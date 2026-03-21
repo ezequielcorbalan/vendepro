@@ -2,13 +2,24 @@
 // Database types for the Reportes App
 // ============================================================
 
-export type UserRole = 'admin' | 'agent'
+export type UserRole = 'owner' | 'admin' | 'agent'
 export type PropertyStatus = 'active' | 'sold' | 'suspended' | 'archived'
 export type PropertyType = 'departamento' | 'casa' | 'ph' | 'local' | 'terreno' | 'oficina'
 export type ReportStatus = 'draft' | 'published'
 export type MetricSource = 'zonaprop' | 'argenprop' | 'mercadolibre' | 'manual'
 export type ReportSection = 'strategy' | 'marketing' | 'conclusion' | 'benchmarks' | 'price_reference'
 export type PhotoType = 'visit_form' | 'property' | 'screenshot'
+
+export interface Organization {
+  id: string
+  name: string
+  slug: string
+  logo_url: string | null
+  brand_color: string
+  canva_template_id: string | null
+  owner_id: string | null
+  created_at: string
+}
 
 export interface Profile {
   id: string
@@ -17,6 +28,7 @@ export interface Profile {
   phone: string | null
   photo_url: string | null
   role: UserRole
+  org_id: string | null
   created_at: string
 }
 
@@ -106,6 +118,58 @@ export interface CompetitorLink {
   currency: string
   notes: string | null
   created_at: string
+}
+
+// ============================================================
+// Appraisals (Tasaciones)
+// ============================================================
+
+export type AppraisalStatus = 'draft' | 'generated' | 'sent'
+
+export interface Appraisal {
+  id: string
+  org_id: string
+  property_address: string
+  neighborhood: string
+  city: string
+  property_type: PropertyType
+  covered_area: number | null
+  total_area: number | null
+  semi_area: number | null
+  weighted_area: number | null
+  strengths: string | null
+  weaknesses: string | null
+  opportunities: string | null
+  threats: string | null
+  publication_analysis: string | null
+  suggested_price: number | null
+  test_price: number | null
+  expected_close_price: number | null
+  usd_per_m2: number | null
+  canva_design_id: string | null
+  canva_edit_url: string | null
+  agent_id: string
+  status: AppraisalStatus
+  created_at: string
+  updated_at: string
+  // Joined
+  agent?: Profile
+  comparables?: AppraisalComparable[]
+}
+
+export interface AppraisalComparable {
+  id: string
+  appraisal_id: string
+  zonaprop_url: string | null
+  address: string | null
+  total_area: number | null
+  covered_area: number | null
+  price: number | null
+  usd_per_m2: number | null
+  days_on_market: number | null
+  views_per_day: number | null
+  age: number | null
+  sort_order: number
 }
 
 // ============================================================

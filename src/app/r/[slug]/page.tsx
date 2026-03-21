@@ -27,6 +27,7 @@ export default async function PublicReportPage({
 
   const property = data.property as any
   const allReports = data.reports as any[]
+  const competitors = (data.competitors || []) as any[]
 
   if (allReports.length === 0) {
     return (
@@ -251,6 +252,43 @@ export default async function PublicReportPage({
               {conclusion.title}
             </h2>
             <p className="text-gray-600 whitespace-pre-wrap leading-relaxed text-sm sm:text-base">{conclusion.body}</p>
+          </section>
+        )}
+
+        {/* Competitors */}
+        {competitors.length > 0 && (
+          <section className="bg-white rounded-2xl shadow-sm p-4 sm:p-6">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <span className="w-1 h-6 bg-red-400 rounded-full"></span>
+              Propiedades similares en la zona
+            </h2>
+            <div className="space-y-3">
+              {competitors.map((comp: any) => (
+                <div key={comp.id} className="border border-gray-100 rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    {comp.address && (
+                      <p className="font-medium text-gray-800 text-sm truncate">{comp.address}</p>
+                    )}
+                    {comp.price && (
+                      <p className="text-sm text-brand-pink font-semibold">
+                        {comp.currency || 'USD'} {Number(comp.price).toLocaleString('es-AR')}
+                      </p>
+                    )}
+                    {comp.notes && (
+                      <p className="text-xs text-gray-500 mt-1">{comp.notes}</p>
+                    )}
+                  </div>
+                  <a
+                    href={comp.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:underline flex-shrink-0 bg-indigo-50 px-3 py-1.5 rounded-lg"
+                  >
+                    Ver aviso ↗
+                  </a>
+                </div>
+              ))}
+            </div>
           </section>
         )}
 

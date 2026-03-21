@@ -35,7 +35,7 @@ export async function login(email: string, password: string): Promise<Profile | 
   const hash = await hashPassword(password)
 
   const user = await db.prepare(
-    'SELECT id, email, full_name, phone, photo_url, role, created_at FROM users WHERE email = ? AND password_hash = ?'
+    'SELECT id, email, full_name, phone, photo_url, role, org_id, created_at FROM users WHERE email = ? AND password_hash = ?'
   ).bind(email.toLowerCase(), hash).first<Profile>()
 
   if (!user) return null
@@ -70,7 +70,7 @@ export async function getCurrentUser(): Promise<Profile | null> {
 
     const db = await getDB()
     const user = await db.prepare(
-      'SELECT id, email, full_name, phone, photo_url, role, created_at FROM users WHERE id = ?'
+      'SELECT id, email, full_name, phone, photo_url, role, org_id, created_at FROM users WHERE id = ?'
     ).bind(session.uid).first<Profile>()
 
     return user || null

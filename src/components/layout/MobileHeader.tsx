@@ -12,16 +12,20 @@ import {
   Menu,
   X,
   FileBarChart,
+  ClipboardList,
+  Settings,
 } from 'lucide-react'
 import type { Profile } from '@/lib/types'
 
 const agentLinks = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/propiedades', label: 'Propiedades', icon: Building2 },
+  { href: '/tasaciones', label: 'Tasaciones', icon: ClipboardList },
 ]
 
 const adminLinks = [
   { href: '/admin/agentes', label: 'Agentes', icon: Users },
+  { href: '/configuracion', label: 'Configuración', icon: Settings },
 ]
 
 export default function MobileHeader({ profile }: { profile: Profile }) {

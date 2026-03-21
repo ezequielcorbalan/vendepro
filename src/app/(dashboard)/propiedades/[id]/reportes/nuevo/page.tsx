@@ -205,7 +205,24 @@ export default function NuevoReporte() {
         return
       }
 
-      // TODO: Upload photos to R2 in a separate step
+      const result = await res.json() as any
+      const reportId = result.reportId
+
+      // Upload photos to R2
+      if (photos.length > 0 && reportId) {
+        for (let i = 0; i < photos.length; i++) {
+          const photoForm = new FormData()
+          photoForm.append('file', photos[i])
+          photoForm.append('reportId', reportId)
+          photoForm.append('photoType', 'visit_form')
+          photoForm.append('sortOrder', i.toString())
+          try {
+            await fetch('/api/upload-photo', { method: 'POST', body: photoForm })
+          } catch (e) {
+            console.error('Error uploading photo:', e)
+          }
+        }
+      }
 
       router.push(`/propiedades/${propertyId}`)
       router.refresh()

@@ -4,7 +4,7 @@ export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
 
   // Public routes — no auth needed
-  if (path.startsWith('/r/') || path === '/login' || path.startsWith('/api/auth/') || path.startsWith('/api/extract')) {
+  if (path.startsWith('/r/') || path === '/login' || path.startsWith('/api/auth/') || path.startsWith('/api/extract') || path.startsWith('/api/photo/')) {
     // If logged in and on login page, redirect to dashboard
     if (path === '/login' && request.cookies.get('reportes_session')) {
       return NextResponse.redirect(new URL('/dashboard', request.url))

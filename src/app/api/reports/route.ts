@@ -21,7 +21,7 @@ export async function POST(request: Request) {
       publish: body.publish,
     })
 
-    return NextResponse.json({ id: reportId })
+    return NextResponse.json({ id: reportId, reportId })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }

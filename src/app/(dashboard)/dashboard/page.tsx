@@ -21,7 +21,7 @@ export default async function DashboardPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-800">
+          <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">
             {isAdmin ? 'Dashboard de Sucursal' : 'Mi Dashboard'}
           </h1>
           <p className="text-brand-gray text-sm mt-1">
@@ -38,88 +38,88 @@ export default async function DashboardPage() {
       </div>
 
       {/* Overview Cards */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8 md:grid-cols-4">
-        <div className="bg-white rounded-xl p-5 shadow-sm">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-lg bg-brand-pink/10 flex items-center justify-center">
-              <Building2 className="w-5 h-5 text-brand-pink" />
+      <div className="grid grid-cols-2 gap-3 mb-5 sm:mb-8 md:grid-cols-4">
+        <div className="bg-white rounded-xl p-3 sm:p-5 shadow-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-brand-pink/10 flex items-center justify-center">
+              <Building2 className="w-4 h-4 sm:w-5 sm:h-5 text-brand-pink" />
             </div>
           </div>
-          <p className="text-3xl font-bold text-gray-800">{overview.active_properties}</p>
-          <p className="text-xs text-brand-gray mt-1">Propiedades activas</p>
+          <p className="text-2xl sm:text-3xl font-bold text-gray-800">{overview.active_properties}</p>
+          <p className="text-[10px] sm:text-xs text-brand-gray mt-1">Propiedades activas</p>
         </div>
 
-        <div className="bg-white rounded-xl p-5 shadow-sm">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-green-600" />
+        <div className="bg-white rounded-xl p-3 sm:p-5 shadow-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-green-100 flex items-center justify-center">
+              <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
             </div>
           </div>
-          <p className="text-3xl font-bold text-gray-800">{overview.sold_properties}</p>
-          <p className="text-xs text-brand-gray mt-1">Vendidas</p>
+          <p className="text-2xl sm:text-3xl font-bold text-gray-800">{overview.sold_properties}</p>
+          <p className="text-[10px] sm:text-xs text-brand-gray mt-1">Vendidas</p>
         </div>
 
-        <div className="bg-white rounded-xl p-5 shadow-sm">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-lg bg-brand-orange/10 flex items-center justify-center">
-              <FileBarChart className="w-5 h-5 text-brand-orange" />
+        <div className="bg-white rounded-xl p-3 sm:p-5 shadow-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-brand-orange/10 flex items-center justify-center">
+              <FileBarChart className="w-4 h-4 sm:w-5 sm:h-5 text-brand-orange" />
             </div>
           </div>
-          <p className="text-3xl font-bold text-gray-800">{overview.total_reports}</p>
-          <p className="text-xs text-brand-gray mt-1">Reportes publicados</p>
+          <p className="text-2xl sm:text-3xl font-bold text-gray-800">{overview.total_reports}</p>
+          <p className="text-[10px] sm:text-xs text-brand-gray mt-1">Reportes publicados</p>
         </div>
 
         {isAdmin && (
-          <div className="bg-white rounded-xl p-5 shadow-sm">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center">
-                <Users className="w-5 h-5 text-indigo-600" />
+          <div className="bg-white rounded-xl p-3 sm:p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-indigo-100 flex items-center justify-center">
+                <Users className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
               </div>
             </div>
-            <p className="text-3xl font-bold text-gray-800">{overview.total_agents}</p>
-            <p className="text-xs text-brand-gray mt-1">Agentes</p>
+            <p className="text-2xl sm:text-3xl font-bold text-gray-800">{overview.total_agents}</p>
+            <p className="text-[10px] sm:text-xs text-brand-gray mt-1">Agentes</p>
           </div>
         )}
 
         {!isAdmin && (
-          <div className="bg-white rounded-xl p-5 shadow-sm">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
-                <Target className="w-5 h-5 text-red-500" />
+          <div className="bg-white rounded-xl p-3 sm:p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-red-100 flex items-center justify-center">
+                <Target className="w-4 h-4 sm:w-5 sm:h-5 text-red-500" />
               </div>
             </div>
-            <p className="text-3xl font-bold text-gray-800">{overview.conversion_rate.toFixed(1)}%</p>
-            <p className="text-xs text-brand-gray mt-1">Tasa de conversión</p>
+            <p className="text-2xl sm:text-3xl font-bold text-gray-800">{overview.conversion_rate.toFixed(1)}%</p>
+            <p className="text-[10px] sm:text-xs text-brand-gray mt-1">Tasa de conversión</p>
           </div>
         )}
       </div>
 
       {/* Metrics Summary */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8 sm:grid-cols-3 md:grid-cols-5">
-        <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-4 text-white">
-          <Eye className="w-5 h-5 mb-2 opacity-80" />
-          <p className="text-2xl font-bold">{overview.total_impressions.toLocaleString('es-AR')}</p>
-          <p className="text-xs opacity-80 mt-1">Impresiones totales</p>
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-5 sm:mb-8 sm:grid-cols-3 md:grid-cols-5">
+        <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-3 sm:p-4 text-white">
+          <Eye className="w-4 h-4 sm:w-5 sm:h-5 mb-1 sm:mb-2 opacity-80" />
+          <p className="text-lg sm:text-2xl font-bold">{overview.total_impressions.toLocaleString('es-AR')}</p>
+          <p className="text-[10px] sm:text-xs opacity-80 mt-0.5">Impresiones</p>
         </div>
-        <div className="bg-gradient-to-br from-[#ff007c] to-[#ff3d94] rounded-xl p-4 text-white">
-          <BarChart3 className="w-5 h-5 mb-2 opacity-80" />
-          <p className="text-2xl font-bold">{overview.total_visits.toLocaleString('es-AR')}</p>
-          <p className="text-xs opacity-80 mt-1">Visitas a avisos</p>
+        <div className="bg-gradient-to-br from-[#ff007c] to-[#ff3d94] rounded-xl p-3 sm:p-4 text-white">
+          <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 mb-1 sm:mb-2 opacity-80" />
+          <p className="text-lg sm:text-2xl font-bold">{overview.total_visits.toLocaleString('es-AR')}</p>
+          <p className="text-[10px] sm:text-xs opacity-80 mt-0.5">Visitas avisos</p>
         </div>
-        <div className="bg-gradient-to-br from-[#ff8017] to-orange-500 rounded-xl p-4 text-white">
-          <MessageCircle className="w-5 h-5 mb-2 opacity-80" />
-          <p className="text-2xl font-bold">{overview.total_inquiries.toLocaleString('es-AR')}</p>
-          <p className="text-xs opacity-80 mt-1">Consultas totales</p>
+        <div className="bg-gradient-to-br from-[#ff8017] to-orange-500 rounded-xl p-3 sm:p-4 text-white">
+          <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 mb-1 sm:mb-2 opacity-80" />
+          <p className="text-lg sm:text-2xl font-bold">{overview.total_inquiries.toLocaleString('es-AR')}</p>
+          <p className="text-[10px] sm:text-xs opacity-80 mt-0.5">Consultas</p>
         </div>
-        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-4 text-white">
-          <Users className="w-5 h-5 mb-2 opacity-80" />
-          <p className="text-2xl font-bold">{overview.total_in_person_visits.toLocaleString('es-AR')}</p>
-          <p className="text-xs opacity-80 mt-1">Visitas presenciales</p>
+        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-3 sm:p-4 text-white">
+          <Users className="w-4 h-4 sm:w-5 sm:h-5 mb-1 sm:mb-2 opacity-80" />
+          <p className="text-lg sm:text-2xl font-bold">{overview.total_in_person_visits.toLocaleString('es-AR')}</p>
+          <p className="text-[10px] sm:text-xs opacity-80 mt-0.5">Visitas presenc.</p>
         </div>
-        <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-4 text-white">
-          <Award className="w-5 h-5 mb-2 opacity-80" />
-          <p className="text-2xl font-bold">{overview.total_offers.toLocaleString('es-AR')}</p>
-          <p className="text-xs opacity-80 mt-1">Ofertas recibidas</p>
+        <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-3 sm:p-4 text-white col-span-2 sm:col-span-1">
+          <Award className="w-4 h-4 sm:w-5 sm:h-5 mb-1 sm:mb-2 opacity-80" />
+          <p className="text-lg sm:text-2xl font-bold">{overview.total_offers.toLocaleString('es-AR')}</p>
+          <p className="text-[10px] sm:text-xs opacity-80 mt-0.5">Ofertas</p>
         </div>
       </div>
 
