@@ -1,26 +1,42 @@
 'use client'
 
+import { useRef, useState, useEffect } from 'react'
 import type { FunnelData } from '@/lib/types'
 
 export default function FunnelChart({ data }: { data: FunnelData[] }) {
-  const maxValue = Math.max(...data.map((d) => d.value), 1)
-  const totalHeight = data.length * 64
-  const svgWidth = 500
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [width, setWidth] = useState(400)
+
+  useEffect(() => {
+    function updateWidth() {
+      if (containerRef.current) {
+        setWidth(containerRef.current.offsetWidth)
+      }
+    }
+    updateWidth()
+    window.addEventListener('resize', updateWidth)
+    return () => window.removeEventListener('resize', updateWidth)
+  }, [])
+
+  const svgWidth = width
   const centerX = svgWidth / 2
-  const maxBarWidth = 440
-  const minBarWidth = 100
-  const stepHeight = 56
-  const gap = 8
+  const maxBarWidth = svgWidth * 0.88
+  const minBarWidth = svgWidth * 0.25
+  const stepHeight = Math.max(44, Math.min(56, width * 0.12))
+  const gap = 6
+  const totalHeight = data.length * (stepHeight + gap)
+
+  const labelSize = Math.max(10, Math.min(13, width * 0.032))
+  const valueSize = Math.max(13, Math.min(18, width * 0.042))
 
   return (
-    <div className="flex flex-col items-center">
+    <div ref={containerRef} className="w-full">
       <svg
         viewBox={`0 0 ${svgWidth} ${totalHeight}`}
-        className="w-full max-w-lg"
+        className="w-full"
         preserveAspectRatio="xMidYMid meet"
       >
         {data.map((item, index) => {
-          // Each level gets progressively narrower to form funnel shape
           const ratio = data.length > 1 ? 1 - (index / (data.length - 1)) * 0.7 : 1
           const barWidth = minBarWidth + (maxBarWidth - minBarWidth) * ratio
           const nextRatio = data.length > 1 ? 1 - ((index + 1) / (data.length - 1)) * 0.7 : 1
@@ -38,32 +54,28 @@ export default function FunnelChart({ data }: { data: FunnelData[] }) {
 
           return (
             <g key={item.label}>
-              {/* Trapezoid shape */}
               <polygon
                 points={points}
                 fill={item.color}
                 opacity={0.9}
-                rx={4}
               />
-              {/* Label */}
               <text
                 x={centerX}
-                y={y + stepHeight / 2 - 6}
+                y={y + stepHeight / 2 - 5}
                 textAnchor="middle"
                 fill="white"
-                fontSize="13"
+                fontSize={labelSize}
                 fontWeight="600"
                 fontFamily="Poppins, sans-serif"
               >
                 {item.label}
               </text>
-              {/* Value */}
               <text
                 x={centerX}
-                y={y + stepHeight / 2 + 12}
+                y={y + stepHeight / 2 + 11}
                 textAnchor="middle"
                 fill="white"
-                fontSize="18"
+                fontSize={valueSize}
                 fontWeight="700"
                 fontFamily="Poppins, sans-serif"
               >

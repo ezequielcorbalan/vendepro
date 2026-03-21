@@ -16,12 +16,12 @@ export default function EvolutionChart({ data }: { data: HistoricalDataPoint[] }
   if (data.length === 0) return null
 
   return (
-    <div className="w-full h-72">
+    <div className="w-full h-52 sm:h-64 md:h-72">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+        <BarChart data={data} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-          <XAxis dataKey="period" tick={{ fontSize: 12 }} />
-          <YAxis tick={{ fontSize: 12 }} />
+          <XAxis dataKey="period" tick={{ fontSize: 10 }} />
+          <YAxis tick={{ fontSize: 10 }} width={40} />
           <Tooltip />
           <Legend />
           <Bar dataKey="portal_visits" name="Visitas portal" fill="#ff007c" radius={[4, 4, 0, 0]} />

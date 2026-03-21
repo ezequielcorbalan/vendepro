@@ -269,7 +269,7 @@ export default function NuevoReporte() {
                 className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Desde *</label>
                 <input
@@ -350,7 +350,7 @@ export default function NuevoReporte() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                   {[
                     { key: 'impressions', label: 'Impresiones' },
                     { key: 'portal_visits', label: 'Visitas al aviso' },
@@ -462,7 +462,7 @@ export default function NuevoReporte() {
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs text-brand-gray mb-1">Dirección</label>
                     <input
@@ -530,7 +530,7 @@ export default function NuevoReporte() {
             </label>
 
             {photos.length > 0 && (
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                 {photos.map((photo, i) => (
                   <div key={i} className="relative">
                     <img

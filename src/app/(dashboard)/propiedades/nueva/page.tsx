@@ -80,12 +80,12 @@ export default function NuevaPropiedad() {
 
       <h1 className="text-2xl font-semibold text-gray-800 mb-6">Nueva propiedad</h1>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm p-6 space-y-6">
+      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm p-4 sm:p-6 space-y-5 sm:space-y-6">
         {error && (
           <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg">{error}</div>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-1">Dirección *</label>
             <input
@@ -183,7 +183,7 @@ export default function NuevaPropiedad() {
 
         <h2 className="text-lg font-medium text-gray-800">Datos del propietario</h2>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
             <input

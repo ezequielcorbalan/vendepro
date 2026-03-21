@@ -32,11 +32,11 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-brand-light">
-      <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md">
-        <div className="text-center mb-8">
-          <img src="/logo.png" alt="Marcela Genta" className="h-16 mx-auto mb-4" />
-          <h1 className="text-2xl font-semibold text-gray-800">Reportes</h1>
+    <div className="min-h-screen flex items-center justify-center bg-brand-light px-4">
+      <div className="bg-white rounded-2xl shadow-lg p-5 sm:p-8 w-full max-w-md">
+        <div className="text-center mb-6 sm:mb-8">
+          <img src="/logo.png" alt="Marcela Genta" className="h-12 sm:h-16 mx-auto mb-3 sm:mb-4" />
+          <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Reportes</h1>
           <p className="text-brand-gray text-sm mt-1">Ingresá con tu cuenta de agente</p>
         </div>
 

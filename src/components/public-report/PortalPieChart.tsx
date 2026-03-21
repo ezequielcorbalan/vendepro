@@ -39,19 +39,19 @@ export default function PortalPieChart({
   return (
     <div>
       <h3 className="text-sm font-semibold text-gray-700 mb-3 text-center">{title}</h3>
-      <div className="h-56">
+      <div className="h-40 sm:h-48 md:h-56">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={data}
               cx="50%"
               cy="50%"
-              innerRadius={45}
-              outerRadius={75}
+              innerRadius={30}
+              outerRadius={55}
               paddingAngle={3}
               dataKey="value"
-              label={({ name, value }) => `${name}: ${value}`}
-              labelLine={true}
+              label={({ name, value }) => `${value}`}
+              labelLine={false}
             >
               {data.map((entry, index) => (
                 <Cell key={index} fill={entry.color} />
