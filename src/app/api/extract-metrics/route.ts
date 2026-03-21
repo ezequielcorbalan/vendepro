@@ -6,14 +6,14 @@ export async function POST(request: Request) {
 
   try {
     const { env } = await getCloudflareContext()
-    apiKey = (env as any).ANTHROPIC_API_KEY
+    apiKey = (env as any).ANTHROPIC_API_KEY_2 || (env as any).ANTHROPIC_API_KEY
   } catch (e) {
     console.error('Failed to get Cloudflare context:', e)
   }
 
   // Fallback to process.env
   if (!apiKey) {
-    apiKey = process.env.ANTHROPIC_API_KEY
+    apiKey = process.env.ANTHROPIC_API_KEY_2 || process.env.ANTHROPIC_API_KEY
   }
 
   if (!apiKey) {

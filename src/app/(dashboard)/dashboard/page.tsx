@@ -19,7 +19,7 @@ export default async function DashboardPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
         <div>
           <h1 className="text-2xl font-semibold text-gray-800">
             {isAdmin ? 'Dashboard de Sucursal' : 'Mi Dashboard'}
@@ -38,7 +38,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Overview Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8 md:grid-cols-4">
         <div className="bg-white rounded-xl p-5 shadow-sm">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-lg bg-brand-pink/10 flex items-center justify-center">
@@ -95,7 +95,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Metrics Summary */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8 sm:grid-cols-3 md:grid-cols-5">
         <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-4 text-white">
           <Eye className="w-5 h-5 mb-2 opacity-80" />
           <p className="text-2xl font-bold">{overview.total_impressions.toLocaleString('es-AR')}</p>
@@ -125,7 +125,7 @@ export default async function DashboardPage() {
 
       {/* Sold vs Active Comparison */}
       {(soldData || activeData) && (
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
+        <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 mb-6 sm:mb-8">
           <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
             <span className="w-1 h-6 bg-brand-pink rounded-full"></span>
             Vendidas vs Activas — Métricas promedio

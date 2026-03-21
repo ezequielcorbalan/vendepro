@@ -1,4 +1,4 @@
-import { getPublicReport } from '@/lib/actions'
+import { getPublicReport, getPriceHistory } from '@/lib/actions'
 import { getSoldBenchmarks } from '@/lib/benchmarks'
 import { notFound } from 'next/navigation'
 import { formatDate } from '@/lib/utils'
@@ -8,6 +8,7 @@ import PortalPieChart from '@/components/public-report/PortalPieChart'
 import { MetricsGridFromTotals } from '@/components/public-report/MetricsGrid'
 import ReportSelector from '@/components/public-report/ReportSelector'
 import BenchmarkComparison from '@/components/public-report/BenchmarkComparison'
+import PriceEvolution from '@/components/public-report/PriceEvolution'
 import Link from 'next/link'
 import type { ReportMetric, ReportContent, ReportPhoto, HistoricalDataPoint, FunnelData } from '@/lib/types'
 
@@ -59,8 +60,9 @@ export default async function PublicReportPage({
     { impressions: 0, portal_visits: 0, inquiries: 0, in_person_visits: 0, offers: 0 }
   )
 
-  // Get benchmark data from sold properties
+  // Get benchmark and price history
   const benchmark = await getSoldBenchmarks(property.neighborhood as string)
+  const priceHistory = await getPriceHistory(property.id as string) as any[]
 
   const funnelData: FunnelData[] = [
     { label: 'Impresiones', value: totalMetrics.impressions, color: '#6366f1' },
@@ -203,6 +205,15 @@ export default async function PublicReportPage({
         )}
 
         {/* Content sections */}
+        {/* Price Evolution */}
+        {priceHistory.length > 0 && (
+          <PriceEvolution
+            history={priceHistory}
+            currentPrice={Number(property.asking_price) || 0}
+            currency={(property.currency as string) || 'USD'}
+          />
+        )}
+
         {strategy && (
           <section className="bg-white rounded-2xl shadow-sm p-4 sm:p-6">
             <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-3 flex items-center gap-2">
