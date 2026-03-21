@@ -1,11 +1,25 @@
 import { NextResponse } from 'next/server'
-import { getEnvVar } from '@/lib/db'
+import { getCloudflareContext } from '@opennextjs/cloudflare'
 
 export async function POST(request: Request) {
-  const apiKey = await getEnvVar('ANTHROPIC_API_KEY')
+  let apiKey: string | undefined
+
+  try {
+    const { env } = await getCloudflareContext()
+    apiKey = (env as any).ANTHROPIC_API_KEY
+  } catch (e) {
+    console.error('Failed to get Cloudflare context:', e)
+  }
+
+  // Fallback to process.env
   if (!apiKey) {
+    apiKey = process.env.ANTHROPIC_API_KEY
+  }
+
+  if (!apiKey) {
+    console.error('ANTHROPIC_API_KEY not found in env or context')
     return NextResponse.json(
-      { error: 'Extracción automática no configurada. Cargá los datos manualmente.' },
+      { error: 'Extracción automática no configurada. Falta ANTHROPIC_API_KEY.' },
       { status: 501 }
     )
   }
@@ -86,24 +100,26 @@ Notas:
     })
 
     if (!response.ok) {
-      throw new Error(`API error: ${response.status}`)
+      const errText = await response.text()
+      console.error('Claude API error status:', response.status, 'body:', errText)
+      throw new Error(`API error: ${response.status} - ${errText}`)
     }
 
     const data = await response.json() as any
     const text = data.content[0]?.text || '{}'
 
-    // Extract JSON from response (Claude sometimes wraps it in markdown code blocks)
     const jsonMatch = text.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
+      console.error('Could not parse JSON from Claude response:', text)
       throw new Error('No se pudo parsear la respuesta')
     }
 
     const metrics = JSON.parse(jsonMatch[0])
     return NextResponse.json(metrics)
   } catch (err: any) {
-    console.error('Extract metrics error:', err)
+    console.error('Extract metrics error:', err?.message || err)
     return NextResponse.json(
-      { error: 'Error al extraer métricas. Cargalos manualmente.' },
+      { error: `Error al extraer métricas: ${err?.message || 'Error desconocido'}. Cargalos manualmente.` },
       { status: 500 }
     )
   }

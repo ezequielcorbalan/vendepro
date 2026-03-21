@@ -1,4 +1,5 @@
 import { getPublicReport } from '@/lib/actions'
+import { getSoldBenchmarks } from '@/lib/benchmarks'
 import { notFound } from 'next/navigation'
 import { formatDate } from '@/lib/utils'
 import FunnelChart from '@/components/public-report/FunnelChart'
@@ -6,6 +7,7 @@ import EvolutionChart from '@/components/public-report/EvolutionChart'
 import PortalPieChart from '@/components/public-report/PortalPieChart'
 import { MetricsGridFromTotals } from '@/components/public-report/MetricsGrid'
 import ReportSelector from '@/components/public-report/ReportSelector'
+import BenchmarkComparison from '@/components/public-report/BenchmarkComparison'
 import Link from 'next/link'
 import type { ReportMetric, ReportContent, ReportPhoto, HistoricalDataPoint, FunnelData } from '@/lib/types'
 
@@ -57,6 +59,9 @@ export default async function PublicReportPage({
     { impressions: 0, portal_visits: 0, inquiries: 0, in_person_visits: 0, offers: 0 }
   )
 
+  // Get benchmark data from sold properties
+  const benchmark = await getSoldBenchmarks(property.neighborhood as string)
+
   const funnelData: FunnelData[] = [
     { label: 'Impresiones', value: totalMetrics.impressions, color: '#6366f1' },
     { label: 'Visitas portal', value: totalMetrics.portal_visits, color: '#ff007c' },
@@ -105,8 +110,8 @@ export default async function PublicReportPage({
           </div>
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1">{property.address}</h1>
           <p className="text-white/80 text-sm sm:text-base">
-            {property.neighborhood}, {property.city} &middot; {property.property_type}
-            {property.rooms ? ` &middot; ${property.rooms} amb.` : ''}
+            {property.neighborhood}, {property.city} · {property.property_type}
+            {property.rooms ? ` · ${property.rooms} amb.` : ''}
           </p>
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <ReportSelector reports={reportOptions} currentIndex={reportIndex} slug={slug} />
@@ -140,6 +145,17 @@ export default async function PublicReportPage({
           </h2>
           <FunnelChart data={funnelData} />
         </section>
+
+        {/* Benchmark Comparison */}
+        {benchmark && (
+          <BenchmarkComparison
+            currentImpressions={totalMetrics.impressions}
+            currentVisits={totalMetrics.portal_visits}
+            currentInquiries={totalMetrics.inquiries}
+            benchmark={benchmark}
+            neighborhood={property.neighborhood as string}
+          />
+        )}
 
         {/* Per-portal pie charts */}
         {metrics.length > 1 && (
@@ -278,7 +294,7 @@ export default async function PublicReportPage({
       <footer className="bg-gray-900 text-white py-6 sm:py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <img src="/logo.png" alt="Marcela Genta" className="h-8 mx-auto mb-3 brightness-0 invert" />
-          <p className="text-gray-400 text-sm">Marcela Genta &middot; Operaciones Inmobiliarias</p>
+          <p className="text-gray-400 text-sm">Marcela Genta · Operaciones Inmobiliarias</p>
           {property.agent_name && (
             <p className="text-gray-500 text-xs mt-1">Agente: {property.agent_name}</p>
           )}

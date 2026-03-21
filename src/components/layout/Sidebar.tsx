@@ -9,6 +9,7 @@ import {
   Users,
   LogOut,
   FileBarChart,
+  BarChart3,
 } from 'lucide-react'
 import type { Profile } from '@/lib/types'
 

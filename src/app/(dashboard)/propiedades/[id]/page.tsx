@@ -28,9 +28,9 @@ export default async function PropertyDetailPage({
           <div>
             <h1 className="text-2xl font-semibold text-gray-800">{property.address as string}</h1>
             <p className="text-brand-gray mt-1">
-              {property.neighborhood as string}, {property.city as string} &middot; {property.property_type as string}
-              {property.rooms ? ` &middot; ${property.rooms} amb.` : ''}
-              {property.size_m2 ? ` &middot; ${property.size_m2} m²` : ''}
+              {property.neighborhood as string}, {property.city as string} · {property.property_type as string}
+              {property.rooms ? ` · ${property.rooms} amb.` : ''}
+              {property.size_m2 ? ` · ${property.size_m2} m²` : ''}
             </p>
             {property.asking_price && (
               <p className="text-lg font-semibold text-brand-pink mt-2">
@@ -82,7 +82,7 @@ export default async function PropertyDetailPage({
                     <p className="font-medium text-gray-800">{report.period_label}</p>
                     <p className="text-sm text-brand-gray">
                       {formatDate(report.period_start)} - {formatDate(report.period_end)}
-                      {report.creator_name && ` &middot; por ${report.creator_name}`}
+                      {report.creator_name && ` · por ${report.creator_name}`}
                     </p>
                   </div>
                 </div>

@@ -1,17 +1,10 @@
 import { getProperties } from '@/lib/actions'
 import Link from 'next/link'
 import { Building2, Plus } from 'lucide-react'
+import PropertyFilters from '@/components/properties/PropertyFilters'
 
 export default async function PropiedadesPage() {
   const properties = await getProperties()
-
-  const statusLabel: Record<string, string> = {
-    active: 'Activa', sold: 'Vendida', suspended: 'Pausada', archived: 'Archivada',
-  }
-  const statusColor: Record<string, string> = {
-    active: 'bg-green-100 text-green-700', sold: 'bg-pink-100 text-brand-pink',
-    suspended: 'bg-yellow-100 text-yellow-700', archived: 'bg-gray-100 text-gray-500',
-  }
 
   return (
     <div>
@@ -35,29 +28,7 @@ export default async function PropiedadesPage() {
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {properties.map((property: any) => (
-            <Link key={property.id} href={`/propiedades/${property.id}`} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-              <div className="h-40 bg-gradient-to-br from-brand-pink/20 to-brand-orange/20 flex items-center justify-center">
-                <Building2 className="w-12 h-12 text-brand-pink/40" />
-              </div>
-              <div className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusColor[property.status]}`}>
-                    {statusLabel[property.status]}
-                  </span>
-                  <span className="text-xs text-brand-gray">{property.report_count || 0} reportes</span>
-                </div>
-                <h3 className="font-semibold text-gray-800 mb-1">{property.address}</h3>
-                <p className="text-sm text-brand-gray">{property.neighborhood} &middot; {property.property_type}</p>
-                {property.asking_price && (
-                  <p className="text-sm font-medium text-brand-pink mt-2">{property.currency} {Number(property.asking_price).toLocaleString('es-AR')}</p>
-                )}
-                {property.agent_name && <p className="text-xs text-brand-gray mt-2">Agente: {property.agent_name}</p>}
-              </div>
-            </Link>
-          ))}
-        </div>
+        <PropertyFilters properties={properties as any[]} />
       )}
     </div>
   )

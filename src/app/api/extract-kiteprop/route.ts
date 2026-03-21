@@ -1,11 +1,25 @@
 import { NextResponse } from 'next/server'
-import { getEnvVar } from '@/lib/db'
+import { getCloudflareContext } from '@opennextjs/cloudflare'
 
 export async function POST(request: Request) {
-  const apiKey = await getEnvVar('ANTHROPIC_API_KEY')
+  let apiKey: string | undefined
+
+  try {
+    const { env } = await getCloudflareContext()
+    apiKey = (env as any).ANTHROPIC_API_KEY
+  } catch (e) {
+    console.error('Failed to get Cloudflare context:', e)
+  }
+
+  // Fallback to process.env
   if (!apiKey) {
+    apiKey = process.env.ANTHROPIC_API_KEY
+  }
+
+  if (!apiKey) {
+    console.error('ANTHROPIC_API_KEY not found in env or context')
     return NextResponse.json(
-      { error: 'Extracción automática no configurada.' },
+      { error: 'Extracción automática no configurada. Falta ANTHROPIC_API_KEY.' },
       { status: 501 }
     )
   }
@@ -17,7 +31,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'No se envió ningún archivo' }, { status: 400 })
   }
 
-  // Convert PDF to base64 for Claude
   const bytes = await file.arrayBuffer()
   const base64 = Buffer.from(bytes).toString('base64')
 
@@ -91,8 +104,8 @@ Si un dato no está visible, usá null. Extraé todo lo que puedas del PDF.`,
 
     if (!response.ok) {
       const errText = await response.text()
-      console.error('Claude API error:', errText)
-      throw new Error(`API error: ${response.status}`)
+      console.error('Claude API error status:', response.status, 'body:', errText)
+      throw new Error(`API error: ${response.status} - ${errText}`)
     }
 
     const data = await response.json() as any
@@ -100,15 +113,16 @@ Si un dato no está visible, usá null. Extraé todo lo que puedas del PDF.`,
 
     const jsonMatch = text.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
+      console.error('Could not parse JSON from Claude response:', text)
       throw new Error('No se pudo parsear la respuesta')
     }
 
     const extracted = JSON.parse(jsonMatch[0])
     return NextResponse.json(extracted)
   } catch (err: any) {
-    console.error('Extract KiteProp error:', err)
+    console.error('Extract KiteProp error:', err?.message || err)
     return NextResponse.json(
-      { error: 'Error al extraer datos del PDF. Cargalos manualmente.' },
+      { error: `Error al extraer datos del PDF: ${err?.message || 'Error desconocido'}. Cargalos manualmente.` },
       { status: 500 }
     )
   }

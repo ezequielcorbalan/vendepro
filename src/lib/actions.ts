@@ -92,7 +92,7 @@ export async function createProperty(formData: FormData) {
   redirect(`/propiedades/${id}`)
 }
 
-export async function updatePropertyStatus(propertyId: string, status: 'active' | 'sold' | 'suspended' | 'archived') {
+export async function updatePropertyStatus(propertyId: string, status: 'active' | 'sold' | 'suspended' | 'archived' | 'inactive') {
   const user = await getCurrentUser()
   if (!user) redirect('/login')
 
@@ -102,6 +102,36 @@ export async function updatePropertyStatus(propertyId: string, status: 'active' 
 
   revalidatePath(`/propiedades/${propertyId}`)
   revalidatePath('/propiedades')
+}
+
+// ============================================================
+// Price History
+// ============================================================
+
+export async function updatePropertyPrice(propertyId: string, newPrice: number, currency: string, reason?: string) {
+  const user = await getCurrentUser()
+  if (!user) redirect('/login')
+
+  const db = await getDB()
+
+  // Record price change in history
+  await db.prepare(
+    'INSERT INTO price_history (id, property_id, price, currency, reason, changed_by) VALUES (?, ?, ?, ?, ?, ?)'
+  ).bind(generateId(), propertyId, newPrice, currency, reason || null, user.id).run()
+
+  // Update current price
+  await db.prepare(
+    'UPDATE properties SET asking_price = ?, currency = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+  ).bind(newPrice, currency, propertyId).run()
+
+  revalidatePath(`/propiedades/${propertyId}`)
+}
+
+export async function getPriceHistory(propertyId: string) {
+  const db = await getDB()
+  return (await db.prepare(
+    'SELECT ph.*, u.full_name as changed_by_name FROM price_history ph LEFT JOIN users u ON ph.changed_by = u.id WHERE ph.property_id = ? ORDER BY ph.created_at DESC'
+  ).bind(propertyId).all()).results
 }
 
 // ============================================================
