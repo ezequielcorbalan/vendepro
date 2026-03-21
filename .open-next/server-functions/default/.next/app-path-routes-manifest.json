@@ -1,0 +1,23 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/api/auth/login/route": "/api/auth/login",
+  "/api/auth/logout/route": "/api/auth/logout",
+  "/api/extract-kiteprop/route": "/api/extract-kiteprop",
+  "/api/create-agent/route": "/api/create-agent",
+  "/api/extract-metrics/route": "/api/extract-metrics",
+  "/api/properties/[id]/status/route": "/api/properties/[id]/status",
+  "/api/reports/route": "/api/reports",
+  "/api/properties/route": "/api/properties",
+  "/favicon.ico/route": "/favicon.ico",
+  "/r/[slug]/historial/page": "/r/[slug]/historial",
+  "/(auth)/login/page": "/login",
+  "/page": "/",
+  "/r/[slug]/page": "/r/[slug]",
+  "/(dashboard)/dashboard/page": "/dashboard",
+  "/(dashboard)/admin/agentes/nuevo/page": "/admin/agentes/nuevo",
+  "/(dashboard)/propiedades/[id]/page": "/propiedades/[id]",
+  "/(dashboard)/propiedades/[id]/reportes/nuevo/page": "/propiedades/[id]/reportes/nuevo",
+  "/(dashboard)/admin/agentes/page": "/admin/agentes",
+  "/(dashboard)/propiedades/nueva/page": "/propiedades/nueva",
+  "/(dashboard)/propiedades/page": "/propiedades"
+}
