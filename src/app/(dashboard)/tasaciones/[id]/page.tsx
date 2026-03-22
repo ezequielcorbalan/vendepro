@@ -2,7 +2,7 @@ import { getCurrentUser } from '@/lib/auth'
 import { getDB } from '@/lib/db'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Download, ExternalLink, MapPin, DollarSign, Ruler, Calendar, Eye, TrendingUp, Shield } from 'lucide-react'
+import { ArrowLeft, ExternalLink, Ruler, Eye, TrendingUp, Shield, Pencil } from 'lucide-react'
 
 export default async function TasacionDetailPage({
   params,
@@ -49,15 +49,23 @@ export default async function TasacionDetailPage({
           <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 truncate">{a.property_address}</h1>
           <p className="text-brand-gray text-sm">{a.neighborhood}, {a.city}</p>
         </div>
-        {a.public_slug && (
-          <a
-            href={`/t/${a.public_slug}`}
-            target="_blank"
-            className="inline-flex items-center gap-2 bg-brand-pink text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/tasaciones/${id}/editar`}
+            className="inline-flex items-center gap-2 border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50"
           >
-            <ExternalLink className="w-4 h-4" /> Ver landing
-          </a>
-        )}
+            <Pencil className="w-4 h-4" /> Editar
+          </Link>
+          {a.public_slug && (
+            <a
+              href={`/t/${a.public_slug}`}
+              target="_blank"
+              className="inline-flex items-center gap-2 bg-brand-pink text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
+            >
+              <ExternalLink className="w-4 h-4" /> Ver landing
+            </a>
+          )}
+        </div>
       </div>
 
       {/* Preview - Canva-style */}
