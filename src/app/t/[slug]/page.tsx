@@ -389,9 +389,6 @@ export default async function TasacionPublicPage({
             <h2 className={`text-lg sm:text-xl font-semibold ${headingClass} mb-2 flex items-center gap-2`}>
               <DollarSign className="w-5 h-5 text-green-500" /> Propiedades vendidas en la zona
             </h2>
-            <p className={`text-xs mb-4 ${presentationMode ? 'text-gray-400' : 'text-gray-500'}`}>
-              Referencias de operaciones cerradas. En Argentina, el precio de cierre suele estar entre un 5% y 15% por debajo del valor publicado.
-            </p>
             <div className="space-y-3">
               {soldProps.map((sp: any) => {
                 const discount = sp.original_price && sp.sold_price

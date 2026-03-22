@@ -2,7 +2,7 @@ import { getCurrentUser } from '@/lib/auth'
 import { getDB } from '@/lib/db'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Plus, ClipboardList, ExternalLink, MapPin } from 'lucide-react'
+import { Plus, ClipboardList, ExternalLink, MapPin, Pencil } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import DeleteTasacionButton from '@/components/tasaciones/DeleteTasacionButton'
 
@@ -75,6 +75,9 @@ export default async function TasacionesPage() {
                   {isAdmin && a.agent_name && <p className="text-xs text-gray-400 mt-1">Agente: {a.agent_name}</p>}
                 </Link>
                 <div className="flex items-center gap-2 flex-shrink-0">
+                  <Link href={`/tasaciones/${a.id}/editar`} className="inline-flex items-center gap-1 text-xs text-gray-600 bg-gray-100 px-3 py-1.5 rounded-lg hover:bg-gray-200">
+                    <Pencil className="w-3 h-3" /> Editar
+                  </Link>
                   {a.public_slug && (
                     <a href={`/t/${a.public_slug}`} target="_blank" className="inline-flex items-center gap-1 text-xs text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-100">
                       <ExternalLink className="w-3 h-3" /> Landing
