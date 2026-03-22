@@ -17,8 +17,8 @@ export async function POST(request: NextRequest) {
       INSERT INTO appraisals (id, org_id, property_address, neighborhood, city, property_type,
         covered_area, total_area, semi_area, weighted_area, strengths, weaknesses, opportunities,
         threats, publication_analysis, suggested_price, test_price, expected_close_price, usd_per_m2,
-        agent_id, status, video_url, public_slug)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?)
+        agent_id, status, video_url, public_slug, agent_notes, zone_avg_price, zone_avg_m2, zone_avg_usd_m2)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?)
     `).bind(
       id,
       user.org_id || 'org_mg',
@@ -41,7 +41,11 @@ export async function POST(request: NextRequest) {
       data.usd_per_m2,
       user.id,
       data.video_url || null,
-      publicSlug
+      publicSlug,
+      data.agent_notes || null,
+      data.zone_avg_price || null,
+      data.zone_avg_m2 || null,
+      data.zone_avg_usd_m2 || null
     ).run()
 
     // Insert comparables
