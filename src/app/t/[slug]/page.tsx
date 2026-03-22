@@ -385,31 +385,62 @@ export default async function TasacionPublicPage({
 
         {/* Sold properties */}
         {soldProps.length > 0 && (
-          <section className={`${cardClass} p-5 sm:p-8`}>
-            <h2 className={`text-lg sm:text-xl font-semibold ${headingClass} mb-4 flex items-center gap-2`}>
+          <section className={`${cardClass} p-4 sm:p-8`}>
+            <h2 className={`text-lg sm:text-xl font-semibold ${headingClass} mb-2 flex items-center gap-2`}>
               <DollarSign className="w-5 h-5 text-green-500" /> Propiedades vendidas en la zona
             </h2>
-            <div className="overflow-x-auto -mx-2">
-              <table className={`w-full text-sm ${presentationMode ? 'text-gray-200' : ''}`}>
-                <thead>
-                  <tr className={`border-b ${presentationMode ? 'border-gray-600' : 'border-gray-200'}`}>
-                    <th className={`text-left p-2 font-medium ${presentationMode ? 'text-gray-400' : 'text-gray-500'}`}>Direcci&oacute;n</th>
-                    <th className={`text-center p-2 font-medium ${presentationMode ? 'text-gray-400' : 'text-gray-500'}`}>Venta</th>
-                    <th className={`text-center p-2 font-medium ${presentationMode ? 'text-gray-400' : 'text-gray-500'}`}>m&sup2;</th>
-                    <th className={`text-center p-2 font-medium ${presentationMode ? 'text-gray-400' : 'text-gray-500'}`}>USD/m&sup2;</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {soldProps.map((sp: any) => (
-                    <tr key={sp.id} className={`border-b ${presentationMode ? 'border-gray-700' : 'border-gray-50'}`}>
-                      <td className="p-2 font-medium">{sp.address}</td>
-                      <td className="text-center p-2 text-green-500 font-semibold">{sp.sold_price ? `USD ${Number(sp.sold_price).toLocaleString('es-AR')}` : '-'}</td>
-                      <td className="text-center p-2">{sp.total_area || '-'}</td>
-                      <td className="text-center p-2">{sp.sold_price && sp.total_area ? Math.round(sp.sold_price / sp.total_area).toLocaleString('es-AR') : '-'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <p className={`text-xs mb-4 ${presentationMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              Referencias de operaciones cerradas. En Argentina, el precio de cierre suele estar entre un 5% y 15% por debajo del valor publicado.
+            </p>
+            <div className="space-y-3">
+              {soldProps.map((sp: any) => {
+                const discount = sp.original_price && sp.sold_price
+                  ? ((1 - sp.sold_price / sp.original_price) * 100).toFixed(1)
+                  : null
+                const usdM2Sold = sp.sold_price && sp.total_area
+                  ? Math.round(sp.sold_price / sp.total_area)
+                  : null
+                return (
+                  <div key={sp.id} className={`${presentationMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-100'} border rounded-xl p-4`}>
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <p className={`font-bold text-sm ${headingClass}`}>{sp.address}</p>
+                        <p className={`text-xs ${presentationMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          {sp.neighborhood} &middot; {sp.property_type || 'Depto'} &middot; {sp.total_area ? `${sp.total_area} m\u00B2` : ''}
+                          {sp.sold_date ? ` \u00B7 ${new Date(sp.sold_date).toLocaleDateString('es-AR', { month: 'short', year: 'numeric' })}` : ''}
+                        </p>
+                      </div>
+                      {discount && Number(discount) > 0 && (
+                        <span className="text-xs font-bold bg-red-100 text-red-600 px-2 py-1 rounded-lg flex-shrink-0">
+                          -{discount}%
+                        </span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      {sp.original_price && (
+                        <div className={`${presentationMode ? 'bg-gray-600' : 'bg-white'} rounded-lg p-2 text-center`}>
+                          <p className="text-[10px] text-gray-400">Publicado</p>
+                          <p className={`text-sm font-semibold ${presentationMode ? 'text-gray-300 line-through' : 'text-gray-400 line-through'}`}>
+                            USD {Number(sp.original_price).toLocaleString('es-AR')}
+                          </p>
+                        </div>
+                      )}
+                      <div className={`${presentationMode ? 'bg-gray-600' : 'bg-white'} rounded-lg p-2 text-center`}>
+                        <p className="text-[10px] text-gray-400">Cierre</p>
+                        <p className="text-sm font-bold text-green-600">
+                          USD {Number(sp.sold_price).toLocaleString('es-AR')}
+                        </p>
+                      </div>
+                      {usdM2Sold && (
+                        <div className={`${presentationMode ? 'bg-gray-600' : 'bg-white'} rounded-lg p-2 text-center`}>
+                          <p className="text-[10px] text-gray-400">USD/m&sup2;</p>
+                          <p className={`text-sm font-semibold ${headingClass}`}>{usdM2Sold.toLocaleString('es-AR')}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </section>
         )}
