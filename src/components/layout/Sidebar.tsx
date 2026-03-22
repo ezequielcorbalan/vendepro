@@ -12,20 +12,34 @@ import {
   ClipboardList,
   Settings,
   DollarSign,
+  BarChart3,
 } from 'lucide-react'
 import type { Profile } from '@/lib/types'
 
-const agentLinks = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/propiedades', label: 'Propiedades', icon: Building2 },
-  { href: '/tasaciones', label: 'Tasaciones', icon: ClipboardList },
-  { href: '/vendidas', label: 'Vendidas', icon: DollarSign },
+const menuSections = [
+  {
+    title: 'General',
+    links: [
+      { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    ],
+  },
+  {
+    title: 'Comercialización',
+    links: [
+      { href: '/tasaciones', label: 'Tasaciones', icon: ClipboardList },
+      { href: '/propiedades', label: 'Reportes', icon: BarChart3 },
+      { href: '/vendidas', label: 'Vendidas', icon: DollarSign },
+    ],
+  },
 ]
 
-const adminLinks = [
-  { href: '/admin/agentes', label: 'Agentes', icon: Users },
-  { href: '/configuracion', label: 'Configuración', icon: Settings },
-]
+const adminSection = {
+  title: 'Administración',
+  links: [
+    { href: '/admin/agentes', label: 'Agentes', icon: Users },
+    { href: '/configuracion', label: 'Configuración', icon: Settings },
+  ],
+}
 
 export default function Sidebar({ profile }: { profile: Profile }) {
   const pathname = usePathname()
@@ -37,9 +51,9 @@ export default function Sidebar({ profile }: { profile: Profile }) {
     router.refresh()
   }
 
-  const links = profile.role === 'admin'
-    ? [...agentLinks, ...adminLinks]
-    : agentLinks
+  const sections = profile.role === 'admin'
+    ? [...menuSections, adminSection]
+    : menuSections
 
   return (
     <aside className="w-64 bg-white border-r border-gray-200 flex flex-col h-screen fixed left-0 top-0">
@@ -50,30 +64,37 @@ export default function Sidebar({ profile }: { profile: Profile }) {
           className="h-10"
         />
         <p className="text-xs text-brand-gray mt-2 flex items-center gap-1">
-          <FileBarChart className="w-3 h-3" /> Reportes
+          <FileBarChart className="w-3 h-3" /> Gestión inmobiliaria
         </p>
       </div>
 
-      <nav className="flex-1 p-4 space-y-1">
-        {links.map((link) => {
-          const Icon = link.icon
-          const isActive = pathname === link.href || pathname.startsWith(link.href + '/')
-          return (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-brand-pink/10 text-brand-pink'
-                  : 'text-gray-600 hover:bg-gray-100'
-              )}
-            >
-              <Icon className="w-5 h-5" />
-              {link.label}
-            </Link>
-          )
-        })}
+      <nav className="flex-1 p-4 space-y-4 overflow-y-auto">
+        {sections.map((section) => (
+          <div key={section.title}>
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-3 mb-1">{section.title}</p>
+            <div className="space-y-0.5">
+              {section.links.map((link) => {
+                const Icon = link.icon
+                const isActive = pathname === link.href || pathname.startsWith(link.href + '/')
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={cn(
+                      'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                      isActive
+                        ? 'bg-brand-pink/10 text-brand-pink'
+                        : 'text-gray-600 hover:bg-gray-100'
+                    )}
+                  >
+                    <Icon className="w-5 h-5" />
+                    {link.label}
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
 
       <div className="p-4 border-t border-gray-100">
