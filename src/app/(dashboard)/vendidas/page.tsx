@@ -46,14 +46,14 @@ export default function VendidasPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div>
           <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Propiedades vendidas</h1>
           <p className="text-sm text-brand-gray mt-1">Base de datos interna de ventas y reservas</p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="inline-flex items-center gap-2 bg-brand-pink text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
+          className="inline-flex items-center gap-2 bg-brand-pink text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" /> Nueva venta
         </button>
@@ -97,45 +97,59 @@ export default function VendidasPage() {
           <p className="text-brand-gray">No hay propiedades vendidas registradas</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="text-left p-3 font-medium text-gray-500">Dirección</th>
-                  <th className="text-left p-3 font-medium text-gray-500">Barrio</th>
-                  <th className="text-center p-3 font-medium text-gray-500">m²</th>
-                  <th className="text-center p-3 font-medium text-gray-500">Precio venta</th>
-                  <th className="text-center p-3 font-medium text-gray-500">USD/m²</th>
-                  <th className="text-center p-3 font-medium text-gray-500">Días</th>
-                  <th className="text-center p-3 font-medium text-gray-500">Fecha</th>
-                  <th className="p-3"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {properties.map((p: any) => (
-                  <tr key={p.id} className="hover:bg-gray-50">
-                    <td className="p-3 font-medium">{p.address}</td>
-                    <td className="p-3 text-gray-500">{p.neighborhood}</td>
-                    <td className="text-center p-3">{p.total_area || '-'}</td>
-                    <td className="text-center p-3 font-semibold text-green-600">
-                      {p.sold_price ? `USD ${Number(p.sold_price).toLocaleString('es-AR')}` : '-'}
-                    </td>
-                    <td className="text-center p-3">
-                      {p.sold_price && p.total_area ? Math.round(p.sold_price / p.total_area).toLocaleString('es-AR') : '-'}
-                    </td>
-                    <td className="text-center p-3">{p.days_on_market || '-'}</td>
-                    <td className="text-center p-3 text-gray-500">{p.sold_date || '-'}</td>
-                    <td className="p-3">
-                      <button onClick={() => handleDelete(p.id)} className="text-gray-400 hover:text-red-500">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div className="grid gap-3">
+          {properties.map((p: any) => {
+            const usdM2 = p.sold_price && p.total_area ? Math.round(p.sold_price / p.total_area) : null
+            const discount = p.original_price && p.sold_price ? ((1 - p.sold_price / p.original_price) * 100).toFixed(1) : null
+            return (
+              <div key={p.id} className="bg-white rounded-xl shadow-sm p-4">
+                <div className="flex items-start justify-between gap-2 mb-3">
+                  <div className="min-w-0">
+                    <h3 className="font-semibold text-gray-800 truncate">{p.address}</h3>
+                    <p className="text-xs text-gray-500 mt-0.5">{p.neighborhood} &middot; {p.property_type || 'Depto'} {p.total_area ? `\u00B7 ${p.total_area} m\u00B2` : ''}</p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {discount && Number(discount) > 0 && (
+                      <span className="text-[10px] font-bold bg-red-100 text-red-600 px-1.5 py-0.5 rounded">-{discount}%</span>
+                    )}
+                    <button onClick={() => handleDelete(p.id)} className="text-gray-300 hover:text-red-500 p-1">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                  {p.original_price && (
+                    <div className="bg-gray-50 rounded-lg p-2 text-center">
+                      <p className="text-[10px] text-gray-400">Publicado</p>
+                      <p className="text-xs font-medium text-gray-400 line-through">USD {Number(p.original_price).toLocaleString('es-AR')}</p>
+                    </div>
+                  )}
+                  <div className="bg-green-50 rounded-lg p-2 text-center">
+                    <p className="text-[10px] text-gray-400">Cierre</p>
+                    <p className="text-xs font-bold text-green-600">{p.sold_price ? `USD ${Number(p.sold_price).toLocaleString('es-AR')}` : '-'}</p>
+                  </div>
+                  {usdM2 && (
+                    <div className="bg-gray-50 rounded-lg p-2 text-center">
+                      <p className="text-[10px] text-gray-400">USD/m&sup2;</p>
+                      <p className="text-xs font-semibold text-gray-700">{usdM2.toLocaleString('es-AR')}</p>
+                    </div>
+                  )}
+                  {p.days_on_market && (
+                    <div className="bg-gray-50 rounded-lg p-2 text-center">
+                      <p className="text-[10px] text-gray-400">D&iacute;as</p>
+                      <p className="text-xs font-semibold text-gray-700">{p.days_on_market}</p>
+                    </div>
+                  )}
+                  {p.sold_date && (
+                    <div className="bg-gray-50 rounded-lg p-2 text-center">
+                      <p className="text-[10px] text-gray-400">Fecha</p>
+                      <p className="text-xs font-semibold text-gray-700">{p.sold_date}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })}
         </div>
       )}
     </div>
