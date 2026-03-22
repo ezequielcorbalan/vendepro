@@ -95,31 +95,31 @@ export default async function DashboardPage() {
       </div>
 
       {/* Metrics Summary */}
-      <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-5 sm:mb-8 sm:grid-cols-3 md:grid-cols-5">
-        <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-3 sm:p-4 text-white">
-          <Eye className="w-4 h-4 sm:w-5 sm:h-5 mb-1 sm:mb-2 opacity-80" />
-          <p className="text-lg sm:text-2xl font-bold">{overview.total_impressions.toLocaleString('es-AR')}</p>
-          <p className="text-[10px] sm:text-xs opacity-80 mt-0.5">Impresiones</p>
+      <div className="grid grid-cols-3 gap-2 mb-5 sm:mb-8 sm:grid-cols-5 sm:gap-3">
+        <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-2.5 sm:p-4 text-white">
+          <Eye className="w-4 h-4 mb-1 opacity-80" />
+          <p className="text-base sm:text-2xl font-bold leading-tight">{overview.total_impressions.toLocaleString('es-AR')}</p>
+          <p className="text-[9px] sm:text-xs opacity-80">Impresiones</p>
         </div>
-        <div className="bg-gradient-to-br from-[#ff007c] to-[#ff3d94] rounded-xl p-3 sm:p-4 text-white">
-          <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 mb-1 sm:mb-2 opacity-80" />
-          <p className="text-lg sm:text-2xl font-bold">{overview.total_visits.toLocaleString('es-AR')}</p>
-          <p className="text-[10px] sm:text-xs opacity-80 mt-0.5">Visitas avisos</p>
+        <div className="bg-gradient-to-br from-[#ff007c] to-[#ff3d94] rounded-xl p-2.5 sm:p-4 text-white">
+          <BarChart3 className="w-4 h-4 mb-1 opacity-80" />
+          <p className="text-base sm:text-2xl font-bold leading-tight">{overview.total_visits.toLocaleString('es-AR')}</p>
+          <p className="text-[9px] sm:text-xs opacity-80">Visitas</p>
         </div>
-        <div className="bg-gradient-to-br from-[#ff8017] to-orange-500 rounded-xl p-3 sm:p-4 text-white">
-          <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 mb-1 sm:mb-2 opacity-80" />
-          <p className="text-lg sm:text-2xl font-bold">{overview.total_inquiries.toLocaleString('es-AR')}</p>
-          <p className="text-[10px] sm:text-xs opacity-80 mt-0.5">Consultas</p>
+        <div className="bg-gradient-to-br from-[#ff8017] to-orange-500 rounded-xl p-2.5 sm:p-4 text-white">
+          <MessageCircle className="w-4 h-4 mb-1 opacity-80" />
+          <p className="text-base sm:text-2xl font-bold leading-tight">{overview.total_inquiries.toLocaleString('es-AR')}</p>
+          <p className="text-[9px] sm:text-xs opacity-80">Consultas</p>
         </div>
-        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-3 sm:p-4 text-white">
-          <Users className="w-4 h-4 sm:w-5 sm:h-5 mb-1 sm:mb-2 opacity-80" />
-          <p className="text-lg sm:text-2xl font-bold">{overview.total_in_person_visits.toLocaleString('es-AR')}</p>
-          <p className="text-[10px] sm:text-xs opacity-80 mt-0.5">Visitas presenc.</p>
+        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-2.5 sm:p-4 text-white">
+          <Users className="w-4 h-4 mb-1 opacity-80" />
+          <p className="text-base sm:text-2xl font-bold leading-tight">{overview.total_in_person_visits.toLocaleString('es-AR')}</p>
+          <p className="text-[9px] sm:text-xs opacity-80">Visitas pres.</p>
         </div>
-        <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-3 sm:p-4 text-white col-span-2 sm:col-span-1">
-          <Award className="w-4 h-4 sm:w-5 sm:h-5 mb-1 sm:mb-2 opacity-80" />
-          <p className="text-lg sm:text-2xl font-bold">{overview.total_offers.toLocaleString('es-AR')}</p>
-          <p className="text-[10px] sm:text-xs opacity-80 mt-0.5">Ofertas</p>
+        <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-2.5 sm:p-4 text-white">
+          <Award className="w-4 h-4 mb-1 opacity-80" />
+          <p className="text-base sm:text-2xl font-bold leading-tight">{overview.total_offers.toLocaleString('es-AR')}</p>
+          <p className="text-[9px] sm:text-xs opacity-80">Ofertas</p>
         </div>
       </div>
 
@@ -130,47 +130,47 @@ export default async function DashboardPage() {
             <span className="w-1 h-6 bg-brand-pink rounded-full"></span>
             Vendidas vs Activas — Métricas promedio
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
             {/* Sold */}
-            <div className="border border-green-200 bg-green-50/50 rounded-xl p-5">
-              <div className="flex items-center gap-2 mb-4">
+            <div className="border border-green-200 bg-green-50/50 rounded-xl p-4 sm:p-5">
+              <div className="flex items-center gap-2 mb-3">
                 <span className="w-3 h-3 bg-green-500 rounded-full"></span>
-                <h3 className="font-semibold text-gray-800">Vendidas ({soldData?.count || 0})</h3>
+                <h3 className="font-semibold text-gray-800 text-sm sm:text-base">Vendidas ({soldData?.count || 0})</h3>
               </div>
-              <div className="grid grid-cols-3 gap-4 text-center">
+              <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
                 <div>
-                  <p className="text-xl font-bold text-gray-800">{Math.round(soldData?.avg_impressions || 0).toLocaleString('es-AR')}</p>
-                  <p className="text-xs text-gray-500">Impresiones prom.</p>
+                  <p className="text-lg sm:text-xl font-bold text-gray-800">{Math.round(soldData?.avg_impressions || 0).toLocaleString('es-AR')}</p>
+                  <p className="text-[10px] sm:text-xs text-gray-500">Impresiones</p>
                 </div>
                 <div>
-                  <p className="text-xl font-bold text-gray-800">{Math.round(soldData?.avg_visits || 0).toLocaleString('es-AR')}</p>
-                  <p className="text-xs text-gray-500">Visitas prom.</p>
+                  <p className="text-lg sm:text-xl font-bold text-gray-800">{Math.round(soldData?.avg_visits || 0).toLocaleString('es-AR')}</p>
+                  <p className="text-[10px] sm:text-xs text-gray-500">Visitas</p>
                 </div>
                 <div>
-                  <p className="text-xl font-bold text-gray-800">{Math.round(soldData?.avg_inquiries || 0).toLocaleString('es-AR')}</p>
-                  <p className="text-xs text-gray-500">Consultas prom.</p>
+                  <p className="text-lg sm:text-xl font-bold text-gray-800">{Math.round(soldData?.avg_inquiries || 0).toLocaleString('es-AR')}</p>
+                  <p className="text-[10px] sm:text-xs text-gray-500">Consultas</p>
                 </div>
               </div>
             </div>
 
             {/* Active */}
-            <div className="border border-blue-200 bg-blue-50/50 rounded-xl p-5">
-              <div className="flex items-center gap-2 mb-4">
+            <div className="border border-blue-200 bg-blue-50/50 rounded-xl p-4 sm:p-5">
+              <div className="flex items-center gap-2 mb-3">
                 <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
-                <h3 className="font-semibold text-gray-800">Activas ({activeData?.count || 0})</h3>
+                <h3 className="font-semibold text-gray-800 text-sm sm:text-base">Activas ({activeData?.count || 0})</h3>
               </div>
-              <div className="grid grid-cols-3 gap-4 text-center">
+              <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
                 <div>
-                  <p className="text-xl font-bold text-gray-800">{Math.round(activeData?.avg_impressions || 0).toLocaleString('es-AR')}</p>
-                  <p className="text-xs text-gray-500">Impresiones prom.</p>
+                  <p className="text-lg sm:text-xl font-bold text-gray-800">{Math.round(activeData?.avg_impressions || 0).toLocaleString('es-AR')}</p>
+                  <p className="text-[10px] sm:text-xs text-gray-500">Impresiones</p>
                 </div>
                 <div>
-                  <p className="text-xl font-bold text-gray-800">{Math.round(activeData?.avg_visits || 0).toLocaleString('es-AR')}</p>
-                  <p className="text-xs text-gray-500">Visitas prom.</p>
+                  <p className="text-lg sm:text-xl font-bold text-gray-800">{Math.round(activeData?.avg_visits || 0).toLocaleString('es-AR')}</p>
+                  <p className="text-[10px] sm:text-xs text-gray-500">Visitas</p>
                 </div>
                 <div>
-                  <p className="text-xl font-bold text-gray-800">{Math.round(activeData?.avg_inquiries || 0).toLocaleString('es-AR')}</p>
-                  <p className="text-xs text-gray-500">Consultas prom.</p>
+                  <p className="text-lg sm:text-xl font-bold text-gray-800">{Math.round(activeData?.avg_inquiries || 0).toLocaleString('es-AR')}</p>
+                  <p className="text-[10px] sm:text-xs text-gray-500">Consultas</p>
                 </div>
               </div>
             </div>

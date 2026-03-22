@@ -15,13 +15,20 @@ import {
   ClipboardList,
   Settings,
   DollarSign,
+  UserPlus,
+  BookUser,
+  Activity,
+  BarChart3,
 } from 'lucide-react'
 import type { Profile } from '@/lib/types'
 
 const agentLinks = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/propiedades', label: 'Propiedades', icon: Building2 },
+  { href: '/leads', label: 'Leads', icon: UserPlus },
+  { href: '/contactos', label: 'Contactos', icon: BookUser },
+  { href: '/actividades', label: 'Actividad', icon: Activity },
   { href: '/tasaciones', label: 'Tasaciones', icon: ClipboardList },
+  { href: '/propiedades', label: 'Reportes', icon: BarChart3 },
   { href: '/vendidas', label: 'Vendidas', icon: DollarSign },
 ]
 

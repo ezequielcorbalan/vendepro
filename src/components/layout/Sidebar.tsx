@@ -13,6 +13,10 @@ import {
   Settings,
   DollarSign,
   BarChart3,
+  UserPlus,
+  PhoneCall,
+  BookUser,
+  Activity,
 } from 'lucide-react'
 import type { Profile } from '@/lib/types'
 
@@ -21,6 +25,14 @@ const menuSections = [
     title: 'General',
     links: [
       { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    ],
+  },
+  {
+    title: 'CRM',
+    links: [
+      { href: '/leads', label: 'Leads', icon: UserPlus },
+      { href: '/contactos', label: 'Contactos', icon: BookUser },
+      { href: '/actividades', label: 'Actividad', icon: Activity },
     ],
   },
   {
