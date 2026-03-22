@@ -43,7 +43,7 @@ export default async function TasacionPublicPage({
   const db = await getDB()
 
   const appraisal = await db.prepare(`
-    SELECT a.*, u.full_name as agent_name, u.phone as agent_phone, u.email as agent_email
+    SELECT a.*, u.full_name as agent_name, u.phone as agent_phone, u.email as agent_email, u.photo_url as agent_photo
     FROM appraisals a LEFT JOIN users u ON a.agent_id = u.id
     WHERE a.public_slug = ?
   `).bind(slug).first() as any
@@ -105,9 +105,13 @@ export default async function TasacionPublicPage({
           <h1 className={`font-bold leading-tight mb-2 ${presentationMode ? 'text-4xl sm:text-6xl' : 'text-3xl sm:text-5xl'}`}>{a.property_address}</h1>
           <p className={`text-white/80 ${presentationMode ? 'text-lg sm:text-xl' : 'text-base sm:text-lg'}`}>{a.neighborhood}, {a.city}</p>
           <div className="mt-6 flex items-center gap-3">
-            <div className={`rounded-full bg-white/20 flex items-center justify-center font-bold ${presentationMode ? 'w-14 h-14 text-xl' : 'w-10 h-10'}`}>
-              {(a.agent_name || 'A').charAt(0)}
-            </div>
+            {a.agent_photo ? (
+              <img src={a.agent_photo} alt={a.agent_name} className={`rounded-full object-cover ${presentationMode ? 'w-14 h-14' : 'w-10 h-10'}`} />
+            ) : (
+              <div className={`rounded-full bg-white/20 flex items-center justify-center font-bold ${presentationMode ? 'w-14 h-14 text-xl' : 'w-10 h-10'}`}>
+                {(a.agent_name || 'A').charAt(0)}
+              </div>
+            )}
             <div>
               <p className={`font-semibold ${presentationMode ? 'text-base' : 'text-sm'}`}>{a.agent_name}</p>
               <p className={`text-white/70 ${presentationMode ? 'text-sm' : 'text-xs'}`}>{a.agent_phone}</p>
@@ -158,6 +162,9 @@ export default async function TasacionPublicPage({
                 <iframe src={youtubeEmbed(settings.tasacion_video_mercado)!} className="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
               </div>
             )}
+            {settings.tasacion_datos_mes_referencia && (
+              <p className={`text-xs ${presentationMode ? 'text-gray-500' : 'text-gray-400'} mb-3`}>Datos de {settings.tasacion_datos_mes_referencia}</p>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {settings.tasacion_datos_props_publicadas && (
                 <div className={`${presentationMode ? 'bg-indigo-900/50' : 'bg-indigo-50'} rounded-xl p-5 text-center`}>
@@ -166,11 +173,13 @@ export default async function TasacionPublicPage({
                   <p className={`text-sm ${presentationMode ? 'text-gray-400' : 'text-gray-500'}`}>Propiedades en venta</p>
                 </div>
               )}
-              {settings.tasacion_datos_props_vendidas_pct && (
+              {settings.tasacion_datos_vendidas_mes && settings.tasacion_datos_props_publicadas && (
                 <div className={`${presentationMode ? 'bg-green-900/50' : 'bg-green-50'} rounded-xl p-5 text-center`}>
                   <TrendingUp className={`w-6 h-6 ${presentationMode ? 'text-green-300' : 'text-green-500'} mx-auto mb-2`} />
-                  <p className={`text-3xl font-bold ${headingClass}`}>{settings.tasacion_datos_props_vendidas_pct}%</p>
-                  <p className={`text-sm ${presentationMode ? 'text-gray-400' : 'text-gray-500'}`}>Se vende por mes</p>
+                  <p className={`text-3xl font-bold ${headingClass}`}>
+                    {(Number(settings.tasacion_datos_vendidas_mes) / Number(settings.tasacion_datos_props_publicadas) * 100).toFixed(1)}%
+                  </p>
+                  <p className={`text-sm ${presentationMode ? 'text-gray-400' : 'text-gray-500'}`}>Se vende por mes ({Number(settings.tasacion_datos_vendidas_mes).toLocaleString('es-AR')})</p>
                 </div>
               )}
               {settings.tasacion_datos_escrituras_mes && (

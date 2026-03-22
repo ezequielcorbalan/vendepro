@@ -1,7 +1,9 @@
 import { getCurrentUser } from '@/lib/auth'
 import { getDB } from '@/lib/db'
 import { redirect } from 'next/navigation'
-import { Settings, Palette, FileText, Building } from 'lucide-react'
+import Link from 'next/link'
+import { Settings, Palette, FileText, Building, ClipboardList, User } from 'lucide-react'
+import ProfilePhotoForm from '@/components/settings/ProfilePhotoForm'
 
 export default async function ConfiguracionPage() {
   const user = await getCurrentUser()
@@ -30,6 +32,24 @@ export default async function ConfiguracionPage() {
       </div>
 
       <div className="space-y-4">
+        {/* Profile Photo */}
+        <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <User className="w-5 h-5 text-purple-500" />
+            Mi perfil
+          </h2>
+          <ProfilePhotoForm userId={user.id} currentName={user.full_name} currentPhoto={(user as any).photo_url || ''} />
+        </div>
+
+        {/* Tasacion Config Link */}
+        <Link href="/configuracion/tasacion" className="block bg-white rounded-xl shadow-sm p-4 sm:p-6 hover:shadow-md transition-shadow">
+          <h2 className="text-lg font-semibold text-gray-800 mb-1 flex items-center gap-2">
+            <ClipboardList className="w-5 h-5 text-brand-pink" />
+            Configuraci&oacute;n de tasaciones
+          </h2>
+          <p className="text-sm text-brand-gray">Videos, textos, datos de mercado y CTAs para las landings de tasaci&oacute;n</p>
+        </Link>
+
         {/* Organization Info */}
         <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
           <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
