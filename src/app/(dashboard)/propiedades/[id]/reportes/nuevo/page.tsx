@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, ArrowRight, Upload, Check, Loader2, FileText, Link2, Trash2 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Upload, Check, Loader2, FileText, Link2, Trash2, Clipboard } from 'lucide-react'
 import type { MetricSource, ExtractedMetrics } from '@/lib/types'
 
 const steps = [
@@ -57,6 +57,9 @@ export default function NuevoReporte() {
 
   // Step 5: Photos
   const [photos, setPhotos] = useState<File[]>([])
+
+  // Competitor extraction
+  const [extractingComp, setExtractingComp] = useState<number | null>(null)
 
   // KiteProp PDF extraction
   const [extractingPdf, setExtractingPdf] = useState(false)
@@ -118,6 +121,40 @@ export default function NuevoReporte() {
 
   function removeCompetitor(index: number) {
     setCompetitors((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  async function handleCompetitorScreenshot(file: File, index: number) {
+    setExtractingComp(index)
+    setError('')
+    try {
+      const formData = new FormData()
+      formData.append('screenshot', file)
+      const res = await fetch('/api/extract-zonaprop', { method: 'POST', body: formData })
+      const data = await res.json() as any
+      if (data.success && data.data) {
+        setCompetitors((prev) => {
+          const updated = [...prev]
+          updated[index] = {
+            ...updated[index],
+            address: data.data.address || updated[index].address,
+            price: data.data.price?.toString() || updated[index].price,
+            notes: [
+              data.data.total_area ? `${data.data.total_area}m²` : '',
+              data.data.usd_per_m2 ? `${data.data.usd_per_m2} USD/m²` : '',
+              data.data.days_on_market ? `${data.data.days_on_market}d` : '',
+              data.data.views_per_day ? `${data.data.views_per_day} vistas/d` : '',
+            ].filter(Boolean).join(' · ') || updated[index].notes,
+          }
+          return updated
+        })
+      } else {
+        setError('No se pudieron extraer datos del screenshot')
+      }
+    } catch {
+      setError('Error al procesar el screenshot')
+    } finally {
+      setExtractingComp(null)
+    }
   }
 
   function updateMetric(index: number, field: string, value: string) {
@@ -465,12 +502,50 @@ export default function NuevoReporte() {
               <div key={idx} className="border border-gray-200 rounded-lg p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-gray-700">Propiedad {idx + 1}</span>
-                  <button onClick={() => removeCompetitor(idx)} className="text-red-400 hover:text-red-600">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <label className="inline-flex items-center gap-1 text-xs text-indigo-600 cursor-pointer hover:underline bg-indigo-50 px-2 py-1 rounded">
+                      <Clipboard className="w-3 h-3" />
+                      {extractingComp === idx ? 'Extrayendo...' : 'Screenshot'}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={extractingComp !== null}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (file) handleCompetitorScreenshot(file, idx)
+                        }}
+                      />
+                    </label>
+                    <button onClick={() => removeCompetitor(idx)} className="text-red-400 hover:text-red-600">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                {extractingComp === idx && (
+                  <div className="flex items-center gap-2 text-xs text-indigo-600 bg-indigo-50 p-2 rounded">
+                    <Loader2 className="w-3 h-3 animate-spin" /> Extrayendo datos con IA...
+                  </div>
+                )}
+                <div
+                  className="border-2 border-dashed border-gray-200 rounded-lg p-2 text-center text-xs text-gray-400 cursor-pointer hover:border-indigo-300"
+                  onPaste={(e) => {
+                    const items = e.clipboardData?.items
+                    if (!items) return
+                    for (const item of Array.from(items)) {
+                      if (item.type.startsWith('image/')) {
+                        const file = item.getAsFile()
+                        if (file) handleCompetitorScreenshot(file, idx)
+                        break
+                      }
+                    }
+                  }}
+                  tabIndex={0}
+                >
+                  Pegá un screenshot aquí (Ctrl+V)
                 </div>
                 <div>
-                  <label className="block text-xs text-brand-gray mb-1">URL del aviso *</label>
+                  <label className="block text-xs text-brand-gray mb-1">URL del aviso</label>
                   <input
                     type="url"
                     value={comp.url}

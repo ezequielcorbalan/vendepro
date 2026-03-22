@@ -1,7 +1,8 @@
 import { getProperty, getPriceHistory } from '@/lib/actions'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Plus, FileBarChart, ExternalLink, Clock, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, Plus, FileBarChart, ExternalLink, Clock, CheckCircle2, Trash2 } from 'lucide-react'
+import DeleteReportButton from '@/components/reports/DeleteReportButton'
 import PropertyStatusActions from '@/components/properties/PropertyStatusActions'
 import PriceHistory from '@/components/properties/PriceHistory'
 import { formatDate } from '@/lib/utils'
@@ -104,9 +105,12 @@ export default async function PropertyDetailPage({
                         </p>
                       </div>
                     </div>
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${report.status === 'published' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                      {report.status === 'published' ? 'Publicado' : 'Borrador'}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${report.status === 'published' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                        {report.status === 'published' ? 'Publicado' : 'Borrador'}
+                      </span>
+                      <DeleteReportButton reportId={report.id} propertyId={id} />
+                    </div>
                   </div>
                 ))}
               </div>
