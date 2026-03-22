@@ -329,10 +329,11 @@ export default async function TasacionPublicPage({
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {c.price && <span className="text-xs bg-[#ff007c]/10 text-[#ff007c] font-bold px-2.5 py-1 rounded-lg">USD {Number(c.price).toLocaleString('es-AR')}</span>}
-                    {c.total_area && <span className={`text-xs ${presentationMode ? 'bg-gray-600 text-gray-200' : 'bg-gray-100 text-gray-600'} px-2.5 py-1 rounded-lg`}>{c.total_area} m&sup2;</span>}
+                    {c.total_area && <span className={`text-xs ${presentationMode ? 'bg-gray-600 text-gray-200' : 'bg-gray-100 text-gray-600'} px-2.5 py-1 rounded-lg`}>{c.total_area} m&sup2; tot</span>}
+                    {c.covered_area && <span className={`text-xs ${presentationMode ? 'bg-gray-600 text-gray-200' : 'bg-gray-100 text-gray-600'} px-2.5 py-1 rounded-lg`}>{c.covered_area} m&sup2; cub</span>}
                     {c.usd_per_m2 && <span className={`text-xs ${presentationMode ? 'bg-gray-600 text-gray-200' : 'bg-gray-100 text-gray-600'} px-2.5 py-1 rounded-lg`}>{Number(c.usd_per_m2).toLocaleString('es-AR')} USD/m&sup2;</span>}
                     {c.days_on_market && <span className={`text-xs ${presentationMode ? 'bg-gray-600 text-gray-200' : 'bg-gray-100 text-gray-600'} px-2.5 py-1 rounded-lg flex items-center gap-1`}><Clock className="w-3 h-3" /> {c.days_on_market}d</span>}
-                    {c.views_per_day && <span className={`text-xs ${presentationMode ? 'bg-gray-600 text-gray-200' : 'bg-gray-100 text-gray-600'} px-2.5 py-1 rounded-lg flex items-center gap-1`}><Eye className="w-3 h-3" /> {c.views_per_day}/d</span>}
+                    {c.views_per_day && <span className={`text-xs ${presentationMode ? 'bg-gray-600 text-gray-200' : 'bg-gray-100 text-gray-600'} px-2.5 py-1 rounded-lg flex items-center gap-1`}><Eye className="w-3 h-3" /> {c.views_per_day} vistas/30d</span>}
                   </div>
                 </div>
               ))}

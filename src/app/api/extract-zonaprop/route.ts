@@ -53,21 +53,25 @@ export async function POST(request: NextRequest) {
 {
   "address": "dirección completa de la propiedad",
   "price": numero_en_usd (sin puntos ni comas, solo el numero entero),
-  "total_area": numero_m2_totales,
-  "covered_area": numero_m2_cubiertos,
+  "total_area": numero_m2_totales (superficie total incluyendo descubierto),
+  "covered_area": numero_m2_cubiertos (superficie cubierta),
   "usd_per_m2": precio_dividido_superficie_total (redondeado a entero),
   "days_on_market": dias_publicado (numero entero),
-  "views_per_day": vistas_por_dia (numero, puede tener decimales),
+  "views_30d": vistas_totales_ultimos_30_dias (numero entero, ZonaProp muestra "X visitas en los últimos 30 días"),
+  "views_per_day": vistas_30d dividido 30 (redondeado a 1 decimal),
   "age": antiguedad_en_anos (numero entero),
-  "rooms": cantidad_de_ambientes (numero entero)
+  "rooms": cantidad_de_ambientes (numero entero),
+  "property_type": tipo de propiedad (departamento, casa, ph, local, terreno, oficina)
 }
 
 REGLAS:
 - Si el precio está en pesos o en otra moneda, convertilo a USD estimando.
 - Si un dato no está visible, poné null.
 - Si dice "hace X días" eso son los days_on_market.
-- Las vistas totales divididas por los días publicado = views_per_day.
-- usd_per_m2 = price / total_area (redondeado).`,
+- ZonaProp muestra las vistas de los ÚLTIMOS 30 DÍAS, no totales. Ese dato va en views_30d.
+- views_per_day = views_30d / 30.
+- usd_per_m2 = price / total_area (redondeado).
+- covered_area es la superficie CUBIERTA, distinta de total_area.`,
             },
           ],
         }],
