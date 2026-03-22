@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDB, generateId } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth'
+import { slugify } from '@/lib/utils'
 
 export async function POST(request: NextRequest) {
   const user = await getCurrentUser()
@@ -9,14 +10,15 @@ export async function POST(request: NextRequest) {
   const data = (await request.json()) as any
   const db = await getDB()
   const id = generateId()
+  const publicSlug = slugify(`${data.address}-${data.neighborhood}`)
 
   try {
     await db.prepare(`
       INSERT INTO appraisals (id, org_id, property_address, neighborhood, city, property_type,
         covered_area, total_area, semi_area, weighted_area, strengths, weaknesses, opportunities,
         threats, publication_analysis, suggested_price, test_price, expected_close_price, usd_per_m2,
-        agent_id, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft')
+        agent_id, status, video_url, public_slug)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?)
     `).bind(
       id,
       user.org_id || 'org_mg',
@@ -37,7 +39,9 @@ export async function POST(request: NextRequest) {
       data.test_price,
       data.expected_close_price,
       data.usd_per_m2,
-      user.id
+      user.id,
+      data.video_url || null,
+      publicSlug
     ).run()
 
     // Insert comparables

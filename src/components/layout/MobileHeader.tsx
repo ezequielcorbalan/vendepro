@@ -14,6 +14,7 @@ import {
   FileBarChart,
   ClipboardList,
   Settings,
+  DollarSign,
 } from 'lucide-react'
 import type { Profile } from '@/lib/types'
 
@@ -21,6 +22,7 @@ const agentLinks = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/propiedades', label: 'Propiedades', icon: Building2 },
   { href: '/tasaciones', label: 'Tasaciones', icon: ClipboardList },
+  { href: '/vendidas', label: 'Vendidas', icon: DollarSign },
 ]
 
 const adminLinks = [
