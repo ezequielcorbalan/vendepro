@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   ArrowLeft, ArrowRight, Home, Shield, Search, DollarSign, Eye,
-  Plus, Trash2, Loader2, MapPin, CheckCircle
+  Plus, Trash2, Loader2, MapPin, CheckCircle, Clipboard, Image
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -58,6 +58,7 @@ export default function NuevaTasacionPage() {
 
   // Step 3: Comparables
   const [comparables, setComparables] = useState<Comparable[]>([emptyComparable(), emptyComparable()])
+  const [pastedImages, setPastedImages] = useState<Record<number, string[]>>({})
 
   // Step 4: Valuation
   const [suggestedPrice, setSuggestedPrice] = useState('')
@@ -72,43 +73,71 @@ export default function NuevaTasacionPage() {
     return prices.length > 0 ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length) : 0
   })()
 
-  async function extractFromUrl(index: number) {
-    const comp = comparables[index]
-    if (!comp.zonaprop_url) return
-
+  async function extractFromImage(index: number, file: File) {
     const updated = [...comparables]
     updated[index] = { ...updated[index], loading: true }
     setComparables(updated)
 
+    // Show preview of pasted image
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      setPastedImages(prev => ({
+        ...prev,
+        [index]: [...(prev[index] || []), e.target?.result as string]
+      }))
+    }
+    reader.readAsDataURL(file)
+
     try {
+      const formData = new FormData()
+      formData.append('screenshot', file)
+
       const res = await fetch('/api/extract-zonaprop', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: comp.zonaprop_url }),
+        body: formData,
       })
-      const data = await res.json()
+      const data = (await res.json()) as any
       if (data.success) {
-        updated[index] = {
-          ...updated[index],
-          address: data.data.address || '',
-          total_area: data.data.total_area?.toString() || '',
-          covered_area: data.data.covered_area?.toString() || '',
-          price: data.data.price?.toString() || '',
-          usd_per_m2: data.data.usd_per_m2?.toString() || '',
-          days_on_market: data.data.days_on_market?.toString() || '',
-          views_per_day: data.data.views_per_day?.toString() || '',
-          age: data.data.age?.toString() || '',
+        const curr = comparables[index]
+        const final = [...comparables]
+        final[index] = {
+          ...curr,
+          address: (data.data.address && data.data.address !== 'null') ? data.data.address : curr.address,
+          total_area: data.data.total_area ? data.data.total_area.toString() : curr.total_area,
+          covered_area: data.data.covered_area ? data.data.covered_area.toString() : curr.covered_area,
+          price: data.data.price ? data.data.price.toString() : curr.price,
+          usd_per_m2: data.data.usd_per_m2 ? data.data.usd_per_m2.toString() : curr.usd_per_m2,
+          days_on_market: data.data.days_on_market ? data.data.days_on_market.toString() : curr.days_on_market,
+          views_per_day: data.data.views_per_day ? data.data.views_per_day.toString() : curr.views_per_day,
+          age: data.data.age ? data.data.age.toString() : curr.age,
           loading: false,
         }
+        setComparables(final)
       } else {
-        updated[index] = { ...updated[index], loading: false }
-        alert('No se pudieron extraer los datos. Carg\u00e1los manualmente.')
+        const final = [...comparables]
+        final[index] = { ...final[index], loading: false }
+        setComparables(final)
+        alert('No se pudieron extraer datos. Cargalos manualmente.')
       }
     } catch {
-      updated[index] = { ...updated[index], loading: false }
+      const final = [...comparables]
+      final[index] = { ...final[index], loading: false }
+      setComparables(final)
       alert('Error al conectar con el servidor.')
     }
-    setComparables(updated)
+  }
+
+  function handlePaste(index: number, e: React.ClipboardEvent) {
+    const items = e.clipboardData?.items
+    if (!items) return
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        e.preventDefault()
+        const file = items[i].getAsFile()
+        if (file) extractFromImage(index, file)
+        return
+      }
+    }
   }
 
   function addComparable() {
@@ -163,7 +192,7 @@ export default function NuevaTasacionPage() {
           })),
         }),
       })
-      const data = await res.json()
+      const data = (await res.json()) as any
       if (data.id) {
         router.push('/tasaciones')
       } else {
@@ -327,22 +356,62 @@ export default function NuevaTasacionPage() {
                   )}
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <input
                     className={`${inputClass} flex-1`}
                     value={comp.zonaprop_url}
                     onChange={e => updateComparable(i, 'zonaprop_url', e.target.value)}
-                    placeholder="Peg&aacute; el link de ZonaProp"
+                    placeholder="Peg&aacute; el link de ZonaProp (referencia)"
                   />
-                  <button
-                    onClick={() => extractFromUrl(i)}
-                    disabled={!comp.zonaprop_url || comp.loading}
-                    className="px-3 py-2 bg-indigo-500 text-white rounded-lg text-xs font-medium hover:bg-indigo-600 disabled:opacity-50 flex items-center gap-1 whitespace-nowrap"
-                  >
-                    {comp.loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Search className="w-3 h-3" />}
-                    Extraer
-                  </button>
                 </div>
+
+                {/* Paste zone */}
+                <div
+                  onPaste={e => handlePaste(i, e)}
+                  tabIndex={0}
+                  className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors focus:outline-none focus:border-brand-pink ${
+                    comp.loading ? 'border-indigo-300 bg-indigo-50' : 'border-gray-200 hover:border-brand-pink/50 hover:bg-brand-pink/5'
+                  }`}
+                >
+                  {comp.loading ? (
+                    <div className="flex items-center justify-center gap-2 text-indigo-600">
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span className="text-sm font-medium">Extrayendo datos...</span>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="flex items-center justify-center gap-2 text-gray-400 mb-1">
+                        <Clipboard className="w-5 h-5" />
+                        <span className="text-sm font-medium">Click ac&aacute; y peg&aacute; screenshot (Ctrl+V)</span>
+                      </div>
+                      <p className="text-[10px] text-gray-400">
+                        Us&aacute; la herramienta recortar en ZonaProp y pegalo directo. Pod&eacute;s pegar varias veces para completar datos.
+                      </p>
+                      <label className="inline-flex items-center gap-1 mt-2 text-xs text-indigo-600 cursor-pointer hover:underline">
+                        <Image className="w-3 h-3" /> O sub&iacute; una imagen
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          disabled={comp.loading}
+                          onChange={e => {
+                            const file = e.target.files?.[0]
+                            if (file) extractFromImage(i, file)
+                          }}
+                        />
+                      </label>
+                    </div>
+                  )}
+                </div>
+
+                {/* Pasted image previews */}
+                {pastedImages[i]?.length > 0 && (
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    {pastedImages[i].map((src, j) => (
+                      <img key={j} src={src} alt={`Screenshot ${j + 1}`} className="h-16 rounded-lg border border-gray-200 flex-shrink-0" />
+                    ))}
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <div>

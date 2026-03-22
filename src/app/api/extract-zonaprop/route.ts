@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
-  const { url } = (await request.json()) as any
+  const formData = await request.formData()
+  const screenshot = formData.get('screenshot') as File | null
 
-  if (!url || !url.includes('zonaprop.com')) {
-    return NextResponse.json({ success: false, error: 'URL de ZonaProp invalida' }, { status: 400 })
+  if (!screenshot) {
+    return NextResponse.json({ success: false, error: 'Se requiere un screenshot' }, { status: 400 })
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY_2 || process.env.ANTHROPIC_API_KEY
@@ -13,30 +14,12 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Fetch the ZonaProp page HTML
-    const pageRes = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml',
-        'Accept-Language': 'es-AR,es;q=0.9',
-      },
-    })
+    // Convert file to base64
+    const bytes = await screenshot.arrayBuffer()
+    const base64 = btoa(String.fromCharCode(...new Uint8Array(bytes)))
+    const mediaType = screenshot.type || 'image/png'
 
-    if (!pageRes.ok) {
-      return NextResponse.json({ success: false, error: 'No se pudo acceder a la URL' }, { status: 400 })
-    }
-
-    const html = await pageRes.text()
-
-    // Extract text content (remove scripts, styles, tags)
-    const textContent = html
-      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .substring(0, 8000) // Limit to avoid token limits
-
-    // Use Claude to extract structured data
+    // Use Claude Vision to extract data from screenshot
     const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -49,24 +32,34 @@ export async function POST(request: NextRequest) {
         max_tokens: 1024,
         messages: [{
           role: 'user',
-          content: `Extraé los siguientes datos de esta publicación inmobiliaria de ZonaProp. Respondé SOLO en formato JSON sin markdown:
+          content: [
+            {
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: mediaType,
+                data: base64,
+              },
+            },
+            {
+              type: 'text',
+              text: `Este es un screenshot de una publicación inmobiliaria de ZonaProp. Extraé los siguientes datos. Respondé SOLO en formato JSON sin markdown ni explicaciones:
 
 {
   "address": "dirección completa",
-  "price": numero_en_usd (sin puntos ni comas),
+  "price": numero_en_usd (sin puntos ni comas, solo el numero),
   "total_area": numero_m2_totales,
   "covered_area": numero_m2_cubiertos,
-  "usd_per_m2": precio_dividido_m2,
+  "usd_per_m2": precio_dividido_m2_totales,
   "days_on_market": dias_publicado (numero),
   "views_per_day": vistas_por_dia (numero),
   "age": antiguedad_en_anos (numero),
   "rooms": ambientes (numero)
 }
 
-Si un dato no está disponible, poné null. El precio siempre en USD.
-
-Texto de la publicación:
-${textContent}`
+Si un dato no está visible en el screenshot, poné null. El precio siempre en USD.`,
+            },
+          ],
         }],
       }),
     })
@@ -76,7 +69,7 @@ ${textContent}`
       return NextResponse.json({ success: false, error: 'Error de Claude API: ' + err }, { status: 500 })
     }
 
-    const claudeData = await claudeRes.json()
+    const claudeData = (await claudeRes.json()) as any
     const responseText = claudeData.content?.[0]?.text || ''
 
     // Parse JSON from response
