@@ -71,6 +71,35 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Insert sold properties linked to this appraisal
+    if (data.sold_properties?.length > 0) {
+      for (const sp of data.sold_properties) {
+        const spId = sp.id || generateId()
+        // If it's a new sold property, insert into sold_properties table
+        if (sp.isNew || !sp.id) {
+          await db.prepare(`
+            INSERT INTO sold_properties (id, org_id, address, neighborhood, property_type, total_area,
+              sold_price, original_price, currency, sold_date, agent_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'USD', ?, ?)
+          `).bind(
+            spId, user.org_id || 'org_mg',
+            sp.address, sp.neighborhood || data.neighborhood,
+            sp.property_type || null,
+            sp.total_area || null,
+            sp.sold_price || null,
+            sp.original_price || null,
+            sp.sold_date || null,
+            user.id
+          ).run()
+        }
+        // Link sold property to this appraisal
+        await db.prepare(`
+          INSERT OR IGNORE INTO appraisal_sold_properties (appraisal_id, sold_property_id)
+          VALUES (?, ?)
+        `).bind(id, spId).run()
+      }
+    }
+
     return NextResponse.json({ id })
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Error al guardar' }, { status: 500 })
@@ -122,6 +151,35 @@ export async function PUT(request: NextRequest) {
           comp.total_area, comp.covered_area, comp.price, comp.usd_per_m2,
           comp.days_on_market, comp.views_per_day, comp.age, comp.sort_order || 0
         ).run()
+      }
+    }
+
+    // Update sold properties links
+    await db.prepare('DELETE FROM appraisal_sold_properties WHERE appraisal_id = ?').bind(data.id).run()
+
+    if (data.sold_properties?.length > 0) {
+      for (const sp of data.sold_properties) {
+        const spId = sp.id || generateId()
+        if (sp.isNew || !sp.id) {
+          await db.prepare(`
+            INSERT INTO sold_properties (id, org_id, address, neighborhood, property_type, total_area,
+              sold_price, original_price, currency, sold_date, agent_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'USD', ?, ?)
+          `).bind(
+            spId, user.org_id || 'org_mg',
+            sp.address, sp.neighborhood || data.neighborhood,
+            sp.property_type || null,
+            sp.total_area || null,
+            sp.sold_price || null,
+            sp.original_price || null,
+            sp.sold_date || null,
+            user.id
+          ).run()
+        }
+        await db.prepare(`
+          INSERT OR IGNORE INTO appraisal_sold_properties (appraisal_id, sold_property_id)
+          VALUES (?, ?)
+        `).bind(data.id, spId).run()
       }
     }
 

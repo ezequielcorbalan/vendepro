@@ -23,11 +23,21 @@ async function getOrgSettings() {
   return result
 }
 
-async function getSoldProperties(neighborhood: string) {
+async function getSoldProperties(appraisalId: string, neighborhood: string) {
   const db = await getDB()
-  return (await db.prepare(
-    'SELECT * FROM sold_properties WHERE neighborhood = ? ORDER BY sold_date DESC LIMIT 5'
-  ).bind(neighborhood).all()).results as any[]
+  // First try linked sold properties for this appraisal
+  let results = (await db.prepare(
+    `SELECT sp.* FROM sold_properties sp
+     INNER JOIN appraisal_sold_properties asp ON sp.id = asp.sold_property_id
+     WHERE asp.appraisal_id = ? ORDER BY sp.sold_date DESC`
+  ).bind(appraisalId).all()).results as any[]
+  // Fallback to neighborhood if no linked props
+  if (results.length === 0) {
+    results = (await db.prepare(
+      'SELECT * FROM sold_properties WHERE neighborhood = ? ORDER BY sold_date DESC LIMIT 5'
+    ).bind(neighborhood).all()).results as any[]
+  }
+  return results
 }
 
 export default async function TasacionPublicPage({
@@ -55,7 +65,7 @@ export default async function TasacionPublicPage({
   ).bind(appraisal.id).all()).results as any[]
 
   const settings = await getOrgSettings()
-  const soldProps = await getSoldProperties(appraisal.neighborhood)
+  const soldProps = await getSoldProperties(appraisal.id, appraisal.neighborhood)
 
   const a = appraisal
   const weighted = Number(a.weighted_area) || 0

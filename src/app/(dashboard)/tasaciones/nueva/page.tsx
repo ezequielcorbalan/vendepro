@@ -31,6 +31,7 @@ const steps = [
   { label: 'FODA', icon: Shield },
   { label: 'Competencia', icon: Search },
   { label: 'Tasaci\u00f3n', icon: DollarSign },
+  { label: 'Vendidas', icon: CheckCircle },
   { label: 'Generar', icon: Eye },
 ]
 
@@ -560,102 +561,120 @@ export default function NuevaTasacionPage() {
               <label className={labelClass}>Notas del agente</label>
               <textarea className={`${inputClass} h-24`} value={agentNotes} onChange={e => setAgentNotes(e.target.value)} placeholder="Observaciones adicionales..." />
             </div>
-
-            {/* Sold properties section */}
-            <div className="border-t border-gray-100 pt-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-gray-700">Propiedades vendidas / reservadas</h3>
-                <button onClick={addSoldProp} className="flex items-center gap-1 text-xs text-brand-pink font-medium hover:underline">
-                  <Plus className="w-3 h-3" /> Nueva vendida
-                </button>
-              </div>
-
-              {/* Search existing */}
-              <button
-                onClick={loadExistingSold}
-                className="w-full border border-dashed border-gray-200 rounded-xl p-3 text-sm text-gray-500 hover:border-brand-pink/50 hover:text-brand-pink mb-3 transition-colors"
-              >
-                {loadingSold ? (
-                  <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Buscando...</span>
-                ) : existingSold.length > 0 ? (
-                  `${existingSold.length} propiedades vendidas disponibles`
-                ) : (
-                  <span className="flex items-center justify-center gap-2"><Search className="w-4 h-4" /> Buscar vendidas de mi base</span>
-                )}
-              </button>
-
-              {existingSold.length > 0 && (
-                <div className="space-y-2 mb-4 max-h-48 overflow-y-auto">
-                  {existingSold.map((sp) => (
-                    <label key={sp.id} className={`flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition-colors ${
-                      selectedExisting.has(sp.id!) ? 'border-brand-pink bg-brand-pink/5' : 'border-gray-100 hover:border-gray-200'
-                    }`}>
-                      <input
-                        type="checkbox"
-                        checked={selectedExisting.has(sp.id!)}
-                        onChange={() => toggleExistingSold(sp.id!)}
-                        className="accent-[#ff007c]"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-800 truncate">{sp.address}</p>
-                        <p className="text-xs text-gray-500">{sp.neighborhood} &middot; USD {Number(sp.sold_price).toLocaleString('es-AR')} &middot; {sp.sold_date}</p>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              )}
-
-              {/* New sold properties */}
-              {soldProps.map((sp, i) => (
-                <div key={i} className="border border-gray-100 rounded-xl p-3 space-y-2 mb-3">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-semibold text-gray-600">Nueva vendida {i + 1}</h4>
-                    <button onClick={() => removeSoldProp(i)} className="text-red-400 hover:text-red-600">
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    <div className="col-span-2">
-                      <label className="text-[10px] text-gray-500">Direcci&oacute;n</label>
-                      <input className={`${inputClass} text-xs`} value={sp.address} onChange={e => updateSoldProp(i, 'address', e.target.value)} placeholder="Direcci&oacute;n" />
-                    </div>
-                    <div>
-                      <label className="text-[10px] text-gray-500">Barrio</label>
-                      <input className={`${inputClass} text-xs`} value={sp.neighborhood} onChange={e => updateSoldProp(i, 'neighborhood', e.target.value)} placeholder="Barrio" />
-                    </div>
-                    <div>
-                      <label className="text-[10px] text-gray-500">Tipolog&iacute;a</label>
-                      <select className={`${inputClass} text-xs`} value={sp.property_type} onChange={e => updateSoldProp(i, 'property_type', e.target.value)}>
-                        <option value="departamento">Depto</option>
-                        <option value="casa">Casa</option>
-                        <option value="ph">PH</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-[10px] text-gray-500">m&sup2; total</label>
-                      <input className={`${inputClass} text-xs`} type="number" value={sp.total_area} onChange={e => updateSoldProp(i, 'total_area', e.target.value)} />
-                    </div>
-                    <div>
-                      <label className="text-[10px] text-gray-500">Precio publicado USD</label>
-                      <input className={`${inputClass} text-xs`} type="number" value={sp.original_price} onChange={e => updateSoldProp(i, 'original_price', e.target.value)} />
-                    </div>
-                    <div>
-                      <label className="text-[10px] text-gray-500">Precio venta USD</label>
-                      <input className={`${inputClass} text-xs`} type="number" value={sp.sold_price} onChange={e => updateSoldProp(i, 'sold_price', e.target.value)} />
-                    </div>
-                    <div>
-                      <label className="text-[10px] text-gray-500">Fecha venta</label>
-                      <input className={`${inputClass} text-xs`} type="date" value={sp.sold_date} onChange={e => updateSoldProp(i, 'sold_date', e.target.value)} />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
         )}
 
-        {/* STEP 5: Preview & Generate */}
+        {/* STEP 5: Sold properties */}
         {step === 4 && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-800">Propiedades vendidas</h2>
+                <p className="text-xs text-gray-500 mt-1">Opcional. Agreg&aacute; propiedades vendidas como referencia para justificar valores.</p>
+              </div>
+              <button onClick={addSoldProp} className="flex items-center gap-1 text-sm text-brand-pink font-medium hover:underline">
+                <Plus className="w-4 h-4" /> Agregar
+              </button>
+            </div>
+
+            {/* Search existing */}
+            <button
+              onClick={loadExistingSold}
+              className="w-full border border-dashed border-gray-200 rounded-xl p-4 text-sm text-gray-500 hover:border-brand-pink/50 hover:text-brand-pink transition-colors"
+            >
+              {loadingSold ? (
+                <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Buscando...</span>
+              ) : existingSold.length > 0 ? (
+                `${existingSold.length} propiedades vendidas en tu base`
+              ) : (
+                <span className="flex items-center justify-center gap-2"><Search className="w-4 h-4" /> Buscar vendidas de mi base</span>
+              )}
+            </button>
+
+            {existingSold.length > 0 && (
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {existingSold.map((sp) => (
+                  <label key={sp.id} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
+                    selectedExisting.has(sp.id!) ? 'border-brand-pink bg-brand-pink/5' : 'border-gray-100 hover:border-gray-200'
+                  }`}>
+                    <input
+                      type="checkbox"
+                      checked={selectedExisting.has(sp.id!)}
+                      onChange={() => toggleExistingSold(sp.id!)}
+                      className="accent-[#ff007c] w-4 h-4"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-800 truncate">{sp.address}</p>
+                      <p className="text-xs text-gray-500">
+                        {sp.neighborhood}
+                        {sp.sold_price ? ` \u00B7 Venta: USD ${Number(sp.sold_price).toLocaleString('es-AR')}` : ''}
+                        {sp.original_price ? ` \u00B7 Publicado: USD ${Number(sp.original_price).toLocaleString('es-AR')}` : ''}
+                        {sp.sold_date ? ` \u00B7 ${sp.sold_date}` : ''}
+                      </p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            )}
+
+            {/* New sold properties */}
+            {soldProps.length > 0 && <div className="border-t border-gray-100 pt-4" />}
+            {soldProps.map((sp, i) => (
+              <div key={i} className="border border-gray-100 rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-semibold text-gray-700">Nueva vendida {i + 1}</h4>
+                  <button onClick={() => removeSoldProp(i)} className="text-red-400 hover:text-red-600">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="col-span-2">
+                    <label className="text-xs text-gray-500">Direcci&oacute;n *</label>
+                    <input className={inputClass} value={sp.address} onChange={e => updateSoldProp(i, 'address', e.target.value)} placeholder="Ej: Pelliza 490" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500">Barrio</label>
+                    <input className={inputClass} value={sp.neighborhood} onChange={e => updateSoldProp(i, 'neighborhood', e.target.value)} placeholder="Barrio" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500">Tipolog&iacute;a</label>
+                    <select className={inputClass} value={sp.property_type} onChange={e => updateSoldProp(i, 'property_type', e.target.value)}>
+                      <option value="departamento">Departamento</option>
+                      <option value="casa">Casa</option>
+                      <option value="ph">PH</option>
+                      <option value="local">Local</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500">m&sup2; total</label>
+                    <input className={inputClass} type="number" value={sp.total_area} onChange={e => updateSoldProp(i, 'total_area', e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500">Precio publicado USD</label>
+                    <input className={inputClass} type="number" value={sp.original_price} onChange={e => updateSoldProp(i, 'original_price', e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500">Precio venta USD</label>
+                    <input className={inputClass} type="number" value={sp.sold_price} onChange={e => updateSoldProp(i, 'sold_price', e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500">Fecha venta</label>
+                    <input className={inputClass} type="date" value={sp.sold_date} onChange={e => updateSoldProp(i, 'sold_date', e.target.value)} />
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {soldProps.length === 0 && existingSold.length === 0 && !loadingSold && (
+              <div className="text-center py-6 text-gray-400">
+                <p className="text-sm">No ten&eacute;s vendidas cargadas. Pod&eacute;s saltear este paso.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* STEP 6: Preview & Generate */}
+        {step === 5 && (
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">Resumen de la tasaci&oacute;n</h2>
 
