@@ -314,26 +314,68 @@ export default async function TasacionPublicPage({
 
         {/* Comparables */}
         {comparables.length > 0 && (
-          <section className={`${cardClass} p-5 sm:p-8`}>
+          <section className={`${cardClass} p-4 sm:p-8`}>
             <h2 className={`text-lg sm:text-xl font-semibold ${headingClass} mb-4 flex items-center gap-2`}>
               <Eye className="w-5 h-5 text-indigo-500" /> Competencia en la zona
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-4">
               {comparables.map((c: any, i: number) => (
-                <div key={i} className={`${presentationMode ? 'bg-gray-700 border-gray-600' : 'border-gray-100'} border rounded-xl p-4`}>
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <p className={`font-semibold text-sm ${headingClass}`}>{c.address || `Propiedad ${i + 1}`}</p>
-                    {c.zonaprop_url && (
-                      <a href={c.zonaprop_url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-indigo-500 hover:underline flex-shrink-0">Ver &rarr;</a>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {c.price && <span className="text-xs bg-[#ff007c]/10 text-[#ff007c] font-bold px-2.5 py-1 rounded-lg">USD {Number(c.price).toLocaleString('es-AR')}</span>}
-                    {c.total_area && <span className={`text-xs ${presentationMode ? 'bg-gray-600 text-gray-200' : 'bg-gray-100 text-gray-600'} px-2.5 py-1 rounded-lg`}>{c.total_area} m&sup2; tot</span>}
-                    {c.covered_area && <span className={`text-xs ${presentationMode ? 'bg-gray-600 text-gray-200' : 'bg-gray-100 text-gray-600'} px-2.5 py-1 rounded-lg`}>{c.covered_area} m&sup2; cub</span>}
-                    {c.usd_per_m2 && <span className={`text-xs ${presentationMode ? 'bg-gray-600 text-gray-200' : 'bg-gray-100 text-gray-600'} px-2.5 py-1 rounded-lg`}>{Number(c.usd_per_m2).toLocaleString('es-AR')} USD/m&sup2;</span>}
-                    {c.days_on_market && <span className={`text-xs ${presentationMode ? 'bg-gray-600 text-gray-200' : 'bg-gray-100 text-gray-600'} px-2.5 py-1 rounded-lg flex items-center gap-1`}><Clock className="w-3 h-3" /> {c.days_on_market}d</span>}
-                    {c.views_per_day && <span className={`text-xs ${presentationMode ? 'bg-gray-600 text-gray-200' : 'bg-gray-100 text-gray-600'} px-2.5 py-1 rounded-lg flex items-center gap-1`}><Eye className="w-3 h-3" /> {c.views_per_day} vistas/30d</span>}
+                <div key={i} className={`${presentationMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-100'} border rounded-2xl overflow-hidden`}>
+                  {c.photo_url && (
+                    <img src={c.photo_url} alt={c.address || ''} className="w-full h-40 sm:h-52 object-cover" />
+                  )}
+                  <div className="p-4">
+                    <div className="flex items-start justify-between gap-2 mb-3">
+                      <div>
+                        <p className={`font-bold text-base ${headingClass}`}>{c.address || `Propiedad ${i + 1}`}</p>
+                        {c.price && (
+                          <p className="text-lg font-bold text-[#ff007c] mt-0.5">USD {Number(c.price).toLocaleString('es-AR')}</p>
+                        )}
+                      </div>
+                      {c.zonaprop_url && (
+                        <a href={c.zonaprop_url} target="_blank" rel="noopener noreferrer" className="text-xs text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-100 flex-shrink-0">
+                          Ver aviso &rarr;
+                        </a>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                      {c.total_area && (
+                        <div className={`${presentationMode ? 'bg-gray-600' : 'bg-white'} rounded-lg p-2 text-center`}>
+                          <p className="text-[10px] text-gray-400">Total</p>
+                          <p className={`text-sm font-semibold ${headingClass}`}>{c.total_area} m&sup2;</p>
+                        </div>
+                      )}
+                      {c.covered_area && (
+                        <div className={`${presentationMode ? 'bg-gray-600' : 'bg-white'} rounded-lg p-2 text-center`}>
+                          <p className="text-[10px] text-gray-400">Cubierto</p>
+                          <p className={`text-sm font-semibold ${headingClass}`}>{c.covered_area} m&sup2;</p>
+                        </div>
+                      )}
+                      {c.usd_per_m2 && (
+                        <div className={`${presentationMode ? 'bg-gray-600' : 'bg-white'} rounded-lg p-2 text-center`}>
+                          <p className="text-[10px] text-gray-400">USD/m&sup2;</p>
+                          <p className={`text-sm font-semibold ${headingClass}`}>{Number(c.usd_per_m2).toLocaleString('es-AR')}</p>
+                        </div>
+                      )}
+                      {c.days_on_market && (
+                        <div className={`${presentationMode ? 'bg-gray-600' : 'bg-white'} rounded-lg p-2 text-center`}>
+                          <p className="text-[10px] text-gray-400">D&iacute;as</p>
+                          <p className={`text-sm font-semibold ${headingClass}`}>{c.days_on_market}</p>
+                        </div>
+                      )}
+                      {c.views_per_day && (
+                        <div className={`${presentationMode ? 'bg-gray-600' : 'bg-white'} rounded-lg p-2 text-center`}>
+                          <p className="text-[10px] text-gray-400">Vistas 30d</p>
+                          <p className={`text-sm font-semibold ${headingClass}`}>{c.views_per_day}</p>
+                        </div>
+                      )}
+                      {c.age && (
+                        <div className={`${presentationMode ? 'bg-gray-600' : 'bg-white'} rounded-lg p-2 text-center`}>
+                          <p className="text-[10px] text-gray-400">Antig.</p>
+                          <p className={`text-sm font-semibold ${headingClass}`}>{c.age} a&ntilde;os</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
