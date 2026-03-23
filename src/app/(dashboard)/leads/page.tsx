@@ -12,6 +12,16 @@ import {
   getLeadUrgency, getUrgencyBadge, formatWhatsApp, type LeadStage
 } from '@/lib/crm-config'
 
+function timeAgo(dateStr: string): string {
+  const diff = (Date.now() - new Date(dateStr).getTime()) / 60000
+  if (diff < 60) return `${Math.floor(diff)}m`
+  if (diff < 1440) return `${Math.floor(diff / 60)}h`
+  const days = Math.floor(diff / 1440)
+  if (days === 1) return 'Ayer'
+  if (days < 7) return `${days}d`
+  return new Date(dateStr).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })
+}
+
 export default function LeadsPage() {
   const searchParams = useSearchParams()
   const [leads, setLeads] = useState<any[]>([])
@@ -332,31 +342,45 @@ function LeadCard({ lead, onAdvance, onLost }: { lead: any; onAdvance: () => voi
   const badge = getUrgencyBadge(urgency)
   const checklist = getLeadChecklist(lead)
   const checkItems = Object.values(checklist).filter(Boolean).length
+  const hasAppraisal = lead.appraisal_count > 0
+  const lastActivity = lead.last_activity_at ? timeAgo(lead.last_activity_at) : null
+  const sourceCfg = LEAD_SOURCES[lead.source as keyof typeof LEAD_SOURCES]
 
   return (
     <Link href={`/leads/${lead.id}`}
       className={`block bg-white border rounded-xl p-3 sm:p-4 hover:shadow-md transition-all ${urgency === 'danger' ? 'border-red-200 bg-red-50/30' : urgency === 'warning' ? 'border-yellow-200' : ''}`}>
       <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
+          {/* Row 1: Name + badges */}
+          <div className="flex items-center gap-1.5 flex-wrap">
             <h3 className="font-medium text-gray-800 truncate">{lead.full_name}</h3>
             <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${stage.color}`}>{stage.label}</span>
             {badge && <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${badge.class}`}>{badge.text}</span>}
+            {hasAppraisal && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium">Tasación</span>}
           </div>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-xs text-gray-500">
+          {/* Row 2: Key info */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1 text-xs text-gray-500">
             {lead.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{lead.phone}</span>}
+            {lead.email && <span className="hidden sm:flex items-center gap-1 truncate max-w-[140px]">{lead.email}</span>}
             {lead.operation && <span className="capitalize">{lead.operation}</span>}
-            {lead.neighborhood && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{lead.neighborhood}</span>}
-            {lead.estimated_value && <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" />USD {Number(lead.estimated_value).toLocaleString()}</span>}
-            {lead.assigned_name && <span className="flex items-center gap-1"><User className="w-3 h-3" />{lead.assigned_name}</span>}
+            {lead.neighborhood && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /><span className="truncate max-w-[100px]">{lead.neighborhood}</span></span>}
+            {lead.estimated_value && <span className="hidden sm:flex items-center gap-1"><DollarSign className="w-3 h-3" />USD {Number(lead.estimated_value).toLocaleString()}</span>}
           </div>
-          <div className="flex items-center gap-2 mt-2">
+          {/* Row 3: Agent + source + last activity */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1 text-[10px] text-gray-400">
+            {lead.assigned_name && <span className="flex items-center gap-1"><User className="w-3 h-3" />{lead.assigned_name}</span>}
+            {sourceCfg && <span>{sourceCfg.label}</span>}
+            {lastActivity && <span>Últ. actividad: {lastActivity}</span>}
+          </div>
+          {/* Row 4: Checklist + next step */}
+          <div className="flex items-center gap-2 mt-1.5">
             <div className="flex gap-0.5">{Object.entries(checklist).map(([k, v]) => <div key={k} className={`w-1.5 h-1.5 rounded-full ${v ? 'bg-green-500' : 'bg-gray-200'}`} />)}</div>
             <span className="text-[10px] text-gray-400">{checkItems}/6</span>
-            {lead.next_step && <span className="text-[10px] text-gray-400 truncate ml-2">→ {lead.next_step}</span>}
+            {lead.next_step && <span className="text-[10px] text-gray-400 truncate ml-1">→ {lead.next_step}</span>}
           </div>
         </div>
-        <div className="flex items-center gap-0.5 sm:gap-1 shrink-0" onClick={e => e.preventDefault()}>
+        {/* Quick actions */}
+        <div className="flex flex-col sm:flex-row items-center gap-0.5 shrink-0" onClick={e => e.preventDefault()}>
           {lead.phone && (
             <>
               <a href={`tel:${lead.phone}`} className="p-2 sm:p-1.5 rounded-lg hover:bg-blue-50 text-blue-500"><Phone className="w-4 h-4" /></a>

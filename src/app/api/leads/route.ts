@@ -50,8 +50,14 @@ export async function GET(request: NextRequest) {
     }
 
     let query = isAdmin
-      ? `SELECT l.*, u.full_name as assigned_name FROM leads l LEFT JOIN users u ON l.assigned_to = u.id WHERE l.org_id = ?`
-      : `SELECT l.*, u.full_name as assigned_name FROM leads l LEFT JOIN users u ON l.assigned_to = u.id WHERE l.org_id = ? AND (l.assigned_to = ? OR l.assigned_to IS NULL)`
+      ? `SELECT l.*, u.full_name as assigned_name,
+          (SELECT MAX(a2.created_at) FROM activities a2 WHERE a2.lead_id = l.id) as last_activity_at,
+          (SELECT COUNT(*) FROM appraisals ap WHERE ap.lead_id = l.id) as appraisal_count
+        FROM leads l LEFT JOIN users u ON l.assigned_to = u.id WHERE l.org_id = ?`
+      : `SELECT l.*, u.full_name as assigned_name,
+          (SELECT MAX(a2.created_at) FROM activities a2 WHERE a2.lead_id = l.id) as last_activity_at,
+          (SELECT COUNT(*) FROM appraisals ap WHERE ap.lead_id = l.id) as appraisal_count
+        FROM leads l LEFT JOIN users u ON l.assigned_to = u.id WHERE l.org_id = ? AND (l.assigned_to = ? OR l.assigned_to IS NULL)`
 
     const binds: any[] = isAdmin ? [user.org_id || 'org_mg'] : [user.org_id || 'org_mg', user.id]
 
@@ -60,7 +66,7 @@ export async function GET(request: NextRequest) {
       binds.push(stage)
     }
 
-    query += ' ORDER BY l.created_at DESC'
+    query += ' ORDER BY l.updated_at DESC'
 
     const results = (await db.prepare(query).bind(...binds).all()).results
     return NextResponse.json(results)

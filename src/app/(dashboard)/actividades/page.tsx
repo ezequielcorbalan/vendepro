@@ -6,7 +6,10 @@ import {
   FileText, Settings, CheckCircle2, Target, Plus, X,
   BarChart3
 } from 'lucide-react'
-import { ACTIVITY_TYPES, ACTIVITY_TYPE_KEYS, type ActivityType } from '@/lib/crm-config'
+import {
+  ACTIVITY_TYPES, ACTIVITY_TYPE_KEYS, OBJECTIVE_METRICS,
+  getObjectiveSemaforo, getPeriodProgressPct, type ActivityType, type ObjectiveMetric
+} from '@/lib/crm-config'
 
 const ICON_MAP: Record<string, any> = {
   Phone, MessageCircle, Users, Home, Eye, Calculator, Clock,
@@ -60,14 +63,13 @@ export default function ActividadesPage() {
 
   const objectivesWithProgress = useMemo(() => {
     return objectives.map((obj: any) => {
-      const metricMap: Record<string, string[]> = {
-        llamadas: ['llamada'], reuniones: ['reunion'], visitas: ['visita_captacion', 'visita_comprador'],
-        tasaciones: ['tasacion'], cierres: ['cierre'],
-      }
-      const types = metricMap[obj.metric] || [obj.metric]
-      const realized = activities.filter(a => types.includes(a.activity_type)).length
+      const metricCfg = OBJECTIVE_METRICS[obj.metric as ObjectiveMetric]
+      const types = (metricCfg?.activityTypes || []) as readonly string[]
+      const realized = types.length > 0 ? activities.filter(a => types.includes(a.activity_type)).length : 0
       const pct = obj.target > 0 ? Math.round((realized / obj.target) * 100) : 0
-      return { ...obj, realized, pct }
+      const periodPct = getPeriodProgressPct(obj.period_start, obj.period_end)
+      const semaforo = getObjectiveSemaforo(realized, obj.target, periodPct)
+      return { ...obj, realized, pct, semaforo, metricLabel: metricCfg?.label || obj.metric }
     })
   }, [objectives, activities])
 
@@ -160,16 +162,14 @@ export default function ActividadesPage() {
             {objectivesWithProgress.map((obj: any) => (
               <div key={obj.id}>
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm text-gray-700 capitalize">{obj.metric}</span>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold">{obj.realized}/{obj.target}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${obj.pct >= 100 ? 'bg-green-100 text-green-700' : obj.pct >= 60 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
-                      {obj.pct}%
-                    </span>
+                    <span className="text-sm text-gray-700">{obj.metricLabel}</span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${obj.semaforo.color}`}>{obj.semaforo.label}</span>
                   </div>
+                  <span className="text-sm font-semibold">{obj.realized}/{obj.target} <span className="text-xs text-gray-400">({obj.pct}%)</span></span>
                 </div>
                 <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full transition-all ${obj.pct >= 100 ? 'bg-green-500' : obj.pct >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                  <div className={`h-full rounded-full transition-all ${obj.semaforo.level === 'green' ? 'bg-green-500' : obj.semaforo.level === 'yellow' ? 'bg-yellow-500' : obj.semaforo.level === 'orange' ? 'bg-orange-500' : 'bg-red-500'}`}
                     style={{ width: `${Math.min(obj.pct, 100)}%` }} />
                 </div>
               </div>

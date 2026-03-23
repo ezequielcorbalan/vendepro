@@ -79,15 +79,49 @@ export const OPERATION_TYPES = {
 
 // ── OBJECTIVE METRICS ────────────────────────────────────────
 export const OBJECTIVE_METRICS = {
-  llamadas:    { label: 'Llamadas',    activityType: 'llamada' },
-  reuniones:   { label: 'Reuniones',   activityType: 'reunion' },
-  visitas:     { label: 'Visitas',     activityType: 'visita_captacion' },
-  tasaciones:  { label: 'Tasaciones',  activityType: 'tasacion' },
-  captaciones: { label: 'Captaciones', activityType: null },
-  cierres:     { label: 'Cierres',     activityType: 'cierre' },
+  // Actividad
+  llamadas:        { label: 'Llamadas',         category: 'actividad', activityTypes: ['llamada'] },
+  reuniones:       { label: 'Reuniones',         category: 'actividad', activityTypes: ['reunion'] },
+  visitas:         { label: 'Visitas',           category: 'actividad', activityTypes: ['visita_captacion', 'visita_comprador'] },
+  seguimientos:    { label: 'Seguimientos',      category: 'actividad', activityTypes: ['seguimiento'] },
+  whatsapps:       { label: 'WhatsApps',         category: 'actividad', activityTypes: ['whatsapp'] },
+  prospeccion_bc:  { label: 'Prospección BC',    category: 'actividad', activityTypes: ['admin'] },
+  pre_listing:     { label: 'Pre Listing',       category: 'actividad', activityTypes: [] },
+  pre_buying:      { label: 'Pre Buying',        category: 'actividad', activityTypes: [] },
+  referidos:       { label: 'Referidos',         category: 'actividad', activityTypes: [] },
+  // Resultados
+  tasaciones:      { label: 'Tasaciones',        category: 'resultado', activityTypes: ['tasacion'] },
+  captaciones:     { label: 'Captaciones',       category: 'resultado', activityTypes: [] },
+  cierres:         { label: 'Cierres / Ventas',  category: 'resultado', activityTypes: ['cierre'] },
+  facturacion:     { label: 'Facturación (USD)',  category: 'resultado', activityTypes: [] },
 } as const
 
 export type ObjectiveMetric = keyof typeof OBJECTIVE_METRICS
+
+// ── SEMÁFORO DE OBJETIVOS ────────────────────────────────────
+export function getObjectiveSemaforo(realized: number, target: number, periodProgressPct: number): {
+  level: 'red' | 'orange' | 'yellow' | 'green'; label: string; color: string
+} {
+  if (target <= 0) return { level: 'green', label: 'Sin objetivo', color: 'bg-gray-100 text-gray-500' }
+  const pct = (realized / target) * 100
+  // Compare progress vs period progress
+  // If we're 50% through the period, we should be at ~50% of target
+  const ratio = periodProgressPct > 0 ? pct / periodProgressPct : pct / 100
+
+  if (pct >= 100) return { level: 'green', label: 'Cumplido', color: 'bg-green-100 text-green-700' }
+  if (ratio >= 0.8) return { level: 'yellow', label: 'En camino', color: 'bg-yellow-100 text-yellow-700' }
+  if (ratio >= 0.5) return { level: 'orange', label: 'Bajo', color: 'bg-orange-100 text-orange-700' }
+  return { level: 'red', label: 'Muy bajo', color: 'bg-red-100 text-red-700' }
+}
+
+export function getPeriodProgressPct(periodStart: string, periodEnd: string): number {
+  const start = new Date(periodStart).getTime()
+  const end = new Date(periodEnd).getTime()
+  const now = Date.now()
+  if (now >= end) return 100
+  if (now <= start) return 0
+  return Math.round(((now - start) / (end - start)) * 100)
+}
 
 // ── PERIOD TYPES ─────────────────────────────────────────────
 export const PERIOD_TYPES = {
