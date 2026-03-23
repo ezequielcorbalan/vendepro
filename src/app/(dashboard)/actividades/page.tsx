@@ -127,7 +127,7 @@ export default function ActividadesPage() {
             {PERIOD_OPTIONS.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
           </select>
           <button onClick={() => setShowCreate(true)} className="bg-pink-600 text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:bg-pink-700">
-            <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Registrar</span>
+            <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Registrar</span><span className="sm:hidden">Nueva</span>
           </button>
         </div>
       </div>

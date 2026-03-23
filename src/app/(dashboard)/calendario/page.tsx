@@ -6,29 +6,18 @@ import {
   ClipboardList, RefreshCw, FileText, FileSignature, Loader2, Filter,
   CheckCircle, Search, Clock, Trash2, MessageCircle, Link2, CalendarDays,
 } from 'lucide-react'
+import { EVENT_TYPES } from '@/lib/crm-config'
 
 /* ──────────────────────────────────────────────────────────
-   EVENT TYPE CONFIG
+   EVENT TYPE CONFIG (icons map + helpers)
    ────────────────────────────────────────────────────────── */
 
 const ICON_MAP: Record<string, any> = {
   Phone, Users, Home, Eye, ClipboardList, RefreshCw, FileText, FileSignature, Calendar,
 }
 
-const EVENT_TYPES: Record<string, { label: string; color: string; bg: string; icon: string }> = {
-  llamada:          { label: 'Llamada',          color: 'text-blue-700',    bg: 'bg-blue-100',    icon: 'Phone' },
-  reunion:          { label: 'Reunión',          color: 'text-purple-700',  bg: 'bg-purple-100',  icon: 'Users' },
-  visita_captacion: { label: 'Visita captación', color: 'text-green-700',   bg: 'bg-green-100',   icon: 'Home' },
-  visita_comprador: { label: 'Visita comprador', color: 'text-emerald-700', bg: 'bg-emerald-100', icon: 'Eye' },
-  tasacion:         { label: 'Tasación',         color: 'text-orange-700',  bg: 'bg-orange-100',  icon: 'ClipboardList' },
-  seguimiento:      { label: 'Seguimiento',      color: 'text-yellow-700',  bg: 'bg-yellow-100',  icon: 'RefreshCw' },
-  admin:            { label: 'Administrativa',   color: 'text-gray-700',    bg: 'bg-gray-100',    icon: 'FileText' },
-  firma:            { label: 'Firma',            color: 'text-pink-700',    bg: 'bg-pink-100',    icon: 'FileSignature' },
-  otro:             { label: 'Otro',             color: 'text-slate-700',   bg: 'bg-slate-100',   icon: 'Calendar' },
-}
-
 function getET(key: string) {
-  return EVENT_TYPES[key] || EVENT_TYPES.otro
+  return (EVENT_TYPES as any)[key] || EVENT_TYPES.otro
 }
 function ETIcon({ type, className }: { type: string; className?: string }) {
   const cfg = getET(type)
@@ -554,7 +543,7 @@ export default function CalendarioPage() {
                       key={e.id}
                       onClick={() => setExpandedEventId(expandedEventId === e.id ? null : e.id)}
                       className={`absolute left-0.5 right-0.5 rounded px-1 py-0.5 cursor-pointer overflow-hidden border-l-2 ${cfg.bg} ${isCompleted ? 'opacity-50' : ''}`}
-                      style={{ top: `${top}px`, height: `${height}px`, borderColor: cfg.color.replace('text-', '').includes('blue') ? '#1d4ed8' : cfg.color.replace('text-', '').includes('purple') ? '#7e22ce' : cfg.color.replace('text-', '').includes('green') ? '#15803d' : cfg.color.replace('text-', '').includes('orange') ? '#c2410c' : cfg.color.replace('text-', '').includes('pink') ? '#be185d' : cfg.color.replace('text-', '').includes('yellow') ? '#a16207' : cfg.color.replace('text-', '').includes('emerald') ? '#047857' : '#475569' }}
+                      style={{ top: `${top}px`, height: `${height}px`, borderColor: cfg.border || '#475569' }}
                       title={`${e.title} (${fmtTime(e.start_at)} – ${fmtTime(e.end_at)})`}
                     >
                       <p className={`text-[10px] font-semibold ${cfg.color} truncate ${isCompleted ? 'line-through' : ''}`}>{e.title}</p>

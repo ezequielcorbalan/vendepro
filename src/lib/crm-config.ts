@@ -41,15 +41,15 @@ export const ACTIVITY_TYPE_KEYS = Object.keys(ACTIVITY_TYPES) as ActivityType[]
 
 // ── CALENDAR EVENT TYPES ─────────────────────────────────────
 export const EVENT_TYPES = {
-  llamada:          { label: 'Llamada',          color: 'text-blue-700 bg-blue-100',    icon: 'Phone' },
-  reunion:          { label: 'Reunión',          color: 'text-purple-700 bg-purple-100', icon: 'Users' },
-  visita_captacion: { label: 'Visita captación', color: 'text-orange-700 bg-orange-100', icon: 'Home' },
-  visita_comprador: { label: 'Visita comprador', color: 'text-teal-700 bg-teal-100',    icon: 'Eye' },
-  tasacion:         { label: 'Tasación',         color: 'text-pink-700 bg-pink-100',     icon: 'Calculator' },
-  seguimiento:      { label: 'Seguimiento',      color: 'text-yellow-700 bg-yellow-100', icon: 'Clock' },
-  admin:            { label: 'Administrativa',   color: 'text-gray-700 bg-gray-100',     icon: 'Settings' },
-  firma:            { label: 'Firma',            color: 'text-emerald-700 bg-emerald-100', icon: 'PenTool' },
-  otro:             { label: 'Otro',             color: 'text-slate-700 bg-slate-100',   icon: 'Calendar' },
+  llamada:          { label: 'Llamada',          color: 'text-blue-700',    bg: 'bg-blue-100',    icon: 'Phone',         border: '#1d4ed8' },
+  reunion:          { label: 'Reunión',          color: 'text-purple-700',  bg: 'bg-purple-100',  icon: 'Users',         border: '#7c3aed' },
+  visita_captacion: { label: 'Visita captación', color: 'text-orange-700',  bg: 'bg-orange-100',  icon: 'Home',          border: '#c2410c' },
+  visita_comprador: { label: 'Visita comprador', color: 'text-teal-700',    bg: 'bg-teal-100',    icon: 'Eye',           border: '#0f766e' },
+  tasacion:         { label: 'Tasación',         color: 'text-pink-700',    bg: 'bg-pink-100',    icon: 'ClipboardList', border: '#be185d' },
+  seguimiento:      { label: 'Seguimiento',      color: 'text-yellow-700',  bg: 'bg-yellow-100',  icon: 'RefreshCw',     border: '#a16207' },
+  admin:            { label: 'Administrativa',   color: 'text-gray-700',    bg: 'bg-gray-100',    icon: 'FileText',      border: '#374151' },
+  firma:            { label: 'Firma',            color: 'text-emerald-700', bg: 'bg-emerald-100', icon: 'FileSignature', border: '#047857' },
+  otro:             { label: 'Otro',             color: 'text-slate-700',   bg: 'bg-slate-100',   icon: 'Calendar',      border: '#475569' },
 } as const
 
 export type EventType = keyof typeof EVENT_TYPES

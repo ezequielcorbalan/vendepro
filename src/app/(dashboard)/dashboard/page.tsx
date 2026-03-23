@@ -17,8 +17,8 @@ function FunnelChart({ data }: { data: { stage: string; count: number }[] }) {
       {data.map((item, i) => {
         const pct = Math.max((item.count / max) * 100, 8)
         return (
-          <div key={item.stage} className="flex items-center gap-3">
-            <div className="w-24 sm:w-28 text-xs text-gray-600 text-right truncate">{item.stage}</div>
+          <div key={item.stage} className="flex items-center gap-2 sm:gap-3">
+            <div className="w-20 sm:w-28 text-[10px] sm:text-xs text-gray-600 text-right truncate">{item.stage}</div>
             <div className="flex-1 h-7 bg-gray-50 rounded overflow-hidden">
               <div
                 className="h-full rounded flex items-center px-2 transition-all duration-500"
@@ -209,7 +209,7 @@ export default function DashboardCRM() {
                 const time = ev.start_at ? new Date(ev.start_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : ''
                 return (
                   <div key={ev.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50">
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${cfg.color}`}>{time}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.color}`}>{time}</span>
                     <span className="text-sm text-gray-700 truncate flex-1">{ev.title}</span>
                     {ev.completed === 1 && <CheckCircle2 className="w-4 h-4 text-green-500" />}
                   </div>

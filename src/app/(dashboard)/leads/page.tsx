@@ -356,15 +356,15 @@ function LeadCard({ lead, onAdvance, onLost }: { lead: any; onAdvance: () => voi
             {lead.next_step && <span className="text-[10px] text-gray-400 truncate ml-2">→ {lead.next_step}</span>}
           </div>
         </div>
-        <div className="flex items-center gap-1 shrink-0" onClick={e => e.preventDefault()}>
+        <div className="flex items-center gap-0.5 sm:gap-1 shrink-0" onClick={e => e.preventDefault()}>
           {lead.phone && (
             <>
-              <a href={`tel:${lead.phone}`} className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-500"><Phone className="w-4 h-4" /></a>
-              <a href={`https://wa.me/${formatWhatsApp(lead.phone)}`} target="_blank" className="p-1.5 rounded-lg hover:bg-green-50 text-green-500"><MessageCircle className="w-4 h-4" /></a>
+              <a href={`tel:${lead.phone}`} className="p-2 sm:p-1.5 rounded-lg hover:bg-blue-50 text-blue-500"><Phone className="w-4 h-4" /></a>
+              <a href={`https://wa.me/${formatWhatsApp(lead.phone)}`} target="_blank" className="p-2 sm:p-1.5 rounded-lg hover:bg-green-50 text-green-500"><MessageCircle className="w-4 h-4" /></a>
             </>
           )}
           {lead.stage !== 'captado' && lead.stage !== 'perdido' && (
-            <button onClick={onAdvance} className="p-1.5 rounded-lg hover:bg-pink-50 text-pink-500" title="Avanzar etapa"><ArrowRight className="w-4 h-4" /></button>
+            <button onClick={onAdvance} className="p-2 sm:p-1.5 rounded-lg hover:bg-pink-50 text-pink-500" title="Avanzar etapa"><ArrowRight className="w-4 h-4" /></button>
           )}
         </div>
       </div>
