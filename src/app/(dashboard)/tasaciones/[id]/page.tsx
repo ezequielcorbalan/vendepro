@@ -17,6 +17,7 @@ export default async function TasacionDetailPage({
 
   let appraisal: any = null
   let comparables: any[] = []
+  let linkedLead: any = null
 
   try {
     appraisal = await db.prepare(
@@ -27,6 +28,13 @@ export default async function TasacionDetailPage({
       comparables = (await db.prepare(
         'SELECT * FROM appraisal_comparables WHERE appraisal_id = ? ORDER BY sort_order'
       ).bind(id).all()).results as any[]
+
+      // Get linked lead if exists
+      if (appraisal.lead_id) {
+        try {
+          linkedLead = await db.prepare('SELECT id, full_name, phone, stage FROM leads WHERE id = ?').bind(appraisal.lead_id).first()
+        } catch {}
+      }
     }
   } catch {
     // Tables might not exist
@@ -67,6 +75,26 @@ export default async function TasacionDetailPage({
           )}
         </div>
       </div>
+
+      {/* Lead/Contact origin */}
+      {(linkedLead || a.contact_name) && (
+        <div className="flex flex-wrap items-center gap-3 mb-4">
+          {linkedLead && (
+            <Link href={`/leads/${linkedLead.id}`} className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 transition-colors">
+              <span className="text-xs font-medium text-blue-700">Lead origen:</span>
+              <span className="text-sm text-blue-800 font-semibold">{linkedLead.full_name}</span>
+              {linkedLead.phone && <span className="text-xs text-blue-500">{linkedLead.phone}</span>}
+            </Link>
+          )}
+          {!linkedLead && a.contact_name && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl">
+              <span className="text-xs font-medium text-gray-500">Contacto:</span>
+              <span className="text-sm text-gray-800">{a.contact_name}</span>
+              {a.contact_phone && <span className="text-xs text-gray-500">{a.contact_phone}</span>}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Preview - Canva-style */}
       <div className="space-y-4 max-w-3xl mx-auto">

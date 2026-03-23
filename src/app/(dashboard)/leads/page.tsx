@@ -160,13 +160,14 @@ export default function LeadsPage() {
       const lead = leads.find(l => l.id === leadId)
       if (lead) { setShowConvertModal(lead); return }
     }
+    if (stage === 'perdido' && !confirm('¿Marcar este lead como perdido?')) return
     await fetch('/api/leads', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: leadId, stage })
     })
     const stageLabel = LEAD_STAGES[stage as keyof typeof LEAD_STAGES]?.label || stage
-    toast(`Movido a ${stageLabel}`)
+    toast(stage === 'perdido' ? 'Lead marcado como perdido' : `Movido a ${stageLabel}`, stage === 'perdido' ? 'warning' : 'success')
     loadLeads()
   }
 

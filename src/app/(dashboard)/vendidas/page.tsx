@@ -11,7 +11,7 @@ export default function VendidasPage() {
   const [form, setForm] = useState({
     address: '', neighborhood: '', property_type: 'departamento', rooms: '',
     total_area: '', sold_price: '', original_price: '', currency: 'USD',
-    sold_date: '', days_on_market: '',
+    sold_date: '', days_on_market: '', listing_url: '',
   })
 
   useEffect(() => {
@@ -32,7 +32,7 @@ export default function VendidasPage() {
     const data = await res.json() as any
     if (data.id) {
       setProperties(prev => [{ ...form, id: data.id, created_at: new Date().toISOString() }, ...prev])
-      setForm({ address: '', neighborhood: '', property_type: 'departamento', rooms: '', total_area: '', sold_price: '', original_price: '', currency: 'USD', sold_date: '', days_on_market: '' })
+      setForm({ address: '', neighborhood: '', property_type: 'departamento', rooms: '', total_area: '', sold_price: '', original_price: '', currency: 'USD', sold_date: '', days_on_market: '', listing_url: '' })
       setShowForm(false)
     }
     setSaving(false)
@@ -80,6 +80,7 @@ export default function VendidasPage() {
             <input type="date" placeholder="Fecha venta" value={form.sold_date} onChange={e => setForm(f => ({ ...f, sold_date: e.target.value }))} className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/50" />
             <input type="number" placeholder="Días en cartera" value={form.days_on_market} onChange={e => setForm(f => ({ ...f, days_on_market: e.target.value }))} className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/50" />
           </div>
+          <input type="url" placeholder="Link ficha (ZonaProp, ArgenProp...)" value={form.listing_url} onChange={e => setForm(f => ({ ...f, listing_url: e.target.value }))} className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/50 w-full" />
           <div className="flex gap-2">
             <button onClick={handleSave} disabled={saving} className="bg-brand-pink text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50">
               {saving ? 'Guardando...' : 'Guardar'}
@@ -147,6 +148,11 @@ export default function VendidasPage() {
                     </div>
                   )}
                 </div>
+                {p.listing_url && (
+                  <a href={p.listing_url} target="_blank" rel="noopener noreferrer" className="text-xs text-pink-600 hover:underline mt-2 inline-block">
+                    Ver ficha →
+                  </a>
+                )}
               </div>
             )
           })}
