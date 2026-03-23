@@ -100,6 +100,28 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Update lead_id and contact info if provided (from lead conversion)
+    if (data.lead_id || data.contact_name || data.contact_phone || data.contact_email) {
+      try {
+        await db.prepare(`
+          UPDATE appraisals SET lead_id=?, contact_name=?, contact_phone=?, contact_email=?,
+          property_address=COALESCE(NULLIF(property_address,''), ?),
+          neighborhood=COALESCE(NULLIF(neighborhood,''), ?),
+          agent_id=COALESCE(agent_id, ?)
+          WHERE id=?
+        `).bind(
+          data.lead_id || null,
+          data.contact_name || null,
+          data.contact_phone || null,
+          data.contact_email || null,
+          data.property_address || null,
+          data.neighborhood || null,
+          data.agent_id || null,
+          id
+        ).run()
+      } catch { /* columns may not exist yet, safe to ignore */ }
+    }
+
     return NextResponse.json({ id })
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Error al guardar' }, { status: 500 })

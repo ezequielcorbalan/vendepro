@@ -1,162 +1,277 @@
 'use client'
+import { useState, useEffect, useMemo } from 'react'
+import Link from 'next/link'
+import {
+  Phone, MessageCircle, Users, Home, Eye, Calculator, Clock,
+  FileText, Settings, CheckCircle2, Target, Plus, X,
+  BarChart3
+} from 'lucide-react'
+import { ACTIVITY_TYPES, ACTIVITY_TYPE_KEYS, type ActivityType } from '@/lib/crm-config'
 
-import { useState, useEffect } from 'react'
-import { Plus, Loader2, Activity, Phone, Users, Calendar, Eye, ClipboardList, Home, X, CheckCircle } from 'lucide-react'
+const ICON_MAP: Record<string, any> = {
+  Phone, MessageCircle, Users, Home, Eye, Calculator, Clock,
+  FileText, Settings, CheckCircle2, Presentation: Target,
+}
 
-const ACTIVITY_TYPES = [
-  { key: 'llamada', label: 'Llamada', icon: Phone, color: 'bg-blue-100 text-blue-700' },
-  { key: 'reunion', label: 'Reunión', icon: Users, color: 'bg-purple-100 text-purple-700' },
-  { key: 'visita', label: 'Visita propiedad', icon: Home, color: 'bg-green-100 text-green-700' },
-  { key: 'tasacion', label: 'Tasación', icon: ClipboardList, color: 'bg-orange-100 text-orange-700' },
-  { key: 'seguimiento', label: 'Seguimiento', icon: Eye, color: 'bg-yellow-100 text-yellow-700' },
-  { key: 'admin', label: 'Administrativa', icon: Calendar, color: 'bg-gray-100 text-gray-700' },
+const PERIOD_OPTIONS = [
+  { key: 'week', label: 'Esta semana', start: () => { const d = new Date(); d.setDate(d.getDate() - d.getDay()); return d.toISOString().split('T')[0] } },
+  { key: 'month', label: 'Este mes', start: () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01` } },
+  { key: 'quarter', label: 'Trimestre', start: () => { const d = new Date(); const q = Math.floor(d.getMonth() / 3) * 3; return `${d.getFullYear()}-${String(q + 1).padStart(2, '0')}-01` } },
+  { key: 'year', label: 'Este año', start: () => `${new Date().getFullYear()}-01-01` },
 ]
-
-const inputClass = 'border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50 w-full'
 
 export default function ActividadesPage() {
   const [activities, setActivities] = useState<any[]>([])
+  const [objectives, setObjectives] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [showForm, setShowForm] = useState(false)
+  const [period, setPeriod] = useState('month')
+  const [filterType, setFilterType] = useState('')
+  const [showCreate, setShowCreate] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState({
-    activity_type: 'llamada', description: '', scheduled_at: '', completed_at: '',
-  })
+  const [form, setForm] = useState({ activity_type: 'llamada', description: '', lead_id: '' })
 
-  useEffect(() => {
-    fetch('/api/activities').then(r => r.json()).then(data => {
-      setActivities(Array.isArray(data) ? data : [])
+  const periodStart = PERIOD_OPTIONS.find(p => p.key === period)?.start() || ''
+
+  const loadData = () => {
+    const params = new URLSearchParams()
+    if (periodStart) params.set('start', periodStart)
+    if (filterType) params.set('type', filterType)
+
+    Promise.all([
+      fetch(`/api/activities?${params}`).then(r => r.json() as Promise<any>),
+      fetch('/api/objectives').then(r => r.json() as Promise<any>).catch(() => []),
+    ]).then(([acts, objs]) => {
+      setActivities(Array.isArray(acts) ? acts : [])
+      setObjectives(Array.isArray(objs) ? objs : [])
       setLoading(false)
     }).catch(() => setLoading(false))
-  }, [])
+  }
 
-  async function handleSave() {
-    setSaving(true)
-    const res = await fetch('/api/activities', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+  useEffect(() => { loadData() }, [period, filterType])
+
+  const metrics = useMemo(() => {
+    const counts: Record<string, number> = {}
+    ACTIVITY_TYPE_KEYS.forEach(k => { counts[k] = 0 })
+    activities.forEach(a => { if (counts[a.activity_type] !== undefined) counts[a.activity_type]++ })
+    return counts
+  }, [activities])
+
+  const totalActivities = activities.length
+
+  const objectivesWithProgress = useMemo(() => {
+    return objectives.map((obj: any) => {
+      const metricMap: Record<string, string[]> = {
+        llamadas: ['llamada'], reuniones: ['reunion'], visitas: ['visita_captacion', 'visita_comprador'],
+        tasaciones: ['tasacion'], cierres: ['cierre'],
+      }
+      const types = metricMap[obj.metric] || [obj.metric]
+      const realized = activities.filter(a => types.includes(a.activity_type)).length
+      const pct = obj.target > 0 ? Math.round((realized / obj.target) * 100) : 0
+      return { ...obj, realized, pct }
     })
-    const data = await res.json() as any
-    if (data.id) {
-      setActivities(prev => [{ ...form, id: data.id, created_at: new Date().toISOString() }, ...prev])
-      setForm({ activity_type: 'llamada', description: '', scheduled_at: '', completed_at: '' })
-      setShowForm(false)
+  }, [objectives, activities])
+
+  const dailyData = useMemo(() => {
+    const days: Record<string, number> = {}
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i)
+      days[d.toISOString().split('T')[0]] = 0
     }
+    activities.forEach(a => {
+      const day = (a.completed_at || a.created_at || '').split('T')[0]
+      if (days[day] !== undefined) days[day]++
+    })
+    return Object.entries(days).map(([day, count]) => ({ day, count }))
+  }, [activities])
+
+  const handleCreate = async () => {
+    setSaving(true)
+    try {
+      await fetch('/api/activities', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ activity_type: form.activity_type, description: form.description, lead_id: form.lead_id || null, completed_at: new Date().toISOString() }),
+      })
+      setShowCreate(false)
+      setForm({ activity_type: 'llamada', description: '', lead_id: '' })
+      loadData()
+    } catch {}
     setSaving(false)
   }
 
-  // Count by type for today
-  const today = new Date().toISOString().split('T')[0]
-  const todayActivities = activities.filter(a => a.created_at?.startsWith(today) || a.completed_at?.startsWith(today))
-
   return (
-    <div>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+    <div className="space-y-4 sm:space-y-5">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Actividad</h1>
-          <p className="text-sm text-brand-gray mt-1">Registro de actividades del equipo</p>
+          <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Actividad Comercial</h1>
+          <p className="text-gray-500 text-sm">{totalActivities} actividades en el período</p>
         </div>
-        <button onClick={() => setShowForm(true)} className="inline-flex items-center gap-2 bg-[#ff007c] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 self-start sm:self-auto">
-          <Plus className="w-4 h-4" /> Registrar actividad
-        </button>
+        <div className="flex items-center gap-2">
+          <select value={period} onChange={e => setPeriod(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
+            {PERIOD_OPTIONS.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
+          </select>
+          <button onClick={() => setShowCreate(true)} className="bg-pink-600 text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:bg-pink-700">
+            <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Registrar</span>
+          </button>
+        </div>
       </div>
 
-      {/* Today's summary */}
-      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-6">
-        {ACTIVITY_TYPES.map(at => {
-          const count = todayActivities.filter(a => a.activity_type === at.key).length
-          const Icon = at.icon
+      {/* KPI Cards */}
+      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
+        {(['llamada', 'reunion', 'visita_captacion', 'tasacion', 'seguimiento', 'whatsapp'] as ActivityType[]).map(key => {
+          const cfg = ACTIVITY_TYPES[key]
+          const IconComp = ICON_MAP[cfg.icon] || Clock
           return (
-            <div key={at.key} className="bg-white rounded-xl shadow-sm p-3 text-center">
-              <Icon className="w-4 h-4 mx-auto mb-1 text-gray-400" />
-              <p className="text-lg font-bold text-gray-800">{count}</p>
-              <p className="text-[9px] sm:text-[10px] text-gray-500">{at.label}</p>
-            </div>
+            <button key={key} onClick={() => setFilterType(filterType === key ? '' : key)}
+              className={`bg-white border rounded-xl p-3 text-center transition-all hover:shadow-sm ${filterType === key ? 'ring-2 ring-pink-500 border-pink-300' : ''}`}>
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center mx-auto mb-1.5 ${cfg.color}`}>
+                <IconComp className="w-4 h-4" />
+              </div>
+              <p className="text-xl font-bold text-gray-800">{metrics[key] || 0}</p>
+              <p className="text-[10px] text-gray-500 truncate">{cfg.label}</p>
+            </button>
           )
         })}
       </div>
 
-      {/* New activity modal */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-2xl p-5 sm:p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-800">Nueva actividad</h2>
-              <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
-            </div>
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {ACTIVITY_TYPES.map(at => {
-                  const Icon = at.icon
-                  return (
-                    <button
-                      key={at.key}
-                      onClick={() => setForm(f => ({ ...f, activity_type: at.key }))}
-                      className={`flex items-center gap-2 p-2.5 rounded-lg border text-xs font-medium transition ${
-                        form.activity_type === at.key ? 'border-[#ff007c] bg-[#ff007c]/5 text-[#ff007c]' : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                      }`}
-                    >
-                      <Icon className="w-4 h-4" /> {at.label}
-                    </button>
-                  )
-                })}
-              </div>
-              <textarea className={`${inputClass} h-20`} placeholder="Descripción de la actividad..." value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs text-gray-500">Programada para</label>
-                  <input className={inputClass} type="datetime-local" value={form.scheduled_at} onChange={e => setForm(f => ({ ...f, scheduled_at: e.target.value }))} />
+      {/* Objectives */}
+      {objectivesWithProgress.length > 0 && (
+        <div className="bg-white rounded-xl border p-4 sm:p-5">
+          <h2 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+            <Target className="w-4 h-4 text-pink-500" /> Objetivos del período
+          </h2>
+          <div className="space-y-3">
+            {objectivesWithProgress.map((obj: any) => (
+              <div key={obj.id}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm text-gray-700 capitalize">{obj.metric}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold">{obj.realized}/{obj.target}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${obj.pct >= 100 ? 'bg-green-100 text-green-700' : obj.pct >= 60 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
+                      {obj.pct}%
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-xs text-gray-500">Completada</label>
-                  <input className={inputClass} type="datetime-local" value={form.completed_at} onChange={e => setForm(f => ({ ...f, completed_at: e.target.value }))} />
+                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full transition-all ${obj.pct >= 100 ? 'bg-green-500' : obj.pct >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                    style={{ width: `${Math.min(obj.pct, 100)}%` }} />
                 </div>
               </div>
-            </div>
-            <div className="flex gap-2 mt-4">
-              <button onClick={handleSave} disabled={saving} className="flex-1 bg-[#ff007c] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50">
-                {saving ? 'Guardando...' : 'Guardar'}
-              </button>
-              <button onClick={() => setShowForm(false)} className="border border-gray-300 text-gray-700 px-4 py-2.5 rounded-lg text-sm hover:bg-gray-50">Cancelar</button>
-            </div>
+            ))}
           </div>
         </div>
       )}
 
-      {/* Activity list */}
-      {loading ? (
-        <div className="flex items-center gap-2 text-brand-gray py-12 justify-center"><Loader2 className="w-5 h-5 animate-spin" /> Cargando...</div>
-      ) : activities.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm p-8 sm:p-12 text-center">
-          <Activity className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-brand-gray">No hay actividades registradas</p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {activities.map(a => {
-            const at = ACTIVITY_TYPES.find(t => t.key === a.activity_type) || ACTIVITY_TYPES[0]
-            const Icon = at.icon
-            const isCompleted = !!a.completed_at
-            return (
-              <div key={a.id} className="bg-white rounded-xl shadow-sm p-4 flex items-start gap-3">
-                <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${isCompleted ? 'bg-green-100' : at.color.split(' ')[0]}`}>
-                  {isCompleted ? <CheckCircle className="w-4 h-4 text-green-600" /> : <Icon className="w-4 h-4" />}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${at.color}`}>{at.label}</span>
-                    {a.agent_name && <span className="text-[10px] text-gray-400">{a.agent_name}</span>}
-                    {a.lead_name && <span className="text-[10px] text-indigo-500">{a.lead_name}</span>}
+      {/* Daily chart + Activity list */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="bg-white rounded-xl border p-4">
+          <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+            <BarChart3 className="w-4 h-4 text-pink-500" /> Últimos 7 días
+          </h3>
+          <div className="flex items-end gap-1 h-24">
+            {dailyData.map(d => {
+              const max = Math.max(...dailyData.map(x => x.count), 1)
+              const h = Math.max((d.count / max) * 100, 4)
+              const dayName = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][new Date(d.day + 'T12:00:00').getDay()]
+              return (
+                <div key={d.day} className="flex-1 flex flex-col items-center gap-0.5">
+                  <span className="text-[10px] text-gray-500">{d.count}</span>
+                  <div className="w-full bg-gray-100 rounded-t relative" style={{ height: '60px' }}>
+                    <div className="absolute bottom-0 left-0 right-0 bg-pink-500 rounded-t" style={{ height: `${h}%` }} />
                   </div>
-                  {a.description && <p className="text-sm text-gray-700 mt-1">{a.description}</p>}
-                  <p className="text-[10px] text-gray-400 mt-1">
-                    {new Date(a.created_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                  </p>
+                  <span className="text-[9px] text-gray-400">{dayName}</span>
+                </div>
+              )
+            })}
+          </div>
+          <div className="mt-3 text-center">
+            <p className="text-2xl font-bold text-gray-800">{totalActivities}</p>
+            <p className="text-xs text-gray-500">Total del período</p>
+          </div>
+        </div>
+
+        <div className="lg:col-span-2 bg-white rounded-xl border p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-gray-800">Actividad reciente</h3>
+            {filterType && (
+              <button onClick={() => setFilterType('')} className="text-xs text-pink-600 flex items-center gap-1">
+                <X className="w-3 h-3" /> {ACTIVITY_TYPES[filterType as ActivityType]?.label}
+              </button>
+            )}
+          </div>
+          {loading ? (
+            <div className="space-y-3">{[...Array(5)].map((_, i) => <div key={i} className="h-12 bg-gray-100 rounded-lg animate-pulse" />)}</div>
+          ) : activities.length === 0 ? (
+            <div className="text-center py-8 text-gray-400">
+              <Clock className="w-10 h-10 mx-auto mb-2 text-gray-300" />
+              <p className="text-sm">Sin actividades en este período</p>
+            </div>
+          ) : (
+            <div className="space-y-1 max-h-[50vh] overflow-y-auto">
+              {activities.map((act: any) => {
+                const cfg = ACTIVITY_TYPES[act.activity_type as ActivityType]
+                const IconComp = cfg ? (ICON_MAP[cfg.icon] || Clock) : Clock
+                const time = act.completed_at || act.created_at
+                return (
+                  <div key={act.id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${cfg?.color || 'bg-gray-50 text-gray-500'}`}>
+                      <IconComp className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-medium text-gray-800">{cfg?.label || act.activity_type}</p>
+                        <span className="text-[10px] text-gray-400 shrink-0">
+                          {time ? new Date(time).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}
+                        </span>
+                      </div>
+                      {act.description && <p className="text-xs text-gray-500 truncate">{act.description}</p>}
+                      <div className="flex items-center gap-2 mt-0.5 text-[10px] text-gray-400">
+                        {act.agent_name && <span>{act.agent_name}</span>}
+                        {act.lead_name && <Link href={`/leads/${act.lead_id}`} className="text-pink-500 hover:underline">{act.lead_name}</Link>}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Create modal */}
+      {showCreate && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowCreate(false)}>
+          <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white border-b px-4 py-3 flex items-center justify-between rounded-t-2xl z-10">
+              <h3 className="font-semibold text-gray-800">Registrar actividad</h3>
+              <button onClick={() => setShowCreate(false)} className="p-1 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="p-4 space-y-3">
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Tipo</label>
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                  {ACTIVITY_TYPE_KEYS.map(key => {
+                    const cfg = ACTIVITY_TYPES[key]
+                    const IconComp = ICON_MAP[cfg.icon] || Clock
+                    return (
+                      <button key={key} onClick={() => setForm({ ...form, activity_type: key })}
+                        className={`p-2 rounded-lg border text-center text-xs transition-all ${form.activity_type === key ? 'border-pink-500 bg-pink-50 text-pink-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+                        <IconComp className="w-4 h-4 mx-auto mb-1" />
+                        <span className="truncate block">{cfg.label}</span>
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
-            )
-          })}
+              <textarea placeholder="Descripción..." rows={3} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
+            </div>
+            <div className="sticky bottom-0 bg-white border-t px-4 py-3 flex gap-2">
+              <button onClick={() => setShowCreate(false)} className="flex-1 px-4 py-2 border rounded-lg text-sm">Cancelar</button>
+              <button onClick={handleCreate} disabled={saving || !form.description} className="flex-1 px-4 py-2 bg-pink-600 text-white rounded-lg text-sm font-medium disabled:opacity-50">
+                {saving ? 'Guardando...' : 'Registrar'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

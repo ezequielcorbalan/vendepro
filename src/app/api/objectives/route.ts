@@ -7,48 +7,36 @@ export async function GET(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'No auth' }, { status: 401 })
 
   const db = await getDB()
-  const { searchParams } = new URL(request.url)
-  const leadId = searchParams.get('lead_id')
-  const agentId = searchParams.get('agent_id')
+  const orgId = user.org_id || 'org_mg'
   const isAdmin = user.role === 'admin' || user.role === 'owner'
+  const { searchParams } = new URL(request.url)
+  const agentId = searchParams.get('agent_id')
+  const periodType = searchParams.get('period_type')
 
   try {
-    let query = `SELECT a.*, u.full_name as agent_name, l.full_name as lead_name
-      FROM activities a
-      LEFT JOIN users u ON a.agent_id = u.id
-      LEFT JOIN leads l ON a.lead_id = l.id
-      WHERE a.org_id = ?`
-    const binds: any[] = [user.org_id || 'org_mg']
-
-    if (leadId) {
-      query += ' AND a.lead_id = ?'
-      binds.push(leadId)
-    }
+    let query = `SELECT o.*, u.full_name as agent_name FROM agent_objectives o LEFT JOIN users u ON o.agent_id = u.id WHERE o.org_id = ?`
+    const binds: any[] = [orgId]
 
     if (agentId) {
-      query += ' AND a.agent_id = ?'
+      query += ' AND o.agent_id = ?'
       binds.push(agentId)
     } else if (!isAdmin) {
-      query += ' AND a.agent_id = ?'
+      query += ' AND o.agent_id = ?'
       binds.push(user.id)
     }
 
-    // Date range filter
-    const startDate = searchParams.get('start')
-    const endDate = searchParams.get('end')
-    if (startDate) { query += ' AND a.created_at >= ?'; binds.push(startDate) }
-    if (endDate) { query += ' AND a.created_at <= ?'; binds.push(endDate) }
+    if (periodType) {
+      query += ' AND o.period_type = ?'
+      binds.push(periodType)
+    }
 
-    // Activity type filter
-    const actType = searchParams.get('type')
-    if (actType) { query += ' AND a.activity_type = ?'; binds.push(actType) }
+    // Only current/future periods
+    query += ` AND o.period_end >= date('now') ORDER BY o.period_start DESC LIMIT 50`
 
-    query += ' ORDER BY a.created_at DESC LIMIT 200'
-
-    const results = (await db.prepare(query).bind(...binds).all()).results
+    const results = (await db.prepare(query).bind(...binds).all()).results as any[]
     return NextResponse.json(results)
-  } catch {
-    return NextResponse.json([])
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
 
@@ -56,24 +44,23 @@ export async function POST(request: NextRequest) {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'No auth' }, { status: 401 })
 
+  const isAdmin = user.role === 'admin' || user.role === 'owner'
+  if (!isAdmin) return NextResponse.json({ error: 'Solo admin' }, { status: 403 })
+
   const data = (await request.json()) as any
   const db = await getDB()
   const id = generateId()
 
   try {
     await db.prepare(`
-      INSERT INTO activities (id, org_id, lead_id, contact_id, agent_id, activity_type, description, scheduled_at, completed_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO agent_objectives (id, org_id, agent_id, period_type, period_start, period_end, metric, target)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       id, user.org_id || 'org_mg',
-      data.lead_id || null, data.contact_id || null,
-      data.agent_id || user.id,
-      data.activity_type,
-      data.description || null,
-      data.scheduled_at || null,
-      data.completed_at || null
+      data.agent_id, data.period_type || 'monthly',
+      data.period_start, data.period_end,
+      data.metric, data.target || 0
     ).run()
-
     return NextResponse.json({ id })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
@@ -90,7 +77,7 @@ export async function DELETE(request: NextRequest) {
 
   const db = await getDB()
   try {
-    await db.prepare('DELETE FROM activities WHERE id = ?').bind(id).run()
+    await db.prepare('DELETE FROM agent_objectives WHERE id = ? AND org_id = ?').bind(id, user.org_id || 'org_mg').run()
     return NextResponse.json({ success: true })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })

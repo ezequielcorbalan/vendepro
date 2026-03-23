@@ -1,326 +1,356 @@
-import { getAgencyDashboard } from '@/lib/analytics'
-import { redirect } from 'next/navigation'
+'use client'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
-  Building2, FileBarChart, Plus, TrendingUp, Eye, Users,
-  MapPin, BarChart3, Target, Phone, MessageCircle, Award
+  Users, Phone, CalendarDays, Target, TrendingUp, AlertTriangle,
+  Clock, ArrowRight, CheckCircle2, BarChart3, ChevronRight,
+  MessageCircle, Home, Calculator, Activity
 } from 'lucide-react'
-import DashboardCharts from '@/components/dashboard/DashboardCharts'
+import { LEAD_STAGES, EVENT_TYPES } from '@/lib/crm-config'
 
-export default async function DashboardPage() {
-  const data = await getAgencyDashboard()
-  if (!data) redirect('/login')
+// ── Funnel SVG ─────────────────────────────────────────────
+function FunnelChart({ data }: { data: { stage: string; count: number }[] }) {
+  const max = Math.max(...data.map(d => d.count), 1)
+  const colors = ['#3B82F6', '#06B6D4', '#10B981', '#8B5CF6', '#EC4899', '#F59E0B']
+  return (
+    <div className="space-y-2">
+      {data.map((item, i) => {
+        const pct = Math.max((item.count / max) * 100, 8)
+        return (
+          <div key={item.stage} className="flex items-center gap-3">
+            <div className="w-24 sm:w-28 text-xs text-gray-600 text-right truncate">{item.stage}</div>
+            <div className="flex-1 h-7 bg-gray-50 rounded overflow-hidden">
+              <div
+                className="h-full rounded flex items-center px-2 transition-all duration-500"
+                style={{ width: `${pct}%`, backgroundColor: colors[i % colors.length] }}
+              >
+                <span className="text-white text-xs font-semibold">{item.count}</span>
+              </div>
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
 
-  const { user, isAdmin, overview, agentStats, neighborhoods, soldComparison } = data
+// ── Weekly bar chart ───────────────────────────────────────
+function WeeklyChart({ data }: { data: { day: string; count: number }[] }) {
+  const max = Math.max(...data.map(d => d.count), 1)
+  const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+  return (
+    <div className="flex items-end gap-1 sm:gap-2 h-32">
+      {data.map((item) => {
+        const h = Math.max((item.count / max) * 100, 4)
+        const d = new Date(item.day + 'T12:00:00')
+        const dayName = dayNames[d.getDay()]
+        return (
+          <div key={item.day} className="flex-1 flex flex-col items-center gap-1">
+            <span className="text-xs text-gray-600 font-medium">{item.count}</span>
+            <div className="w-full bg-gray-100 rounded-t relative" style={{ height: '100px' }}>
+              <div
+                className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-pink-500 to-pink-400 rounded-t transition-all"
+                style={{ height: `${h}%` }}
+              />
+            </div>
+            <span className="text-[10px] text-gray-500">{dayName}</span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
 
-  const soldData = soldComparison.find((s: any) => s.status === 'sold')
-  const activeData = soldComparison.find((s: any) => s.status === 'active')
+export default function DashboardCRM() {
+  const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/dashboard-crm')
+      .then(r => r.json() as Promise<any>)
+      .then(d => { setData(d); setLoading(false) })
+      .catch(() => setLoading(false))
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="space-y-4 animate-pulse">
+        <div className="h-8 bg-gray-200 rounded w-48" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          {[...Array(6)].map((_, i) => <div key={i} className="h-24 bg-gray-200 rounded-xl" />)}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="h-64 bg-gray-200 rounded-xl" />
+          <div className="h-64 bg-gray-200 rounded-xl" />
+        </div>
+      </div>
+    )
+  }
+
+  if (!data || data.error) {
+    return <div className="text-center py-12 text-gray-500">Error al cargar el dashboard</div>
+  }
+
+  const { leads, overdueLeads, tasaciones, activity, weeklyActivity, todayEvents, pendingFollowups, agentPerformance, funnel, conversionRate } = data
+
+  // Build full 7-day array filling gaps
+  const last7 = [...Array(7)].map((_, i) => {
+    const d = new Date()
+    d.setDate(d.getDate() - (6 - i))
+    return d.toISOString().split('T')[0]
+  })
+  const weekData = last7.map(day => ({
+    day,
+    count: weeklyActivity?.find((w: any) => w.day === day)?.count || 0
+  }))
 
   return (
-    <div>
+    <div className="space-y-5 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">
-            {isAdmin ? 'Dashboard de Sucursal' : 'Mi Dashboard'}
-          </h1>
-          <p className="text-brand-gray text-sm mt-1">
-            {isAdmin ? 'Métricas generales de la inmobiliaria' : `Hola, ${user.full_name}`}
-          </p>
+          <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Dashboard CRM</h1>
+          <p className="text-gray-500 text-sm">Resumen ejecutivo del negocio</p>
         </div>
-        <Link
-          href="/propiedades/nueva"
-          className="inline-flex items-center gap-2 bg-brand-pink text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
-        >
-          <Plus className="w-4 h-4" />
-          Nueva propiedad
+        <Link href="/dashboard/reportes" className="text-sm text-pink-600 hover:text-pink-700 flex items-center gap-1">
+          Ver reportes de propiedades <ChevronRight className="w-4 h-4" />
         </Link>
       </div>
 
-      {/* Overview Cards */}
-      <div className="grid grid-cols-2 gap-3 mb-5 sm:mb-8 md:grid-cols-4">
-        <div className="bg-white rounded-xl p-3 sm:p-5 shadow-sm">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-brand-pink/10 flex items-center justify-center">
-              <Building2 className="w-4 h-4 sm:w-5 sm:h-5 text-brand-pink" />
-            </div>
-          </div>
-          <p className="text-2xl sm:text-3xl font-bold text-gray-800">{overview.active_properties}</p>
-          <p className="text-[10px] sm:text-xs text-brand-gray mt-1">Propiedades activas</p>
-        </div>
-
-        <div className="bg-white rounded-xl p-3 sm:p-5 shadow-sm">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-green-100 flex items-center justify-center">
-              <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
-            </div>
-          </div>
-          <p className="text-2xl sm:text-3xl font-bold text-gray-800">{overview.sold_properties}</p>
-          <p className="text-[10px] sm:text-xs text-brand-gray mt-1">Vendidas</p>
-        </div>
-
-        <div className="bg-white rounded-xl p-3 sm:p-5 shadow-sm">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-brand-orange/10 flex items-center justify-center">
-              <FileBarChart className="w-4 h-4 sm:w-5 sm:h-5 text-brand-orange" />
-            </div>
-          </div>
-          <p className="text-2xl sm:text-3xl font-bold text-gray-800">{overview.total_reports}</p>
-          <p className="text-[10px] sm:text-xs text-brand-gray mt-1">Reportes publicados</p>
-        </div>
-
-        {isAdmin && (
-          <div className="bg-white rounded-xl p-3 sm:p-5 shadow-sm">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-indigo-100 flex items-center justify-center">
-                <Users className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
-              </div>
-            </div>
-            <p className="text-2xl sm:text-3xl font-bold text-gray-800">{overview.total_agents}</p>
-            <p className="text-[10px] sm:text-xs text-brand-gray mt-1">Agentes</p>
-          </div>
-        )}
-
-        {!isAdmin && (
-          <div className="bg-white rounded-xl p-3 sm:p-5 shadow-sm">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-red-100 flex items-center justify-center">
-                <Target className="w-4 h-4 sm:w-5 sm:h-5 text-red-500" />
-              </div>
-            </div>
-            <p className="text-2xl sm:text-3xl font-bold text-gray-800">{overview.conversion_rate.toFixed(1)}%</p>
-            <p className="text-[10px] sm:text-xs text-brand-gray mt-1">Tasa de conversión</p>
-          </div>
-        )}
+      {/* ── KPI Cards ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <KPICard icon={<Users className="w-5 h-5" />} label="Leads activos" value={((leads.total || 0) - (leads.perdidos || 0) - (leads.captados || 0))} color="blue" />
+        <KPICard icon={<Phone className="w-5 h-5" />} label="Contactados" value={leads.contactados || 0} color="cyan" />
+        <KPICard icon={<Calculator className="w-5 h-5" />} label="Tasaciones" value={tasaciones.total || 0} color="purple" />
+        <KPICard icon={<Home className="w-5 h-5" />} label="Captaciones" value={tasaciones.captadas || 0} color="green" />
+        <KPICard icon={<Activity className="w-5 h-5" />} label="Actividad (30d)" value={activity.total || 0} color="pink" />
+        <KPICard icon={<Target className="w-5 h-5" />} label="Conversión" value={`${conversionRate}%`} color="amber" />
       </div>
 
-      {/* Metrics Summary */}
-      <div className="grid grid-cols-3 gap-2 mb-5 sm:mb-8 sm:grid-cols-5 sm:gap-3">
-        <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-2.5 sm:p-4 text-white">
-          <Eye className="w-4 h-4 mb-1 opacity-80" />
-          <p className="text-base sm:text-2xl font-bold leading-tight">{overview.total_impressions.toLocaleString('es-AR')}</p>
-          <p className="text-[9px] sm:text-xs opacity-80">Impresiones</p>
-        </div>
-        <div className="bg-gradient-to-br from-[#ff007c] to-[#ff3d94] rounded-xl p-2.5 sm:p-4 text-white">
-          <BarChart3 className="w-4 h-4 mb-1 opacity-80" />
-          <p className="text-base sm:text-2xl font-bold leading-tight">{overview.total_visits.toLocaleString('es-AR')}</p>
-          <p className="text-[9px] sm:text-xs opacity-80">Visitas</p>
-        </div>
-        <div className="bg-gradient-to-br from-[#ff8017] to-orange-500 rounded-xl p-2.5 sm:p-4 text-white">
-          <MessageCircle className="w-4 h-4 mb-1 opacity-80" />
-          <p className="text-base sm:text-2xl font-bold leading-tight">{overview.total_inquiries.toLocaleString('es-AR')}</p>
-          <p className="text-[9px] sm:text-xs opacity-80">Consultas</p>
-        </div>
-        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-2.5 sm:p-4 text-white">
-          <Users className="w-4 h-4 mb-1 opacity-80" />
-          <p className="text-base sm:text-2xl font-bold leading-tight">{overview.total_in_person_visits.toLocaleString('es-AR')}</p>
-          <p className="text-[9px] sm:text-xs opacity-80">Visitas pres.</p>
-        </div>
-        <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-2.5 sm:p-4 text-white">
-          <Award className="w-4 h-4 mb-1 opacity-80" />
-          <p className="text-base sm:text-2xl font-bold leading-tight">{overview.total_offers.toLocaleString('es-AR')}</p>
-          <p className="text-[9px] sm:text-xs opacity-80">Ofertas</p>
-        </div>
-      </div>
-
-      {/* Sold vs Active Comparison */}
-      {(soldData || activeData) && (
-        <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 mb-6 sm:mb-8">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <span className="w-1 h-6 bg-brand-pink rounded-full"></span>
-            Vendidas vs Activas — Métricas promedio
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
-            {/* Sold */}
-            <div className="border border-green-200 bg-green-50/50 rounded-xl p-4 sm:p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="w-3 h-3 bg-green-500 rounded-full"></span>
-                <h3 className="font-semibold text-gray-800 text-sm sm:text-base">Vendidas ({soldData?.count || 0})</h3>
+      {/* ── Alertas operativas ── */}
+      {(overdueLeads > 0 || (todayEvents && todayEvents.length > 0)) && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {overdueLeads > 0 && (
+            <Link href="/leads" className="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100 transition-colors">
+              <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-red-700">{overdueLeads} lead{overdueLeads > 1 ? 's' : ''} vencido{overdueLeads > 1 ? 's' : ''}</p>
+                <p className="text-xs text-red-500">Sin contactar o sin actividad</p>
               </div>
-              <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
-                <div>
-                  <p className="text-lg sm:text-xl font-bold text-gray-800">{Math.round(soldData?.avg_impressions || 0).toLocaleString('es-AR')}</p>
-                  <p className="text-[10px] sm:text-xs text-gray-500">Impresiones</p>
-                </div>
-                <div>
-                  <p className="text-lg sm:text-xl font-bold text-gray-800">{Math.round(soldData?.avg_visits || 0).toLocaleString('es-AR')}</p>
-                  <p className="text-[10px] sm:text-xs text-gray-500">Visitas</p>
-                </div>
-                <div>
-                  <p className="text-lg sm:text-xl font-bold text-gray-800">{Math.round(soldData?.avg_inquiries || 0).toLocaleString('es-AR')}</p>
-                  <p className="text-[10px] sm:text-xs text-gray-500">Consultas</p>
-                </div>
+            </Link>
+          )}
+          {pendingFollowups && pendingFollowups.length > 0 && (
+            <Link href="/leads" className="flex items-center gap-3 p-3 bg-yellow-50 border border-yellow-200 rounded-xl hover:bg-yellow-100 transition-colors">
+              <Clock className="w-5 h-5 text-yellow-600 shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-yellow-700">{pendingFollowups.length} seguimiento{pendingFollowups.length > 1 ? 's' : ''} pendiente{pendingFollowups.length > 1 ? 's' : ''}</p>
+                <p className="text-xs text-yellow-500">Próximas acciones definidas</p>
               </div>
-            </div>
-
-            {/* Active */}
-            <div className="border border-blue-200 bg-blue-50/50 rounded-xl p-4 sm:p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
-                <h3 className="font-semibold text-gray-800 text-sm sm:text-base">Activas ({activeData?.count || 0})</h3>
+            </Link>
+          )}
+          {todayEvents && todayEvents.length > 0 && (
+            <Link href="/calendario" className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 transition-colors">
+              <CalendarDays className="w-5 h-5 text-blue-500 shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-blue-700">{todayEvents.length} evento{todayEvents.length > 1 ? 's' : ''} hoy</p>
+                <p className="text-xs text-blue-500">Calendario del día</p>
               </div>
-              <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
-                <div>
-                  <p className="text-lg sm:text-xl font-bold text-gray-800">{Math.round(activeData?.avg_impressions || 0).toLocaleString('es-AR')}</p>
-                  <p className="text-[10px] sm:text-xs text-gray-500">Impresiones</p>
-                </div>
-                <div>
-                  <p className="text-lg sm:text-xl font-bold text-gray-800">{Math.round(activeData?.avg_visits || 0).toLocaleString('es-AR')}</p>
-                  <p className="text-[10px] sm:text-xs text-gray-500">Visitas</p>
-                </div>
-                <div>
-                  <p className="text-lg sm:text-xl font-bold text-gray-800">{Math.round(activeData?.avg_inquiries || 0).toLocaleString('es-AR')}</p>
-                  <p className="text-[10px] sm:text-xs text-gray-500">Consultas</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {soldData && activeData && soldData.avg_impressions > 0 && (
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-600">
-                <span className="font-medium">💡 Insight:</span>{' '}
-                Las propiedades vendidas tuvieron en promedio{' '}
-                <span className="font-semibold text-green-600">
-                  {Math.round(soldData.avg_impressions).toLocaleString('es-AR')} impresiones
-                </span>{' '}
-                y{' '}
-                <span className="font-semibold text-green-600">
-                  {Math.round(soldData.avg_inquiries).toLocaleString('es-AR')} consultas
-                </span>.
-                {activeData.avg_impressions > 0 && (
-                  <span>
-                    {' '}Las activas llevan{' '}
-                    <span className="font-semibold text-blue-600">
-                      {Math.round(activeData.avg_impressions).toLocaleString('es-AR')} impresiones
-                    </span>{' '}
-                    y{' '}
-                    <span className="font-semibold text-blue-600">
-                      {Math.round(activeData.avg_inquiries).toLocaleString('es-AR')} consultas
-                    </span> promedio.
-                  </span>
-                )}
-              </p>
-            </div>
+            </Link>
           )}
         </div>
       )}
 
-      {/* Agent Rankings (admin only) */}
-      {isAdmin && agentStats.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm mb-8">
-          <div className="p-6 border-b border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-              <span className="w-1 h-6 bg-indigo-500 rounded-full"></span>
-              Rendimiento por agente
+      {/* ── Main grid ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
+        {/* Funnel */}
+        <div className="bg-white rounded-xl border p-4 sm:p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-gray-800 flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-pink-500" /> Funnel de conversión
             </h2>
+            <span className="text-xs text-gray-400">lead → captación</span>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100">
-                  <th className="text-left p-4 font-medium text-gray-500">Agente</th>
-                  <th className="text-center p-4 font-medium text-gray-500">Propiedades</th>
-                  <th className="text-center p-4 font-medium text-gray-500">Activas</th>
-                  <th className="text-center p-4 font-medium text-gray-500">Vendidas</th>
-                  <th className="text-center p-4 font-medium text-gray-500">Reportes</th>
-                  <th className="text-center p-4 font-medium text-gray-500">Impresiones</th>
-                  <th className="text-center p-4 font-medium text-gray-500">Consultas</th>
-                  <th className="text-center p-4 font-medium text-gray-500">Visitas</th>
-                </tr>
-              </thead>
-              <tbody>
-                {agentStats.map((agent) => (
-                  <tr key={agent.id} className="border-b border-gray-50 hover:bg-gray-50">
-                    <td className="p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-brand-pink/20 flex items-center justify-center text-brand-pink font-semibold text-xs">
-                          {agent.full_name.charAt(0)}
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-800">{agent.full_name}</p>
-                          <p className="text-xs text-gray-400">{agent.email}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="text-center p-4 font-medium">{agent.total_properties}</td>
-                    <td className="text-center p-4">
-                      <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs font-medium">{agent.active_properties}</span>
-                    </td>
-                    <td className="text-center p-4">
-                      <span className="bg-pink-100 text-pink-700 px-2 py-0.5 rounded-full text-xs font-medium">{agent.sold_properties}</span>
-                    </td>
-                    <td className="text-center p-4">{agent.total_reports}</td>
-                    <td className="text-center p-4 text-gray-600">{Number(agent.total_impressions).toLocaleString('es-AR')}</td>
-                    <td className="text-center p-4 text-gray-600">{Number(agent.total_inquiries).toLocaleString('es-AR')}</td>
-                    <td className="text-center p-4 text-gray-600">{Number(agent.total_in_person_visits).toLocaleString('es-AR')}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <FunnelChart data={funnel || []} />
         </div>
-      )}
 
-      {/* Neighborhood Analytics */}
-      {neighborhoods.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm mb-8">
-          <div className="p-6 border-b border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-              <span className="w-1 h-6 bg-[#ff8017] rounded-full"></span>
-              Métricas por barrio
+        {/* Actividad semanal */}
+        <div className="bg-white rounded-xl border p-4 sm:p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-gray-800 flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-pink-500" /> Actividad semanal
             </h2>
-            <p className="text-xs text-gray-400 mt-1">Promedios de métricas por reporte en cada barrio</p>
+            <div className="flex gap-3 text-xs text-gray-500">
+              <span>📞 {activity.llamadas || 0}</span>
+              <span>🤝 {activity.reuniones || 0}</span>
+              <span>🏠 {activity.visitas || 0}</span>
+            </div>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100">
-                  <th className="text-left p-4 font-medium text-gray-500">Barrio</th>
-                  <th className="text-center p-4 font-medium text-gray-500">Propiedades</th>
-                  <th className="text-center p-4 font-medium text-gray-500">Vendidas</th>
-                  <th className="text-center p-4 font-medium text-gray-500">Impresiones prom.</th>
-                  <th className="text-center p-4 font-medium text-gray-500">Visitas prom.</th>
-                  <th className="text-center p-4 font-medium text-gray-500">Consultas prom.</th>
-                  <th className="text-center p-4 font-medium text-gray-500">Precio prom.</th>
-                </tr>
-              </thead>
-              <tbody>
-                {neighborhoods.map((n) => (
-                  <tr key={n.neighborhood} className="border-b border-gray-50 hover:bg-gray-50">
-                    <td className="p-4">
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-brand-orange" />
-                        <span className="font-medium text-gray-800">{n.neighborhood}</span>
-                      </div>
-                    </td>
-                    <td className="text-center p-4 font-medium">{n.total_properties}</td>
-                    <td className="text-center p-4">
-                      <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs font-medium">
-                        {n.sold_count}
+          {weekData.some(d => d.count > 0) ? (
+            <WeeklyChart data={weekData} />
+          ) : (
+            <div className="flex items-center justify-center h-32 text-gray-400 text-sm">
+              Sin actividad registrada esta semana
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Bottom grid ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
+        {/* Eventos de hoy */}
+        <div className="bg-white rounded-xl border p-4 sm:p-5">
+          <h2 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+            <CalendarDays className="w-4 h-4 text-blue-500" /> Hoy
+          </h2>
+          {todayEvents && todayEvents.length > 0 ? (
+            <div className="space-y-2">
+              {todayEvents.slice(0, 5).map((ev: any) => {
+                const cfg = EVENT_TYPES[ev.event_type as keyof typeof EVENT_TYPES] || EVENT_TYPES.otro
+                const time = ev.start_at ? new Date(ev.start_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : ''
+                return (
+                  <div key={ev.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50">
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${cfg.color}`}>{time}</span>
+                    <span className="text-sm text-gray-700 truncate flex-1">{ev.title}</span>
+                    {ev.completed === 1 && <CheckCircle2 className="w-4 h-4 text-green-500" />}
+                  </div>
+                )
+              })}
+              {todayEvents.length > 5 && (
+                <Link href="/calendario" className="text-xs text-pink-600 hover:underline">
+                  +{todayEvents.length - 5} más
+                </Link>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-400">Sin eventos programados</p>
+          )}
+        </div>
+
+        {/* Seguimientos pendientes */}
+        <div className="bg-white rounded-xl border p-4 sm:p-5">
+          <h2 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+            <Clock className="w-4 h-4 text-yellow-500" /> Seguimientos
+          </h2>
+          {pendingFollowups && pendingFollowups.length > 0 ? (
+            <div className="space-y-2">
+              {pendingFollowups.slice(0, 5).map((f: any) => (
+                <Link key={f.id} href={`/leads/${f.id}`} className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 group">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-700 truncate">{f.full_name}</p>
+                    <p className="text-xs text-gray-400 truncate">{f.next_step}</p>
+                  </div>
+                  {f.next_step_date && (
+                    <span className="text-[10px] text-gray-400 shrink-0">
+                      {new Date(f.next_step_date).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}
+                    </span>
+                  )}
+                  <ChevronRight className="w-3 h-3 text-gray-300 group-hover:text-pink-500" />
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-400">Sin seguimientos definidos</p>
+          )}
+        </div>
+
+        {/* Performance por agente */}
+        <div className="bg-white rounded-xl border p-4 sm:p-5">
+          <h2 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+            <Users className="w-4 h-4 text-purple-500" /> Equipo
+          </h2>
+          {agentPerformance && agentPerformance.length > 0 ? (
+            <div className="space-y-3">
+              {agentPerformance.map((agent: any) => {
+                const convRate = agent.total_leads > 0
+                  ? Math.round((agent.captados / agent.total_leads) * 100)
+                  : 0
+                return (
+                  <div key={agent.id} className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-700 truncate">{agent.full_name}</span>
+                      <span className="text-xs text-gray-400">{agent.actividad_mes} act.</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <span>{agent.total_leads} leads</span>
+                      <span>·</span>
+                      <span>{agent.captados} capt.</span>
+                      <span>·</span>
+                      <span className={convRate >= 20 ? 'text-green-600' : convRate >= 10 ? 'text-yellow-600' : 'text-red-500'}>
+                        {convRate}% conv.
                       </span>
-                    </td>
-                    <td className="text-center p-4 text-gray-600">{n.avg_impressions.toLocaleString('es-AR')}</td>
-                    <td className="text-center p-4 text-gray-600">{n.avg_visits.toLocaleString('es-AR')}</td>
-                    <td className="text-center p-4 text-gray-600">{n.avg_inquiries.toLocaleString('es-AR')}</td>
-                    <td className="text-center p-4 text-gray-600">
-                      {n.avg_price > 0 ? `USD ${Math.round(n.avg_price).toLocaleString('es-AR')}` : '-'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </div>
+                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-pink-500 to-orange-400 rounded-full transition-all"
+                        style={{ width: `${Math.min(convRate * 2, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm text-gray-400">Pipeline personal</p>
+              <div className="grid grid-cols-2 gap-2 text-center">
+                <div className="bg-blue-50 rounded-lg p-2">
+                  <p className="text-lg font-semibold text-blue-700">{leads.total || 0}</p>
+                  <p className="text-[10px] text-blue-500">Mis leads</p>
+                </div>
+                <div className="bg-green-50 rounded-lg p-2">
+                  <p className="text-lg font-semibold text-green-700">{leads.captados || 0}</p>
+                  <p className="text-[10px] text-green-500">Captados</p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
-      {/* Charts */}
-      <DashboardCharts
-        neighborhoods={neighborhoods as any[]}
-        agentStats={agentStats as any[]}
-        soldComparison={soldComparison as any[]}
-        isAdmin={isAdmin}
-      />
+      {/* ── Pipeline detail cards (mobile-friendly) ── */}
+      <div className="bg-white rounded-xl border p-4 sm:p-5">
+        <h2 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+          <Target className="w-4 h-4 text-pink-500" /> Pipeline de leads
+        </h2>
+        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-9 gap-2">
+          {Object.entries(LEAD_STAGES).map(([key, cfg]) => {
+            const count = leads[key === 'en_tasacion' ? 'en_tasacion' : key] || leads[key + 's'] || 0
+            // Map stage keys to API response keys
+            const countMap: any = {
+              nuevo: leads.nuevos, asignado: leads.asignados, contactado: leads.contactados,
+              calificado: leads.calificados, seguimiento: leads.seguimiento, en_tasacion: leads.en_tasacion,
+              presentada: leads.presentada, captado: leads.captados, perdido: leads.perdidos
+            }
+            return (
+              <Link key={key} href={`/leads?stage=${key}`} className="text-center p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                <p className="text-lg sm:text-xl font-semibold text-gray-800">{countMap[key] || 0}</p>
+                <p className={`text-[10px] sm:text-xs px-1 py-0.5 rounded-full ${cfg.color} mt-1`}>{cfg.label}</p>
+              </Link>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── KPI Card component ─────────────────────────────────────
+function KPICard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: number | string; color: string }) {
+  const colorMap: Record<string, string> = {
+    blue: 'bg-blue-50 text-blue-600',
+    cyan: 'bg-cyan-50 text-cyan-600',
+    purple: 'bg-purple-50 text-purple-600',
+    green: 'bg-green-50 text-green-600',
+    pink: 'bg-pink-50 text-pink-600',
+    amber: 'bg-amber-50 text-amber-600',
+  }
+  return (
+    <div className="bg-white rounded-xl border p-3 sm:p-4">
+      <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2 ${colorMap[color]}`}>
+        {icon}
+      </div>
+      <p className="text-xl sm:text-2xl font-bold text-gray-800">{value}</p>
+      <p className="text-xs text-gray-500 mt-0.5">{label}</p>
     </div>
   )
 }

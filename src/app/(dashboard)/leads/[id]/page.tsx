@@ -7,39 +7,40 @@ import {
   MessageCircle, User, AlertCircle, Loader2, CheckCircle,
   Activity, ChevronRight, ExternalLink, PlusCircle, Home,
   DollarSign, Briefcase, PawPrint, StickyNote, Target, X,
-  Send, RefreshCw,
+  Send, RefreshCw, Link2,
 } from 'lucide-react'
+import Link from 'next/link'
+import {
+  LEAD_STAGES, LEAD_STAGE_KEYS, LEAD_PIPELINE_STAGES,
+  ACTIVITY_TYPES as CRM_ACTIVITY_TYPES, type LeadStage
+} from '@/lib/crm-config'
 
-// ---------------------------------------------------------------------------
-// Stage & Activity definitions
-// ---------------------------------------------------------------------------
+// Build stage array for pipeline visual
+const STAGES = LEAD_STAGE_KEYS.map(key => ({
+  key,
+  label: LEAD_STAGES[key].label,
+  color: key === 'nuevo' ? 'bg-blue-500' : key === 'asignado' ? 'bg-indigo-500' : key === 'contactado' ? 'bg-cyan-500' :
+         key === 'calificado' ? 'bg-emerald-500' : key === 'seguimiento' ? 'bg-yellow-500' : key === 'en_tasacion' ? 'bg-purple-500' :
+         key === 'presentada' ? 'bg-pink-500' : key === 'captado' ? 'bg-green-500' : 'bg-red-500',
+  textColor: LEAD_STAGES[key].color.split(' ')[1] || 'text-gray-700',
+  bgLight: LEAD_STAGES[key].color.split(' ')[0] || 'bg-gray-50',
+}))
 
-const STAGES = [
-  { key: 'nuevo', label: 'Nuevo', color: 'bg-blue-500', textColor: 'text-blue-700', bgLight: 'bg-blue-50' },
-  { key: 'contactado', label: 'Contactado', color: 'bg-yellow-500', textColor: 'text-yellow-700', bgLight: 'bg-yellow-50' },
-  { key: 'calificado', label: 'Calificado', color: 'bg-orange-500', textColor: 'text-orange-700', bgLight: 'bg-orange-50' },
-  { key: 'visita', label: 'Visita', color: 'bg-purple-500', textColor: 'text-purple-700', bgLight: 'bg-purple-50' },
-  { key: 'asignado', label: 'Asignado', color: 'bg-indigo-500', textColor: 'text-indigo-700', bgLight: 'bg-indigo-50' },
-  { key: 'convertido', label: 'Convertido', color: 'bg-green-500', textColor: 'text-green-700', bgLight: 'bg-green-50' },
-  { key: 'no_califica', label: 'No califica', color: 'bg-gray-400', textColor: 'text-gray-600', bgLight: 'bg-gray-50' },
-  { key: 'perdido', label: 'Perdido', color: 'bg-red-500', textColor: 'text-red-700', bgLight: 'bg-red-50' },
-]
-
-const ACTIVITY_TYPES: Record<string, { label: string; icon: typeof Phone }> = {
+const ACTIVITY_TYPES_MAP: Record<string, { label: string; icon: typeof Phone }> = {
   llamada: { label: 'Llamada', icon: Phone },
   whatsapp: { label: 'WhatsApp', icon: MessageCircle },
   reunion: { label: 'Reunión', icon: User },
-  visita_captacion: { label: 'Visita captacion', icon: Home },
+  visita_captacion: { label: 'Visita captación', icon: Home },
   visita_comprador: { label: 'Visita comprador', icon: Home },
-  tasacion_realizada: { label: 'Tasacion realizada', icon: DollarSign },
-  presentacion_tasacion: { label: 'Presentacion tasacion', icon: Target },
+  tasacion: { label: 'Tasación', icon: DollarSign },
+  presentacion: { label: 'Presentación', icon: Target },
   seguimiento: { label: 'Seguimiento', icon: RefreshCw },
-  publicacion: { label: 'Publicacion', icon: ExternalLink },
-  revision_docs: { label: 'Revision docs', icon: StickyNote },
-  cierre_reserva: { label: 'Cierre / Reserva', icon: CheckCircle },
+  documentacion: { label: 'Documentación', icon: StickyNote },
+  admin: { label: 'Administrativa', icon: Briefcase },
+  cierre: { label: 'Cierre', icon: CheckCircle },
 }
 
-const ACTIVE_STAGES = ['nuevo', 'contactado', 'calificado', 'visita', 'asignado']
+const ACTIVE_STAGES = LEAD_PIPELINE_STAGES.filter(s => s !== 'captado')
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -158,20 +159,33 @@ export default function LeadDetailPage() {
     }
   }
 
-  // ------ Convert lead ------
+  // ------ Convert lead → tasación ------
   async function handleConvert() {
     if (!lead || converting) return
-    if (!confirm('Convertir este lead a contacto + tasacion?')) return
+    if (!confirm('¿Crear tasación vinculada a este lead?')) return
     setConverting(true)
     try {
-      const res = await fetch('/api/leads/convert', {
+      // Advance stage to en_tasacion
+      await fetch('/api/leads', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: leadId, stage: 'en_tasacion' }),
+      })
+      // Create linked appraisal
+      await fetch('/api/tasaciones', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lead_id: leadId }),
+        body: JSON.stringify({
+          lead_id: leadId,
+          contact_name: lead.full_name,
+          contact_phone: lead.phone,
+          contact_email: lead.email,
+          agent_id: lead.assigned_to,
+          neighborhood: lead.neighborhood,
+          property_address: lead.property_address,
+        }),
       })
-      if (res.ok) {
-        await fetchLead()
-      }
+      await fetchLead()
     } catch {
       // silent
     } finally {
@@ -203,17 +217,19 @@ export default function LeadDetailPage() {
   // ------ Compute next stages ------
   function getNextStages(): typeof STAGES {
     if (!lead) return []
-    const currentIdx = STAGES.findIndex(s => s.key === lead.stage)
-    if (currentIdx === -1) return []
+    const pipelineIdx = (LEAD_PIPELINE_STAGES as readonly string[]).indexOf(lead.stage)
+    if (pipelineIdx === -1) return []
     const results: typeof STAGES = []
-    // Allow linear forward (up to convertido)
-    if (currentIdx < 5) {
-      results.push(STAGES[currentIdx + 1])
+    // Allow linear forward (within pipeline stages)
+    if (pipelineIdx < LEAD_PIPELINE_STAGES.length - 1) {
+      const nextKey = LEAD_PIPELINE_STAGES[pipelineIdx + 1]
+      const nextStage = STAGES.find(s => s.key === nextKey)
+      if (nextStage) results.push(nextStage)
     }
-    // Always allow no_califica and perdido if currently active
+    // Always allow perdido if currently active
     if (ACTIVE_STAGES.includes(lead.stage)) {
-      results.push(STAGES.find(s => s.key === 'no_califica')!)
-      results.push(STAGES.find(s => s.key === 'perdido')!)
+      const perdido = STAGES.find(s => s.key === 'perdido')
+      if (perdido) results.push(perdido)
     }
     return results
   }
@@ -261,15 +277,15 @@ export default function LeadDetailPage() {
           <ArrowLeft className="w-4 h-4" /> Volver a Leads
         </button>
         <div className="flex items-center gap-2">
-          {lead.stage !== 'convertido' && lead.stage !== 'perdido' && lead.stage !== 'no_califica' && (
+          {lead.stage !== 'captado' && lead.stage !== 'perdido' && lead.stage !== 'en_tasacion' && lead.stage !== 'presentada' && (
             <button
               onClick={handleConvert}
               disabled={converting}
-              className="text-xs sm:text-sm font-medium bg-green-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-1.5"
+              className="text-xs sm:text-sm font-medium bg-purple-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center gap-1.5"
             >
-              {converting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-              <span className="hidden sm:inline">Convertir a contacto</span>
-              <span className="sm:hidden">Convertir</span>
+              {converting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
+              <span className="hidden sm:inline">Crear tasación</span>
+              <span className="sm:hidden">Tasación</span>
             </button>
           )}
         </div>
@@ -333,10 +349,11 @@ export default function LeadDetailPage() {
       <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-5 mb-4 overflow-x-auto">
         <p className="text-xs font-medium text-gray-500 mb-3">Pipeline</p>
         <div className="flex items-center gap-1 min-w-max">
-          {STAGES.filter(s => !['no_califica', 'perdido'].includes(s.key)).map((stage, idx) => {
+          {STAGES.filter(s => s.key !== 'perdido').map((stage, idx, arr) => {
             const isCurrent = stage.key === lead.stage
-            const currentIdx = STAGES.findIndex(s => s.key === lead.stage)
-            const isPast = idx < currentIdx && currentIdx < 6
+            const pipelineKeys = STAGES.filter(s => s.key !== 'perdido').map(s => s.key)
+            const currentPipeIdx = pipelineKeys.indexOf(lead.stage)
+            const isPast = idx < currentPipeIdx && currentPipeIdx >= 0
             return (
               <div key={stage.key} className="flex items-center">
                 <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition
@@ -344,7 +361,7 @@ export default function LeadDetailPage() {
                   {isPast && <CheckCircle className="w-3.5 h-3.5" />}
                   {stage.label}
                 </div>
-                {idx < 5 && <ChevronRight className="w-4 h-4 text-gray-300 mx-0.5 flex-shrink-0" />}
+                {idx < arr.length - 1 && <ChevronRight className="w-4 h-4 text-gray-300 mx-0.5 flex-shrink-0" />}
               </div>
             )
           })}
@@ -362,7 +379,7 @@ export default function LeadDetailPage() {
                 onClick={() => advanceStage(ns.key)}
                 disabled={stageUpdating}
                 className={`flex items-center gap-1.5 text-xs font-medium px-4 py-2 rounded-lg border transition disabled:opacity-50
-                  ${ns.key === 'perdido' || ns.key === 'no_califica'
+                  ${ns.key === 'perdido'
                     ? 'border-gray-300 text-gray-600 hover:bg-gray-50'
                     : 'border-[#ff007c]/30 text-[#ff007c] hover:bg-[#ff007c]/5'
                   }`}
@@ -472,7 +489,7 @@ export default function LeadDetailPage() {
             ) : (
               <div className="space-y-1">
                 {activities.map((act: any, idx: number) => {
-                  const actType = ACTIVITY_TYPES[act.activity_type]
+                  const actType = ACTIVITY_TYPES_MAP[act.activity_type]
                   const Icon = actType?.icon || Activity
                   return (
                     <div key={act.id || idx} className="flex gap-3 group">
@@ -529,7 +546,7 @@ export default function LeadDetailPage() {
                   value={activityForm.activity_type}
                   onChange={e => setActivityForm(f => ({ ...f, activity_type: e.target.value }))}
                 >
-                  {Object.entries(ACTIVITY_TYPES).map(([key, val]) => (
+                  {Object.entries(ACTIVITY_TYPES_MAP).map(([key, val]) => (
                     <option key={key} value={key}>{val.label}</option>
                   ))}
                 </select>

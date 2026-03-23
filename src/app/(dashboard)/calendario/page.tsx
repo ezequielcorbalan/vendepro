@@ -652,8 +652,8 @@ export default function CalendarioPage() {
         </div>
         <div className="flex items-center gap-2">
           {/* Google Calendar placeholder */}
-          <button disabled className="hidden sm:inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border border-gray-200 text-gray-400 cursor-not-allowed" title="Próximamente">
-            <Link2 className="w-3.5 h-3.5" /> Google Calendar
+          <button className="hidden sm:inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border border-gray-200 text-gray-400 hover:text-gray-500 hover:border-gray-300 transition-colors" title="Integración con Google Calendar — Próximamente">
+            <Link2 className="w-3.5 h-3.5" /> <span>Google Calendar</span> <span className="text-[9px] bg-gray-100 px-1.5 py-0.5 rounded-full">Pronto</span>
           </button>
           <button onClick={() => { resetForm(); setShowCreateModal(true) }} className="inline-flex items-center gap-1.5 bg-[#ff007c] text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90">
             <Plus className="w-4 h-4" /> Nuevo evento
