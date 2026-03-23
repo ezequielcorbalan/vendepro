@@ -148,7 +148,7 @@ export default async function TasacionPublicPage({
             {settings.tasacion_texto_comercial && (
               <div className="p-5 sm:p-8">
                 <h2 className={`text-lg sm:text-xl font-semibold ${headingClass} mb-3 flex items-center gap-2`}>
-                  <span className="w-1 h-6 bg-[#ff007c] rounded-full" />
+                  <span className="w-1 h-7 bg-gradient-to-b from-[#ff007c] to-[#ff8017] rounded-full" />
                   Nuestra propuesta comercial
                 </h2>
                 <p className={`${textClass} text-sm sm:text-base leading-relaxed whitespace-pre-wrap`}>{settings.tasacion_texto_comercial}</p>
@@ -160,7 +160,7 @@ export default async function TasacionPublicPage({
         {settings.tasacion_texto_servicios && (
           <section className={`${cardClass} p-5 sm:p-8`}>
             <h2 className={`text-lg sm:text-xl font-semibold ${headingClass} mb-3 flex items-center gap-2`}>
-              <span className="w-1 h-6 bg-[#ff8017] rounded-full" />
+              <span className="w-1 h-7 bg-gradient-to-b from-[#ff007c] to-[#ff8017] rounded-full" />
               Qu&eacute; hacemos para vender al mejor valor
             </h2>
             <p className={`${textClass} text-sm sm:text-base leading-relaxed whitespace-pre-wrap`}>{settings.tasacion_texto_servicios}</p>
@@ -170,7 +170,7 @@ export default async function TasacionPublicPage({
         {(settings.tasacion_datos_props_publicadas || settings.tasacion_datos_escrituras_mes) && (
           <section className={`${cardClass} p-5 sm:p-8`}>
             <h2 className={`text-lg sm:text-xl font-semibold ${headingClass} mb-4 flex items-center gap-2`}>
-              <span className="w-1 h-6 bg-indigo-500 rounded-full" />
+              <span className="w-1 h-7 bg-gradient-to-b from-[#ff007c] to-[#ff8017] rounded-full" />
               Situaci&oacute;n del mercado
             </h2>
             {settings.tasacion_video_mercado && (
@@ -212,7 +212,7 @@ export default async function TasacionPublicPage({
         {settings.tasacion_texto_embudo && (
           <section className={`${cardClass} p-5 sm:p-8`}>
             <h2 className={`text-lg sm:text-xl font-semibold ${headingClass} mb-3 flex items-center gap-2`}>
-              <span className="w-1 h-6 bg-green-500 rounded-full" />
+              <span className="w-1 h-7 bg-gradient-to-b from-[#ff007c] to-[#ff8017] rounded-full" />
               Embudo de ventas y seguimiento
             </h2>
             <p className={`${textClass} text-sm sm:text-base leading-relaxed whitespace-pre-wrap`}>{settings.tasacion_texto_embudo}</p>
@@ -236,7 +236,7 @@ export default async function TasacionPublicPage({
         {a.agent_notes && (
           <section className={`${cardClass} p-5 sm:p-8`}>
             <h2 className={`text-lg sm:text-xl font-semibold ${headingClass} mb-3 flex items-center gap-2`}>
-              <span className="w-1 h-6 bg-purple-500 rounded-full" />
+              <span className="w-1 h-7 bg-gradient-to-b from-[#ff007c] to-[#ff8017] rounded-full" />
               Explicaci&oacute;n de la tasaci&oacute;n
             </h2>
             <p className={`${textClass} text-sm sm:text-base leading-relaxed whitespace-pre-wrap`}>{a.agent_notes}</p>
@@ -253,27 +253,38 @@ export default async function TasacionPublicPage({
 
         {/* Property data */}
         <section className={`${cardClass} p-5 sm:p-8`}>
-          <h2 className={`text-lg sm:text-xl font-semibold ${headingClass} mb-4 flex items-center gap-2`}>
+          <h2 className={`text-lg sm:text-xl font-semibold ${headingClass} mb-5 flex items-center gap-2`}>
             <Ruler className="w-5 h-5 text-[#ff007c]" />
             Datos de la propiedad
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className={`${presentationMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-xl p-4 text-center`}>
-              <p className={`text-xs ${presentationMode ? 'text-gray-400' : 'text-gray-500'}`}>Tipolog&iacute;a</p>
-              <p className={`font-bold text-sm sm:text-base ${headingClass} capitalize`}>{a.property_type}</p>
+          {/* Table style like image 8 */}
+          <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+            <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-gray-100">
+              <div className="p-4 text-center">
+                <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">Tipolog&iacute;a</p>
+                <p className={`font-black text-lg ${headingClass} capitalize`}>{a.property_type}</p>
+              </div>
+              <div className="p-4 text-center">
+                <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">Cubierta</p>
+                <p className={`font-black text-lg ${headingClass}`}>{a.covered_area || '-'} <span className="text-sm font-normal text-gray-400">m&sup2;</span></p>
+              </div>
+              <div className="p-4 text-center">
+                <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">Total</p>
+                <p className={`font-black text-lg ${headingClass}`}>{a.total_area || '-'} <span className="text-sm font-normal text-gray-400">m&sup2;</span></p>
+              </div>
+              <div className="p-4 text-center bg-gradient-to-br from-[#ff007c]/5 to-[#ff8017]/5">
+                <p className="text-[10px] text-[#ff007c] uppercase tracking-wider font-bold mb-1">Ponderada</p>
+                <p className="font-black text-lg text-[#ff007c]">{weighted.toFixed(1)} <span className="text-sm font-normal">m&sup2;</span></p>
+              </div>
             </div>
-            <div className={`${presentationMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-xl p-4 text-center`}>
-              <p className={`text-xs ${presentationMode ? 'text-gray-400' : 'text-gray-500'}`}>Sup. cubierta</p>
-              <p className={`font-bold text-sm sm:text-base ${headingClass}`}>{a.covered_area || '-'} m&sup2;</p>
-            </div>
-            <div className={`${presentationMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-xl p-4 text-center`}>
-              <p className={`text-xs ${presentationMode ? 'text-gray-400' : 'text-gray-500'}`}>Sup. total</p>
-              <p className={`font-bold text-sm sm:text-base ${headingClass}`}>{a.total_area || '-'} m&sup2;</p>
-            </div>
-            <div className="bg-[#ff007c]/10 border border-[#ff007c]/20 rounded-xl p-4 text-center">
-              <p className={`text-xs ${presentationMode ? 'text-gray-400' : 'text-gray-500'}`}>Ponderada</p>
-              <p className="font-bold text-sm sm:text-base text-[#ff007c]">{weighted.toFixed(1)} m&sup2;</p>
-            </div>
+            {(a.semi_area || a.total_area !== a.covered_area) && (
+              <div className="border-t border-gray-100 px-4 py-2 flex items-center gap-4 text-xs text-gray-400">
+                {a.semi_area && <span>Semicubierta: {a.semi_area} m&sup2;</span>}
+                {a.total_area && a.covered_area && Number(a.total_area) !== Number(a.covered_area) && (
+                  <span>Descubierta: {(Number(a.total_area) - Number(a.covered_area) - (Number(a.semi_area) || 0)).toFixed(0)} m&sup2;</span>
+                )}
+              </div>
+            )}
           </div>
         </section>
 
@@ -286,21 +297,21 @@ export default async function TasacionPublicPage({
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {a.zone_avg_price && (
-                <div className={`${presentationMode ? 'bg-indigo-900/30 border-indigo-700' : 'bg-indigo-50 border-indigo-100'} border rounded-xl p-5 text-center`}>
-                  <p className={`text-xs ${presentationMode ? 'text-gray-400' : 'text-gray-500'}`}>Precio promedio</p>
-                  <p className={`text-2xl font-bold ${headingClass}`}>USD {Number(a.zone_avg_price).toLocaleString('es-AR')}</p>
+                <div className="bg-white border border-gray-100 rounded-2xl p-5 text-center shadow-sm">
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">Precio promedio</p>
+                  <p className={`font-black text-gray-800 ${presentationMode ? 'text-3xl' : 'text-2xl'}`}>USD {Number(a.zone_avg_price).toLocaleString('es-AR')}</p>
                 </div>
               )}
               {a.zone_avg_m2 && (
-                <div className={`${presentationMode ? 'bg-indigo-900/30 border-indigo-700' : 'bg-indigo-50 border-indigo-100'} border rounded-xl p-5 text-center`}>
-                  <p className={`text-xs ${presentationMode ? 'text-gray-400' : 'text-gray-500'}`}>m&sup2; promedio</p>
-                  <p className={`text-2xl font-bold ${headingClass}`}>{Number(a.zone_avg_m2).toLocaleString('es-AR')} m&sup2;</p>
+                <div className="bg-white border border-gray-100 rounded-2xl p-5 text-center shadow-sm">
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">m&sup2; promedio</p>
+                  <p className={`font-black text-gray-800 ${presentationMode ? 'text-3xl' : 'text-2xl'}`}>{Number(a.zone_avg_m2).toLocaleString('es-AR')}</p>
                 </div>
               )}
               {a.zone_avg_usd_m2 && (
-                <div className={`${presentationMode ? 'bg-[#ff007c]/10 border-[#ff007c]/30' : 'bg-[#ff007c]/5 border-[#ff007c]/15'} border rounded-xl p-5 text-center`}>
-                  <p className={`text-xs ${presentationMode ? 'text-gray-400' : 'text-gray-500'}`}>USD/m&sup2; promedio</p>
-                  <p className="text-2xl font-bold text-[#ff007c]">{Number(a.zone_avg_usd_m2).toLocaleString('es-AR')}</p>
+                <div className="bg-white border border-gray-100 rounded-2xl p-5 text-center shadow-sm">
+                  <p className="text-[10px] text-[#ff007c] uppercase tracking-wider font-bold mb-1">USD/m&sup2;</p>
+                  <p className={`font-black text-[#ff007c] ${presentationMode ? 'text-3xl' : 'text-2xl'}`}>{Number(a.zone_avg_usd_m2).toLocaleString('es-AR')}</p>
                 </div>
               )}
             </div>
