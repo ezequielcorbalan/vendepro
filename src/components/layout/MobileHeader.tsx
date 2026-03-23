@@ -19,6 +19,8 @@ import {
   BookUser,
   Activity,
   BarChart3,
+  CalendarDays,
+  Handshake,
 } from 'lucide-react'
 import type { Profile } from '@/lib/types'
 
@@ -27,9 +29,11 @@ const agentLinks = [
   { href: '/leads', label: 'Leads', icon: UserPlus },
   { href: '/contactos', label: 'Contactos', icon: BookUser },
   { href: '/actividades', label: 'Actividad', icon: Activity },
+  { href: '/calendario', label: 'Calendario', icon: CalendarDays },
   { href: '/tasaciones', label: 'Tasaciones', icon: ClipboardList },
   { href: '/propiedades', label: 'Reportes', icon: BarChart3 },
   { href: '/vendidas', label: 'Vendidas', icon: DollarSign },
+  { href: '/reservas', label: 'Reservas', icon: Handshake },
 ]
 
 const adminLinks = [
