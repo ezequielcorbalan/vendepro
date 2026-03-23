@@ -28,6 +28,7 @@ const menuSections = [
     title: 'General',
     links: [
       { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { href: '/dashboard/mi-performance', label: 'Mi Performance', icon: BarChart3 },
     ],
   },
   {

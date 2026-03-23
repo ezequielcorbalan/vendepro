@@ -132,12 +132,18 @@ export async function PUT(request: NextRequest) {
   const data = (await request.json()) as any
   if (!data.id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
 
+  // Validate stage if provided
+  const validStages = ['nuevo', 'asignado', 'contactado', 'calificado', 'seguimiento', 'en_tasacion', 'presentada', 'captado', 'perdido']
+  if (data.stage && !validStages.includes(data.stage)) {
+    return NextResponse.json({ error: `Invalid stage: ${data.stage}` }, { status: 400 })
+  }
+
   const db = await getDB()
   const orgId = user.org_id || 'org_mg'
 
   try {
-    // Get current lead for stage history + partial update
-    const current = await db.prepare('SELECT * FROM leads WHERE id = ?').bind(data.id).first() as any
+    // Get current lead for stage history + partial update (with org_id check)
+    const current = await db.prepare('SELECT * FROM leads WHERE id = ? AND org_id = ?').bind(data.id, orgId).first() as any
     if (!current) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     const oldStage = current.stage
 

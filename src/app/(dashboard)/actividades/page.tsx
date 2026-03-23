@@ -26,9 +26,11 @@ const PERIOD_OPTIONS = [
 export default function ActividadesPage() {
   const [activities, setActivities] = useState<any[]>([])
   const [objectives, setObjectives] = useState<any[]>([])
+  const [agents, setAgents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState('month')
   const [filterType, setFilterType] = useState('')
+  const [filterAgent, setFilterAgent] = useState('')
   const [showCreate, setShowCreate] = useState(false)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({ activity_type: 'llamada', description: '', lead_id: '' })
@@ -39,18 +41,21 @@ export default function ActividadesPage() {
     const params = new URLSearchParams()
     if (periodStart) params.set('start', periodStart)
     if (filterType) params.set('type', filterType)
+    if (filterAgent) params.set('agent_id', filterAgent)
 
     Promise.all([
       fetch(`/api/activities?${params}`).then(r => r.json() as Promise<any>),
-      fetch('/api/objectives').then(r => r.json() as Promise<any>).catch(() => []),
-    ]).then(([acts, objs]) => {
+      fetch('/api/objectives' + (filterAgent ? `?agent_id=${filterAgent}` : '')).then(r => r.json() as Promise<any>).catch(() => []),
+      fetch('/api/agents').then(r => r.json() as Promise<any>).catch(() => []),
+    ]).then(([acts, objs, agts]) => {
       setActivities(Array.isArray(acts) ? acts : [])
       setObjectives(Array.isArray(objs) ? objs : [])
+      if (Array.isArray(agts)) setAgents(agts)
       setLoading(false)
     }).catch(() => setLoading(false))
   }
 
-  useEffect(() => { loadData() }, [period, filterType])
+  useEffect(() => { loadData() }, [period, filterType, filterAgent])
 
   const metrics = useMemo(() => {
     const counts: Record<string, number> = {}
@@ -74,17 +79,37 @@ export default function ActividadesPage() {
   }, [objectives, activities])
 
   const dailyData = useMemo(() => {
-    const days: Record<string, number> = {}
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(); d.setDate(d.getDate() - i)
-      days[d.toISOString().split('T')[0]] = 0
+    // Adapt chart to period: week=7 days, month=weeks, quarter/year=months
+    if (period === 'week' || period === 'month') {
+      // Daily view
+      const numDays = period === 'week' ? 7 : 30
+      const days: Record<string, number> = {}
+      for (let i = numDays - 1; i >= 0; i--) {
+        const d = new Date(); d.setDate(d.getDate() - i)
+        days[d.toISOString().split('T')[0]] = 0
+      }
+      activities.forEach(a => {
+        const day = (a.completed_at || a.created_at || '').split('T')[0]
+        if (days[day] !== undefined) days[day]++
+      })
+      return Object.entries(days).map(([day, count]) => ({ day, count }))
+    } else {
+      // Monthly view for quarter/year
+      const months: Record<string, number> = {}
+      const numMonths = period === 'quarter' ? 3 : 12
+      for (let i = numMonths - 1; i >= 0; i--) {
+        const d = new Date(); d.setMonth(d.getMonth() - i)
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+        months[key] = 0
+      }
+      activities.forEach(a => {
+        const date = a.completed_at || a.created_at || ''
+        const key = date.substring(0, 7)
+        if (months[key] !== undefined) months[key]++
+      })
+      return Object.entries(months).map(([day, count]) => ({ day, count }))
     }
-    activities.forEach(a => {
-      const day = (a.completed_at || a.created_at || '').split('T')[0]
-      if (days[day] !== undefined) days[day]++
-    })
-    return Object.entries(days).map(([day, count]) => ({ day, count }))
-  }, [activities])
+  }, [activities, period])
 
   // Agent ranking
   const agentRanking = useMemo(() => {
@@ -124,7 +149,13 @@ export default function ActividadesPage() {
           <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Actividad Comercial</h1>
           <p className="text-gray-500 text-sm">{totalActivities} actividades en el período</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {agents.length > 1 && (
+            <select value={filterAgent} onChange={e => setFilterAgent(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
+              <option value="">Todos los agentes</option>
+              {agents.map((a: any) => <option key={a.id} value={a.id}>{a.full_name}</option>)}
+            </select>
+          )}
           <select value={period} onChange={e => setPeriod(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
             {PERIOD_OPTIONS.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
           </select>
@@ -182,20 +213,31 @@ export default function ActividadesPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="bg-white rounded-xl border p-4">
           <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
-            <BarChart3 className="w-4 h-4 text-pink-500" /> Últimos 7 días
+            <BarChart3 className="w-4 h-4 text-pink-500" /> {period === 'week' ? 'Esta semana' : period === 'month' ? 'Últimos 30 días' : 'Evolución'}
           </h3>
           <div className="flex items-end gap-1 h-24">
-            {dailyData.map(d => {
-              const max = Math.max(...dailyData.map(x => x.count), 1)
+            {dailyData.slice(period === 'month' ? -14 : undefined).map(d => {
+              const sliced = dailyData.slice(period === 'month' ? -14 : undefined)
+              const max = Math.max(...sliced.map(x => x.count), 1)
               const h = Math.max((d.count / max) * 100, 4)
-              const dayName = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][new Date(d.day + 'T12:00:00').getDay()]
+              const monthNames = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
+              let label = ''
+              if (period === 'quarter' || period === 'year') {
+                // d.day is "YYYY-MM"
+                const m = parseInt(d.day.split('-')[1]) - 1
+                label = monthNames[m] || d.day
+              } else {
+                const dt = new Date(d.day + 'T12:00:00')
+                label = ['Do','Lu','Ma','Mi','Ju','Vi','Sa'][dt.getDay()] || ''
+                if (period === 'month') label = String(dt.getDate())
+              }
               return (
-                <div key={d.day} className="flex-1 flex flex-col items-center gap-0.5">
-                  <span className="text-[10px] text-gray-500">{d.count}</span>
+                <div key={d.day} className="flex-1 flex flex-col items-center gap-0.5 min-w-0">
+                  <span className="text-[10px] text-gray-500">{d.count || ''}</span>
                   <div className="w-full bg-gray-100 rounded-t relative" style={{ height: '60px' }}>
                     <div className="absolute bottom-0 left-0 right-0 bg-pink-500 rounded-t" style={{ height: `${h}%` }} />
                   </div>
-                  <span className="text-[9px] text-gray-400">{dayName}</span>
+                  <span className="text-[8px] sm:text-[9px] text-gray-400 truncate">{label}</span>
                 </div>
               )
             })}
