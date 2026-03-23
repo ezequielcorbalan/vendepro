@@ -10,6 +10,7 @@ import {
   Send, RefreshCw, Link2, Calculator,
 } from 'lucide-react'
 import Link from 'next/link'
+import { useToast } from '@/components/ui/Toast'
 import {
   LEAD_STAGES, LEAD_STAGE_KEYS, LEAD_PIPELINE_STAGES,
   ACTIVITY_TYPES as CRM_ACTIVITY_TYPES, formatWhatsApp, type LeadStage
@@ -80,6 +81,7 @@ export default function LeadDetailPage() {
   const router = useRouter()
   const leadId = params?.id as string
 
+  const { toast } = useToast()
   const [lead, setLead] = useState<any>(null)
   const [activities, setActivities] = useState<any[]>([])
   const [history, setHistory] = useState<any[]>([])
@@ -135,9 +137,10 @@ export default function LeadDetailPage() {
         body: JSON.stringify({ id: lead.id, stage: targetStage }),
       })
       if (!res.ok) throw new Error('Error actualizando etapa')
+      toast(`Etapa actualizada: ${targetStage}`)
       await fetchLead()
     } catch {
-      // silent fail, user can retry
+      toast('Error al avanzar etapa', 'error')
     } finally {
       setStageUpdating(false)
     }
@@ -161,9 +164,10 @@ export default function LeadDetailPage() {
       if (!res.ok) throw new Error('Error guardando actividad')
       setActivityForm({ activity_type: 'llamada', description: '' })
       setShowActivityForm(false)
+      toast('Actividad registrada')
       await fetchLead()
     } catch {
-      // silent
+      toast('Error al registrar actividad', 'error')
     } finally {
       setSavingActivity(false)
     }
@@ -202,8 +206,9 @@ export default function LeadDetailPage() {
         body: JSON.stringify({ id: leadId, ...editForm }),
       })
       setShowEdit(false)
+      toast('Lead actualizado')
       await fetchLead()
-    } catch {}
+    } catch { toast('Error al guardar', 'error') }
   }
 
   async function handleScheduleFollowup() {
@@ -233,8 +238,9 @@ export default function LeadDetailPage() {
       })
       setShowSchedule(false)
       setScheduleForm({ title: '', date: '', time: '10:00', event_type: 'seguimiento' })
+      toast('Seguimiento agendado')
       await fetchLead()
-    } catch {}
+    } catch { toast('Error al agendar', 'error') }
   }
 
   // ------ Convert lead → tasación ------
@@ -263,9 +269,10 @@ export default function LeadDetailPage() {
           property_address: lead.property_address,
         }),
       })
+      toast('Tasación creada y vinculada')
       await fetchLead()
     } catch {
-      // silent
+      toast('Error al crear tasación', 'error')
     } finally {
       setConverting(false)
     }

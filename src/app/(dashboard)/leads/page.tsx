@@ -11,6 +11,7 @@ import {
   OPERATION_TYPES, getLeadChecklist, getLeadChecklistScore,
   getLeadUrgency, getUrgencyBadge, formatWhatsApp, type LeadStage
 } from '@/lib/crm-config'
+import { useToast } from '@/components/ui/Toast'
 
 function timeAgo(dateStr: string): string {
   const diff = (Date.now() - new Date(dateStr).getTime()) / 60000
@@ -24,6 +25,7 @@ function timeAgo(dateStr: string): string {
 
 export default function LeadsPage() {
   const searchParams = useSearchParams()
+  const { toast } = useToast()
   const [leads, setLeads] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<'list' | 'kanban'>('list')
@@ -32,6 +34,7 @@ export default function LeadsPage() {
   const [filterSource, setFilterSource] = useState('')
   const [filterOperation, setFilterOperation] = useState('')
   const [showFilters, setShowFilters] = useState(false)
+  const [sortBy, setSortBy] = useState<'recent' | 'name' | 'urgency'>('recent')
   const [showCreate, setShowCreate] = useState(false)
   const [saving, setSaving] = useState(false)
   const [showConvertModal, setShowConvertModal] = useState<any>(null)
@@ -56,7 +59,7 @@ export default function LeadsPage() {
   }, [])
 
   const filtered = useMemo(() => {
-    return leads.filter(l => {
+    const result = leads.filter(l => {
       if (search) {
         const q = search.toLowerCase()
         if (!((l.full_name || '').toLowerCase().includes(q) ||
@@ -70,7 +73,16 @@ export default function LeadsPage() {
       if (filterOperation && l.operation !== filterOperation) return false
       return true
     })
-  }, [leads, search, filterStage, filterSource, filterOperation])
+    // Sort
+    if (sortBy === 'name') result.sort((a, b) => (a.full_name || '').localeCompare(b.full_name || ''))
+    else if (sortBy === 'urgency') result.sort((a, b) => {
+      const ua = getLeadUrgency(a), ub = getLeadUrgency(b)
+      const order = { danger: 0, warning: 1, ok: 2, lost: 3 }
+      return (order[ua] || 2) - (order[ub] || 2)
+    })
+    // 'recent' is already sorted by updated_at DESC from API
+    return result
+  }, [leads, search, filterStage, filterSource, filterOperation, sortBy])
 
   const stageCounts = useMemo(() => {
     const counts: Record<string, number> = {}
@@ -87,9 +99,12 @@ export default function LeadsPage() {
       if (data.id) {
         setShowCreate(false)
         setForm({ full_name: '', phone: '', email: '', source: 'manual', source_detail: '', property_address: '', neighborhood: '', operation: 'venta', stage: 'nuevo', notes: '', estimated_value: '', assigned_to: '', next_step: '', next_step_date: '' })
+        toast('Lead creado correctamente')
         loadLeads()
+      } else {
+        toast(data.error || 'Error al crear lead', 'error')
       }
-    } catch {}
+    } catch { toast('Error de conexión', 'error') }
     setSaving(false)
   }
 
@@ -108,6 +123,8 @@ export default function LeadsPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: lead.id, stage: nextStage })
     })
+    const stageLabel = LEAD_STAGES[nextStage as keyof typeof LEAD_STAGES]?.label || nextStage
+    toast(`${lead.full_name} → ${stageLabel}`)
     loadLeads()
   }
 
@@ -134,6 +151,7 @@ export default function LeadsPage() {
       })
     }
     setShowConvertModal(null)
+    toast(createAppraisal ? `Tasación creada para ${lead.full_name}` : `${lead.full_name} → En tasación`)
     loadLeads()
   }
 
@@ -143,6 +161,7 @@ export default function LeadsPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: leadId, stage: 'perdido' })
     })
+    toast('Lead marcado como perdido', 'warning')
     loadLeads()
   }
 
@@ -178,6 +197,11 @@ export default function LeadsPage() {
           <input type="text" placeholder="Buscar nombre, teléfono, dirección..." value={search} onChange={e => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500" />
         </div>
+        <select value={sortBy} onChange={e => setSortBy(e.target.value as any)} className="border rounded-lg px-2 py-2 text-sm text-gray-600 hidden sm:block">
+          <option value="recent">Recientes</option>
+          <option value="urgency">Urgencia</option>
+          <option value="name">Nombre A-Z</option>
+        </select>
         <button onClick={() => setShowFilters(!showFilters)} className={`flex items-center gap-2 px-3 py-2 border rounded-lg text-sm ${activeFilters > 0 ? 'border-pink-500 text-pink-600 bg-pink-50' : 'text-gray-600'}`}>
           <Filter className="w-4 h-4" /> Filtros {activeFilters > 0 && <span className="bg-pink-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">{activeFilters}</span>}
         </button>

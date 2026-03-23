@@ -6,6 +6,7 @@ import {
   FileText, Settings, CheckCircle2, Target, Plus, X,
   BarChart3
 } from 'lucide-react'
+import { useToast } from '@/components/ui/Toast'
 import {
   ACTIVITY_TYPES, ACTIVITY_TYPE_KEYS, OBJECTIVE_METRICS,
   getObjectiveSemaforo, getPeriodProgressPct, type ActivityType, type ObjectiveMetric
@@ -24,6 +25,7 @@ const PERIOD_OPTIONS = [
 ]
 
 export default function ActividadesPage() {
+  const { toast } = useToast()
   const [activities, setActivities] = useState<any[]>([])
   const [objectives, setObjectives] = useState<any[]>([])
   const [agents, setAgents] = useState<any[]>([])
@@ -170,8 +172,9 @@ export default function ActividadesPage() {
       })
       setShowCreate(false)
       setForm({ activity_type: 'llamada', description: '', lead_id: '', contact_id: '', linkedName: '' })
+      toast('Actividad registrada')
       loadData()
-    } catch {}
+    } catch { toast('Error al registrar', 'error') }
     setSaving(false)
   }
 
