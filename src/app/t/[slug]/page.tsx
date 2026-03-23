@@ -75,10 +75,10 @@ export default async function TasacionPublicPage({
 
   const containerClass = presentationMode
     ? 'min-h-screen bg-gray-900'
-    : 'min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50'
+    : 'min-h-screen bg-white'
   const cardClass = presentationMode
     ? 'bg-gray-800/80 backdrop-blur rounded-2xl shadow-2xl border border-gray-700/50 text-white'
-    : 'bg-white rounded-2xl shadow-md shadow-gray-200/50 border border-gray-100'
+    : 'bg-[#f8f8f8] rounded-2xl border border-gray-100'
   const textClass = presentationMode ? 'text-gray-200' : 'text-gray-600'
   const headingClass = presentationMode ? 'text-white' : 'text-gray-800'
 
@@ -104,33 +104,33 @@ export default async function TasacionPublicPage({
         </a>
       )}
 
-      {/* Hero — Brand gradient pink→orange on white */}
-      <header className="relative overflow-hidden bg-gradient-to-br from-[#ff007c] via-[#ff3d94] to-[#ff8017]">
-        <div className="absolute top-0 right-0 w-72 h-72 bg-white/10 rounded-full -translate-y-1/3 translate-x-1/3" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full translate-y-1/3 -translate-x-1/4" />
-        <div className={`relative max-w-5xl mx-auto px-4 sm:px-8 ${presentationMode ? 'py-20 sm:py-32' : 'py-12 sm:py-20'}`}>
-          <div className="flex items-center gap-3 mb-8">
-            <img src="/logo.png" alt="Marcela Genta" className={`brightness-0 invert ${presentationMode ? 'h-12 sm:h-16' : 'h-8 sm:h-12'}`} />
-            <span className={`text-white/80 font-medium ${presentationMode ? 'text-base' : 'text-sm'}`}>Operaciones Inmobiliarias</span>
+      {/* Hero — White bg with brand gradient accent */}
+      <header className="relative overflow-hidden bg-white border-b border-gray-100">
+        {/* Left gradient accent bar */}
+        <div className="absolute left-0 top-0 bottom-0 w-1.5 sm:w-2 bg-gradient-to-b from-[#ff007c] to-[#ff8017]" />
+        <div className={`max-w-5xl mx-auto px-6 sm:px-10 ${presentationMode ? 'py-20 sm:py-28' : 'py-10 sm:py-16'}`}>
+          <div className="flex items-center gap-3 mb-6">
+            <img src="/logo.png" alt="Marcela Genta" className={`${presentationMode ? 'h-12 sm:h-16' : 'h-8 sm:h-12'}`} />
+            <span className={`text-gray-400 font-medium ${presentationMode ? 'text-base' : 'text-sm'}`}>Operaciones Inmobiliarias</span>
           </div>
-          <div className="inline-block bg-white/20 backdrop-blur-sm rounded-full px-4 py-1.5 mb-4">
+          <div className="inline-block bg-gradient-to-r from-[#ff007c] to-[#ff8017] rounded-full px-4 py-1.5 mb-4">
             <p className="text-white text-xs sm:text-sm font-medium tracking-wider uppercase">Propuesta de tasaci&oacute;n</p>
           </div>
-          <h1 className={`font-bold leading-tight mb-3 text-white ${presentationMode ? 'text-4xl sm:text-6xl' : 'text-3xl sm:text-5xl'}`}>{a.property_address}</h1>
-          <p className={`text-white/80 font-light ${presentationMode ? 'text-lg sm:text-2xl' : 'text-lg sm:text-xl'}`}>{a.neighborhood}, {a.city}</p>
+          <h1 className={`font-black leading-tight mb-3 text-gray-800 ${presentationMode ? 'text-4xl sm:text-6xl' : 'text-3xl sm:text-5xl'}`}>{a.property_address}</h1>
+          <p className={`text-gray-400 font-light ${presentationMode ? 'text-lg sm:text-2xl' : 'text-lg sm:text-xl'}`}>{a.neighborhood}, {a.city}</p>
 
           {/* Agent card */}
-          <div className="mt-8 inline-flex items-center gap-4 bg-white/20 backdrop-blur-sm rounded-2xl px-5 py-3">
+          <div className="mt-8 inline-flex items-center gap-4 bg-[#f8f8f8] rounded-2xl px-5 py-3">
             {a.agent_photo ? (
-              <img src={a.agent_photo} alt={a.agent_name} className={`rounded-full object-cover ring-2 ring-white/40 ${presentationMode ? 'w-14 h-14' : 'w-11 h-11'}`} />
+              <img src={a.agent_photo} alt={a.agent_name} className={`rounded-full object-cover ring-2 ring-pink-200 ${presentationMode ? 'w-14 h-14' : 'w-11 h-11'}`} />
             ) : (
-              <div className={`rounded-full bg-white/30 flex items-center justify-center font-bold text-white ${presentationMode ? 'w-14 h-14 text-xl' : 'w-11 h-11'}`}>
+              <div className={`rounded-full bg-gradient-to-br from-[#ff007c] to-[#ff8017] flex items-center justify-center font-bold text-white ${presentationMode ? 'w-14 h-14 text-xl' : 'w-11 h-11'}`}>
                 {(a.agent_name || 'A').charAt(0)}
               </div>
             )}
             <div>
-              <p className={`font-semibold text-white ${presentationMode ? 'text-base' : 'text-sm'}`}>{a.agent_name}</p>
-              <p className={`text-white/70 ${presentationMode ? 'text-sm' : 'text-xs'}`}>{a.agent_phone}</p>
+              <p className={`font-semibold text-gray-800 ${presentationMode ? 'text-base' : 'text-sm'}`}>{a.agent_name}</p>
+              <p className={`text-[#ff007c] ${presentationMode ? 'text-sm' : 'text-xs'}`}>{a.agent_phone}</p>
             </div>
           </div>
         </div>
@@ -315,27 +315,27 @@ export default async function TasacionPublicPage({
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {a.strengths && (
-                <div className={`${presentationMode ? 'bg-green-900/30 border-green-800/50' : 'bg-gradient-to-br from-green-50 to-white border-green-200'} border rounded-2xl p-5`}>
-                  <div className="flex items-center gap-2 mb-2"><div className="w-2 h-2 rounded-full bg-green-500" /><p className="text-xs font-bold text-green-700 uppercase tracking-wider">Fortalezas</p></div>
-                  <p className={`text-sm leading-relaxed whitespace-pre-wrap ${presentationMode ? 'text-green-200' : 'text-green-800'}`}>{a.strengths}</p>
-                </div>
-              )}
-              {a.weaknesses && (
-                <div className={`${presentationMode ? 'bg-red-900/30 border-red-800/50' : 'bg-gradient-to-br from-red-50 to-white border-red-200'} border rounded-2xl p-5`}>
-                  <div className="flex items-center gap-2 mb-2"><div className="w-2 h-2 rounded-full bg-red-500" /><p className="text-xs font-bold text-red-700 uppercase tracking-wider">Debilidades</p></div>
-                  <p className={`text-sm leading-relaxed whitespace-pre-wrap ${presentationMode ? 'text-red-200' : 'text-red-800'}`}>{a.weaknesses}</p>
+                <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+                  <span className="inline-block bg-gradient-to-r from-[#ff007c] to-[#ff8017] text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full mb-3">Fortalezas</span>
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-700">{a.strengths}</p>
                 </div>
               )}
               {a.opportunities && (
-                <div className={`${presentationMode ? 'bg-blue-900/30 border-blue-800/50' : 'bg-gradient-to-br from-blue-50 to-white border-blue-200'} border rounded-2xl p-5`}>
-                  <div className="flex items-center gap-2 mb-2"><div className="w-2 h-2 rounded-full bg-blue-500" /><p className="text-xs font-bold text-blue-700 uppercase tracking-wider">Oportunidades</p></div>
-                  <p className={`text-sm leading-relaxed whitespace-pre-wrap ${presentationMode ? 'text-blue-200' : 'text-blue-800'}`}>{a.opportunities}</p>
+                <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+                  <span className="inline-block bg-gradient-to-r from-[#ff8017] to-[#ffb347] text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full mb-3">Oportunidades</span>
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-700">{a.opportunities}</p>
+                </div>
+              )}
+              {a.weaknesses && (
+                <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+                  <span className="inline-block bg-gray-400 text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full mb-3">Debilidades</span>
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-600">{a.weaknesses}</p>
                 </div>
               )}
               {a.threats && (
-                <div className={`${presentationMode ? 'bg-yellow-900/30 border-yellow-800/50' : 'bg-gradient-to-br from-yellow-50 to-white border-yellow-200'} border rounded-2xl p-5`}>
-                  <div className="flex items-center gap-2 mb-2"><div className="w-2 h-2 rounded-full bg-yellow-500" /><p className="text-xs font-bold text-yellow-700 uppercase tracking-wider">Amenazas</p></div>
-                  <p className={`text-sm leading-relaxed whitespace-pre-wrap ${presentationMode ? 'text-yellow-200' : 'text-yellow-800'}`}>{a.threats}</p>
+                <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+                  <span className="inline-block bg-gray-500 text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full mb-3">Amenazas</span>
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-600">{a.threats}</p>
                 </div>
               )}
             </div>
@@ -484,57 +484,71 @@ export default async function TasacionPublicPage({
           </section>
         )}
 
-        {/* Valuation — Brand gradient */}
-        <section className="relative overflow-hidden bg-gradient-to-br from-[#ff007c] via-[#ff3d94] to-[#ff8017] rounded-2xl p-6 sm:p-12 text-white shadow-xl">
-          <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -translate-y-1/4 translate-x-1/4" />
-          <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full translate-y-1/4 -translate-x-1/4" />
-          <div className="relative">
-            <p className="text-white/70 text-xs font-medium tracking-widest uppercase mb-2">Resultado del an&aacute;lisis</p>
-            <h2 className={`font-bold mb-8 ${presentationMode ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl'}`}>
-              Tasaci&oacute;n proyectada
-            </h2>
-            <div className="grid grid-cols-2 gap-4 sm:gap-6 mb-8">
-              <div className="bg-white/20 backdrop-blur rounded-2xl p-5 sm:p-6 text-center">
-                <p className="text-xs text-white/70 uppercase tracking-wider mb-2">Sup. ponderada</p>
-                <p className={`font-bold ${presentationMode ? 'text-4xl sm:text-5xl' : 'text-3xl sm:text-4xl'}`}>{weighted.toFixed(1)}</p>
-                <p className="text-white/60 text-sm mt-1">m&sup2;</p>
-              </div>
-              <div className="bg-white/20 backdrop-blur rounded-2xl p-5 sm:p-6 text-center">
-                <p className="text-xs text-white/70 uppercase tracking-wider mb-2">USD/m&sup2;</p>
-                <p className={`font-bold ${presentationMode ? 'text-4xl sm:text-5xl' : 'text-3xl sm:text-4xl'}`}>{usdM2.toLocaleString('es-AR')}</p>
-                <p className="text-white/60 text-sm mt-1">d&oacute;lares</p>
-              </div>
+        {/* Valuation — Timeline style like brand presentations */}
+        <section className="bg-[#f8f8f8] rounded-2xl p-6 sm:p-12 border border-gray-100">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-1.5 h-8 bg-gradient-to-b from-[#ff007c] to-[#ff8017] rounded-full" />
+            <div>
+              <p className="text-gray-400 text-xs font-medium tracking-widest uppercase">Resultado del an&aacute;lisis</p>
+              <h2 className={`font-black text-gray-800 ${presentationMode ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl'}`}>
+                Tasaci&oacute;n proyectada
+              </h2>
             </div>
-            <div className="space-y-4">
+          </div>
+          <div className="grid grid-cols-2 gap-4 sm:gap-6 mb-8">
+            <div className="bg-white rounded-2xl p-5 sm:p-6 text-center border border-gray-100 shadow-sm">
+              <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">Sup. ponderada</p>
+              <p className={`font-black text-gray-800 ${presentationMode ? 'text-4xl sm:text-5xl' : 'text-3xl sm:text-4xl'}`}>{weighted.toFixed(1)}</p>
+              <p className="text-gray-400 text-sm mt-1">m&sup2;</p>
+            </div>
+            <div className="bg-white rounded-2xl p-5 sm:p-6 text-center border border-gray-100 shadow-sm">
+              <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">USD/m&sup2;</p>
+              <p className={`font-black text-gray-800 ${presentationMode ? 'text-4xl sm:text-5xl' : 'text-3xl sm:text-4xl'}`}>{usdM2.toLocaleString('es-AR')}</p>
+              <p className="text-gray-400 text-sm mt-1">d&oacute;lares</p>
+            </div>
+          </div>
+            {/* Timeline vertical with dots — like image 14 */}
+            <div className="relative pl-8 sm:pl-10 space-y-4">
+              {/* Timeline line */}
+              <div className="absolute left-3 sm:left-4 top-4 bottom-4 w-0.5 bg-gradient-to-b from-[#ff8017] via-[#ff007c] to-green-500" />
+
               {a.test_price && (
-                <div className="bg-white/15 backdrop-blur rounded-2xl p-5 sm:p-6 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-white/70 uppercase tracking-wider">Valor prueba</p>
-                    <p className="text-white/60 text-sm">30 d&iacute;as</p>
+                <div className="relative">
+                  <div className="absolute left-[-22px] sm:left-[-26px] top-5 w-3 h-3 rounded-full bg-[#ff8017] ring-4 ring-[#f8f8f8]" />
+                  <div className="bg-white rounded-2xl p-5 sm:p-6 flex items-center justify-between border border-gray-100 shadow-sm">
+                    <div>
+                      <p className="text-xs text-gray-400 uppercase tracking-wider font-medium">Valor de prueba</p>
+                      <p className="text-gray-500 text-sm">30 d&iacute;as</p>
+                    </div>
+                    <p className={`font-black text-gray-800 ${presentationMode ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl'}`}>USD {Number(a.test_price).toLocaleString('es-AR')}</p>
                   </div>
-                  <p className={`font-bold text-white ${presentationMode ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl'}`}>USD {Number(a.test_price).toLocaleString('es-AR')}</p>
                 </div>
               )}
               {a.suggested_price && (
-                <div className="bg-white rounded-2xl p-6 sm:p-8 flex items-center justify-between shadow-lg">
-                  <div>
-                    <p className="text-sm font-semibold text-gray-800">Valor sugerido</p>
-                    <p className="text-xs text-gray-400">Publicaci&oacute;n inicial</p>
+                <div className="relative">
+                  <div className="absolute left-[-22px] sm:left-[-26px] top-6 w-3.5 h-3.5 rounded-full bg-[#ff007c] ring-4 ring-[#f8f8f8]" />
+                  <div className="bg-white rounded-2xl p-6 sm:p-8 flex items-center justify-between border-2 border-[#ff007c]/20 shadow-md">
+                    <div>
+                      <p className="text-sm font-bold text-[#ff007c] uppercase tracking-wider">Valor sugerido</p>
+                      <p className="text-xs text-gray-400">Publicaci&oacute;n inicial</p>
+                    </div>
+                    <p className={`font-black bg-gradient-to-r from-[#ff007c] to-[#ff8017] bg-clip-text text-transparent ${presentationMode ? 'text-4xl sm:text-5xl' : 'text-3xl sm:text-4xl'}`}>USD {Number(a.suggested_price).toLocaleString('es-AR')}</p>
                   </div>
-                  <p className={`font-black bg-gradient-to-r from-[#ff007c] to-[#ff8017] bg-clip-text text-transparent ${presentationMode ? 'text-4xl sm:text-5xl' : 'text-3xl sm:text-4xl'}`}>USD {Number(a.suggested_price).toLocaleString('es-AR')}</p>
                 </div>
               )}
               {a.expected_close_price && (
-                <div className="bg-white/15 backdrop-blur rounded-2xl p-5 sm:p-6 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-white/70 uppercase tracking-wider">Cierre esperado</p>
-                    <p className="text-white/60 text-sm">120 d&iacute;as</p>
+                <div className="relative">
+                  <div className="absolute left-[-22px] sm:left-[-26px] top-5 w-3 h-3 rounded-full bg-green-500 ring-4 ring-[#f8f8f8]" />
+                  <div className="bg-white rounded-2xl p-5 sm:p-6 flex items-center justify-between border border-gray-100 shadow-sm">
+                    <div>
+                      <p className="text-xs text-gray-400 uppercase tracking-wider font-medium">Cierre esperado</p>
+                      <p className="text-gray-500 text-sm">120 d&iacute;as</p>
+                    </div>
+                    <p className={`font-black text-green-600 ${presentationMode ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl'}`}>USD {Number(a.expected_close_price).toLocaleString('es-AR')}</p>
                   </div>
-                  <p className={`font-bold text-white ${presentationMode ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl'}`}>USD {Number(a.expected_close_price).toLocaleString('es-AR')}</p>
                 </div>
               )}
             </div>
-          </div>
         </section>
 
         {/* ====== SECTION 3: CTA ====== */}
@@ -546,28 +560,28 @@ export default async function TasacionPublicPage({
           </section>
         )}
 
-        <section className="relative overflow-hidden bg-gradient-to-br from-[#ff007c] via-[#ff3d94] to-[#ff8017] rounded-2xl p-8 sm:p-16 text-white text-center">
-          <div className="absolute top-0 left-0 w-40 h-40 bg-white/10 rounded-full -translate-y-1/2 -translate-x-1/2" />
-          <div className="absolute bottom-0 right-0 w-56 h-56 bg-white/10 rounded-full translate-y-1/3 translate-x-1/3" />
+        <section className="relative bg-[#f8f8f8] rounded-2xl p-8 sm:p-16 text-center border border-gray-100">
+          {/* Top gradient accent */}
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#ff007c] to-[#ff8017] rounded-t-2xl" />
           <div className="relative">
-            <p className="text-white/70 text-xs font-medium tracking-widest uppercase mb-3">Siguiente paso</p>
-            <h2 className={`font-bold mb-4 ${presentationMode ? 'text-3xl sm:text-5xl' : 'text-2xl sm:text-3xl'}`}>
+            <p className="text-gray-400 text-xs font-medium tracking-widest uppercase mb-3">Siguiente paso</p>
+            <h2 className={`font-black text-gray-800 mb-4 ${presentationMode ? 'text-3xl sm:text-5xl' : 'text-2xl sm:text-3xl'}`}>
               &iquest;Listo para vender al mejor precio?
             </h2>
-            <p className={`text-white/80 mb-10 max-w-lg mx-auto ${presentationMode ? 'text-lg' : 'text-sm sm:text-base'}`}>
+            <p className={`text-gray-500 mb-10 max-w-lg mx-auto ${presentationMode ? 'text-lg' : 'text-sm sm:text-base'}`}>
               Si est&aacute;s dispuesto a vender con esta estrategia, coordinemos una reuni&oacute;n para aclarar todas las dudas.
             </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             {calendlyUrl && (
-              <a href={calendlyUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-white text-[#ff007c] px-6 py-3 rounded-full font-semibold text-sm hover:bg-gray-100 w-full sm:w-auto justify-center">
+              <a href={calendlyUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-gradient-to-r from-[#ff007c] to-[#ff8017] text-white px-8 py-3.5 rounded-full font-semibold text-sm hover:opacity-90 shadow-lg shadow-pink-200 w-full sm:w-auto justify-center">
                 <Video className="w-5 h-5" /> Agendar reuni&oacute;n
               </a>
             )}
-            <a href={`https://wa.me/${whatsapp}?text=${encodeURIComponent(`Hola, vi la tasación de ${a.property_address} y me gustaría coordinar.`)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-green-500 text-white px-6 py-3 rounded-full font-semibold text-sm hover:bg-green-600 w-full sm:w-auto justify-center">
+            <a href={`https://wa.me/${whatsapp}?text=${encodeURIComponent(`Hola, vi la tasación de ${a.property_address} y me gustaría coordinar.`)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-green-500 text-white px-8 py-3.5 rounded-full font-semibold text-sm hover:bg-green-600 shadow-lg shadow-green-200 w-full sm:w-auto justify-center">
               <MessageCircle className="w-5 h-5" /> WhatsApp
             </a>
             {a.agent_phone && (
-              <a href={`tel:${a.agent_phone}`} className="inline-flex items-center gap-2 bg-white/20 text-white px-6 py-3 rounded-full font-semibold text-sm hover:bg-white/30 w-full sm:w-auto justify-center">
+              <a href={`tel:${a.agent_phone}`} className="inline-flex items-center gap-2 bg-white text-gray-700 border border-gray-200 px-8 py-3.5 rounded-full font-semibold text-sm hover:bg-gray-50 w-full sm:w-auto justify-center">
                 <Phone className="w-5 h-5" /> Llamar
               </a>
             )}
@@ -576,17 +590,17 @@ export default async function TasacionPublicPage({
         </section>
       </main>
 
-      <footer className="bg-gray-900 text-white py-12">
+      <footer className="bg-white border-t border-gray-100 py-10">
         <div className="max-w-5xl mx-auto px-4 sm:px-8 text-center">
-          <img src="/logo.png" alt="Marcela Genta" className="h-10 mx-auto mb-4 brightness-0 invert opacity-80" />
-          <p className="text-white/60 text-sm font-medium">Marcela Genta &middot; Operaciones Inmobiliarias</p>
-          <div className="flex items-center justify-center gap-4 mt-3 text-white/40 text-xs">
+          <img src="/logo.png" alt="Marcela Genta" className="h-10 mx-auto mb-4" />
+          <p className="text-gray-600 text-sm font-medium">Marcela Genta &middot; Operaciones Inmobiliarias</p>
+          <div className="flex items-center justify-center gap-4 mt-3 text-gray-400 text-xs">
             <span>{a.agent_name}</span>
-            {a.agent_phone && <span>&middot; {a.agent_phone}</span>}
+            {a.agent_phone && <span>&middot; <span className="text-[#ff007c]">{a.agent_phone}</span></span>}
             {a.agent_email && <span>&middot; {a.agent_email}</span>}
           </div>
-          <div className="mt-6 pt-6 border-t border-white/10">
-            <p className="text-white/20 text-[10px] tracking-wider uppercase">CUCICBA Mat. N&deg;3906</p>
+          <div className="mt-6 pt-6 border-t border-gray-100">
+            <p className="text-gray-300 text-[10px] tracking-wider uppercase">CUCICBA Mat. N&deg;3906</p>
           </div>
         </div>
       </footer>
