@@ -445,6 +445,12 @@ export default async function TasacionPublicPage({
                         </div>
                       )}
                     </div>
+                    {sp.listing_url && (
+                      <a href={sp.listing_url} target="_blank" rel="noopener noreferrer"
+                        className={`text-xs mt-2 inline-flex items-center gap-1 ${presentationMode ? 'text-pink-400' : 'text-pink-600'} hover:underline`}>
+                        Ver ficha →
+                      </a>
+                    )}
                   </div>
                 )
               })}

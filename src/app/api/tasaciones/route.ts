@@ -79,8 +79,8 @@ export async function POST(request: NextRequest) {
         if (sp.isNew || !sp.id) {
           await db.prepare(`
             INSERT INTO sold_properties (id, org_id, address, neighborhood, property_type, total_area,
-              sold_price, original_price, currency, sold_date, agent_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'USD', ?, ?)
+              sold_price, original_price, currency, sold_date, agent_id, listing_url)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'USD', ?, ?, ?)
           `).bind(
             spId, user.org_id || 'org_mg',
             sp.address, sp.neighborhood || data.neighborhood,
@@ -89,7 +89,8 @@ export async function POST(request: NextRequest) {
             sp.sold_price || null,
             sp.original_price || null,
             sp.sold_date || null,
-            user.id
+            user.id,
+            sp.listing_url || null
           ).run()
         }
         // Link sold property to this appraisal
@@ -185,8 +186,8 @@ export async function PUT(request: NextRequest) {
         if (sp.isNew || !sp.id) {
           await db.prepare(`
             INSERT INTO sold_properties (id, org_id, address, neighborhood, property_type, total_area,
-              sold_price, original_price, currency, sold_date, agent_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'USD', ?, ?)
+              sold_price, original_price, currency, sold_date, agent_id, listing_url)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'USD', ?, ?, ?)
           `).bind(
             spId, user.org_id || 'org_mg',
             sp.address, sp.neighborhood || data.neighborhood,
@@ -195,7 +196,8 @@ export async function PUT(request: NextRequest) {
             sp.sold_price || null,
             sp.original_price || null,
             sp.sold_date || null,
-            user.id
+            user.id,
+            sp.listing_url || null
           ).run()
         }
         await db.prepare(`

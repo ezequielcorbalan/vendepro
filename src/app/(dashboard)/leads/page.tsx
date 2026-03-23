@@ -469,15 +469,18 @@ function KanbanCard({ lead, onAdvance, onMoveTo }: { lead: any; onAdvance: () =>
       </div>
       {/* Move to dropdown */}
       {showMove && (
-        <div className="absolute right-2 top-full mt-1 z-20 bg-white border rounded-lg shadow-lg py-1 min-w-[140px]">
-          {LEAD_STAGE_KEYS.filter(s => s !== lead.stage).map(s => (
-            <button key={s} onClick={() => { onMoveTo(s); setShowMove(false) }}
-              className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 flex items-center gap-2`}>
-              <span className={`w-2 h-2 rounded-full ${LEAD_STAGES[s].color.split(' ')[0]}`} />
-              {LEAD_STAGES[s].label}
-            </button>
-          ))}
-        </div>
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setShowMove(false)} />
+          <div className="absolute right-2 top-full mt-1 z-20 bg-white border rounded-lg shadow-lg py-1 min-w-[140px] max-h-60 overflow-y-auto">
+            {LEAD_STAGE_KEYS.filter(s => s !== lead.stage).map(s => (
+              <button key={s} onClick={() => { onMoveTo(s); setShowMove(false) }}
+                className="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 flex items-center gap-2">
+                <span className={`w-2 h-2 rounded-full ${LEAD_STAGES[s].color.split(' ')[0]}`} />
+                {LEAD_STAGES[s].label}
+              </button>
+            ))}
+          </div>
+        </>
       )}
     </div>
   )

@@ -24,17 +24,19 @@ export async function POST(request: Request) {
 
   await db.prepare(`
     INSERT INTO sold_properties (id, org_id, address, neighborhood, property_type, rooms, total_area,
-      sold_price, original_price, currency, sold_date, days_on_market, agent_id)
-    VALUES (?, 'org_mg', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      sold_price, original_price, currency, sold_date, days_on_market, agent_id, listing_url)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).bind(
-    id, body.address, body.neighborhood, body.property_type || null,
+    id, user.org_id || 'org_mg',
+    body.address, body.neighborhood, body.property_type || null,
     body.rooms ? parseInt(body.rooms) : null,
     body.total_area ? parseFloat(body.total_area) : null,
     body.sold_price ? parseFloat(body.sold_price) : null,
     body.original_price ? parseFloat(body.original_price) : null,
     body.currency || 'USD', body.sold_date || null,
     body.days_on_market ? parseInt(body.days_on_market) : null,
-    body.agent_id || user.id
+    body.agent_id || user.id,
+    body.listing_url || null
   ).run()
 
   return NextResponse.json({ id })
