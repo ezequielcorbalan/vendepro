@@ -73,8 +73,9 @@ export async function GET() {
       ORDER BY day ASC
     `).bind(...(isAdmin ? [orgId] : [orgId, user.id])).all()).results as any[]
 
-    // ── Eventos de hoy ──
-    const today = new Date().toISOString().split('T')[0]
+    // ── Eventos de hoy (Argentina UTC-3) ──
+    const nowAR = new Date(Date.now() - 3 * 60 * 60 * 1000)
+    const today = nowAR.toISOString().split('T')[0]
     const todayEvents = (await db.prepare(`
       SELECT e.*, u.full_name as agent_name,
         l.full_name as lead_name, c.full_name as contact_name

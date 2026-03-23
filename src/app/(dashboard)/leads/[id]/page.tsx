@@ -130,7 +130,7 @@ export default function LeadDetailPage() {
       const res = await fetch('/api/leads', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...lead, stage: targetStage }),
+        body: JSON.stringify({ id: lead.id, stage: targetStage }),
       })
       if (!res.ok) throw new Error('Error actualizando etapa')
       await fetchLead()

@@ -144,7 +144,7 @@ export async function PUT(request: NextRequest) {
         opportunities=?, threats=?, publication_analysis=?, suggested_price=?, test_price=?,
         expected_close_price=?, usd_per_m2=?, video_url=?, agent_notes=?,
         zone_avg_price=?, zone_avg_m2=?, zone_avg_usd_m2=?, updated_at=datetime('now')
-      WHERE id=?
+      WHERE id=? AND org_id=?
     `).bind(
       data.address, data.neighborhood, data.city || 'Buenos Aires',
       data.property_type || 'departamento',
@@ -155,7 +155,7 @@ export async function PUT(request: NextRequest) {
       data.suggested_price, data.test_price, data.expected_close_price, data.usd_per_m2,
       data.video_url || null, data.agent_notes || null,
       data.zone_avg_price || null, data.zone_avg_m2 || null, data.zone_avg_usd_m2 || null,
-      data.id
+      data.id, user.org_id || 'org_mg'
     ).run()
 
     // Delete old comparables and re-insert
@@ -222,8 +222,11 @@ export async function DELETE(request: NextRequest) {
   const db = await getDB()
 
   try {
+    const orgId = user.org_id || 'org_mg'
+    const exists = await db.prepare('SELECT id FROM appraisals WHERE id = ? AND org_id = ?').bind(id, orgId).first()
+    if (!exists) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     await db.prepare('DELETE FROM appraisal_comparables WHERE appraisal_id = ?').bind(id).run()
-    await db.prepare('DELETE FROM appraisals WHERE id = ?').bind(id).run()
+    await db.prepare('DELETE FROM appraisals WHERE id = ? AND org_id = ?').bind(id, orgId).run()
     return NextResponse.json({ success: true })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
@@ -238,13 +241,14 @@ export async function GET() {
   const isAdmin = user.role === 'admin' || user.role === 'owner'
 
   try {
+    const orgId = user.org_id || 'org_mg'
     const query = isAdmin
-      ? `SELECT a.*, u.full_name as agent_name FROM appraisals a LEFT JOIN users u ON a.agent_id = u.id ORDER BY a.created_at DESC`
-      : `SELECT a.* FROM appraisals a WHERE a.agent_id = ? ORDER BY a.created_at DESC`
+      ? `SELECT a.*, u.full_name as agent_name FROM appraisals a LEFT JOIN users u ON a.agent_id = u.id WHERE a.org_id = ? ORDER BY a.created_at DESC`
+      : `SELECT a.*, u.full_name as agent_name FROM appraisals a LEFT JOIN users u ON a.agent_id = u.id WHERE a.org_id = ? AND a.agent_id = ? ORDER BY a.created_at DESC`
 
     const results = isAdmin
-      ? (await db.prepare(query).all()).results
-      : (await db.prepare(query).bind(user.id).all()).results
+      ? (await db.prepare(query).bind(orgId).all()).results
+      : (await db.prepare(query).bind(orgId, user.id).all()).results
 
     return NextResponse.json(results)
   } catch {

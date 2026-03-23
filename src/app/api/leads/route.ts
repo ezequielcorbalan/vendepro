@@ -24,8 +24,8 @@ export async function GET(request: NextRequest) {
     // Single lead detail
     if (leadId) {
       const lead = await db.prepare(
-        `SELECT l.*, u.full_name as assigned_name FROM leads l LEFT JOIN users u ON l.assigned_to = u.id WHERE l.id = ?`
-      ).bind(leadId).first()
+        `SELECT l.*, u.full_name as assigned_name FROM leads l LEFT JOIN users u ON l.assigned_to = u.id WHERE l.id = ? AND l.org_id = ?`
+      ).bind(leadId, user.org_id || 'org_mg').first()
       if (!lead) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
       // Get activities for this lead
@@ -135,8 +135,9 @@ export async function PUT(request: NextRequest) {
     if (!current) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     const oldStage = current.stage
 
-    // If only stage is being changed (quick advance from list)
-    if (data.stage && Object.keys(data).length <= 3) {
+    // If only stage is being changed (quick advance from list/detail)
+    const isQuickStage = data._action === 'advance_stage' || (data.stage && !data.full_name && Object.keys(data).length <= 3)
+    if (isQuickStage) {
       let firstContactSql = ''
       const binds: any[] = [data.stage]
       if (oldStage === 'nuevo' && data.stage === 'contactado') {
