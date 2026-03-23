@@ -90,6 +90,8 @@ export default function LeadDetailPage() {
   const [stageUpdating, setStageUpdating] = useState(false)
   const [converting, setConverting] = useState(false)
   const [showEdit, setShowEdit] = useState(false)
+  const [showSchedule, setShowSchedule] = useState(false)
+  const [scheduleForm, setScheduleForm] = useState({ title: '', date: '', time: '10:00', event_type: 'seguimiento' })
   const [editForm, setEditForm] = useState<any>({})
 
   // Activity form state
@@ -200,6 +202,37 @@ export default function LeadDetailPage() {
         body: JSON.stringify({ id: leadId, ...editForm }),
       })
       setShowEdit(false)
+      await fetchLead()
+    } catch {}
+  }
+
+  async function handleScheduleFollowup() {
+    if (!scheduleForm.date || !scheduleForm.title) return
+    const startAt = `${scheduleForm.date}T${scheduleForm.time}:00`
+    const endDate = new Date(startAt)
+    endDate.setHours(endDate.getHours() + 1)
+    const endAt = endDate.toISOString().replace('Z', '')
+    try {
+      await fetch('/api/calendar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: scheduleForm.title,
+          event_type: scheduleForm.event_type,
+          start_at: startAt,
+          end_at: endAt,
+          lead_id: leadId,
+          description: `Seguimiento: ${lead.full_name}`,
+        }),
+      })
+      // Also update lead next_step
+      await fetch('/api/leads', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: leadId, next_step: scheduleForm.title, next_step_date: scheduleForm.date }),
+      })
+      setShowSchedule(false)
+      setScheduleForm({ title: '', date: '', time: '10:00', event_type: 'seguimiento' })
       await fetchLead()
     } catch {}
   }
@@ -387,7 +420,13 @@ export default function LeadDetailPage() {
               onClick={() => setShowActivityForm(true)}
               className="flex items-center gap-1.5 text-xs font-medium bg-[#ff8017] text-white px-3 py-2 rounded-lg hover:opacity-90"
             >
-              <PlusCircle className="w-4 h-4" /> <span className="hidden sm:inline">Registrar actividad</span><span className="sm:hidden">Actividad</span>
+              <PlusCircle className="w-4 h-4" /> <span className="hidden sm:inline">Actividad</span><span className="sm:hidden">Act.</span>
+            </button>
+            <button
+              onClick={() => setShowSchedule(true)}
+              className="flex items-center gap-1.5 text-xs font-medium border border-gray-300 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-50"
+            >
+              <Calendar className="w-4 h-4" /> <span className="hidden sm:inline">Agendar</span>
             </button>
           </div>
         </div>
@@ -719,6 +758,46 @@ export default function LeadDetailPage() {
             <div className="sticky bottom-0 bg-white border-t px-4 py-3 flex gap-2">
               <button onClick={() => setShowEdit(false)} className="flex-1 px-4 py-2 border rounded-lg text-sm">Cancelar</button>
               <button onClick={handleSaveEdit} className="flex-1 px-4 py-2 bg-[#ff007c] text-white rounded-lg text-sm font-medium">Guardar</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ---- Schedule followup modal ---- */}
+      {showSchedule && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center" onClick={() => setShowSchedule(false)}>
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-sm p-5" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold text-gray-800">Agendar seguimiento</h2>
+              <button onClick={() => setShowSchedule(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="space-y-3">
+              <input placeholder="Título (ej: Llamar para definir visita)" value={scheduleForm.title}
+                onChange={e => setScheduleForm({ ...scheduleForm, title: e.target.value })}
+                className="w-full border rounded-lg px-3 py-2 text-sm" />
+              <div className="grid grid-cols-2 gap-2">
+                <input type="date" value={scheduleForm.date}
+                  onChange={e => setScheduleForm({ ...scheduleForm, date: e.target.value })}
+                  className="border rounded-lg px-3 py-2 text-sm" />
+                <input type="time" value={scheduleForm.time}
+                  onChange={e => setScheduleForm({ ...scheduleForm, time: e.target.value })}
+                  className="border rounded-lg px-3 py-2 text-sm" />
+              </div>
+              <select value={scheduleForm.event_type}
+                onChange={e => setScheduleForm({ ...scheduleForm, event_type: e.target.value })}
+                className="w-full border rounded-lg px-3 py-2 text-sm">
+                <option value="seguimiento">Seguimiento</option>
+                <option value="llamada">Llamada</option>
+                <option value="reunion">Reunión</option>
+                <option value="visita_captacion">Visita captación</option>
+                <option value="tasacion">Tasación</option>
+              </select>
+            </div>
+            <div className="flex gap-2 mt-4">
+              <button onClick={() => setShowSchedule(false)} className="flex-1 border px-4 py-2 rounded-lg text-sm">Cancelar</button>
+              <button onClick={handleScheduleFollowup} disabled={!scheduleForm.title || !scheduleForm.date}
+                className="flex-1 bg-[#ff007c] text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50">
+                Agendar
+              </button>
             </div>
           </div>
         </div>

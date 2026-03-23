@@ -93,9 +93,10 @@ export default function CalendarioPage() {
   const [rescheduleId, setRescheduleId] = useState<string | null>(null)
   const [rescheduleDate, setRescheduleDate] = useState('')
 
+  const [calAgents, setCalAgents] = useState<any[]>([])
   const [form, setForm] = useState({
     title: '', event_type: 'llamada', start_at: '', end_at: '', all_day: false,
-    description: '', lead_id: '', contact_id: '', property_id: '',
+    description: '', lead_id: '', contact_id: '', property_id: '', agent_id: '',
   })
 
   // ----- Responsive detection -----
@@ -167,7 +168,10 @@ export default function CalendarioPage() {
     }
   }, [fetchRange, filterType, filterStatus, filterMine])
 
-  useEffect(() => { fetchEvents() }, [fetchEvents])
+  useEffect(() => {
+    fetchEvents()
+    fetch('/api/agents').then(r => r.json() as Promise<any>).then(d => { if (Array.isArray(d)) setCalAgents(d) }).catch(() => {})
+  }, [fetchEvents])
 
   // ----- Client-side search filter -----
   const filteredEvents = useMemo(() => {
@@ -233,6 +237,7 @@ export default function CalendarioPage() {
         lead_id: form.lead_id || null,
         contact_id: form.contact_id || null,
         property_id: form.property_id || null,
+        agent_id: form.agent_id || null,
       }
       const res = await fetch('/api/calendar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       const data = (await res.json()) as any
@@ -271,7 +276,7 @@ export default function CalendarioPage() {
   }
 
   function resetForm() {
-    setForm({ title: '', event_type: 'llamada', start_at: '', end_at: '', all_day: false, description: '', lead_id: '', contact_id: '', property_id: '' })
+    setForm({ title: '', event_type: 'llamada', start_at: '', end_at: '', all_day: false, description: '', lead_id: '', contact_id: '', property_id: '', agent_id: '' })
   }
 
   // ----- Events grouped by date (for agenda / day) -----
@@ -793,6 +798,17 @@ export default function CalendarioPage() {
                 <label className="text-xs font-medium text-gray-600 mb-1 block">Descripción</label>
                 <textarea value={form.description} onChange={ev => setForm(f => ({ ...f, description: ev.target.value }))} rows={2} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50" />
               </div>
+
+              {/* Agent selector */}
+              {calAgents.length > 0 && (
+                <div>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">Agente</label>
+                  <select value={form.agent_id || ''} onChange={ev => setForm(f => ({ ...f, agent_id: ev.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                    <option value="">Yo (por defecto)</option>
+                    {calAgents.map((a: any) => <option key={a.id} value={a.id}>{a.full_name}</option>)}
+                  </select>
+                </div>
+              )}
 
               {/* Entity search */}
               <div className="border-t border-gray-100 pt-3">

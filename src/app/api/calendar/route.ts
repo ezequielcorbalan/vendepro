@@ -113,6 +113,13 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'No auth' }, { status: 401 })
 
   const data = (await request.json()) as any
+  if (!data.title) return NextResponse.json({ error: 'Missing title' }, { status: 400 })
+
+  const validEventTypes = ['llamada', 'reunion', 'visita_captacion', 'visita_comprador', 'tasacion', 'seguimiento', 'admin', 'firma', 'otro']
+  if (data.event_type && !validEventTypes.includes(data.event_type)) {
+    return NextResponse.json({ error: `Invalid event_type: ${data.event_type}` }, { status: 400 })
+  }
+
   const db = await getDB()
   const id = generateId()
   const orgId = user.org_id || 'org_mg'

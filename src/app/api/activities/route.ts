@@ -57,6 +57,13 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'No auth' }, { status: 401 })
 
   const data = (await request.json()) as any
+  if (!data.activity_type) return NextResponse.json({ error: 'Missing activity_type' }, { status: 400 })
+
+  const validTypes = ['llamada', 'whatsapp', 'reunion', 'visita_captacion', 'visita_comprador', 'tasacion', 'presentacion', 'seguimiento', 'documentacion', 'admin', 'cierre']
+  if (!validTypes.includes(data.activity_type)) {
+    return NextResponse.json({ error: `Invalid activity_type: ${data.activity_type}` }, { status: 400 })
+  }
+
   const db = await getDB()
   const id = generateId()
 
