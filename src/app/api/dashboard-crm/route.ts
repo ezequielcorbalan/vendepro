@@ -113,14 +113,35 @@ export async function GET() {
       `).bind(orgId, orgId, orgId, orgId).all()).results as any[]
     }
 
-    // ── Funnel de conversión ──
+    // ── Reservas y Vendidas ──
+    let reservadosCount = 0
+    let vendidosCount = 0
+    try {
+      const reservas = (await db.prepare(
+        `SELECT COUNT(*) as count FROM reservations WHERE org_id = ? AND status NOT IN ('cancelled', 'rejected')`
+      ).bind(orgId).first()) as any
+      reservadosCount = reservas?.count || 0
+    } catch { /* table may not exist */ }
+    try {
+      const vendidas = (await db.prepare(
+        `SELECT COUNT(*) as count FROM properties WHERE org_id = ? AND status = 'sold'`
+      ).bind(orgId).first()) as any
+      // Also count sold_properties
+      const soldProps = (await db.prepare(
+        `SELECT COUNT(*) as count FROM sold_properties WHERE agent_id IN (SELECT id FROM users WHERE org_id = ?)`
+      ).bind(orgId).first()) as any
+      vendidosCount = (vendidas?.count || 0) + (soldProps?.count || 0)
+    } catch { /* tables may not exist */ }
+
+    // ── Funnel de conversión (completo: lead → captado → reservado → vendido) ──
     const funnel = [
       { stage: 'Leads totales', count: leadStats.total || 0 },
       { stage: 'Contactados', count: (leadStats.contactados || 0) + (leadStats.calificados || 0) + (leadStats.seguimiento || 0) + (leadStats.en_tasacion || 0) + (leadStats.presentada || 0) + (leadStats.captados || 0) },
       { stage: 'Calificados', count: (leadStats.calificados || 0) + (leadStats.seguimiento || 0) + (leadStats.en_tasacion || 0) + (leadStats.presentada || 0) + (leadStats.captados || 0) },
       { stage: 'En tasación', count: (leadStats.en_tasacion || 0) + (leadStats.presentada || 0) + (leadStats.captados || 0) },
-      { stage: 'Presentadas', count: (leadStats.presentada || 0) + (leadStats.captados || 0) },
       { stage: 'Captados', count: leadStats.captados || 0 },
+      { stage: 'Reservados', count: reservadosCount },
+      { stage: 'Vendidos', count: vendidosCount },
     ]
 
     const conversionRate = leadStats.total > 0

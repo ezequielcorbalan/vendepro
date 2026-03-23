@@ -11,7 +11,7 @@ import { LEAD_STAGES, EVENT_TYPES } from '@/lib/crm-config'
 // ── Funnel SVG ─────────────────────────────────────────────
 function FunnelChart({ data }: { data: { stage: string; count: number }[] }) {
   const max = Math.max(...data.map(d => d.count), 1)
-  const colors = ['#3B82F6', '#06B6D4', '#10B981', '#8B5CF6', '#EC4899', '#F59E0B']
+  const colors = ['#3B82F6', '#06B6D4', '#10B981', '#8B5CF6', '#EC4899', '#F59E0B', '#22C55E']
   return (
     <div className="space-y-2">
       {data.map((item, i) => {
