@@ -12,7 +12,7 @@ import {
 import Link from 'next/link'
 import {
   LEAD_STAGES, LEAD_STAGE_KEYS, LEAD_PIPELINE_STAGES,
-  ACTIVITY_TYPES as CRM_ACTIVITY_TYPES, type LeadStage
+  ACTIVITY_TYPES as CRM_ACTIVITY_TYPES, formatWhatsApp, type LeadStage
 } from '@/lib/crm-config'
 
 // Build stage array for pipeline visual
@@ -375,7 +375,7 @@ export default function LeadDetailPage() {
             )}
             {lead.phone && (
               <a
-                href={`https://wa.me/${lead.phone.replace(/\D/g, '')}`}
+                href={`https://wa.me/${formatWhatsApp(lead.phone)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1.5 text-xs font-medium bg-green-500 text-white px-3 py-2 rounded-lg hover:opacity-90"

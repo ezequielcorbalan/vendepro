@@ -130,6 +130,17 @@ export function getLeadUrgency(lead: any): 'ok' | 'warning' | 'danger' | 'lost' 
   return 'ok'
 }
 
+// ── WHATSAPP HELPER ──────────────────────────────────────────
+export function formatWhatsApp(phone: string): string {
+  const digits = phone.replace(/\D/g, '')
+  // Already has country code (10+ digits starting with valid prefix)
+  if (digits.startsWith('54') && digits.length >= 12) return digits
+  if (digits.startsWith('+')) return digits
+  // Argentine number without country code
+  if (digits.length === 10 || digits.length === 11) return `54${digits}`
+  return digits
+}
+
 export function getUrgencyBadge(urgency: 'ok' | 'warning' | 'danger' | 'lost') {
   switch (urgency) {
     case 'danger':  return { text: 'URGENTE', class: 'bg-red-100 text-red-700' }

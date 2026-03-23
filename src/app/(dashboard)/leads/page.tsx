@@ -9,7 +9,7 @@ import {
 import {
   LEAD_STAGES, LEAD_STAGE_KEYS, LEAD_PIPELINE_STAGES, LEAD_SOURCES,
   OPERATION_TYPES, getLeadChecklist, getLeadChecklistScore,
-  getLeadUrgency, getUrgencyBadge, type LeadStage
+  getLeadUrgency, getUrgencyBadge, formatWhatsApp, type LeadStage
 } from '@/lib/crm-config'
 
 export default function LeadsPage() {
@@ -360,7 +360,7 @@ function LeadCard({ lead, onAdvance, onLost }: { lead: any; onAdvance: () => voi
           {lead.phone && (
             <>
               <a href={`tel:${lead.phone}`} className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-500"><Phone className="w-4 h-4" /></a>
-              <a href={`https://wa.me/${lead.phone.replace(/\D/g, '')}`} target="_blank" className="p-1.5 rounded-lg hover:bg-green-50 text-green-500"><MessageCircle className="w-4 h-4" /></a>
+              <a href={`https://wa.me/${formatWhatsApp(lead.phone)}`} target="_blank" className="p-1.5 rounded-lg hover:bg-green-50 text-green-500"><MessageCircle className="w-4 h-4" /></a>
             </>
           )}
           {lead.stage !== 'captado' && lead.stage !== 'perdido' && (
@@ -394,7 +394,7 @@ function KanbanCard({ lead, onAdvance }: { lead: any; onAdvance: () => void }) {
         <div className="flex gap-0.5">{Object.entries(checklist).map(([k, v]) => <div key={k} className={`w-1.5 h-1.5 rounded-full ${v ? 'bg-green-500' : 'bg-gray-200'}`} />)}</div>
         <div className="flex gap-1" onClick={e => e.preventDefault()}>
           {lead.phone && (
-            <a href={`https://wa.me/${lead.phone.replace(/\D/g, '')}`} target="_blank" className="p-1 rounded hover:bg-green-50 text-green-500"><MessageCircle className="w-3.5 h-3.5" /></a>
+            <a href={`https://wa.me/${formatWhatsApp(lead.phone)}`} target="_blank" className="p-1 rounded hover:bg-green-50 text-green-500"><MessageCircle className="w-3.5 h-3.5" /></a>
           )}
           <button onClick={onAdvance} className="p-1 rounded hover:bg-pink-50 text-pink-500"><ArrowRight className="w-3.5 h-3.5" /></button>
         </div>

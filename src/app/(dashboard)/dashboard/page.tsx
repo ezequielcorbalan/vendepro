@@ -314,8 +314,6 @@ export default function DashboardCRM() {
         </h2>
         <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-9 gap-2">
           {Object.entries(LEAD_STAGES).map(([key, cfg]) => {
-            const count = leads[key === 'en_tasacion' ? 'en_tasacion' : key] || leads[key + 's'] || 0
-            // Map stage keys to API response keys
             const countMap: any = {
               nuevo: leads.nuevos, asignado: leads.asignados, contactado: leads.contactados,
               calificado: leads.calificados, seguimiento: leads.seguimiento, en_tasacion: leads.en_tasacion,

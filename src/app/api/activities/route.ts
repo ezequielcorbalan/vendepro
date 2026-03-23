@@ -90,7 +90,7 @@ export async function DELETE(request: NextRequest) {
 
   const db = await getDB()
   try {
-    await db.prepare('DELETE FROM activities WHERE id = ?').bind(id).run()
+    await db.prepare('DELETE FROM activities WHERE id = ? AND org_id = ?').bind(id, user.org_id || 'org_mg').run()
     return NextResponse.json({ success: true })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })

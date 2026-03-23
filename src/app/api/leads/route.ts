@@ -51,9 +51,9 @@ export async function GET(request: NextRequest) {
 
     let query = isAdmin
       ? `SELECT l.*, u.full_name as assigned_name FROM leads l LEFT JOIN users u ON l.assigned_to = u.id WHERE l.org_id = ?`
-      : `SELECT l.*, u.full_name as assigned_name FROM leads l LEFT JOIN users u ON l.assigned_to = u.id WHERE l.assigned_to = ?`
+      : `SELECT l.*, u.full_name as assigned_name FROM leads l LEFT JOIN users u ON l.assigned_to = u.id WHERE l.org_id = ? AND (l.assigned_to = ? OR l.assigned_to IS NULL)`
 
-    const binds: any[] = [isAdmin ? (user.org_id || 'org_mg') : user.id]
+    const binds: any[] = isAdmin ? [user.org_id || 'org_mg'] : [user.org_id || 'org_mg', user.id]
 
     if (stage) {
       query += ' AND l.stage = ?'
@@ -200,9 +200,14 @@ export async function DELETE(request: NextRequest) {
   const db = await getDB()
 
   try {
+    const orgId = user.org_id || 'org_mg'
+    // Verify ownership before delete
+    const lead = await db.prepare('SELECT id FROM leads WHERE id = ? AND org_id = ?').bind(id, orgId).first()
+    if (!lead) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
     await db.prepare('DELETE FROM stage_history WHERE entity_type = ? AND entity_id = ?').bind('lead', id).run()
     await db.prepare('DELETE FROM activities WHERE lead_id = ?').bind(id).run()
-    await db.prepare('DELETE FROM leads WHERE id = ?').bind(id).run()
+    await db.prepare('DELETE FROM leads WHERE id = ? AND org_id = ?').bind(id, orgId).run()
     return NextResponse.json({ success: true })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
