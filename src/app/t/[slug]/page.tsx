@@ -104,34 +104,33 @@ export default async function TasacionPublicPage({
         </a>
       )}
 
-      {/* Hero — Premium gradient */}
-      <header className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#ff007c]/20 via-transparent to-[#ff8017]/20" />
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-gray-900/50 to-transparent" />
+      {/* Hero — Brand gradient pink→orange on white */}
+      <header className="relative overflow-hidden bg-gradient-to-br from-[#ff007c] via-[#ff3d94] to-[#ff8017]">
+        <div className="absolute top-0 right-0 w-72 h-72 bg-white/10 rounded-full -translate-y-1/3 translate-x-1/3" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full translate-y-1/3 -translate-x-1/4" />
         <div className={`relative max-w-5xl mx-auto px-4 sm:px-8 ${presentationMode ? 'py-20 sm:py-32' : 'py-12 sm:py-20'}`}>
           <div className="flex items-center gap-3 mb-8">
             <img src="/logo.png" alt="Marcela Genta" className={`brightness-0 invert ${presentationMode ? 'h-12 sm:h-16' : 'h-8 sm:h-12'}`} />
-            <span className={`text-white/60 font-medium ${presentationMode ? 'text-base' : 'text-sm'}`}>Operaciones Inmobiliarias</span>
+            <span className={`text-white/80 font-medium ${presentationMode ? 'text-base' : 'text-sm'}`}>Operaciones Inmobiliarias</span>
           </div>
-          <div className="inline-block bg-white/10 backdrop-blur-sm rounded-full px-4 py-1.5 mb-4">
-            <p className="text-white/80 text-xs sm:text-sm font-medium tracking-wider uppercase">Propuesta de tasaci&oacute;n</p>
+          <div className="inline-block bg-white/20 backdrop-blur-sm rounded-full px-4 py-1.5 mb-4">
+            <p className="text-white text-xs sm:text-sm font-medium tracking-wider uppercase">Propuesta de tasaci&oacute;n</p>
           </div>
           <h1 className={`font-bold leading-tight mb-3 text-white ${presentationMode ? 'text-4xl sm:text-6xl' : 'text-3xl sm:text-5xl'}`}>{a.property_address}</h1>
-          <p className={`text-white/60 font-light ${presentationMode ? 'text-lg sm:text-2xl' : 'text-lg sm:text-xl'}`}>{a.neighborhood}, {a.city}</p>
+          <p className={`text-white/80 font-light ${presentationMode ? 'text-lg sm:text-2xl' : 'text-lg sm:text-xl'}`}>{a.neighborhood}, {a.city}</p>
 
           {/* Agent card */}
-          <div className="mt-8 inline-flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-2xl px-5 py-3">
+          <div className="mt-8 inline-flex items-center gap-4 bg-white/20 backdrop-blur-sm rounded-2xl px-5 py-3">
             {a.agent_photo ? (
-              <img src={a.agent_photo} alt={a.agent_name} className={`rounded-full object-cover ring-2 ring-white/30 ${presentationMode ? 'w-14 h-14' : 'w-11 h-11'}`} />
+              <img src={a.agent_photo} alt={a.agent_name} className={`rounded-full object-cover ring-2 ring-white/40 ${presentationMode ? 'w-14 h-14' : 'w-11 h-11'}`} />
             ) : (
-              <div className={`rounded-full bg-gradient-to-br from-[#ff007c] to-[#ff8017] flex items-center justify-center font-bold text-white ${presentationMode ? 'w-14 h-14 text-xl' : 'w-11 h-11'}`}>
+              <div className={`rounded-full bg-white/30 flex items-center justify-center font-bold text-white ${presentationMode ? 'w-14 h-14 text-xl' : 'w-11 h-11'}`}>
                 {(a.agent_name || 'A').charAt(0)}
               </div>
             )}
             <div>
               <p className={`font-semibold text-white ${presentationMode ? 'text-base' : 'text-sm'}`}>{a.agent_name}</p>
-              <p className={`text-white/50 ${presentationMode ? 'text-sm' : 'text-xs'}`}>{a.agent_phone}</p>
+              <p className={`text-white/70 ${presentationMode ? 'text-sm' : 'text-xs'}`}>{a.agent_phone}</p>
             </div>
           </div>
         </div>
@@ -485,53 +484,53 @@ export default async function TasacionPublicPage({
           </section>
         )}
 
-        {/* Valuation — Premium dark section */}
-        <section className="relative overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl p-6 sm:p-12 text-white shadow-2xl">
-          <div className="absolute inset-0 bg-gradient-to-r from-[#ff007c]/10 via-transparent to-[#ff8017]/10" />
-          <div className="absolute top-0 right-0 w-64 h-64 bg-[#ff007c]/5 rounded-full blur-3xl" />
+        {/* Valuation — Brand gradient */}
+        <section className="relative overflow-hidden bg-gradient-to-br from-[#ff007c] via-[#ff3d94] to-[#ff8017] rounded-2xl p-6 sm:p-12 text-white shadow-xl">
+          <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -translate-y-1/4 translate-x-1/4" />
+          <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full translate-y-1/4 -translate-x-1/4" />
           <div className="relative">
-            <p className="text-white/40 text-xs font-medium tracking-widest uppercase mb-2">Resultado del an&aacute;lisis</p>
+            <p className="text-white/70 text-xs font-medium tracking-widest uppercase mb-2">Resultado del an&aacute;lisis</p>
             <h2 className={`font-bold mb-8 ${presentationMode ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl'}`}>
               Tasaci&oacute;n proyectada
             </h2>
             <div className="grid grid-cols-2 gap-4 sm:gap-6 mb-8">
-              <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-5 sm:p-6 text-center">
-                <p className="text-xs text-white/40 uppercase tracking-wider mb-2">Sup. ponderada</p>
+              <div className="bg-white/20 backdrop-blur rounded-2xl p-5 sm:p-6 text-center">
+                <p className="text-xs text-white/70 uppercase tracking-wider mb-2">Sup. ponderada</p>
                 <p className={`font-bold ${presentationMode ? 'text-4xl sm:text-5xl' : 'text-3xl sm:text-4xl'}`}>{weighted.toFixed(1)}</p>
-                <p className="text-white/40 text-sm mt-1">m&sup2;</p>
+                <p className="text-white/60 text-sm mt-1">m&sup2;</p>
               </div>
-              <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-5 sm:p-6 text-center">
-                <p className="text-xs text-white/40 uppercase tracking-wider mb-2">USD/m&sup2;</p>
+              <div className="bg-white/20 backdrop-blur rounded-2xl p-5 sm:p-6 text-center">
+                <p className="text-xs text-white/70 uppercase tracking-wider mb-2">USD/m&sup2;</p>
                 <p className={`font-bold ${presentationMode ? 'text-4xl sm:text-5xl' : 'text-3xl sm:text-4xl'}`}>{usdM2.toLocaleString('es-AR')}</p>
-                <p className="text-white/40 text-sm mt-1">d&oacute;lares</p>
+                <p className="text-white/60 text-sm mt-1">d&oacute;lares</p>
               </div>
             </div>
             <div className="space-y-4">
               {a.test_price && (
-                <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-5 sm:p-6 flex items-center justify-between">
+                <div className="bg-white/15 backdrop-blur rounded-2xl p-5 sm:p-6 flex items-center justify-between">
                   <div>
-                    <p className="text-xs text-white/40 uppercase tracking-wider">Valor prueba</p>
+                    <p className="text-xs text-white/70 uppercase tracking-wider">Valor prueba</p>
                     <p className="text-white/60 text-sm">30 d&iacute;as</p>
                   </div>
-                  <p className={`font-bold text-yellow-400 ${presentationMode ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl'}`}>USD {Number(a.test_price).toLocaleString('es-AR')}</p>
+                  <p className={`font-bold text-white ${presentationMode ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl'}`}>USD {Number(a.test_price).toLocaleString('es-AR')}</p>
                 </div>
               )}
               {a.suggested_price && (
-                <div className="bg-gradient-to-r from-[#ff007c]/20 to-[#ff8017]/20 border border-[#ff007c]/30 rounded-2xl p-6 sm:p-8 flex items-center justify-between">
+                <div className="bg-white rounded-2xl p-6 sm:p-8 flex items-center justify-between shadow-lg">
                   <div>
-                    <p className="text-sm font-semibold text-white/90">Valor sugerido</p>
-                    <p className="text-xs text-white/50">Publicaci&oacute;n inicial</p>
+                    <p className="text-sm font-semibold text-gray-800">Valor sugerido</p>
+                    <p className="text-xs text-gray-400">Publicaci&oacute;n inicial</p>
                   </div>
                   <p className={`font-black bg-gradient-to-r from-[#ff007c] to-[#ff8017] bg-clip-text text-transparent ${presentationMode ? 'text-4xl sm:text-5xl' : 'text-3xl sm:text-4xl'}`}>USD {Number(a.suggested_price).toLocaleString('es-AR')}</p>
                 </div>
               )}
               {a.expected_close_price && (
-                <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-5 sm:p-6 flex items-center justify-between">
+                <div className="bg-white/15 backdrop-blur rounded-2xl p-5 sm:p-6 flex items-center justify-between">
                   <div>
-                    <p className="text-xs text-white/40 uppercase tracking-wider">Cierre esperado</p>
+                    <p className="text-xs text-white/70 uppercase tracking-wider">Cierre esperado</p>
                     <p className="text-white/60 text-sm">120 d&iacute;as</p>
                   </div>
-                  <p className={`font-bold text-green-400 ${presentationMode ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl'}`}>USD {Number(a.expected_close_price).toLocaleString('es-AR')}</p>
+                  <p className={`font-bold text-white ${presentationMode ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl'}`}>USD {Number(a.expected_close_price).toLocaleString('es-AR')}</p>
                 </div>
               )}
             </div>
@@ -547,15 +546,15 @@ export default async function TasacionPublicPage({
           </section>
         )}
 
-        <section className="relative overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl p-8 sm:p-16 text-white text-center">
-          <div className="absolute inset-0 bg-gradient-to-r from-[#ff007c]/20 via-transparent to-[#ff8017]/20" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#ff007c]/10 rounded-full blur-3xl" />
+        <section className="relative overflow-hidden bg-gradient-to-br from-[#ff007c] via-[#ff3d94] to-[#ff8017] rounded-2xl p-8 sm:p-16 text-white text-center">
+          <div className="absolute top-0 left-0 w-40 h-40 bg-white/10 rounded-full -translate-y-1/2 -translate-x-1/2" />
+          <div className="absolute bottom-0 right-0 w-56 h-56 bg-white/10 rounded-full translate-y-1/3 translate-x-1/3" />
           <div className="relative">
-            <p className="text-white/40 text-xs font-medium tracking-widest uppercase mb-3">Siguiente paso</p>
+            <p className="text-white/70 text-xs font-medium tracking-widest uppercase mb-3">Siguiente paso</p>
             <h2 className={`font-bold mb-4 ${presentationMode ? 'text-3xl sm:text-5xl' : 'text-2xl sm:text-3xl'}`}>
               &iquest;Listo para vender al mejor precio?
             </h2>
-            <p className={`text-white/50 mb-10 max-w-lg mx-auto ${presentationMode ? 'text-lg' : 'text-sm sm:text-base'}`}>
+            <p className={`text-white/80 mb-10 max-w-lg mx-auto ${presentationMode ? 'text-lg' : 'text-sm sm:text-base'}`}>
               Si est&aacute;s dispuesto a vender con esta estrategia, coordinemos una reuni&oacute;n para aclarar todas las dudas.
             </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
