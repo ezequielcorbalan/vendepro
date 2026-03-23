@@ -7,7 +7,7 @@ import {
   MessageCircle, User, AlertCircle, Loader2, CheckCircle,
   Activity, ChevronRight, ExternalLink, PlusCircle, Home,
   DollarSign, Briefcase, PawPrint, StickyNote, Target, X,
-  Send, RefreshCw, Link2,
+  Send, RefreshCw, Link2, Calculator,
 } from 'lucide-react'
 import Link from 'next/link'
 import {
@@ -83,10 +83,13 @@ export default function LeadDetailPage() {
   const [lead, setLead] = useState<any>(null)
   const [activities, setActivities] = useState<any[]>([])
   const [history, setHistory] = useState<any[]>([])
+  const [linkedAppraisal, setLinkedAppraisal] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [stageUpdating, setStageUpdating] = useState(false)
   const [converting, setConverting] = useState(false)
+  const [showEdit, setShowEdit] = useState(false)
+  const [editForm, setEditForm] = useState<any>({})
 
   // Activity form state
   const [showActivityForm, setShowActivityForm] = useState(false)
@@ -104,6 +107,7 @@ export default function LeadDetailPage() {
       setLead(data.lead)
       setActivities(data.activities || [])
       setHistory(data.history || [])
+      setLinkedAppraisal(data.linkedAppraisal || null)
       setError(null)
     } catch (err: any) {
       setError(err.message || 'Error cargando datos')
@@ -157,6 +161,42 @@ export default function LeadDetailPage() {
     } finally {
       setSavingActivity(false)
     }
+  }
+
+  // ------ Edit lead ------
+  function openEdit() {
+    setEditForm({
+      full_name: lead.full_name || '',
+      phone: lead.phone || '',
+      email: lead.email || '',
+      source: lead.source || 'manual',
+      source_detail: lead.source_detail || '',
+      operation: lead.operation || 'venta',
+      property_address: lead.property_address || '',
+      neighborhood: lead.neighborhood || '',
+      estimated_value: lead.estimated_value || '',
+      budget: lead.budget || '',
+      timing: lead.timing || '',
+      personas_trabajo: lead.personas_trabajo || '',
+      mascotas: lead.mascotas || '',
+      notes: lead.notes || '',
+      next_step: lead.next_step || '',
+      next_step_date: lead.next_step_date || '',
+      lost_reason: lead.lost_reason || '',
+    })
+    setShowEdit(true)
+  }
+
+  async function handleSaveEdit() {
+    try {
+      await fetch('/api/leads', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: leadId, ...editForm }),
+      })
+      setShowEdit(false)
+      await fetchLead()
+    } catch {}
   }
 
   // ------ Convert lead → tasación ------
@@ -277,6 +317,9 @@ export default function LeadDetailPage() {
           <ArrowLeft className="w-4 h-4" /> Volver a Leads
         </button>
         <div className="flex items-center gap-2">
+          <button onClick={openEdit} className="text-xs sm:text-sm font-medium border border-gray-300 text-gray-700 px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center gap-1.5">
+            <StickyNote className="w-4 h-4" /> Editar
+          </button>
           {lead.stage !== 'captado' && lead.stage !== 'perdido' && lead.stage !== 'en_tasacion' && lead.stage !== 'presentada' && (
             <button
               onClick={handleConvert}
@@ -421,6 +464,18 @@ export default function LeadDetailPage() {
               )}
             </div>
           </div>
+
+          {/* Linked appraisal */}
+          {linkedAppraisal && (
+            <Link href={`/tasaciones/${linkedAppraisal.id}`} className="block bg-purple-50 border border-purple-200 rounded-2xl p-4 hover:bg-purple-100 transition-colors">
+              <div className="flex items-center gap-2 mb-1">
+                <Calculator className="w-4 h-4 text-purple-600" />
+                <h3 className="text-sm font-semibold text-purple-800">Tasación vinculada</h3>
+              </div>
+              <p className="text-xs text-purple-600">{linkedAppraisal.property_address || linkedAppraisal.neighborhood || 'Sin dirección'}</p>
+              <p className="text-[10px] text-purple-400 mt-1 capitalize">Estado: {linkedAppraisal.status || 'draft'}</p>
+            </Link>
+          )}
 
           {/* Stage history */}
           {history.length > 0 && (
@@ -578,6 +633,78 @@ export default function LeadDetailPage() {
               >
                 Cancelar
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ---- Edit lead modal ---- */}
+      {showEdit && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center" onClick={() => setShowEdit(false)}>
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white border-b px-4 py-3 flex items-center justify-between rounded-t-2xl z-10">
+              <h2 className="font-semibold text-gray-800">Editar lead</h2>
+              <button onClick={() => setShowEdit(false)} className="p-1 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="p-4 space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] text-gray-400 uppercase">Nombre</label>
+                  <input value={editForm.full_name} onChange={e => setEditForm({ ...editForm, full_name: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-gray-400 uppercase">Teléfono</label>
+                  <input value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-gray-400 uppercase">Email</label>
+                  <input value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-gray-400 uppercase">Operación</label>
+                  <select value={editForm.operation} onChange={e => setEditForm({ ...editForm, operation: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full">
+                    <option value="venta">Venta</option><option value="alquiler">Alquiler</option><option value="tasacion">Tasación</option><option value="otro">Otro</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] text-gray-400 uppercase">Dirección</label>
+                  <input value={editForm.property_address} onChange={e => setEditForm({ ...editForm, property_address: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-gray-400 uppercase">Barrio</label>
+                  <input value={editForm.neighborhood} onChange={e => setEditForm({ ...editForm, neighborhood: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-gray-400 uppercase">Valor estimado (USD)</label>
+                  <input type="number" value={editForm.estimated_value} onChange={e => setEditForm({ ...editForm, estimated_value: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-gray-400 uppercase">Presupuesto</label>
+                  <input value={editForm.budget} onChange={e => setEditForm({ ...editForm, budget: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
+                </div>
+              </div>
+              <div>
+                <label className="text-[10px] text-gray-400 uppercase">Próxima acción</label>
+                <input value={editForm.next_step} onChange={e => setEditForm({ ...editForm, next_step: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
+              </div>
+              <div>
+                <label className="text-[10px] text-gray-400 uppercase">Fecha próxima acción</label>
+                <input type="date" value={editForm.next_step_date} onChange={e => setEditForm({ ...editForm, next_step_date: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
+              </div>
+              <div>
+                <label className="text-[10px] text-gray-400 uppercase">Notas</label>
+                <textarea rows={3} value={editForm.notes} onChange={e => setEditForm({ ...editForm, notes: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
+              </div>
+              {lead.stage === 'perdido' && (
+                <div>
+                  <label className="text-[10px] text-gray-400 uppercase">Razón de pérdida</label>
+                  <input value={editForm.lost_reason} onChange={e => setEditForm({ ...editForm, lost_reason: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
+                </div>
+              )}
+            </div>
+            <div className="sticky bottom-0 bg-white border-t px-4 py-3 flex gap-2">
+              <button onClick={() => setShowEdit(false)} className="flex-1 px-4 py-2 border rounded-lg text-sm">Cancelar</button>
+              <button onClick={handleSaveEdit} className="flex-1 px-4 py-2 bg-[#ff007c] text-white rounded-lg text-sm font-medium">Guardar</button>
             </div>
           </div>
         </div>

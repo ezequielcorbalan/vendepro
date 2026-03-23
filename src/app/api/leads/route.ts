@@ -38,7 +38,15 @@ export async function GET(request: NextRequest) {
         `SELECT sh.*, u.full_name as changed_by_name FROM stage_history sh LEFT JOIN users u ON sh.changed_by = u.id WHERE sh.entity_type = 'lead' AND sh.entity_id = ? ORDER BY sh.created_at DESC`
       ).bind(leadId).all()).results
 
-      return NextResponse.json({ lead, activities, history })
+      // Get linked appraisal
+      let linkedAppraisal = null
+      try {
+        linkedAppraisal = await db.prepare(
+          `SELECT id, property_address, neighborhood, status, created_at FROM appraisals WHERE lead_id = ? LIMIT 1`
+        ).bind(leadId).first()
+      } catch { /* column may not exist */ }
+
+      return NextResponse.json({ lead, activities, history, linkedAppraisal })
     }
 
     let query = isAdmin
@@ -122,39 +130,53 @@ export async function PUT(request: NextRequest) {
   const orgId = user.org_id || 'org_mg'
 
   try {
-    // Get current stage for history
-    const current = await db.prepare('SELECT stage FROM leads WHERE id = ?').bind(data.id).first() as any
-    const oldStage = current?.stage
+    // Get current lead for stage history + partial update
+    const current = await db.prepare('SELECT * FROM leads WHERE id = ?').bind(data.id).first() as any
+    if (!current) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    const oldStage = current.stage
 
-    // Update first_contact_at if moving from nuevo to contactado
-    let firstContactAt = null
-    if (oldStage === 'nuevo' && data.stage === 'contactado') {
-      firstContactAt = new Date().toISOString()
+    // If only stage is being changed (quick advance from list)
+    if (data.stage && Object.keys(data).length <= 3) {
+      let firstContactSql = ''
+      const binds: any[] = [data.stage]
+      if (oldStage === 'nuevo' && data.stage === 'contactado') {
+        firstContactSql = ', first_contact_at=?'
+        binds.push(new Date().toISOString())
+      }
+      binds.push(data.id)
+      await db.prepare(`UPDATE leads SET stage=?, updated_at=datetime('now')${firstContactSql} WHERE id=?`).bind(...binds).run()
+    } else {
+      // Full update — merge with current values so we don't null out fields
+      const m = (key: string) => data[key] !== undefined ? data[key] : current[key]
+      let firstContactAt = null
+      if (oldStage === 'nuevo' && data.stage === 'contactado') {
+        firstContactAt = new Date().toISOString()
+      }
+
+      await db.prepare(`
+        UPDATE leads SET full_name=?, phone=?, email=?, source=?, source_detail=?,
+          property_address=?, neighborhood=?, property_type=?, operation=?, stage=?,
+          assigned_to=?, notes=?, estimated_value=?, budget=?, timing=?,
+          personas_trabajo=?, mascotas=?, next_step=?, next_step_date=?,
+          lost_reason=?,
+          first_contact_at=COALESCE(?, first_contact_at),
+          updated_at=datetime('now')
+        WHERE id=?
+      `).bind(
+        m('full_name'), m('phone'), m('email'),
+        m('source'), m('source_detail'),
+        m('property_address'), m('neighborhood'),
+        m('property_type'), m('operation'),
+        data.stage || current.stage, m('assigned_to'),
+        m('notes'), m('estimated_value'),
+        m('budget'), m('timing'),
+        m('personas_trabajo'), m('mascotas'),
+        m('next_step'), m('next_step_date'),
+        m('lost_reason'),
+        firstContactAt,
+        data.id
+      ).run()
     }
-
-    await db.prepare(`
-      UPDATE leads SET full_name=?, phone=?, email=?, source=?, source_detail=?,
-        property_address=?, neighborhood=?, property_type=?, operation=?, stage=?,
-        assigned_to=?, notes=?, estimated_value=?, budget=?, timing=?,
-        personas_trabajo=?, mascotas=?, next_step=?, next_step_date=?,
-        lost_reason=?,
-        first_contact_at=COALESCE(?, first_contact_at),
-        updated_at=datetime('now')
-      WHERE id=?
-    `).bind(
-      data.full_name, data.phone || null, data.email || null,
-      data.source || 'manual', data.source_detail || null,
-      data.property_address || null, data.neighborhood || null,
-      data.property_type || null, data.operation || 'venta',
-      data.stage || 'nuevo', data.assigned_to || null,
-      data.notes || null, data.estimated_value || null,
-      data.budget || null, data.timing || null,
-      data.personas_trabajo || null, data.mascotas || null,
-      data.next_step || null, data.next_step_date || null,
-      data.lost_reason || null,
-      firstContactAt,
-      data.id
-    ).run()
 
     // Log stage change if different
     if (oldStage && data.stage && oldStage !== data.stage) {
