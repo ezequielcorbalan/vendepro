@@ -6,6 +6,7 @@ import {
   ClipboardList, RefreshCw, FileText, FileSignature, Loader2, Filter,
   CheckCircle, Search, Clock, Trash2, MessageCircle, Link2, CalendarDays,
 } from 'lucide-react'
+import { useToast } from '@/components/ui/Toast'
 import { EVENT_TYPES } from '@/lib/crm-config'
 
 /* ──────────────────────────────────────────────────────────
@@ -66,6 +67,7 @@ type StatusFilter = 'all' | 'pending' | 'completed' | 'overdue'
    ────────────────────────────────────────────────────────── */
 
 export default function CalendarioPage() {
+  const { toast } = useToast()
   const today = useRef(new Date())
   const now = today.current
 
@@ -244,17 +246,21 @@ export default function CalendarioPage() {
       if (data.id) {
         setShowCreateModal(false)
         resetForm()
+        toast('Evento creado')
         await fetchEvents()
+      } else {
+        toast(data.error || 'Error al crear evento', 'error')
       }
     } finally { setSaving(false) }
   }
 
   async function handleToggleComplete(id: string) {
-    // Optimistic
+    const ev = events.find(e => e.id === id)
     setEvents(prev => prev.map(e => e.id === id ? { ...e, completed: e.completed ? 0 : 1 } : e))
+    toast(ev?.completed ? 'Evento reabierto' : 'Evento completado')
     try {
       await fetch('/api/calendar', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, _action: 'toggle_complete' }) })
-    } catch { fetchEvents() }
+    } catch { toast('Error', 'error'); fetchEvents() }
   }
 
   async function handleReschedule(id: string) {
@@ -263,8 +269,9 @@ export default function CalendarioPage() {
       await fetch('/api/calendar', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, _action: 'reschedule', start_at: rescheduleDate, end_at: rescheduleDate }) })
       setRescheduleId(null)
       setRescheduleDate('')
+      toast('Evento reprogramado')
       await fetchEvents()
-    } catch { /* */ }
+    } catch { toast('Error al reprogramar', 'error') }
   }
 
   async function handleDelete(id: string) {
@@ -272,7 +279,8 @@ export default function CalendarioPage() {
     setEvents(prev => prev.filter(e => e.id !== id))
     try {
       await fetch(`/api/calendar?id=${id}`, { method: 'DELETE' })
-    } catch { fetchEvents() }
+      toast('Evento eliminado', 'warning')
+    } catch { toast('Error', 'error'); fetchEvents() }
   }
 
   function resetForm() {

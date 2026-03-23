@@ -2,12 +2,14 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Plus, X, Target, Trash2, ChevronLeft, BarChart3 } from 'lucide-react'
 import Link from 'next/link'
+import { useToast } from '@/components/ui/Toast'
 import {
   OBJECTIVE_METRICS, PERIOD_TYPES, getObjectiveSemaforo, getPeriodProgressPct,
   type ObjectiveMetric
 } from '@/lib/crm-config'
 
 export default function ObjetivosPage() {
+  const { toast } = useToast()
   const [objectives, setObjectives] = useState<any[]>([])
   const [agents, setAgents] = useState<any[]>([])
   const [activities, setActivities] = useState<any[]>([])
@@ -94,14 +96,16 @@ export default function ObjetivosPage() {
       })
       setShowCreate(false)
       setForm({ agent_id: '', period_type: 'monthly', metric: 'llamadas', target: '' })
+      toast('Objetivo creado')
       loadData()
-    } catch {}
+    } catch { toast('Error al crear objetivo', 'error') }
     setSaving(false)
   }
 
   const handleDelete = async (id: string) => {
     if (!confirm('¿Eliminar este objetivo?')) return
     await fetch(`/api/objectives?id=${id}`, { method: 'DELETE' })
+    toast('Objetivo eliminado', 'warning')
     loadData()
   }
 

@@ -506,10 +506,13 @@ export default function LeadDetailPage() {
               <InfoRow icon={User} label="Personas/Trabajo" value={lead.personas_trabajo} />
               <InfoRow icon={PawPrint} label="Mascotas" value={lead.mascotas} />
               <InfoRow icon={StickyNote} label="Notas" value={lead.notes} multiline />
-              <InfoRow icon={Target} label="Proximo paso" value={lead.next_step} />
-              {lead.next_step_date && (
-                <InfoRow icon={Calendar} label="Fecha prox. paso" value={formatDate(lead.next_step_date)} />
-              )}
+              {/* Inline editable next step */}
+              <InlineNextStep
+                leadId={leadId}
+                nextStep={lead.next_step || ''}
+                nextStepDate={lead.next_step_date || ''}
+                onSave={() => { toast('Próximo paso actualizado'); fetchLead() }}
+              />
               {lead.lost_reason && (
                 <InfoRow icon={AlertCircle} label="Razon de perdida" value={lead.lost_reason} />
               )}
@@ -816,6 +819,67 @@ export default function LeadDetailPage() {
 // ---------------------------------------------------------------------------
 // Info row sub-component
 // ---------------------------------------------------------------------------
+
+// ── Inline editable next step ──
+function InlineNextStep({ leadId, nextStep, nextStepDate, onSave }: {
+  leadId: string; nextStep: string; nextStepDate: string; onSave: () => void
+}) {
+  const [editing, setEditing] = useState(false)
+  const [step, setStep] = useState(nextStep)
+  const [date, setDate] = useState(nextStepDate)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => { setStep(nextStep); setDate(nextStepDate) }, [nextStep, nextStepDate])
+
+  async function save() {
+    setSaving(true)
+    await fetch('/api/leads', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: leadId, next_step: step, next_step_date: date }),
+    })
+    setSaving(false)
+    setEditing(false)
+    onSave()
+  }
+
+  if (editing) {
+    return (
+      <div className="flex gap-3 text-sm p-2 bg-yellow-50 rounded-lg border border-yellow-200">
+        <Target className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-1" />
+        <div className="flex-1 space-y-2">
+          <input value={step} onChange={e => setStep(e.target.value)} placeholder="Próxima acción..."
+            className="w-full border rounded px-2 py-1 text-sm" autoFocus />
+          <input type="date" value={date} onChange={e => setDate(e.target.value)}
+            className="w-full border rounded px-2 py-1 text-sm" />
+          <div className="flex gap-1">
+            <button onClick={save} disabled={saving} className="text-xs bg-yellow-600 text-white px-3 py-1 rounded hover:bg-yellow-700 disabled:opacity-50">
+              {saving ? '...' : 'Guardar'}
+            </button>
+            <button onClick={() => setEditing(false)} className="text-xs text-gray-500 px-2 py-1">Cancelar</button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex gap-3 text-sm group cursor-pointer" onClick={() => setEditing(true)}>
+      <Target className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">Próximo paso</p>
+        {nextStep ? (
+          <div className="flex items-center gap-2">
+            <p className="text-gray-700 group-hover:text-yellow-700 transition-colors">{nextStep}</p>
+            {nextStepDate && <span className="text-[10px] text-gray-400">{new Date(nextStepDate).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}</span>}
+          </div>
+        ) : (
+          <p className="text-gray-300 group-hover:text-yellow-600 transition-colors italic">+ Definir próximo paso</p>
+        )}
+      </div>
+    </div>
+  )
+}
 
 function InfoRow({
   icon: Icon,
