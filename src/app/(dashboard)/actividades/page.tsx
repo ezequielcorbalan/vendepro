@@ -33,7 +33,10 @@ export default function ActividadesPage() {
   const [filterAgent, setFilterAgent] = useState('')
   const [showCreate, setShowCreate] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState({ activity_type: 'llamada', description: '', lead_id: '' })
+  const [form, setForm] = useState({ activity_type: 'llamada', description: '', lead_id: '', contact_id: '', linkedName: '' })
+  const [entitySearch, setEntitySearch] = useState('')
+  const [entityResults, setEntityResults] = useState<any[]>([])
+  const [searchTimer, setSearchTimer] = useState<any>(null)
 
   const periodStart = PERIOD_OPTIONS.find(p => p.key === period)?.start() || ''
 
@@ -127,15 +130,46 @@ export default function ActividadesPage() {
     return sorted.map(a => ({ ...a, pct: Math.round((a.count / max) * 100) }))
   }, [activities])
 
+  function searchEntities(q: string) {
+    setEntitySearch(q)
+    if (searchTimer) clearTimeout(searchTimer)
+    if (q.length < 2) { setEntityResults([]); return }
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/search-entities?q=${encodeURIComponent(q)}`)
+        const data = (await res.json()) as any
+        setEntityResults(Array.isArray(data) ? data : [])
+      } catch { setEntityResults([]) }
+    }, 300)
+    setSearchTimer(t)
+  }
+
+  function selectEntity(entity: any) {
+    setForm({
+      ...form,
+      lead_id: entity.entity_type === 'lead' ? entity.id : '',
+      contact_id: entity.entity_type === 'contact' ? entity.id : '',
+      linkedName: `${entity.entity_type === 'lead' ? 'Lead' : 'Contacto'}: ${entity.name}`,
+    })
+    setEntitySearch('')
+    setEntityResults([])
+  }
+
   const handleCreate = async () => {
     setSaving(true)
     try {
       await fetch('/api/activities', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ activity_type: form.activity_type, description: form.description, lead_id: form.lead_id || null, completed_at: new Date().toISOString() }),
+        body: JSON.stringify({
+          activity_type: form.activity_type,
+          description: form.description,
+          lead_id: form.lead_id || null,
+          contact_id: form.contact_id || null,
+          completed_at: new Date().toISOString(),
+        }),
       })
       setShowCreate(false)
-      setForm({ activity_type: 'llamada', description: '', lead_id: '' })
+      setForm({ activity_type: 'llamada', description: '', lead_id: '', contact_id: '', linkedName: '' })
       loadData()
     } catch {}
     setSaving(false)
@@ -352,6 +386,35 @@ export default function ActividadesPage() {
                     )
                   })}
                 </div>
+              </div>
+              {/* Entity link */}
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Vincular a (opcional)</label>
+                {form.linkedName ? (
+                  <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg">
+                    <span className="text-xs text-blue-700 flex-1">{form.linkedName}</span>
+                    <button onClick={() => setForm({ ...form, lead_id: '', contact_id: '', linkedName: '' })} className="text-blue-400 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <input type="text" placeholder="Buscar lead o contacto..." value={entitySearch} onChange={e => searchEntities(e.target.value)}
+                      className="w-full border rounded-lg px-3 py-2 text-sm" />
+                    {entityResults.length > 0 && (
+                      <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg max-h-32 overflow-y-auto">
+                        {entityResults.map((r: any) => (
+                          <button key={`${r.entity_type}-${r.id}`} onClick={() => selectEntity(r)}
+                            className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-xs border-b last:border-0">
+                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium ${r.entity_type === 'lead' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                              {r.entity_type === 'lead' ? 'Lead' : 'Contacto'}
+                            </span>
+                            <span className="text-gray-800 truncate">{r.name}</span>
+                            {r.phone && <span className="text-gray-400 ml-auto">{r.phone}</span>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               <textarea placeholder="Descripción..." rows={3} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
             </div>

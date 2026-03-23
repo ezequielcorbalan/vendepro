@@ -112,12 +112,15 @@ export default function DashboardCRM() {
           <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Dashboard CRM</h1>
           <p className="text-gray-500 text-sm">Resumen ejecutivo del negocio</p>
         </div>
-        <div className="flex items-center gap-3">
-          <Link href="/dashboard/mi-performance" className="text-sm text-pink-600 hover:text-pink-700 flex items-center gap-1">
-            Mi performance <ChevronRight className="w-4 h-4" />
+        <div className="flex flex-wrap items-center gap-2">
+          <Link href="/leads" className="bg-pink-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-pink-700 flex items-center gap-1">
+            <Users className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Nuevo lead</span><span className="sm:hidden">Lead</span>
           </Link>
-          <Link href="/dashboard/reportes" className="text-sm text-gray-400 hover:text-gray-600 flex items-center gap-1">
-            Reportes <ChevronRight className="w-4 h-4" />
+          <Link href="/dashboard/mi-performance" className="text-xs text-pink-600 hover:text-pink-700 flex items-center gap-1 border border-pink-200 px-2.5 py-1.5 rounded-lg">
+            Mi performance
+          </Link>
+          <Link href="/dashboard/reportes" className="hidden sm:flex text-xs text-gray-400 hover:text-gray-600 items-center gap-1">
+            Reportes <ChevronRight className="w-3 h-3" />
           </Link>
         </div>
       </div>
