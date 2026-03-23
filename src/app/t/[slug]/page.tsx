@@ -137,7 +137,7 @@ export default async function TasacionPublicPage({
         </div>
       </header>
 
-      <main className={`max-w-5xl mx-auto px-4 sm:px-8 py-8 space-y-8 ${presentationMode ? 'text-lg' : ''}`}>
+      <main className={`max-w-5xl mx-auto px-4 sm:px-8 py-10 sm:py-14 space-y-8 sm:space-y-10 ${presentationMode ? 'text-lg' : ''}`}>
 
         {/* ====== SECTION 1: PARTE COMERCIAL ====== */}
 
@@ -184,26 +184,26 @@ export default async function TasacionPublicPage({
             )}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {settings.tasacion_datos_props_publicadas && (
-                <div className={`${presentationMode ? 'bg-indigo-900/50' : 'bg-indigo-50'} rounded-xl p-5 text-center`}>
-                  <Home className={`w-6 h-6 ${presentationMode ? 'text-indigo-300' : 'text-indigo-500'} mx-auto mb-2`} />
-                  <p className={`text-3xl font-bold ${headingClass}`}>{Number(settings.tasacion_datos_props_publicadas).toLocaleString('es-AR')}</p>
-                  <p className={`text-sm ${presentationMode ? 'text-gray-400' : 'text-gray-500'}`}>Propiedades en venta</p>
+                <div className={`${presentationMode ? 'bg-white/5 border border-white/10' : 'bg-gradient-to-br from-indigo-50 to-white border border-indigo-100'} rounded-2xl p-6 text-center`}>
+                  <Home className={`w-7 h-7 ${presentationMode ? 'text-indigo-300' : 'text-indigo-500'} mx-auto mb-3`} />
+                  <p className={`font-bold ${headingClass} ${presentationMode ? 'text-4xl' : 'text-3xl sm:text-4xl'}`}>{Number(settings.tasacion_datos_props_publicadas).toLocaleString('es-AR')}</p>
+                  <p className={`text-sm mt-1 ${presentationMode ? 'text-gray-400' : 'text-gray-500'}`}>Propiedades en venta</p>
                 </div>
               )}
               {settings.tasacion_datos_vendidas_mes && Number(settings.tasacion_datos_props_publicadas) > 0 && (
-                <div className={`${presentationMode ? 'bg-green-900/50' : 'bg-green-50'} rounded-xl p-5 text-center`}>
-                  <TrendingUp className={`w-6 h-6 ${presentationMode ? 'text-green-300' : 'text-green-500'} mx-auto mb-2`} />
-                  <p className={`text-3xl font-bold ${headingClass}`}>
+                <div className={`${presentationMode ? 'bg-white/5 border border-white/10' : 'bg-gradient-to-br from-green-50 to-white border border-green-100'} rounded-2xl p-6 text-center`}>
+                  <TrendingUp className={`w-7 h-7 ${presentationMode ? 'text-green-300' : 'text-green-500'} mx-auto mb-3`} />
+                  <p className={`font-bold ${headingClass} ${presentationMode ? 'text-4xl' : 'text-3xl sm:text-4xl'}`}>
                     {(Number(settings.tasacion_datos_vendidas_mes) / Number(settings.tasacion_datos_props_publicadas) * 100).toFixed(1)}%
                   </p>
-                  <p className={`text-sm ${presentationMode ? 'text-gray-400' : 'text-gray-500'}`}>Se vende por mes ({Number(settings.tasacion_datos_vendidas_mes).toLocaleString('es-AR')})</p>
+                  <p className={`text-sm mt-1 ${presentationMode ? 'text-gray-400' : 'text-gray-500'}`}>Se vende por mes ({Number(settings.tasacion_datos_vendidas_mes).toLocaleString('es-AR')})</p>
                 </div>
               )}
               {settings.tasacion_datos_escrituras_mes && (
-                <div className={`${presentationMode ? 'bg-orange-900/50' : 'bg-orange-50'} rounded-xl p-5 text-center`}>
-                  <Calendar className={`w-6 h-6 ${presentationMode ? 'text-orange-300' : 'text-orange-500'} mx-auto mb-2`} />
-                  <p className={`text-3xl font-bold ${headingClass}`}>{Number(settings.tasacion_datos_escrituras_mes).toLocaleString('es-AR')}</p>
-                  <p className={`text-sm ${presentationMode ? 'text-gray-400' : 'text-gray-500'}`}>Escrituras por mes</p>
+                <div className={`${presentationMode ? 'bg-white/5 border border-white/10' : 'bg-gradient-to-br from-orange-50 to-white border border-orange-100'} rounded-2xl p-6 text-center`}>
+                  <Calendar className={`w-7 h-7 ${presentationMode ? 'text-orange-300' : 'text-orange-500'} mx-auto mb-3`} />
+                  <p className={`font-bold ${headingClass} ${presentationMode ? 'text-4xl' : 'text-3xl sm:text-4xl'}`}>{Number(settings.tasacion_datos_escrituras_mes).toLocaleString('es-AR')}</p>
+                  <p className={`text-sm mt-1 ${presentationMode ? 'text-gray-400' : 'text-gray-500'}`}>Escrituras por mes</p>
                 </div>
               )}
             </div>
@@ -224,10 +224,10 @@ export default async function TasacionPublicPage({
         )}
 
         {/* ====== DIVIDER ====== */}
-        <div className="relative py-4">
-          <div className="absolute inset-0 flex items-center"><div className={`w-full border-t-2 ${presentationMode ? 'border-[#ff007c]/40' : 'border-[#ff007c]/20'}`} /></div>
+        <div className="relative py-8">
+          <div className="absolute inset-0 flex items-center"><div className={`w-full h-px ${presentationMode ? 'bg-gradient-to-r from-transparent via-[#ff007c]/40 to-transparent' : 'bg-gradient-to-r from-transparent via-[#ff007c]/20 to-transparent'}`} /></div>
           <div className="relative flex justify-center">
-            <span className={`px-6 text-sm font-semibold text-[#ff007c] uppercase tracking-wider ${presentationMode ? 'bg-gray-900' : 'bg-gray-50'}`}>Tasaci&oacute;n de tu propiedad</span>
+            <span className={`px-8 py-2 text-xs font-semibold uppercase tracking-[0.2em] ${presentationMode ? 'bg-gray-900 text-[#ff007c]' : 'bg-white text-[#ff007c] shadow-sm border border-pink-100 rounded-full'}`}>Tasaci&oacute;n de tu propiedad</span>
           </div>
         </div>
 
@@ -311,14 +311,34 @@ export default async function TasacionPublicPage({
         {/* FODA */}
         {(a.strengths || a.weaknesses || a.opportunities || a.threats) && (
           <section className={`${cardClass} p-5 sm:p-8`}>
-            <h2 className={`text-lg sm:text-xl font-semibold ${headingClass} mb-4 flex items-center gap-2`}>
+            <h2 className={`text-lg sm:text-xl font-semibold ${headingClass} mb-5 flex items-center gap-2`}>
               <Shield className="w-5 h-5 text-indigo-500" /> An&aacute;lisis FODA
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {a.strengths && <div className="bg-green-50 border border-green-200 rounded-xl p-4"><p className="text-xs font-semibold text-green-700 mb-1">Fortalezas</p><p className="text-sm text-green-800 whitespace-pre-wrap">{a.strengths}</p></div>}
-              {a.weaknesses && <div className="bg-red-50 border border-red-200 rounded-xl p-4"><p className="text-xs font-semibold text-red-700 mb-1">Debilidades</p><p className="text-sm text-red-800 whitespace-pre-wrap">{a.weaknesses}</p></div>}
-              {a.opportunities && <div className="bg-blue-50 border border-blue-200 rounded-xl p-4"><p className="text-xs font-semibold text-blue-700 mb-1">Oportunidades</p><p className="text-sm text-blue-800 whitespace-pre-wrap">{a.opportunities}</p></div>}
-              {a.threats && <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4"><p className="text-xs font-semibold text-yellow-700 mb-1">Amenazas</p><p className="text-sm text-yellow-800 whitespace-pre-wrap">{a.threats}</p></div>}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {a.strengths && (
+                <div className={`${presentationMode ? 'bg-green-900/30 border-green-800/50' : 'bg-gradient-to-br from-green-50 to-white border-green-200'} border rounded-2xl p-5`}>
+                  <div className="flex items-center gap-2 mb-2"><div className="w-2 h-2 rounded-full bg-green-500" /><p className="text-xs font-bold text-green-700 uppercase tracking-wider">Fortalezas</p></div>
+                  <p className={`text-sm leading-relaxed whitespace-pre-wrap ${presentationMode ? 'text-green-200' : 'text-green-800'}`}>{a.strengths}</p>
+                </div>
+              )}
+              {a.weaknesses && (
+                <div className={`${presentationMode ? 'bg-red-900/30 border-red-800/50' : 'bg-gradient-to-br from-red-50 to-white border-red-200'} border rounded-2xl p-5`}>
+                  <div className="flex items-center gap-2 mb-2"><div className="w-2 h-2 rounded-full bg-red-500" /><p className="text-xs font-bold text-red-700 uppercase tracking-wider">Debilidades</p></div>
+                  <p className={`text-sm leading-relaxed whitespace-pre-wrap ${presentationMode ? 'text-red-200' : 'text-red-800'}`}>{a.weaknesses}</p>
+                </div>
+              )}
+              {a.opportunities && (
+                <div className={`${presentationMode ? 'bg-blue-900/30 border-blue-800/50' : 'bg-gradient-to-br from-blue-50 to-white border-blue-200'} border rounded-2xl p-5`}>
+                  <div className="flex items-center gap-2 mb-2"><div className="w-2 h-2 rounded-full bg-blue-500" /><p className="text-xs font-bold text-blue-700 uppercase tracking-wider">Oportunidades</p></div>
+                  <p className={`text-sm leading-relaxed whitespace-pre-wrap ${presentationMode ? 'text-blue-200' : 'text-blue-800'}`}>{a.opportunities}</p>
+                </div>
+              )}
+              {a.threats && (
+                <div className={`${presentationMode ? 'bg-yellow-900/30 border-yellow-800/50' : 'bg-gradient-to-br from-yellow-50 to-white border-yellow-200'} border rounded-2xl p-5`}>
+                  <div className="flex items-center gap-2 mb-2"><div className="w-2 h-2 rounded-full bg-yellow-500" /><p className="text-xs font-bold text-yellow-700 uppercase tracking-wider">Amenazas</p></div>
+                  <p className={`text-sm leading-relaxed whitespace-pre-wrap ${presentationMode ? 'text-yellow-200' : 'text-yellow-800'}`}>{a.threats}</p>
+                </div>
+              )}
             </div>
             {a.publication_analysis && (
               <div className="mt-3 bg-orange-50 border border-orange-200 rounded-xl p-4">
@@ -557,12 +577,18 @@ export default async function TasacionPublicPage({
         </section>
       </main>
 
-      <footer className={`${presentationMode ? 'bg-black' : 'bg-gray-900'} text-white py-8`}>
+      <footer className="bg-gray-900 text-white py-12">
         <div className="max-w-5xl mx-auto px-4 sm:px-8 text-center">
-          <img src="/logo.png" alt="Marcela Genta" className="h-8 mx-auto mb-3 brightness-0 invert" />
-          <p className="text-gray-400 text-sm">Marcela Genta &middot; Operaciones Inmobiliarias</p>
-          <p className="text-gray-500 text-xs mt-1">{a.agent_name} &middot; {a.agent_phone} &middot; {a.agent_email}</p>
-          <p className="text-gray-600 text-[10px] mt-3">CUCICBA Mat. N&deg;3906</p>
+          <img src="/logo.png" alt="Marcela Genta" className="h-10 mx-auto mb-4 brightness-0 invert opacity-80" />
+          <p className="text-white/60 text-sm font-medium">Marcela Genta &middot; Operaciones Inmobiliarias</p>
+          <div className="flex items-center justify-center gap-4 mt-3 text-white/40 text-xs">
+            <span>{a.agent_name}</span>
+            {a.agent_phone && <span>&middot; {a.agent_phone}</span>}
+            {a.agent_email && <span>&middot; {a.agent_email}</span>}
+          </div>
+          <div className="mt-6 pt-6 border-t border-white/10">
+            <p className="text-white/20 text-[10px] tracking-wider uppercase">CUCICBA Mat. N&deg;3906</p>
+          </div>
         </div>
       </footer>
     </div>
