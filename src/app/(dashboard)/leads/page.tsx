@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import {
   Plus, Search, Phone, MessageCircle, Filter, X, LayoutList, Columns3,
-  AlertTriangle, Clock, User, MapPin, DollarSign, ArrowRight
+  AlertTriangle, Clock, User, MapPin, DollarSign, ArrowRight, ChevronDown
 } from 'lucide-react'
 import {
   LEAD_STAGES, LEAD_STAGE_KEYS, LEAD_PIPELINE_STAGES, LEAD_SOURCES,
@@ -155,6 +155,21 @@ export default function LeadsPage() {
     loadLeads()
   }
 
+  const moveToStage = async (leadId: string, stage: string) => {
+    if (stage === 'en_tasacion') {
+      const lead = leads.find(l => l.id === leadId)
+      if (lead) { setShowConvertModal(lead); return }
+    }
+    await fetch('/api/leads', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: leadId, stage })
+    })
+    const stageLabel = LEAD_STAGES[stage as keyof typeof LEAD_STAGES]?.label || stage
+    toast(`Movido a ${stageLabel}`)
+    loadLeads()
+  }
+
   const markLost = async (leadId: string) => {
     await fetch('/api/leads', {
       method: 'PUT',
@@ -278,7 +293,7 @@ export default function LeadsPage() {
                     </div>
                   </div>
                   <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-                    {stageLeads.map(lead => <KanbanCard key={lead.id} lead={lead} onAdvance={() => advanceStage(lead)} />)}
+                    {stageLeads.map(lead => <KanbanCard key={lead.id} lead={lead} onAdvance={() => advanceStage(lead)} onMoveTo={(s) => moveToStage(lead.id, s)} />)}
                   </div>
                 </div>
               )
@@ -421,32 +436,49 @@ function LeadCard({ lead, onAdvance, onLost }: { lead: any; onAdvance: () => voi
 }
 
 // ── KanbanCard ──
-function KanbanCard({ lead, onAdvance }: { lead: any; onAdvance: () => void }) {
+function KanbanCard({ lead, onAdvance, onMoveTo }: { lead: any; onAdvance: () => void; onMoveTo: (stage: string) => void }) {
   const urgency = getLeadUrgency(lead)
   const badge = getUrgencyBadge(urgency)
   const checklist = getLeadChecklist(lead)
+  const [showMove, setShowMove] = useState(false)
 
   return (
-    <Link href={`/leads/${lead.id}`}
-      className={`block bg-white border rounded-xl p-3 hover:shadow-md transition-all ${urgency === 'danger' ? 'border-red-200 bg-red-50/30' : ''}`}>
-      <div className="flex items-center justify-between mb-1">
-        <h4 className="text-sm font-medium text-gray-800 truncate">{lead.full_name}</h4>
-        {badge && <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${badge.class}`}>{badge.text}</span>}
-      </div>
-      <div className="space-y-1 text-xs text-gray-500">
-        {lead.phone && <p className="flex items-center gap-1"><Phone className="w-3 h-3" />{lead.phone}</p>}
-        {lead.operation && <p className="capitalize">{lead.operation}{lead.neighborhood ? ` · ${lead.neighborhood}` : ''}</p>}
-        {lead.next_step && <p className="text-gray-400 truncate">→ {lead.next_step}</p>}
-      </div>
+    <div className={`bg-white border rounded-xl p-3 hover:shadow-md transition-all relative ${urgency === 'danger' ? 'border-red-200 bg-red-50/30' : ''}`}>
+      <Link href={`/leads/${lead.id}`}>
+        <div className="flex items-center justify-between mb-1">
+          <h4 className="text-sm font-medium text-gray-800 truncate">{lead.full_name}</h4>
+          {badge && <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${badge.class}`}>{badge.text}</span>}
+        </div>
+        <div className="space-y-1 text-xs text-gray-500">
+          {lead.phone && <p className="flex items-center gap-1"><Phone className="w-3 h-3" />{lead.phone}</p>}
+          {lead.operation && <p className="capitalize">{lead.operation}{lead.neighborhood ? ` · ${lead.neighborhood}` : ''}</p>}
+          {lead.next_step && <p className="text-gray-400 truncate">→ {lead.next_step}</p>}
+        </div>
+      </Link>
       <div className="flex items-center justify-between mt-2">
         <div className="flex gap-0.5">{Object.entries(checklist).map(([k, v]) => <div key={k} className={`w-1.5 h-1.5 rounded-full ${v ? 'bg-green-500' : 'bg-gray-200'}`} />)}</div>
-        <div className="flex gap-1" onClick={e => e.preventDefault()}>
+        <div className="flex gap-1">
           {lead.phone && (
             <a href={`https://wa.me/${formatWhatsApp(lead.phone)}`} target="_blank" className="p-1 rounded hover:bg-green-50 text-green-500"><MessageCircle className="w-3.5 h-3.5" /></a>
           )}
-          <button onClick={onAdvance} className="p-1 rounded hover:bg-pink-50 text-pink-500"><ArrowRight className="w-3.5 h-3.5" /></button>
+          <button onClick={() => setShowMove(!showMove)} className="p-1 rounded hover:bg-gray-100 text-gray-400" title="Mover a...">
+            <ChevronDown className="w-3.5 h-3.5" />
+          </button>
+          <button onClick={onAdvance} className="p-1 rounded hover:bg-pink-50 text-pink-500" title="Avanzar"><ArrowRight className="w-3.5 h-3.5" /></button>
         </div>
       </div>
-    </Link>
+      {/* Move to dropdown */}
+      {showMove && (
+        <div className="absolute right-2 top-full mt-1 z-20 bg-white border rounded-lg shadow-lg py-1 min-w-[140px]">
+          {LEAD_STAGE_KEYS.filter(s => s !== lead.stage).map(s => (
+            <button key={s} onClick={() => { onMoveTo(s); setShowMove(false) }}
+              className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 flex items-center gap-2`}>
+              <span className={`w-2 h-2 rounded-full ${LEAD_STAGES[s].color.split(' ')[0]}`} />
+              {LEAD_STAGES[s].label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }

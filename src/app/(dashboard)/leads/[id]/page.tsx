@@ -463,28 +463,37 @@ export default function LeadDetailPage() {
       </div>
 
       {/* ---- Stage transition buttons ---- */}
-      {nextStages.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-5 mb-4">
-          <p className="text-xs font-medium text-gray-500 mb-3">Avanzar etapa</p>
-          <div className="flex flex-wrap gap-2">
-            {nextStages.map(ns => (
-              <button
-                key={ns.key}
-                onClick={() => advanceStage(ns.key)}
-                disabled={stageUpdating}
-                className={`flex items-center gap-1.5 text-xs font-medium px-4 py-2 rounded-lg border transition disabled:opacity-50
-                  ${ns.key === 'perdido'
-                    ? 'border-gray-300 text-gray-600 hover:bg-gray-50'
-                    : 'border-[#ff007c]/30 text-[#ff007c] hover:bg-[#ff007c]/5'
-                  }`}
-              >
-                {stageUpdating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ArrowRight className="w-3.5 h-3.5" />}
-                {ns.label}
-              </button>
+      <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-5 mb-4">
+        <p className="text-xs font-medium text-gray-500 mb-3">Mover etapa</p>
+        <div className="flex flex-wrap gap-2">
+          {nextStages.map(ns => (
+            <button
+              key={ns.key}
+              onClick={() => advanceStage(ns.key)}
+              disabled={stageUpdating}
+              className={`flex items-center gap-1.5 text-xs font-medium px-4 py-2 rounded-lg border transition disabled:opacity-50
+                ${ns.key === 'perdido'
+                  ? 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                  : 'border-[#ff007c]/30 text-[#ff007c] hover:bg-[#ff007c]/5'
+                }`}
+            >
+              {stageUpdating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ArrowRight className="w-3.5 h-3.5" />}
+              {ns.label}
+            </button>
+          ))}
+          {/* Move to any stage */}
+          <select
+            value=""
+            onChange={e => { if (e.target.value) advanceStage(e.target.value) }}
+            className="text-xs border rounded-lg px-3 py-2 text-gray-500"
+          >
+            <option value="">Mover a...</option>
+            {LEAD_STAGE_KEYS.filter(s => s !== lead.stage).map(s => (
+              <option key={s} value={s}>{LEAD_STAGES[s].label}</option>
             ))}
-          </div>
+          </select>
         </div>
-      )}
+      </div>
 
       {/* ---- Two column layout: info + timeline ---- */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
