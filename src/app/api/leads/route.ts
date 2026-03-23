@@ -2,22 +2,59 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getDB, generateId } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth'
 
-export async function GET() {
+async function logStageChange(db: any, orgId: string, entityId: string, fromStage: string | null, toStage: string, changedBy: string, notes?: string) {
+  const id = generateId()
+  await db.prepare(
+    `INSERT INTO stage_history (id, org_id, entity_type, entity_id, from_stage, to_stage, changed_by, notes)
+     VALUES (?, ?, 'lead', ?, ?, ?, ?, ?)`
+  ).bind(id, orgId, entityId, fromStage, toStage, changedBy, notes || null).run()
+}
+
+export async function GET(request: NextRequest) {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'No auth' }, { status: 401 })
 
   const db = await getDB()
   const isAdmin = user.role === 'admin' || user.role === 'owner'
+  const { searchParams } = new URL(request.url)
+  const stage = searchParams.get('stage')
+  const leadId = searchParams.get('id')
 
   try {
-    const query = isAdmin
-      ? `SELECT l.*, u.full_name as assigned_name FROM leads l LEFT JOIN users u ON l.assigned_to = u.id WHERE l.org_id = ? ORDER BY l.created_at DESC`
-      : `SELECT l.* FROM leads l WHERE l.assigned_to = ? ORDER BY l.created_at DESC`
+    // Single lead detail
+    if (leadId) {
+      const lead = await db.prepare(
+        `SELECT l.*, u.full_name as assigned_name FROM leads l LEFT JOIN users u ON l.assigned_to = u.id WHERE l.id = ?`
+      ).bind(leadId).first()
+      if (!lead) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-    const results = isAdmin
-      ? (await db.prepare(query).bind(user.org_id || 'org_mg').all()).results
-      : (await db.prepare(query).bind(user.id).all()).results
+      // Get activities for this lead
+      const activities = (await db.prepare(
+        `SELECT a.*, u.full_name as agent_name FROM activities a LEFT JOIN users u ON a.agent_id = u.id WHERE a.lead_id = ? ORDER BY a.created_at DESC`
+      ).bind(leadId).all()).results
 
+      // Get stage history
+      const history = (await db.prepare(
+        `SELECT sh.*, u.full_name as changed_by_name FROM stage_history sh LEFT JOIN users u ON sh.changed_by = u.id WHERE sh.entity_type = 'lead' AND sh.entity_id = ? ORDER BY sh.created_at DESC`
+      ).bind(leadId).all()).results
+
+      return NextResponse.json({ lead, activities, history })
+    }
+
+    let query = isAdmin
+      ? `SELECT l.*, u.full_name as assigned_name FROM leads l LEFT JOIN users u ON l.assigned_to = u.id WHERE l.org_id = ?`
+      : `SELECT l.*, u.full_name as assigned_name FROM leads l LEFT JOIN users u ON l.assigned_to = u.id WHERE l.assigned_to = ?`
+
+    const binds: any[] = [isAdmin ? (user.org_id || 'org_mg') : user.id]
+
+    if (stage) {
+      query += ' AND l.stage = ?'
+      binds.push(stage)
+    }
+
+    query += ' ORDER BY l.created_at DESC'
+
+    const results = (await db.prepare(query).bind(...binds).all()).results
     return NextResponse.json(results)
   } catch {
     return NextResponse.json([])
@@ -31,21 +68,30 @@ export async function POST(request: NextRequest) {
   const data = (await request.json()) as any
   const db = await getDB()
   const id = generateId()
+  const orgId = user.org_id || 'org_mg'
 
   try {
     await db.prepare(`
       INSERT INTO leads (id, org_id, full_name, phone, email, source, source_detail,
-        property_address, neighborhood, property_type, operation, stage, assigned_to, notes, estimated_value)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        property_address, neighborhood, property_type, operation, stage, assigned_to,
+        notes, estimated_value, budget, timing, personas_trabajo, mascotas,
+        next_step, next_step_date)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
-      id, user.org_id || 'org_mg',
+      id, orgId,
       data.full_name, data.phone || null, data.email || null,
       data.source || 'manual', data.source_detail || null,
       data.property_address || null, data.neighborhood || null,
       data.property_type || null, data.operation || 'venta',
       data.stage || 'nuevo', data.assigned_to || user.id,
-      data.notes || null, data.estimated_value || null
+      data.notes || null, data.estimated_value || null,
+      data.budget || null, data.timing || null,
+      data.personas_trabajo || null, data.mascotas || null,
+      data.next_step || null, data.next_step_date || null
     ).run()
+
+    // Log initial stage
+    await logStageChange(db, orgId, id, null, data.stage || 'nuevo', user.id)
 
     return NextResponse.json({ id })
   } catch (err: any) {
@@ -61,12 +107,27 @@ export async function PUT(request: NextRequest) {
   if (!data.id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
 
   const db = await getDB()
+  const orgId = user.org_id || 'org_mg'
 
   try {
+    // Get current stage for history
+    const current = await db.prepare('SELECT stage FROM leads WHERE id = ?').bind(data.id).first() as any
+    const oldStage = current?.stage
+
+    // Update first_contact_at if moving from nuevo to contactado
+    let firstContactAt = null
+    if (oldStage === 'nuevo' && data.stage === 'contactado') {
+      firstContactAt = new Date().toISOString()
+    }
+
     await db.prepare(`
       UPDATE leads SET full_name=?, phone=?, email=?, source=?, source_detail=?,
         property_address=?, neighborhood=?, property_type=?, operation=?, stage=?,
-        assigned_to=?, notes=?, estimated_value=?, updated_at=datetime('now')
+        assigned_to=?, notes=?, estimated_value=?, budget=?, timing=?,
+        personas_trabajo=?, mascotas=?, next_step=?, next_step_date=?,
+        lost_reason=?,
+        first_contact_at=COALESCE(?, first_contact_at),
+        updated_at=datetime('now')
       WHERE id=?
     `).bind(
       data.full_name, data.phone || null, data.email || null,
@@ -74,8 +135,19 @@ export async function PUT(request: NextRequest) {
       data.property_address || null, data.neighborhood || null,
       data.property_type || null, data.operation || 'venta',
       data.stage || 'nuevo', data.assigned_to || null,
-      data.notes || null, data.estimated_value || null, data.id
+      data.notes || null, data.estimated_value || null,
+      data.budget || null, data.timing || null,
+      data.personas_trabajo || null, data.mascotas || null,
+      data.next_step || null, data.next_step_date || null,
+      data.lost_reason || null,
+      firstContactAt,
+      data.id
     ).run()
+
+    // Log stage change if different
+    if (oldStage && data.stage && oldStage !== data.stage) {
+      await logStageChange(db, orgId, data.id, oldStage, data.stage, user.id, data.stage_notes)
+    }
 
     return NextResponse.json({ success: true })
   } catch (err: any) {
@@ -94,6 +166,7 @@ export async function DELETE(request: NextRequest) {
   const db = await getDB()
 
   try {
+    await db.prepare('DELETE FROM stage_history WHERE entity_type = ? AND entity_id = ?').bind('lead', id).run()
     await db.prepare('DELETE FROM activities WHERE lead_id = ?').bind(id).run()
     await db.prepare('DELETE FROM leads WHERE id = ?').bind(id).run()
     return NextResponse.json({ success: true })
