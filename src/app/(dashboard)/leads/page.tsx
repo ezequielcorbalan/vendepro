@@ -25,6 +25,7 @@ export default function LeadsPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [saving, setSaving] = useState(false)
   const [showConvertModal, setShowConvertModal] = useState<any>(null)
+  const [agents, setAgents] = useState<any[]>([])
 
   const [form, setForm] = useState({
     full_name: '', phone: '', email: '', source: 'manual', source_detail: '',
@@ -39,7 +40,10 @@ export default function LeadsPage() {
       .catch(() => setLoading(false))
   }
 
-  useEffect(() => { loadLeads() }, [])
+  useEffect(() => {
+    loadLeads()
+    fetch('/api/agents').then(r => r.json() as Promise<any>).then(d => { if (Array.isArray(d)) setAgents(d) }).catch(() => {})
+  }, [])
 
   const filtered = useMemo(() => {
     return leads.filter(l => {
@@ -276,6 +280,12 @@ export default function LeadsPage() {
                 <input placeholder="Barrio/Zona" value={form.neighborhood} onChange={e => setForm({ ...form, neighborhood: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
                 <input placeholder="Dirección propiedad" value={form.property_address} onChange={e => setForm({ ...form, property_address: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
                 <input placeholder="Valor estimado (USD)" type="number" value={form.estimated_value} onChange={e => setForm({ ...form, estimated_value: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
+                {agents.length > 0 && (
+                  <select value={form.assigned_to} onChange={e => setForm({ ...form, assigned_to: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full">
+                    <option value="">Asignar agente...</option>
+                    {agents.map((a: any) => <option key={a.id} value={a.id}>{a.full_name}</option>)}
+                  </select>
+                )}
               </div>
               <input placeholder="Próxima acción" value={form.next_step} onChange={e => setForm({ ...form, next_step: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
               <input type="date" value={form.next_step_date} onChange={e => setForm({ ...form, next_step_date: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />

@@ -84,6 +84,7 @@ export default function LeadDetailPage() {
   const [activities, setActivities] = useState<any[]>([])
   const [history, setHistory] = useState<any[]>([])
   const [linkedAppraisal, setLinkedAppraisal] = useState<any>(null)
+  const [agents, setAgents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [stageUpdating, setStageUpdating] = useState(false)
@@ -116,7 +117,10 @@ export default function LeadDetailPage() {
     }
   }, [leadId])
 
-  useEffect(() => { fetchLead() }, [fetchLead])
+  useEffect(() => {
+    fetchLead()
+    fetch('/api/agents').then(r => r.json() as Promise<any>).then(d => { if (Array.isArray(d)) setAgents(d) }).catch(() => {})
+  }, [fetchLead])
 
   // ------ Stage advance ------
   async function advanceStage(targetStage: string) {
@@ -183,6 +187,7 @@ export default function LeadDetailPage() {
       next_step: lead.next_step || '',
       next_step_date: lead.next_step_date || '',
       lost_reason: lead.lost_reason || '',
+      assigned_to: lead.assigned_to || '',
     })
     setShowEdit(true)
   }
@@ -683,6 +688,15 @@ export default function LeadDetailPage() {
                   <input value={editForm.budget} onChange={e => setEditForm({ ...editForm, budget: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
                 </div>
               </div>
+              {agents.length > 0 && (
+                <div>
+                  <label className="text-[10px] text-gray-400 uppercase">Agente asignado</label>
+                  <select value={editForm.assigned_to} onChange={e => setEditForm({ ...editForm, assigned_to: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full">
+                    <option value="">Sin asignar</option>
+                    {agents.map((a: any) => <option key={a.id} value={a.id}>{a.full_name}</option>)}
+                  </select>
+                </div>
+              )}
               <div>
                 <label className="text-[10px] text-gray-400 uppercase">Próxima acción</label>
                 <input value={editForm.next_step} onChange={e => setEditForm({ ...editForm, next_step: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />

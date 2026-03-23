@@ -805,22 +805,20 @@ export default function CalendarioPage() {
                 <textarea value={form.description} onChange={ev => setForm(f => ({ ...f, description: ev.target.value }))} rows={2} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50" />
               </div>
 
-              {/* Link IDs */}
+              {/* Entity search */}
               <div className="border-t border-gray-100 pt-3">
-                <p className="text-xs font-semibold text-gray-500 mb-2">Vinculación (opcional)</p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <div>
-                    <label className="text-[10px] font-medium text-gray-400 mb-0.5 block">Lead ID</label>
-                    <input type="text" value={form.lead_id} onChange={ev => setForm(f => ({ ...f, lead_id: ev.target.value }))} className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs" placeholder="lead_xxx" />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-medium text-gray-400 mb-0.5 block">Contact ID</label>
-                    <input type="text" value={form.contact_id} onChange={ev => setForm(f => ({ ...f, contact_id: ev.target.value }))} className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs" placeholder="contact_xxx" />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-medium text-gray-400 mb-0.5 block">Property ID</label>
-                    <input type="text" value={form.property_id} onChange={ev => setForm(f => ({ ...f, property_id: ev.target.value }))} className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs" placeholder="prop_xxx" />
-                  </div>
+                <p className="text-xs font-semibold text-gray-500 mb-2">Vincular a (opcional)</p>
+                <EntitySearch
+                  onSelect={(entity) => {
+                    if (entity.entity_type === 'lead') setForm(f => ({ ...f, lead_id: entity.id }))
+                    else if (entity.entity_type === 'contact') setForm(f => ({ ...f, contact_id: entity.id }))
+                    else if (entity.entity_type === 'property') setForm(f => ({ ...f, property_id: entity.id }))
+                  }}
+                />
+                <div className="flex gap-2 mt-2 flex-wrap">
+                  {form.lead_id && <span className="text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full flex items-center gap-1">Lead vinculado <button onClick={() => setForm(f => ({ ...f, lead_id: '' }))} className="hover:text-red-500">&times;</button></span>}
+                  {form.contact_id && <span className="text-[10px] bg-green-50 text-green-700 px-2 py-0.5 rounded-full flex items-center gap-1">Contacto vinculado <button onClick={() => setForm(f => ({ ...f, contact_id: '' }))} className="hover:text-red-500">&times;</button></span>}
+                  {form.property_id && <span className="text-[10px] bg-orange-50 text-orange-700 px-2 py-0.5 rounded-full flex items-center gap-1">Propiedad vinculada <button onClick={() => setForm(f => ({ ...f, property_id: '' }))} className="hover:text-red-500">&times;</button></span>}
                 </div>
               </div>
             </div>
@@ -836,6 +834,61 @@ export default function CalendarioPage() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+// ── Entity search for linking events ──
+function EntitySearch({ onSelect }: { onSelect: (entity: any) => void }) {
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState<any[]>([])
+  const [searching, setSearching] = useState(false)
+  const timerRef = useRef<any>(null)
+
+  function handleSearch(q: string) {
+    setQuery(q)
+    if (timerRef.current) clearTimeout(timerRef.current)
+    if (q.length < 2) { setResults([]); return }
+    timerRef.current = setTimeout(async () => {
+      setSearching(true)
+      try {
+        const res = await fetch(`/api/search-entities?q=${encodeURIComponent(q)}`)
+        const data = (await res.json()) as any
+        setResults(Array.isArray(data) ? data : [])
+      } catch { setResults([]) }
+      setSearching(false)
+    }, 300)
+  }
+
+  const typeLabels: Record<string, { label: string; color: string }> = {
+    lead: { label: 'Lead', color: 'bg-blue-100 text-blue-700' },
+    contact: { label: 'Contacto', color: 'bg-green-100 text-green-700' },
+    property: { label: 'Propiedad', color: 'bg-orange-100 text-orange-700' },
+  }
+
+  return (
+    <div className="relative">
+      <input
+        type="text" placeholder="Buscar lead, contacto o propiedad..."
+        value={query} onChange={e => handleSearch(e.target.value)}
+        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+      />
+      {results.length > 0 && (
+        <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg max-h-40 overflow-y-auto">
+          {results.map((r: any) => {
+            const t = typeLabels[r.entity_type] || { label: r.entity_type, color: 'bg-gray-100 text-gray-600' }
+            return (
+              <button key={`${r.entity_type}-${r.id}`} onClick={() => { onSelect(r); setQuery(''); setResults([]) }}
+                className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-xs border-b last:border-0">
+                <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium ${t.color}`}>{t.label}</span>
+                <span className="text-gray-800 truncate">{r.name}</span>
+                {r.phone && <span className="text-gray-400 ml-auto shrink-0">{r.phone}</span>}
+              </button>
+            )
+          })}
+        </div>
+      )}
+      {searching && <div className="absolute right-3 top-2 text-[10px] text-gray-400">Buscando...</div>}
     </div>
   )
 }
