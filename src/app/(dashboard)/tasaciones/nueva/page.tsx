@@ -77,12 +77,13 @@ export default function NuevaTasacionPage() {
     original_price: string
     sold_date: string
     days_on_market: string
+    listing_url: string
     isNew?: boolean
     id?: string
   }
   const emptySoldProp = (): SoldProp => ({
     address: '', neighborhood: '', property_type: 'departamento',
-    total_area: '', sold_price: '', original_price: '', sold_date: '', days_on_market: '', isNew: true,
+    total_area: '', sold_price: '', original_price: '', sold_date: '', days_on_market: '', listing_url: '', isNew: true,
   })
   const [soldProps, setSoldProps] = useState<SoldProp[]>([])
   const [existingSold, setExistingSold] = useState<SoldProp[]>([])
@@ -101,6 +102,7 @@ export default function NuevaTasacionPage() {
           property_type: p.property_type || '', total_area: p.total_area?.toString() || '',
           sold_price: p.sold_price?.toString() || '', original_price: p.original_price?.toString() || '',
           sold_date: p.sold_date || '', days_on_market: p.days_on_market?.toString() || '',
+          listing_url: p.listing_url || '',
         })))
       }
     } catch {}
@@ -661,6 +663,10 @@ export default function NuevaTasacionPage() {
                     <label className="text-xs text-gray-500">Fecha venta</label>
                     <input className={inputClass} type="date" value={sp.sold_date} onChange={e => updateSoldProp(i, 'sold_date', e.target.value)} />
                   </div>
+                </div>
+                <div className="mt-2">
+                  <label className="text-xs text-gray-500">Link ficha de la propiedad</label>
+                  <input className={inputClass} type="url" placeholder="https://www.zonaprop.com.ar/..." value={sp.listing_url} onChange={e => updateSoldProp(i, 'listing_url', e.target.value)} />
                 </div>
               </div>
             ))}
