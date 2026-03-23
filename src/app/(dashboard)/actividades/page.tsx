@@ -84,6 +84,22 @@ export default function ActividadesPage() {
     return Object.entries(days).map(([day, count]) => ({ day, count }))
   }, [activities])
 
+  // Agent ranking
+  const agentRanking = useMemo(() => {
+    const agents: Record<string, { name: string; count: number; llamadas: number; reuniones: number; visitas: number }> = {}
+    activities.forEach(a => {
+      const name = a.agent_name || 'Sin agente'
+      if (!agents[name]) agents[name] = { name, count: 0, llamadas: 0, reuniones: 0, visitas: 0 }
+      agents[name].count++
+      if (a.activity_type === 'llamada') agents[name].llamadas++
+      if (a.activity_type === 'reunion') agents[name].reuniones++
+      if (['visita_captacion', 'visita_comprador'].includes(a.activity_type)) agents[name].visitas++
+    })
+    const sorted = Object.values(agents).sort((a, b) => b.count - a.count)
+    const max = sorted[0]?.count || 1
+    return sorted.map(a => ({ ...a, pct: Math.round((a.count / max) * 100) }))
+  }, [activities])
+
   const handleCreate = async () => {
     setSaving(true)
     try {
@@ -237,6 +253,38 @@ export default function ActividadesPage() {
           )}
         </div>
       </div>
+
+      {/* Agent ranking */}
+      {agentRanking.length > 1 && (
+        <div className="bg-white rounded-xl border p-4 sm:p-5">
+          <h2 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+            <Users className="w-4 h-4 text-purple-500" /> Ranking de agentes
+          </h2>
+          <div className="space-y-3">
+            {agentRanking.map((agent: any, idx: number) => (
+              <div key={agent.name} className="flex items-center gap-3">
+                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${idx === 0 ? 'bg-yellow-100 text-yellow-700' : idx === 1 ? 'bg-gray-100 text-gray-600' : 'bg-gray-50 text-gray-400'}`}>
+                  {idx + 1}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium text-gray-800 truncate">{agent.name}</span>
+                    <span className="text-sm font-bold text-gray-700">{agent.count}</span>
+                  </div>
+                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-pink-500 to-orange-400 rounded-full transition-all" style={{ width: `${agent.pct}%` }} />
+                  </div>
+                </div>
+                <div className="hidden sm:flex gap-2 text-[10px] text-gray-400 shrink-0">
+                  <span>📞{agent.llamadas}</span>
+                  <span>🤝{agent.reuniones}</span>
+                  <span>🏠{agent.visitas}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Create modal */}
       {showCreate && (
