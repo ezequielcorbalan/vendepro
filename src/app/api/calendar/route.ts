@@ -12,37 +12,99 @@ export async function GET(request: NextRequest) {
   const start = searchParams.get('start')
   const end = searchParams.get('end')
   const eventId = searchParams.get('id')
+  const filterType = searchParams.get('type')
+  const filterAgent = searchParams.get('agent_id')
+  const filterStatus = searchParams.get('status')
+  const onlyMine = searchParams.get('mine') === '1'
+  const overdue = searchParams.get('overdue') === '1'
 
   try {
     if (eventId) {
-      const event = await db.prepare(
-        `SELECT e.*, u.full_name as agent_name FROM calendar_events e LEFT JOIN users u ON e.agent_id = u.id WHERE e.id = ?`
-      ).bind(eventId).first()
+      const event = await db.prepare(`
+        SELECT e.*,
+          u.full_name as agent_name, u.phone as agent_phone,
+          l.full_name as lead_name, l.phone as lead_phone,
+          c.full_name as contact_name, c.phone as contact_phone,
+          p.address as property_address
+        FROM calendar_events e
+        LEFT JOIN users u ON e.agent_id = u.id
+        LEFT JOIN leads l ON e.lead_id = l.id
+        LEFT JOIN contacts c ON e.contact_id = c.id
+        LEFT JOIN properties p ON e.property_id = p.id
+        WHERE e.id = ?
+      `).bind(eventId).first()
       if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 })
       return NextResponse.json(event)
     }
 
-    let query = isAdmin
-      ? `SELECT e.*, u.full_name as agent_name FROM calendar_events e LEFT JOIN users u ON e.agent_id = u.id WHERE e.org_id = ?`
-      : `SELECT e.*, u.full_name as agent_name FROM calendar_events e LEFT JOIN users u ON e.agent_id = u.id WHERE e.agent_id = ?`
+    let query = `
+      SELECT e.*,
+        u.full_name as agent_name, u.phone as agent_phone,
+        l.full_name as lead_name, l.phone as lead_phone,
+        c.full_name as contact_name, c.phone as contact_phone,
+        p.address as property_address
+      FROM calendar_events e
+      LEFT JOIN users u ON e.agent_id = u.id
+      LEFT JOIN leads l ON e.lead_id = l.id
+      LEFT JOIN contacts c ON e.contact_id = c.id
+      LEFT JOIN properties p ON e.property_id = p.id
+      WHERE e.org_id = ?
+    `
+    const binds: any[] = [user.org_id || 'org_mg']
 
-    const binds: any[] = [isAdmin ? (user.org_id || 'org_mg') : user.id]
+    // Agent filter
+    if (onlyMine || (!isAdmin && !filterAgent)) {
+      query += ' AND e.agent_id = ?'
+      binds.push(user.id)
+    } else if (filterAgent) {
+      query += ' AND e.agent_id = ?'
+      binds.push(filterAgent)
+    }
 
+    // Date range
     if (start) {
-      query += ' AND e.end_time >= ?'
+      query += ' AND e.end_at >= ?'
       binds.push(start)
     }
     if (end) {
-      query += ' AND e.start_time <= ?'
+      query += ' AND e.start_at <= ?'
       binds.push(end)
     }
 
-    query += ' ORDER BY e.start_time ASC'
+    // Type filter
+    if (filterType) {
+      query += ' AND e.event_type = ?'
+      binds.push(filterType)
+    }
+
+    // Status filter
+    if (filterStatus === 'completed') {
+      query += ' AND e.completed = 1'
+    } else if (filterStatus === 'pending') {
+      query += ' AND e.completed = 0'
+    }
+
+    // Overdue: past events not completed
+    if (overdue) {
+      query += " AND e.completed = 0 AND e.end_at < datetime('now')"
+    }
+
+    query += ' ORDER BY e.start_at ASC LIMIT 500'
 
     const results = (await db.prepare(query).bind(...binds).all()).results as any[]
-    return NextResponse.json(results)
-  } catch {
-    return NextResponse.json([])
+
+    // Add overdue flag to each event
+    const now = new Date().toISOString()
+    const enriched = results.map((e: any) => ({
+      ...e,
+      overdue: e.completed === 0 && e.end_at && e.end_at < now,
+      // Resolve phone for quick actions
+      phone: e.lead_phone || e.contact_phone || null,
+    }))
+
+    return NextResponse.json(enriched)
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
 
@@ -57,16 +119,25 @@ export async function POST(request: NextRequest) {
 
   try {
     await db.prepare(`
-      INSERT INTO calendar_events (id, org_id, agent_id, title, event_type, start_time, end_time, description)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO calendar_events (id, org_id, agent_id, title, event_type,
+        start_at, end_at, all_day, description,
+        lead_id, contact_id, property_id, appraisal_id, reservation_id, color)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       id, orgId,
       data.agent_id || user.id,
       data.title || '',
       data.event_type || 'otro',
-      data.start_time || null,
-      data.end_time || null,
-      data.description || null
+      data.start_at || null,
+      data.end_at || null,
+      data.all_day ? 1 : 0,
+      data.description || null,
+      data.lead_id || null,
+      data.contact_id || null,
+      data.property_id || null,
+      data.appraisal_id || null,
+      data.reservation_id || null,
+      data.color || null
     ).run()
 
     return NextResponse.json({ id })
@@ -85,18 +156,45 @@ export async function PUT(request: NextRequest) {
   const db = await getDB()
 
   try {
+    // If only toggling completed
+    if (data._action === 'toggle_complete') {
+      await db.prepare(
+        "UPDATE calendar_events SET completed = CASE WHEN completed = 1 THEN 0 ELSE 1 END, updated_at = datetime('now') WHERE id = ?"
+      ).bind(data.id).run()
+      return NextResponse.json({ success: true })
+    }
+
+    // If rescheduling
+    if (data._action === 'reschedule') {
+      await db.prepare(
+        "UPDATE calendar_events SET start_at = ?, end_at = ?, updated_at = datetime('now') WHERE id = ?"
+      ).bind(data.start_at, data.end_at, data.id).run()
+      return NextResponse.json({ success: true })
+    }
+
+    // Full update
     await db.prepare(`
       UPDATE calendar_events SET
-        title=?, event_type=?, start_time=?, end_time=?,
-        description=?, agent_id=?, updated_at=datetime('now')
+        title=?, event_type=?, start_at=?, end_at=?, all_day=?,
+        description=?, agent_id=?,
+        lead_id=?, contact_id=?, property_id=?, appraisal_id=?, reservation_id=?,
+        color=?, completed=?, updated_at=datetime('now')
       WHERE id=?
     `).bind(
       data.title || '',
       data.event_type || 'otro',
-      data.start_time || null,
-      data.end_time || null,
+      data.start_at || null,
+      data.end_at || null,
+      data.all_day ? 1 : 0,
       data.description || null,
       data.agent_id || null,
+      data.lead_id || null,
+      data.contact_id || null,
+      data.property_id || null,
+      data.appraisal_id || null,
+      data.reservation_id || null,
+      data.color || null,
+      data.completed ? 1 : 0,
       data.id
     ).run()
 

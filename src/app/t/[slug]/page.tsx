@@ -183,7 +183,7 @@ export default async function TasacionPublicPage({
                   <p className={`text-sm ${presentationMode ? 'text-gray-400' : 'text-gray-500'}`}>Propiedades en venta</p>
                 </div>
               )}
-              {settings.tasacion_datos_vendidas_mes && settings.tasacion_datos_props_publicadas && (
+              {settings.tasacion_datos_vendidas_mes && Number(settings.tasacion_datos_props_publicadas) > 0 && (
                 <div className={`${presentationMode ? 'bg-green-900/50' : 'bg-green-50'} rounded-xl p-5 text-center`}>
                   <TrendingUp className={`w-6 h-6 ${presentationMode ? 'text-green-300' : 'text-green-500'} mx-auto mb-2`} />
                   <p className={`text-3xl font-bold ${headingClass}`}>
