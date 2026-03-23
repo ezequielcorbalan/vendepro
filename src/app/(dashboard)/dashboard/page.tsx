@@ -112,9 +112,14 @@ export default function DashboardCRM() {
           <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Dashboard CRM</h1>
           <p className="text-gray-500 text-sm">Resumen ejecutivo del negocio</p>
         </div>
-        <Link href="/dashboard/reportes" className="text-sm text-pink-600 hover:text-pink-700 flex items-center gap-1">
-          Ver reportes de propiedades <ChevronRight className="w-4 h-4" />
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href="/dashboard/mi-performance" className="text-sm text-pink-600 hover:text-pink-700 flex items-center gap-1">
+            Mi performance <ChevronRight className="w-4 h-4" />
+          </Link>
+          <Link href="/dashboard/reportes" className="text-sm text-gray-400 hover:text-gray-600 flex items-center gap-1">
+            Reportes <ChevronRight className="w-4 h-4" />
+          </Link>
+        </div>
       </div>
 
       {/* ── KPI Cards ── */}
