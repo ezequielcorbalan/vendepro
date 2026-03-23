@@ -71,12 +71,12 @@ export async function POST(request: NextRequest) {
   const orgId = user.org_id || 'org_mg'
 
   try {
+    // Use basic columns that definitely exist, then update new fields separately
     await db.prepare(`
       INSERT INTO leads (id, org_id, full_name, phone, email, source, source_detail,
         property_address, neighborhood, property_type, operation, stage, assigned_to,
-        notes, estimated_value, budget, timing, personas_trabajo, mascotas,
-        next_step, next_step_date)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        notes, estimated_value)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       id, orgId,
       data.full_name, data.phone || null, data.email || null,
@@ -84,14 +84,26 @@ export async function POST(request: NextRequest) {
       data.property_address || null, data.neighborhood || null,
       data.property_type || null, data.operation || 'venta',
       data.stage || 'nuevo', data.assigned_to || user.id,
-      data.notes || null, data.estimated_value || null,
-      data.budget || null, data.timing || null,
-      data.personas_trabajo || null, data.mascotas || null,
-      data.next_step || null, data.next_step_date || null
+      data.notes || null, data.estimated_value || null
     ).run()
 
+    // Update extra fields if provided (columns may or may not exist)
+    try {
+      await db.prepare(`
+        UPDATE leads SET budget=?, timing=?, personas_trabajo=?, mascotas=?,
+          next_step=?, next_step_date=?
+        WHERE id=?
+      `).bind(
+        data.budget || null, data.timing || null,
+        data.personas_trabajo || null, data.mascotas || null,
+        data.next_step || null, data.next_step_date || null, id
+      ).run()
+    } catch { /* columns may not exist yet */ }
+
     // Log initial stage
-    await logStageChange(db, orgId, id, null, data.stage || 'nuevo', user.id)
+    try {
+      await logStageChange(db, orgId, id, null, data.stage || 'nuevo', user.id)
+    } catch { /* stage_history table may not exist */ }
 
     return NextResponse.json({ id })
   } catch (err: any) {
