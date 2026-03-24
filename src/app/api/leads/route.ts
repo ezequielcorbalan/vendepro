@@ -132,8 +132,8 @@ export async function PUT(request: NextRequest) {
   const data = (await request.json()) as any
   if (!data.id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
 
-  // Validate stage if provided
-  const validStages = ['nuevo', 'asignado', 'contactado', 'calificado', 'seguimiento', 'en_tasacion', 'presentada', 'captado', 'perdido']
+  // Validate stage if provided — order matches real flow
+  const validStages = ['nuevo', 'asignado', 'contactado', 'calificado', 'en_tasacion', 'presentada', 'seguimiento', 'captado', 'perdido']
   if (data.stage && !validStages.includes(data.stage)) {
     return NextResponse.json({ error: `Invalid stage: ${data.stage}` }, { status: 400 })
   }
@@ -196,7 +196,56 @@ export async function PUT(request: NextRequest) {
       await logStageChange(db, orgId, data.id, oldStage, data.stage, user.id, data.stage_notes)
     }
 
-    return NextResponse.json({ success: true })
+    // ── AUTO-ACTIONS on stage change ──
+    let autoFollowup = null
+
+    // When "presentada" → auto-create follow-up event (5 days later)
+    if (data.stage === 'presentada' && oldStage !== 'presentada') {
+      try {
+        const followupDate = new Date()
+        followupDate.setDate(followupDate.getDate() + 5)
+        const followupId = generateId()
+        const leadName = current.full_name || 'Lead'
+        await db.prepare(`
+          INSERT INTO calendar_events (id, org_id, agent_id, title, event_type, start_at, end_at, description, lead_id, completed, created_at, updated_at)
+          VALUES (?, ?, ?, ?, 'seguimiento', ?, ?, ?, ?, 0, datetime('now'), datetime('now'))
+        `).bind(
+          followupId, orgId,
+          current.assigned_to || user.id,
+          `Seguimiento tasación — ${leadName}`,
+          followupDate.toISOString().split('T')[0] + 'T10:00:00',
+          followupDate.toISOString().split('T')[0] + 'T10:30:00',
+          `Seguimiento automático post-presentación de tasación para ${leadName}. Verificar interés y decisión del propietario.`,
+          data.id
+        ).run()
+        autoFollowup = { id: followupId, date: followupDate.toISOString().split('T')[0], leadName }
+      } catch (e) { /* calendar_events table may not exist yet */ }
+    }
+
+    // When "captado" → signal UI to offer creating commercial property
+    let captadoTransition = null
+    if (data.stage === 'captado' && oldStage !== 'captado') {
+      // Check if there's a linked appraisal to pull property data from
+      let appraisalData = null
+      try {
+        appraisalData = await db.prepare('SELECT * FROM appraisals WHERE lead_id = ? AND org_id = ?').bind(data.id, orgId).first() as any
+      } catch (e) { /* no linked appraisal */ }
+
+      captadoTransition = {
+        leadId: data.id,
+        leadName: current.full_name,
+        phone: current.phone,
+        email: current.email,
+        neighborhood: current.neighborhood || appraisalData?.neighborhood,
+        propertyAddress: current.property_address || appraisalData?.address,
+        propertyType: current.property_type || appraisalData?.property_type,
+        assignedTo: current.assigned_to,
+        appraisalId: appraisalData?.id || null,
+        suggestedPrice: appraisalData?.suggested_price || null,
+      }
+    }
+
+    return NextResponse.json({ success: true, autoFollowup, captadoTransition })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }

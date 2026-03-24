@@ -134,13 +134,22 @@ export async function GET() {
       vendidosCount = (vendidas?.count || 0) + (soldProps?.count || 0)
     } catch { /* tables may not exist */ }
 
-    // ── Funnel de conversión (completo: lead → captado → reservado → vendido) ──
+    // ── Property commercial stage counts ──
+    let propPublicadas = 0
+    try {
+      const pc = (await db.prepare(`SELECT COUNT(*) as c FROM properties WHERE org_id = ? AND commercial_stage = 'publicada'`).bind(orgId).first()) as any
+      propPublicadas = pc?.c || 0
+    } catch { /* column may not exist */ }
+
+    // ── Funnel de conversión — Pipeline A (lead→captado) + Pipeline B (propiedad captada→vendida) ──
     const funnel = [
       { stage: 'Leads totales', count: leadStats.total || 0 },
-      { stage: 'Contactados', count: (leadStats.contactados || 0) + (leadStats.calificados || 0) + (leadStats.seguimiento || 0) + (leadStats.en_tasacion || 0) + (leadStats.presentada || 0) + (leadStats.captados || 0) },
-      { stage: 'Calificados', count: (leadStats.calificados || 0) + (leadStats.seguimiento || 0) + (leadStats.en_tasacion || 0) + (leadStats.presentada || 0) + (leadStats.captados || 0) },
-      { stage: 'En tasación', count: (leadStats.en_tasacion || 0) + (leadStats.presentada || 0) + (leadStats.captados || 0) },
+      { stage: 'Contactados', count: (leadStats.contactados || 0) + (leadStats.calificados || 0) + (leadStats.en_tasacion || 0) + (leadStats.presentada || 0) + (leadStats.seguimiento || 0) + (leadStats.captados || 0) },
+      { stage: 'Calificados', count: (leadStats.calificados || 0) + (leadStats.en_tasacion || 0) + (leadStats.presentada || 0) + (leadStats.seguimiento || 0) + (leadStats.captados || 0) },
+      { stage: 'En tasación', count: (leadStats.en_tasacion || 0) + (leadStats.presentada || 0) + (leadStats.seguimiento || 0) + (leadStats.captados || 0) },
+      { stage: 'Presentada', count: (leadStats.presentada || 0) + (leadStats.seguimiento || 0) + (leadStats.captados || 0) },
       { stage: 'Captados', count: leadStats.captados || 0 },
+      { stage: 'Publicadas', count: propPublicadas },
       { stage: 'Reservados', count: reservadosCount },
       { stage: 'Vendidos', count: vendidosCount },
     ]

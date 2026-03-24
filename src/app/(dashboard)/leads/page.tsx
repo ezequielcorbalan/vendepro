@@ -113,18 +113,32 @@ export default function LeadsPage() {
     if (currentIdx < 0 || currentIdx >= LEAD_PIPELINE_STAGES.length - 1) return
     const nextStage = LEAD_PIPELINE_STAGES[currentIdx + 1]
 
+    // en_tasacion → show convert modal
     if (nextStage === 'en_tasacion') {
       setShowConvertModal(lead)
       return
     }
 
-    await fetch('/api/leads', {
+    const res = await fetch('/api/leads', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: lead.id, stage: nextStage })
     })
+    const result = (await res.json()) as any
     const stageLabel = LEAD_STAGES[nextStage as keyof typeof LEAD_STAGES]?.label || nextStage
     toast(`${lead.full_name} → ${stageLabel}`)
+
+    // Auto-followup created when "presentada"
+    if (result.autoFollowup) {
+      toast(`📅 Seguimiento automático creado para ${result.autoFollowup.date}`)
+    }
+
+    // Captado → offer to create commercial property
+    if (result.captadoTransition) {
+      const ct = result.captadoTransition
+      toast(`✅ ¡${lead.full_name} captado! Podés crear la propiedad comercial desde su ficha.`)
+    }
+
     loadLeads()
   }
 

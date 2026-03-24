@@ -4,22 +4,46 @@
 // Todos los módulos importan de acá
 // ============================================================
 
-// ── LEAD STAGES ──────────────────────────────────────────────
+// ── LEAD/TASACIÓN PIPELINE ──────────────────────────────────
+// Flujo real: nuevo → asignado → contactado → calificado → en_tasación → presentada → seguimiento → captado | perdido
+// "seguimiento" va DESPUÉS de presentar la tasación (follow-up post-presentación)
+// El pipeline termina en "captado" o "perdido" — lo comercial va en PROPERTY_STAGES
 export const LEAD_STAGES = {
-  nuevo:       { label: 'Nuevo',        color: 'bg-blue-100 text-blue-800',     order: 1 },
-  asignado:    { label: 'Asignado',     color: 'bg-indigo-100 text-indigo-800', order: 2 },
-  contactado:  { label: 'Contactado',   color: 'bg-cyan-100 text-cyan-800',     order: 3 },
+  nuevo:       { label: 'Nuevo',        color: 'bg-blue-100 text-blue-800',       order: 1 },
+  asignado:    { label: 'Asignado',     color: 'bg-indigo-100 text-indigo-800',   order: 2 },
+  contactado:  { label: 'Contactado',   color: 'bg-cyan-100 text-cyan-800',       order: 3 },
   calificado:  { label: 'Calificado',   color: 'bg-emerald-100 text-emerald-800', order: 4 },
-  seguimiento: { label: 'Seguimiento',  color: 'bg-yellow-100 text-yellow-800', order: 5 },
-  en_tasacion: { label: 'En tasación',  color: 'bg-purple-100 text-purple-800', order: 6 },
-  presentada:  { label: 'Presentada',   color: 'bg-pink-100 text-pink-800',     order: 7 },
-  captado:     { label: 'Captado',      color: 'bg-green-100 text-green-800',   order: 8 },
-  perdido:     { label: 'Perdido',      color: 'bg-red-100 text-red-800',       order: 9 },
+  en_tasacion: { label: 'En tasación',  color: 'bg-purple-100 text-purple-800',   order: 5 },
+  presentada:  { label: 'Presentada',   color: 'bg-pink-100 text-pink-800',       order: 6 },
+  seguimiento: { label: 'Seguimiento',  color: 'bg-yellow-100 text-yellow-800',   order: 7 },
+  captado:     { label: 'Captado',      color: 'bg-green-100 text-green-800',     order: 8 },
+  perdido:     { label: 'Perdido',      color: 'bg-red-100 text-red-800',         order: 9 },
 } as const
 
 export type LeadStage = keyof typeof LEAD_STAGES
 export const LEAD_STAGE_KEYS = Object.keys(LEAD_STAGES) as LeadStage[]
 export const LEAD_PIPELINE_STAGES = LEAD_STAGE_KEYS.filter(s => s !== 'perdido')
+
+// Stages que disparan acciones automáticas
+export const STAGE_AUTO_ACTIONS = {
+  en_tasacion: 'create_appraisal',  // Ofrecer crear tasación vinculada
+  presentada:  'create_followup',    // Auto-crear evento de seguimiento
+  captado:     'create_property',    // Ofrecer crear propiedad comercial
+} as const
+
+// ── PROPERTY COMMERCIAL PIPELINE ────────────────────────────
+// Pipeline SEPARADO del lead — arranca cuando se capta la propiedad
+// Lead termina en "captado" → se crea propiedad con stage "captada"
+export const PROPERTY_STAGES = {
+  captada:       { label: 'Captada',        color: 'bg-green-100 text-green-800',   order: 1 },
+  documentacion: { label: 'Documentación',  color: 'bg-amber-100 text-amber-800',   order: 2 },
+  publicada:     { label: 'Publicada',      color: 'bg-blue-100 text-blue-800',     order: 3 },
+  reservada:     { label: 'Reservada',      color: 'bg-purple-100 text-purple-800', order: 4 },
+  vendida:       { label: 'Vendida',        color: 'bg-emerald-100 text-emerald-800', order: 5 },
+} as const
+
+export type PropertyStage = keyof typeof PROPERTY_STAGES
+export const PROPERTY_STAGE_KEYS = Object.keys(PROPERTY_STAGES) as PropertyStage[]
 
 // ── ACTIVITY TYPES ───────────────────────────────────────────
 export const ACTIVITY_TYPES = {
