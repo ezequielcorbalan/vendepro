@@ -1,6 +1,6 @@
 import { getDB } from '@/lib/db'
 import { notFound } from 'next/navigation'
-import { Ruler, Shield, TrendingUp, Calendar, DollarSign, Phone, Video, MessageCircle, Home, Eye, Clock, Monitor, BarChart3 } from 'lucide-react'
+import { Ruler, TrendingUp, Calendar, Phone, Video, MessageCircle, Home, Monitor, BarChart3 } from 'lucide-react'
 
 function youtubeEmbed(url: string) {
   if (!url) return null
@@ -322,31 +322,44 @@ export default async function TasacionPublicPage({
         {(a.strengths || a.weaknesses || a.opportunities || a.threats) && (
           <section className={`${cardClass} p-5 sm:p-8`}>
             <h2 className={`text-lg sm:text-xl font-semibold ${headingClass} mb-5 flex items-center gap-2`}>
-              <Shield className="w-5 h-5 text-indigo-500" /> An&aacute;lisis FODA
+              <span className="w-1 h-7 bg-gradient-to-b from-[#ff007c] to-[#ff8017] rounded-full" />
+              An&aacute;lisis FODA
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {a.strengths && (
-                <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-                  <span className="inline-block bg-gradient-to-r from-[#ff007c] to-[#ff8017] text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full mb-3">Fortalezas</span>
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-700">{a.strengths}</p>
+                <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm flex">
+                  <div className="w-1 bg-gradient-to-b from-[#ff007c] to-[#ff8017] flex-shrink-0" />
+                  <div className="p-5">
+                    <span className="inline-block bg-gradient-to-r from-[#ff007c] to-[#ff8017] text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full mb-3">Fortalezas</span>
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-700">{a.strengths}</p>
+                  </div>
                 </div>
               )}
               {a.opportunities && (
-                <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-                  <span className="inline-block bg-gradient-to-r from-[#ff8017] to-[#ffb347] text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full mb-3">Oportunidades</span>
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-700">{a.opportunities}</p>
+                <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm flex">
+                  <div className="w-1 bg-gradient-to-b from-[#ff8017] to-[#ffb347] flex-shrink-0" />
+                  <div className="p-5">
+                    <span className="inline-block bg-gradient-to-r from-[#ff8017] to-[#ffb347] text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full mb-3">Oportunidades</span>
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-700">{a.opportunities}</p>
+                  </div>
                 </div>
               )}
               {a.weaknesses && (
-                <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-                  <span className="inline-block bg-gray-400 text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full mb-3">Debilidades</span>
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-600">{a.weaknesses}</p>
+                <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm flex">
+                  <div className="w-1 bg-gray-300 flex-shrink-0" />
+                  <div className="p-5">
+                    <span className="inline-block bg-gray-400 text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full mb-3">Debilidades</span>
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-600">{a.weaknesses}</p>
+                  </div>
                 </div>
               )}
               {a.threats && (
-                <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-                  <span className="inline-block bg-gray-500 text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full mb-3">Amenazas</span>
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-600">{a.threats}</p>
+                <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm flex">
+                  <div className="w-1 bg-gray-500 flex-shrink-0" />
+                  <div className="p-5">
+                    <span className="inline-block bg-gray-500 text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full mb-3">Amenazas</span>
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-600">{a.threats}</p>
+                  </div>
                 </div>
               )}
             </div>
@@ -362,66 +375,75 @@ export default async function TasacionPublicPage({
         {/* Comparables */}
         {comparables.length > 0 && (
           <section className={`${cardClass} p-4 sm:p-8`}>
-            <h2 className={`text-lg sm:text-xl font-semibold ${headingClass} mb-4 flex items-center gap-2`}>
-              <Eye className="w-5 h-5 text-indigo-500" /> Competencia en la zona
+            <h2 className={`text-lg sm:text-xl font-semibold ${headingClass} mb-5 flex items-center gap-2`}>
+              <span className="w-1 h-7 bg-gradient-to-b from-[#ff007c] to-[#ff8017] rounded-full" />
+              Competencia en la zona
+              <span className="ml-auto text-xs font-normal text-gray-400">{comparables.length} propiedades</span>
             </h2>
             <div className="space-y-4">
               {comparables.map((c: any, i: number) => (
-                <div key={i} className={`${presentationMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-100'} border rounded-2xl overflow-hidden`}>
-                  {c.photo_url && (
-                    <img src={c.photo_url} alt={c.address || ''} className="w-full h-40 sm:h-52 object-cover" />
-                  )}
-                  <div className="p-4">
-                    <div className="flex items-start justify-between gap-2 mb-3">
-                      <div>
-                        <p className={`font-bold text-base ${headingClass}`}>{c.address || `Propiedad ${i + 1}`}</p>
-                        {c.price && (
-                          <p className="text-lg font-bold text-[#ff007c] mt-0.5">USD {Number(c.price).toLocaleString('es-AR')}</p>
+                <div key={i} className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex flex-col sm:flex-row">
+                    {/* Photo */}
+                    {c.photo_url && (
+                      <div className="sm:w-56 sm:flex-shrink-0">
+                        <img src={c.photo_url} alt={c.address || ''} className="w-full h-40 sm:h-full object-cover" />
+                      </div>
+                    )}
+                    {/* Content */}
+                    <div className="flex-1 p-4 sm:p-5">
+                      <div className="flex items-start justify-between gap-2 mb-3">
+                        <div>
+                          <p className="font-bold text-base text-gray-800">{c.address || `Comparable ${i + 1}`}</p>
+                          {c.price && (
+                            <p className="text-xl font-black text-[#ff007c] mt-0.5">USD {Number(c.price).toLocaleString('es-AR')}</p>
+                          )}
+                        </div>
+                        {c.zonaprop_url && (
+                          <a href={c.zonaprop_url} target="_blank" rel="noopener noreferrer"
+                            className="text-xs text-white bg-gradient-to-r from-[#ff007c] to-[#ff8017] px-3 py-1.5 rounded-full hover:opacity-90 flex-shrink-0 font-medium">
+                            Ver aviso &rarr;
+                          </a>
                         )}
                       </div>
-                      {c.zonaprop_url && (
-                        <a href={c.zonaprop_url} target="_blank" rel="noopener noreferrer" className="text-xs text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-100 flex-shrink-0">
-                          Ver aviso &rarr;
-                        </a>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                      {c.total_area && (
-                        <div className={`${presentationMode ? 'bg-gray-600' : 'bg-white'} rounded-lg p-2 text-center`}>
-                          <p className="text-[10px] text-gray-400">Total</p>
-                          <p className={`text-sm font-semibold ${headingClass}`}>{c.total_area} m&sup2;</p>
-                        </div>
-                      )}
-                      {c.covered_area && (
-                        <div className={`${presentationMode ? 'bg-gray-600' : 'bg-white'} rounded-lg p-2 text-center`}>
-                          <p className="text-[10px] text-gray-400">Cubierto</p>
-                          <p className={`text-sm font-semibold ${headingClass}`}>{c.covered_area} m&sup2;</p>
-                        </div>
-                      )}
-                      {c.usd_per_m2 && (
-                        <div className={`${presentationMode ? 'bg-gray-600' : 'bg-white'} rounded-lg p-2 text-center`}>
-                          <p className="text-[10px] text-gray-400">USD/m&sup2;</p>
-                          <p className={`text-sm font-semibold ${headingClass}`}>{Number(c.usd_per_m2).toLocaleString('es-AR')}</p>
-                        </div>
-                      )}
-                      {c.days_on_market && (
-                        <div className={`${presentationMode ? 'bg-gray-600' : 'bg-white'} rounded-lg p-2 text-center`}>
-                          <p className="text-[10px] text-gray-400">D&iacute;as</p>
-                          <p className={`text-sm font-semibold ${headingClass}`}>{c.days_on_market}</p>
-                        </div>
-                      )}
-                      {c.views_per_day && (
-                        <div className={`${presentationMode ? 'bg-gray-600' : 'bg-white'} rounded-lg p-2 text-center`}>
-                          <p className="text-[10px] text-gray-400">Vistas 30d</p>
-                          <p className={`text-sm font-semibold ${headingClass}`}>{c.views_per_day}</p>
-                        </div>
-                      )}
-                      {c.age && (
-                        <div className={`${presentationMode ? 'bg-gray-600' : 'bg-white'} rounded-lg p-2 text-center`}>
-                          <p className="text-[10px] text-gray-400">Antig.</p>
-                          <p className={`text-sm font-semibold ${headingClass}`}>{c.age} a&ntilde;os</p>
-                        </div>
-                      )}
+                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+                        {c.covered_area && (
+                          <div className="bg-gray-50 rounded-lg p-2 text-center">
+                            <p className="text-[9px] text-gray-400 uppercase">Cubierto</p>
+                            <p className="text-sm font-bold text-gray-700">{c.covered_area} m&sup2;</p>
+                          </div>
+                        )}
+                        {c.total_area && (
+                          <div className="bg-gray-50 rounded-lg p-2 text-center">
+                            <p className="text-[9px] text-gray-400 uppercase">Total</p>
+                            <p className="text-sm font-bold text-gray-700">{c.total_area} m&sup2;</p>
+                          </div>
+                        )}
+                        {c.usd_per_m2 && (
+                          <div className="bg-[#ff007c]/5 rounded-lg p-2 text-center">
+                            <p className="text-[9px] text-[#ff007c] uppercase font-medium">USD/m&sup2;</p>
+                            <p className="text-sm font-bold text-[#ff007c]">{Number(c.usd_per_m2).toLocaleString('es-AR')}</p>
+                          </div>
+                        )}
+                        {c.days_on_market && (
+                          <div className="bg-gray-50 rounded-lg p-2 text-center">
+                            <p className="text-[9px] text-gray-400 uppercase">D&iacute;as</p>
+                            <p className="text-sm font-bold text-gray-700">{c.days_on_market}</p>
+                          </div>
+                        )}
+                        {c.views_per_day && (
+                          <div className="bg-gray-50 rounded-lg p-2 text-center">
+                            <p className="text-[9px] text-gray-400 uppercase">Vistas</p>
+                            <p className="text-sm font-bold text-gray-700">{c.views_per_day}</p>
+                          </div>
+                        )}
+                        {c.age && (
+                          <div className="bg-gray-50 rounded-lg p-2 text-center">
+                            <p className="text-[9px] text-gray-400 uppercase">Antig.</p>
+                            <p className="text-sm font-bold text-gray-700">{c.age} a&ntilde;os</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -433,8 +455,10 @@ export default async function TasacionPublicPage({
         {/* Sold properties */}
         {soldProps.length > 0 && (
           <section className={`${cardClass} p-4 sm:p-8`}>
-            <h2 className={`text-lg sm:text-xl font-semibold ${headingClass} mb-2 flex items-center gap-2`}>
-              <DollarSign className="w-5 h-5 text-green-500" /> Propiedades vendidas en la zona
+            <h2 className={`text-lg sm:text-xl font-semibold ${headingClass} mb-5 flex items-center gap-2`}>
+              <span className="w-1 h-7 bg-gradient-to-b from-[#ff007c] to-[#ff8017] rounded-full" />
+              Propiedades vendidas en la zona
+              <span className="ml-auto text-xs font-normal text-gray-400">{soldProps.length} operaciones</span>
             </h2>
             <div className="space-y-3">
               {soldProps.map((sp: any) => {
@@ -445,47 +469,47 @@ export default async function TasacionPublicPage({
                   ? Math.round(sp.sold_price / sp.total_area)
                   : null
                 return (
-                  <div key={sp.id} className={`${presentationMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-100'} border rounded-xl p-4`}>
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <p className={`font-bold text-sm ${headingClass}`}>{sp.address}</p>
+                  <div key={sp.id} className="bg-white border border-gray-100 rounded-2xl p-4 sm:p-5 shadow-sm">
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="min-w-0">
+                        <p className="font-bold text-sm text-gray-800 truncate">{sp.address}</p>
                         <p className={`text-xs ${presentationMode ? 'text-gray-400' : 'text-gray-500'}`}>
                           {sp.neighborhood} &middot; {sp.property_type || 'Depto'} &middot; {sp.total_area ? `${sp.total_area} m\u00B2` : ''}
                           {sp.sold_date ? ` \u00B7 ${new Date(sp.sold_date).toLocaleDateString('es-AR', { month: 'short', year: 'numeric' })}` : ''}
                         </p>
                       </div>
                       {discount && Number(discount) > 0 && (
-                        <span className="text-xs font-bold bg-red-100 text-red-600 px-2 py-1 rounded-lg flex-shrink-0">
+                        <span className="text-[10px] font-bold bg-red-50 text-red-500 px-2 py-1 rounded-full border border-red-100 flex-shrink-0">
                           -{discount}%
                         </span>
                       )}
                     </div>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-3 gap-1.5">
                       {sp.original_price && (
-                        <div className={`${presentationMode ? 'bg-gray-600' : 'bg-white'} rounded-lg p-2 text-center`}>
-                          <p className="text-[10px] text-gray-400">Publicado</p>
-                          <p className={`text-sm font-semibold ${presentationMode ? 'text-gray-300 line-through' : 'text-gray-400 line-through'}`}>
+                        <div className="bg-gray-50 rounded-lg p-2.5 text-center">
+                          <p className="text-[9px] text-gray-400 uppercase">Publicado</p>
+                          <p className="text-sm font-semibold text-gray-400 line-through">
                             USD {Number(sp.original_price).toLocaleString('es-AR')}
                           </p>
                         </div>
                       )}
-                      <div className={`${presentationMode ? 'bg-gray-600' : 'bg-white'} rounded-lg p-2 text-center`}>
-                        <p className="text-[10px] text-gray-400">Cierre</p>
-                        <p className="text-sm font-bold text-green-600">
+                      <div className="bg-green-50 rounded-lg p-2.5 text-center border border-green-100">
+                        <p className="text-[9px] text-green-600 uppercase font-medium">Cierre</p>
+                        <p className="text-sm font-black text-green-600">
                           USD {Number(sp.sold_price).toLocaleString('es-AR')}
                         </p>
                       </div>
                       {usdM2Sold && (
-                        <div className={`${presentationMode ? 'bg-gray-600' : 'bg-white'} rounded-lg p-2 text-center`}>
-                          <p className="text-[10px] text-gray-400">USD/m&sup2;</p>
-                          <p className={`text-sm font-semibold ${headingClass}`}>{usdM2Sold.toLocaleString('es-AR')}</p>
+                        <div className="bg-gray-50 rounded-lg p-2.5 text-center">
+                          <p className="text-[9px] text-gray-400 uppercase">USD/m&sup2;</p>
+                          <p className="text-sm font-bold text-gray-700">{usdM2Sold.toLocaleString('es-AR')}</p>
                         </div>
                       )}
                     </div>
                     {sp.listing_url && (
                       <a href={sp.listing_url} target="_blank" rel="noopener noreferrer"
-                        className={`text-xs mt-2 inline-flex items-center gap-1 ${presentationMode ? 'text-pink-400' : 'text-pink-600'} hover:underline`}>
-                        Ver ficha →
+                        className="text-[10px] mt-2 inline-flex items-center gap-1 text-white bg-gradient-to-r from-[#ff007c] to-[#ff8017] px-2.5 py-1 rounded-full hover:opacity-90 font-medium">
+                        Ver ficha &rarr;
                       </a>
                     )}
                   </div>
