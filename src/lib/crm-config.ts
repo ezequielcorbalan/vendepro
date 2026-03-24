@@ -103,21 +103,26 @@ export const OPERATION_TYPES = {
 
 // ── OBJECTIVE METRICS ────────────────────────────────────────
 export const OBJECTIVE_METRICS = {
-  // Actividad
-  llamadas:        { label: 'Llamadas',         category: 'actividad', activityTypes: ['llamada'] },
-  reuniones:       { label: 'Reuniones',         category: 'actividad', activityTypes: ['reunion'] },
-  visitas:         { label: 'Visitas',           category: 'actividad', activityTypes: ['visita_captacion', 'visita_comprador'] },
-  seguimientos:    { label: 'Seguimientos',      category: 'actividad', activityTypes: ['seguimiento'] },
-  whatsapps:       { label: 'WhatsApps',         category: 'actividad', activityTypes: ['whatsapp'] },
-  prospeccion_bc:  { label: 'Prospección BC',    category: 'actividad', activityTypes: ['admin'] },
-  pre_listing:     { label: 'Pre Listing',       category: 'actividad', activityTypes: [] },
-  pre_buying:      { label: 'Pre Buying',        category: 'actividad', activityTypes: [] },
-  referidos:       { label: 'Referidos',         category: 'actividad', activityTypes: [] },
-  // Resultados
-  tasaciones:      { label: 'Tasaciones',        category: 'resultado', activityTypes: ['tasacion'] },
-  captaciones:     { label: 'Captaciones',       category: 'resultado', activityTypes: [] },
-  cierres:         { label: 'Cierres / Ventas',  category: 'resultado', activityTypes: ['cierre'] },
-  facturacion:     { label: 'Facturación (USD)',  category: 'resultado', activityTypes: [] },
+  // ── Actividad / Prospección ──
+  llamadas:           { label: 'Llamadas',               category: 'actividad',    activityTypes: ['llamada'] },
+  reuniones:          { label: 'Reuniones',               category: 'actividad',    activityTypes: ['reunion'] },
+  reuniones_verdes:   { label: 'Reuniones verdes',        category: 'actividad',    activityTypes: [] },  // manual count
+  visitas:            { label: 'Visitas',                 category: 'actividad',    activityTypes: ['visita_captacion', 'visita_comprador'] },
+  seguimientos:       { label: 'Seguimientos',            category: 'actividad',    activityTypes: ['seguimiento'] },
+  whatsapps:          { label: 'WhatsApps',               category: 'actividad',    activityTypes: ['whatsapp'] },
+  prospeccion_bc:     { label: 'Prospección BC',          category: 'actividad',    activityTypes: ['admin'] },
+  pre_listing:        { label: 'Pre Listing',             category: 'actividad',    activityTypes: [] },
+  pre_buying:         { label: 'Pre Buying',              category: 'actividad',    activityTypes: [] },
+  referidos:          { label: 'Referidos',               category: 'actividad',    activityTypes: [] },
+  presentaciones:     { label: 'Presentaciones',          category: 'actividad',    activityTypes: ['presentacion'] },
+  // ── Resultados ──
+  tasaciones:         { label: 'Tasaciones',              category: 'resultado',    activityTypes: ['tasacion'] },
+  captaciones:        { label: 'Captaciones',             category: 'resultado',    activityTypes: [] },
+  publicaciones:      { label: 'Publicaciones',           category: 'resultado',    activityTypes: [] },
+  reservas:           { label: 'Reservas',                category: 'resultado',    activityTypes: [] },
+  cierres:            { label: 'Cierres / Ventas',        category: 'resultado',    activityTypes: ['cierre'] },
+  facturacion:        { label: 'Facturación (USD)',        category: 'resultado',    activityTypes: [] },
+  ticket_promedio:    { label: 'Ticket promedio (USD)',    category: 'resultado',    activityTypes: [] },
 } as const
 
 export type ObjectiveMetric = keyof typeof OBJECTIVE_METRICS

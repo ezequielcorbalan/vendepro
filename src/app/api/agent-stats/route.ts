@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getDB } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth'
+import { getDB } from '@/lib/db'
+import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
   const user = await getCurrentUser()
@@ -11,99 +11,107 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const agentId = searchParams.get('agent_id') || user.id
   const isAdmin = user.role === 'admin' || user.role === 'owner'
-
-  // Non-admin can only see own stats
   const targetAgent = isAdmin ? agentId : user.id
 
   try {
-    // Agent info
-    const agent = await db.prepare('SELECT id, full_name, email, phone FROM users WHERE id = ?').bind(targetAgent).first() as any
+    const agent = await db.prepare('SELECT id, full_name, role FROM users WHERE id = ? AND org_id = ?')
+      .bind(targetAgent, orgId).first() as any
 
     // Lead stats
-    const leadStats = (await db.prepare(`
+    const leadStats = await db.prepare(`
       SELECT
         COUNT(*) as total,
         SUM(CASE WHEN stage = 'captado' THEN 1 ELSE 0 END) as captados,
+        SUM(CASE WHEN stage IN ('en_tasacion','presentada','seguimiento') THEN 1 ELSE 0 END) as en_proceso,
         SUM(CASE WHEN stage = 'perdido' THEN 1 ELSE 0 END) as perdidos,
-        SUM(CASE WHEN stage IN ('en_tasacion','presentada') THEN 1 ELSE 0 END) as en_tasacion
-      FROM leads WHERE org_id = ? AND assigned_to = ?
-    `).bind(orgId, targetAgent).first()) as any || {}
+        SUM(CASE WHEN operation = 'venta' THEN 1 ELSE 0 END) as vendedores,
+        SUM(CASE WHEN operation = 'alquiler' THEN 1 ELSE 0 END) as compradores
+      FROM leads WHERE assigned_to = ? AND org_id = ?
+    `).bind(targetAgent, orgId).first() as any
 
-    // Tasaciones stats
-    const tasaStats = (await db.prepare(`
-      SELECT
-        COUNT(*) as total,
-        SUM(CASE WHEN status = 'captada' THEN 1 ELSE 0 END) as captadas
-      FROM appraisals WHERE org_id = ? AND agent_id = ?
-    `).bind(orgId, targetAgent).first()) as any || {}
+    // Activity by type — month, quarter, year
+    const now = new Date()
+    const monthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+    const qMonth = Math.floor(now.getMonth() / 3) * 3 + 1
+    const quarterStr = `${now.getFullYear()}-${String(qMonth).padStart(2, '0')}-01`
+    const yearStr = `${now.getFullYear()}-01-01`
 
-    // Activity by type (last 30 days)
-    const actByType = (await db.prepare(`
-      SELECT activity_type, COUNT(*) as count
-      FROM activities WHERE org_id = ? AND agent_id = ?
-      AND created_at >= datetime('now', '-30 days')
-      GROUP BY activity_type
-    `).bind(orgId, targetAgent).all()).results as any[]
+    const actMonth = (await db.prepare(`
+      SELECT activity_type, COUNT(*) as count FROM activities
+      WHERE agent_id = ? AND org_id = ? AND created_at >= ? GROUP BY activity_type
+    `).bind(targetAgent, orgId, monthStr).all()).results as any[]
 
-    // Activity by month (last 6 months)
-    const actByMonth = (await db.prepare(`
-      SELECT strftime('%Y-%m', created_at) as month, COUNT(*) as count
-      FROM activities WHERE org_id = ? AND agent_id = ?
-      AND created_at >= datetime('now', '-6 months')
-      GROUP BY strftime('%Y-%m', created_at)
-      ORDER BY month ASC
-    `).bind(orgId, targetAgent).all()).results as any[]
+    const actQuarter = (await db.prepare(`
+      SELECT activity_type, COUNT(*) as count FROM activities
+      WHERE agent_id = ? AND org_id = ? AND created_at >= ? GROUP BY activity_type
+    `).bind(targetAgent, orgId, quarterStr).all()).results as any[]
+
+    const actYear = (await db.prepare(`
+      SELECT activity_type, COUNT(*) as count FROM activities
+      WHERE agent_id = ? AND org_id = ? AND created_at >= ? GROUP BY activity_type
+    `).bind(targetAgent, orgId, yearStr).all()).results as any[]
+
+    // Tasaciones
+    let tasacionStats = { total: 0, presentadas: 0, captadas: 0 }
+    try {
+      const ts = await db.prepare(`
+        SELECT COUNT(*) as total,
+          SUM(CASE WHEN status IN ('presentada','captada') THEN 1 ELSE 0 END) as presentadas,
+          SUM(CASE WHEN status = 'captada' THEN 1 ELSE 0 END) as captadas
+        FROM appraisals WHERE agent_id = ? AND org_id = ?
+      `).bind(targetAgent, orgId).first() as any
+      tasacionStats = { total: ts?.total || 0, presentadas: ts?.presentadas || 0, captadas: ts?.captadas || 0 }
+    } catch { /* */ }
+
+    // Properties
+    let propertyStats = { captadas: 0, publicadas: 0, reservadas: 0, vendidas: 0 }
+    try {
+      const ps = await db.prepare(`
+        SELECT
+          SUM(CASE WHEN commercial_stage='captada' THEN 1 ELSE 0 END) as captadas,
+          SUM(CASE WHEN commercial_stage='publicada' THEN 1 ELSE 0 END) as publicadas,
+          SUM(CASE WHEN commercial_stage='reservada' THEN 1 ELSE 0 END) as reservadas,
+          SUM(CASE WHEN commercial_stage='vendida' THEN 1 ELSE 0 END) as vendidas
+        FROM properties WHERE agent_id = ? AND org_id = ?
+      `).bind(targetAgent, orgId).first() as any
+      propertyStats = { captadas: ps?.captadas || 0, publicadas: ps?.publicadas || 0, reservadas: ps?.reservadas || 0, vendidas: ps?.vendidas || 0 }
+    } catch { /* */ }
 
     // Top neighborhoods
     const topBarrios = (await db.prepare(`
       SELECT neighborhood, COUNT(*) as count FROM leads
-      WHERE org_id = ? AND assigned_to = ? AND neighborhood IS NOT NULL AND neighborhood != ''
+      WHERE assigned_to = ? AND org_id = ? AND neighborhood IS NOT NULL AND neighborhood != ''
       GROUP BY neighborhood ORDER BY count DESC LIMIT 5
-    `).bind(orgId, targetAgent).all()).results as any[]
+    `).bind(targetAgent, orgId).all()).results as any[]
 
-    // Top operations
-    const topOps = (await db.prepare(`
-      SELECT operation, COUNT(*) as count FROM leads
-      WHERE org_id = ? AND assigned_to = ? AND operation IS NOT NULL AND operation != ''
-      GROUP BY operation ORDER BY count DESC LIMIT 5
-    `).bind(orgId, targetAgent).all()).results as any[]
+    // Weekly trend (8 weeks)
+    const weeklyTrend = (await db.prepare(`
+      SELECT strftime('%Y-W%W', created_at) as week, COUNT(*) as count
+      FROM activities WHERE agent_id = ? AND org_id = ? AND created_at >= datetime('now','-56 days')
+      GROUP BY week ORDER BY week ASC
+    `).bind(targetAgent, orgId).all()).results as any[]
 
-    // Current objectives
-    const objectives = (await db.prepare(`
-      SELECT * FROM agent_objectives
-      WHERE org_id = ? AND agent_id = ? AND period_end >= date('now')
-      ORDER BY period_start DESC
-    `).bind(orgId, targetAgent).all()).results as any[]
+    // Objectives
+    let objectives: any[] = []
+    try {
+      objectives = (await db.prepare(`
+        SELECT * FROM agent_objectives WHERE agent_id = ? AND org_id = ? AND period_end >= date('now')
+        ORDER BY period_start ASC
+      `).bind(targetAgent, orgId).all()).results as any[]
+    } catch { /* */ }
 
-    // Activity total this month/quarter/year
-    const nowAR = new Date(Date.now() - 3 * 60 * 60 * 1000)
-    const thisMonth = `${nowAR.getFullYear()}-${String(nowAR.getMonth() + 1).padStart(2, '0')}-01`
-    const thisQuarter = `${nowAR.getFullYear()}-${String(Math.floor(nowAR.getMonth() / 3) * 3 + 1).padStart(2, '0')}-01`
-    const thisYear = `${nowAR.getFullYear()}-01-01`
-
-    const periodCounts = (await db.prepare(`
-      SELECT
-        (SELECT COUNT(*) FROM activities WHERE org_id = ? AND agent_id = ? AND created_at >= ?) as month_count,
-        (SELECT COUNT(*) FROM activities WHERE org_id = ? AND agent_id = ? AND created_at >= ?) as quarter_count,
-        (SELECT COUNT(*) FROM activities WHERE org_id = ? AND agent_id = ? AND created_at >= ?) as year_count
-    `).bind(orgId, targetAgent, thisMonth, orgId, targetAgent, thisQuarter, orgId, targetAgent, thisYear).first()) as any || {}
-
-    // Conversion rates
-    const convLeadTasa = leadStats.total > 0 ? Math.round(((leadStats.en_tasacion || 0) + (tasaStats.total || 0)) / leadStats.total * 100) : 0
-    const convTasaCap = tasaStats.total > 0 ? Math.round((tasaStats.captadas || 0) / tasaStats.total * 100) : 0
+    // Conversions
+    const totalL = leadStats?.total || 0
+    const captL = leadStats?.captados || 0
+    const convLT = totalL > 0 ? Math.round((tasacionStats.total / totalL) * 100) : 0
+    const convTC = tasacionStats.total > 0 ? Math.round((tasacionStats.captadas / tasacionStats.total) * 100) : 0
+    const convLC = totalL > 0 ? Math.round((captL / totalL) * 100) : 0
 
     return NextResponse.json({
-      agent,
-      leads: leadStats,
-      tasaciones: tasaStats,
-      actByType,
-      actByMonth,
-      topBarrios,
-      topOps,
-      objectives,
-      periodCounts,
-      convLeadTasa,
-      convTasaCap,
+      agent, leadStats,
+      activityMonth: actMonth, activityQuarter: actQuarter, activityYear: actYear,
+      tasacionStats, propertyStats, topBarrios, weeklyTrend, objectives,
+      conversions: { leadTasacion: convLT, tasacionCaptacion: convTC, leadCaptacion: convLC }
     })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })

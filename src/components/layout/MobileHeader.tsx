@@ -21,12 +21,13 @@ import {
   BarChart3,
   CalendarDays,
   Handshake,
+  Target,
 } from 'lucide-react'
 import type { Profile } from '@/lib/types'
 
 const agentLinks = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/dashboard/mi-performance', label: 'Mi Performance', icon: BarChart3 },
+  { href: '/mi-performance', label: 'Mi Performance', icon: Target },
   { href: '/leads', label: 'Leads', icon: UserPlus },
   { href: '/contactos', label: 'Contactos', icon: BookUser },
   { href: '/actividades', label: 'Actividad', icon: Activity },

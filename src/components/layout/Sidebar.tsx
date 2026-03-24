@@ -28,7 +28,7 @@ const menuSections = [
     title: 'General',
     links: [
       { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-      { href: '/dashboard/mi-performance', label: 'Mi Performance', icon: BarChart3 },
+      { href: '/mi-performance', label: 'Mi Performance', icon: Target },
     ],
   },
   {
@@ -44,6 +44,7 @@ const menuSections = [
     title: 'Comercialización',
     links: [
       { href: '/tasaciones', label: 'Tasaciones', icon: ClipboardList },
+      { href: '/propiedades/pipeline', label: 'Pipeline', icon: Building2 },
       { href: '/propiedades', label: 'Reportes', icon: BarChart3 },
       { href: '/vendidas', label: 'Vendidas', icon: DollarSign },
       { href: '/reservas', label: 'Reservas', icon: Handshake },
