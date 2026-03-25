@@ -64,13 +64,15 @@ function WeeklyChart({ data }: { data: { day: string; count: number }[] }) {
 export default function DashboardCRM() {
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [period, setPeriod] = useState<'week' | 'month' | 'quarter' | 'year'>('month')
 
   useEffect(() => {
-    fetch('/api/dashboard-crm')
+    setLoading(true)
+    fetch(`/api/dashboard-crm?period=${period}`)
       .then(r => r.json() as Promise<any>)
       .then(d => { setData(d); setLoading(false) })
       .catch(() => setLoading(false))
-  }, [])
+  }, [period])
 
   if (loading) {
     return (
@@ -113,10 +115,18 @@ export default function DashboardCRM() {
           <p className="text-gray-500 text-sm">Resumen ejecutivo del negocio</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <div className="flex gap-0.5 bg-gray-100 rounded-lg p-0.5">
+            {([['week', 'Sem'], ['month', 'Mes'], ['quarter', 'Trim'], ['year', 'Año']] as const).map(([k, l]) => (
+              <button key={k} onClick={() => setPeriod(k)}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${period === k ? 'bg-white shadow text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}>
+                {l}
+              </button>
+            ))}
+          </div>
           <Link href="/leads" className="bg-pink-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-pink-700 flex items-center gap-1">
             <Users className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Nuevo lead</span><span className="sm:hidden">Lead</span>
           </Link>
-          <Link href="/dashboard/mi-performance" className="text-xs text-pink-600 hover:text-pink-700 flex items-center gap-1 border border-pink-200 px-2.5 py-1.5 rounded-lg">
+          <Link href="/mi-performance" className="text-xs text-pink-600 hover:text-pink-700 flex items-center gap-1 border border-pink-200 px-2.5 py-1.5 rounded-lg">
             Mi performance
           </Link>
           <Link href="/dashboard/reportes" className="hidden sm:flex text-xs text-gray-400 hover:text-gray-600 items-center gap-1">

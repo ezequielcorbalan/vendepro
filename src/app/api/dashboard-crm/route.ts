@@ -1,17 +1,34 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getDB } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth'
 
-export async function GET() {
+function getARDate() {
+  return new Date(Date.now() - 3 * 60 * 60 * 1000)
+}
+
+function getPeriodStart(period: string): string {
+  const now = getARDate()
+  const y = now.getFullYear(), m = now.getMonth()
+  switch (period) {
+    case 'week': { const d = new Date(now); d.setDate(d.getDate() - d.getDay()); return d.toISOString().split('T')[0] }
+    case 'quarter': { const qm = Math.floor(m / 3) * 3; return `${y}-${String(qm + 1).padStart(2, '0')}-01` }
+    case 'year': return `${y}-01-01`
+    default: return `${y}-${String(m + 1).padStart(2, '0')}-01` // month
+  }
+}
+
+export async function GET(request: NextRequest) {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'No auth' }, { status: 401 })
 
   const db = await getDB()
   const orgId = user.org_id || 'org_mg'
   const isAdmin = user.role === 'admin' || user.role === 'owner'
+  const period = new URL(request.url).searchParams.get('period') || 'month'
+  const periodStart = getPeriodStart(period)
 
   try {
-    // ── KPIs de Leads ──
+    // ── KPIs de Leads (filtrado por período de creación) ──
     const agentFilter = isAdmin ? '' : ' AND l.assigned_to = ?'
     const agentBinds = isAdmin ? [orgId] : [orgId, user.id]
 
@@ -49,7 +66,7 @@ export async function GET() {
       FROM appraisals WHERE org_id = ?${isAdmin ? '' : ' AND agent_id = ?'}
     `).bind(...(isAdmin ? [orgId] : [orgId, user.id])).first()) as any || {}
 
-    // ── Actividad del período (últimos 30 días) ──
+    // ── Actividad del período seleccionado ──
     const activityStats = (await db.prepare(`
       SELECT
         COUNT(*) as total,
@@ -59,23 +76,23 @@ export async function GET() {
         SUM(CASE WHEN activity_type = 'tasacion' THEN 1 ELSE 0 END) as tasaciones,
         SUM(CASE WHEN activity_type = 'seguimiento' THEN 1 ELSE 0 END) as seguimientos
       FROM activities WHERE org_id = ?
-      AND created_at >= datetime('now', '-30 days')
+      AND created_at >= ?
       ${isAdmin ? '' : 'AND agent_id = ?'}
-    `).bind(...(isAdmin ? [orgId] : [orgId, user.id])).first()) as any || {}
+    `).bind(...(isAdmin ? [orgId, periodStart] : [orgId, periodStart, user.id])).first()) as any || {}
 
-    // ── Actividad por día (últimos 7 días) ──
+    // ── Actividad por día (del período seleccionado, max 30 days for chart) ──
+    const chartDays = period === 'week' ? 7 : period === 'year' ? 30 : period === 'quarter' ? 14 : 30
     const weeklyActivity = (await db.prepare(`
       SELECT date(created_at) as day, COUNT(*) as count
       FROM activities WHERE org_id = ?
-      AND created_at >= datetime('now', '-7 days')
+      AND created_at >= datetime('now', '-${chartDays} days')
       ${isAdmin ? '' : 'AND agent_id = ?'}
       GROUP BY date(created_at)
       ORDER BY day ASC
     `).bind(...(isAdmin ? [orgId] : [orgId, user.id])).all()).results as any[]
 
     // ── Eventos de hoy (Argentina UTC-3) ──
-    const nowAR = new Date(Date.now() - 3 * 60 * 60 * 1000)
-    const today = nowAR.toISOString().split('T')[0]
+    const today = getARDate().toISOString().split('T')[0]
     const todayEvents = (await db.prepare(`
       SELECT e.*, u.full_name as agent_name,
         l.full_name as lead_name, c.full_name as contact_name
@@ -108,10 +125,10 @@ export async function GET() {
           u.id, u.full_name,
           (SELECT COUNT(*) FROM leads WHERE assigned_to = u.id AND org_id = ?) as total_leads,
           (SELECT COUNT(*) FROM leads WHERE assigned_to = u.id AND org_id = ? AND stage = 'captado') as captados,
-          (SELECT COUNT(*) FROM activities WHERE agent_id = u.id AND org_id = ? AND created_at >= datetime('now', '-30 days')) as actividad_mes
+          (SELECT COUNT(*) FROM activities WHERE agent_id = u.id AND org_id = ? AND created_at >= ?) as actividad_mes
         FROM users u WHERE u.org_id = ? AND u.role IN ('admin', 'agent', 'owner')
         ORDER BY actividad_mes DESC
-      `).bind(orgId, orgId, orgId, orgId).all()).results as any[]
+      `).bind(orgId, orgId, orgId, periodStart, orgId).all()).results as any[]
     }
 
     // ── Reservas y Vendidas ──
@@ -159,6 +176,7 @@ export async function GET() {
       : 0
 
     return NextResponse.json({
+      period, periodStart,
       leads: leadStats,
       overdueLeads: overdueLeads?.count || 0,
       tasaciones: tasacionStats,

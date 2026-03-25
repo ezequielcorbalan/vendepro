@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDB, generateId } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth'
+import { LEAD_STAGES } from '@/lib/crm-config'
+
+const VALID_STAGES = Object.keys(LEAD_STAGES)
 
 async function logStageChange(db: any, orgId: string, entityId: string, fromStage: string | null, toStage: string, changedBy: string, notes?: string) {
   const id = generateId()
@@ -83,6 +86,20 @@ export async function POST(request: NextRequest) {
   const db = await getDB()
   const id = generateId()
   const orgId = user.org_id || 'org_mg'
+
+  // Validate required fields
+  if (!data.full_name || typeof data.full_name !== 'string' || data.full_name.trim().length < 2) {
+    return NextResponse.json({ error: 'Nombre es requerido (mín. 2 caracteres)' }, { status: 400 })
+  }
+  // Validate email format if provided
+  if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+    return NextResponse.json({ error: 'Email no válido' }, { status: 400 })
+  }
+  // Validate operation
+  const validOps = ['venta', 'alquiler', 'alquiler_temporal', 'tasacion']
+  if (data.operation && !validOps.includes(data.operation)) {
+    return NextResponse.json({ error: 'Operación no válida' }, { status: 400 })
+  }
 
   try {
     // Use basic columns that definitely exist, then update new fields separately

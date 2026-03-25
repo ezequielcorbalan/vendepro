@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { PROPERTY_STAGES, type PropertyStage, PROPERTY_STAGE_KEYS } from '@/lib/crm-config'
 import { useToast } from '@/components/ui/Toast'
-import { Building2, ArrowRight, Eye, Phone, Filter, List, Columns } from 'lucide-react'
+import { Building2, ArrowRight, Eye, Phone, Filter, List, Columns, XCircle } from 'lucide-react'
 
 type Property = {
   id: string
@@ -84,30 +84,39 @@ export default function PipelinePage() {
     return map
   }, [filtered])
 
-  async function advanceStage(property: Property) {
-    const next = getNextStage(property.commercial_stage)
-    if (!next) return
+  async function changeStage(property: Property, targetStage: PropertyStage) {
     setAdvancing(property.id)
     try {
       const res = await fetch('/api/properties', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: property.id, commercial_stage: next }),
+        body: JSON.stringify({ id: property.id, commercial_stage: targetStage }),
       })
       if (!res.ok) throw new Error()
       setProperties(prev =>
         prev.map(p =>
           p.id === property.id
-            ? { ...p, commercial_stage: next, stage_changed_at: new Date().toISOString() }
+            ? { ...p, commercial_stage: targetStage, stage_changed_at: new Date().toISOString() }
             : p
         )
       )
-      toast(`${property.address} avanzada a ${PROPERTY_STAGES[next].label}`, 'success')
+      toast(`${property.address} → ${PROPERTY_STAGES[targetStage].label}`, 'success')
     } catch {
-      toast('Error al avanzar etapa', 'error')
+      toast('Error al cambiar etapa', 'error')
     } finally {
       setAdvancing(null)
     }
+  }
+
+  function advanceStage(property: Property) {
+    const next = getNextStage(property.commercial_stage)
+    if (!next) return
+    changeStage(property, next)
+  }
+
+  function markVencida(property: Property) {
+    if (!confirm(`¿Marcar "${property.address}" como vencida?`)) return
+    changeStage(property, 'vencida')
   }
 
   if (loading) {
@@ -235,6 +244,7 @@ export default function PipelinePage() {
                       key={p.id}
                       property={p}
                       onAdvance={() => advanceStage(p)}
+                      onMarkVencida={() => markVencida(p)}
                       advancing={advancing === p.id}
                       compact
                     />
@@ -267,6 +277,7 @@ export default function PipelinePage() {
                       key={p.id}
                       property={p}
                       onAdvance={() => advanceStage(p)}
+                      onMarkVencida={() => markVencida(p)}
                       advancing={advancing === p.id}
                     />
                   ))}
@@ -283,11 +294,13 @@ export default function PipelinePage() {
 function PropertyCard({
   property,
   onAdvance,
+  onMarkVencida,
   advancing,
   compact,
 }: {
   property: Property
   onAdvance: () => void
+  onMarkVencida: () => void
   advancing: boolean
   compact?: boolean
 }) {
@@ -341,6 +354,15 @@ function PropertyCard({
         >
           <Eye className="w-3.5 h-3.5" /> Ver
         </Link>
+        {property.commercial_stage !== 'vencida' && property.commercial_stage !== 'vendida' && (
+          <button
+            onClick={onMarkVencida}
+            disabled={advancing}
+            className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-red-500 transition-colors"
+          >
+            <XCircle className="w-3.5 h-3.5" /> Vencida
+          </button>
+        )}
         {compact && next && (
           <button
             onClick={onAdvance}

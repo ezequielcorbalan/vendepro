@@ -49,18 +49,33 @@ export async function POST(request: NextRequest) {
 
   const data = (await request.json()) as any
   const db = await getDB()
-  const id = generateId()
+  const orgId = user.org_id || 'org_mg'
 
+  // Support batch: { batch: [{agent_id, metric, target, period_type, period_start, period_end}, ...] }
+  if (data.batch && Array.isArray(data.batch)) {
+    try {
+      let created = 0
+      for (const item of data.batch) {
+        const id = generateId()
+        await db.prepare(`
+          INSERT INTO agent_objectives (id, org_id, agent_id, period_type, period_start, period_end, metric, target)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `).bind(id, orgId, item.agent_id, item.period_type || 'monthly', item.period_start, item.period_end, item.metric, item.target || 0).run()
+        created++
+      }
+      return NextResponse.json({ created })
+    } catch (err: any) {
+      return NextResponse.json({ error: err.message }, { status: 500 })
+    }
+  }
+
+  // Single create
+  const id = generateId()
   try {
     await db.prepare(`
       INSERT INTO agent_objectives (id, org_id, agent_id, period_type, period_start, period_end, metric, target)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).bind(
-      id, user.org_id || 'org_mg',
-      data.agent_id, data.period_type || 'monthly',
-      data.period_start, data.period_end,
-      data.metric, data.target || 0
-    ).run()
+    `).bind(id, orgId, data.agent_id, data.period_type || 'monthly', data.period_start, data.period_end, data.metric, data.target || 0).run()
     return NextResponse.json({ id })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })

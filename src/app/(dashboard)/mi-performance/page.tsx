@@ -197,6 +197,52 @@ export default function MiPerformancePage() {
         </div>
       </div>
 
+      {/* Quarter comparison */}
+      {data.quarterComparison && (
+        <div className="bg-white rounded-xl border border-gray-100 p-5">
+          <h2 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <BarChart3 className="w-4 h-4 text-purple-500" /> Comparación trimestral
+          </h2>
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            <div className="text-center">
+              <p className="text-[10px] text-gray-400 uppercase">Trim. anterior</p>
+              <p className="text-xl font-black text-gray-400">{data.quarterComparison.previous}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-[10px] text-gray-400 uppercase">Trim. actual</p>
+              <p className="text-xl font-black text-gray-800">{data.quarterComparison.current}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-[10px] text-gray-400 uppercase">Variación</p>
+              <p className={`text-xl font-black ${data.quarterComparison.change > 0 ? 'text-green-600' : data.quarterComparison.change < 0 ? 'text-red-500' : 'text-gray-400'}`}>
+                {data.quarterComparison.change > 0 ? '+' : ''}{data.quarterComparison.change}%
+              </p>
+            </div>
+          </div>
+          {data.quarterComparison.currentByType?.length > 0 && (
+            <div className="space-y-1.5">
+              {data.quarterComparison.currentByType.map((curr: any) => {
+                const prev = data.quarterComparison.previousByType?.find((p: any) => p.activity_type === curr.activity_type)
+                const prevCount = prev?.count || 0
+                const diff = curr.count - prevCount
+                const cfg = ACTIVITY_TYPES[curr.activity_type as ActivityType]
+                return (
+                  <div key={curr.activity_type} className="flex items-center gap-2 text-xs">
+                    <span className="w-24 text-gray-500 truncate">{cfg?.label || curr.activity_type}</span>
+                    <span className="text-gray-400 w-8 text-right">{prevCount}</span>
+                    <ArrowRight className="w-3 h-3 text-gray-300" />
+                    <span className="font-bold text-gray-800 w-8">{curr.count}</span>
+                    <span className={`text-[10px] font-medium ${diff > 0 ? 'text-green-600' : diff < 0 ? 'text-red-500' : 'text-gray-400'}`}>
+                      {diff > 0 ? '+' : ''}{diff}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Weekly trend */}
       {data.weeklyTrend?.length > 0 && (
         <div className="bg-white rounded-xl border border-gray-100 p-5">

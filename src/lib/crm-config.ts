@@ -35,11 +35,12 @@ export const STAGE_AUTO_ACTIONS = {
 // Pipeline SEPARADO del lead — arranca cuando se capta la propiedad
 // Lead termina en "captado" → se crea propiedad con stage "captada"
 export const PROPERTY_STAGES = {
-  captada:       { label: 'Captada',        color: 'bg-green-100 text-green-800',   order: 1 },
-  documentacion: { label: 'Documentación',  color: 'bg-amber-100 text-amber-800',   order: 2 },
-  publicada:     { label: 'Publicada',      color: 'bg-blue-100 text-blue-800',     order: 3 },
-  reservada:     { label: 'Reservada',      color: 'bg-purple-100 text-purple-800', order: 4 },
+  captada:       { label: 'Captada',        color: 'bg-green-100 text-green-800',     order: 1 },
+  documentacion: { label: 'Documentación',  color: 'bg-amber-100 text-amber-800',     order: 2 },
+  publicada:     { label: 'Publicada',      color: 'bg-blue-100 text-blue-800',       order: 3 },
+  reservada:     { label: 'Reservada',      color: 'bg-purple-100 text-purple-800',   order: 4 },
   vendida:       { label: 'Vendida',        color: 'bg-emerald-100 text-emerald-800', order: 5 },
+  vencida:       { label: 'Vencida',        color: 'bg-red-100 text-red-800',         order: 6 },
 } as const
 
 export type PropertyStage = keyof typeof PROPERTY_STAGES

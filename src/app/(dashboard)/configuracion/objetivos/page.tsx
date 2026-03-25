@@ -85,18 +85,33 @@ export default function ObjetivosPage() {
     return { total, cumplidos, atrasados, avgPct }
   }, [enriched])
 
-  const handleCreate = async () => {
-    if (!form.agent_id || !form.target) return
+  const handleCreate = async (forAll = false) => {
+    if (!forAll && !form.agent_id) return
+    if (!form.target) return
     setSaving(true)
     const { start, end } = getPeriodDates(form.period_type)
+    const target = parseInt(form.target) || 0
     try {
-      await fetch('/api/objectives', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agent_id: form.agent_id, period_type: form.period_type, period_start: start, period_end: end, metric: form.metric, target: parseInt(form.target) || 0 }),
-      })
+      if (forAll) {
+        // Batch: create same objective for all agents
+        const batch = agents.map((a: any) => ({
+          agent_id: a.id, period_type: form.period_type, period_start: start, period_end: end, metric: form.metric, target,
+        }))
+        const res = await fetch('/api/objectives', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ batch }),
+        })
+        const result = (await res.json()) as any
+        toast(`${result.created || agents.length} objetivos creados`)
+      } else {
+        await fetch('/api/objectives', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agent_id: form.agent_id, period_type: form.period_type, period_start: start, period_end: end, metric: form.metric, target }),
+        })
+        toast('Objetivo creado')
+      }
       setShowCreate(false)
       setForm({ agent_id: '', period_type: 'monthly', metric: 'llamadas', target: '' })
-      toast('Objetivo creado')
       loadData()
     } catch { toast('Error al crear objetivo', 'error') }
     setSaving(false)
@@ -276,11 +291,18 @@ export default function ObjetivosPage() {
                 </div>
               </div>
             </div>
-            <div className="px-4 py-3 border-t flex gap-2">
-              <button onClick={() => setShowCreate(false)} className="flex-1 px-4 py-2 border rounded-lg text-sm">Cancelar</button>
-              <button onClick={handleCreate} disabled={!form.agent_id || !form.target || saving} className="flex-1 px-4 py-2 bg-pink-600 text-white rounded-lg text-sm font-medium disabled:opacity-50">
-                {saving ? 'Guardando...' : 'Crear'}
-              </button>
+            <div className="px-4 py-3 border-t flex flex-col gap-2">
+              <div className="flex gap-2">
+                <button onClick={() => setShowCreate(false)} className="flex-1 px-4 py-2 border rounded-lg text-sm">Cancelar</button>
+                <button onClick={() => handleCreate(false)} disabled={!form.agent_id || !form.target || saving} className="flex-1 px-4 py-2 bg-pink-600 text-white rounded-lg text-sm font-medium disabled:opacity-50">
+                  {saving ? 'Guardando...' : 'Crear'}
+                </button>
+              </div>
+              {agents.length > 1 && form.target && (
+                <button onClick={() => handleCreate(true)} disabled={saving} className="w-full px-4 py-2 border-2 border-dashed border-pink-300 text-pink-600 rounded-lg text-xs font-medium hover:bg-pink-50 disabled:opacity-50">
+                  Crear para todos los agentes ({agents.length})
+                </button>
+              )}
             </div>
           </div>
         </div>

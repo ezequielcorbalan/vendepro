@@ -46,6 +46,23 @@ export async function GET(request: NextRequest) {
       WHERE agent_id = ? AND org_id = ? AND created_at >= ? GROUP BY activity_type
     `).bind(targetAgent, orgId, quarterStr).all()).results as any[]
 
+    // Previous quarter for comparison
+    const prevQMonth = qMonth <= 3 ? (now.getFullYear() - 1) + '-10-01' : `${now.getFullYear()}-${String(qMonth - 3).padStart(2, '0')}-01`
+    const actPrevQuarter = (await db.prepare(`
+      SELECT activity_type, COUNT(*) as count FROM activities
+      WHERE agent_id = ? AND org_id = ? AND created_at >= ? AND created_at < ? GROUP BY activity_type
+    `).bind(targetAgent, orgId, prevQMonth, quarterStr).all()).results as any[]
+
+    const prevQuarterTotal = actPrevQuarter.reduce((s: number, a: any) => s + a.count, 0)
+    const currQuarterTotal = actQuarter.reduce((s: number, a: any) => s + a.count, 0)
+    const quarterComparison = {
+      current: currQuarterTotal,
+      previous: prevQuarterTotal,
+      change: prevQuarterTotal > 0 ? Math.round(((currQuarterTotal - prevQuarterTotal) / prevQuarterTotal) * 100) : 0,
+      currentByType: actQuarter,
+      previousByType: actPrevQuarter,
+    }
+
     const actYear = (await db.prepare(`
       SELECT activity_type, COUNT(*) as count FROM activities
       WHERE agent_id = ? AND org_id = ? AND created_at >= ? GROUP BY activity_type
@@ -110,6 +127,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       agent, leadStats,
       activityMonth: actMonth, activityQuarter: actQuarter, activityYear: actYear,
+      quarterComparison,
       tasacionStats, propertyStats, topBarrios, weeklyTrend, objectives,
       conversions: { leadTasacion: convLT, tasacionCaptacion: convTC, leadCaptacion: convLC }
     })
