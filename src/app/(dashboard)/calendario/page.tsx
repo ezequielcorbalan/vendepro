@@ -79,6 +79,9 @@ export default function CalendarioPage() {
 
   // ----- Data -----
   const [events, setEvents] = useState<any[]>([])
+  const [googleEvents, setGoogleEvents] = useState<any[]>([])
+  const [gcalConnected, setGcalConnected] = useState(false)
+  const [gcalEmail, setGcalEmail] = useState('')
   const [loading, setLoading] = useState(true)
 
   // ----- Filters -----
@@ -170,16 +173,38 @@ export default function CalendarioPage() {
     }
   }, [fetchRange, filterType, filterStatus, filterMine])
 
+  // ----- Fetch Google Calendar events -----
+  const fetchGoogleEvents = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/google-calendar?start=${fetchRange.start}&end=${fetchRange.end}`)
+      const data = (await res.json()) as any
+      setGcalConnected(!!data.connected)
+      setGcalEmail(data.google_email || '')
+      if (data.events) setGoogleEvents(data.events)
+    } catch { /* ignore */ }
+  }, [fetchRange])
+
   useEffect(() => {
     fetchEvents()
+    fetchGoogleEvents()
     fetch('/api/agents').then(r => r.json() as Promise<any>).then(d => { if (Array.isArray(d)) setCalAgents(d) }).catch(() => {})
-  }, [fetchEvents])
+  }, [fetchEvents, fetchGoogleEvents])
+
+  // ----- Merge CRM + Google events -----
+  const allEvents = useMemo(() => {
+    // Google events get a "source: google" marker, CRM events get "source: crm"
+    const crm = events.map((e: any) => ({ ...e, source: 'crm' }))
+    const google = googleEvents.map((e: any) => ({
+      ...e, id: 'g_' + e.google_id, source: 'google', completed: 0,
+    }))
+    return [...crm, ...google].sort((a, b) => (a.start_at || '').localeCompare(b.start_at || ''))
+  }, [events, googleEvents])
 
   // ----- Client-side search filter -----
   const filteredEvents = useMemo(() => {
-    if (!searchText.trim()) return events
+    if (!searchText.trim()) return allEvents
     const q = searchText.toLowerCase()
-    return events.filter((e: any) =>
+    return allEvents.filter((e: any) =>
       (e.title || '').toLowerCase().includes(q) ||
       (e.description || '').toLowerCase().includes(q) ||
       (e.lead_name || '').toLowerCase().includes(q) ||
@@ -244,10 +269,20 @@ export default function CalendarioPage() {
       const res = await fetch('/api/calendar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       const data = (await res.json()) as any
       if (data.id) {
+        // Also push to Google Calendar if connected
+        if (gcalConnected && form.start_at) {
+          try {
+            await fetch('/api/google-calendar', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ title: form.title, description: form.description, start_at: form.start_at, end_at: form.end_at || form.start_at }),
+            })
+          } catch { /* optional sync, don't block */ }
+        }
         setShowCreateModal(false)
         resetForm()
-        toast('Evento creado')
+        toast(gcalConnected ? 'Evento creado + sincronizado con Google' : 'Evento creado')
         await fetchEvents()
+        if (gcalConnected) await fetchGoogleEvents()
       } else {
         toast(data.error || 'Error al crear evento', 'error')
       }
@@ -333,6 +368,7 @@ export default function CalendarioPage() {
           <div className="flex-1 min-w-0">
             <p className={`text-sm font-medium text-gray-800 ${isCompleted ? 'line-through' : ''}`}>
               {isCompleted && <CheckCircle className="w-3.5 h-3.5 text-green-500 inline mr-1 -mt-0.5" />}
+              {e.source === 'google' && <span className="text-[9px] bg-blue-100 text-blue-600 px-1 py-0.5 rounded mr-1 font-bold">G</span>}
               {e.title}
             </p>
             <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
@@ -653,10 +689,17 @@ export default function CalendarioPage() {
           <p className="text-sm text-gray-400 mt-0.5">Eventos y actividades programadas</p>
         </div>
         <div className="flex items-center gap-2">
-          {/* Google Calendar placeholder */}
-          <button className="hidden sm:inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border border-gray-200 text-gray-400 hover:text-gray-500 hover:border-gray-300 transition-colors" title="Integración con Google Calendar — Próximamente">
-            <Link2 className="w-3.5 h-3.5" /> <span>Google Calendar</span> <span className="text-[9px] bg-gray-100 px-1.5 py-0.5 rounded-full">Pronto</span>
-          </button>
+          {/* Google Calendar */}
+          {gcalConnected ? (
+            <div className="hidden sm:inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border border-green-200 bg-green-50 text-green-700">
+              <Link2 className="w-3.5 h-3.5" /> <span>{gcalEmail || 'Google Calendar'}</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+            </div>
+          ) : (
+            <a href="/api/auth/google" className="hidden sm:inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border border-gray-200 text-gray-500 hover:text-blue-600 hover:border-blue-300 transition-colors">
+              <Link2 className="w-3.5 h-3.5" /> <span>Conectar Google Calendar</span>
+            </a>
+          )}
           <button onClick={() => { resetForm(); setShowCreateModal(true) }} className="inline-flex items-center gap-1.5 bg-[#ff007c] text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90">
             <Plus className="w-4 h-4" /> Nuevo evento
           </button>

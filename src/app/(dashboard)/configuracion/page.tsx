@@ -2,8 +2,9 @@ import { getCurrentUser } from '@/lib/auth'
 import { getDB } from '@/lib/db'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Settings, Palette, FileText, Building, ClipboardList, User } from 'lucide-react'
+import { Settings, Palette, FileText, Building, ClipboardList, User, Calendar } from 'lucide-react'
 import ProfilePhotoForm from '@/components/settings/ProfilePhotoForm'
+import GoogleCalendarSection from '@/components/settings/GoogleCalendarSection'
 
 export default async function ConfiguracionPage() {
   const user = await getCurrentUser()
@@ -75,6 +76,9 @@ export default async function ConfiguracionPage() {
             </div>
           </div>
         </div>
+
+        {/* Google Calendar */}
+        <GoogleCalendarSection />
 
         {/* Branding */}
         <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">

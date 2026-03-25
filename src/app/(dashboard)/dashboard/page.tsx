@@ -149,21 +149,23 @@ export default function DashboardCRM() {
       {(overdueLeads > 0 || (todayEvents && todayEvents.length > 0)) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {overdueLeads > 0 && (
-            <Link href="/leads" className="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100 transition-colors">
+            <Link href="/leads?sort=urgency" className="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100 transition-colors">
               <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
               <div>
                 <p className="text-sm font-medium text-red-700">{overdueLeads} lead{overdueLeads > 1 ? 's' : ''} vencido{overdueLeads > 1 ? 's' : ''}</p>
                 <p className="text-xs text-red-500">Sin contactar o sin actividad</p>
               </div>
+              <ArrowRight className="w-4 h-4 text-red-400 ml-auto shrink-0" />
             </Link>
           )}
           {pendingFollowups && pendingFollowups.length > 0 && (
-            <Link href="/leads" className="flex items-center gap-3 p-3 bg-yellow-50 border border-yellow-200 rounded-xl hover:bg-yellow-100 transition-colors">
+            <Link href="/leads?sort=urgency" className="flex items-center gap-3 p-3 bg-yellow-50 border border-yellow-200 rounded-xl hover:bg-yellow-100 transition-colors">
               <Clock className="w-5 h-5 text-yellow-600 shrink-0" />
               <div>
                 <p className="text-sm font-medium text-yellow-700">{pendingFollowups.length} seguimiento{pendingFollowups.length > 1 ? 's' : ''} pendiente{pendingFollowups.length > 1 ? 's' : ''}</p>
                 <p className="text-xs text-yellow-500">Próximas acciones definidas</p>
               </div>
+              <ArrowRight className="w-4 h-4 text-yellow-400 ml-auto shrink-0" />
             </Link>
           )}
           {todayEvents && todayEvents.length > 0 && (
