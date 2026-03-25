@@ -147,13 +147,13 @@ export async function findMatchingLeads(
 
   if (name) {
     const nameResults = (await db.prepare(`
-      SELECT id, full_name, phone, address, stage, operation, neighborhood, assigned_to
+      SELECT id, full_name, phone, property_address, stage, operation, neighborhood, assigned_to
       FROM leads WHERE org_id = ? AND LOWER(full_name) LIKE ? AND stage != 'perdido'
       ORDER BY updated_at DESC LIMIT 5
     `).bind(orgId, `%${name.toLowerCase()}%`).all()).results as any[]
     matches.push(...nameResults.map((r: any) => ({
       ...r, match_type: 'name',
-      display_name: r.full_name + (r.address ? ` · ${r.address}` : r.neighborhood ? ` · ${r.neighborhood}` : '')
+      display_name: r.full_name + (r.property_address ? ` · ${r.property_address}` : r.neighborhood ? ` · ${r.neighborhood}` : '')
     })))
   }
 

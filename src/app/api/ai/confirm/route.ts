@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
         case 'create_lead': {
           const id = generateId()
           await db.prepare(`
-            INSERT INTO leads (id, org_id, full_name, phone, email, operation, property_type, rooms, neighborhood, address, estimated_value, source, notes, next_step, next_step_date, stage, assigned_to, created_at, updated_at)
+            INSERT INTO leads (id, org_id, full_name, phone, email, operation, property_type, rooms, neighborhood, property_address, estimated_value, source, notes, next_step, next_step_date, stage, assigned_to, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'nuevo', ?, datetime('now'), datetime('now'))
           `).bind(
             id, orgId,
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
             d.property_type || null,
             d.rooms || null,
             d.neighborhood || null,
-            d.address || null,
+            d.address || d.property_address || null,
             d.estimated_value || null,
             d.source || 'ia_chat',
             d.notes || null,
