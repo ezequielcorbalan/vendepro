@@ -4,6 +4,9 @@ export interface CloudflareEnv {
   DB: D1Database
   R2: R2Bucket
   ANTHROPIC_API_KEY?: string
+  GROQ_API_KEY?: string
+  GOOGLE_CLIENT_ID?: string
+  GOOGLE_CLIENT_SECRET?: string
 }
 
 export async function getDB(): Promise<D1Database> {
