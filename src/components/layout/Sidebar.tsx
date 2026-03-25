@@ -3,6 +3,8 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import GlobalSearch from './GlobalSearch'
+import NotificationBell from './NotificationBell'
 import {
   LayoutDashboard,
   Building2,
@@ -78,14 +80,21 @@ export default function Sidebar({ profile }: { profile: Profile }) {
   return (
     <aside className="w-64 bg-white border-r border-gray-200 flex flex-col h-screen fixed left-0 top-0">
       <div className="p-6 border-b border-gray-100">
-        <img
-          src="/logo.png"
-          alt="Marcela Genta"
-          className="h-10"
-        />
+        <div className="flex items-center justify-between">
+          <img
+            src="/logo.png"
+            alt="Marcela Genta"
+            className="h-10"
+          />
+          <NotificationBell />
+        </div>
         <p className="text-xs text-brand-gray mt-2 flex items-center gap-1">
           <FileBarChart className="w-3 h-3" /> Gestión inmobiliaria
         </p>
+      </div>
+
+      <div className="px-4 pt-3 pb-1">
+        <GlobalSearch />
       </div>
 
       <nav className="flex-1 p-4 space-y-4 overflow-y-auto">

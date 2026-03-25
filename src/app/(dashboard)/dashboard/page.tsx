@@ -129,7 +129,7 @@ export default function DashboardCRM() {
           <Link href="/mi-performance" className="text-xs text-pink-600 hover:text-pink-700 flex items-center gap-1 border border-pink-200 px-2.5 py-1.5 rounded-lg">
             Mi performance
           </Link>
-          <Link href="/dashboard/reportes" className="hidden sm:flex text-xs text-gray-400 hover:text-gray-600 items-center gap-1">
+          <Link href="/dashboard/reportes" className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1 border border-gray-200 px-2.5 py-1.5 rounded-lg">
             Reportes <ChevronRight className="w-3 h-3" />
           </Link>
         </div>

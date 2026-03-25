@@ -1,310 +1,239 @@
 'use client'
 import { useState, useEffect, useMemo } from 'react'
-import { Plus, X, Target, Trash2, ChevronLeft, BarChart3 } from 'lucide-react'
-import Link from 'next/link'
+import { Target, Plus, Trash2, Save, Users, ChevronDown, ChevronUp } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
-import {
-  OBJECTIVE_METRICS, PERIOD_TYPES, getObjectiveSemaforo, getPeriodProgressPct,
-  type ObjectiveMetric
-} from '@/lib/crm-config'
+import { OBJECTIVE_METRICS, type ObjectiveMetric, getObjectiveSemaforo, getPeriodProgressPct } from '@/lib/crm-config'
+
+const METRIC_KEYS = Object.keys(OBJECTIVE_METRICS) as ObjectiveMetric[]
+const CATEGORIES = {
+  actividad: { label: 'Actividad / Prospección', metrics: METRIC_KEYS.filter(k => OBJECTIVE_METRICS[k].category === 'actividad') },
+  resultado: { label: 'Resultados', metrics: METRIC_KEYS.filter(k => OBJECTIVE_METRICS[k].category === 'resultado') },
+}
+
+const PERIOD_PRESETS = {
+  weekly: { label: 'Semanal', getRange: () => { const d = new Date(); const s = new Date(d); s.setDate(d.getDate() - d.getDay() + 1); const e = new Date(s); e.setDate(s.getDate() + 6); return { start: fmt(s), end: fmt(e) } } },
+  monthly: { label: 'Mensual', getRange: () => { const d = new Date(); return { start: `${d.getFullYear()}-${p(d.getMonth()+1)}-01`, end: `${d.getFullYear()}-${p(d.getMonth()+1)}-${new Date(d.getFullYear(), d.getMonth()+1, 0).getDate()}` } } },
+  quarterly: { label: 'Trimestral', getRange: () => { const d = new Date(); const qm = Math.floor(d.getMonth() / 3) * 3; return { start: `${d.getFullYear()}-${p(qm+1)}-01`, end: `${d.getFullYear()}-${p(qm+3)}-${new Date(d.getFullYear(), qm+3, 0).getDate()}` } } },
+  yearly: { label: 'Anual', getRange: () => { const y = new Date().getFullYear(); return { start: `${y}-01-01`, end: `${y}-12-31` } } },
+}
+function p(n: number) { return String(n).padStart(2, '0') }
+function fmt(d: Date) { return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}` }
+
+type Agent = { id: string; full_name: string }
+type Objective = { id: string; agent_id: string; agent_name: string; metric: string; target: number; period_type: string; period_start: string; period_end: string }
 
 export default function ObjetivosPage() {
   const { toast } = useToast()
-  const [objectives, setObjectives] = useState<any[]>([])
-  const [agents, setAgents] = useState<any[]>([])
-  const [activities, setActivities] = useState<any[]>([])
+  const [agents, setAgents] = useState<Agent[]>([])
+  const [objectives, setObjectives] = useState<Objective[]>([])
   const [loading, setLoading] = useState(true)
-  const [showCreate, setShowCreate] = useState(false)
+
+  // Batch creation
+  const [showBatch, setShowBatch] = useState(false)
+  const [batchAgents, setBatchAgents] = useState<string[]>([])
+  const [batchPeriod, setBatchPeriod] = useState<'weekly' | 'monthly' | 'quarterly' | 'yearly'>('monthly')
+  const [batchTargets, setBatchTargets] = useState<Record<string, number>>({})
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState({
-    agent_id: '', period_type: 'monthly', metric: 'llamadas', target: ''
-  })
 
-  function getPeriodDates(periodType: string) {
-    const now = new Date()
-    const y = now.getFullYear(), m = now.getMonth()
-    switch (periodType) {
-      case 'weekly': {
-        const s = new Date(now); s.setDate(now.getDate() - now.getDay())
-        const e = new Date(s); e.setDate(s.getDate() + 6)
-        return { start: s.toISOString().split('T')[0], end: e.toISOString().split('T')[0] }
-      }
-      case 'monthly':
-        return { start: `${y}-${String(m+1).padStart(2,'0')}-01`, end: `${y}-${String(m+1).padStart(2,'0')}-${new Date(y,m+1,0).getDate()}` }
-      case 'quarterly': {
-        const q = Math.floor(m/3)
-        return { start: `${y}-${String(q*3+1).padStart(2,'0')}-01`, end: `${y}-${String(q*3+3).padStart(2,'0')}-${new Date(y,q*3+3,0).getDate()}` }
-      }
-      case 'yearly': return { start: `${y}-01-01`, end: `${y}-12-31` }
-      default: return { start: `${y}-${String(m+1).padStart(2,'0')}-01`, end: `${y}-${String(m+1).padStart(2,'0')}-${new Date(y,m+1,0).getDate()}` }
-    }
-  }
-
-  const loadData = () => {
+  useEffect(() => {
     Promise.all([
-      fetch('/api/objectives').then(r => r.json() as Promise<any>),
       fetch('/api/agents').then(r => r.json() as Promise<any>),
-      fetch('/api/activities?start=' + new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0]).then(r => r.json() as Promise<any>).catch(() => []),
-    ]).then(([objs, agts, acts]) => {
-      setObjectives(Array.isArray(objs) ? objs : [])
-      setAgents(Array.isArray(agts) ? agts : [])
-      setActivities(Array.isArray(acts) ? acts : [])
+      fetch('/api/objectives').then(r => r.json() as Promise<any>),
+    ]).then(([a, o]) => {
+      if (Array.isArray(a)) setAgents(a)
+      if (Array.isArray(o)) setObjectives(o)
       setLoading(false)
     }).catch(() => setLoading(false))
-  }
+  }, [])
 
-  useEffect(() => { loadData() }, [])
+  const periodRange = PERIOD_PRESETS[batchPeriod].getRange()
 
-  // Enrich objectives with realized count + semáforo
-  const enriched = useMemo(() => {
-    return objectives.map((obj: any) => {
-      const metricCfg = OBJECTIVE_METRICS[obj.metric as ObjectiveMetric]
-      const types = (metricCfg?.activityTypes || []) as readonly string[]
-      // Filter activities within the objective's period and agent
-      const periodActs = activities.filter((a: any) =>
-        a.agent_id === obj.agent_id &&
-        (a.completed_at || a.created_at) >= obj.period_start &&
-        (a.completed_at || a.created_at) <= obj.period_end + 'T23:59:59' &&
-        (types.length === 0 || types.includes(a.activity_type))
-      )
-      const realized = types.length > 0 ? periodActs.length : 0
-      const periodPct = getPeriodProgressPct(obj.period_start, obj.period_end)
-      const semaforo = getObjectiveSemaforo(realized, obj.target, periodPct)
-      const remaining = Math.max(obj.target - realized, 0)
-      const pct = obj.target > 0 ? Math.round((realized / obj.target) * 100) : 0
-      return { ...obj, realized, pct, remaining, periodPct, semaforo, metricLabel: metricCfg?.label || obj.metric }
-    })
-  }, [objectives, activities])
+  const byAgent = useMemo(() => {
+    const map: Record<string, Objective[]> = {}
+    for (const o of objectives) {
+      if (!map[o.agent_id]) map[o.agent_id] = []
+      map[o.agent_id].push(o)
+    }
+    return map
+  }, [objectives])
 
-  // Summary stats
-  const summary = useMemo(() => {
-    const total = enriched.length
-    const cumplidos = enriched.filter(o => o.pct >= 100).length
-    const atrasados = enriched.filter(o => o.semaforo.level === 'red' || o.semaforo.level === 'orange').length
-    const avgPct = total > 0 ? Math.round(enriched.reduce((s: number, o: any) => s + o.pct, 0) / total) : 0
-    return { total, cumplidos, atrasados, avgPct }
-  }, [enriched])
-
-  const handleCreate = async (forAll = false) => {
-    if (!forAll && !form.agent_id) return
-    if (!form.target) return
-    setSaving(true)
-    const { start, end } = getPeriodDates(form.period_type)
-    const target = parseInt(form.target) || 0
-    try {
-      if (forAll) {
-        // Batch: create same objective for all agents
-        const batch = agents.map((a: any) => ({
-          agent_id: a.id, period_type: form.period_type, period_start: start, period_end: end, metric: form.metric, target,
+  async function saveBatch() {
+    if (batchAgents.length === 0) { toast('Seleccioná al menos un agente', 'warning'); return }
+    const items = batchAgents.flatMap(agentId =>
+      Object.entries(batchTargets)
+        .filter(([, target]) => target > 0)
+        .map(([metric, target]) => ({
+          agent_id: agentId, metric, target,
+          period_type: batchPeriod,
+          period_start: periodRange.start,
+          period_end: periodRange.end,
         }))
-        const res = await fetch('/api/objectives', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ batch }),
-        })
-        const result = (await res.json()) as any
-        toast(`${result.created || agents.length} objetivos creados`)
+    )
+    if (items.length === 0) { toast('Cargá al menos un objetivo con valor > 0', 'warning'); return }
+
+    setSaving(true)
+    try {
+      const res = await fetch('/api/objectives', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ batch: items }),
+      })
+      const data = (await res.json()) as any
+      if (data.created) {
+        toast(`${data.created} objetivos creados para ${batchAgents.length} agente${batchAgents.length > 1 ? 's' : ''}`)
+        const fresh = await fetch('/api/objectives').then(r => r.json() as Promise<any>)
+        if (Array.isArray(fresh)) setObjectives(fresh)
+        setShowBatch(false)
+        setBatchTargets({})
+        setBatchAgents([])
       } else {
-        await fetch('/api/objectives', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ agent_id: form.agent_id, period_type: form.period_type, period_start: start, period_end: end, metric: form.metric, target }),
-        })
-        toast('Objetivo creado')
+        toast(data.error || 'Error', 'error')
       }
-      setShowCreate(false)
-      setForm({ agent_id: '', period_type: 'monthly', metric: 'llamadas', target: '' })
-      loadData()
-    } catch { toast('Error al crear objetivo', 'error') }
-    setSaving(false)
+    } catch { toast('Error al guardar', 'error') }
+    finally { setSaving(false) }
   }
 
-  const handleDelete = async (id: string) => {
+  async function deleteObj(id: string) {
     if (!confirm('¿Eliminar este objetivo?')) return
     await fetch(`/api/objectives?id=${id}`, { method: 'DELETE' })
-    toast('Objetivo eliminado', 'warning')
-    loadData()
+    setObjectives(prev => prev.filter(o => o.id !== id))
+    toast('Objetivo eliminado')
   }
 
-  // Group by agent
-  const grouped = agents.map(agent => ({
-    ...agent,
-    objectives: enriched.filter((o: any) => o.agent_id === agent.id),
-  })).filter(a => a.objectives.length > 0)
-
-  // Metric categories
-  const metricCategories = [
-    { key: 'actividad', label: 'Actividad' },
-    { key: 'resultado', label: 'Resultados' },
-  ]
+  if (loading) return <div className="animate-pulse space-y-4">{[1,2,3].map(i => <div key={i} className="bg-gray-100 rounded-xl h-20" />)}</div>
 
   return (
-    <div className="space-y-4 sm:space-y-5 max-w-4xl mx-auto">
-      {/* Header */}
+    <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <Link href="/configuracion" className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 mb-1">
-            <ChevronLeft className="w-3 h-3" /> Configuración
-          </Link>
           <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 flex items-center gap-2">
-            <Target className="w-5 h-5 text-pink-500" /> Objetivos por agente
+            <Target className="w-6 h-6 text-[#ff007c]" /> Objetivos por agente
           </h1>
+          <p className="text-sm text-gray-500 mt-0.5">{objectives.length} objetivos activos</p>
         </div>
-        <button onClick={() => setShowCreate(true)} className="bg-pink-600 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:bg-pink-700">
-          <Plus className="w-4 h-4" /> Nuevo objetivo
+        <button onClick={() => setShowBatch(!showBatch)}
+          className="bg-[#ff007c] text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 flex items-center gap-1.5">
+          <Plus className="w-4 h-4" /> Crear en batch
         </button>
       </div>
 
-      {/* Summary cards */}
-      {enriched.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="bg-white rounded-xl border p-3 text-center">
-            <p className="text-2xl font-bold text-gray-800">{summary.total}</p>
-            <p className="text-xs text-gray-500">Activos</p>
-          </div>
-          <div className="bg-white rounded-xl border p-3 text-center">
-            <p className="text-2xl font-bold text-green-600">{summary.cumplidos}</p>
-            <p className="text-xs text-gray-500">Cumplidos</p>
-          </div>
-          <div className="bg-white rounded-xl border p-3 text-center">
-            <p className="text-2xl font-bold text-red-600">{summary.atrasados}</p>
-            <p className="text-xs text-gray-500">Atrasados</p>
-          </div>
-          <div className="bg-white rounded-xl border p-3 text-center">
-            <p className="text-2xl font-bold text-gray-800">{summary.avgPct}%</p>
-            <p className="text-xs text-gray-500">Avance promedio</p>
-          </div>
-        </div>
-      )}
+      {showBatch && (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-6 space-y-4">
+          <h2 className="font-semibold text-gray-800">Crear objetivos en batch</h2>
 
-      {/* Objectives by agent */}
-      {loading ? (
-        <div className="space-y-3">{[...Array(3)].map((_, i) => <div key={i} className="h-24 bg-gray-100 rounded-xl animate-pulse" />)}</div>
-      ) : enriched.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-xl border">
-          <Target className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-          <p className="font-medium text-gray-600">Sin objetivos definidos</p>
-          <p className="text-sm text-gray-400 mt-1">Creá objetivos para medir la performance de tu equipo</p>
-          <button onClick={() => setShowCreate(true)} className="mt-4 bg-pink-600 text-white px-4 py-2 rounded-lg text-sm font-medium">
-            Crear primer objetivo
-          </button>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {grouped.map(agent => (
-            <div key={agent.id} className="bg-white rounded-xl border p-4 sm:p-5">
-              <h3 className="font-semibold text-gray-800 mb-3">{agent.full_name}</h3>
-              <div className="space-y-3">
-                {agent.objectives.map((obj: any) => {
-                  const periodCfg = PERIOD_TYPES[obj.period_type as keyof typeof PERIOD_TYPES]
-                  return (
-                    <div key={obj.id} className="p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-gray-700">{obj.metricLabel}</span>
-                          <span className="text-[10px] bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded">{periodCfg?.label || obj.period_type}</span>
-                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${obj.semaforo.color}`}>{obj.semaforo.label}</span>
-                        </div>
-                        <button onClick={() => handleDelete(obj.id)} className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500">
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                      <div className="flex items-center gap-4 mb-2">
-                        <div className="text-center">
-                          <p className="text-lg font-bold text-gray-800">{obj.realized}</p>
-                          <p className="text-[10px] text-gray-400">Realizado</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-lg font-bold text-gray-400">{obj.target}</p>
-                          <p className="text-[10px] text-gray-400">Objetivo</p>
-                        </div>
-                        <div className="text-center">
-                          <p className={`text-lg font-bold ${obj.pct >= 100 ? 'text-green-600' : obj.pct >= 60 ? 'text-yellow-600' : 'text-red-500'}`}>{obj.pct}%</p>
-                          <p className="text-[10px] text-gray-400">Avance</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-lg font-bold text-gray-500">{obj.remaining}</p>
-                          <p className="text-[10px] text-gray-400">Faltan</p>
-                        </div>
-                      </div>
-                      {/* Progress bar */}
-                      <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div className={`absolute left-0 top-0 h-full rounded-full transition-all ${obj.pct >= 100 ? 'bg-green-500' : obj.pct >= 60 ? 'bg-yellow-500' : obj.pct >= 30 ? 'bg-orange-500' : 'bg-red-500'}`}
-                          style={{ width: `${Math.min(obj.pct, 100)}%` }} />
-                        {/* Period progress indicator */}
-                        <div className="absolute top-0 h-full w-0.5 bg-gray-400" style={{ left: `${obj.periodPct}%` }} title={`${obj.periodPct}% del período`} />
-                      </div>
-                      <div className="flex justify-between mt-1 text-[9px] text-gray-400">
-                        <span>{obj.period_start}</span>
-                        <span>{obj.periodPct}% del período</span>
-                        <span>{obj.period_end}</span>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
+          <div>
+            <label className="text-xs text-gray-500 mb-1.5 block">Período</label>
+            <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5 w-fit">
+              {(Object.entries(PERIOD_PRESETS) as [string, any][]).map(([k, v]) => (
+                <button key={k} onClick={() => setBatchPeriod(k as any)}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${batchPeriod === k ? 'bg-white shadow text-gray-800' : 'text-gray-500'}`}>
+                  {v.label}
+                </button>
+              ))}
             </div>
-          ))}
-        </div>
-      )}
+            <p className="text-[10px] text-gray-400 mt-1">{periodRange.start} → {periodRange.end}</p>
+          </div>
 
-      {/* Create modal */}
-      {showCreate && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowCreate(false)}>
-          <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl" onClick={e => e.stopPropagation()}>
-            <div className="px-4 py-3 border-b flex items-center justify-between rounded-t-2xl">
-              <h3 className="font-semibold text-gray-800">Nuevo objetivo</h3>
-              <button onClick={() => setShowCreate(false)} className="p-1 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
+          <div>
+            <label className="text-xs text-gray-500 mb-1.5 block">Agentes</label>
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => setBatchAgents(batchAgents.length === agents.length ? [] : agents.map(a => a.id))}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                  batchAgents.length === agents.length ? 'bg-gray-800 text-white border-gray-800' : 'text-gray-500 border-gray-200'
+                }`}>
+                Todos
+              </button>
+              {agents.map(a => (
+                <button key={a.id}
+                  onClick={() => setBatchAgents(prev => prev.includes(a.id) ? prev.filter(x => x !== a.id) : [...prev, a.id])}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                    batchAgents.includes(a.id) ? 'bg-[#ff007c] text-white border-[#ff007c]' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
+                  }`}>
+                  {a.full_name}
+                </button>
+              ))}
             </div>
-            <div className="p-4 space-y-3">
-              <div>
-                <label className="text-xs text-gray-500 mb-1 block">Agente</label>
-                <select value={form.agent_id} onChange={e => setForm({ ...form, agent_id: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm">
-                  <option value="">Seleccionar agente...</option>
-                  {agents.map((a: any) => <option key={a.id} value={a.id}>{a.full_name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs text-gray-500 mb-1 block">Métrica</label>
-                {metricCategories.map(cat => (
-                  <div key={cat.key} className="mb-2">
-                    <p className="text-[10px] text-gray-400 uppercase mb-1">{cat.label}</p>
-                    <div className="grid grid-cols-3 gap-1">
-                      {Object.entries(OBJECTIVE_METRICS).filter(([, v]) => v.category === cat.key).map(([k, v]) => (
-                        <button key={k} onClick={() => setForm({ ...form, metric: k })}
-                          className={`px-2 py-1.5 rounded-lg text-xs border transition-all ${form.metric === k ? 'border-pink-500 bg-pink-50 text-pink-700 font-medium' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
-                          {v.label}
-                        </button>
-                      ))}
-                    </div>
+          </div>
+
+          {Object.entries(CATEGORIES).map(([catKey, cat]) => (
+            <div key={catKey}>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{cat.label}</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                {cat.metrics.map(metric => (
+                  <div key={metric} className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
+                    <label className="text-xs text-gray-600 flex-1 truncate">{OBJECTIVE_METRICS[metric].label}</label>
+                    <input type="number" min="0" step="1"
+                      value={batchTargets[metric] || ''}
+                      onChange={e => setBatchTargets(prev => ({ ...prev, [metric]: parseInt(e.target.value) || 0 }))}
+                      placeholder="0"
+                      className="w-16 text-right border rounded px-2 py-1 text-sm focus:ring-1 focus:ring-[#ff007c] focus:border-[#ff007c]" />
                   </div>
                 ))}
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Período</label>
-                  <select value={form.period_type} onChange={e => setForm({ ...form, period_type: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm">
-                    {Object.entries(PERIOD_TYPES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Target</label>
-                  <input type="number" placeholder="Ej: 15" value={form.target} onChange={e => setForm({ ...form, target: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm" />
-                </div>
-              </div>
             </div>
-            <div className="px-4 py-3 border-t flex flex-col gap-2">
-              <div className="flex gap-2">
-                <button onClick={() => setShowCreate(false)} className="flex-1 px-4 py-2 border rounded-lg text-sm">Cancelar</button>
-                <button onClick={() => handleCreate(false)} disabled={!form.agent_id || !form.target || saving} className="flex-1 px-4 py-2 bg-pink-600 text-white rounded-lg text-sm font-medium disabled:opacity-50">
-                  {saving ? 'Guardando...' : 'Crear'}
-                </button>
-              </div>
-              {agents.length > 1 && form.target && (
-                <button onClick={() => handleCreate(true)} disabled={saving} className="w-full px-4 py-2 border-2 border-dashed border-pink-300 text-pink-600 rounded-lg text-xs font-medium hover:bg-pink-50 disabled:opacity-50">
-                  Crear para todos los agentes ({agents.length})
-                </button>
-              )}
+          ))}
+
+          {batchAgents.length > 0 && Object.values(batchTargets).some(v => v > 0) && (
+            <div className="bg-pink-50 border border-pink-200 rounded-lg p-3 text-xs text-pink-700">
+              Se crearán <strong>{batchAgents.length * Object.values(batchTargets).filter(v => v > 0).length}</strong> objetivos
+              ({Object.values(batchTargets).filter(v => v > 0).length} métricas × {batchAgents.length} agente{batchAgents.length > 1 ? 's' : ''})
             </div>
+          )}
+
+          <div className="flex gap-2">
+            <button onClick={saveBatch} disabled={saving}
+              className="bg-[#ff007c] text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 flex items-center gap-1.5">
+              <Save className="w-4 h-4" /> {saving ? 'Guardando...' : 'Guardar objetivos'}
+            </button>
+            <button onClick={() => setShowBatch(false)} className="text-gray-500 text-sm hover:text-gray-700 px-3">Cancelar</button>
           </div>
+        </div>
+      )}
+
+      {agents.map(agent => {
+        const agentObjs = byAgent[agent.id]
+        if (!agentObjs || agentObjs.length === 0) return null
+        return <AgentCard key={agent.id} agent={agent} objectives={agentObjs} onDelete={deleteObj} />
+      })}
+
+      {objectives.length === 0 && !showBatch && (
+        <div className="bg-white rounded-xl border p-12 text-center">
+          <Target className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+          <p className="text-gray-500 font-medium">Sin objetivos cargados</p>
+          <p className="text-sm text-gray-400 mt-1">Usá &quot;Crear en batch&quot; para cargar objetivos para tus agentes</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function AgentCard({ agent, objectives, onDelete }: { agent: { id: string; full_name: string }; objectives: Objective[]; onDelete: (id: string) => void }) {
+  const [open, setOpen] = useState(true)
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between p-4 hover:bg-gray-50">
+        <div className="flex items-center gap-2">
+          <Users className="w-4 h-4 text-gray-400" />
+          <span className="font-medium text-gray-800">{agent.full_name}</span>
+          <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{objectives.length}</span>
+        </div>
+        {open ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+      </button>
+      {open && (
+        <div className="border-t border-gray-100 divide-y divide-gray-50">
+          {objectives.map(obj => {
+            const cfg = OBJECTIVE_METRICS[obj.metric as ObjectiveMetric]
+            return (
+              <div key={obj.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 group">
+                <span className="text-sm text-gray-700 flex-1 truncate">{cfg?.label || obj.metric}</span>
+                <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">{obj.period_type}</span>
+                <span className="text-sm font-bold text-gray-800 w-12 text-right">{obj.target}</span>
+                <span className="text-[10px] text-gray-400 w-20 text-right hidden sm:block">{obj.period_start?.slice(5)}</span>
+                <button onClick={() => onDelete(obj.id)} className="opacity-0 group-hover:opacity-100 p-1 text-gray-300 hover:text-red-500 transition-all">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )
+          })}
         </div>
       )}
     </div>
