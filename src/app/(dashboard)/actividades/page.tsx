@@ -4,9 +4,10 @@ import Link from 'next/link'
 import {
   Phone, MessageCircle, Users, Home, Eye, Calculator, Clock,
   FileText, Settings, CheckCircle2, Target, Plus, X,
-  BarChart3
+  BarChart3, Sparkles
 } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
+import AIChatPanel from '@/components/ai/AIChatPanel'
 import {
   ACTIVITY_TYPES, ACTIVITY_TYPE_KEYS, OBJECTIVE_METRICS,
   getObjectiveSemaforo, getPeriodProgressPct, type ActivityType, type ObjectiveMetric
@@ -34,6 +35,7 @@ export default function ActividadesPage() {
   const [filterType, setFilterType] = useState('')
   const [filterAgent, setFilterAgent] = useState('')
   const [showCreate, setShowCreate] = useState(false)
+  const [showAI, setShowAI] = useState(false)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({ activity_type: 'llamada', description: '', lead_id: '', contact_id: '', linkedName: '' })
   const [entitySearch, setEntitySearch] = useState('')
@@ -196,6 +198,9 @@ export default function ActividadesPage() {
           <select value={period} onChange={e => setPeriod(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
             {PERIOD_OPTIONS.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
           </select>
+          <button onClick={() => setShowAI(true)} className="border border-[#ff007c]/30 text-[#ff007c] px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:bg-[#ff007c]/5">
+            <Sparkles className="w-4 h-4" /> <span className="hidden sm:inline">con IA</span>
+          </button>
           <button onClick={() => setShowCreate(true)} className="bg-pink-600 text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:bg-pink-700">
             <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Registrar</span><span className="sm:hidden">Nueva</span>
           </button>
@@ -430,6 +435,7 @@ export default function ActividadesPage() {
           </div>
         </div>
       )}
+      {showAI && <AIChatPanel context={{ module: 'actividades' }} onClose={() => { setShowAI(false); loadData() }} />}
     </div>
   )
 }
