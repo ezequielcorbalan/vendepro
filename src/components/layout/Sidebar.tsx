@@ -58,7 +58,7 @@ const adminSection = {
   title: 'Administración',
   links: [
     { href: '/admin/agentes', label: 'Agentes', icon: Users },
-    { href: '/configuracion/objetivos', label: 'Objetivos', icon: Target },
+    { href: '/admin/objetivos', label: 'Objetivos', icon: Target },
     { href: '/configuracion', label: 'Configuración', icon: Settings },
   ],
 }
