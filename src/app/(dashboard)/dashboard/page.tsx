@@ -137,12 +137,12 @@ export default function DashboardCRM() {
 
       {/* ── KPI Cards ── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <KPICard icon={<Users className="w-5 h-5" />} label="Leads activos" value={((leads.total || 0) - (leads.perdidos || 0) - (leads.captados || 0))} color="blue" />
-        <KPICard icon={<Phone className="w-5 h-5" />} label="Contactados" value={leads.contactados || 0} color="cyan" />
-        <KPICard icon={<Calculator className="w-5 h-5" />} label="Tasaciones" value={tasaciones.total || 0} color="purple" />
-        <KPICard icon={<Home className="w-5 h-5" />} label="Captaciones" value={tasaciones.captadas || 0} color="green" />
-        <KPICard icon={<Activity className="w-5 h-5" />} label="Actividad (30d)" value={activity.total || 0} color="pink" />
-        <KPICard icon={<Target className="w-5 h-5" />} label="Conversión" value={`${conversionRate}%`} color="amber" />
+        <KPICard icon={<Users className="w-5 h-5" />} label="Leads activos" value={((leads.total || 0) - (leads.perdidos || 0) - (leads.captados || 0))} color="blue" href="/leads" />
+        <KPICard icon={<Phone className="w-5 h-5" />} label="Contactados" value={leads.contactados || 0} color="cyan" href="/leads?stage=contactado" />
+        <KPICard icon={<Calculator className="w-5 h-5" />} label="Tasaciones" value={tasaciones.total || 0} color="purple" href="/tasaciones" />
+        <KPICard icon={<Home className="w-5 h-5" />} label="Captaciones" value={tasaciones.captadas || 0} color="green" href="/propiedades/pipeline" />
+        <KPICard icon={<Activity className="w-5 h-5" />} label="Actividad (30d)" value={activity.total || 0} color="pink" href="/actividades" />
+        <KPICard icon={<Target className="w-5 h-5" />} label="Conversión" value={`${conversionRate}%`} color="amber" href="/mi-performance" />
       </div>
 
       {/* ── Alertas operativas ── */}
@@ -353,7 +353,7 @@ export default function DashboardCRM() {
 }
 
 // ── KPI Card component ─────────────────────────────────────
-function KPICard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: number | string; color: string }) {
+function KPICard({ icon, label, value, color, href }: { icon: React.ReactNode; label: string; value: number | string; color: string; href?: string }) {
   const colorMap: Record<string, string> = {
     blue: 'bg-blue-50 text-blue-600',
     cyan: 'bg-cyan-50 text-cyan-600',
@@ -362,13 +362,17 @@ function KPICard({ icon, label, value, color }: { icon: React.ReactNode; label: 
     pink: 'bg-pink-50 text-pink-600',
     amber: 'bg-amber-50 text-amber-600',
   }
-  return (
-    <div className="bg-white rounded-xl border p-3 sm:p-4">
+  const inner = (
+    <>
       <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2 ${colorMap[color]}`}>
         {icon}
       </div>
       <p className="text-xl sm:text-2xl font-bold text-gray-800">{value}</p>
       <p className="text-xs text-gray-500 mt-0.5">{label}</p>
-    </div>
+    </>
   )
+  if (href) {
+    return <a href={href} className="bg-white rounded-xl border p-3 sm:p-4 hover:shadow-md hover:border-gray-300 transition-all block">{inner}</a>
+  }
+  return <div className="bg-white rounded-xl border p-3 sm:p-4">{inner}</div>
 }
