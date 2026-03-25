@@ -119,8 +119,16 @@ export default function AIChatPanel({ context, onClose }: {
       const data = (await res.json()) as any
       const total = Object.values(data.created || {}).flat().length
       toast(`${total} registro${total !== 1 ? 's' : ''} guardado${total !== 1 ? 's' : ''} ✓`, 'success')
-      setStep('done')
-      setTimeout(() => { onClose() }, 1500)
+
+      // Remove confirmed intents, keep the rest
+      const remaining = intents.filter((_, i) => !indices.includes(i))
+      if (remaining.length === 0) {
+        setStep('done')
+        setTimeout(() => { onClose() }, 1500)
+      } else {
+        setIntents(remaining)
+        setEditingIdx(null)
+      }
     } catch {
       toast('Error al guardar', 'error')
     } finally { setSaving(false) }
