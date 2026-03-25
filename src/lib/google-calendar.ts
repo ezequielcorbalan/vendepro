@@ -4,11 +4,9 @@
 const SCOPES = 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events'
 
 export function getRedirectUri() {
-  // In production use the worker URL, in dev use localhost
-  const base = process.env.NODE_ENV === 'production'
-    ? 'https://reportes-mg.marcelagenta.workers.dev'
-    : 'http://localhost:3000'
-  return `${base}/api/auth/google/callback`
+  // Always use the production URL for OAuth redirect
+  // Google requires exact match with registered redirect URI
+  return 'https://reportes-mg.marcelagenta.workers.dev/api/auth/google/callback'
 }
 
 export function getAuthUrl(state: string): string {
