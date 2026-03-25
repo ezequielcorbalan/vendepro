@@ -1,10 +1,10 @@
 'use client'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import {
   Plus, Search, Phone, MessageCircle, Filter, X, LayoutList, Columns3,
-  AlertTriangle, Clock, User, MapPin, DollarSign, ArrowRight, ChevronDown, Download, Sparkles
+  AlertTriangle, Clock, User, MapPin, DollarSign, ArrowRight, ChevronDown, Download, Sparkles, GripVertical
 } from 'lucide-react'
 import {
   LEAD_STAGES, LEAD_STAGE_KEYS, LEAD_PIPELINE_STAGES, LEAD_SOURCES,
@@ -13,6 +13,7 @@ import {
 } from '@/lib/crm-config'
 import { useToast } from '@/components/ui/Toast'
 import AIChatPanel from '@/components/ai/AIChatPanel'
+import { DndContext, DragOverlay, useDraggable, useDroppable, type DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 
 function timeAgo(dateStr: string): string {
   const diff = (Date.now() - new Date(dateStr).getTime()) / 60000
@@ -38,6 +39,8 @@ export default function LeadsPage() {
   const [sortBy, setSortBy] = useState<'recent' | 'name' | 'urgency'>((searchParams.get('sort') as any) || 'recent')
   const [showCreate, setShowCreate] = useState(false)
   const [showAI, setShowAI] = useState(false)
+  const [activeDragId, setActiveDragId] = useState<string | null>(null)
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
   const [saving, setSaving] = useState(false)
   const [showConvertModal, setShowConvertModal] = useState<any>(null)
   const [agents, setAgents] = useState<any[]>([])
@@ -187,6 +190,17 @@ export default function LeadsPage() {
     loadLeads()
   }
 
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event
+    setActiveDragId(null)
+    if (!over || !active) return
+    const leadId = active.id as string
+    const targetStage = over.id as string
+    const lead = leads.find(l => l.id === leadId)
+    if (!lead || lead.stage === targetStage) return
+    moveToStage(leadId, targetStage)
+  }, [leads, moveToStage])
+
   const markLost = async (leadId: string) => {
     await fetch('/api/leads', {
       method: 'PUT',
@@ -301,13 +315,14 @@ export default function LeadsPage() {
           ) : filtered.map(lead => <LeadCard key={lead.id} lead={lead} onAdvance={() => advanceStage(lead)} onLost={() => markLost(lead.id)} />)}
         </div>
       ) : (
+        <DndContext sensors={sensors} onDragStart={e => setActiveDragId(e.active.id as string)} onDragEnd={handleDragEnd} onDragCancel={() => setActiveDragId(null)}>
         <div className="overflow-x-auto pb-4 -mx-2 px-2">
           <div className="flex gap-3" style={{ minWidth: `${LEAD_PIPELINE_STAGES.length * 260}px` }}>
             {LEAD_PIPELINE_STAGES.map(stage => {
               const stageLeads = filtered.filter(l => l.stage === stage)
               const hasOverdue = stageLeads.some(l => getLeadUrgency(l) === 'danger')
               return (
-                <div key={stage} className="w-64 shrink-0">
+                <DroppableColumn key={stage} id={stage} isOver={false}>
                   <div className={`flex items-center justify-between mb-2 px-2 py-1.5 rounded-lg ${LEAD_STAGES[stage].color}`}>
                     <span className="text-xs font-semibold">{LEAD_STAGES[stage].label}</span>
                     <div className="flex items-center gap-1">
@@ -316,9 +331,9 @@ export default function LeadsPage() {
                     </div>
                   </div>
                   <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-                    {stageLeads.map(lead => <KanbanCard key={lead.id} lead={lead} onAdvance={() => advanceStage(lead)} onMoveTo={(s) => moveToStage(lead.id, s)} />)}
+                    {stageLeads.map(lead => <DraggableKanbanCard key={lead.id} lead={lead} onAdvance={() => advanceStage(lead)} onMoveTo={(s) => moveToStage(lead.id, s)} isDragging={activeDragId === lead.id} />)}
                   </div>
-                </div>
+                </DroppableColumn>
               )
             })}
           </div>
@@ -328,6 +343,16 @@ export default function LeadsPage() {
             </div>
           )}
         </div>
+        <DragOverlay>
+          {activeDragId ? (() => {
+            const lead = leads.find(l => l.id === activeDragId)
+            return lead ? <div className="bg-white rounded-lg shadow-xl border-2 border-[#ff007c] p-3 w-60 opacity-90">
+              <p className="text-sm font-medium text-gray-800 truncate">{lead.full_name}</p>
+              <p className="text-[10px] text-gray-400">{lead.operation} · {lead.neighborhood}</p>
+            </div> : null
+          })() : null}
+        </DragOverlay>
+        </DndContext>
       )}
 
       {/* CREATE MODAL */}
@@ -512,6 +537,30 @@ function KanbanCard({ lead, onAdvance, onMoveTo }: { lead: any; onAdvance: () =>
           </div>
         </>
       )}
+    </div>
+  )
+}
+
+// ── Droppable Column ──
+function DroppableColumn({ id, children, isOver }: { id: string; children: React.ReactNode; isOver: boolean }) {
+  const { setNodeRef, isOver: dropping } = useDroppable({ id })
+  return (
+    <div ref={setNodeRef} className={`w-64 shrink-0 transition-colors rounded-xl ${dropping ? 'bg-[#ff007c]/5 ring-2 ring-[#ff007c]/30' : ''}`}>
+      {children}
+    </div>
+  )
+}
+
+// ── Draggable KanbanCard wrapper ──
+function DraggableKanbanCard({ lead, onAdvance, onMoveTo, isDragging }: { lead: any; onAdvance: () => void; onMoveTo: (s: string) => void; isDragging: boolean }) {
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({ id: lead.id })
+  const style = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : undefined
+  return (
+    <div ref={setNodeRef} style={style} className={`relative ${isDragging ? 'opacity-30' : ''}`}>
+      <div {...attributes} {...listeners} className="absolute top-2 left-1 cursor-grab active:cursor-grabbing z-10 p-1 text-gray-300 hover:text-gray-500">
+        <GripVertical className="w-3 h-3" />
+      </div>
+      <KanbanCard lead={lead} onAdvance={onAdvance} onMoveTo={onMoveTo} />
     </div>
   )
 }
