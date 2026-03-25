@@ -147,11 +147,14 @@ export async function findMatchingLeads(
 
   if (name) {
     const nameResults = (await db.prepare(`
-      SELECT id, full_name, phone, stage, operation, neighborhood, assigned_to
+      SELECT id, full_name, phone, address, stage, operation, neighborhood, assigned_to
       FROM leads WHERE org_id = ? AND LOWER(full_name) LIKE ? AND stage != 'perdido'
       ORDER BY updated_at DESC LIMIT 5
     `).bind(orgId, `%${name.toLowerCase()}%`).all()).results as any[]
-    matches.push(...nameResults.map((r: any) => ({ ...r, match_type: 'name' })))
+    matches.push(...nameResults.map((r: any) => ({
+      ...r, match_type: 'name',
+      display_name: r.full_name + (r.address ? ` · ${r.address}` : r.neighborhood ? ` · ${r.neighborhood}` : '')
+    })))
   }
 
   if (phone) {
@@ -179,12 +182,50 @@ export function resolveRelativeDate(dateStr: string | null): string | null {
   if (!dateStr) return null
   // Already YYYY-MM-DD format
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr
-  // Relative: +N days
-  const match = dateStr.match(/\+(\d+)\s*d/)
-  if (match) {
-    const d = new Date(Date.now() - 3 * 3600000) // AR timezone
-    d.setDate(d.getDate() + parseInt(match[1]))
-    return d.toISOString().split('T')[0]
+
+  const now = new Date(Date.now() - 3 * 3600000) // AR timezone
+  const lower = dateStr.toLowerCase().trim()
+
+  // Spanish relative dates
+  if (lower === 'hoy' || lower === 'today') return now.toISOString().split('T')[0]
+  if (lower === 'mañana' || lower === 'manana' || lower === 'tomorrow') {
+    now.setDate(now.getDate() + 1)
+    return now.toISOString().split('T')[0]
   }
+  if (lower === 'pasado mañana' || lower === 'pasado manana') {
+    now.setDate(now.getDate() + 2)
+    return now.toISOString().split('T')[0]
+  }
+  if (lower.includes('semana que viene') || lower.includes('proxima semana') || lower.includes('próxima semana') || lower === 'next week') {
+    now.setDate(now.getDate() + 7)
+    return now.toISOString().split('T')[0]
+  }
+
+  // "en N días" / "en N dias"
+  const enDias = lower.match(/en\s+(\d+)\s*d[ií]as?/)
+  if (enDias) {
+    now.setDate(now.getDate() + parseInt(enDias[1]))
+    return now.toISOString().split('T')[0]
+  }
+
+  // +N days format
+  const plusDays = dateStr.match(/\+(\d+)\s*d/)
+  if (plusDays) {
+    now.setDate(now.getDate() + parseInt(plusDays[1]))
+    return now.toISOString().split('T')[0]
+  }
+
+  // "lunes", "martes", etc → next occurrence
+  const dayNames = ['domingo', 'lunes', 'martes', 'miércoles', 'miercoles', 'jueves', 'viernes', 'sábado', 'sabado']
+  const dayIdx = dayNames.findIndex(d => lower.includes(d))
+  if (dayIdx >= 0) {
+    const targetDay = dayIdx >= 4 ? dayIdx - 1 : dayIdx // adjust for miercoles duplicate
+    const currentDay = now.getDay()
+    let daysAhead = targetDay - currentDay
+    if (daysAhead <= 0) daysAhead += 7
+    now.setDate(now.getDate() + daysAhead)
+    return now.toISOString().split('T')[0]
+  }
+
   return dateStr
 }

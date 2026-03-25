@@ -447,7 +447,7 @@ function LeadCard({ lead, onAdvance, onLost }: { lead: any; onAdvance: () => voi
         <div className="flex-1 min-w-0">
           {/* Row 1: Name + badges */}
           <div className="flex items-center gap-1.5 flex-wrap">
-            <h3 className="font-medium text-gray-800 truncate">{lead.full_name}</h3>
+            <h3 className="font-medium text-gray-800 truncate">{lead.full_name}{lead.address ? <span className="text-gray-400 font-normal text-xs ml-1">· {lead.address}</span> : ''}</h3>
             <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${stage.color}`}>{stage.label}</span>
             {badge && <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${badge.class}`}>{badge.text}</span>}
             {hasAppraisal && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium">Tasación</span>}
@@ -501,7 +501,7 @@ function KanbanCard({ lead, onAdvance, onMoveTo }: { lead: any; onAdvance: () =>
     <div className={`bg-white border rounded-xl p-3 hover:shadow-md transition-all relative ${urgency === 'danger' ? 'border-red-200 bg-red-50/30' : ''}`}>
       <Link href={`/leads/${lead.id}`}>
         <div className="flex items-center justify-between mb-1">
-          <h4 className="text-sm font-medium text-gray-800 truncate">{lead.full_name}</h4>
+          <h4 className="text-sm font-medium text-gray-800 truncate">{lead.full_name}{lead.address ? <span className="text-gray-400 font-normal text-[10px] ml-1">· {lead.address}</span> : ''}</h4>
           {badge && <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${badge.class}`}>{badge.text}</span>}
         </div>
         <div className="space-y-1 text-xs text-gray-500">

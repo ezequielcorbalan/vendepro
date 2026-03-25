@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
         if (exactName) {
           enriched.suggested_action = 'update_lead'
           enriched.suggested_lead_id = exactName.id
-          enriched.suggestion_reason = `Ya existe un lead "${exactName.full_name}" (${exactName.stage})`
+          enriched.suggestion_reason = `Ya existe "${exactName.display_name || exactName.full_name}" (${exactName.stage})`
         }
       }
     }
