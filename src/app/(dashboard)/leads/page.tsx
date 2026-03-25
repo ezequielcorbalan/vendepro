@@ -34,7 +34,7 @@ export default function LeadsPage() {
   const [filterSource, setFilterSource] = useState('')
   const [filterOperation, setFilterOperation] = useState('')
   const [showFilters, setShowFilters] = useState(false)
-  const [sortBy, setSortBy] = useState<'recent' | 'name' | 'urgency'>('recent')
+  const [sortBy, setSortBy] = useState<'recent' | 'name' | 'urgency'>((searchParams.get('sort') as any) || 'recent')
   const [showCreate, setShowCreate] = useState(false)
   const [saving, setSaving] = useState(false)
   const [showConvertModal, setShowConvertModal] = useState<any>(null)
