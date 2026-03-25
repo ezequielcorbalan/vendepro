@@ -4,58 +4,74 @@ import { getDB, getEnvVar } from '@/lib/db'
 import { processWithGroq, findMatchingLeads } from '@/lib/ai-crm'
 
 export async function POST(request: NextRequest) {
-  const user = await getCurrentUser()
-  if (!user) return NextResponse.json({ error: 'No auth' }, { status: 401 })
+  try {
+    const user = await getCurrentUser()
+    if (!user) return NextResponse.json({ error: 'No auth' }, { status: 401 })
 
-  const body = (await request.json()) as any
-  const { text, source, context } = body
+    const body = (await request.json()) as any
+    const { text, source, context } = body
 
-  if (!text || typeof text !== 'string' || text.trim().length < 3) {
-    return NextResponse.json({ error: 'Texto demasiado corto' }, { status: 400 })
-  }
-
-  const db = await getDB()
-  const orgId = user.org_id || 'org_mg'
-  const groqKey = await getEnvVar('GROQ_API_KEY')
-
-  // 1. Process with Groq
-  const result = await processWithGroq(text, source || 'chat', context, groqKey)
-
-  if (result.error) {
-    return NextResponse.json({ error: result.error, intents: [] }, { status: 200 })
-  }
-
-  // 2. For each intent, find matching leads if relevant
-  const enrichedIntents = []
-  for (const intent of result.intents) {
-    const enriched = { ...intent, matches: [] as any[] }
-
-    // Extract name/phone for matching
-    const name = intent.data?.full_name || intent.data?.lead_name || intent.data?.lead_identifier || intent.data?.contact_name
-    const phone = intent.data?.phone || intent.data?.contact_phone
-
-    if (name || phone) {
-      enriched.matches = await findMatchingLeads(db, orgId, name, phone)
-
-      // If creating a lead and we found exact match, suggest update instead
-      if (intent.action === 'create_lead' && enriched.matches.length > 0) {
-        const exactName = enriched.matches.find((m: any) =>
-          m.full_name?.toLowerCase() === name?.toLowerCase()
-        )
-        if (exactName) {
-          enriched.suggested_action = 'update_lead'
-          enriched.suggested_lead_id = exactName.id
-          enriched.suggestion_reason = `Ya existe "${exactName.display_name || exactName.full_name}" (${exactName.stage})`
-        }
-      }
+    if (!text || typeof text !== 'string' || text.trim().length < 3) {
+      return NextResponse.json({ error: 'Texto demasiado corto' }, { status: 400 })
     }
 
-    enrichedIntents.push(enriched)
-  }
+    // Get Groq key - try multiple methods
+    let groqKey: string | undefined
+    try {
+      groqKey = await getEnvVar('GROQ_API_KEY')
+    } catch {
+      // Fallback: try process.env
+      groqKey = process.env.GROQ_API_KEY
+    }
 
-  return NextResponse.json({
-    intents: enrichedIntents,
-    agent_id: user.id,
-    agent_name: user.full_name,
-  })
+    if (!groqKey) {
+      return NextResponse.json({ error: 'GROQ_API_KEY no configurada. Corré: npx wrangler secret put GROQ_API_KEY', intents: [] })
+    }
+
+    // 1. Process with Groq
+    const result = await processWithGroq(text, source || 'chat', context, groqKey)
+
+    if (result.error) {
+      return NextResponse.json({ error: result.error, intents: [] })
+    }
+
+    // 2. For each intent, find matching leads if relevant
+    const enrichedIntents = []
+    const db = await getDB()
+    const orgId = user.org_id || 'org_mg'
+
+    for (const intent of result.intents) {
+      const enriched = { ...intent, matches: [] as any[] }
+
+      try {
+        const name = intent.data?.full_name || intent.data?.lead_name || intent.data?.lead_identifier || intent.data?.contact_name
+        const phone = intent.data?.phone || intent.data?.contact_phone
+
+        if (name || phone) {
+          enriched.matches = await findMatchingLeads(db, orgId, name, phone)
+
+          if (intent.action === 'create_lead' && enriched.matches.length > 0) {
+            const exactName = enriched.matches.find((m: any) =>
+              m.full_name?.toLowerCase() === name?.toLowerCase()
+            )
+            if (exactName) {
+              enriched.suggested_action = 'update_lead'
+              enriched.suggested_lead_id = exactName.id
+              enriched.suggestion_reason = `Ya existe "${exactName.display_name || exactName.full_name}" (${exactName.stage})`
+            }
+          }
+        }
+      } catch { /* matching is optional, don't block */ }
+
+      enrichedIntents.push(enriched)
+    }
+
+    return NextResponse.json({
+      intents: enrichedIntents,
+      agent_id: user.id,
+      agent_name: user.full_name,
+    })
+  } catch (err: any) {
+    return NextResponse.json({ error: `Error interno: ${err.message}`, intents: [] }, { status: 500 })
+  }
 }
