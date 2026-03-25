@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     `).bind(targetAgent, orgId).first() as any
 
     // Activity by type — month, quarter, year
-    const now = new Date()
+    const now = new Date(Date.now() - 3 * 60 * 60 * 1000) // AR timezone UTC-3
     const monthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
     const qMonth = Math.floor(now.getMonth() / 3) * 3 + 1
     const quarterStr = `${now.getFullYear()}-${String(qMonth).padStart(2, '0')}-01`

@@ -29,10 +29,14 @@ function formatPrice(price: number | null): string {
   return 'USD ' + price.toLocaleString('es-AR')
 }
 
-function getNextStage(current: PropertyStage): PropertyStage | null {
+function getNextStage(current: PropertyStage | null): PropertyStage | null {
+  if (!current) return 'captada'
   const idx = PROPERTY_STAGE_KEYS.indexOf(current)
   if (idx < 0 || idx >= PROPERTY_STAGE_KEYS.length - 1) return null
-  return PROPERTY_STAGE_KEYS[idx + 1]
+  // Don't advance past vendida (vencida is terminal)
+  const next = PROPERTY_STAGE_KEYS[idx + 1]
+  if (next === 'vencida') return null
+  return next
 }
 
 export default function PipelinePage() {
@@ -79,7 +83,8 @@ export default function PipelinePage() {
     const map: Record<PropertyStage, Property[]> = {} as any
     for (const key of PROPERTY_STAGE_KEYS) map[key] = []
     for (const p of filtered) {
-      if (map[p.commercial_stage]) map[p.commercial_stage].push(p)
+      const stage = (p.commercial_stage && map[p.commercial_stage]) ? p.commercial_stage : 'captada'
+      map[stage].push(p)
     }
     return map
   }, [filtered])
