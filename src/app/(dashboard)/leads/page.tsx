@@ -450,7 +450,7 @@ export default function LeadsPage() {
   )
 }
 
-// ── LeadCard (List view) ──
+// ── LeadCard (List view) — mobile-first ──
 function LeadCard({ lead, onAdvance, onLost }: { lead: any; onAdvance: () => void; onLost: () => void }) {
   const stage = LEAD_STAGES[lead.stage as LeadStage] || LEAD_STAGES.nuevo
   const urgency = getLeadUrgency(lead)
@@ -462,52 +462,80 @@ function LeadCard({ lead, onAdvance, onLost }: { lead: any; onAdvance: () => voi
   const sourceCfg = LEAD_SOURCES[lead.source as keyof typeof LEAD_SOURCES]
 
   return (
-    <Link href={`/leads/${lead.id}`}
-      className={`block bg-white border rounded-xl p-3 sm:p-4 hover:shadow-md transition-all ${urgency === 'danger' ? 'border-red-200 bg-red-50/30' : urgency === 'warning' ? 'border-yellow-200' : ''}`}>
-      <div className="flex items-start gap-3">
-        <div className="flex-1 min-w-0">
-          {/* Row 1: Name + badges */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <h3 className="font-medium text-gray-800 truncate">{lead.full_name}{lead.property_address ? <span className="text-gray-400 font-normal text-xs ml-1">· {lead.property_address}</span> : ''}</h3>
-            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${stage.color}`}>{stage.label}</span>
-            {badge && <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${badge.class}`}>{badge.text}</span>}
-            {hasAppraisal && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium">Tasación</span>}
+    <div className={`bg-white border rounded-xl overflow-hidden transition-all ${urgency === 'danger' ? 'border-red-200 bg-red-50/30' : urgency === 'warning' ? 'border-yellow-200' : 'border-gray-200'}`}>
+      {/* Main content — clickable */}
+      <Link href={`/leads/${lead.id}`} className="block p-3 sm:p-4">
+        {/* Row 1: Name + stage badge */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <h3 className="font-semibold text-gray-800 text-sm sm:text-base truncate">
+              {lead.full_name}
+            </h3>
+            {lead.property_address && (
+              <p className="text-[11px] text-gray-400 truncate">{lead.property_address}</p>
+            )}
           </div>
-          {/* Row 2: Key info */}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1 text-xs text-gray-500">
-            {lead.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{lead.phone}</span>}
-            {lead.email && <span className="hidden sm:flex items-center gap-1 truncate max-w-[140px]">{lead.email}</span>}
-            {lead.operation && <span className="capitalize">{lead.operation}</span>}
-            {lead.neighborhood && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /><span className="truncate max-w-[100px]">{lead.neighborhood}</span></span>}
-            {lead.estimated_value && <span className="hidden sm:flex items-center gap-1"><DollarSign className="w-3 h-3" />USD {Number(lead.estimated_value).toLocaleString()}</span>}
+          <div className="flex items-center gap-1 shrink-0">
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium whitespace-nowrap ${stage.color}`}>{stage.label}</span>
+            {badge && <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium whitespace-nowrap ${badge.class}`}>{badge.text}</span>}
           </div>
-          {/* Row 3: Agent + source + last activity */}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1 text-[10px] text-gray-400">
-            {lead.assigned_name && <span className="flex items-center gap-1"><User className="w-3 h-3" />{lead.assigned_name}</span>}
-            {sourceCfg && <span>{sourceCfg.label}</span>}
-            {lastActivity && <span>Últ. actividad: {lastActivity}</span>}
-          </div>
-          {/* Row 4: Checklist + next step */}
-          <div className="flex items-center gap-2 mt-1.5">
-            <div className="flex gap-0.5">{Object.entries(checklist).map(([k, v]) => <div key={k} className={`w-1.5 h-1.5 rounded-full ${v ? 'bg-green-500' : 'bg-gray-200'}`} />)}</div>
+        </div>
+
+        {/* Row 2: Key info grid */}
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1 mt-2 text-xs text-gray-500">
+          {lead.phone && <span className="flex items-center gap-1 truncate"><Phone className="w-3 h-3 shrink-0" />{lead.phone}</span>}
+          {lead.operation && <span className="capitalize">{lead.operation}{lead.neighborhood ? ` · ${lead.neighborhood}` : ''}</span>}
+          {lead.assigned_name && <span className="flex items-center gap-1 truncate"><User className="w-3 h-3 shrink-0" />{lead.assigned_name}</span>}
+          {sourceCfg && <span className="truncate">{sourceCfg.label}</span>}
+        </div>
+
+        {/* Row 3: Checklist + meta */}
+        <div className="flex items-center justify-between mt-2">
+          <div className="flex items-center gap-2">
+            <div className="flex gap-0.5">{Object.entries(checklist).map(([k, v]) => <div key={k} className={`w-2 h-2 rounded-full ${v ? 'bg-green-500' : 'bg-gray-200'}`} />)}</div>
             <span className="text-[10px] text-gray-400">{checkItems}/6</span>
-            {lead.next_step && <span className="text-[10px] text-gray-400 truncate ml-1">→ {lead.next_step}</span>}
+            {hasAppraisal && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium">Tasaci&oacute;n</span>}
+          </div>
+          <div className="flex items-center gap-2 text-[10px] text-gray-400">
+            {lastActivity && <span>&Uacute;lt: {lastActivity}</span>}
+            {lead.estimated_value && <span className="hidden sm:inline">USD {Number(lead.estimated_value).toLocaleString()}</span>}
           </div>
         </div>
-        {/* Quick actions */}
-        <div className="flex sm:flex-col items-center gap-1 shrink-0" onClick={e => e.preventDefault()}>
-          {lead.phone && (
-            <>
-              <a href={`tel:${lead.phone}`} className="p-2.5 sm:p-1.5 rounded-xl sm:rounded-lg bg-blue-50 sm:bg-transparent hover:bg-blue-100 text-blue-500 touch-manipulation"><Phone className="w-4 h-4" /></a>
-              <a href={`https://wa.me/${formatWhatsApp(lead.phone)}`} target="_blank" className="p-2.5 sm:p-1.5 rounded-xl sm:rounded-lg bg-green-50 sm:bg-transparent hover:bg-green-100 text-green-500 touch-manipulation"><MessageCircle className="w-4 h-4" /></a>
-            </>
-          )}
-          {lead.stage !== 'captado' && lead.stage !== 'perdido' && (
-            <button onClick={onAdvance} className="p-2.5 sm:p-1.5 rounded-xl sm:rounded-lg bg-pink-50 sm:bg-transparent hover:bg-pink-100 text-pink-500 touch-manipulation" title="Avanzar etapa"><ArrowRight className="w-4 h-4" /></button>
-          )}
-        </div>
+
+        {/* Row 4: Next step */}
+        {lead.next_step && (
+          <div className="mt-1.5 px-2 py-1 bg-gray-50 rounded-lg">
+            <p className="text-[11px] text-gray-500 truncate">&rarr; {lead.next_step}
+              {lead.next_step_date && <span className="text-gray-400 ml-1">({new Date(lead.next_step_date).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })})</span>}
+            </p>
+          </div>
+        )}
+      </Link>
+
+      {/* Quick actions bar — always visible */}
+      <div className="flex items-center border-t border-gray-100 divide-x divide-gray-100" onClick={e => e.stopPropagation()}>
+        {lead.phone ? (
+          <>
+            <a href={`tel:${lead.phone}`} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-blue-500 hover:bg-blue-50 text-xs font-medium touch-manipulation">
+              <Phone className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Llamar</span>
+            </a>
+            <a href={`https://wa.me/${formatWhatsApp(lead.phone)}`} target="_blank" className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-green-600 hover:bg-green-50 text-xs font-medium touch-manipulation">
+              <MessageCircle className="w-3.5 h-3.5" /> <span className="hidden sm:inline">WhatsApp</span>
+            </a>
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center py-2.5 text-gray-300 text-xs">Sin tel&eacute;fono</div>
+        )}
+        {lead.stage !== 'captado' && lead.stage !== 'perdido' ? (
+          <button onClick={onAdvance} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[#ff007c] hover:bg-pink-50 text-xs font-medium touch-manipulation">
+            <ArrowRight className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Avanzar</span>
+          </button>
+        ) : null}
+        <Link href={`/leads/${lead.id}`} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-gray-500 hover:bg-gray-50 text-xs font-medium touch-manipulation">
+          <span>Ver &rarr;</span>
+        </Link>
       </div>
-    </Link>
+    </div>
   )
 }
 

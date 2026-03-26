@@ -117,6 +117,11 @@ export default function AIChatPanel({ context, onClose }: {
         body: JSON.stringify({ intents: toConfirm }),
       })
       const data = (await res.json()) as any
+      if (data.errors?.length) {
+        toast(`Error: ${data.errors[0]}`, 'error')
+        setSaving(false)
+        return
+      }
       const total = Object.values(data.created || {}).flat().length
       toast(`${total} registro${total !== 1 ? 's' : ''} guardado${total !== 1 ? 's' : ''} ✓`, 'success')
 

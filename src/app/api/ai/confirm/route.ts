@@ -26,26 +26,34 @@ export async function POST(request: NextRequest) {
       switch (intent.action) {
         case 'create_lead': {
           const id = generateId()
-          await db.prepare(`
-            INSERT INTO leads (id, org_id, full_name, phone, email, operation, property_type, rooms, neighborhood, property_address, estimated_value, source, notes, next_step, next_step_date, stage, assigned_to, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'nuevo', ?, datetime('now'), datetime('now'))
-          `).bind(
-            id, orgId,
-            d.full_name || 'Sin nombre',
-            d.phone || null, d.email || null,
-            d.operation || 'venta',
-            d.property_type || null,
-            d.rooms || null,
-            d.neighborhood || null,
-            d.address || d.property_address || null,
-            d.estimated_value || null,
-            d.source || 'ia_chat',
-            d.notes || null,
-            d.next_step || null,
-            resolveRelativeDate(d.next_step_date),
-            user.id
-          ).run()
-          created.leads.push(id)
+          const rooms = d.rooms ? parseInt(String(d.rooms)) || null : null
+          const estValue = d.estimated_value ? parseFloat(String(d.estimated_value)) || null : null
+          const resolvedDate = resolveRelativeDate(d.next_step_date)
+          try {
+            await db.prepare(`
+              INSERT INTO leads (id, org_id, full_name, phone, email, operation, property_type, rooms, neighborhood, property_address, estimated_value, source, notes, next_step, next_step_date, stage, assigned_to, created_at, updated_at)
+              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, 'nuevo', ?16, datetime('now'), datetime('now'))
+            `).bind(
+              id, orgId,
+              String(d.full_name || 'Sin nombre'),
+              d.phone ? String(d.phone) : null,
+              d.email ? String(d.email) : null,
+              String(d.operation || 'venta'),
+              d.property_type ? String(d.property_type) : null,
+              rooms,
+              d.neighborhood ? String(d.neighborhood) : null,
+              d.address ? String(d.address) : d.property_address ? String(d.property_address) : null,
+              estValue,
+              String(d.source || 'ia_chat'),
+              d.notes ? String(d.notes) : null,
+              d.next_step ? String(d.next_step) : null,
+              resolvedDate,
+              user.id
+            ).run()
+            created.leads.push(id)
+          } catch (insertErr: any) {
+            errors.push(`create_lead: ${insertErr.message}`)
+          }
           break
         }
 
