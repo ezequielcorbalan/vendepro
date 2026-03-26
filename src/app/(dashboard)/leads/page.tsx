@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import {
   Plus, Search, Phone, MessageCircle, Filter, X, LayoutList, Columns3,
-  AlertTriangle, Clock, User, MapPin, DollarSign, ArrowRight, ChevronDown, Download, Sparkles, GripVertical
+  AlertTriangle, Clock, User, MapPin, DollarSign, ArrowRight, ChevronDown, Download, Sparkles, Trash2, GripVertical
 } from 'lucide-react'
 import {
   LEAD_STAGES, LEAD_STAGE_KEYS, LEAD_PIPELINE_STAGES, LEAD_SOURCES,
@@ -225,6 +225,15 @@ export default function LeadsPage() {
     loadLeads()
   }
 
+  const deleteLead = async (leadId: string, leadName: string) => {
+    if (!confirm(`¿Eliminar "${leadName}" permanentemente?\n\nEsta acción no se puede deshacer.`)) return
+    try {
+      await fetch(`/api/leads?id=${leadId}`, { method: 'DELETE' })
+      toast('Lead eliminado', 'warning')
+      loadLeads()
+    } catch { toast('Error al eliminar', 'error') }
+  }
+
   const activeFilters = [filterStage, filterSource, filterOperation, filterAgent].filter(Boolean).length
 
   return (
@@ -333,7 +342,7 @@ export default function LeadsPage() {
               <p className="font-medium">Sin leads</p>
               <p className="text-sm mt-1">Creá tu primer lead para comenzar</p>
             </div>
-          ) : filtered.map(lead => <LeadCard key={lead.id} lead={lead} onAdvance={() => advanceStage(lead)} onLost={() => markLost(lead.id)} />)}
+          ) : filtered.map(lead => <LeadCard key={lead.id} lead={lead} onAdvance={() => advanceStage(lead)} onLost={() => markLost(lead.id)} onDelete={() => deleteLead(lead.id, lead.full_name)} />)}
         </div>
       ) : (
         <DndContext sensors={sensors} onDragStart={e => setActiveDragId(e.active.id as string)} onDragEnd={handleDragEnd} onDragCancel={() => setActiveDragId(null)}>
@@ -451,7 +460,7 @@ export default function LeadsPage() {
 }
 
 // ── LeadCard (List view) ──
-function LeadCard({ lead, onAdvance, onLost }: { lead: any; onAdvance: () => void; onLost: () => void }) {
+function LeadCard({ lead, onAdvance, onLost, onDelete }: { lead: any; onAdvance: () => void; onLost: () => void; onDelete: () => void }) {
   const stage = LEAD_STAGES[lead.stage as LeadStage] || LEAD_STAGES.nuevo
   const urgency = getLeadUrgency(lead)
   const badge = getUrgencyBadge(urgency)
@@ -503,6 +512,7 @@ function LeadCard({ lead, onAdvance, onLost }: { lead: any; onAdvance: () => voi
         {lead.stage !== 'captado' && lead.stage !== 'perdido' && (
           <button onClick={onAdvance} className="flex-1 py-2.5 flex justify-center text-[#ff007c] hover:bg-pink-50 border-l border-gray-100"><ArrowRight className="w-4 h-4" /></button>
         )}
+        <button onClick={onDelete} className="py-2.5 px-3 flex justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 border-l border-gray-100" title="Eliminar"><Trash2 className="w-3.5 h-3.5" /></button>
       </div>
     </div>
   )
