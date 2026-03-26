@@ -51,11 +51,15 @@ export default function PipelinePage() {
   const [advancing, setAdvancing] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch('/api/properties?include_stage=true')
-      .then(r => r.json())
+    fetch('/api/properties')
+      .then(r => (r.json()) as Promise<any>)
       .then(data => {
-        const d = data as any
-        setProperties(d.properties || d || [])
+        const arr = Array.isArray(data) ? data : data.properties || []
+        // Ensure each property has a valid commercial_stage
+        setProperties(arr.map((p: any) => ({
+          ...p,
+          commercial_stage: p.commercial_stage || 'captada',
+        })))
       })
       .catch(() => setError('Error al cargar propiedades'))
       .finally(() => setLoading(false))
