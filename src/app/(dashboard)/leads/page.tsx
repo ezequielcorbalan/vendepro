@@ -35,6 +35,8 @@ export default function LeadsPage() {
   const [filterStage, setFilterStage] = useState<string>(searchParams.get('stage') || '')
   const [filterSource, setFilterSource] = useState('')
   const [filterOperation, setFilterOperation] = useState('')
+  const [filterAgent, setFilterAgent] = useState('')
+  const [agents, setAgents] = useState<any[]>([])
   const [showFilters, setShowFilters] = useState(false)
   const [sortBy, setSortBy] = useState<'recent' | 'name' | 'urgency'>((searchParams.get('sort') as any) || 'recent')
   const [showCreate, setShowCreate] = useState(false)
@@ -43,7 +45,6 @@ export default function LeadsPage() {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
   const [saving, setSaving] = useState(false)
   const [showConvertModal, setShowConvertModal] = useState<any>(null)
-  const [agents, setAgents] = useState<any[]>([])
 
   const [form, setForm] = useState({
     full_name: '', phone: '', email: '', source: 'manual', source_detail: '',
@@ -76,6 +77,7 @@ export default function LeadsPage() {
       if (filterStage && l.stage !== filterStage) return false
       if (filterSource && l.source !== filterSource) return false
       if (filterOperation && l.operation !== filterOperation) return false
+      if (filterAgent && l.assigned_to !== filterAgent) return false
       return true
     })
     // Sort
@@ -87,7 +89,7 @@ export default function LeadsPage() {
     })
     // 'recent' is already sorted by updated_at DESC from API
     return result
-  }, [leads, search, filterStage, filterSource, filterOperation, sortBy])
+  }, [leads, search, filterStage, filterSource, filterOperation, filterAgent, sortBy])
 
   const stageCounts = useMemo(() => {
     const counts: Record<string, number> = {}
@@ -179,7 +181,17 @@ export default function LeadsPage() {
       const lead = leads.find(l => l.id === leadId)
       if (lead) { setShowConvertModal(lead); return }
     }
-    if (stage === 'perdido' && !confirm('¿Marcar este lead como perdido?')) return
+    if (stage === 'perdido') {
+      const reason = prompt('¿Por qué se pierde este lead?')
+      if (reason === null) return
+      await fetch('/api/leads', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: leadId, stage: 'perdido', lost_reason: reason || 'Sin motivo' })
+      })
+      toast('Lead marcado como perdido', 'warning')
+      loadLeads()
+      return
+    }
     await fetch('/api/leads', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -202,16 +214,18 @@ export default function LeadsPage() {
   }, [leads, moveToStage])
 
   const markLost = async (leadId: string) => {
+    const reason = prompt('¿Por qué se pierde este lead?\n\nEj: No responde, presupuesto fuera de rango, eligió otra inmobiliaria, etc.')
+    if (reason === null) return // cancelled
     await fetch('/api/leads', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: leadId, stage: 'perdido' })
+      body: JSON.stringify({ id: leadId, stage: 'perdido', lost_reason: reason || 'Sin motivo especificado' })
     })
     toast('Lead marcado como perdido', 'warning')
     loadLeads()
   }
 
-  const activeFilters = [filterStage, filterSource, filterOperation].filter(Boolean).length
+  const activeFilters = [filterStage, filterSource, filterOperation, filterAgent].filter(Boolean).length
 
   return (
     <div className="space-y-4">
@@ -282,8 +296,15 @@ export default function LeadsPage() {
               {Object.entries(OPERATION_TYPES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
             </select>
           </div>
+          <div>
+            <label className="text-[10px] text-gray-500 font-medium mb-1 block">Agente</label>
+            <select value={filterAgent} onChange={e => setFilterAgent(e.target.value)} className="w-full border rounded-lg px-2 py-1.5 text-sm">
+              <option value="">Todos</option>
+              {agents.map(a => <option key={a.id} value={a.id}>{a.full_name}</option>)}
+            </select>
+          </div>
           <div className="flex items-end">
-            <button onClick={() => { setFilterStage(''); setFilterSource(''); setFilterOperation('') }} className="text-xs text-gray-500 hover:text-pink-600">Limpiar filtros</button>
+            <button onClick={() => { setFilterStage(''); setFilterSource(''); setFilterOperation(''); setFilterAgent('') }} className="text-xs text-gray-500 hover:text-pink-600">Limpiar filtros</button>
           </div>
         </div>
       )}
