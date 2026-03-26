@@ -448,15 +448,17 @@ export default function LeadDetailPage() {
             const pipelineKeys = STAGES.filter(s => s.key !== 'perdido').map(s => s.key)
             const currentPipeIdx = pipelineKeys.indexOf(lead.stage)
             const isPast = idx < currentPipeIdx && currentPipeIdx >= 0
+            // Check if this stage was actually visited (in history)
+            const wasVisited = isPast && history.some((h: any) => h.to_stage === stage.key || h.from_stage === stage.key)
             return (
-              <div key={stage.key} className="flex items-center">
-                <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition
-                  ${isCurrent ? `${stage.color} text-white` : isPast ? `${stage.bgLight} ${stage.textColor}` : 'bg-gray-100 text-gray-400'}`}>
-                  {isPast && <CheckCircle className="w-3.5 h-3.5" />}
+              <button key={stage.key} className="flex items-center" onClick={() => { if (!isCurrent && stage.key !== 'captado') advanceStage(stage.key) }}>
+                <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition cursor-pointer hover:opacity-80
+                  ${isCurrent ? `${stage.color} text-white ring-2 ring-offset-1 ring-${stage.color.replace('bg-', '')}` : isPast ? 'bg-gray-200 text-gray-600' : 'bg-gray-100 text-gray-400'}`}>
+                  {wasVisited && <CheckCircle className="w-3.5 h-3.5" />}
                   {stage.label}
                 </div>
                 {idx < arr.length - 1 && <ChevronRight className="w-4 h-4 text-gray-300 mx-0.5 flex-shrink-0" />}
-              </div>
+              </button>
             )
           })}
         </div>
