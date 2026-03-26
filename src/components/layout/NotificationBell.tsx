@@ -5,11 +5,11 @@ import Link from 'next/link'
 
 type Notification = {
   id: string
-  type: 'overdue' | 'followup' | 'event'
+  type: string
   title: string
-  subtitle: string
+  body: string
   link: string
-  urgent?: boolean
+  urgency: 'high' | 'medium' | 'low'
 }
 
 export default function NotificationBell() {
@@ -19,49 +19,21 @@ export default function NotificationBell() {
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    fetch('/api/dashboard-crm?period=week')
+    fetch('/api/notifications')
       .then(r => r.json() as Promise<any>)
       .then(data => {
-        const notifs: Notification[] = []
-
-        if (data.overdueLeads > 0) {
-          notifs.push({
-            id: 'overdue',
-            type: 'overdue',
-            title: `${data.overdueLeads} lead${data.overdueLeads > 1 ? 's' : ''} vencido${data.overdueLeads > 1 ? 's' : ''}`,
-            subtitle: 'Sin contactar o sin actividad reciente',
-            link: '/leads?sort=urgency',
-            urgent: true,
-          })
-        }
-
-        if (data.pendingFollowups?.length > 0) {
-          data.pendingFollowups.slice(0, 3).forEach((f: any) => {
-            notifs.push({
-              id: `follow-${f.id}`,
-              type: 'followup',
-              title: f.full_name,
-              subtitle: f.next_step || 'Seguimiento pendiente',
-              link: `/leads/${f.id}`,
-            })
-          })
-        }
-
-        if (data.todayEvents?.length > 0) {
-          data.todayEvents.slice(0, 2).forEach((e: any) => {
-            notifs.push({
-              id: `event-${e.id}`,
-              type: 'event',
-              title: e.title,
-              subtitle: e.start_at ? new Date(e.start_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : 'Hoy',
-              link: '/calendario',
-            })
-          })
-        }
-
-        setNotifications(notifs)
+        if (data.notifications) setNotifications(data.notifications)
       })
       .catch(() => {})
+
+    // Refresh every 5 minutes
+    const interval = setInterval(() => {
+      fetch('/api/notifications')
+        .then(r => r.json() as Promise<any>)
+        .then(data => { if (data.notifications) setNotifications(data.notifications) })
+        .catch(() => {})
+    }, 5 * 60 * 1000)
+    return () => clearInterval(interval)
   }, [])
 
   // Close on click outside
@@ -74,7 +46,7 @@ export default function NotificationBell() {
   }, [])
 
   const active = notifications.filter(n => !dismissed.has(n.id))
-  const hasUrgent = active.some(n => n.urgent)
+  const hasUrgent = active.some(n => n.urgency === 'high')
 
   return (
     <div ref={ref} className="relative">
@@ -104,12 +76,12 @@ export default function NotificationBell() {
               active.map(n => (
                 <Link key={n.id} href={n.link} onClick={() => setOpen(false)}
                   className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 border-b border-gray-50 transition-colors">
-                  {n.type === 'overdue' ? <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" /> :
-                   n.type === 'followup' ? <Clock className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" /> :
+                  {n.urgency === 'high' ? <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" /> :
+                   n.urgency === 'medium' ? <Clock className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" /> :
                    <Bell className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />}
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm ${n.urgent ? 'text-red-700 font-medium' : 'text-gray-700'} truncate`}>{n.title}</p>
-                    <p className="text-xs text-gray-400 truncate">{n.subtitle}</p>
+                    <p className={`text-sm ${n.urgency === 'high' ? 'text-red-700 font-medium' : 'text-gray-700'} truncate`}>{n.title}</p>
+                    <p className="text-xs text-gray-400 truncate">{n.body}</p>
                   </div>
                   <button onClick={e => { e.preventDefault(); e.stopPropagation(); setDismissed(prev => new Set([...prev, n.id])) }}
                     className="p-1 text-gray-300 hover:text-gray-500 shrink-0">
