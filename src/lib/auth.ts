@@ -4,17 +4,42 @@ import type { Profile } from './types'
 
 const SESSION_COOKIE = 'reportes_session'
 const SESSION_MAX_AGE = 60 * 60 * 24 * 30 // 30 days
+const HMAC_SECRET = 'reportes-mg-session-hmac-2026'
 
-// Simple session: store user ID in a signed cookie
-// In production, you'd want to use a proper JWT or session store
-function encodeSession(userId: string): string {
-  // Simple base64 encoding of userId + timestamp
-  const payload = JSON.stringify({ uid: userId, exp: Date.now() + SESSION_MAX_AGE * 1000 })
-  return btoa(payload)
+// HMAC-SHA256 signed session token
+async function hmacSign(payload: string): Promise<string> {
+  const enc = new TextEncoder()
+  const key = await crypto.subtle.importKey('raw', enc.encode(HMAC_SECRET), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(payload))
+  return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
-function decodeSession(token: string): { uid: string; exp: number } | null {
+async function hmacVerify(payload: string, signature: string): Promise<boolean> {
+  const expected = await hmacSign(payload)
+  return expected === signature
+}
+
+async function encodeSession(userId: string): Promise<string> {
+  const payload = JSON.stringify({ uid: userId, exp: Date.now() + SESSION_MAX_AGE * 1000 })
+  const b64 = btoa(payload)
+  const sig = await hmacSign(b64)
+  return `${b64}.${sig}`
+}
+
+async function decodeSession(token: string): Promise<{ uid: string; exp: number } | null> {
   try {
+    // Support both old (unsigned) and new (signed) tokens
+    const dotIdx = token.indexOf('.')
+    if (dotIdx > 0) {
+      // New signed format: base64.hmac
+      const b64 = token.substring(0, dotIdx)
+      const sig = token.substring(dotIdx + 1)
+      if (!await hmacVerify(b64, sig)) return null
+      const payload = JSON.parse(atob(b64))
+      if (payload.exp < Date.now()) return null
+      return payload
+    }
+    // Legacy unsigned format (backwards compatible, will be replaced on next login)
     const payload = JSON.parse(atob(token))
     if (payload.exp < Date.now()) return null
     return payload
@@ -41,7 +66,7 @@ export async function login(email: string, password: string): Promise<Profile | 
   if (!user) return null
 
   // Set session cookie
-  const token = encodeSession(user.id)
+  const token = await encodeSession(user.id)
   const cookieStore = await cookies()
   cookieStore.set(SESSION_COOKIE, token, {
     httpOnly: true,
@@ -65,7 +90,7 @@ export async function getCurrentUser(): Promise<Profile | null> {
     const token = cookieStore.get(SESSION_COOKIE)?.value
     if (!token) return null
 
-    const session = decodeSession(token)
+    const session = await decodeSession(token)
     if (!session) return null
 
     const db = await getDB()

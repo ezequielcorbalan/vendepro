@@ -5,6 +5,7 @@ import { ArrowLeft, Plus, FileBarChart, ExternalLink, Clock, CheckCircle2, Trash
 import DeleteReportButton from '@/components/reports/DeleteReportButton'
 import PropertyStatusActions from '@/components/properties/PropertyStatusActions'
 import PriceHistory from '@/components/properties/PriceHistory'
+import DocumentChecklist from '@/components/properties/DocumentChecklist'
 import { formatDate } from '@/lib/utils'
 
 export default async function PropertyDetailPage({
@@ -117,6 +118,9 @@ export default async function PropertyDetailPage({
             )}
           </div>
         </div>
+
+        {/* Documents checklist */}
+        <DocumentChecklist propertyId={id} />
       </div>
     </div>
   )
