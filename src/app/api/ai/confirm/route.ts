@@ -26,13 +26,10 @@ export async function POST(request: NextRequest) {
       switch (intent.action) {
         case 'create_lead': {
           const id = generateId()
-          const rooms = d.rooms ? parseInt(String(d.rooms)) || null : null
-          const estValue = d.estimated_value ? parseFloat(String(d.estimated_value)) || null : null
-          const resolvedDate = resolveRelativeDate(d.next_step_date)
           try {
             await db.prepare(`
-              INSERT INTO leads (id, org_id, full_name, phone, email, operation, property_type, rooms, neighborhood, property_address, estimated_value, source, notes, next_step, next_step_date, stage, assigned_to, created_at, updated_at)
-              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, 'nuevo', ?16, datetime('now'), datetime('now'))
+              INSERT INTO leads (id, org_id, full_name, phone, email, operation, property_type, neighborhood, property_address, estimated_value, source, notes, next_step, next_step_date, stage, assigned_to, created_at, updated_at)
+              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, 'nuevo', ?15, datetime('now'), datetime('now'))
             `).bind(
               id, orgId,
               String(d.full_name || 'Sin nombre'),
@@ -40,14 +37,13 @@ export async function POST(request: NextRequest) {
               d.email ? String(d.email) : null,
               String(d.operation || 'venta'),
               d.property_type ? String(d.property_type) : null,
-              rooms,
               d.neighborhood ? String(d.neighborhood) : null,
               d.address ? String(d.address) : d.property_address ? String(d.property_address) : null,
-              estValue,
+              d.estimated_value ? parseFloat(String(d.estimated_value)) || null : null,
               String(d.source || 'ia_chat'),
               d.notes ? String(d.notes) : null,
               d.next_step ? String(d.next_step) : null,
-              resolvedDate,
+              resolveRelativeDate(d.next_step_date),
               user.id
             ).run()
             created.leads.push(id)

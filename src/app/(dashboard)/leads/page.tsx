@@ -450,7 +450,7 @@ export default function LeadsPage() {
   )
 }
 
-// ── LeadCard (List view) — mobile-first ──
+// ── LeadCard (List view) ──
 function LeadCard({ lead, onAdvance, onLost }: { lead: any; onAdvance: () => void; onLost: () => void }) {
   const stage = LEAD_STAGES[lead.stage as LeadStage] || LEAD_STAGES.nuevo
   const urgency = getLeadUrgency(lead)
@@ -459,81 +459,50 @@ function LeadCard({ lead, onAdvance, onLost }: { lead: any; onAdvance: () => voi
   const checkItems = Object.values(checklist).filter(Boolean).length
   const hasAppraisal = lead.appraisal_count > 0
   const lastActivity = lead.last_activity_at ? timeAgo(lead.last_activity_at) : null
-  const sourceCfg = LEAD_SOURCES[lead.source as keyof typeof LEAD_SOURCES]
 
   return (
-    <div className={`bg-white border rounded-xl overflow-hidden transition-all ${urgency === 'danger' ? 'border-red-200 bg-red-50/30' : urgency === 'warning' ? 'border-yellow-200' : 'border-gray-200'}`}>
-      {/* Main content — clickable */}
-      <Link href={`/leads/${lead.id}`} className="block p-3 sm:p-4">
-        {/* Row 1: Name + stage badge */}
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <h3 className="font-semibold text-gray-800 text-sm sm:text-base truncate">
-              {lead.full_name}
-            </h3>
-            {lead.property_address && (
-              <p className="text-[11px] text-gray-400 truncate">{lead.property_address}</p>
-            )}
-          </div>
-          <div className="flex items-center gap-1 shrink-0">
-            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium whitespace-nowrap ${stage.color}`}>{stage.label}</span>
-            {badge && <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium whitespace-nowrap ${badge.class}`}>{badge.text}</span>}
-          </div>
+    <div className={`bg-white border rounded-xl transition-all ${urgency === 'danger' ? 'border-red-300' : urgency === 'warning' ? 'border-yellow-300' : 'border-gray-200'}`}>
+      <Link href={`/leads/${lead.id}`} className="block px-4 py-3">
+        {/* Line 1 */}
+        <div className="flex items-center gap-2 mb-1">
+          <span className="font-semibold text-sm text-gray-800 truncate flex-1">{lead.full_name}</span>
+          <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0 ${stage.color}`}>{stage.label}</span>
+          {badge && <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold shrink-0 ${badge.class}`}>{badge.text}</span>}
         </div>
-
-        {/* Row 2: Key info grid */}
-        <div className="grid grid-cols-2 gap-x-3 gap-y-1 mt-2 text-xs text-gray-500">
-          {lead.phone && <span className="flex items-center gap-1 truncate"><Phone className="w-3 h-3 shrink-0" />{lead.phone}</span>}
-          {lead.operation && <span className="capitalize">{lead.operation}{lead.neighborhood ? ` · ${lead.neighborhood}` : ''}</span>}
-          {lead.assigned_name && <span className="flex items-center gap-1 truncate"><User className="w-3 h-3 shrink-0" />{lead.assigned_name}</span>}
-          {sourceCfg && <span className="truncate">{sourceCfg.label}</span>}
+        {/* Line 2 */}
+        <div className="text-xs text-gray-500 space-y-0.5">
+          {lead.property_address && <p className="truncate text-gray-400">{lead.property_address}</p>}
+          <p className="truncate">
+            {lead.phone && <span>{lead.phone} &middot; </span>}
+            {lead.operation && <span className="capitalize">{lead.operation}</span>}
+            {lead.neighborhood && <span> &middot; {lead.neighborhood}</span>}
+          </p>
+          <p className="text-[10px] text-gray-400 truncate">
+            {lead.assigned_name && <span>{lead.assigned_name}</span>}
+            {lastActivity && <span> &middot; &Uacute;lt: {lastActivity}</span>}
+            {hasAppraisal && <span> &middot; Tasaci&oacute;n &#x2713;</span>}
+          </p>
         </div>
-
-        {/* Row 3: Checklist + meta */}
-        <div className="flex items-center justify-between mt-2">
-          <div className="flex items-center gap-2">
-            <div className="flex gap-0.5">{Object.entries(checklist).map(([k, v]) => <div key={k} className={`w-2 h-2 rounded-full ${v ? 'bg-green-500' : 'bg-gray-200'}`} />)}</div>
-            <span className="text-[10px] text-gray-400">{checkItems}/6</span>
-            {hasAppraisal && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium">Tasaci&oacute;n</span>}
-          </div>
-          <div className="flex items-center gap-2 text-[10px] text-gray-400">
-            {lastActivity && <span>&Uacute;lt: {lastActivity}</span>}
-            {lead.estimated_value && <span className="hidden sm:inline">USD {Number(lead.estimated_value).toLocaleString()}</span>}
-          </div>
+        {/* Line 3: checklist + next step */}
+        <div className="flex items-center gap-2 mt-2">
+          <div className="flex gap-0.5">{Object.entries(checklist).map(([k, v]) => <div key={k} className={`w-2 h-2 rounded-full ${v ? 'bg-green-500' : 'bg-gray-200'}`} />)}</div>
+          <span className="text-[10px] text-gray-400">{checkItems}/6</span>
+          {lead.next_step && <span className="text-[10px] text-gray-400 truncate flex-1">&rarr; {lead.next_step}</span>}
         </div>
-
-        {/* Row 4: Next step */}
-        {lead.next_step && (
-          <div className="mt-1.5 px-2 py-1 bg-gray-50 rounded-lg">
-            <p className="text-[11px] text-gray-500 truncate">&rarr; {lead.next_step}
-              {lead.next_step_date && <span className="text-gray-400 ml-1">({new Date(lead.next_step_date).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })})</span>}
-            </p>
-          </div>
-        )}
       </Link>
-
-      {/* Quick actions bar — always visible */}
-      <div className="flex items-center border-t border-gray-100 divide-x divide-gray-100" onClick={e => e.stopPropagation()}>
+      {/* Actions */}
+      <div className="flex border-t border-gray-100" onClick={e => e.stopPropagation()}>
         {lead.phone ? (
           <>
-            <a href={`tel:${lead.phone}`} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-blue-500 hover:bg-blue-50 text-xs font-medium touch-manipulation">
-              <Phone className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Llamar</span>
-            </a>
-            <a href={`https://wa.me/${formatWhatsApp(lead.phone)}`} target="_blank" className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-green-600 hover:bg-green-50 text-xs font-medium touch-manipulation">
-              <MessageCircle className="w-3.5 h-3.5" /> <span className="hidden sm:inline">WhatsApp</span>
-            </a>
+            <a href={`tel:${lead.phone}`} className="flex-1 py-2.5 flex justify-center text-blue-500 hover:bg-blue-50"><Phone className="w-4 h-4" /></a>
+            <a href={`https://wa.me/${formatWhatsApp(lead.phone)}`} target="_blank" className="flex-1 py-2.5 flex justify-center text-green-500 hover:bg-green-50 border-l border-gray-100"><MessageCircle className="w-4 h-4" /></a>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center py-2.5 text-gray-300 text-xs">Sin tel&eacute;fono</div>
+          <span className="flex-1 py-2.5 flex justify-center text-gray-300 text-xs">Sin tel</span>
         )}
-        {lead.stage !== 'captado' && lead.stage !== 'perdido' ? (
-          <button onClick={onAdvance} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[#ff007c] hover:bg-pink-50 text-xs font-medium touch-manipulation">
-            <ArrowRight className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Avanzar</span>
-          </button>
-        ) : null}
-        <Link href={`/leads/${lead.id}`} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-gray-500 hover:bg-gray-50 text-xs font-medium touch-manipulation">
-          <span>Ver &rarr;</span>
-        </Link>
+        {lead.stage !== 'captado' && lead.stage !== 'perdido' && (
+          <button onClick={onAdvance} className="flex-1 py-2.5 flex justify-center text-[#ff007c] hover:bg-pink-50 border-l border-gray-100"><ArrowRight className="w-4 h-4" /></button>
+        )}
       </div>
     </div>
   )
