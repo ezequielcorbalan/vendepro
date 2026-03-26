@@ -93,7 +93,7 @@ export default function DashboardCRM() {
     return <div className="text-center py-12 text-gray-500">Error al cargar el dashboard</div>
   }
 
-  const { leads, overdueLeads, tasaciones, activity, weeklyActivity, todayEvents, pendingFollowups, agentPerformance, funnel, conversionRate } = data
+  const { leads, overdueLeads, tasaciones, activity, weeklyActivity, todayEvents, pendingFollowups, agentPerformance, funnel, conversionRate, recentActivities } = data
 
   // Build full 7-day array filling gaps
   const last7 = [...Array(7)].map((_, i) => {
@@ -326,6 +326,42 @@ export default function DashboardCRM() {
           )}
         </div>
       </div>
+
+      {/* ── Actividad reciente ── */}
+      {recentActivities && recentActivities.length > 0 && (
+        <div className="bg-white rounded-xl border p-4 sm:p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold text-gray-800 flex items-center gap-2">
+              <Activity className="w-4 h-4 text-pink-500" /> Actividad reciente
+            </h2>
+            <Link href="/actividades" className="text-xs text-[#ff007c] hover:underline">Ver todo →</Link>
+          </div>
+          <div className="space-y-1.5">
+            {recentActivities.slice(0, 6).map((a: any) => {
+              const typeLabel = a.activity_type === 'llamada' ? '📞' : a.activity_type === 'whatsapp' ? '💬' : a.activity_type === 'reunion' ? '👥' : a.activity_type === 'visita_captacion' ? '🏠' : a.activity_type === 'tasacion' ? '📋' : a.activity_type === 'seguimiento' ? '🔄' : '📝'
+              const timeAgo = (() => {
+                const mins = Math.floor((Date.now() - new Date(a.created_at).getTime()) / 60000)
+                if (mins < 60) return `${mins}m`
+                const hrs = Math.floor(mins / 60)
+                if (hrs < 24) return `${hrs}h`
+                return `${Math.floor(hrs / 24)}d`
+              })()
+              return (
+                <div key={a.id} className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-gray-50">
+                  <span className="text-sm">{typeLabel}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-gray-700 truncate">{a.description || a.activity_type}</p>
+                    <p className="text-[10px] text-gray-400 truncate">
+                      {a.agent_name}{a.lead_name ? ` · ${a.lead_name}` : ''}
+                    </p>
+                  </div>
+                  <span className="text-[10px] text-gray-300 shrink-0">{timeAgo}</span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* ── Pipeline detail cards (mobile-friendly) ── */}
       <div className="bg-white rounded-xl border p-4 sm:p-5">

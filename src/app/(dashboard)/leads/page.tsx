@@ -474,15 +474,15 @@ function LeadCard({ lead, onAdvance, onLost }: { lead: any; onAdvance: () => voi
           </div>
         </div>
         {/* Quick actions */}
-        <div className="flex flex-col sm:flex-row items-center gap-0.5 shrink-0" onClick={e => e.preventDefault()}>
+        <div className="flex sm:flex-col items-center gap-1 shrink-0" onClick={e => e.preventDefault()}>
           {lead.phone && (
             <>
-              <a href={`tel:${lead.phone}`} className="p-2 sm:p-1.5 rounded-lg hover:bg-blue-50 text-blue-500"><Phone className="w-4 h-4" /></a>
-              <a href={`https://wa.me/${formatWhatsApp(lead.phone)}`} target="_blank" className="p-2 sm:p-1.5 rounded-lg hover:bg-green-50 text-green-500"><MessageCircle className="w-4 h-4" /></a>
+              <a href={`tel:${lead.phone}`} className="p-2.5 sm:p-1.5 rounded-xl sm:rounded-lg bg-blue-50 sm:bg-transparent hover:bg-blue-100 text-blue-500 touch-manipulation"><Phone className="w-4 h-4" /></a>
+              <a href={`https://wa.me/${formatWhatsApp(lead.phone)}`} target="_blank" className="p-2.5 sm:p-1.5 rounded-xl sm:rounded-lg bg-green-50 sm:bg-transparent hover:bg-green-100 text-green-500 touch-manipulation"><MessageCircle className="w-4 h-4" /></a>
             </>
           )}
           {lead.stage !== 'captado' && lead.stage !== 'perdido' && (
-            <button onClick={onAdvance} className="p-2 sm:p-1.5 rounded-lg hover:bg-pink-50 text-pink-500" title="Avanzar etapa"><ArrowRight className="w-4 h-4" /></button>
+            <button onClick={onAdvance} className="p-2.5 sm:p-1.5 rounded-xl sm:rounded-lg bg-pink-50 sm:bg-transparent hover:bg-pink-100 text-pink-500 touch-manipulation" title="Avanzar etapa"><ArrowRight className="w-4 h-4" /></button>
           )}
         </div>
       </div>

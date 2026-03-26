@@ -175,6 +175,19 @@ export async function GET(request: NextRequest) {
       ? Math.round(((leadStats.captados || 0) / leadStats.total) * 100)
       : 0
 
+    // Recent activities (last 8)
+    let recentActivities: any[] = []
+    try {
+      recentActivities = (await db.prepare(`
+        SELECT a.id, a.activity_type, a.description, a.created_at, u.full_name as agent_name, l.full_name as lead_name, l.id as lead_id
+        FROM activities a
+        LEFT JOIN users u ON a.agent_id = u.id
+        LEFT JOIN leads l ON a.lead_id = l.id
+        WHERE a.org_id = ?
+        ORDER BY a.created_at DESC LIMIT 8
+      `).bind(orgId).all()).results as any[]
+    } catch { /* */ }
+
     return NextResponse.json({
       period, periodStart,
       leads: leadStats,
@@ -187,6 +200,7 @@ export async function GET(request: NextRequest) {
       agentPerformance,
       funnel,
       conversionRate,
+      recentActivities,
     })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
