@@ -8,6 +8,7 @@ import PortalPieChart from '@/components/public-report/PortalPieChart'
 import { MetricsGridFromTotals } from '@/components/public-report/MetricsGrid'
 import ReportSelector from '@/components/public-report/ReportSelector'
 import BenchmarkComparison from '@/components/public-report/BenchmarkComparison'
+import PhotoGallery from '@/components/public-report/PhotoGallery'
 import PriceEvolution from '@/components/public-report/PriceEvolution'
 import Link from 'next/link'
 import type { ReportMetric, ReportContent, ReportPhoto, HistoricalDataPoint, FunnelData } from '@/lib/types'
@@ -293,24 +294,7 @@ export default async function PublicReportPage({
         )}
 
         {/* Photos */}
-        {photos.length > 0 && (
-          <section className="bg-white rounded-2xl shadow-sm p-4 sm:p-6">
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
-              <span className="w-1 h-6 bg-purple-500 rounded-full"></span>
-              Fichas de visita
-            </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-              {photos.map((photo) => (
-                <div key={photo.id} className="rounded-xl overflow-hidden shadow-sm">
-                  <img src={photo.photo_url} alt={photo.caption || ''} className="w-full h-36 sm:h-48 object-cover" />
-                  {photo.caption && (
-                    <p className="text-xs text-gray-500 p-2">{photo.caption}</p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
+        {photos.length > 0 && <PhotoGallery photos={photos} />}
 
         {/* Historical link */}
         {allReports.length > 1 && (
