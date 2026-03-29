@@ -119,3 +119,27 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  const user = await getCurrentUser()
+  if (!user) return NextResponse.json({ error: 'No auth' }, { status: 401 })
+
+  const { searchParams } = new URL(request.url)
+  const id = searchParams.get('id')
+  if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
+
+  const db = await getDB()
+  const orgId = user.org_id || 'org_mg'
+  const isAdmin = user.role === 'admin' || user.role === 'owner'
+  if (!isAdmin) return NextResponse.json({ error: 'No permission' }, { status: 403 })
+
+  try {
+    await db.prepare('DELETE FROM properties WHERE id = ? AND org_id = ?').bind(id, orgId).run()
+    // Also delete related reports
+    try { await db.prepare('DELETE FROM reports WHERE property_id = ?').bind(id).run() } catch {}
+    try { await db.prepare('DELETE FROM report_photos WHERE report_id IN (SELECT id FROM reports WHERE property_id = ?)').bind(id).run() } catch {}
+    return NextResponse.json({ deleted: true })
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 })
+  }
+}

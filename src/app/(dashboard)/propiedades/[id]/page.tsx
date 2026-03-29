@@ -43,7 +43,7 @@ export default async function PropertyDetailPage({
             )}
           </div>
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            <PropertyStatusActions propertyId={id} currentStatus={property.status as string || 'active'} />
+            <PropertyStatusActions propertyId={id} currentStatus={property.status as string || 'active'} currentStage={property.commercial_stage as string || 'captada'} />
             <div className="flex gap-2 w-full sm:w-auto">
               <a href={publicUrl} target="_blank" className="inline-flex items-center justify-center gap-2 text-sm text-brand-gray border border-gray-300 px-3 py-2 rounded-lg hover:bg-gray-50 flex-1 sm:flex-initial">
                 <ExternalLink className="w-4 h-4" /> <span className="hidden sm:inline">Ver como propietario</span><span className="sm:hidden">Ver</span>
