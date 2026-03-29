@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Plus, FileBarChart, ExternalLink, Clock, CheckCircle2, Trash2 } from 'lucide-react'
 import DeleteReportButton from '@/components/reports/DeleteReportButton'
-import PropertyStatusActions from '@/components/properties/PropertyStatusActions'
+import PropertyHeader from '@/components/properties/PropertyHeader'
 import PriceHistory from '@/components/properties/PriceHistory'
 import DocumentChecklist from '@/components/properties/DocumentChecklist'
 import AuthorizationSection from '@/components/properties/AuthorizationSection'
@@ -28,40 +28,7 @@ export default async function PropertyDetailPage({
         <ArrowLeft className="w-4 h-4" /> Volver
       </Link>
 
-      <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">{property.address as string}</h1>
-            <p className="text-brand-gray mt-1 text-sm">
-              {property.neighborhood as string}, {property.city as string} · {property.property_type as string}
-              {property.rooms ? ` · ${property.rooms} amb.` : ''}
-              {property.size_m2 ? ` · ${property.size_m2} m²` : ''}
-            </p>
-            {property.asking_price && (
-              <p className="text-lg font-semibold text-brand-pink mt-2">
-                {property.currency as string} {Number(property.asking_price).toLocaleString('es-AR')}
-              </p>
-            )}
-          </div>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            <PropertyStatusActions propertyId={id} currentStatus={property.status as string || 'active'} currentStage={property.commercial_stage as string || 'captada'} />
-            <div className="flex gap-2 w-full sm:w-auto">
-              <a href={publicUrl} target="_blank" className="inline-flex items-center justify-center gap-2 text-sm text-brand-gray border border-gray-300 px-3 py-2 rounded-lg hover:bg-gray-50 flex-1 sm:flex-initial">
-                <ExternalLink className="w-4 h-4" /> <span className="hidden sm:inline">Ver como propietario</span><span className="sm:hidden">Ver</span>
-              </a>
-              <Link href={`/propiedades/${id}/reportes/nuevo`} className="inline-flex items-center justify-center gap-2 bg-brand-pink text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 flex-1 sm:flex-initial">
-                <Plus className="w-4 h-4" /> Nuevo reporte
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-sm">
-          <div><span className="text-brand-gray">Propietario:</span> <span className="font-medium">{property.owner_name as string}</span></div>
-          {property.owner_phone && <div><span className="text-brand-gray">Tel:</span> <span className="font-medium">{property.owner_phone as string}</span></div>}
-          {property.owner_email && <div><span className="text-brand-gray">Email:</span> <span className="font-medium">{property.owner_email as string}</span></div>}
-        </div>
-      </div>
+      <PropertyHeader property={JSON.parse(JSON.stringify(property))} publicUrl={publicUrl} />
 
       {/* Authorization */}
       <AuthorizationSection propertyId={id} authStart={property.authorization_start as string} authDays={Number(property.authorization_days) || 180} />

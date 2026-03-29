@@ -56,6 +56,7 @@ export default function PipelinePage() {
   const [view, setView] = useState<'pipeline' | 'lista'>('pipeline')
   const [filterAgent, setFilterAgent] = useState('')
   const [filterType, setFilterType] = useState('')
+  const [filterAuth, setFilterAuth] = useState<'' | 'expiring' | 'expired'>('')
   const [showFilters, setShowFilters] = useState(false)
   const [advancing, setAdvancing] = useState<string | null>(null)
 
@@ -88,9 +89,14 @@ export default function PipelinePage() {
     return properties.filter(p => {
       if (filterAgent && p.agent_name !== filterAgent) return false
       if (filterType && p.property_type !== filterType) return false
+      if (filterAuth) {
+        const remaining = authDaysRemaining(p.authorization_start, p.authorization_days)
+        if (filterAuth === 'expired' && (remaining === null || remaining > 0)) return false
+        if (filterAuth === 'expiring' && (remaining === null || remaining > 30 || remaining <= 0)) return false
+      }
       return true
     })
-  }, [properties, filterAgent, filterType])
+  }, [properties, filterAgent, filterType, filterAuth])
 
   const byStage = useMemo(() => {
     const map: Record<PropertyStage, Property[]> = {} as any
@@ -215,9 +221,18 @@ export default function PipelinePage() {
             <option value="">Todos los tipos</option>
             {types.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
-          {(filterAgent || filterType) && (
+          <select
+            value={filterAuth}
+            onChange={e => setFilterAuth(e.target.value as any)}
+            className="px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white min-w-[160px]"
+          >
+            <option value="">Autorización: todas</option>
+            <option value="expiring">Por vencer (&lt;30d)</option>
+            <option value="expired">Vencidas</option>
+          </select>
+          {(filterAgent || filterType || filterAuth) && (
             <button
-              onClick={() => { setFilterAgent(''); setFilterType('') }}
+              onClick={() => { setFilterAgent(''); setFilterType(''); setFilterAuth('') }}
               className="text-sm text-[#ff007c] hover:underline px-2"
             >
               Limpiar
