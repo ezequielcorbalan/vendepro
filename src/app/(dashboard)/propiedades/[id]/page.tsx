@@ -7,6 +7,7 @@ import PropertyHeader from '@/components/properties/PropertyHeader'
 import PriceHistory from '@/components/properties/PriceHistory'
 import DocumentChecklist from '@/components/properties/DocumentChecklist'
 import AuthorizationSection from '@/components/properties/AuthorizationSection'
+import PropertyPhotos from '@/components/properties/PropertyPhotos'
 import { formatDate } from '@/lib/utils'
 
 export default async function PropertyDetailPage({
@@ -90,8 +91,11 @@ export default async function PropertyDetailPage({
           </div>
         </div>
 
-        {/* Documents checklist */}
-        <DocumentChecklist propertyId={id} />
+        {/* Documents + Photos */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <DocumentChecklist propertyId={id} />
+          <PropertyPhotos propertyId={id} />
+        </div>
       </div>
     </div>
   )
