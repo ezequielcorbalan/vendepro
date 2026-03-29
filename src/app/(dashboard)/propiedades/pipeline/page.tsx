@@ -17,6 +17,15 @@ type Property = {
   agent_name: string | null
   stage_changed_at: string | null
   updated_at: string
+  authorization_start: string | null
+  authorization_days: number | null
+}
+
+function authDaysRemaining(authStart: string | null, authDays: number | null): number | null {
+  if (!authStart || !authDays) return null
+  const end = new Date(authStart)
+  end.setDate(end.getDate() + authDays)
+  return Math.ceil((end.getTime() - Date.now()) / 86400000)
 }
 
 function daysInStage(stageChangedAt: string | null, updatedAt: string): number {
@@ -248,15 +257,30 @@ export default function PipelinePage() {
                   {items.map(p => {
                     const days = daysInStage(p.stage_changed_at, p.updated_at)
                     const next = getNextStage(p.commercial_stage)
+                    const authRemaining = authDaysRemaining(p.authorization_start, p.authorization_days)
+                    const authUrgent = authRemaining !== null && authRemaining <= 15
+                    const authWarning = authRemaining !== null && authRemaining <= 30 && authRemaining > 15
+                    const authExpired = authRemaining !== null && authRemaining <= 0
                     return (
-                      <div key={p.id} className="bg-white rounded-lg border border-gray-100 px-2.5 py-2 hover:border-gray-300 hover:shadow-sm transition-all group cursor-pointer">
+                      <div key={p.id} className={`bg-white rounded-lg border px-2.5 py-2 hover:shadow-sm transition-all group cursor-pointer ${
+                        authExpired ? 'border-red-300 bg-red-50/50' : authUrgent ? 'border-red-200' : authWarning ? 'border-yellow-200' : 'border-gray-100 hover:border-gray-300'
+                      }`}>
                         <Link href={`/propiedades/${p.id}`} className="block">
                           <p className="text-xs font-semibold text-gray-800 truncate">{p.address}</p>
                           <p className="text-[10px] text-gray-400 truncate">{p.neighborhood} · {p.property_type}</p>
                         </Link>
                         <div className="flex items-center justify-between mt-1">
                           <span className="text-[10px] font-bold text-gray-600">{formatPrice(p.asking_price)}</span>
-                          <span className={`text-[9px] ${days > 30 ? 'text-red-500 font-bold' : 'text-gray-300'}`}>{days}d</span>
+                          <div className="flex items-center gap-1.5">
+                            {authRemaining !== null && (
+                              <span className={`text-[9px] font-bold px-1 py-0.5 rounded ${
+                                authExpired ? 'bg-red-100 text-red-600' : authUrgent ? 'bg-red-50 text-red-500 animate-pulse' : authWarning ? 'bg-yellow-50 text-yellow-600' : 'bg-green-50 text-green-600'
+                              }`}>
+                                {authExpired ? 'VENCIDA' : `${authRemaining}d auth`}
+                              </span>
+                            )}
+                            <span className={`text-[9px] ${days > 30 ? 'text-red-500 font-bold' : 'text-gray-300'}`}>{days}d</span>
+                          </div>
                         </div>
                         {/* Actions — show on hover */}
                         <div className="flex items-center gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">

@@ -6,6 +6,7 @@ import DeleteReportButton from '@/components/reports/DeleteReportButton'
 import PropertyStatusActions from '@/components/properties/PropertyStatusActions'
 import PriceHistory from '@/components/properties/PriceHistory'
 import DocumentChecklist from '@/components/properties/DocumentChecklist'
+import AuthorizationSection from '@/components/properties/AuthorizationSection'
 import { formatDate } from '@/lib/utils'
 
 export default async function PropertyDetailPage({
@@ -61,6 +62,9 @@ export default async function PropertyDetailPage({
           {property.owner_email && <div><span className="text-brand-gray">Email:</span> <span className="font-medium">{property.owner_email as string}</span></div>}
         </div>
       </div>
+
+      {/* Authorization */}
+      <AuthorizationSection propertyId={id} authStart={property.authorization_start as string} authDays={Number(property.authorization_days) || 180} />
 
       {/* Price History + Reports side by side */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">

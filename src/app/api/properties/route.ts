@@ -90,10 +90,17 @@ export async function PUT(request: NextRequest) {
     const current = await db.prepare('SELECT * FROM properties WHERE id = ? AND org_id = ?').bind(data.id, orgId).first() as any
     if (!current) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-    // Quick stage advance
-    if (data.commercial_stage && Object.keys(data).length <= 2) {
-      await db.prepare(`UPDATE properties SET commercial_stage = ?, updated_at = datetime('now') WHERE id = ?`)
-        .bind(data.commercial_stage, data.id).run()
+    // Quick partial updates (stage, authorization, etc.)
+    const keys = Object.keys(data).filter(k => k !== 'id')
+    if (keys.length <= 3 && keys.every(k => ['commercial_stage', 'authorization_start', 'authorization_days', 'status'].includes(k))) {
+      const sets: string[] = ['updated_at=datetime(\'now\')']
+      const binds: any[] = []
+      for (const k of keys) {
+        sets.push(`${k}=?`)
+        binds.push(data[k])
+      }
+      binds.push(data.id, orgId)
+      await db.prepare(`UPDATE properties SET ${sets.join(',')} WHERE id=? AND org_id=?`).bind(...binds).run()
       return NextResponse.json({ success: true })
     }
 
@@ -104,6 +111,7 @@ export async function PUT(request: NextRequest) {
         address=?, neighborhood=?, city=?, property_type=?, rooms=?, size_m2=?,
         asking_price=?, currency=?, owner_name=?, owner_phone=?, owner_email=?,
         agent_id=?, commercial_stage=?, status=?,
+        authorization_start=?, authorization_days=?,
         updated_at=datetime('now')
       WHERE id=? AND org_id=?
     `).bind(
@@ -111,6 +119,7 @@ export async function PUT(request: NextRequest) {
       m('rooms'), m('size_m2'), m('asking_price'), m('currency'),
       m('owner_name'), m('owner_phone'), m('owner_email'),
       m('agent_id'), m('commercial_stage'), m('status'),
+      m('authorization_start'), m('authorization_days'),
       data.id, orgId
     ).run()
 
