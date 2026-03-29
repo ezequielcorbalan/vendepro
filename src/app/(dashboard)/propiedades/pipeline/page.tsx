@@ -225,39 +225,57 @@ export default function PipelinePage() {
         </div>
       )}
 
-      {/* Pipeline / Kanban view */}
+      {/* Pipeline / Kanban view — optimized for 30-60 properties */}
       {filtered.length > 0 && view === 'pipeline' && (
-        <div className="flex gap-4 overflow-x-auto pb-4 md:grid md:grid-cols-5 md:overflow-visible">
+        <div className="flex gap-3 overflow-x-auto pb-4 lg:grid lg:grid-cols-6 lg:overflow-visible">
           {PROPERTY_STAGE_KEYS.map(stage => {
             const cfg = PROPERTY_STAGES[stage]
             const items = byStage[stage]
             return (
-              <div
-                key={stage}
-                className="min-w-[260px] md:min-w-0 flex flex-col bg-gray-50 rounded-xl"
-              >
-                <div className="px-3 py-2.5 border-b border-gray-200">
+              <div key={stage} className="min-w-[200px] lg:min-w-0 flex flex-col bg-gray-50/80 rounded-xl border border-gray-100">
+                <div className="px-3 py-2 border-b border-gray-200 sticky top-0 bg-gray-50/95 backdrop-blur-sm rounded-t-xl z-10">
                   <div className="flex items-center justify-between">
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${cfg.color}`}>
+                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${cfg.color}`}>
                       {cfg.label}
                     </span>
-                    <span className="text-xs text-gray-400 font-medium">{items.length}</span>
+                    <span className={`text-sm font-black ${items.length > 0 ? 'text-gray-800' : 'text-gray-300'}`}>{items.length}</span>
                   </div>
                 </div>
-                <div className="p-2 space-y-2 flex-1 overflow-y-auto max-h-[calc(100vh-260px)]">
+                <div className="p-1.5 space-y-1 flex-1 overflow-y-auto max-h-[calc(100vh-220px)] scrollbar-thin">
                   {items.length === 0 && (
-                    <p className="text-xs text-gray-400 text-center py-6">Sin propiedades</p>
+                    <p className="text-[10px] text-gray-300 text-center py-4">—</p>
                   )}
-                  {items.map(p => (
-                    <PropertyCard
-                      key={p.id}
-                      property={p}
-                      onAdvance={() => advanceStage(p)}
-                      onMarkVencida={() => markVencida(p)}
-                      advancing={advancing === p.id}
-                      compact
-                    />
-                  ))}
+                  {items.map(p => {
+                    const days = daysInStage(p.stage_changed_at, p.updated_at)
+                    const next = getNextStage(p.commercial_stage)
+                    return (
+                      <div key={p.id} className="bg-white rounded-lg border border-gray-100 px-2.5 py-2 hover:border-gray-300 hover:shadow-sm transition-all group cursor-pointer">
+                        <Link href={`/propiedades/${p.id}`} className="block">
+                          <p className="text-xs font-semibold text-gray-800 truncate">{p.address}</p>
+                          <p className="text-[10px] text-gray-400 truncate">{p.neighborhood} · {p.property_type}</p>
+                        </Link>
+                        <div className="flex items-center justify-between mt-1">
+                          <span className="text-[10px] font-bold text-gray-600">{formatPrice(p.asking_price)}</span>
+                          <span className={`text-[9px] ${days > 30 ? 'text-red-500 font-bold' : 'text-gray-300'}`}>{days}d</span>
+                        </div>
+                        {/* Actions — show on hover */}
+                        <div className="flex items-center gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {next && (
+                            <button onClick={(e) => { e.stopPropagation(); advanceStage(p) }} disabled={advancing === p.id}
+                              className="text-[9px] font-medium text-[#ff007c] hover:text-[#ff8017] flex items-center gap-0.5">
+                              <ArrowRight className="w-3 h-3" /> {PROPERTY_STAGES[next].label}
+                            </button>
+                          )}
+                          {p.commercial_stage !== 'vencida' && p.commercial_stage !== 'vendida' && (
+                            <button onClick={(e) => { e.stopPropagation(); markVencida(p) }}
+                              className="ml-auto text-[9px] text-gray-300 hover:text-red-500">
+                              <XCircle className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             )

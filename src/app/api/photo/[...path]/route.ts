@@ -16,14 +16,22 @@ export async function GET(
       return new Response('Not found', { status: 404 })
     }
 
-    // Read the full body as ArrayBuffer to avoid streaming issues
-    const arrayBuffer = await object.arrayBuffer()
+    // Read body as ArrayBuffer
+    const body = await object.arrayBuffer()
     const contentType = object.httpMetadata?.contentType || 'image/jpeg'
 
-    return new Response(arrayBuffer, {
+    // Debug: log size
+    console.log(`Photo ${key}: ${body.byteLength} bytes, type: ${contentType}`)
+
+    if (body.byteLength === 0) {
+      return new Response('Empty file', { status: 404 })
+    }
+
+    return new Response(new Uint8Array(body), {
+      status: 200,
       headers: {
         'Content-Type': contentType,
-        'Content-Length': String(arrayBuffer.byteLength),
+        'Content-Length': String(body.byteLength),
         'Cache-Control': 'public, max-age=31536000, immutable',
       },
     })
