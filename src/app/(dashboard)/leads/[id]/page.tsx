@@ -278,6 +278,45 @@ export default function LeadDetailPage() {
     }
   }
 
+  // ------ Convert lead → property (when captado) ------
+  const [creatingProperty, setCreatingProperty] = useState(false)
+  async function handleCreateProperty() {
+    if (!lead || creatingProperty) return
+    if (!confirm('¿Crear propiedad en el pipeline comercial con los datos de este lead?')) return
+    setCreatingProperty(true)
+    try {
+      const res = await fetch('/api/properties', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          address: lead.property_address || lead.neighborhood || 'Sin dirección',
+          neighborhood: lead.neighborhood || '',
+          city: 'Buenos Aires',
+          property_type: lead.property_type || 'departamento',
+          asking_price: lead.estimated_value || null,
+          currency: 'USD',
+          owner_name: lead.full_name,
+          owner_phone: lead.phone || '',
+          owner_email: lead.email || '',
+          agent_id: lead.assigned_to,
+          commercial_stage: 'captada',
+          lead_id: leadId,
+        }),
+      })
+      const data = (await res.json()) as any
+      if (data.id) {
+        toast('Propiedad creada en pipeline comercial')
+        router.push(`/propiedades/${data.id}`)
+      } else {
+        toast(data.error || 'Error al crear propiedad', 'error')
+      }
+    } catch {
+      toast('Error al crear propiedad', 'error')
+    } finally {
+      setCreatingProperty(false)
+    }
+  }
+
   // ------ SLA badge logic ------
   function getSLABadge() {
     if (!lead) return null
@@ -374,6 +413,17 @@ export default function LeadDetailPage() {
               {converting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
               <span className="hidden sm:inline">Crear tasación</span>
               <span className="sm:hidden">Tasación</span>
+            </button>
+          )}
+          {lead.stage === 'captado' && (
+            <button
+              onClick={handleCreateProperty}
+              disabled={creatingProperty}
+              className="text-xs sm:text-sm font-medium bg-green-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-1.5"
+            >
+              {creatingProperty ? <Loader2 className="w-4 h-4 animate-spin" /> : <Home className="w-4 h-4" />}
+              <span className="hidden sm:inline">Crear propiedad</span>
+              <span className="sm:hidden">Propiedad</span>
             </button>
           )}
         </div>
