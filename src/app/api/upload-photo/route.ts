@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server'
 import { getCloudflareContext } from '@opennextjs/cloudflare'
 import { generateId } from '@/lib/db'
+import { getCurrentUser } from '@/lib/auth'
 
 export async function POST(request: Request) {
+  const user = await getCurrentUser()
+  if (!user) return NextResponse.json({ error: 'No auth' }, { status: 401 })
+
   try {
     const { env } = await getCloudflareContext()
     const r2 = (env as any).R2 as R2Bucket
