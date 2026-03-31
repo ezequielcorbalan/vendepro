@@ -1,4 +1,5 @@
 import { getPublicReport, getPriceHistory } from '@/lib/actions'
+import { getDB } from '@/lib/db'
 import { getSoldBenchmarks } from '@/lib/benchmarks'
 import { notFound } from 'next/navigation'
 import { formatDate } from '@/lib/utils'
@@ -50,6 +51,15 @@ export default async function PublicReportPage({
   const metrics = (report.metrics || []) as ReportMetric[]
   const contentSections = (report.content || []) as ReportContent[]
   const photos = (report.photos || []) as ReportPhoto[]
+
+  // Fetch visit forms for this property
+  let visitForms: any[] = []
+  try {
+    const db = await getDB()
+    visitForms = (await db.prepare(
+      "SELECT visitor_name, rating, likes, dislikes, would_buy, price_opinion, how_found, created_at FROM visit_forms WHERE property_id = ? ORDER BY created_at DESC"
+    ).bind(property.id).all()).results as any[]
+  } catch { /* table may not exist */ }
 
   const totalMetrics = metrics.reduce(
     (acc, m) => ({
@@ -295,6 +305,66 @@ export default async function PublicReportPage({
 
         {/* Photos */}
         {photos.length > 0 && <PhotoGallery photos={photos} />}
+
+        {/* Visit Forms Summary */}
+        {visitForms.length > 0 && (
+          <section className="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <div className="p-5 sm:p-6 border-b border-gray-100">
+              <h2 className="text-lg font-semibold text-gray-800">Feedback de visitantes</h2>
+              <p className="text-xs text-gray-400 mt-1">{visitForms.length} ficha{visitForms.length !== 1 ? 's' : ''} de visita</p>
+            </div>
+            <div className="p-5 sm:p-6">
+              {/* Summary stats */}
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                <div className="text-center p-3 bg-gray-50 rounded-xl">
+                  <p className="text-2xl font-black text-gray-800">{visitForms.length}</p>
+                  <p className="text-[10px] text-gray-400 uppercase">Visitas</p>
+                </div>
+                <div className="text-center p-3 bg-green-50 rounded-xl">
+                  <p className="text-2xl font-black text-green-600">{visitForms.filter((f: any) => f.would_buy).length}</p>
+                  <p className="text-[10px] text-gray-400 uppercase">Interesados</p>
+                </div>
+                <div className="text-center p-3 bg-yellow-50 rounded-xl">
+                  <p className="text-2xl font-black text-yellow-600">
+                    {visitForms.filter((f: any) => f.rating).length > 0
+                      ? (visitForms.reduce((s: number, f: any) => s + (f.rating || 0), 0) / visitForms.filter((f: any) => f.rating).length).toFixed(1)
+                      : '-'}
+                  </p>
+                  <p className="text-[10px] text-gray-400 uppercase">Rating prom.</p>
+                </div>
+              </div>
+
+              {/* Individual feedback */}
+              <div className="space-y-3">
+                {visitForms.slice(0, 5).map((f: any, i: number) => (
+                  <div key={i} className="border border-gray-100 rounded-xl p-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium text-gray-800">{f.visitor_name}</span>
+                      <div className="flex items-center gap-0.5">
+                        {f.rating && [1,2,3,4,5].map((n: number) => (
+                          <span key={n} className={`text-xs ${n <= f.rating ? 'text-yellow-500' : 'text-gray-200'}`}>&#9733;</span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {f.would_buy !== null && (
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${f.would_buy ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
+                          {f.would_buy ? 'Comprar\u00eda' : 'No comprar\u00eda'}
+                        </span>
+                      )}
+                      {f.price_opinion && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600">
+                          {f.price_opinion === 'justo' ? 'Precio justo' : f.price_opinion === 'buen_precio' ? 'Buen precio' : f.price_opinion === 'algo_caro' ? 'Algo caro' : f.price_opinion === 'muy_caro' ? 'Muy caro' : f.price_opinion === 'oportunidad' ? 'Oportunidad' : f.price_opinion}
+                        </span>
+                      )}
+                    </div>
+                    {f.likes && <p className="text-xs text-green-600 mt-1">&ldquo;{f.likes}&rdquo;</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Historical link */}
         {allReports.length > 1 && (

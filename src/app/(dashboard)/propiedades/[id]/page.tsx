@@ -8,6 +8,7 @@ import PriceHistory from '@/components/properties/PriceHistory'
 import DocumentChecklist from '@/components/properties/DocumentChecklist'
 import AuthorizationSection from '@/components/properties/AuthorizationSection'
 import PropertyPhotos from '@/components/properties/PropertyPhotos'
+import VisitFormsSection from '@/components/properties/VisitFormsSection'
 import { formatDate } from '@/lib/utils'
 
 export default async function PropertyDetailPage({
@@ -97,6 +98,9 @@ export default async function PropertyDetailPage({
           <PropertyPhotos propertyId={id} />
         </div>
       </div>
+
+      {/* Visit Forms */}
+      <VisitFormsSection propertyId={id} propertySlug={property.public_slug as string} />
     </div>
   )
 }
