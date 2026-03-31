@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { PROPERTY_STAGES, type PropertyStage, PROPERTY_STAGE_KEYS } from '@/lib/crm-config'
 import { useToast } from '@/components/ui/Toast'
-import { Building2, ArrowRight, Eye, Phone, Filter, List, Columns, XCircle } from 'lucide-react'
+import { Building2, ArrowRight, Eye, Phone, Filter, List, Columns, XCircle, Search } from 'lucide-react'
 
 type Property = {
   id: string
@@ -58,6 +58,7 @@ export default function PipelinePage() {
   const [filterType, setFilterType] = useState('')
   const [filterAuth, setFilterAuth] = useState<'' | 'expiring' | 'expired'>('')
   const [showFilters, setShowFilters] = useState(false)
+  const [searchText, setSearchText] = useState('')
   const [advancing, setAdvancing] = useState<string | null>(null)
 
   useEffect(() => {
@@ -86,7 +87,13 @@ export default function PipelinePage() {
   }, [properties])
 
   const filtered = useMemo(() => {
+    const q = searchText.toLowerCase().trim()
     return properties.filter(p => {
+      if (q) {
+        const hay = [p.address, p.neighborhood, p.owner_name, p.agent_name, p.property_type]
+          .filter(Boolean).join(' ').toLowerCase()
+        if (!hay.includes(q)) return false
+      }
       if (filterAgent && p.agent_name !== filterAgent) return false
       if (filterType && p.property_type !== filterType) return false
       if (filterAuth) {
@@ -96,7 +103,7 @@ export default function PipelinePage() {
       }
       return true
     })
-  }, [properties, filterAgent, filterType, filterAuth])
+  }, [properties, filterAgent, filterType, filterAuth, searchText])
 
   const byStage = useMemo(() => {
     const map: Record<PropertyStage, Property[]> = {} as any
@@ -171,10 +178,18 @@ export default function PipelinePage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              value={searchText} onChange={e => setSearchText(e.target.value)}
+              placeholder="Buscar dirección, barrio, propietario..."
+              className="pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm w-48 sm:w-64 focus:ring-2 focus:ring-[#ff007c]/20 focus:border-[#ff007c] bg-white"
+            />
+          </div>
           <button
             onClick={() => setShowFilters(f => !f)}
             className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm border transition-colors ${
-              showFilters || filterAgent || filterType
+              showFilters || filterAgent || filterType || filterAuth
                 ? 'bg-[#ff007c]/10 border-[#ff007c]/30 text-[#ff007c]'
                 : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
             }`}

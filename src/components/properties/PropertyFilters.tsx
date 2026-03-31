@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Building2 } from 'lucide-react'
+import { Building2, Search } from 'lucide-react'
 
 const statusLabel: Record<string, string> = {
   active: 'Activas',
@@ -21,10 +21,18 @@ const statusColor: Record<string, string> = {
 
 export default function PropertyFilters({ properties }: { properties: any[] }) {
   const [filter, setFilter] = useState<string>('all')
+  const [searchText, setSearchText] = useState('')
 
-  const filtered = filter === 'all'
-    ? properties
-    : properties.filter(p => p.status === filter)
+  const filtered = properties.filter(p => {
+    if (filter !== 'all' && p.status !== filter) return false
+    if (searchText.trim()) {
+      const q = searchText.toLowerCase()
+      const hay = [p.address, p.neighborhood, p.owner_name, p.agent_name, p.property_type]
+        .filter(Boolean).join(' ').toLowerCase()
+      if (!hay.includes(q)) return false
+    }
+    return true
+  })
 
   // Count by status
   const counts: Record<string, number> = {}
@@ -34,6 +42,16 @@ export default function PropertyFilters({ properties }: { properties: any[] }) {
 
   return (
     <div>
+      {/* Search */}
+      <div className="relative mb-4">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <input
+          value={searchText} onChange={e => setSearchText(e.target.value)}
+          placeholder="Buscar dirección, barrio, propietario, agente..."
+          className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#ff007c]/20 focus:border-[#ff007c] bg-white"
+        />
+      </div>
+
       {/* Filter tabs */}
       <div className="flex flex-wrap gap-2 mb-6">
         <button
