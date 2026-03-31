@@ -66,9 +66,45 @@ export async function POST(request: Request) {
       body.lead_id || null, body.appraisal_id || null
     ).run()
 
+    // Update extra fields if provided
+    try {
+      await db.prepare(`
+        UPDATE properties SET
+          bedrooms = COALESCE(?, bedrooms),
+          bathrooms = COALESCE(?, bathrooms),
+          covered_area = COALESCE(?, covered_area),
+          floor_number = COALESCE(?, floor_number),
+          year_built = COALESCE(?, year_built),
+          expenses = COALESCE(?, expenses),
+          credit_eligible = COALESCE(?, credit_eligible),
+          kp_code = COALESCE(?, kp_code),
+          authorization_start = COALESCE(?, authorization_start),
+          authorization_days = COALESCE(?, authorization_days)
+        WHERE id = ?
+      `).bind(
+        body.bedrooms ? parseInt(body.bedrooms) : null,
+        body.bathrooms ? parseInt(body.bathrooms) : null,
+        body.covered_area ? parseFloat(body.covered_area) : null,
+        body.floor_number || null,
+        body.year_built ? parseInt(body.year_built) : null,
+        body.expenses ? parseFloat(body.expenses) : null,
+        body.credit_eligible !== undefined ? (body.credit_eligible ? 1 : 0) : null,
+        body.kp_code || null,
+        body.authorization_start || null,
+        body.authorization_days ? parseInt(body.authorization_days) : null,
+        id
+      ).run()
+    } catch { /* columns may not exist */ }
+
     return NextResponse.json({ id, slug })
   } catch (err: any) {
     if (err.message?.includes('UNIQUE')) {
+      // Try with unique slug
+      try {
+        const uniqueSlug = slug + '-' + id.substring(0, 6)
+        await db.prepare("UPDATE properties SET public_slug = ? WHERE id = ?").bind(uniqueSlug, id).run()
+        return NextResponse.json({ id, slug: uniqueSlug })
+      } catch {}
       return NextResponse.json({ error: 'Ya existe una propiedad con esa dirección' }, { status: 400 })
     }
     return NextResponse.json({ error: err.message }, { status: 500 })

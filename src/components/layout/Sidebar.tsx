@@ -22,6 +22,7 @@ import {
   CalendarDays,
   Handshake,
   Target,
+  Upload,
 } from 'lucide-react'
 import type { Profile } from '@/lib/types'
 
@@ -59,6 +60,7 @@ const adminSection = {
   links: [
     { href: '/admin/agentes', label: 'Agentes', icon: Users },
     { href: '/admin/objetivos', label: 'Objetivos', icon: Target },
+    { href: '/admin/importar', label: 'Importar', icon: Upload },
     { href: '/admin/auditoria', label: 'Auditoría', icon: FileBarChart },
     { href: '/perfil', label: 'Mi perfil', icon: UserPlus },
     { href: '/configuracion', label: 'Configuración', icon: Settings },
