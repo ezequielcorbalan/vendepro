@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'No auth' }, { status: 401 })
 
   const db = await getDB()
-  const isAdmin = user.role === 'admin' || user.role === 'owner'
+  const isAdmin = user.role === 'admin' || user.role === 'owner' || user.role === 'supervisor'
   const { searchParams } = new URL(request.url)
   const stage = searchParams.get('stage')
   const leadId = searchParams.get('id')

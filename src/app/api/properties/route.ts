@@ -25,9 +25,9 @@ export async function GET(request: NextRequest) {
     if (stage) { sql += ' AND p.commercial_stage = ?'; binds.push(stage) }
     if (agentId) { sql += ' AND p.agent_id = ?'; binds.push(agentId) }
 
-    // Non-admin sees only own properties
-    const isAdmin = user.role === 'admin' || user.role === 'owner'
-    if (!isAdmin) { sql += ' AND p.agent_id = ?'; binds.push(user.id) }
+    // Non-admin/supervisor sees only own properties
+    const canSeeAll = user.role === 'admin' || user.role === 'owner' || user.role === 'supervisor'
+    if (!canSeeAll) { sql += ' AND p.agent_id = ?'; binds.push(user.id) }
 
     sql += ' ORDER BY p.updated_at DESC'
     const results = (await db.prepare(sql).bind(...binds).all()).results

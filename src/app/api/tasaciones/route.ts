@@ -123,6 +123,14 @@ export async function POST(request: NextRequest) {
       } catch { /* columns may not exist yet, safe to ignore */ }
     }
 
+    // Update video_tasacion_url if provided
+    if (data.video_tasacion_url) {
+      try {
+        await db.prepare("UPDATE appraisals SET video_tasacion_url=? WHERE id=?")
+          .bind(data.video_tasacion_url, id).run()
+      } catch { /* column may not exist */ }
+    }
+
     return NextResponse.json({ id })
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Error al guardar' }, { status: 500 })

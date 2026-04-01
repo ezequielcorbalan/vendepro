@@ -56,6 +56,7 @@ export default function NuevaTasacionPage() {
   const [opportunities, setOpportunities] = useState('')
   const [threats, setThreats] = useState('')
   const [pubAnalysis, setPubAnalysis] = useState('')
+  const [videoTasacionUrl, setVideoTasacionUrl] = useState('')
 
   // Step 3: Comparables
   const [comparables, setComparables] = useState<Comparable[]>([emptyComparable(), emptyComparable()])
@@ -231,6 +232,7 @@ export default function NuevaTasacionPage() {
           weighted_area: weightedArea > 0 ? weightedArea : null,
           strengths, weaknesses, opportunities, threats,
           publication_analysis: pubAnalysis,
+          video_tasacion_url: videoTasacionUrl || null,
           suggested_price: parseFloat(suggestedPrice) || null,
           test_price: parseFloat(testPrice) || null,
           expected_close_price: parseFloat(expectedClose) || null,
@@ -400,6 +402,12 @@ export default function NuevaTasacionPage() {
             <div>
               <label className={labelClass}>An&aacute;lisis de publicaci&oacute;n actual</label>
               <textarea className={`${inputClass} h-28 sm:h-32`} value={pubAnalysis} onChange={e => setPubAnalysis(e.target.value)} placeholder="Solo fotos de celular, se puede mejorar con plano, video, tour 360..." />
+            </div>
+            <div className="border-t border-gray-100 pt-4">
+              <label className={labelClass}>Video explicando la tasaci&oacute;n <span className="text-gray-400 font-normal">(opcional)</span></label>
+              <input className={inputClass} value={videoTasacionUrl} onChange={e => setVideoTasacionUrl(e.target.value)}
+                placeholder="https://www.youtube.com/embed/VIDEO_ID" />
+              <p className="text-[10px] text-gray-400 mt-1">URL embed de YouTube con tu explicaci&oacute;n de la tasaci&oacute;n y la competencia. Se muestra en la landing del propietario.</p>
             </div>
           </div>
         )}
