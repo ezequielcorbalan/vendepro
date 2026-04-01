@@ -99,20 +99,6 @@ export default function VisitFormClient({ property, orgName, brandColor }: Props
               style={{ '--tw-ring-color': brandColor + '40' } as any}
               placeholder="Ej: Juan P&eacute;rez" />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Tel&eacute;fono</label>
-              <input value={form.visitor_phone} onChange={e => set('visitor_phone', e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm"
-                placeholder="+54 11..." />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Email</label>
-              <input type="email" value={form.visitor_email} onChange={e => set('visitor_email', e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm"
-                placeholder="tu@email.com" />
-            </div>
-          </div>
         </div>
 
         {/* Rating */}
@@ -164,30 +150,6 @@ export default function VisitFormClient({ property, orgName, brandColor }: Props
                   dangerouslySetInnerHTML={{ __html: opt.label }} />
               ))}
             </div>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">&iquest;Qu&eacute; te parece el precio?</label>
-            <select value={form.price_opinion} onChange={e => set('price_opinion', e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white">
-              <option value="">Seleccionar...</option>
-              <option value="muy_caro">Muy caro</option>
-              <option value="algo_caro">Algo caro</option>
-              <option value="justo">Precio justo</option>
-              <option value="buen_precio">Buen precio</option>
-              <option value="oportunidad">Una oportunidad</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">&iquest;C&oacute;mo financiar&iacute;as?</label>
-            <select value={form.financing} onChange={e => set('financing', e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white">
-              <option value="">Seleccionar...</option>
-              <option value="contado">Contado</option>
-              <option value="credito_hipotecario">Cr&eacute;dito hipotecario</option>
-              <option value="parte_contado_credito">Parte contado + cr&eacute;dito</option>
-              <option value="permuta">Permuta</option>
-              <option value="otros">Otros</option>
-            </select>
           </div>
         </div>
 
