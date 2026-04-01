@@ -32,6 +32,9 @@ const menuSections = [
     links: [
       { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { href: '/mi-performance', label: 'Mi Performance', icon: Target },
+      { href: '/perfil', label: 'Mi Perfil', icon: Settings },
+      { href: '/perfil/tasaciones', label: 'Mi Config Tasaciones', icon: ClipboardList },
+      { href: '/perfil/objetivos', label: 'Mis Objetivos', icon: Target },
     ],
   },
   {
@@ -59,10 +62,9 @@ const adminSection = {
   title: 'Administración',
   links: [
     { href: '/admin/agentes', label: 'Agentes', icon: Users },
-    { href: '/admin/objetivos', label: 'Objetivos', icon: Target },
+    { href: '/admin/objetivos', label: 'Objetivos equipo', icon: Target },
     { href: '/admin/importar', label: 'Importar', icon: Upload },
     { href: '/admin/auditoria', label: 'Auditoría', icon: FileBarChart },
-    { href: '/perfil', label: 'Mi perfil', icon: UserPlus },
     { href: '/configuracion', label: 'Configuración', icon: Settings },
   ],
 }
