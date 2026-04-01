@@ -243,10 +243,16 @@ export default async function TasacionPublicPage({
           </section>
         )}
 
-        {a.video_url && (
+        {(a.video_tasacion_url || a.video_url) && (
           <section className={`${cardClass} overflow-hidden`}>
-            <div className="aspect-video">
-              <iframe src={youtubeEmbed(a.video_url)!} className="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+            <div className="p-5 pb-0">
+              <h2 className={`text-lg font-semibold ${headingClass} flex items-center gap-2`}>
+                <span className="w-1 h-7 bg-gradient-to-b from-[#ff007c] to-[#ff8017] rounded-full" />
+                Video: Explicaci&oacute;n de la tasaci&oacute;n
+              </h2>
+            </div>
+            <div className="aspect-video p-5">
+              <iframe src={youtubeEmbed(a.video_tasacion_url || a.video_url)!} className="w-full h-full rounded-xl" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
             </div>
           </section>
         )}

@@ -183,10 +183,10 @@ export default function VisitFormClient({ property, orgName, brandColor }: Props
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Comentarios adicionales</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Comentarios adicionales <span className="text-gray-400">(¿Qu&eacute; valor pens&aacute;s que vale la propiedad?)</span></label>
             <textarea value={form.comments} onChange={e => set('comments', e.target.value)} rows={3}
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm resize-none"
-              placeholder="Cualquier otro comentario..." />
+              placeholder="Ej: Me pareci&oacute; que vale alrededor de USD 150.000..." />
           </div>
         </div>
 

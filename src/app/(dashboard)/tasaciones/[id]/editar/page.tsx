@@ -64,6 +64,7 @@ export default function EditarTasacionPage() {
   const [testPrice, setTestPrice] = useState('')
   const [expectedClose, setExpectedClose] = useState('')
   const [agentNotes, setAgentNotes] = useState('')
+  const [videoTasacionUrl, setVideoTasacionUrl] = useState('')
   const [zoneAvgPrice, setZoneAvgPrice] = useState('')
   const [zoneAvgM2, setZoneAvgM2] = useState('')
   const [zoneAvgUsdM2, setZoneAvgUsdM2] = useState('')
@@ -91,6 +92,7 @@ export default function EditarTasacionPage() {
         setTestPrice(data.test_price?.toString() || '')
         setExpectedClose(data.expected_close_price?.toString() || '')
         setAgentNotes(data.agent_notes || '')
+        setVideoTasacionUrl(data.video_tasacion_url || '')
         setZoneAvgPrice(data.zone_avg_price?.toString() || '')
         setZoneAvgM2(data.zone_avg_m2?.toString() || '')
         setZoneAvgUsdM2(data.zone_avg_usd_m2?.toString() || '')
@@ -208,6 +210,7 @@ export default function EditarTasacionPage() {
           expected_close_price: parseFloat(expectedClose) || null,
           usd_per_m2: avgUsdM2 || null,
           agent_notes: agentNotes,
+          video_tasacion_url: videoTasacionUrl || null,
           zone_avg_price: parseFloat(zoneAvgPrice) || null,
           zone_avg_m2: parseFloat(zoneAvgM2) || null,
           zone_avg_usd_m2: parseFloat(zoneAvgUsdM2) || null,
@@ -378,6 +381,7 @@ export default function EditarTasacionPage() {
               <div><label className={labelClass}>Cierre 120 días (USD)</label><input className={inputClass} type="number" value={expectedClose} onChange={e => setExpectedClose(e.target.value)} /></div>
             </div>
             <div><label className={labelClass}>Notas del agente</label><textarea className={`${inputClass} h-24`} value={agentNotes} onChange={e => setAgentNotes(e.target.value)} /></div>
+            <div><label className={labelClass}>Video explicando la tasaci&oacute;n <span className="text-gray-400 font-normal">(individual, URL YouTube embed)</span></label><input className={inputClass} value={videoTasacionUrl} onChange={e => setVideoTasacionUrl(e.target.value)} placeholder="https://www.youtube.com/embed/..." /></div>
           </div>
         )}
 

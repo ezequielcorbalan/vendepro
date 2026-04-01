@@ -1,7 +1,7 @@
 // AI CRM — Groq integration for structured entity extraction
 import { LEAD_STAGES, ACTIVITY_TYPES } from './crm-config'
 
-const GROQ_MODEL = 'llama-3.1-70b-versatile'
+const GROQ_MODEL = 'llama-3.3-70b-specdec'
 
 // ── System prompt ─────────────────────────────────────────
 const SYSTEM_PROMPT = `Sos un asistente de CRM inmobiliario argentino.

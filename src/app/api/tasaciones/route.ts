@@ -143,7 +143,7 @@ export async function PUT(request: NextRequest) {
       UPDATE appraisals SET property_address=?, neighborhood=?, city=?, property_type=?,
         covered_area=?, total_area=?, semi_area=?, weighted_area=?, strengths=?, weaknesses=?,
         opportunities=?, threats=?, publication_analysis=?, suggested_price=?, test_price=?,
-        expected_close_price=?, usd_per_m2=?, video_url=?, agent_notes=?,
+        expected_close_price=?, usd_per_m2=?, video_url=?, video_tasacion_url=?, agent_notes=?,
         zone_avg_price=?, zone_avg_m2=?, zone_avg_usd_m2=?, updated_at=datetime('now')
       WHERE id=? AND org_id=?
     `).bind(
@@ -154,7 +154,7 @@ export async function PUT(request: NextRequest) {
       data.opportunities || null, data.threats || null,
       data.publication_analysis || null,
       data.suggested_price, data.test_price, data.expected_close_price, data.usd_per_m2,
-      data.video_url || null, data.agent_notes || null,
+      data.video_url || null, data.video_tasacion_url || null, data.agent_notes || null,
       data.zone_avg_price || null, data.zone_avg_m2 || null, data.zone_avg_usd_m2 || null,
       data.id, user.org_id || 'org_mg'
     ).run()
