@@ -2,7 +2,7 @@
 // Database types for the Reportes App
 // ============================================================
 
-export type UserRole = 'owner' | 'admin' | 'agent'
+export type UserRole = 'owner' | 'admin' | 'supervisor' | 'agent'
 export type PropertyStatus = 'active' | 'sold' | 'suspended' | 'archived'
 export type PropertyType = 'departamento' | 'casa' | 'ph' | 'local' | 'terreno' | 'oficina'
 export type ReportStatus = 'draft' | 'published'

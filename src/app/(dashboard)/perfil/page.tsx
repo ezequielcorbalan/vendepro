@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { User, Lock, Save, Loader2, CheckCircle2, Eye, EyeOff } from 'lucide-react'
+import { User, Lock, Save, Loader2, CheckCircle2, Eye, EyeOff, Video } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 
 export default function PerfilPage() {
@@ -12,6 +12,11 @@ export default function PerfilPage() {
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
   const [savingProfile, setSavingProfile] = useState(false)
+
+  // Video settings
+  const [videoComercial, setVideoComercial] = useState('')
+  const [videoMercado, setVideoMercado] = useState('')
+  const [savingVideos, setSavingVideos] = useState(false)
 
   // Password fields
   const [currentPw, setCurrentPw] = useState('')
@@ -27,6 +32,11 @@ export default function PerfilPage() {
       setPhone(d.phone || '')
       setLoading(false)
     }).catch(() => setLoading(false))
+    // Load agent video settings
+    fetch('/api/agent-settings').then(r => r.json() as Promise<any>).then(d => {
+      setVideoComercial(d.video_propuesta_comercial || '')
+      setVideoMercado(d.video_situacion_mercado || '')
+    }).catch(() => {})
   }, [])
 
   const handleSaveProfile = async () => {
@@ -103,6 +113,42 @@ export default function PerfilPage() {
           className="w-full bg-[#ff007c] text-white py-2.5 rounded-xl text-sm font-medium hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2">
           {savingProfile ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Guardar cambios
+        </button>
+      </div>
+
+      {/* My videos for tasaciones */}
+      <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-4">
+        <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+          <Video className="w-4 h-4 text-[#ff007c]" /> Mis videos para tasaciones
+        </h2>
+        <p className="text-xs text-gray-400">Estos videos se muestran en las landings de tasaci&oacute;n que cre&eacute;s. Cada agente configura los suyos.</p>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Video propuesta comercial</label>
+          <input value={videoComercial} onChange={e => setVideoComercial(e.target.value)}
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#ff007c]/20 focus:border-[#ff007c]"
+            placeholder="https://www.youtube.com/embed/..." />
+          <p className="text-[10px] text-gray-400 mt-1">URL embed de YouTube. Ej: https://www.youtube.com/embed/VIDEO_ID</p>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Video situaci&oacute;n de mercado</label>
+          <input value={videoMercado} onChange={e => setVideoMercado(e.target.value)}
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#ff007c]/20 focus:border-[#ff007c]"
+            placeholder="https://www.youtube.com/embed/..." />
+        </div>
+        <button onClick={async () => {
+          setSavingVideos(true)
+          try {
+            await fetch('/api/agent-settings', {
+              method: 'PUT', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ video_propuesta_comercial: videoComercial, video_situacion_mercado: videoMercado }),
+            })
+            toast('Videos guardados', 'success')
+          } catch { toast('Error', 'error') }
+          finally { setSavingVideos(false) }
+        }} disabled={savingVideos}
+          className="w-full bg-[#ff007c] text-white py-2.5 rounded-xl text-sm font-medium hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2">
+          {savingVideos ? <Loader2 className="w-4 h-4 animate-spin" /> : <Video className="w-4 h-4" />}
+          Guardar videos
         </button>
       </div>
 

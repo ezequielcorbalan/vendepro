@@ -213,3 +213,40 @@ export function getUrgencyBadge(urgency: 'ok' | 'warning' | 'danger' | 'lost') {
     default:        return null
   }
 }
+
+// ── Roles & Permissions ──────────────────────────────────
+export const USER_ROLES = {
+  admin:      { label: 'Administrador', color: 'bg-red-100 text-red-700', level: 3 },
+  supervisor: { label: 'Supervisor',    color: 'bg-purple-100 text-purple-700', level: 2 },
+  agent:      { label: 'Agente',        color: 'bg-blue-100 text-blue-700', level: 1 },
+} as const
+
+export type RoleKey = keyof typeof USER_ROLES
+
+// Can this role see all agents' data?
+export function canSeeAll(role: string): boolean {
+  return role === 'admin' || role === 'owner' || role === 'supervisor'
+}
+
+// Can this role manage org settings, create admins, etc?
+export function canManageOrg(role: string): boolean {
+  return role === 'admin' || role === 'owner'
+}
+
+// Can this role create/delete agents?
+export function canManageAgents(role: string): boolean {
+  return role === 'admin' || role === 'owner'
+}
+
+// Can this role set objectives for other agents?
+export function canSetObjectives(role: string): boolean {
+  return role === 'admin' || role === 'owner' || role === 'supervisor'
+}
+
+export function getRoleLabel(role: string): string {
+  return (USER_ROLES as any)[role]?.label || role
+}
+
+export function getRoleColor(role: string): string {
+  return (USER_ROLES as any)[role]?.color || 'bg-gray-100 text-gray-600'
+}

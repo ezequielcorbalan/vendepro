@@ -108,7 +108,7 @@ export async function createUser(
   email: string,
   password: string,
   fullName: string,
-  role: 'admin' | 'agent' = 'agent',
+  role: 'admin' | 'supervisor' | 'agent' = 'agent',
   phone?: string
 ): Promise<{ id: string } | { error: string }> {
   const db = await getDB()

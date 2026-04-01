@@ -67,11 +67,24 @@ export default async function TasacionPublicPage({
   const settings = await getOrgSettings()
   const soldProps = await getSoldProperties(appraisal.id, appraisal.neighborhood)
 
+  // Agent-specific video settings (override org settings)
+  const agentVideos: Record<string, string> = {}
+  try {
+    const avRows = (await db.prepare(
+      'SELECT setting_key, setting_value FROM agent_settings WHERE agent_id = ?'
+    ).bind(appraisal.agent_id).all()).results as any[]
+    for (const r of avRows) agentVideos[r.setting_key] = r.setting_value
+  } catch { /* table may not exist */ }
+
   const a = appraisal
   const weighted = Number(a.weighted_area) || 0
   const usdM2 = Number(a.usd_per_m2) || 0
   const whatsapp = settings.tasacion_cta_whatsapp || '5491158905594'
   const calendlyUrl = settings.tasacion_cta_calendly || ''
+
+  // Videos: agent settings override org settings
+  const videoComercial: string = agentVideos.video_propuesta_comercial || settings.tasacion_video_comercial || ''
+  const videoMercado: string = agentVideos.video_situacion_mercado || settings.tasacion_video_mercado || ''
 
   const containerClass = presentationMode
     ? 'min-h-screen bg-gray-900'
@@ -140,10 +153,10 @@ export default async function TasacionPublicPage({
 
         {/* ====== SECTION 1: PARTE COMERCIAL ====== */}
 
-        {settings.tasacion_video_comercial && (
+        {videoComercial && (
           <section className={`${cardClass} overflow-hidden`}>
             <div className="aspect-video">
-              <iframe src={youtubeEmbed(settings.tasacion_video_comercial)!} className="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+              <iframe src={youtubeEmbed(videoComercial)!} className="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
             </div>
             {settings.tasacion_texto_comercial && (
               <div className="p-5 sm:p-8">
@@ -173,9 +186,9 @@ export default async function TasacionPublicPage({
               <span className="w-1 h-7 bg-gradient-to-b from-[#ff007c] to-[#ff8017] rounded-full" />
               Situaci&oacute;n del mercado
             </h2>
-            {settings.tasacion_video_mercado && (
+            {videoMercado && (
               <div className="aspect-video rounded-xl overflow-hidden mb-6">
-                <iframe src={youtubeEmbed(settings.tasacion_video_mercado)!} className="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+                <iframe src={youtubeEmbed(videoMercado)!} className="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
               </div>
             )}
             {settings.tasacion_datos_mes_referencia && (
