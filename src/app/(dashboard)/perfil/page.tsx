@@ -116,41 +116,31 @@ export default function PerfilPage() {
         </button>
       </div>
 
-      {/* My videos for tasaciones */}
-      <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-          <Video className="w-4 h-4 text-[#ff007c]" /> Mis videos para tasaciones
-        </h2>
-        <p className="text-xs text-gray-400">Estos videos se muestran en las landings de tasaci&oacute;n que cre&eacute;s. Cada agente configura los suyos.</p>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Video propuesta comercial</label>
-          <input value={videoComercial} onChange={e => setVideoComercial(e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#ff007c]/20 focus:border-[#ff007c]"
-            placeholder="https://www.youtube.com/embed/..." />
-          <p className="text-[10px] text-gray-400 mt-1">URL embed de YouTube. Ej: https://www.youtube.com/embed/VIDEO_ID</p>
+      {/* Config tasaciones link */}
+      <a href="/perfil/tasaciones" className="block bg-white rounded-xl border border-gray-100 p-5 hover:shadow-md transition-shadow">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+              <Video className="w-4 h-4 text-[#ff007c]" /> Mi configuraci&oacute;n de tasaciones
+            </h2>
+            <p className="text-xs text-gray-400 mt-1">Videos, textos, datos de mercado y CTAs para tus landings de tasaci&oacute;n</p>
+          </div>
+          <span className="text-[#ff007c] text-sm">&rarr;</span>
         </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Video situaci&oacute;n de mercado</label>
-          <input value={videoMercado} onChange={e => setVideoMercado(e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#ff007c]/20 focus:border-[#ff007c]"
-            placeholder="https://www.youtube.com/embed/..." />
+      </a>
+
+      {/* Mis objetivos link */}
+      <a href="/perfil/objetivos" className="block bg-white rounded-xl border border-gray-100 p-5 hover:shadow-md transition-shadow">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+              <Save className="w-4 h-4 text-orange-500" /> Mis objetivos
+            </h2>
+            <p className="text-xs text-gray-400 mt-1">Carg&aacute; tus propios objetivos mensuales, trimestrales y anuales</p>
+          </div>
+          <span className="text-[#ff007c] text-sm">&rarr;</span>
         </div>
-        <button onClick={async () => {
-          setSavingVideos(true)
-          try {
-            await fetch('/api/agent-settings', {
-              method: 'PUT', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ video_propuesta_comercial: videoComercial, video_situacion_mercado: videoMercado }),
-            })
-            toast('Videos guardados', 'success')
-          } catch { toast('Error', 'error') }
-          finally { setSavingVideos(false) }
-        }} disabled={savingVideos}
-          className="w-full bg-[#ff007c] text-white py-2.5 rounded-xl text-sm font-medium hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2">
-          {savingVideos ? <Loader2 className="w-4 h-4 animate-spin" /> : <Video className="w-4 h-4" />}
-          Guardar videos
-        </button>
-      </div>
+      </a>
 
       {/* Change password */}
       <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-4">

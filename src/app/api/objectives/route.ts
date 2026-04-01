@@ -44,15 +44,21 @@ export async function POST(request: NextRequest) {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'No auth' }, { status: 401 })
 
-  const isAdmin = user.role === 'admin' || user.role === 'owner'
-  if (!isAdmin) return NextResponse.json({ error: 'Solo admin' }, { status: 403 })
+  const isAdmin = user.role === 'admin' || user.role === 'owner' || user.role === 'supervisor'
 
   const data = (await request.json()) as any
   const db = await getDB()
   const orgId = user.org_id || 'org_mg'
 
+  // Agents can only create objectives for themselves
+  if (!isAdmin && data.agent_id && data.agent_id !== user.id) {
+    return NextResponse.json({ error: 'Solo pod\u00e9s crear objetivos para vos' }, { status: 403 })
+  }
+
   // Support batch: { batch: [{agent_id, metric, target, period_type, period_start, period_end}, ...] }
+  // Batch only for admins
   if (data.batch && Array.isArray(data.batch)) {
+    if (!isAdmin) return NextResponse.json({ error: 'Batch solo para admins' }, { status: 403 })
     try {
       let created = 0
       for (const item of data.batch) {
@@ -72,10 +78,11 @@ export async function POST(request: NextRequest) {
   // Single create
   const id = generateId()
   try {
+    const agentId = data.agent_id || user.id // Default to self
     await db.prepare(`
       INSERT INTO agent_objectives (id, org_id, agent_id, period_type, period_start, period_end, metric, target)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).bind(id, orgId, data.agent_id, data.period_type || 'monthly', data.period_start, data.period_end, data.metric, data.target || 0).run()
+    `).bind(id, orgId, agentId, data.period_type || 'monthly', data.period_start, data.period_end, data.metric, data.target || 0).run()
     return NextResponse.json({ id })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
