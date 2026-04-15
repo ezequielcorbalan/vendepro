@@ -1,0 +1,29 @@
+{
+  "name": "@reportes/infrastructure",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./repositories": "./src/repositories/index.ts",
+    "./services": "./src/services/index.ts",
+    "./middleware": "./src/middleware/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@reportes/core": "*",
+    "hono": "^4.7.11",
+    "jose": "^5.10.0"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.8.5",
+    "@cloudflare/workers-types": "^4.20260317.1",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.0",
+    "wrangler": "^4.76.0"
+  }
+}

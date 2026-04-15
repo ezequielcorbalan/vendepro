@@ -1,0 +1,95 @@
+import { describe, it, expect, vi } from 'vitest'
+
+vi.mock('@reportes/infrastructure', async (importOriginal) => {
+  const actual = await importOriginal() as any
+  return {
+    ...actual,
+    corsMiddleware: async (_c: any, next: any) => next(),
+    createAuthMiddleware: () => async (c: any, next: any) => {
+      c.set('userId', 'agent-1')
+      c.set('userRole', 'agent')
+      c.set('orgId', 'org_mg')
+      await next()
+    },
+    D1LeadRepository: vi.fn().mockImplementation(() => ({
+      findByOrg: vi.fn().mockResolvedValue([]),
+      findById: vi.fn().mockResolvedValue(null),
+      save: vi.fn().mockResolvedValue(undefined),
+      delete: vi.fn().mockResolvedValue(undefined),
+    })),
+    D1ContactRepository: vi.fn().mockImplementation(() => ({
+      findByOrg: vi.fn().mockResolvedValue([]),
+      findById: vi.fn().mockResolvedValue(null),
+      save: vi.fn().mockResolvedValue(undefined),
+      delete: vi.fn().mockResolvedValue(undefined),
+    })),
+    D1CalendarRepository: vi.fn().mockImplementation(() => ({
+      findByOrg: vi.fn().mockResolvedValue([]),
+      findById: vi.fn().mockResolvedValue(null),
+      save: vi.fn().mockResolvedValue(undefined),
+      delete: vi.fn().mockResolvedValue(undefined),
+    })),
+    D1ActivityRepository: vi.fn().mockImplementation(() => ({
+      findByOrg: vi.fn().mockResolvedValue([]),
+    })),
+    D1TagRepository: vi.fn().mockImplementation(() => ({
+      findByOrg: vi.fn().mockResolvedValue([]),
+      findByLead: vi.fn().mockResolvedValue([]),
+      addToLead: vi.fn().mockResolvedValue(undefined),
+      removeFromLead: vi.fn().mockResolvedValue(undefined),
+      delete: vi.fn().mockResolvedValue(undefined),
+    })),
+    D1StageHistoryRepository: vi.fn().mockImplementation(() => ({
+      log: vi.fn().mockResolvedValue(undefined),
+      findByEntity: vi.fn().mockResolvedValue([]),
+    })),
+    JwtAuthService: vi.fn().mockImplementation(() => ({})),
+    CryptoIdGenerator: vi.fn().mockImplementation(() => ({
+      generate: vi.fn().mockReturnValue('gen-id'),
+    })),
+  }
+})
+
+describe('api-crm lead routes', () => {
+  it('GET /leads returns empty array', async () => {
+    const { default: app } = await import('../src/index')
+    const res = await app.request('/leads', { method: 'GET' }, { DB: {}, JWT_SECRET: 'secret' })
+    expect(res.status).toBe(200)
+    const body = await res.json() as any
+    expect(Array.isArray(body)).toBe(true)
+  })
+
+  it('POST /leads with valid data creates lead', async () => {
+    const { default: app } = await import('../src/index')
+    const res = await app.request('/leads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ full_name: 'María González', phone: '1134567890', source: 'manual' }),
+    }, { DB: {}, JWT_SECRET: 'secret' })
+    expect(res.status).toBe(201)
+    const body = await res.json() as any
+    expect(body.id).toBe('gen-id')
+  })
+
+  it('POST /leads with too-short name returns 422', async () => {
+    const { default: app } = await import('../src/index')
+    const res = await app.request('/leads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ full_name: 'X', phone: '123', source: 'manual' }),
+    }, { DB: {}, JWT_SECRET: 'secret' })
+    expect(res.status).toBe(400)
+  })
+
+  it('GET /tags returns empty array', async () => {
+    const { default: app } = await import('../src/index')
+    const res = await app.request('/tags', { method: 'GET' }, { DB: {}, JWT_SECRET: 'secret' })
+    expect(res.status).toBe(200)
+  })
+
+  it('GET /calendar returns empty array', async () => {
+    const { default: app } = await import('../src/index')
+    const res = await app.request('/calendar', { method: 'GET' }, { DB: {}, JWT_SECRET: 'secret' })
+    expect(res.status).toBe(200)
+  })
+})

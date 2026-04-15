@@ -1,0 +1,19 @@
+{
+  "name": "reportes-api-properties",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-01-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "reportes-mg-db",
+      "database_id": "ca41dfff-cc50-45c7-a92a-424eebcabfb8"
+    }
+  ],
+    "r2_buckets": [
+      {
+        "binding": "R2",
+        "bucket_name": "reportes-mg-assets"
+      }
+    ]
+}

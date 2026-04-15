@@ -1,0 +1,19 @@
+{
+  "name": "reportes-infra-test",
+  "compatibility_date": "2025-01-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "reportes-mg-db-test",
+      "database_id": "test-db-id",
+      "migrations_dir": "../../migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "R2",
+      "bucket_name": "reportes-mg-assets-test"
+    }
+  ]
+}
