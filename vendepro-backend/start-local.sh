@@ -122,6 +122,9 @@ echo "✓ .env.local generado"
 echo ""
 echo "--- Levantando frontend ---"
 cd "$FRONTEND_DIR"
+# Limpiar cache de Next.js para forzar recompilación fresca
+rm -rf .next
+echo "  ✓ Cache .next eliminado"
 npx next dev --port 3000 > "$BACKEND_DIR/logs/frontend.log" 2>&1 &
 echo $! >> "$PIDS_FILE"
 echo "  ↑ frontend  →  http://localhost:3000  (PID $!)"

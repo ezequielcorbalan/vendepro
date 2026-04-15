@@ -1,14 +1,10 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter, useParams } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import {
-  ArrowLeft, ArrowRight, Upload, Check, Loader2,
-  FileText, Trash2, Clipboard, Link2
-} from 'lucide-react'
-import { apiFetch } from '@/lib/api'
-import { useToast } from '@/components/ui/Toast'
+import { ArrowLeft, ArrowRight, Upload, Check, Loader2, FileText, Link2, Trash2, Clipboard } from 'lucide-react'
+import type { MetricSource, ExtractedMetrics } from '@/lib/types'
 
 const steps = [
   { id: 1, title: 'Período' },
@@ -20,7 +16,7 @@ const steps = [
 ]
 
 const defaultMetrics = {
-  source: 'zonaprop',
+  source: 'zonaprop' as MetricSource,
   impressions: '',
   portal_visits: '',
   inquiries: '',
@@ -32,49 +28,107 @@ const defaultMetrics = {
   avg_market_price: '',
 }
 
-export default function NuevoReportePage() {
+export default function NuevoReporte() {
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
   const propertyId = params.id as string
-  const { toast } = useToast()
+  const editId = searchParams.get('edit') || null
 
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [extracting, setExtracting] = useState(false)
-  const [extractingPdf, setExtractingPdf] = useState(false)
-  const [extractingComp, setExtractingComp] = useState<number | null>(null)
+  const [error, setError] = useState('')
+  const [loadingExisting, setLoadingExisting] = useState(!!editId)
 
   // Step 1: Period
   const [periodLabel, setPeriodLabel] = useState('')
   const [periodStart, setPeriodStart] = useState('')
   const [periodEnd, setPeriodEnd] = useState('')
 
-  // Step 2: Metrics
+  // Step 2: Metrics (can add multiple portals)
   const [metricsList, setMetricsList] = useState([{ ...defaultMetrics }])
 
-  // Step 3: Content
+  // Step 3: Content sections
   const [strategy, setStrategy] = useState('')
   const [marketing, setMarketing] = useState('')
   const [conclusion, setConclusion] = useState('')
   const [priceReference, setPriceReference] = useState('')
 
-  // Step 4: Competitors
+  // Step 4: Competitor links
   const [competitors, setCompetitors] = useState<{ url: string; address: string; price: string; notes: string }[]>([])
 
   // Step 5: Photos
   const [photos, setPhotos] = useState<File[]>([])
 
+  // Competitor extraction
+  const [extractingComp, setExtractingComp] = useState<number | null>(null)
+
+  // KiteProp PDF extraction
+  const [extractingPdf, setExtractingPdf] = useState(false)
+
+  // Load existing report if editing
+  useEffect(() => {
+    if (!editId) return
+    fetch(`/api/reports/${editId}`)
+      .then(r => r.json() as Promise<any>)
+      .then(data => {
+        if (data.error) { setError(data.error); setLoadingExisting(false); return }
+        const rep = data.report || {}
+        setPeriodLabel(rep.period_label || '')
+        setPeriodStart(rep.period_start || '')
+        setPeriodEnd(rep.period_end || '')
+
+        if (Array.isArray(data.metrics) && data.metrics.length > 0) {
+          setMetricsList(data.metrics.map((m: any) => ({
+            source: m.source || 'zonaprop',
+            impressions: m.impressions?.toString() || '',
+            portal_visits: m.portal_visits?.toString() || '',
+            inquiries: m.inquiries?.toString() || '',
+            phone_calls: m.phone_calls?.toString() || '',
+            whatsapp: m.whatsapp?.toString() || '',
+            in_person_visits: m.in_person_visits?.toString() || '',
+            offers: m.offers?.toString() || '',
+            ranking_position: m.ranking_position?.toString() || '',
+            avg_market_price: m.avg_market_price?.toString() || '',
+          })))
+        }
+
+        if (Array.isArray(data.content)) {
+          for (const c of data.content) {
+            if (c.section === 'strategy') setStrategy(c.body || '')
+            else if (c.section === 'marketing') setMarketing(c.body || '')
+            else if (c.section === 'conclusion') setConclusion(c.body || '')
+            else if (c.section === 'price_reference') setPriceReference(c.body || '')
+          }
+        }
+
+        if (Array.isArray(data.competitors)) {
+          setCompetitors(data.competitors.map((c: any) => ({
+            url: c.url || '', address: c.address || '',
+            price: c.price?.toString() || '', notes: c.notes || '',
+          })))
+        }
+
+        setLoadingExisting(false)
+      })
+      .catch(() => { setError('No se pudo cargar el reporte'); setLoadingExisting(false) })
+  }, [editId])
+
   async function handleKitePropPdf(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
     setExtractingPdf(true)
+    setError('')
     try {
       const formData = new FormData()
       formData.append('pdf', file)
-      const response = await apiFetch('ai', '/extract-kiteprop', { method: 'POST', body: formData })
-      const data = (await response.json()) as any
+      const response = await fetch('/api/extract-kiteprop', { method: 'POST', body: formData })
+      if (!response.ok) throw new Error('Error al extraer datos del PDF')
+      const data = await response.json() as any
 
-      if (data.portals?.length > 0) {
+      // Auto-fill metrics from KiteProp data
+      if (data.portals && data.portals.length > 0) {
         const newMetrics = data.portals.map((p: any) => ({
           ...defaultMetrics,
           source: p.source || 'manual',
@@ -84,62 +138,52 @@ export default function NuevoReportePage() {
         setMetricsList(newMetrics)
       }
       if (data.total_visits_presenciales) {
-        setMetricsList(prev => {
+        setMetricsList((prev) => {
           const updated = [...prev]
           if (updated[0]) updated[0].in_person_visits = data.total_visits_presenciales.toString()
           return updated
         })
       }
       if (data.market_comparison?.avg_market_price) {
-        setMetricsList(prev => {
+        setMetricsList((prev) => {
           const updated = [...prev]
           if (updated[0]) updated[0].avg_market_price = data.market_comparison.avg_market_price.toString()
           return updated
         })
       }
-      toast('Datos extraídos del PDF')
-    } catch {
-      toast('No se pudieron extraer los datos del PDF de KiteProp. Cargalos manualmente.', 'error')
+    } catch (err) {
+      setError('No se pudieron extraer los datos del PDF de KiteProp. Cargalos manualmente.')
+    } finally {
+      setExtractingPdf(false)
     }
-    setExtractingPdf(false)
   }
 
-  async function handleScreenshot(e: React.ChangeEvent<HTMLInputElement>, index: number) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setExtracting(true)
-    try {
-      const formData = new FormData()
-      formData.append('screenshot', file)
-      formData.append('source', metricsList[index].source)
-      const response = await apiFetch('ai', '/extract-metrics', { method: 'POST', body: formData })
-      const extracted = (await response.json()) as any
-      setMetricsList(prev => {
-        const updated = [...prev]
-        updated[index] = {
-          ...updated[index],
-          impressions: extracted.impressions?.toString() || '',
-          portal_visits: extracted.portal_visits?.toString() || '',
-          inquiries: extracted.inquiries?.toString() || '',
-          phone_calls: extracted.phone_calls?.toString() || '',
-          whatsapp: extracted.whatsapp?.toString() || '',
-          ranking_position: extracted.ranking_position?.toString() || '',
-        }
-        return updated
-      })
-    } catch { toast('No se pudieron extraer los datos del screenshot.', 'error') }
-    setExtracting(false)
+  function addCompetitor() {
+    setCompetitors((prev) => [...prev, { url: '', address: '', price: '', notes: '' }])
+  }
+
+  function updateCompetitor(index: number, field: string, value: string) {
+    setCompetitors((prev) => {
+      const updated = [...prev]
+      updated[index] = { ...updated[index], [field]: value }
+      return updated
+    })
+  }
+
+  function removeCompetitor(index: number) {
+    setCompetitors((prev) => prev.filter((_, i) => i !== index))
   }
 
   async function handleCompetitorScreenshot(file: File, index: number) {
     setExtractingComp(index)
+    setError('')
     try {
       const formData = new FormData()
       formData.append('screenshot', file)
-      const res = await apiFetch('ai', '/extract-zonaprop', { method: 'POST', body: formData })
-      const data = (await res.json()) as any
+      const res = await fetch('/api/extract-zonaprop', { method: 'POST', body: formData })
+      const data = await res.json() as any
       if (data.success && data.data) {
-        setCompetitors(prev => {
+        setCompetitors((prev) => {
           const updated = [...prev]
           updated[index] = {
             ...updated[index],
@@ -155,14 +199,17 @@ export default function NuevoReportePage() {
           return updated
         })
       } else {
-        toast('No se pudieron extraer datos del screenshot', 'error')
+        setError('No se pudieron extraer datos del screenshot')
       }
-    } catch { toast('Error al procesar el screenshot', 'error') }
-    setExtractingComp(null)
+    } catch {
+      setError('Error al procesar el screenshot')
+    } finally {
+      setExtractingComp(null)
+    }
   }
 
   function updateMetric(index: number, field: string, value: string) {
-    setMetricsList(prev => {
+    setMetricsList((prev) => {
       const updated = [...prev]
       updated[index] = { ...updated[index], [field]: value }
       return updated
@@ -170,31 +217,59 @@ export default function NuevoReportePage() {
   }
 
   function addPortal() {
-    setMetricsList(prev => [...prev, { ...defaultMetrics, source: 'argenprop' }])
+    setMetricsList((prev) => [...prev, { ...defaultMetrics, source: 'argenprop' as MetricSource }])
   }
 
-  function addCompetitor() {
-    setCompetitors(prev => [...prev, { url: '', address: '', price: '', notes: '' }])
-  }
+  async function handleScreenshot(e: React.ChangeEvent<HTMLInputElement>, index: number) {
+    const file = e.target.files?.[0]
+    if (!file) return
 
-  function updateCompetitor(index: number, field: string, value: string) {
-    setCompetitors(prev => {
-      const updated = [...prev]
-      updated[index] = { ...updated[index], [field]: value }
-      return updated
-    })
-  }
+    setExtracting(true)
+    setError('')
 
-  function removeCompetitor(index: number) {
-    setCompetitors(prev => prev.filter((_, i) => i !== index))
+    try {
+      const formData = new FormData()
+      formData.append('screenshot', file)
+      formData.append('source', metricsList[index].source)
+
+      const response = await fetch('/api/extract-metrics', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error('Error al extraer datos')
+      }
+
+      const extracted: ExtractedMetrics = await response.json()
+
+      setMetricsList((prev) => {
+        const updated = [...prev]
+        updated[index] = {
+          ...updated[index],
+          impressions: extracted.impressions?.toString() || '',
+          portal_visits: extracted.portal_visits?.toString() || '',
+          inquiries: extracted.inquiries?.toString() || '',
+          phone_calls: extracted.phone_calls?.toString() || '',
+          whatsapp: extracted.whatsapp?.toString() || '',
+          ranking_position: extracted.ranking_position?.toString() || '',
+        }
+        return updated
+      })
+    } catch (err) {
+      setError('No se pudieron extraer los datos del screenshot. Cargalos manualmente.')
+    } finally {
+      setExtracting(false)
+    }
   }
 
   async function handleSubmit(publish: boolean) {
-    if (!periodLabel) { toast('El nombre del período es requerido', 'error'); return }
     setLoading(true)
+    setError('')
+
     try {
-      const res = await apiFetch('properties', '/reports', {
-        method: 'POST',
+      const res = await fetch(editId ? `/api/reports/${editId}` : '/api/reports', {
+        method: editId ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           propertyId,
@@ -210,17 +285,18 @@ export default function NuevoReportePage() {
           publish,
         }),
       })
-      const result = (await res.json()) as any
 
-      if (result.error) {
-        toast(result.error, 'error')
+      if (!res.ok) {
+        const data = await res.json() as any
+        setError(data.error || 'Error al crear el reporte')
         setLoading(false)
         return
       }
 
-      const reportId = result.reportId
+      const result = await res.json() as any
+      const reportId = result.reportId || result.id || editId
 
-      // Upload photos
+      // Upload photos to R2
       if (photos.length > 0 && reportId) {
         for (let i = 0; i < photos.length; i++) {
           const photoForm = new FormData()
@@ -229,55 +305,72 @@ export default function NuevoReportePage() {
           photoForm.append('photoType', 'visit_form')
           photoForm.append('sortOrder', i.toString())
           try {
-            await apiFetch('properties', '/upload-photo', { method: 'POST', body: photoForm })
+            const photoRes = await fetch('/api/upload-photo', { method: 'POST', body: photoForm })
+            if (!photoRes.ok) {
+              const photoErr = (await photoRes.json()) as any
+              throw new Error(photoErr.error || 'Error al subir foto')
+            }
           } catch (e: any) {
-            toast(`Error al subir foto ${i + 1}`, 'error')
+            setError(`Error al subir foto ${i + 1}: ${e.message}`)
             setLoading(false)
             return
           }
         }
       }
 
-      toast(publish ? 'Reporte publicado' : 'Borrador guardado')
       router.push(`/propiedades/${propertyId}`)
-    } catch { toast('Error de conexión', 'error') }
-    setLoading(false)
+      router.refresh()
+    } catch (err: any) {
+      setError(err.message || 'Error inesperado')
+      setLoading(false)
+    }
   }
-
-  const inputClass = 'w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50'
 
   return (
     <div className="max-w-3xl">
-      <Link href={`/propiedades/${propertyId}`} className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 mb-6">
+      <Link
+        href={`/propiedades/${propertyId}`}
+        className="inline-flex items-center gap-2 text-sm text-brand-gray hover:text-gray-800 mb-6"
+      >
         <ArrowLeft className="w-4 h-4" /> Volver
       </Link>
 
-      <h1 className="text-2xl font-semibold text-gray-800 mb-6">Nuevo reporte</h1>
+      <h1 className="text-2xl font-semibold text-gray-800 mb-6">{editId ? 'Editar reporte' : 'Nuevo reporte'}</h1>
+      {loadingExisting && (
+        <div className="bg-blue-50 border border-blue-200 text-blue-700 text-sm rounded-xl p-3 mb-4 flex items-center gap-2">
+          <Loader2 className="w-4 h-4 animate-spin" /> Cargando reporte existente...
+        </div>
+      )}
 
       {/* Steps indicator */}
-      <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-1">
-        {steps.map(s => (
-          <div key={s.id} className="flex items-center gap-2 flex-shrink-0">
+      <div className="flex items-center gap-2 mb-8">
+        {steps.map((s) => (
+          <div key={s.id} className="flex items-center gap-2">
             <button
               onClick={() => s.id < step && setStep(s.id)}
               className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
                 s.id === step
-                  ? 'bg-[#ff007c] text-white'
+                  ? 'bg-brand-pink text-white'
                   : s.id < step
-                  ? 'bg-green-500 text-white cursor-pointer'
+                  ? 'bg-green-500 text-white'
                   : 'bg-gray-200 text-gray-500'
               }`}
             >
               {s.id < step ? <Check className="w-4 h-4" /> : s.id}
             </button>
-            <span className={`text-sm ${s.id === step ? 'text-gray-800 font-medium' : 'text-gray-400'}`}>{s.title}</span>
+            <span className={`text-sm ${s.id === step ? 'text-gray-800 font-medium' : 'text-brand-gray'}`}>
+              {s.title}
+            </span>
             {s.id < steps.length && <div className="w-8 h-px bg-gray-300" />}
           </div>
         ))}
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm p-6">
+      {error && (
+        <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg mb-4">{error}</div>
+      )}
 
+      <div className="bg-white rounded-xl shadow-sm p-6">
         {/* Step 1: Period */}
         {step === 1 && (
           <div className="space-y-4">
@@ -287,19 +380,29 @@ export default function NuevoReportePage() {
               <input
                 type="text"
                 value={periodLabel}
-                onChange={e => setPeriodLabel(e.target.value)}
+                onChange={(e) => setPeriodLabel(e.target.value)}
                 placeholder="Ej: Marzo 2026 - 1era quincena"
-                className={inputClass}
+                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
               />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Desde *</label>
-                <input type="date" value={periodStart} onChange={e => setPeriodStart(e.target.value)} className={inputClass} />
+                <input
+                  type="date"
+                  value={periodStart}
+                  onChange={(e) => setPeriodStart(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Hasta *</label>
-                <input type="date" value={periodEnd} onChange={e => setPeriodEnd(e.target.value)} className={inputClass} />
+                <input
+                  type="date"
+                  value={periodEnd}
+                  onChange={(e) => setPeriodEnd(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
+                />
               </div>
             </div>
           </div>
@@ -310,16 +413,22 @@ export default function NuevoReportePage() {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-medium text-gray-800">Métricas por portal</h2>
-              <label className="inline-flex items-center gap-2 text-sm bg-[#ff8017]/10 text-[#ff8017] px-3 py-2 rounded-lg cursor-pointer hover:bg-[#ff8017]/20 transition-colors">
+              <label className="inline-flex items-center gap-2 text-sm bg-brand-orange/10 text-brand-orange px-3 py-2 rounded-lg cursor-pointer hover:bg-brand-orange/20 transition-colors">
                 <FileText className="w-4 h-4" />
                 {extractingPdf ? 'Extrayendo PDF...' : 'Importar PDF KiteProp'}
-                <input type="file" accept=".pdf" className="hidden" onChange={handleKitePropPdf} disabled={extractingPdf} />
+                <input
+                  type="file"
+                  accept=".pdf"
+                  className="hidden"
+                  onChange={handleKitePropPdf}
+                  disabled={extractingPdf}
+                />
               </label>
             </div>
             {extractingPdf && (
-              <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 p-3 rounded-lg">
+              <div className="flex items-center gap-2 text-sm text-brand-gray bg-brand-light p-3 rounded-lg">
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Analizando PDF de KiteProp con IA...
+                Analizando PDF de KiteProp con IA... Esto puede tomar unos segundos.
               </div>
             )}
 
@@ -328,8 +437,8 @@ export default function NuevoReportePage() {
                 <div className="flex items-center justify-between">
                   <select
                     value={metrics.source}
-                    onChange={e => updateMetric(idx, 'source', e.target.value)}
-                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50"
+                    onChange={(e) => updateMetric(idx, 'source', e.target.value)}
+                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
                   >
                     <option value="zonaprop">ZonaProp</option>
                     <option value="argenprop">Argenprop</option>
@@ -337,15 +446,21 @@ export default function NuevoReportePage() {
                     <option value="manual">Manual</option>
                   </select>
 
-                  <label className="inline-flex items-center gap-2 text-sm text-[#ff007c] cursor-pointer hover:underline">
+                  <label className="inline-flex items-center gap-2 text-sm text-brand-pink cursor-pointer hover:underline">
                     <Upload className="w-4 h-4" />
                     {extracting ? 'Extrayendo...' : 'Subir screenshot'}
-                    <input type="file" accept="image/*" className="hidden" onChange={e => handleScreenshot(e, idx)} disabled={extracting} />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handleScreenshot(e, idx)}
+                      disabled={extracting}
+                    />
                   </label>
                 </div>
 
                 {extracting && (
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <div className="flex items-center gap-2 text-sm text-brand-gray">
                     <Loader2 className="w-4 h-4 animate-spin" />
                     Analizando screenshot con IA...
                   </div>
@@ -362,14 +477,14 @@ export default function NuevoReportePage() {
                     { key: 'offers', label: 'Ofertas' },
                     { key: 'ranking_position', label: 'Posición ranking' },
                     { key: 'avg_market_price', label: 'Precio promedio zona' },
-                  ].map(field => (
+                  ].map((field) => (
                     <div key={field.key}>
-                      <label className="block text-xs text-gray-500 mb-1">{field.label}</label>
+                      <label className="block text-xs text-brand-gray mb-1">{field.label}</label>
                       <input
                         type="number"
                         value={(metrics as any)[field.key]}
-                        onChange={e => updateMetric(idx, field.key, e.target.value)}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50"
+                        onChange={(e) => updateMetric(idx, field.key, e.target.value)}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
                         placeholder="0"
                       />
                     </div>
@@ -378,7 +493,11 @@ export default function NuevoReportePage() {
               </div>
             ))}
 
-            <button type="button" onClick={addPortal} className="text-sm text-[#ff007c] font-medium hover:underline">
+            <button
+              type="button"
+              onClick={addPortal}
+              className="text-sm text-brand-pink font-medium hover:underline"
+            >
               + Agregar otro portal
             </button>
           </div>
@@ -388,54 +507,58 @@ export default function NuevoReportePage() {
         {step === 3 && (
           <div className="space-y-4">
             <h2 className="text-lg font-medium text-gray-800">Contenido del reporte</h2>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Estrategia comercial</label>
               <textarea
                 value={strategy}
-                onChange={e => setStrategy(e.target.value)}
+                onChange={(e) => setStrategy(e.target.value)}
                 rows={3}
                 placeholder="Describí la estrategia comercial aplicada..."
-                className={inputClass}
+                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
               />
             </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Marketing y difusión</label>
               <textarea
                 value={marketing}
-                onChange={e => setMarketing(e.target.value)}
+                onChange={(e) => setMarketing(e.target.value)}
                 rows={3}
                 placeholder="Detallá las acciones de marketing realizadas..."
-                className={inputClass}
+                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
               />
             </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Referencia de precio</label>
               <textarea
                 value={priceReference}
-                onChange={e => setPriceReference(e.target.value)}
+                onChange={(e) => setPriceReference(e.target.value)}
                 rows={2}
                 placeholder="Comentarios sobre el precio vs mercado..."
-                className={inputClass}
+                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
               />
             </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Conclusión y recomendación *</label>
               <textarea
                 value={conclusion}
-                onChange={e => setConclusion(e.target.value)}
+                onChange={(e) => setConclusion(e.target.value)}
                 rows={6}
                 placeholder="Análisis del desempeño y recomendaciones para el propietario..."
-                className={inputClass}
+                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
               />
             </div>
           </div>
         )}
 
-        {/* Step 4: Competitors */}
+        {/* Step 4: Competitor links */}
         {step === 4 && (
           <div className="space-y-4">
             <h2 className="text-lg font-medium text-gray-800">Links de competencia</h2>
-            <p className="text-sm text-gray-500">Agregá links de propiedades similares que son competencia directa en la zona.</p>
+            <p className="text-sm text-brand-gray">Agregá links de propiedades similares que son competencia directa en la zona.</p>
 
             {competitors.map((comp, idx) => (
               <div key={idx} className="border border-gray-200 rounded-lg p-4 space-y-3">
@@ -450,7 +573,7 @@ export default function NuevoReportePage() {
                         accept="image/*"
                         className="hidden"
                         disabled={extractingComp !== null}
-                        onChange={e => {
+                        onChange={(e) => {
                           const file = e.target.files?.[0]
                           if (file) handleCompetitorScreenshot(file, idx)
                         }}
@@ -468,7 +591,7 @@ export default function NuevoReportePage() {
                 )}
                 <div
                   className="border-2 border-dashed border-gray-200 rounded-lg p-2 text-center text-xs text-gray-400 cursor-pointer hover:border-indigo-300"
-                  onPaste={e => {
+                  onPaste={(e) => {
                     const items = e.clipboardData?.items
                     if (!items) return
                     for (const item of Array.from(items)) {
@@ -484,45 +607,45 @@ export default function NuevoReportePage() {
                   Pegá un screenshot aquí (Ctrl+V)
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">URL del aviso</label>
+                  <label className="block text-xs text-brand-gray mb-1">URL del aviso</label>
                   <input
                     type="url"
                     value={comp.url}
-                    onChange={e => updateCompetitor(idx, 'url', e.target.value)}
+                    onChange={(e) => updateCompetitor(idx, 'url', e.target.value)}
                     placeholder="https://www.zonaprop.com.ar/propiedades/..."
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
                   />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1">Dirección</label>
+                    <label className="block text-xs text-brand-gray mb-1">Dirección</label>
                     <input
                       type="text"
                       value={comp.address}
-                      onChange={e => updateCompetitor(idx, 'address', e.target.value)}
+                      onChange={(e) => updateCompetitor(idx, 'address', e.target.value)}
                       placeholder="Ej: Av. Rivadavia 5200"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1">Precio (USD)</label>
+                    <label className="block text-xs text-brand-gray mb-1">Precio (USD)</label>
                     <input
                       type="number"
                       value={comp.price}
-                      onChange={e => updateCompetitor(idx, 'price', e.target.value)}
+                      onChange={(e) => updateCompetitor(idx, 'price', e.target.value)}
                       placeholder="85000"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Notas</label>
+                  <label className="block text-xs text-brand-gray mb-1">Notas</label>
                   <input
                     type="text"
                     value={comp.notes}
-                    onChange={e => updateCompetitor(idx, 'notes', e.target.value)}
+                    onChange={(e) => updateCompetitor(idx, 'notes', e.target.value)}
                     placeholder="Ej: Mismo barrio, peor estado, más barato"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
                   />
                 </div>
               </div>
@@ -531,7 +654,7 @@ export default function NuevoReportePage() {
             <button
               type="button"
               onClick={addCompetitor}
-              className="inline-flex items-center gap-2 text-sm text-[#ff007c] font-medium hover:underline"
+              className="inline-flex items-center gap-2 text-sm text-brand-pink font-medium hover:underline"
             >
               <Link2 className="w-4 h-4" /> Agregar propiedad competencia
             </button>
@@ -542,38 +665,38 @@ export default function NuevoReportePage() {
         {step === 5 && (
           <div className="space-y-4">
             <h2 className="text-lg font-medium text-gray-800">Fotos de fichas de visita</h2>
-            <p className="text-sm text-gray-500">Subí las fotos de las fichas de visita que completaron los interesados.</p>
+            <p className="text-sm text-brand-gray">Subí las fotos de las fichas de visita que completaron los interesados.</p>
 
-            <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl p-8 cursor-pointer hover:border-[#ff007c]/50 transition-colors">
-              <Upload className="w-8 h-8 text-gray-400 mb-2" />
-              <span className="text-sm text-gray-400">Click para seleccionar fotos</span>
+            <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl p-8 cursor-pointer hover:border-brand-pink/50 transition-colors">
+              <Upload className="w-8 h-8 text-brand-gray mb-2" />
+              <span className="text-sm text-brand-gray">Click para seleccionar fotos</span>
               <input
                 type="file"
                 accept="image/*"
                 multiple
                 className="hidden"
-                onChange={e => {
+                onChange={(e) => {
                   if (e.target.files) {
-                    setPhotos(prev => [...prev, ...Array.from(e.target.files!)])
+                    setPhotos((prev) => [...prev, ...Array.from(e.target.files!)])
                   }
                 }}
               />
             </label>
 
             {photos.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                 {photos.map((photo, i) => (
                   <div key={i} className="relative">
                     <img
                       src={URL.createObjectURL(photo)}
                       alt=""
-                      className="w-full h-28 object-cover rounded-lg"
+                      className="w-full h-32 object-cover rounded-lg"
                     />
                     <button
-                      onClick={() => setPhotos(prev => prev.filter((_, idx) => idx !== i))}
-                      className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600"
+                      onClick={() => setPhotos((prev) => prev.filter((_, idx) => idx !== i))}
+                      className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full text-xs flex items-center justify-center"
                     >
-                      ×
+                      x
                     </button>
                   </div>
                 ))}
@@ -582,11 +705,11 @@ export default function NuevoReportePage() {
           </div>
         )}
 
-        {/* Step 6: Publish */}
+        {/* Step 6: Preview & Publish */}
         {step === 6 && (
           <div className="space-y-4">
             <h2 className="text-lg font-medium text-gray-800">Revisá y publicá</h2>
-            <div className="bg-gray-50 rounded-lg p-4 space-y-3 text-sm">
+            <div className="bg-brand-light rounded-lg p-4 space-y-3 text-sm">
               <p><strong>Período:</strong> {periodLabel} ({periodStart} a {periodEnd})</p>
               <p><strong>Portales:</strong> {metricsList.map(m => m.source).join(', ')}</p>
               <p><strong>Métricas cargadas:</strong>{' '}
@@ -613,9 +736,8 @@ export default function NuevoReportePage() {
               <button
                 onClick={() => handleSubmit(true)}
                 disabled={loading}
-                className="flex-1 bg-[#ff007c] text-white px-4 py-2.5 rounded-lg font-medium hover:opacity-90 disabled:opacity-50"
+                className="flex-1 bg-brand-pink text-white px-4 py-2.5 rounded-lg font-medium hover:opacity-90 disabled:opacity-50"
               >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin inline mr-2" /> : null}
                 {loading ? 'Publicando...' : 'Publicar reporte'}
               </button>
             </div>
@@ -626,15 +748,15 @@ export default function NuevoReportePage() {
         {step < 6 && (
           <div className="flex justify-between mt-6 pt-4 border-t border-gray-100">
             <button
-              onClick={() => setStep(s => Math.max(1, s - 1))}
+              onClick={() => setStep((s) => Math.max(1, s - 1))}
               disabled={step === 1}
-              className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 disabled:opacity-30"
+              className="inline-flex items-center gap-2 text-sm text-brand-gray hover:text-gray-800 disabled:opacity-30"
             >
               <ArrowLeft className="w-4 h-4" /> Anterior
             </button>
             <button
-              onClick={() => setStep(s => Math.min(6, s + 1))}
-              className="inline-flex items-center gap-2 bg-[#ff007c] text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
+              onClick={() => setStep((s) => Math.min(6, s + 1))}
+              className="inline-flex items-center gap-2 bg-brand-pink text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
             >
               Siguiente <ArrowRight className="w-4 h-4" />
             </button>

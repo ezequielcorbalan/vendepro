@@ -91,7 +91,7 @@ export default function LeadDetailPage() {
     return (
       <div className="text-center py-12">
         <p className="text-gray-500">Lead no encontrado</p>
-        <Link href="/leads" className="text-[#ff007c] hover:underline text-sm mt-2 block">Volver a Contactos</Link>
+        <Link href="/leads" className="text-[#ff007c] hover:underline text-sm mt-2 block">Volver a Leads</Link>
       </div>
     )
   }
@@ -104,7 +104,7 @@ export default function LeadDetailPage() {
     <div className="max-w-3xl space-y-4">
       <div className="flex items-center justify-between">
         <Link href="/leads" className="flex items-center gap-2 text-gray-500 hover:text-gray-700 text-sm">
-          <ArrowLeft className="w-4 h-4" /> Contactos
+          <ArrowLeft className="w-4 h-4" /> Leads
         </Link>
         <div className="flex items-center gap-2">
           {!editing ? (

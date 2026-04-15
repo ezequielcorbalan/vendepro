@@ -79,10 +79,10 @@ export default function Sidebar({ profile }: { profile: Profile }) {
       <div className="p-4 border-t border-gray-100 space-y-1">
         <Link href="/perfil" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors">
           <div className="w-8 h-8 rounded-full bg-[#ff007c]/20 flex items-center justify-center text-[#ff007c] font-semibold text-sm" aria-hidden="true">
-            {profile.full_name.charAt(0).toUpperCase()}
+            {(profile.full_name || profile.email || '?').charAt(0).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-800 truncate">{profile.full_name}</p>
+            <p className="text-sm font-medium text-gray-800 truncate">{profile.full_name || profile.email}</p>
             <p className="text-xs text-gray-500 truncate">{profile.role === 'admin' ? 'Administrador' : 'Agente'}</p>
           </div>
         </Link>
