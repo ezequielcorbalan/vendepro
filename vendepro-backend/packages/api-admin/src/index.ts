@@ -119,10 +119,24 @@ app.get('/org-settings', async (c) => {
 
 app.put('/org-settings', async (c) => {
   const body = (await c.req.json()) as any
-  const { name, logo_url, brand_color, canva_template_id, canva_report_template_id } = body
-  await c.env.DB.prepare(`
-    UPDATE organizations SET name=?, logo_url=?, brand_color=?, canva_template_id=?, canva_report_template_id=? WHERE id=?
-  `).bind(name, logo_url, brand_color, canva_template_id, canva_report_template_id, c.get('orgId')).run()
+  const { name, logo_url, brand_color, canva_template_id, canva_report_template_id, slug } = body
+
+  if (slug) {
+    // Verify slug is not already taken by another org
+    const existing = await c.env.DB.prepare(
+      'SELECT id FROM organizations WHERE slug = ? AND id != ?'
+    ).bind(slug, c.get('orgId')).first()
+    if (existing) return c.json({ error: 'El identificador ya está en uso', code: 'CONFLICT_ERROR' }, 409)
+
+    await c.env.DB.prepare(`
+      UPDATE organizations SET name=?, logo_url=?, brand_color=?, canva_template_id=?, canva_report_template_id=?, slug=? WHERE id=?
+    `).bind(name, logo_url, brand_color, canva_template_id, canva_report_template_id, slug, c.get('orgId')).run()
+  } else {
+    await c.env.DB.prepare(`
+      UPDATE organizations SET name=?, logo_url=?, brand_color=?, canva_template_id=?, canva_report_template_id=? WHERE id=?
+    `).bind(name, logo_url, brand_color, canva_template_id, canva_report_template_id, c.get('orgId')).run()
+  }
+
   return c.json({ success: true })
 })
 
