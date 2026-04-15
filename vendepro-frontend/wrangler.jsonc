@@ -1,0 +1,13 @@
+{
+  "name": "vendepro-frontend",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2025-01-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "routes": [
+    { "pattern": "app.vendepro.com.ar", "custom_domain": true }
+  ],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  }
+}
