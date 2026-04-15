@@ -174,6 +174,51 @@ app.get('/search', async (c) => {
   ])
 })
 
+app.get('/agent-stats', async (c) => {
+  const db = c.env.DB
+  const orgId = c.get('orgId')
+  const agentId = c.get('userId')
+
+  const now = new Date()
+  const monthAgo = new Date(now); monthAgo.setMonth(monthAgo.getMonth() - 1)
+  const quarterAgo = new Date(now); quarterAgo.setMonth(quarterAgo.getMonth() - 3)
+  const yearAgo = new Date(now); yearAgo.setFullYear(yearAgo.getFullYear() - 1)
+
+  const safe = async <T>(fn: () => Promise<T>, fallback: T): Promise<T> => { try { return await fn() } catch { return fallback } }
+
+  const [agentRow, leadStats, tasStats, actMonth, actQuarter, actYear, objectives, propStats] = await Promise.all([
+    safe(() => db.prepare(`SELECT full_name FROM users WHERE id = ?`).bind(agentId).first() as Promise<any>, null),
+    safe(() => db.prepare(`SELECT COUNT(*) as total, SUM(CASE WHEN stage='captado' THEN 1 ELSE 0 END) as captados FROM leads WHERE org_id=? AND assigned_to=?`).bind(orgId, agentId).first() as Promise<any>, null),
+    safe(() => db.prepare(`SELECT COUNT(*) as total FROM appraisals WHERE org_id=? AND agent_id=?`).bind(orgId, agentId).first() as Promise<any>, null),
+    safe(() => db.prepare(`SELECT activity_type, COUNT(*) as count FROM activities WHERE org_id=? AND agent_id=? AND created_at>=? GROUP BY activity_type`).bind(orgId, agentId, monthAgo.toISOString()).all(), { results: [] }),
+    safe(() => db.prepare(`SELECT activity_type, COUNT(*) as count FROM activities WHERE org_id=? AND agent_id=? AND created_at>=? GROUP BY activity_type`).bind(orgId, agentId, quarterAgo.toISOString()).all(), { results: [] }),
+    safe(() => db.prepare(`SELECT activity_type, COUNT(*) as count FROM activities WHERE org_id=? AND agent_id=? AND created_at>=? GROUP BY activity_type`).bind(orgId, agentId, yearAgo.toISOString()).all(), { results: [] }),
+    safe(() => db.prepare(`SELECT * FROM agent_objectives WHERE org_id=? AND agent_id=? AND is_active=1 ORDER BY created_at DESC LIMIT 10`).bind(orgId, agentId).all(), { results: [] }),
+    safe(() => db.prepare(`SELECT SUM(CASE WHEN status='captada' THEN 1 ELSE 0 END) as captadas, SUM(CASE WHEN status='publicada' THEN 1 ELSE 0 END) as publicadas, SUM(CASE WHEN status='reservada' THEN 1 ELSE 0 END) as reservadas, SUM(CASE WHEN status='vendida' THEN 1 ELSE 0 END) as vendidas FROM properties WHERE org_id=? AND agent_id=?`).bind(orgId, agentId).first() as Promise<any>, null),
+  ])
+
+  const total = (leadStats as any)?.total ?? 0
+  const captados = (leadStats as any)?.captados ?? 0
+  const totalTas = (tasStats as any)?.total ?? 0
+  const conversions = {
+    leadTasacion: total > 0 ? Math.round((totalTas / total) * 100) : 0,
+    tasacionCaptacion: totalTas > 0 ? Math.round((captados / totalTas) * 100) : 0,
+    leadCaptacion: total > 0 ? Math.round((captados / total) * 100) : 0,
+  }
+
+  return c.json({
+    agent: agentRow ?? { full_name: 'Agente' },
+    leadStats: { total, captados },
+    tasacionStats: { total: totalTas },
+    activityMonth: (actMonth as any).results ?? [],
+    activityQuarter: (actQuarter as any).results ?? [],
+    activityYear: (actYear as any).results ?? [],
+    conversions,
+    objectives: (objectives as any).results ?? [],
+    propertyStats: propStats ?? { captadas: 0, publicadas: 0, reservadas: 0, vendidas: 0 },
+  })
+})
+
 app.get('/export', async (c) => {
   const { type } = c.req.query()
   const db = c.env.DB
