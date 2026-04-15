@@ -4,50 +4,72 @@ set -e
 BACKEND_DIR="$(cd "$(dirname "$0")" && pwd)"
 FRONTEND_DIR="$BACKEND_DIR/../vendepro-frontend"
 PIDS_FILE="$BACKEND_DIR/.local-pids"
+PERSIST_DIR="$BACKEND_DIR/.wrangler-local"
 
 echo "=== VendéPro — Local Dev Setup ==="
 cd "$BACKEND_DIR"
+
+# ── Cleanup trap ─────────────────────────────────────────────────
+cleanup() {
+  if [ -f "$PIDS_FILE" ]; then
+    echo "" >&2
+    echo "Deteniendo procesos..." >&2
+    xargs kill < "$PIDS_FILE" 2>/dev/null || true
+    rm -f "$PIDS_FILE"
+  fi
+}
+trap cleanup EXIT
 
 # ── 1. Migraciones D1 local ──────────────────────────────────────
 echo ""
 echo "--- Corriendo migraciones D1 local ---"
 npx wrangler d1 execute DB --local \
+  --persist-to "$PERSIST_DIR" \
   --file=migrations_v2/000_initial.sql \
   --config packages/api-auth/wrangler.jsonc
 
 npx wrangler d1 execute DB --local \
+  --persist-to "$PERSIST_DIR" \
   --file=migrations/001_add_inactive_and_sale_data.sql \
   --config packages/api-auth/wrangler.jsonc
 
 npx wrangler d1 execute DB --local \
+  --persist-to "$PERSIST_DIR" \
   --file=migrations/002_price_history.sql \
   --config packages/api-auth/wrangler.jsonc
 
 npx wrangler d1 execute DB --local \
+  --persist-to "$PERSIST_DIR" \
   --file=migrations/003_organizations_appraisals_comparables.sql \
   --config packages/api-auth/wrangler.jsonc
 
 npx wrangler d1 execute DB --local \
+  --persist-to "$PERSIST_DIR" \
   --file=migrations/004_tasacion_template_blocks.sql \
   --config packages/api-auth/wrangler.jsonc
 
 npx wrangler d1 execute DB --local \
+  --persist-to "$PERSIST_DIR" \
   --file=migrations/005_lead_tags_and_archive.sql \
   --config packages/api-auth/wrangler.jsonc
 
 npx wrangler d1 execute DB --local \
+  --persist-to "$PERSIST_DIR" \
   --file=migrations/006_ficha_tasacion.sql \
   --config packages/api-auth/wrangler.jsonc
 
 npx wrangler d1 execute DB --local \
+  --persist-to "$PERSIST_DIR" \
   --file=migrations/007_prefactibilidades.sql \
   --config packages/api-auth/wrangler.jsonc
 
 npx wrangler d1 execute DB --local \
+  --persist-to "$PERSIST_DIR" \
   --file=migrations/008_register_org_indexes.sql \
   --config packages/api-auth/wrangler.jsonc
 
 npx wrangler d1 execute DB --local \
+  --persist-to "$PERSIST_DIR" \
   --file=migrations_v2/001_appraisals_extra_cols.sql \
   --config packages/api-auth/wrangler.jsonc
 
@@ -64,6 +86,7 @@ start_worker() {
   local config=$3
   npx wrangler dev --port "$port" \
     --config "$config" \
+    --persist-to "$PERSIST_DIR" \
     --inspector-port $((port + 1000)) \
     > "$BACKEND_DIR/logs/${name}.log" 2>&1 &
   echo $! >> "$PIDS_FILE"
@@ -137,6 +160,9 @@ echo $! >> "$PIDS_FILE"
 echo "  ↑ frontend  →  http://localhost:3000  (PID $!)"
 
 wait_for_port 3000 frontend
+
+# Disable the cleanup trap — setup succeeded, don't kill processes on normal exit
+trap - EXIT
 
 echo ""
 echo "=== Setup completo ==="
