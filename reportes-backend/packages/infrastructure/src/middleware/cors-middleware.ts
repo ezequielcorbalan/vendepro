@@ -14,7 +14,7 @@ export const corsMiddleware = cors({
 
     if (
       allowed.includes(origin) ||
-      origin.endsWith('.vendepro.com.ar') ||   // any subdomain
+      origin.endsWith('.api.vendepro.com.ar') || // *.api.vendepro.com.ar
       origin.endsWith('.pages.dev')             // CF Pages preview deployments
     ) {
       return origin

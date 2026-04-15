@@ -3,14 +3,14 @@
 // ============================================================
 
 const APIS = {
-  auth:         process.env.NEXT_PUBLIC_API_AUTH_URL         ?? 'https://api-auth.vendepro.com.ar',
-  crm:          process.env.NEXT_PUBLIC_API_CRM_URL          ?? 'https://api-crm.vendepro.com.ar',
-  properties:   process.env.NEXT_PUBLIC_API_PROPERTIES_URL   ?? 'https://api-properties.vendepro.com.ar',
-  transactions: process.env.NEXT_PUBLIC_API_TRANSACTIONS_URL ?? 'https://api-transactions.vendepro.com.ar',
-  analytics:    process.env.NEXT_PUBLIC_API_ANALYTICS_URL    ?? 'https://api-analytics.vendepro.com.ar',
-  ai:           process.env.NEXT_PUBLIC_API_AI_URL           ?? 'https://api-ai.vendepro.com.ar',
-  admin:        process.env.NEXT_PUBLIC_API_ADMIN_URL        ?? 'https://api-admin.vendepro.com.ar',
-  public:       process.env.NEXT_PUBLIC_API_PUBLIC_URL       ?? 'https://api-public.vendepro.com.ar',
+  auth:         process.env.NEXT_PUBLIC_API_AUTH_URL         ?? 'https://auth.api.vendepro.com.ar',
+  crm:          process.env.NEXT_PUBLIC_API_CRM_URL          ?? 'https://crm.api.vendepro.com.ar',
+  properties:   process.env.NEXT_PUBLIC_API_PROPERTIES_URL   ?? 'https://properties.api.vendepro.com.ar',
+  transactions: process.env.NEXT_PUBLIC_API_TRANSACTIONS_URL ?? 'https://transactions.api.vendepro.com.ar',
+  analytics:    process.env.NEXT_PUBLIC_API_ANALYTICS_URL    ?? 'https://analytics.api.vendepro.com.ar',
+  ai:           process.env.NEXT_PUBLIC_API_AI_URL           ?? 'https://ai.api.vendepro.com.ar',
+  admin:        process.env.NEXT_PUBLIC_API_ADMIN_URL        ?? 'https://admin.api.vendepro.com.ar',
+  public:       process.env.NEXT_PUBLIC_API_PUBLIC_URL       ?? 'https://public.api.vendepro.com.ar',
 } as const
 
 export type ApiName = keyof typeof APIS

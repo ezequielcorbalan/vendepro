@@ -4,7 +4,7 @@
   "compatibility_date": "2025-01-01",
   "compatibility_flags": ["nodejs_compat"],
   "routes": [
-    { "pattern": "api-transactions.vendepro.com.ar", "custom_domain": true }
+    { "pattern": "transactions.api.vendepro.com.ar", "custom_domain": true }
   ],
   "d1_databases": [
     {
