@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { apiFetch, setToken } from '@/lib/api'
 import { setCurrentUser } from '@/lib/auth'
 
@@ -40,8 +41,8 @@ export default function LoginPage() {
         setCurrentUser({
           id: data.user.id,
           email: data.user.email,
-          full_name: data.user.full_name,
-          name: data.user.full_name,
+          full_name: data.user.full_name ?? data.user.name ?? '',
+          name: data.user.name ?? data.user.full_name ?? '',
           role: data.user.role,
           org_id: data.user.org_id,
           phone: data.user.phone,
@@ -104,6 +105,13 @@ export default function LoginPage() {
             {loading ? 'Ingresando...' : 'Ingresar'}
           </button>
         </form>
+
+        <p className="text-center text-sm text-gray-500 mt-4">
+          ¿No tenés cuenta?{' '}
+          <Link href="/register" className="text-[#ff007c] hover:underline font-medium">
+            Registrá tu inmobiliaria
+          </Link>
+        </p>
       </div>
     </div>
   )
