@@ -1,0 +1,145 @@
+#!/usr/bin/env bash
+set -e
+
+BACKEND_DIR="$(cd "$(dirname "$0")" && pwd)"
+FRONTEND_DIR="$BACKEND_DIR/../vendepro-frontend"
+PIDS_FILE="$BACKEND_DIR/.local-pids"
+
+echo "=== VendéPro — Local Dev Setup ==="
+cd "$BACKEND_DIR"
+
+# ── 1. Migraciones D1 local ──────────────────────────────────────
+echo ""
+echo "--- Corriendo migraciones D1 local ---"
+npx wrangler d1 execute DB --local \
+  --file=migrations_v2/000_initial.sql \
+  --config packages/api-auth/wrangler.jsonc
+
+npx wrangler d1 execute DB --local \
+  --file=migrations/001_add_inactive_and_sale_data.sql \
+  --config packages/api-auth/wrangler.jsonc
+
+npx wrangler d1 execute DB --local \
+  --file=migrations/002_price_history.sql \
+  --config packages/api-auth/wrangler.jsonc
+
+npx wrangler d1 execute DB --local \
+  --file=migrations/003_organizations_appraisals_comparables.sql \
+  --config packages/api-auth/wrangler.jsonc
+
+npx wrangler d1 execute DB --local \
+  --file=migrations/004_tasacion_template_blocks.sql \
+  --config packages/api-auth/wrangler.jsonc
+
+npx wrangler d1 execute DB --local \
+  --file=migrations/005_lead_tags_and_archive.sql \
+  --config packages/api-auth/wrangler.jsonc
+
+npx wrangler d1 execute DB --local \
+  --file=migrations/006_ficha_tasacion.sql \
+  --config packages/api-auth/wrangler.jsonc
+
+npx wrangler d1 execute DB --local \
+  --file=migrations/007_prefactibilidades.sql \
+  --config packages/api-auth/wrangler.jsonc
+
+npx wrangler d1 execute DB --local \
+  --file=migrations/008_register_org_indexes.sql \
+  --config packages/api-auth/wrangler.jsonc
+
+npx wrangler d1 execute DB --local \
+  --file=migrations_v2/001_appraisals_extra_cols.sql \
+  --config packages/api-auth/wrangler.jsonc
+
+echo "✓ Migraciones aplicadas"
+
+# ── 2. Levantar 8 Workers en background ─────────────────────────
+echo ""
+echo "--- Levantando Workers ---"
+> "$PIDS_FILE"
+
+start_worker() {
+  local name=$1
+  local port=$2
+  local config=$3
+  npx wrangler dev --port "$port" \
+    --config "$config" \
+    --inspector-port $((port + 1000)) \
+    > "$BACKEND_DIR/logs/${name}.log" 2>&1 &
+  echo $! >> "$PIDS_FILE"
+  echo "  ↑ $name  →  http://localhost:$port  (PID $!)"
+}
+
+mkdir -p "$BACKEND_DIR/logs"
+
+start_worker api-auth         8787 packages/api-auth/wrangler.jsonc
+start_worker api-crm          8788 packages/api-crm/wrangler.jsonc
+start_worker api-properties   8789 packages/api-properties/wrangler.jsonc
+start_worker api-transactions 8790 packages/api-transactions/wrangler.jsonc
+start_worker api-analytics    8791 packages/api-analytics/wrangler.jsonc
+start_worker api-ai           8792 packages/api-ai/wrangler.jsonc
+start_worker api-admin        8793 packages/api-admin/wrangler.jsonc
+start_worker api-public       8794 packages/api-public/wrangler.jsonc
+
+# ── 3. Health check ─────────────────────────────────────────────
+echo ""
+echo "--- Esperando que los Workers estén listos ---"
+
+wait_for_port() {
+  local port=$1
+  local name=$2
+  local retries=40
+  local i=0
+  while [ $i -lt $retries ]; do
+    local code
+    code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:$port/" 2>/dev/null || echo "000")
+    if [ "$code" != "000" ]; then
+      echo "  ✓ $name ($port)"
+      return 0
+    fi
+    i=$((i+1))
+    sleep 1
+  done
+  echo "  ✗ Timeout en $name ($port) — ver logs/$name.log" >&2
+  return 1
+}
+
+wait_for_port 8787 api-auth
+wait_for_port 8788 api-crm
+wait_for_port 8789 api-properties
+wait_for_port 8790 api-transactions
+wait_for_port 8791 api-analytics
+wait_for_port 8792 api-ai
+wait_for_port 8793 api-admin
+wait_for_port 8794 api-public
+
+# ── 4. Generar .env.local ────────────────────────────────────────
+echo ""
+echo "--- Generando vendepro-frontend/.env.local ---"
+cat > "$FRONTEND_DIR/.env.local" << 'ENVEOF'
+NEXT_PUBLIC_API_AUTH_URL=http://localhost:8787
+NEXT_PUBLIC_API_CRM_URL=http://localhost:8788
+NEXT_PUBLIC_API_PROPERTIES_URL=http://localhost:8789
+NEXT_PUBLIC_API_TRANSACTIONS_URL=http://localhost:8790
+NEXT_PUBLIC_API_ANALYTICS_URL=http://localhost:8791
+NEXT_PUBLIC_API_AI_URL=http://localhost:8792
+NEXT_PUBLIC_API_ADMIN_URL=http://localhost:8793
+NEXT_PUBLIC_API_PUBLIC_URL=http://localhost:8794
+ENVEOF
+echo "✓ .env.local generado"
+
+# ── 5. Levantar frontend ─────────────────────────────────────────
+echo ""
+echo "--- Levantando frontend ---"
+cd "$FRONTEND_DIR"
+npx next dev --port 3000 > "$BACKEND_DIR/logs/frontend.log" 2>&1 &
+echo $! >> "$PIDS_FILE"
+echo "  ↑ frontend  →  http://localhost:3000  (PID $!)"
+
+wait_for_port 3000 frontend
+
+echo ""
+echo "=== Setup completo ==="
+echo "Frontend:  http://localhost:3000"
+echo "Para detener todo: bash $BACKEND_DIR/stop-local.sh"
+echo "PIDs guardados en: $PIDS_FILE"
