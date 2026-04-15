@@ -28,46 +28,8 @@ npx wrangler d1 execute DB --local \
   --file=migrations_v2/000_initial.sql \
   --config packages/api-auth/wrangler.jsonc
 
-npx wrangler d1 execute DB --local \
-  --persist-to "$PERSIST_DIR" \
-  --file=migrations/001_add_inactive_and_sale_data.sql \
-  --config packages/api-auth/wrangler.jsonc
-
-npx wrangler d1 execute DB --local \
-  --persist-to "$PERSIST_DIR" \
-  --file=migrations/002_price_history.sql \
-  --config packages/api-auth/wrangler.jsonc
-
-npx wrangler d1 execute DB --local \
-  --persist-to "$PERSIST_DIR" \
-  --file=migrations/003_organizations_appraisals_comparables.sql \
-  --config packages/api-auth/wrangler.jsonc
-
-npx wrangler d1 execute DB --local \
-  --persist-to "$PERSIST_DIR" \
-  --file=migrations/004_tasacion_template_blocks.sql \
-  --config packages/api-auth/wrangler.jsonc
-
-npx wrangler d1 execute DB --local \
-  --persist-to "$PERSIST_DIR" \
-  --file=migrations/005_lead_tags_and_archive.sql \
-  --config packages/api-auth/wrangler.jsonc
-
-npx wrangler d1 execute DB --local \
-  --persist-to "$PERSIST_DIR" \
-  --file=migrations/006_ficha_tasacion.sql \
-  --config packages/api-auth/wrangler.jsonc
-
-npx wrangler d1 execute DB --local \
-  --persist-to "$PERSIST_DIR" \
-  --file=migrations/007_prefactibilidades.sql \
-  --config packages/api-auth/wrangler.jsonc
-
-npx wrangler d1 execute DB --local \
-  --persist-to "$PERSIST_DIR" \
-  --file=migrations/008_register_org_indexes.sql \
-  --config packages/api-auth/wrangler.jsonc
-
+# migrations_v2/000_initial.sql ya incluye 001-008 de migrations/
+# Solo aplicar la migración adicional posterior
 npx wrangler d1 execute DB --local \
   --persist-to "$PERSIST_DIR" \
   --file=migrations_v2/001_appraisals_extra_cols.sql \
