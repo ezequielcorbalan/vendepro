@@ -20,3 +20,4 @@ Leer `doc/architecture.md` para entender la arquitectura hexagonal.
 - El frontend NO tiene rutas API propias — todo va a las APIs externas
 - Nunca tocar `vendepro-mg-salt-2026` ni `reportes-mg-db` (recursos CF existentes)
 - Los tests siempre deben pasar antes de mergear a main
+- **NUNCA hacer deploys desde la terminal** — todos los deploys van por GitHub Actions o Cloudflare Dashboard
