@@ -29,10 +29,15 @@ npx wrangler d1 execute DB --local \
   --config packages/api-auth/wrangler.jsonc
 
 # migrations_v2/000_initial.sql ya incluye 001-008 de migrations/
-# Solo aplicar la migración adicional posterior
+# Solo aplicar las migraciones posteriores
 npx wrangler d1 execute DB --local \
   --persist-to "$PERSIST_DIR" \
   --file=migrations_v2/001_appraisals_extra_cols.sql \
+  --config packages/api-auth/wrangler.jsonc
+
+npx wrangler d1 execute DB --local \
+  --persist-to "$PERSIST_DIR" \
+  --file=migrations_v2/002_org_brand_accent_color.sql \
   --config packages/api-auth/wrangler.jsonc
 
 echo "✓ Migraciones aplicadas"
