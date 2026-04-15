@@ -18,6 +18,9 @@ import {
   BookUser,
   Activity,
   CalendarDays,
+  UserCheck,
+  FileCheck,
+  TrendingUp,
 } from 'lucide-react'
 import { apiFetch, clearToken } from '@/lib/api'
 import type { Profile } from '@/lib/types'
@@ -28,12 +31,14 @@ const menuSections = [
     links: [
       { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { href: '/calendario', label: 'Calendario', icon: CalendarDays },
+      { href: '/mi-performance', label: 'Mi Performance', icon: TrendingUp },
     ],
   },
   {
     title: 'CRM',
     links: [
-      { href: '/leads', label: 'Contactos', icon: BookUser },
+      { href: '/leads', label: 'Leads', icon: BookUser },
+      { href: '/contactos', label: 'Contactos', icon: UserCheck },
       { href: '/actividades', label: 'Actividad', icon: Activity },
     ],
   },
@@ -42,7 +47,8 @@ const menuSections = [
     links: [
       { href: '/tasaciones', label: 'Tasaciones', icon: ClipboardList },
       { href: '/propiedades/pipeline', label: 'Pipeline', icon: Building2 },
-      { href: '/propiedades', label: 'Reportes', icon: BarChart3 },
+      { href: '/propiedades', label: 'Propiedades', icon: BarChart3, exact: true },
+      { href: '/reservas', label: 'Reservas', icon: FileCheck },
       { href: '/vendidas', label: 'Vendidas', icon: DollarSign },
     ],
   },
@@ -98,7 +104,7 @@ export default function Sidebar({ profile }: { profile: Profile }) {
             <div className="space-y-0.5">
               {section.links.map((link) => {
                 const Icon = link.icon
-                const isActive = pathname === link.href || pathname.startsWith(link.href + '/')
+                const isActive = pathname === link.href || (!(link as any).exact && pathname.startsWith(link.href + '/'))
                 return (
                   <Link
                     key={link.href}

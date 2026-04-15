@@ -233,7 +233,7 @@ export default function LeadsPage() {
     <div className="space-y-4 min-w-0 overflow-hidden">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Contactos</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Leads</h1>
           <p className="text-gray-500 text-sm">{leads.length} lead{leads.length !== 1 ? 's' : ''} en el pipeline</p>
         </div>
         <div className="flex items-center gap-2">

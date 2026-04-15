@@ -60,7 +60,14 @@ export default function MiPerformancePage() {
     )
   }
   if (!data || data.error) {
-    return <div className="bg-red-50 text-red-600 rounded-xl p-6">Error cargando datos</div>
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Mi Performance</h1>
+        </div>
+        <div className="bg-red-50 text-red-600 rounded-xl p-6">Error cargando datos</div>
+      </div>
+    )
   }
 
   const actData = period === 'month' ? data.activityMonth : period === 'quarter' ? data.activityQuarter : data.activityYear

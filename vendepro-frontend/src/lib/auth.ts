@@ -35,4 +35,5 @@ export function logout(): void {
   if (typeof window === 'undefined') return
   localStorage.removeItem(USER_KEY)
   localStorage.removeItem('vendepro_token')
+  document.cookie = 'vendepro_token=; Max-Age=0; path=/'
 }

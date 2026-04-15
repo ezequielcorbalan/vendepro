@@ -20,6 +20,9 @@ import {
   BarChart3,
   CalendarDays,
   Target,
+  UserCheck,
+  FileCheck,
+  TrendingUp,
 } from 'lucide-react'
 import { apiFetch, clearToken } from '@/lib/api'
 import type { Profile } from '@/lib/types'
@@ -27,11 +30,14 @@ import type { Profile } from '@/lib/types'
 const agentLinks = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/calendario', label: 'Calendario', icon: CalendarDays },
-  { href: '/leads', label: 'Contactos', icon: BookUser },
+  { href: '/mi-performance', label: 'Mi Performance', icon: TrendingUp },
+  { href: '/leads', label: 'Leads', icon: BookUser },
+  { href: '/contactos', label: 'Contactos', icon: UserCheck },
   { href: '/actividades', label: 'Actividad', icon: Activity },
   { href: '/tasaciones', label: 'Tasaciones', icon: ClipboardList },
   { href: '/propiedades/pipeline', label: 'Pipeline', icon: Building2 },
-  { href: '/propiedades', label: 'Reportes', icon: BarChart3 },
+  { href: '/propiedades', label: 'Propiedades', icon: BarChart3 },
+  { href: '/reservas', label: 'Reservas', icon: FileCheck },
   { href: '/vendidas', label: 'Vendidas', icon: DollarSign },
   { href: '/configuracion', label: 'Configuración', icon: Settings },
 ]
@@ -96,7 +102,7 @@ export default function MobileHeader({ profile }: { profile: Profile }) {
               </button>
             </div>
 
-            <nav className="flex-1 p-4 space-y-1">
+            <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
               {links.map((link) => {
                 const Icon = link.icon
                 const isActive = pathname === link.href || pathname.startsWith(link.href + '/')
