@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { getCurrentUser } from '@/lib/auth'
+import { getCurrentUserServer } from '@/lib/auth-server'
 import Sidebar from '@/components/layout/Sidebar'
 import MobileHeader from '@/components/layout/MobileHeader'
 import AIFloatingButton from '@/components/ai/AIFloatingButton'
@@ -11,7 +11,7 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const user = await getCurrentUser()
+  const user = await getCurrentUserServer()
   if (!user) redirect('/login')
 
   return (

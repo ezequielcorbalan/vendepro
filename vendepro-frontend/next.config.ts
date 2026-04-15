@@ -1,10 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  experimental: {
-    // Disable HMR cache in dev to always serve fresh assets
-    serverComponentsHmrCache: false,
-  },
   async headers() {
     const headers = [
       {

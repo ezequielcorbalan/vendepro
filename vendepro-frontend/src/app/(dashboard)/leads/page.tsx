@@ -13,6 +13,7 @@ import {
 } from '@/lib/crm-config'
 import { useToast } from '@/components/ui/Toast'
 import AIChatPanel from '@/components/ai/AIChatPanel'
+import { apiFetch } from '@/lib/api'
 import { DndContext, DragOverlay, useDraggable, useDroppable, type DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 
 function timeAgo(dateStr: string): string {
@@ -53,7 +54,7 @@ export default function LeadsPage() {
   })
 
   const loadLeads = () => {
-    fetch('/api/leads')
+    apiFetch('crm', '/leads')
       .then(r => r.json() as Promise<any>)
       .then(d => { setLeads(Array.isArray(d) ? d : []); setLoading(false) })
       .catch(() => setLoading(false))
@@ -61,7 +62,7 @@ export default function LeadsPage() {
 
   useEffect(() => {
     loadLeads()
-    fetch('/api/agents').then(r => r.json() as Promise<any>).then(d => { if (Array.isArray(d)) setAgents(d) }).catch(() => {})
+    apiFetch('admin', '/agents').then(r => r.json() as Promise<any>).then(d => { if (Array.isArray(d)) setAgents(d) }).catch(() => {})
   }, [])
 
   const filtered = useMemo(() => {
@@ -101,7 +102,7 @@ export default function LeadsPage() {
   const handleCreate = async () => {
     setSaving(true)
     try {
-      const res = await fetch('/api/leads', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
+      const res = await apiFetch('crm', '/leads', { method: 'POST', body: JSON.stringify(form) })
       const data = (await res.json()) as any
       if (data.id) {
         setShowCreate(false)
@@ -126,9 +127,8 @@ export default function LeadsPage() {
       return
     }
 
-    const res = await fetch('/api/leads', {
+    const res = await apiFetch('crm', '/leads', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: lead.id, stage: nextStage })
     })
     const result = (await res.json()) as any
@@ -150,16 +150,14 @@ export default function LeadsPage() {
   }
 
   const handleConvertToAppraisal = async (lead: any, createAppraisal: boolean) => {
-    await fetch('/api/leads', {
+    await apiFetch('crm', '/leads', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: lead.id, stage: 'en_tasacion' })
     })
 
     if (createAppraisal) {
-      await fetch('/api/tasaciones', {
+      await apiFetch('properties', '/appraisals', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           lead_id: lead.id,
           contact_name: lead.full_name,
@@ -184,17 +182,16 @@ export default function LeadsPage() {
     if (stage === 'perdido') {
       const reason = prompt('¿Por qué se pierde este lead?')
       if (reason === null) return
-      await fetch('/api/leads', {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      await apiFetch('crm', '/leads', {
+        method: 'PUT',
         body: JSON.stringify({ id: leadId, stage: 'perdido', lost_reason: reason || 'Sin motivo' })
       })
       toast('Lead marcado como perdido', 'warning')
       loadLeads()
       return
     }
-    await fetch('/api/leads', {
+    await apiFetch('crm', '/leads', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: leadId, stage })
     })
     const stageLabel = LEAD_STAGES[stage as keyof typeof LEAD_STAGES]?.label || stage
@@ -216,9 +213,8 @@ export default function LeadsPage() {
   const markLost = async (leadId: string) => {
     const reason = prompt('¿Por qué se pierde este lead?\n\nEj: No responde, presupuesto fuera de rango, eligió otra inmobiliaria, etc.')
     if (reason === null) return // cancelled
-    await fetch('/api/leads', {
+    await apiFetch('crm', '/leads', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: leadId, stage: 'perdido', lost_reason: reason || 'Sin motivo especificado' })
     })
     toast('Lead marcado como perdido', 'warning')
@@ -228,7 +224,7 @@ export default function LeadsPage() {
   const deleteLead = async (leadId: string, leadName: string) => {
     if (!confirm(`¿Eliminar "${leadName}" permanentemente?\n\nEsta acción no se puede deshacer.`)) return
     try {
-      await fetch(`/api/leads?id=${leadId}`, { method: 'DELETE' })
+      await apiFetch('crm', `/leads?id=${leadId}`, { method: 'DELETE' })
       toast('Lead eliminado', 'warning')
       loadLeads()
     } catch { toast('Error al eliminar', 'error') }
@@ -241,7 +237,7 @@ export default function LeadsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Contactos</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Leads</h1>
           <p className="text-gray-500 text-sm">{leads.length} lead{leads.length !== 1 ? 's' : ''} en el pipeline</p>
         </div>
         <div className="flex items-center gap-2">
