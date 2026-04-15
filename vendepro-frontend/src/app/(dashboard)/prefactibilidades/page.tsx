@@ -13,7 +13,12 @@ export default function PrefactibilidadesPage() {
   useEffect(() => {
     apiFetch('analytics', '/prefactibilidades')
       .then(r => (r.json()) as any)
-      .then((d: any) => { setItems(d.prefactibilidades ?? d ?? []); setLoading(false) })
+      .then((d: any) => {
+        if (d?.error) { setError(true); setLoading(false); return }
+        const list = Array.isArray(d) ? d : (Array.isArray(d?.prefactibilidades) ? d.prefactibilidades : [])
+        setItems(list)
+        setLoading(false)
+      })
       .catch(() => { setError(true); setLoading(false) })
   }, [])
 

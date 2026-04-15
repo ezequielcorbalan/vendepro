@@ -46,7 +46,6 @@ const adminLinks = [
   { href: '/admin/agentes', label: 'Agentes', icon: Users },
   { href: '/admin/objetivos', label: 'Objetivos', icon: Target },
   { href: '/admin/auditoria', label: 'Auditoría', icon: FileBarChart },
-  { href: '/configuracion', label: 'Configuración', icon: Settings },
 ]
 
 export default function MobileHeader({ profile }: { profile: Profile }) {

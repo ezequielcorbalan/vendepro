@@ -113,7 +113,14 @@ export default function DashboardCRM() {
   }
 
   if (!data || data.error) {
-    return <div className="text-center py-12 text-gray-500">Error al cargar el dashboard</div>
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Dashboard</h1>
+        </div>
+        <div className="text-center py-12 text-gray-500">Error al cargar el dashboard</div>
+      </div>
+    )
   }
 
   const { leads, overdueLeads, tasaciones, activity, weeklyActivity, todayEvents, pendingFollowups, agentPerformance, funnel, conversionRate, recentActivities } = data
