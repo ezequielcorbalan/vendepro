@@ -1,5 +1,5 @@
-import { Activity } from '@reportes/core'
-import type { ActivityRepository, ActivityFilters } from '@reportes/core'
+import { Activity } from '@vendepro/core'
+import type { ActivityRepository, ActivityFilters } from '@vendepro/core'
 
 export class D1ActivityRepository implements ActivityRepository {
   constructor(private readonly db: D1Database) {}

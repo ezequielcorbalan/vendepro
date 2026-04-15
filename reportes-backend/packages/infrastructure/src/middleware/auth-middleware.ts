@@ -1,5 +1,5 @@
 import type { MiddlewareHandler } from 'hono'
-import type { AuthService } from '@reportes/core'
+import type { AuthService } from '@vendepro/core'
 
 export interface AuthEnv {
   Variables: {

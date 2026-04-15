@@ -1,5 +1,5 @@
 {
-  "name": "@reportes/api-admin",
+  "name": "@vendepro/api-admin",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -11,8 +11,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@reportes/core": "*",
-    "@reportes/infrastructure": "*",
+    "@vendepro/core": "*",
+    "@vendepro/infrastructure": "*",
     "hono": "^4.7.11"
   },
   "devDependencies": {

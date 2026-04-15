@@ -1,5 +1,5 @@
 {
-  "name": "reportes-backend",
+  "name": "vendepro-backend",
   "private": true,
   "workspaces": [
     "packages/*"

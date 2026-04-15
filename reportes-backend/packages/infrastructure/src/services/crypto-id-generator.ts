@@ -1,4 +1,4 @@
-import type { IdGenerator } from '@reportes/core'
+import type { IdGenerator } from '@vendepro/core'
 
 export class CryptoIdGenerator implements IdGenerator {
   generate(): string {

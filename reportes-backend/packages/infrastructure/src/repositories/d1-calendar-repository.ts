@@ -1,5 +1,5 @@
-import { CalendarEvent } from '@reportes/core'
-import type { CalendarRepository, CalendarFilters } from '@reportes/core'
+import { CalendarEvent } from '@vendepro/core'
+import type { CalendarRepository, CalendarFilters } from '@vendepro/core'
 
 export class D1CalendarRepository implements CalendarRepository {
   constructor(private readonly db: D1Database) {}

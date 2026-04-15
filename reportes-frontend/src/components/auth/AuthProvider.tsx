@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   function login(userData: CurrentUser, token: string) {
     setToken(token)
     // Also set cookie for middleware
-    document.cookie = `reportes_token=${token}; path=/; SameSite=Lax; Max-Age=${60 * 60 * 24 * 30}`
+    document.cookie = `vendepro_token=${token}; path=/; SameSite=Lax; Max-Age=${60 * 60 * 24 * 30}`
     setCurrentUser(userData)
     setUser(userData)
   }
@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   function logout() {
     logoutHelper()
     clearToken()
-    document.cookie = 'reportes_token=; Max-Age=0; path=/'
+    document.cookie = 'vendepro_token=; Max-Age=0; path=/'
     setUser(null)
   }
 

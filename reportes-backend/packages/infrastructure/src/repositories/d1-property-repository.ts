@@ -1,5 +1,5 @@
-import { Property } from '@reportes/core'
-import type { PropertyRepository, PropertyFilters } from '@reportes/core'
+import { Property } from '@vendepro/core'
+import type { PropertyRepository, PropertyFilters } from '@vendepro/core'
 
 export class D1PropertyRepository implements PropertyRepository {
   constructor(private readonly db: D1Database) {}

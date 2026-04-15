@@ -1,4 +1,4 @@
-import type { StageHistoryRepository, StageHistoryEntry } from '@reportes/core'
+import type { StageHistoryRepository, StageHistoryEntry } from '@vendepro/core'
 
 export class D1StageHistoryRepository implements StageHistoryRepository {
   constructor(private readonly db: D1Database) {}

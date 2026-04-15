@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
-import { corsMiddleware, errorHandler, createAuthMiddleware, D1PropertyRepository, JwtAuthService, CryptoIdGenerator, R2StorageService } from '@reportes/infrastructure'
-import { GetPropertiesUseCase, CreatePropertyUseCase, UpdatePropertyPriceUseCase, UpdatePropertyStatusUseCase } from '@reportes/core'
+import { corsMiddleware, errorHandler, createAuthMiddleware, D1PropertyRepository, JwtAuthService, CryptoIdGenerator, R2StorageService } from '@vendepro/infrastructure'
+import { GetPropertiesUseCase, CreatePropertyUseCase, UpdatePropertyPriceUseCase, UpdatePropertyStatusUseCase } from '@vendepro/core'
 
 type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket; R2_PUBLIC_URL: string }
 type AuthVars = { Variables: { userId: string; userRole: string; orgId: string } }

@@ -1,5 +1,5 @@
-import { User } from '@reportes/core'
-import type { UserRepository } from '@reportes/core'
+import { User } from '@vendepro/core'
+import type { UserRepository } from '@vendepro/core'
 
 export class D1UserRepository implements UserRepository {
   constructor(private readonly db: D1Database) {}

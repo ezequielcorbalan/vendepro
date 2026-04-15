@@ -1,5 +1,5 @@
-import { Reservation } from '@reportes/core'
-import type { ReservationRepository, ReservationFilters } from '@reportes/core'
+import { Reservation } from '@vendepro/core'
+import type { ReservationRepository, ReservationFilters } from '@vendepro/core'
 
 export class D1ReservationRepository implements ReservationRepository {
   constructor(private readonly db: D1Database) {}

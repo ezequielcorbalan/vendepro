@@ -1,5 +1,5 @@
-import { TemplateBlock } from '@reportes/core'
-import type { TemplateBlockRepository } from '@reportes/core'
+import { TemplateBlock } from '@vendepro/core'
+import type { TemplateBlockRepository } from '@vendepro/core'
 
 export class D1TemplateBlockRepository implements TemplateBlockRepository {
   constructor(private readonly db: D1Database) {}

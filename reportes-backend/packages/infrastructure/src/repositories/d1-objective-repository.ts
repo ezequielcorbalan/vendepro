@@ -1,5 +1,5 @@
-import { Objective } from '@reportes/core'
-import type { ObjectiveRepository, ObjectiveFilters } from '@reportes/core'
+import { Objective } from '@vendepro/core'
+import type { ObjectiveRepository, ObjectiveFilters } from '@vendepro/core'
 
 export class D1ObjectiveRepository implements ObjectiveRepository {
   constructor(private readonly db: D1Database) {}

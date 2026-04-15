@@ -1,5 +1,5 @@
-import { Tag } from '@reportes/core'
-import type { TagRepository } from '@reportes/core'
+import { Tag } from '@vendepro/core'
+import type { TagRepository } from '@vendepro/core'
 
 export class D1TagRepository implements TagRepository {
   constructor(private readonly db: D1Database) {}

@@ -1,5 +1,5 @@
-import { Contact } from '@reportes/core'
-import type { ContactRepository, ContactFilters } from '@reportes/core'
+import { Contact } from '@vendepro/core'
+import type { ContactRepository, ContactFilters } from '@vendepro/core'
 
 export class D1ContactRepository implements ContactRepository {
   constructor(private readonly db: D1Database) {}

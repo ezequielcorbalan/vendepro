@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest'
-import { DomainError } from '@reportes/core'
+import { DomainError } from '@vendepro/core'
 
 // Mock only what we need to mock — use real errorHandler so DomainError → HTTP status mapping works
-vi.mock('@reportes/infrastructure', async (importOriginal) => {
+vi.mock('@vendepro/infrastructure', async (importOriginal) => {
   const actual = await importOriginal() as any
   return {
     ...actual,

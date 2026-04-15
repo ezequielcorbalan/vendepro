@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
-import { corsMiddleware, errorHandler } from '@reportes/infrastructure'
-import { D1UserRepository, JwtAuthService, CryptoIdGenerator } from '@reportes/infrastructure'
-import { LoginUseCase, CreateUserUseCase, ChangePasswordUseCase } from '@reportes/core'
+import { corsMiddleware, errorHandler } from '@vendepro/infrastructure'
+import { D1UserRepository, JwtAuthService, CryptoIdGenerator } from '@vendepro/infrastructure'
+import { LoginUseCase, CreateUserUseCase, ChangePasswordUseCase } from '@vendepro/core'
 
 type Env = {
   DB: D1Database

@@ -1,5 +1,5 @@
-import { Lead } from '@reportes/core'
-import type { LeadRepository, LeadFilters } from '@reportes/core'
+import { Lead } from '@vendepro/core'
+import type { LeadRepository, LeadFilters } from '@vendepro/core'
 
 export class D1LeadRepository implements LeadRepository {
   constructor(private readonly db: D1Database) {}

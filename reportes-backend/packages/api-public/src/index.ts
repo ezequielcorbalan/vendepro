@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { corsMiddleware, errorHandler } from '@reportes/infrastructure'
+import { corsMiddleware, errorHandler } from '@vendepro/infrastructure'
 
 type Env = { DB: D1Database }
 

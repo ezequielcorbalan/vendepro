@@ -16,7 +16,7 @@ const APIS = {
 export type ApiName = keyof typeof APIS
 
 // ── Token helpers (localStorage for client, cookie for SSR) ─
-const TOKEN_KEY = 'reportes_token'
+const TOKEN_KEY = 'vendepro_token'
 
 export function getToken(): string | null {
   if (typeof window === 'undefined') return null
@@ -31,7 +31,7 @@ export function setToken(token: string): void {
 export function clearToken(): void {
   if (typeof window === 'undefined') return
   localStorage.removeItem(TOKEN_KEY)
-  localStorage.removeItem('reportes_user')
+  localStorage.removeItem('vendepro_user')
 }
 
 // ── Fetch helper with auth header ─────────────────────────

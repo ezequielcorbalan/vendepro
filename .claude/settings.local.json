@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git pull *)",
+      "Bash(git checkout *)",
+      "Bash(npm test *)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(git rm *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(grep *)",
+      "Bash(git push *)",
+      "Bash(git merge arquitectura --no-ff -m ' *)",
+      "Bash(find reportes-backend *)",
+      "Bash(sed -i 's|\"name\": \"reportes-backend\"|\"name\": \"vendepro-backend\"|g' reportes-backend/package.json)",
+      "Bash(sed -i 's|\"name\": \"reportes-frontend\"|\"name\": \"vendepro-frontend\"|g' reportes-frontend/package.json)",
+      "Bash(find reportes-frontend *)",
+      "Bash(sed -i 's|reportes_session|vendepro_session|g' reportes-backend/packages/infrastructure/src/middleware/auth-middleware.ts)",
+      "Bash(git stash *)"
+    ]
+  }
+}

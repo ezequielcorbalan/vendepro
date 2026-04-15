@@ -1,4 +1,4 @@
-import type { AIService, LeadIntent } from '@reportes/core'
+import type { AIService, LeadIntent } from '@vendepro/core'
 
 export class AnthropicAIService implements AIService {
   constructor(private readonly apiKey: string) {}

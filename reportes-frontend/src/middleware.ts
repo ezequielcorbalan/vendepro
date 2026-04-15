@@ -32,7 +32,7 @@ export function middleware(request: NextRequest) {
   }
 
   // Check for auth token in cookie (set on login)
-  const token = request.cookies.get('reportes_token')?.value
+  const token = request.cookies.get('vendepro_token')?.value
 
   if (!token) {
     const loginUrl = new URL('/login', request.url)

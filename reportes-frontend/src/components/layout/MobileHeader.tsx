@@ -53,7 +53,7 @@ export default function MobileHeader({ profile }: { profile: Profile }) {
       await apiFetch('auth', '/logout', { method: 'POST' })
     } catch {}
     clearToken()
-    document.cookie = 'reportes_token=; Max-Age=0; path=/'
+    document.cookie = 'vendepro_token=; Max-Age=0; path=/'
     router.push('/login')
     router.refresh()
   }

@@ -1,5 +1,5 @@
 import type { Context } from 'hono'
-import { DomainError } from '@reportes/core'
+import { DomainError } from '@vendepro/core'
 
 export function errorHandler(err: Error, c: Context): Response {
   console.error(`[${new Date().toISOString()}] ${err.constructor.name}:`, err.message)

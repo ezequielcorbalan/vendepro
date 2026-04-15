@@ -1,4 +1,4 @@
-import type { StorageService } from '@reportes/core'
+import type { StorageService } from '@vendepro/core'
 
 export class R2StorageService implements StorageService {
   constructor(

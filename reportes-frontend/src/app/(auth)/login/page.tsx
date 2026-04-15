@@ -34,7 +34,7 @@ export default function LoginPage() {
       if (data.token && data.user) {
         // Store token in localStorage and as cookie for middleware
         setToken(data.token)
-        document.cookie = `reportes_token=${data.token}; path=/; SameSite=Lax; Max-Age=${60 * 60 * 24 * 30}`
+        document.cookie = `vendepro_token=${data.token}; path=/; SameSite=Lax; Max-Age=${60 * 60 * 24 * 30}`
 
         // Store user info
         setCurrentUser({

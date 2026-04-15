@@ -1,5 +1,5 @@
 import { SignJWT, jwtVerify } from 'jose'
-import type { AuthService } from '@reportes/core'
+import type { AuthService } from '@vendepro/core'
 
 export class JwtAuthService implements AuthService {
   private readonly secret: Uint8Array

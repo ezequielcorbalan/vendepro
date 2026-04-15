@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { corsMiddleware, errorHandler, createAuthMiddleware, JwtAuthService, GroqAIService, AnthropicAIService } from '@reportes/infrastructure'
+import { corsMiddleware, errorHandler, createAuthMiddleware, JwtAuthService, GroqAIService, AnthropicAIService } from '@vendepro/infrastructure'
 
 type Env = { DB: D1Database; JWT_SECRET: string; GROQ_API_KEY: string; ANTHROPIC_API_KEY: string }
 type AuthVars = { Variables: { userId: string; userRole: string; orgId: string } }

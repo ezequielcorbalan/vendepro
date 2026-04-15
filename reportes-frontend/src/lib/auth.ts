@@ -13,7 +13,7 @@ export interface CurrentUser {
   photo_url?: string | null
 }
 
-const USER_KEY = 'reportes_user'
+const USER_KEY = 'vendepro_user'
 
 export function getCurrentUser(): CurrentUser | null {
   if (typeof window === 'undefined') return null
@@ -34,5 +34,5 @@ export function setCurrentUser(user: CurrentUser): void {
 export function logout(): void {
   if (typeof window === 'undefined') return
   localStorage.removeItem(USER_KEY)
-  localStorage.removeItem('reportes_token')
+  localStorage.removeItem('vendepro_token')
 }

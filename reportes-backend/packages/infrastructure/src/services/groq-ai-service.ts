@@ -1,4 +1,4 @@
-import type { AIService, LeadIntent } from '@reportes/core'
+import type { AIService, LeadIntent } from '@vendepro/core'
 
 interface GroqMessage {
   role: 'system' | 'user' | 'assistant'

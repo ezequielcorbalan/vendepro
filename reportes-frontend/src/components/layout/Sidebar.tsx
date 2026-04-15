@@ -66,7 +66,7 @@ export default function Sidebar({ profile }: { profile: Profile }) {
     } catch {}
     clearToken()
     // Clear cookie
-    document.cookie = 'reportes_token=; Max-Age=0; path=/'
+    document.cookie = 'vendepro_token=; Max-Age=0; path=/'
     router.push('/login')
     router.refresh()
   }

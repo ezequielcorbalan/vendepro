@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
-import { corsMiddleware, errorHandler, createAuthMiddleware, D1UserRepository, D1ObjectiveRepository, D1TemplateBlockRepository, JwtAuthService, CryptoIdGenerator } from '@reportes/infrastructure'
-import { CreateAgentUseCase, GetAgentsUseCase, SetObjectivesUseCase } from '@reportes/core'
+import { corsMiddleware, errorHandler, createAuthMiddleware, D1UserRepository, D1ObjectiveRepository, D1TemplateBlockRepository, JwtAuthService, CryptoIdGenerator } from '@vendepro/infrastructure'
+import { CreateAgentUseCase, GetAgentsUseCase, SetObjectivesUseCase } from '@vendepro/core'
 
 type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket }
 type AuthVars = { Variables: { userId: string; userRole: string; orgId: string } }
@@ -82,7 +82,7 @@ app.get('/tasacion-blocks', async (c) => {
 app.post('/tasacion-blocks', async (c) => {
   const body = (await c.req.json()) as any
   const repo = new D1TemplateBlockRepository(c.env.DB)
-  const { TemplateBlock } = await import('@reportes/core')
+  const { TemplateBlock } = await import('@vendepro/core')
   const block = TemplateBlock.create({ id: new CryptoIdGenerator().generate(), org_id: c.get('orgId'), ...body })
   await repo.save(block)
   return c.json(block.toObject(), 201)
