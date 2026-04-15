@@ -1,0 +1,27 @@
+name: Deploy api-properties
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "reportes-backend/packages/api-properties/**"
+      - "reportes-backend/packages/core/**"
+      - "reportes-backend/packages/infrastructure/**"
+      - "reportes-backend/package.json"
+      - "reportes-backend/package-lock.json"
+      - ".github/workflows/deploy-api-properties.yml"
+      - ".github/workflows/_deploy-api.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-api-properties
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/_deploy-api.yml
+    with:
+      api_name: api-properties
+    secrets:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
