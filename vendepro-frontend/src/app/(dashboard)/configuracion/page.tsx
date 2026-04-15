@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { Settings, Save, Loader2, Building2, Palette, Link2 } from 'lucide-react'
+import { Settings, Save, Loader2, Building2, Palette, Link2, CheckCircle, XCircle } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
 
@@ -12,6 +12,9 @@ export default function ConfiguracionPage() {
   const [saving, setSaving] = useState(false)
   const [settings, setSettings] = useState<Record<string, string>>({})
   const [org, setOrg] = useState<any>(null)
+  const [slug, setSlug] = useState('')
+  const slugDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [slugStatus, setSlugStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle')
 
   useEffect(() => {
     Promise.all([
@@ -19,16 +22,33 @@ export default function ConfiguracionPage() {
     ]).then(([data]) => {
       if (data.settings) setSettings(data.settings)
       if (data.org) setOrg(data.org)
+      if (data.slug) setSlug(data.slug)
       setLoading(false)
     }).catch(() => setLoading(false))
   }, [])
+
+  useEffect(() => {
+    if (!slug) { setSlugStatus('idle'); return }
+    if (slugDebounceRef.current) clearTimeout(slugDebounceRef.current)
+    setSlugStatus('checking')
+    slugDebounceRef.current = setTimeout(async () => {
+      try {
+        const res = await apiFetch('auth', `/check-slug?slug=${encodeURIComponent(slug)}`)
+        const data = (await res.json()) as any
+        if (data.slug) setSlug(data.slug)
+        setSlugStatus(data.available ? 'available' : 'taken')
+      } catch {
+        setSlugStatus('idle')
+      }
+    }, 500)
+  }, [slug])
 
   const handleSave = async () => {
     setSaving(true)
     try {
       const res = await apiFetch('admin', '/org-settings', {
         method: 'PUT',
-        body: JSON.stringify({ settings }),
+        body: JSON.stringify({ settings, slug }),
       })
       const data = (await res.json()) as any
       if (data.error) toast(data.error, 'error')
@@ -69,6 +89,28 @@ export default function ConfiguracionPage() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
               <input type="text" value={org.name || ''} disabled className="w-full border rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-400" />
+            </div>
+            {/* Slug */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Identificador único (URL)
+                <span className="text-gray-400 font-normal ml-1 text-xs">— aparece en links públicos</span>
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={slug}
+                  onChange={e => setSlug(e.target.value)}
+                  placeholder="mi-inmobiliaria"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50 focus:border-[#ff007c] pr-8"
+                />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  {slugStatus === 'checking' && <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />}
+                  {slugStatus === 'available' && <CheckCircle className="w-4 h-4 text-green-500" />}
+                  {slugStatus === 'taken' && <XCircle className="w-4 h-4 text-red-500" />}
+                </div>
+              </div>
+              {slugStatus === 'taken' && <p className="text-xs text-red-600 mt-1">Ya está en uso</p>}
             </div>
             {org.logo_url && (
               <div>
