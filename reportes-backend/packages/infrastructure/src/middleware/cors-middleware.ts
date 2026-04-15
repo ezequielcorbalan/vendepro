@@ -2,15 +2,24 @@ import { cors } from 'hono/cors'
 
 export const corsMiddleware = cors({
   origin: (origin) => {
-    // Allow all origins in dev, restrict in prod via env
+    if (!origin) return '*'
+
     const allowed = [
       'http://localhost:3000',
       'http://localhost:3001',
-      'https://reportes-app.pages.dev',
+      // Production
+      'https://vendepro.com.ar',
+      'https://www.vendepro.com.ar',
     ]
-    if (!origin || allowed.includes(origin) || origin.endsWith('.pages.dev')) {
-      return origin ?? '*'
+
+    if (
+      allowed.includes(origin) ||
+      origin.endsWith('.vendepro.com.ar') ||   // any subdomain
+      origin.endsWith('.pages.dev')             // CF Pages preview deployments
+    ) {
+      return origin
     }
+
     return null
   },
   allowHeaders: ['Content-Type', 'Authorization'],
