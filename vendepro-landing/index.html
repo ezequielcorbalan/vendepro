@@ -19,8 +19,72 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { font-family: 'Poppins', sans-serif; }
+
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
     .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+    /* ── Category tabs ── */
+    .ct {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 9px 18px; border-radius: 9999px;
+      font-size: 13px; font-weight: 600;
+      border: 1.5px solid #e5e7eb;
+      background: #fff; color: #6b7280;
+      cursor: pointer; white-space: nowrap;
+      transition: all .18s ease;
+    }
+    .ct:hover { border-color: #ff007c30; color: #ff007c; background: #ff007c05; }
+    .ct.ct-on {
+      background: linear-gradient(135deg, #ff007c, #ff8017);
+      border-color: transparent; color: #fff;
+    }
+    .ct .badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 20px; height: 20px; padding: 0 5px;
+      border-radius: 9999px; font-size: 11px; font-weight: 700;
+      background: #f3f4f6; color: #9ca3af;
+      transition: all .18s ease;
+    }
+    .ct.ct-on .badge { background: rgba(255,255,255,0.28); color: #fff; }
+
+    /* ── Feature panels ── */
+    .fp {
+      display: none;
+      opacity: 0; transform: translateY(10px);
+      transition: opacity .22s ease, transform .22s ease;
+    }
+    .fp.fp-on { opacity: 1; transform: none; }
+
+    /* ── Feature cards ── */
+    .fc {
+      background: #fff;
+      border: 1px solid #f1f5f9;
+      border-radius: 16px;
+      padding: 20px 20px 20px 0;
+      display: flex; align-items: flex-start; gap: 0;
+      position: relative; overflow: hidden;
+      transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease;
+    }
+    .fc:hover {
+      box-shadow: 0 8px 28px -6px rgba(255,0,124,.13);
+      transform: translateY(-2px);
+      border-color: #fce7f3;
+    }
+    .fc-bar {
+      width: 3px; min-width: 3px; align-self: stretch; border-radius: 0 2px 2px 0;
+      background: linear-gradient(180deg, #ff007c, #ff8017);
+      opacity: 0; margin-right: 18px;
+      transition: opacity .18s ease;
+    }
+    .fc:hover .fc-bar { opacity: 1; }
+    .fc-icon {
+      width: 42px; height: 42px; min-width: 42px; border-radius: 12px;
+      background: #fff0f7; display: flex; align-items: center;
+      justify-content: center; font-size: 20px; margin-right: 14px;
+    }
+    .fc-body { flex: 1; min-width: 0; }
+    .fc-title { font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 4px; }
+    .fc-desc { font-size: 12.5px; color: #6b7280; line-height: 1.5; }
   </style>
   <script type="application/ld+json">
   {
@@ -87,12 +151,11 @@
     </div>
   </section>
 
-  <!-- Pipeline -->
+  <!-- Pipeline steps -->
   <section class="bg-gray-50 py-14 sm:py-16 border-y border-gray-100">
     <div class="max-w-5xl mx-auto px-4 sm:px-6">
       <p class="text-center text-xs font-semibold uppercase tracking-widest text-gray-400 mb-8">Pipeline comercial completo</p>
       <div class="flex items-center gap-1 sm:gap-2 overflow-x-auto pb-2 justify-start sm:justify-center">
-        <!-- Step 1 -->
         <div class="flex items-center gap-1 sm:gap-2 shrink-0">
           <div class="text-center">
             <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-sm" style="background: linear-gradient(135deg, #ff007c, #ff8017); opacity: 0.70">1</div>
@@ -101,7 +164,6 @@
           </div>
           <svg class="w-4 h-4 text-gray-300 shrink-0 -mt-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
         </div>
-        <!-- Step 2 -->
         <div class="flex items-center gap-1 sm:gap-2 shrink-0">
           <div class="text-center">
             <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-sm" style="background: linear-gradient(135deg, #ff007c, #ff8017); opacity: 0.74">2</div>
@@ -110,7 +172,6 @@
           </div>
           <svg class="w-4 h-4 text-gray-300 shrink-0 -mt-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
         </div>
-        <!-- Step 3 -->
         <div class="flex items-center gap-1 sm:gap-2 shrink-0">
           <div class="text-center">
             <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-sm" style="background: linear-gradient(135deg, #ff007c, #ff8017); opacity: 0.78">3</div>
@@ -119,7 +180,6 @@
           </div>
           <svg class="w-4 h-4 text-gray-300 shrink-0 -mt-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
         </div>
-        <!-- Step 4 -->
         <div class="flex items-center gap-1 sm:gap-2 shrink-0">
           <div class="text-center">
             <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-sm" style="background: linear-gradient(135deg, #ff007c, #ff8017); opacity: 0.82">4</div>
@@ -128,7 +188,6 @@
           </div>
           <svg class="w-4 h-4 text-gray-300 shrink-0 -mt-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
         </div>
-        <!-- Step 5 -->
         <div class="flex items-center gap-1 sm:gap-2 shrink-0">
           <div class="text-center">
             <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-sm" style="background: linear-gradient(135deg, #ff007c, #ff8017); opacity: 0.86">5</div>
@@ -137,7 +196,6 @@
           </div>
           <svg class="w-4 h-4 text-gray-300 shrink-0 -mt-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
         </div>
-        <!-- Step 6 -->
         <div class="flex items-center gap-1 sm:gap-2 shrink-0">
           <div class="text-center">
             <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-sm" style="background: linear-gradient(135deg, #ff007c, #ff8017); opacity: 0.90">6</div>
@@ -146,57 +204,104 @@
           </div>
           <svg class="w-4 h-4 text-gray-300 shrink-0 -mt-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
         </div>
-        <!-- Step 7 (no arrow after last) -->
-        <div class="flex items-center gap-1 sm:gap-2 shrink-0">
-          <div class="text-center">
-            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-sm" style="background: linear-gradient(135deg, #ff007c, #ff8017); opacity: 0.94">7</div>
-            <p class="text-[10px] sm:text-xs font-semibold text-gray-700 mt-1.5 whitespace-nowrap">Venta</p>
-            <p class="hidden sm:block text-[9px] text-gray-400 mt-0.5 whitespace-nowrap">Operación cerrada</p>
-          </div>
+        <div class="shrink-0 text-center">
+          <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-sm" style="background: linear-gradient(135deg, #ff007c, #ff8017); opacity: 0.94">7</div>
+          <p class="text-[10px] sm:text-xs font-semibold text-gray-700 mt-1.5 whitespace-nowrap">Venta</p>
+          <p class="hidden sm:block text-[9px] text-gray-400 mt-0.5 whitespace-nowrap">Operación cerrada</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Features -->
-  <section class="py-16 sm:py-20">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6">
+  <!-- ── Módulos por sección ── -->
+  <section class="py-20 sm:py-28 relative overflow-hidden">
+    <div class="absolute inset-0 pointer-events-none" style="background: radial-gradient(ellipse 55% 45% at 50% 0%, #ff007c07 0%, transparent 65%), radial-gradient(ellipse 35% 35% at 85% 85%, #ff801705 0%, transparent 65%)"></div>
+
+    <div class="relative max-w-6xl mx-auto px-4 sm:px-6">
+
+      <!-- Header -->
       <div class="text-center mb-12">
-        <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">Todo lo que necesita un agente profesional</h2>
-        <p class="text-gray-500 max-w-xl mx-auto">Herramientas diseñadas para el trabajo diario en campo y en oficina.</p>
+        <div class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest mb-5 px-3.5 py-1.5 rounded-full border" style="color:#ff007c; border-color:#ff007c20; background:#ff007c07">
+          Funcionalidades
+        </div>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4">
+          Seis módulos integrados para<br class="hidden sm:block"/>
+          <span style="background: linear-gradient(135deg, #ff007c, #ff8017); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">cada etapa de tu operación</span>
+        </h2>
+        <p class="text-gray-500 max-w-lg mx-auto">
+          Cada módulo fue construido con agentes reales. Sin funciones de relleno.
+        </p>
       </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        <div class="bg-white rounded-2xl border border-gray-100 p-6 hover:border-gray-200 hover:shadow-md transition-all">
-          <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl mb-4" style="background:#ff007c0d">📋</div>
-          <h3 class="font-semibold text-gray-900 mb-2">Pipeline de leads</h3>
-          <p class="text-sm text-gray-500 leading-relaxed">Seguí cada prospecto desde el primer contacto hasta la firma. Kanban visual, alertas de SLA y priorización automática.</p>
-        </div>
-        <div class="bg-white rounded-2xl border border-gray-100 p-6 hover:border-gray-200 hover:shadow-md transition-all">
-          <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl mb-4" style="background:#ff007c0d">🏠</div>
-          <h3 class="font-semibold text-gray-900 mb-2">Tasaciones profesionales</h3>
-          <p class="text-sm text-gray-500 leading-relaxed">Generá informes de tasación con comparables de mercado, análisis FODA y precio sugerido. Compartí con un link en segundos.</p>
-        </div>
-        <div class="bg-white rounded-2xl border border-gray-100 p-6 hover:border-gray-200 hover:shadow-md transition-all">
-          <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl mb-4" style="background:#ff007c0d">📊</div>
-          <h3 class="font-semibold text-gray-900 mb-2">Reportes de gestión</h3>
-          <p class="text-sm text-gray-500 leading-relaxed">Enviá a tu cliente un reporte periódico con métricas reales: impresiones, consultas y visitas de su propiedad.</p>
-        </div>
-        <div class="bg-white rounded-2xl border border-gray-100 p-6 hover:border-gray-200 hover:shadow-md transition-all">
-          <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl mb-4" style="background:#ff007c0d">📅</div>
-          <h3 class="font-semibold text-gray-900 mb-2">Calendario operativo</h3>
-          <p class="text-sm text-gray-500 leading-relaxed">Planificá llamadas, visitas, reuniones y seguimientos. Vinculados a leads y propiedades, con alertas de vencimiento.</p>
-        </div>
-        <div class="bg-white rounded-2xl border border-gray-100 p-6 hover:border-gray-200 hover:shadow-md transition-all">
-          <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl mb-4" style="background:#ff007c0d">📈</div>
-          <h3 class="font-semibold text-gray-900 mb-2">Dashboard ejecutivo</h3>
-          <p class="text-sm text-gray-500 leading-relaxed">Visualizá el funnel completo: lead → tasación → captación → reserva → venta con tasas de conversión en tiempo real.</p>
-        </div>
-        <div class="bg-white rounded-2xl border border-gray-100 p-6 hover:border-gray-200 hover:shadow-md transition-all">
-          <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl mb-4" style="background:#ff007c0d">🤝</div>
-          <h3 class="font-semibold text-gray-900 mb-2">Gestión de equipo</h3>
-          <p class="text-sm text-gray-500 leading-relaxed">Asigná leads, monitoreá la performance de cada agente y compartiles objetivos mensuales. Control total para el broker.</p>
+
+      <!-- Category tabs -->
+      <div class="overflow-x-auto -mx-4 px-4 pb-2 mb-10">
+        <div class="flex gap-2 w-max mx-auto">
+          <button class="ct ct-on" data-cat="leads"       onclick="showCat('leads')">🎯 Pipeline &amp; Leads <span class="badge">6</span></button>
+          <button class="ct"        data-cat="tasaciones"  onclick="showCat('tasaciones')">🏠 Tasaciones <span class="badge">6</span></button>
+          <button class="ct"        data-cat="propiedades" onclick="showCat('propiedades')">🏢 Propiedades <span class="badge">5</span></button>
+          <button class="ct"        data-cat="reservas"    onclick="showCat('reservas')">💼 Reservas &amp; Ventas <span class="badge">5</span></button>
+          <button class="ct"        data-cat="calendario"  onclick="showCat('calendario')">📅 Calendario <span class="badge">5</span></button>
+          <button class="ct"        data-cat="dashboard"   onclick="showCat('dashboard')">📊 Dashboard &amp; IA <span class="badge">6</span></button>
         </div>
       </div>
+
+      <!-- Panel: Pipeline & Leads -->
+      <div id="p-leads" class="fp fp-on" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px;">
+        <div class="fc"><div class="fc-bar"></div><div class="fc-icon">📋</div><div class="fc-body"><p class="fc-title">Kanban visual de pipeline</p><p class="fc-desc">Arrastrá leads entre etapas: Nuevo → Contactado → Tasación → Captación → Perdido. Vista clara del estado de cada prospecto.</p></div></div>
+        <div class="fc"><div class="fc-bar"></div><div class="fc-icon">⏰</div><div class="fc-body"><p class="fc-title">Alertas de SLA automáticas</p><p class="fc-desc">Notificaciones cuando un lead lleva más de 24h sin contacto o 7 días sin actividad. Nunca pierdas un prospecto por olvido.</p></div></div>
+        <div class="fc"><div class="fc-bar"></div><div class="fc-icon">👤</div><div class="fc-body"><p class="fc-title">Asignación a agentes</p><p class="fc-desc">Distribuí leads entre tu equipo desde el kanban. El agente recibe la notificación y el lead aparece en su dashboard personal.</p></div></div>
+        <div class="fc"><div class="fc-bar"></div><div class="fc-icon">🗂️</div><div class="fc-body"><p class="fc-title">Contactos vinculados</p><p class="fc-desc">Cada lead puede tener uno o más contactos. Propietarios, compradores e inversores en una sola base de datos unificada.</p></div></div>
+        <div class="fc"><div class="fc-bar"></div><div class="fc-icon">🏷️</div><div class="fc-body"><p class="fc-title">Tags y filtros avanzados</p><p class="fc-desc">Etiquetá leads por zona, tipo de operación, fuente o cualquier criterio propio. Filtrá en segundos desde el kanban o la lista.</p></div></div>
+        <div class="fc"><div class="fc-bar"></div><div class="fc-icon">📝</div><div class="fc-body"><p class="fc-title">Historial completo de actividad</p><p class="fc-desc">Cada llamada, nota, evento y cambio de etapa queda registrado con fecha y agente responsable. Trazabilidad total del lead.</p></div></div>
+      </div>
+
+      <!-- Panel: Tasaciones -->
+      <div id="p-tasaciones" class="fp" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px;">
+        <div class="fc"><div class="fc-bar"></div><div class="fc-icon">📄</div><div class="fc-body"><p class="fc-title">Informe de tasación profesional</p><p class="fc-desc">Generá informes con comparables de mercado, análisis de la zona, precio sugerido y rango de valor. Presentación lista para el cliente.</p></div></div>
+        <div class="fc"><div class="fc-bar"></div><div class="fc-icon">⚖️</div><div class="fc-body"><p class="fc-title">Análisis FODA de la propiedad</p><p class="fc-desc">Fortalezas, oportunidades, debilidades y amenazas del inmueble en el contexto del mercado. Diferenciador clave frente a la competencia.</p></div></div>
+        <div class="fc"><div class="fc-bar"></div><div class="fc-icon">🔗</div><div class="fc-body"><p class="fc-title">Link compartible con el propietario</p><p class="fc-desc">Compartí la tasación con un link público generado al instante. Sin PDFs ni correos. El cliente lo ve desde el celular.</p></div></div>
+        <div class="fc"><div class="fc-bar"></div><div class="fc-icon">🤖</div><div class="fc-body"><p class="fc-title">Extracción de datos con IA</p><p class="fc-desc">Subí una foto, screenshot o PDF de la propiedad y la IA extrae automáticamente superficie, ambientes, ubicación y características.</p></div></div>
+        <div class="fc"><div class="fc-bar"></div><div class="fc-icon">📐</div><div class="fc-body"><p class="fc-title">Prefactibilidad de proyectos</p><p class="fc-desc">Análisis preliminar para proyectos en pozo o terrenos. Calculá viabilidad antes de presentar la propuesta al cliente.</p></div></div>
+        <div class="fc"><div class="fc-bar"></div><div class="fc-icon">🔄</div><div class="fc-body"><p class="fc-title">Seguimiento de tasaciones</p><p class="fc-desc">Seguí cada tasación por estado: Presentada, En negociación, Captada o Perdida. El pipeline no termina en la presentación.</p></div></div>
+      </div>
+
+      <!-- Panel: Propiedades -->
+      <div id="p-propiedades" class="fp" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px;">
+        <div class="fc"><div class="fc-bar"></div><div class="fc-icon">🏢</div><div class="fc-body"><p class="fc-title">Cartera de propiedades activas</p><p class="fc-desc">Gestioná todas las propiedades en captación y comercialización. Estado, agente responsable y etapa del proceso en un solo panel.</p></div></div>
+        <div class="fc"><div class="fc-bar"></div><div class="fc-icon">📁</div><div class="fc-body"><p class="fc-title">Control documental</p><p class="fc-desc">Registrá el estado de escrituras, poderes, planos y documentos de deuda. Checklist de habilitación para publicación en portales.</p></div></div>
+        <div class="fc"><div class="fc-bar"></div><div class="fc-icon">🌐</div><div class="fc-body"><p class="fc-title">Estado en portales inmobiliarios</p><p class="fc-desc">Tracked de publicación en Zonaprop, Argenprop, MercadoLibre y otros. Sabés en qué portal está publicada y desde cuándo.</p></div></div>
+        <div class="fc"><div class="fc-bar"></div><div class="fc-icon">📸</div><div class="fc-body"><p class="fc-title">Galería y materiales de marketing</p><p class="fc-desc">Organizá fotos, videos y materiales de cada propiedad. Acceso rápido desde el celular para visitas y presentaciones en campo.</p></div></div>
+        <div class="fc"><div class="fc-bar"></div><div class="fc-icon">🚶</div><div class="fc-body"><p class="fc-title">Gestión de visitas</p><p class="fc-desc">Registrá cada visita con fecha, comprador y resultado. Las visitas se sincronizan automáticamente con el calendario del agente.</p></div></div>
+      </div>
+
+      <!-- Panel: Reservas & Ventas -->
+      <div id="p-reservas" class="fp" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px;">
+        <div class="fc"><div class="fc-bar"></div><div class="fc-icon">🤝</div><div class="fc-body"><p class="fc-title">Registro de ofertas y contraofertas</p><p class="fc-desc">Documentá cada oferta recibida con monto, fecha y respuesta del vendedor. Historial completo de la negociación en tiempo real.</p></div></div>
+        <div class="fc"><div class="fc-bar"></div><div class="fc-icon">✅</div><div class="fc-body"><p class="fc-title">Checklist de cierre</p><p class="fc-desc">Guía paso a paso del proceso: seña → reserva → boleto → escritura. Cada paso tiene su checklist de documentos y tareas pendientes.</p></div></div>
+        <div class="fc"><div class="fc-bar"></div><div class="fc-icon">📅</div><div class="fc-body"><p class="fc-title">Seguimiento hasta escritura</p><p class="fc-desc">La operación no termina con la reserva. Seguí el expediente hasta la firma con alertas de vencimiento y próximos pasos.</p></div></div>
+        <div class="fc"><div class="fc-bar"></div><div class="fc-icon">🏆</div><div class="fc-body"><p class="fc-title">Registro de ventas concretadas</p><p class="fc-desc">Panel de operaciones cerradas con precio final, fecha de escritura y agente responsable. Tu track record en un solo lugar.</p></div></div>
+        <div class="fc"><div class="fc-bar"></div><div class="fc-icon">💰</div><div class="fc-body"><p class="fc-title">Honorarios y liquidaciones</p><p class="fc-desc">Registrá comisiones, porcentajes y liquidaciones por operación. Base para reportes de performance y facturación del equipo.</p></div></div>
+      </div>
+
+      <!-- Panel: Calendario -->
+      <div id="p-calendario" class="fp" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px;">
+        <div class="fc"><div class="fc-bar"></div><div class="fc-icon">📅</div><div class="fc-body"><p class="fc-title">9 tipos de evento operativo</p><p class="fc-desc">Llamada, reunión, visita de captación, visita de comprador, tasación, seguimiento, administrativo, firma y otros. Con colores e íconos propios.</p></div></div>
+        <div class="fc"><div class="fc-bar"></div><div class="fc-icon">🔗</div><div class="fc-body"><p class="fc-title">Eventos vinculados a entidades</p><p class="fc-desc">Cada evento se asocia a un lead, contacto, propiedad o tasación específica. El historial de cada entidad incluye todos sus eventos.</p></div></div>
+        <div class="fc"><div class="fc-bar"></div><div class="fc-icon">🔔</div><div class="fc-body"><p class="fc-title">Alertas de vencimiento</p><p class="fc-desc">Eventos vencidos sin completar aparecen resaltados en rojo. El dashboard muestra siempre cuántos eventos atrasados tenés.</p></div></div>
+        <div class="fc"><div class="fc-bar"></div><div class="fc-icon">👁️</div><div class="fc-body"><p class="fc-title">Vistas mes, semana, día y agenda</p><p class="fc-desc">Cambiá entre vistas según el dispositivo: agenda y día para el celular en campo, semana y mes para planificación desde la oficina.</p></div></div>
+        <div class="fc"><div class="fc-bar"></div><div class="fc-icon">⚡</div><div class="fc-body"><p class="fc-title">Acciones rápidas desde el evento</p><p class="fc-desc">Llamar, enviar WhatsApp, completar o reagendar directamente desde el evento. Sin navegar al lead o propiedad para actuar.</p></div></div>
+      </div>
+
+      <!-- Panel: Dashboard & IA -->
+      <div id="p-dashboard" class="fp" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px;">
+        <div class="fc"><div class="fc-bar"></div><div class="fc-icon">📊</div><div class="fc-body"><p class="fc-title">Funnel de conversión en tiempo real</p><p class="fc-desc">Visualizá el flujo lead → tasación → captación → reserva → venta con tasas de conversión por etapa. Identificá dónde se pierden oportunidades.</p></div></div>
+        <div class="fc"><div class="fc-bar"></div><div class="fc-icon">🎯</div><div class="fc-body"><p class="fc-title">KPIs por agente y por equipo</p><p class="fc-desc">Leads captados, tasaciones realizadas, captaciones, reservas y ventas. Comparativa mensual y evolución en el tiempo para cada agente.</p></div></div>
+        <div class="fc"><div class="fc-bar"></div><div class="fc-icon">🏅</div><div class="fc-body"><p class="fc-title">Ranking de performance del equipo</p><p class="fc-desc">Tabla comparativa de agentes con sus métricas clave. El broker ve quién lidera en cada indicador y puede enfocar el coaching.</p></div></div>
+        <div class="fc"><div class="fc-bar"></div><div class="fc-icon">🎖️</div><div class="fc-body"><p class="fc-title">Objetivos mensuales por agente</p><p class="fc-desc">Configurá metas de captaciones, visitas o ventas para cada agente. El agente ve su progreso en tiempo real desde su dashboard personal.</p></div></div>
+        <div class="fc"><div class="fc-bar"></div><div class="fc-icon">📤</div><div class="fc-body"><p class="fc-title">Reportes compartibles con clientes</p><p class="fc-desc">Generá reportes de gestión con métricas reales de la propiedad y compartílos con el propietario por link. Sin PDFs ni plantillas manuales.</p></div></div>
+        <div class="fc"><div class="fc-bar"></div><div class="fc-icon">🤖</div><div class="fc-body"><p class="fc-title">Extracción con IA (Claude)</p><p class="fc-desc">Subí una foto, screenshot o PDF y la IA extrae automáticamente los datos relevantes. Carga de información sin tipeo manual.</p></div></div>
+      </div>
+
     </div>
   </section>
 
@@ -259,6 +364,27 @@
       </div>
     </div>
   </footer>
+
+  <script>
+    function showCat(id) {
+      document.querySelectorAll('.ct').forEach(function(t) {
+        t.classList.toggle('ct-on', t.dataset.cat === id);
+      });
+      document.querySelectorAll('.fp').forEach(function(p) {
+        if (p.id === 'p-' + id) {
+          p.style.display = 'grid';
+          requestAnimationFrame(function() {
+            requestAnimationFrame(function() { p.classList.add('fp-on'); });
+          });
+        } else {
+          p.classList.remove('fp-on');
+          setTimeout(function() {
+            if (!p.classList.contains('fp-on')) p.style.display = 'none';
+          }, 230);
+        }
+      });
+    }
+  </script>
 
 </body>
 </html>
