@@ -1,7 +1,27 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { Ruler, TrendingUp, Calendar, Phone, MessageCircle, Home, Monitor } from 'lucide-react'
 
 const API_PUBLIC = process.env.NEXT_PUBLIC_API_PUBLIC_URL ?? 'http://localhost:8708'
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
+  try {
+    const res = await fetch(`${API_PUBLIC}/public/appraisal/${slug}`, { cache: 'no-store' })
+    if (!res.ok) return { title: 'Informe de tasación', robots: { index: false } }
+    const data = (await res.json()) as any
+    const appraisal = data?.appraisal
+    if (!appraisal) return { title: 'Informe de tasación', robots: { index: false } }
+    const branding = data.branding || { name: 'Inmobiliaria' }
+    return {
+      title: `Tasación — ${appraisal.property_address}`,
+      description: `Informe de tasación profesional para ${appraisal.property_address}. Preparado por ${branding.name}.`,
+      robots: { index: false, follow: false },
+    }
+  } catch {
+    return { title: 'Informe de tasación', robots: { index: false } }
+  }
+}
 
 function youtubeEmbed(url: string) {
   if (!url) return null

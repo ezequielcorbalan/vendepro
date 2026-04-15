@@ -1,6 +1,25 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
 const API_PUBLIC = process.env.NEXT_PUBLIC_API_PUBLIC_URL ?? 'http://localhost:8708'
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
+  try {
+    const res = await fetch(`${API_PUBLIC}/public/report/${slug}`, { cache: 'no-store' })
+    if (!res.ok) return { title: 'Reporte de propiedad', robots: { index: false } }
+    const data = (await res.json()) as any
+    const property = data?.property
+    if (!property) return { title: 'Reporte de propiedad', robots: { index: false } }
+    return {
+      title: `Reporte de gestión — ${property.address}`,
+      description: `Métricas de comercialización de ${property.address}. Impresiones, consultas y visitas del período.`,
+      robots: { index: false, follow: false },
+    }
+  } catch {
+    return { title: 'Reporte de propiedad', robots: { index: false } }
+  }
+}
 
 export default async function PublicReportPage({
   params,

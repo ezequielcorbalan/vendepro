@@ -1,0 +1,23 @@
+User-agent: *
+Allow: /
+Allow: /terminos
+Disallow: /dashboard
+Disallow: /leads
+Disallow: /tasaciones
+Disallow: /propiedades
+Disallow: /reservas
+Disallow: /contactos
+Disallow: /actividades
+Disallow: /calendario
+Disallow: /perfil
+Disallow: /admin
+Disallow: /configuracion
+Disallow: /vendidas
+Disallow: /mi-performance
+Disallow: /prefactibilidades
+Disallow: /r/
+Disallow: /t/
+Disallow: /v/
+Disallow: /p/
+
+Sitemap: https://vendepro.app/sitemap.xml

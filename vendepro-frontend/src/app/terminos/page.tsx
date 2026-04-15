@@ -1,5 +1,12 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
+
+export const metadata: Metadata = {
+  title: 'Términos y Condiciones',
+  description: 'Términos y condiciones de uso de VendéPro, CRM inmobiliario.',
+  robots: { index: false, follow: false },
+}
 
 export default function TerminosPage() {
   return (

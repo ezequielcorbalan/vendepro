@@ -1,6 +1,22 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
 const API_PUBLIC = process.env.NEXT_PUBLIC_API_PUBLIC_URL ?? 'http://localhost:8708'
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
+  try {
+    const res = await fetch(`${API_PUBLIC}/public/visit-form/${slug}`, { cache: 'no-store' })
+    if (!res.ok) return { title: 'Formulario de visita', robots: { index: false } }
+    const data = (await res.json()) as any
+    return {
+      title: data?.address ? `Visita — ${data.address}` : 'Formulario de visita',
+      robots: { index: false, follow: false },
+    }
+  } catch {
+    return { title: 'Formulario de visita', robots: { index: false } }
+  }
+}
 
 export default async function VisitFormPage({
   params,
