@@ -5,6 +5,7 @@ import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, ArrowRight, Upload, Check, Loader2, FileText, Link2, Trash2, Clipboard } from 'lucide-react'
 import type { MetricSource, ExtractedMetrics } from '@/lib/types'
+import { apiFetch } from '@/lib/api'
 
 const steps = [
   { id: 1, title: 'Período' },
@@ -123,7 +124,7 @@ export default function NuevoReporte() {
     try {
       const formData = new FormData()
       formData.append('pdf', file)
-      const response = await fetch('/api/extract-kiteprop', { method: 'POST', body: formData })
+      const response = await apiFetch('ai', '/extract-kiteprop', { method: 'POST', body: formData })
       if (!response.ok) throw new Error('Error al extraer datos del PDF')
       const data = await response.json() as any
 
@@ -180,7 +181,7 @@ export default function NuevoReporte() {
     try {
       const formData = new FormData()
       formData.append('screenshot', file)
-      const res = await fetch('/api/extract-zonaprop', { method: 'POST', body: formData })
+      const res = await apiFetch('ai', '/extract-zonaprop', { method: 'POST', body: formData })
       const data = await res.json() as any
       if (data.success && data.data) {
         setCompetitors((prev) => {
@@ -232,7 +233,7 @@ export default function NuevoReporte() {
       formData.append('screenshot', file)
       formData.append('source', metricsList[index].source)
 
-      const response = await fetch('/api/extract-metrics', {
+      const response = await apiFetch('ai', '/extract-metrics', {
         method: 'POST',
         body: formData,
       })
@@ -305,7 +306,7 @@ export default function NuevoReporte() {
           photoForm.append('photoType', 'visit_form')
           photoForm.append('sortOrder', i.toString())
           try {
-            const photoRes = await fetch('/api/upload-photo', { method: 'POST', body: photoForm })
+            const photoRes = await apiFetch('properties', '/upload-photo', { method: 'POST', body: photoForm })
             if (!photoRes.ok) {
               const photoErr = (await photoRes.json()) as any
               throw new Error(photoErr.error || 'Error al subir foto')
