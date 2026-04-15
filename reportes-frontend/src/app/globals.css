@@ -1,0 +1,32 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+:root {
+  --brand-pink: #ff007c;
+  --brand-orange: #ff8017;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Brand color utilities */
+.text-brand-pink { color: #ff007c; }
+.text-brand-orange { color: #ff8017; }
+.text-brand-gray { color: #6b7280; }
+.bg-brand-pink { background-color: #ff007c; }
+.bg-brand-orange { background-color: #ff8017; }
+.bg-brand-light { background-color: #f9fafb; }
+.border-brand-pink { border-color: #ff007c; }
+.ring-brand-pink { --tw-ring-color: #ff007c; }
+.focus\:ring-brand-pink:focus { --tw-ring-color: #ff007c; }
+.focus\:border-brand-pink:focus { border-color: #ff007c; }
+
+/* Slide up animation for toasts */
+@keyframes slide-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.animate-slide-up {
+  animation: slide-up 0.2s ease-out;
+}
