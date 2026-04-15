@@ -1,12 +1,14 @@
 {
+  "$schema": "node_modules/wrangler/config-schema.json",
   "name": "vendepro-landing",
-  "compatibility_date": "2025-01-01",
-  "assets": {
-    "directory": ".",
-    "binding": "ASSETS"
+  "compatibility_date": "2026-04-15",
+  "observability": {
+    "enabled": true
   },
-  "routes": [
-    { "pattern": "vendepro.com.ar", "custom_domain": true },
-    { "pattern": "www.vendepro.com.ar", "custom_domain": true }
+  "assets": {
+    "directory": "."
+  },
+  "compatibility_flags": [
+    "nodejs_compat"
   ]
 }
