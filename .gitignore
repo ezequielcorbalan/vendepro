@@ -18,6 +18,10 @@ dist/
 # env files
 .env*
 
+# cloudflare worker secrets (never commit)
+.dev.vars
+**/.dev.vars
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
