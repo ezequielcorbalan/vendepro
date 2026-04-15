@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { corsMiddleware, errorHandler } from '@vendepro/infrastructure'
-import { D1UserRepository, JwtAuthService, CryptoIdGenerator } from '@vendepro/infrastructure'
-import { LoginUseCase, CreateUserUseCase, ChangePasswordUseCase } from '@vendepro/core'
+import { D1UserRepository, D1OrganizationRepository, JwtAuthService, CryptoIdGenerator } from '@vendepro/infrastructure'
+import { LoginUseCase, CreateUserUseCase, ChangePasswordUseCase, RegisterWithOrgUseCase } from '@vendepro/core'
 
 type Env = {
   DB: D1Database
@@ -65,6 +65,44 @@ app.post('/password', async (c) => {
 app.post('/logout', (c) => {
   // JWT is stateless — client deletes the token
   return c.json({ success: true })
+})
+
+app.get('/check-slug', async (c) => {
+  const slug = c.req.query('slug') ?? ''
+  const sanitized = slug
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+
+  if (!sanitized) return c.json({ available: false, slug: '' })
+
+  const orgRepo = new D1OrganizationRepository(c.env.DB)
+  const existing = await orgRepo.findBySlug(sanitized)
+  return c.json({ available: !existing, slug: sanitized })
+})
+
+app.post('/register-org', async (c) => {
+  const body = (await c.req.json()) as any
+  const orgRepo = new D1OrganizationRepository(c.env.DB)
+  const userRepo = new D1UserRepository(c.env.DB)
+  const authService = new JwtAuthService(c.env.JWT_SECRET)
+  const idGen = new CryptoIdGenerator()
+  const useCase = new RegisterWithOrgUseCase(orgRepo, userRepo, authService, idGen)
+  const result = await useCase.execute({
+    org_name: body.org_name,
+    org_slug: body.org_slug,
+    admin_name: body.admin_name,
+    email: body.email,
+    password: body.password,
+    logo_url: body.logo_url ?? null,
+    brand_color: body.brand_color ?? '#ff007c',
+  })
+  return c.json(result, 201)
 })
 
 export default app

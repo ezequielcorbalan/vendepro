@@ -4,6 +4,7 @@ export * from './ports/index'
 export * from './use-cases/auth/login'
 export * from './use-cases/auth/change-password'
 export * from './use-cases/auth/create-user'
+export * from './use-cases/auth/register-with-org'
 
 // Leads
 export * from './use-cases/leads/get-leads'
