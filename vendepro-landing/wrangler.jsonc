@@ -1,0 +1,12 @@
+{
+  "name": "vendepro-landing",
+  "compatibility_date": "2025-01-01",
+  "assets": {
+    "directory": ".",
+    "binding": "ASSETS"
+  },
+  "routes": [
+    { "pattern": "vendepro.com.ar", "custom_domain": true },
+    { "pattern": "www.vendepro.com.ar", "custom_domain": true }
+  ]
+}
