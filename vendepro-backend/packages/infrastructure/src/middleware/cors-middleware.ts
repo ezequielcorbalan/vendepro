@@ -10,6 +10,7 @@ export const corsMiddleware = cors({
       // Production
       'https://vendepro.com.ar',
       'https://www.vendepro.com.ar',
+      'https://app.vendepro.com.ar',
     ]
 
     if (
