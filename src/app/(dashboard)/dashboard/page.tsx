@@ -123,14 +123,14 @@ export default function DashboardCRM() {
               </button>
             ))}
           </div>
-          <Link href="/leads" className="bg-pink-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-pink-700 flex items-center gap-1">
-            <Users className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Nuevo lead</span><span className="sm:hidden">Lead</span>
+          <Link href="/leads" className="bg-pink-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-pink-700 flex items-center gap-1" title="Crear un nuevo contacto en el CRM">
+            <Users className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Nuevo contacto</span><span className="sm:hidden">Contacto</span>
           </Link>
-          <Link href="/mi-performance" className="text-xs text-pink-600 hover:text-pink-700 flex items-center gap-1 border border-pink-200 px-2.5 py-1.5 rounded-lg">
-            Mi performance
+          <Link href="/mi-performance" className="text-xs text-pink-600 hover:text-pink-700 flex items-center gap-1 border border-pink-200 px-2.5 py-1.5 rounded-lg" title="Ver mis métricas personales">
+            <span className="hidden sm:inline">Mi performance</span><span className="sm:hidden">Performance</span>
           </Link>
-          <Link href="/dashboard/reportes" className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1 border border-gray-200 px-2.5 py-1.5 rounded-lg">
-            Reportes <ChevronRight className="w-3 h-3" />
+          <Link href="/dashboard/reportes" className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1 border border-gray-200 px-2.5 py-1.5 rounded-lg" title="Ver reportes del equipo">
+            <span className="hidden sm:inline">Reportes del equipo</span><span className="sm:hidden">Reportes</span><ChevronRight className="w-3 h-3" />
           </Link>
         </div>
       </div>

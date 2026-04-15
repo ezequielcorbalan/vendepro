@@ -254,9 +254,15 @@ export default function NuevoReporte() {
           photoForm.append('photoType', 'visit_form')
           photoForm.append('sortOrder', i.toString())
           try {
-            await fetch('/api/upload-photo', { method: 'POST', body: photoForm })
-          } catch (e) {
-            console.error('Error uploading photo:', e)
+            const photoRes = await fetch('/api/upload-photo', { method: 'POST', body: photoForm })
+            if (!photoRes.ok) {
+              const photoErr = (await photoRes.json()) as any
+              throw new Error(photoErr.error || 'Error al subir foto')
+            }
+          } catch (e: any) {
+            setError(`Error al subir foto ${i + 1}: ${e.message}`)
+            setLoading(false)
+            return
           }
         }
       }

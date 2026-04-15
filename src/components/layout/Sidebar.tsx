@@ -28,32 +28,26 @@ import type { Profile } from '@/lib/types'
 
 const menuSections = [
   {
-    title: 'General',
+    title: 'Principal',
     links: [
       { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-      { href: '/mi-performance', label: 'Mi Performance', icon: Target },
-      { href: '/perfil', label: 'Mi Perfil', icon: Settings },
-      { href: '/perfil/tasaciones', label: 'Mi Config Tasaciones', icon: ClipboardList },
-      { href: '/perfil/objetivos', label: 'Mis Objetivos', icon: Target },
+      { href: '/calendario', label: 'Calendario', icon: CalendarDays },
     ],
   },
   {
     title: 'CRM',
     links: [
-      { href: '/leads', label: 'Leads', icon: UserPlus },
-      { href: '/contactos', label: 'Contactos', icon: BookUser },
+      { href: '/leads', label: 'Contactos', icon: BookUser },
       { href: '/actividades', label: 'Actividad', icon: Activity },
-      { href: '/calendario', label: 'Calendario', icon: CalendarDays },
     ],
   },
   {
-    title: 'Comercialización',
+    title: 'Comercial',
     links: [
       { href: '/tasaciones', label: 'Tasaciones', icon: ClipboardList },
       { href: '/propiedades/pipeline', label: 'Pipeline', icon: Building2 },
       { href: '/propiedades', label: 'Reportes', icon: BarChart3 },
       { href: '/vendidas', label: 'Vendidas', icon: DollarSign },
-      { href: '/reservas', label: 'Reservas', icon: Handshake },
     ],
   },
 ]
@@ -61,11 +55,8 @@ const menuSections = [
 const adminSection = {
   title: 'Administración',
   links: [
-    { href: '/admin/agentes', label: 'Agentes', icon: Users },
-    { href: '/admin/objetivos', label: 'Objetivos equipo', icon: Target },
-    { href: '/admin/importar', label: 'Importar', icon: Upload },
+    { href: '/admin/agentes', label: 'Equipo', icon: Users },
     { href: '/admin/auditoria', label: 'Auditoría', icon: FileBarChart },
-    { href: '/configuracion', label: 'Configuración', icon: Settings },
   ],
 }
 
@@ -132,8 +123,8 @@ export default function Sidebar({ profile }: { profile: Profile }) {
         ))}
       </nav>
 
-      <div className="p-4 border-t border-gray-100">
-        <div className="flex items-center gap-3 px-3 py-2 mb-2">
+      <div className="p-4 border-t border-gray-100 space-y-1">
+        <Link href="/perfil" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors">
           <div className="w-8 h-8 rounded-full bg-brand-pink/20 flex items-center justify-center text-brand-pink font-semibold text-sm">
             {profile.full_name.charAt(0).toUpperCase()}
           </div>
@@ -141,7 +132,19 @@ export default function Sidebar({ profile }: { profile: Profile }) {
             <p className="text-sm font-medium text-gray-800 truncate">{profile.full_name}</p>
             <p className="text-xs text-brand-gray truncate">{profile.role === 'admin' ? 'Administrador' : 'Agente'}</p>
           </div>
-        </div>
+        </Link>
+        <Link
+          href="/configuracion"
+          className={cn(
+            'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+            pathname.startsWith('/configuracion') || pathname.startsWith('/perfil')
+              ? 'bg-brand-pink/10 text-brand-pink'
+              : 'text-gray-600 hover:bg-gray-100'
+          )}
+        >
+          <Settings className="w-4 h-4" />
+          Configuración
+        </Link>
         <button
           onClick={handleLogout}
           className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100 w-full transition-colors"

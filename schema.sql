@@ -175,7 +175,26 @@ CREATE TABLE IF NOT EXISTS price_history (
   created_at TEXT DEFAULT (datetime('now'))
 );
 
+-- Template blocks for tasacion landing pages (per org)
+CREATE TABLE IF NOT EXISTS tasacion_template_blocks (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL,
+  block_type TEXT NOT NULL DEFAULT 'service' CHECK (block_type IN ('service', 'video', 'stats', 'text', 'custom')),
+  title TEXT NOT NULL,
+  description TEXT,
+  icon TEXT,
+  number_label TEXT,
+  video_url TEXT,
+  image_url TEXT,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  section TEXT NOT NULL DEFAULT 'commercial' CHECK (section IN ('commercial', 'conditions')),
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);
+
 -- Indexes
+CREATE INDEX IF NOT EXISTS idx_template_blocks_org ON tasacion_template_blocks(org_id, section, sort_order);
 CREATE INDEX IF NOT EXISTS idx_properties_agent ON properties(agent_id);
 CREATE INDEX IF NOT EXISTS idx_properties_slug ON properties(public_slug);
 CREATE INDEX IF NOT EXISTS idx_reports_property ON reports(property_id);

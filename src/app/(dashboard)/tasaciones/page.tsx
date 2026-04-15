@@ -39,12 +39,17 @@ export default async function TasacionesPage() {
           <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Tasaciones</h1>
           <p className="text-brand-gray text-sm mt-1">Genera tasaciones profesionales para propietarios</p>
         </div>
-        <Link
-          href="/tasaciones/nueva"
-          className="inline-flex items-center gap-2 bg-brand-pink text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90"
-        >
-          <Plus className="w-4 h-4" /> Nueva tasaci&oacute;n
-        </Link>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Link href="/configuracion/tasacion" className="inline-flex items-center gap-2 border border-gray-300 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50">
+            Configurar
+          </Link>
+          <Link href="/prefactibilidades/nueva" className="inline-flex items-center gap-2 border border-orange-300 bg-orange-50 text-orange-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-orange-100">
+            <Plus className="w-4 h-4" /> Prefactibilidad
+          </Link>
+          <Link href="/tasaciones/nueva" className="inline-flex items-center gap-2 bg-brand-pink text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90">
+            <Plus className="w-4 h-4" /> Nueva tasaci&oacute;n
+          </Link>
+        </div>
       </div>
 
       {appraisals.length === 0 ? (

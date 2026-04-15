@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   ArrowLeft, ArrowRight, Home, Shield, Search, DollarSign, Eye,
@@ -40,6 +40,58 @@ export default function NuevaTasacionPage() {
   const [step, setStep] = useState(0)
   const [saving, setSaving] = useState(false)
 
+  // Fichas de visita disponibles
+  const [fichas, setFichas] = useState<any[]>([])
+  const [selectedFicha, setSelectedFicha] = useState<string | null>(null)
+  const [fichasLoaded, setFichasLoaded] = useState(false)
+
+  // Load fichas on mount
+  useEffect(() => {
+    fetch('/api/fichas-tasacion')
+      .then(r => r.json() as Promise<any>)
+      .then(data => { if (Array.isArray(data)) setFichas(data); setFichasLoaded(true) })
+      .catch(() => setFichasLoaded(true))
+  }, [])
+
+  function applyFicha(fichaId: string) {
+    const ficha = fichas.find(f => f.id === fichaId)
+    if (!ficha) return
+    setSelectedFicha(fichaId)
+    if (ficha.address) setAddress(ficha.address)
+    if (ficha.neighborhood) setNeighborhood(ficha.neighborhood)
+    if (ficha.property_type) setPropertyType(ficha.property_type)
+    if (ficha.covered_area) setCoveredArea(String(ficha.covered_area))
+    if (ficha.semi_area) setSemiArea(String(ficha.semi_area))
+    if (ficha.uncovered_area) {
+      const total = (ficha.covered_area || 0) + (ficha.semi_area || 0) + ficha.uncovered_area
+      setTotalArea(String(total))
+    }
+    if (ficha.age) setAge(ficha.age)
+    // Auto-generate FODA from ficha data
+    const autoStrengths: string[] = []
+    const autoWeaknesses: string[] = []
+    if (ficha.building_category === 'excelente') autoStrengths.push('Edificio categoría excelente')
+    if (ficha.property_condition === 'muy_bueno') autoStrengths.push('Muy buen estado general')
+    if (ficha.property_condition === 'a_refaccionar') autoWeaknesses.push('Necesita refacción')
+    if (ficha.parking_spots > 0) autoStrengths.push(`${ficha.parking_spots} cochera${ficha.parking_spots > 1 ? 's' : ''}`)
+    if (ficha.parking_spots === 0 || !ficha.parking_spots) autoWeaknesses.push('Sin cochera')
+    if (ficha.amenities) {
+      try {
+        const am = typeof ficha.amenities === 'string' ? JSON.parse(ficha.amenities) : ficha.amenities
+        if (am.length > 0) autoStrengths.push(`Amenities: ${am.join(', ')}`)
+      } catch {}
+    }
+    if (ficha.disposition === 'frente') autoStrengths.push('Disposición al frente')
+    if (ficha.disposition === 'lateral_interno') autoWeaknesses.push('Disposición lateral/interno')
+    if (ficha.noise_level === 'ruidoso') autoWeaknesses.push('Zona ruidosa')
+    if (ficha.noise_level === 'silencioso') autoStrengths.push('Zona silenciosa')
+    if (ficha.is_credit_eligible) autoStrengths.push('Apto crédito')
+    if (ficha.expenses) autoWeaknesses.push(`Expensas: $${ficha.expenses}`)
+    if (autoStrengths.length) setStrengths(autoStrengths.join('. '))
+    if (autoWeaknesses.length) setWeaknesses(autoWeaknesses.join('. '))
+    if (ficha.notes) setPubAnalysis(ficha.notes)
+  }
+
   // Step 1: Property data
   const [address, setAddress] = useState('')
   const [neighborhood, setNeighborhood] = useState('')
@@ -48,6 +100,9 @@ export default function NuevaTasacionPage() {
   const [coveredArea, setCoveredArea] = useState('')
   const [totalArea, setTotalArea] = useState('')
   const [semiArea, setSemiArea] = useState('')
+  const [pctCubierta, setPctCubierta] = useState('100')
+  const [pctSemi, setPctSemi] = useState('75')
+  const [pctDesc, setPctDesc] = useState('25')
   const [age, setAge] = useState('')
 
   // Step 2: FODA
@@ -125,7 +180,8 @@ export default function NuevaTasacionPage() {
   }
 
   // Calculations
-  const weightedArea = (parseFloat(coveredArea) || 0) + (parseFloat(semiArea) || 0) * 0.75 + ((parseFloat(totalArea) || 0) - (parseFloat(coveredArea) || 0) - (parseFloat(semiArea) || 0)) * 0.25
+  const descArea = Math.max(0, (parseFloat(totalArea) || 0) - (parseFloat(coveredArea) || 0) - (parseFloat(semiArea) || 0))
+  const weightedArea = (parseFloat(coveredArea) || 0) * ((parseFloat(pctCubierta) || 0) / 100) + (parseFloat(semiArea) || 0) * ((parseFloat(pctSemi) || 0) / 100) + descArea * ((parseFloat(pctDesc) || 0) / 100)
   const avgUsdM2 = (() => {
     const prices = comparables.filter(c => parseFloat(c.usd_per_m2) > 0).map(c => parseFloat(c.usd_per_m2))
     return prices.length > 0 ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length) : 0
@@ -319,6 +375,31 @@ export default function NuevaTasacionPage() {
         {/* STEP 1: Property */}
         {step === 0 && (
           <div className="space-y-4">
+            {/* Ficha de visita selector */}
+            {fichas.length > 0 && !selectedFicha && (
+              <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
+                <p className="text-sm font-semibold text-orange-800 mb-2">¿Tenés una ficha de visita?</p>
+                <p className="text-xs text-orange-600 mb-3">Seleccioná una para pre-cargar los datos automáticamente.</p>
+                <div className="space-y-2">
+                  {fichas.map(ficha => (
+                    <button key={ficha.id} onClick={() => applyFicha(ficha.id)}
+                      className="w-full text-left bg-white border border-orange-200 rounded-lg p-3 hover:bg-orange-50 transition-colors flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">{ficha.address || 'Sin dirección'}</p>
+                        <p className="text-xs text-gray-400">{ficha.neighborhood || ''} · {ficha.property_type || ''} · {new Date(ficha.created_at).toLocaleDateString('es-AR')}</p>
+                      </div>
+                      <span className="text-xs text-orange-600 font-medium">Usar →</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {selectedFicha && (
+              <div className="bg-green-50 border border-green-200 rounded-xl p-3 flex items-center justify-between">
+                <p className="text-sm text-green-700">Datos pre-cargados desde ficha de visita</p>
+                <button onClick={() => setSelectedFicha(null)} className="text-xs text-green-600 hover:text-green-800 underline">Cambiar</button>
+              </div>
+            )}
             <h2 className="text-lg font-semibold text-gray-800 mb-4">Datos de la propiedad</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
@@ -372,7 +453,15 @@ export default function NuevaTasacionPage() {
                   </div>
                 </div>
               </div>
-              <p className="text-[10px] sm:text-xs text-gray-400 mt-2">Cubierta 100% + Semi 75% + Descubierta 25%</p>
+              <div className="flex items-center gap-2 mt-2 text-[10px] sm:text-xs text-gray-400">
+                <span>Cubierta</span>
+                <input type="number" className="w-12 px-1 py-0.5 border border-gray-200 rounded text-center text-gray-600 text-[10px] sm:text-xs" value={pctCubierta} onChange={e => setPctCubierta(e.target.value)} />
+                <span>% + Semi</span>
+                <input type="number" className="w-12 px-1 py-0.5 border border-gray-200 rounded text-center text-gray-600 text-[10px] sm:text-xs" value={pctSemi} onChange={e => setPctSemi(e.target.value)} />
+                <span>% + Desc</span>
+                <input type="number" className="w-12 px-1 py-0.5 border border-gray-200 rounded text-center text-gray-600 text-[10px] sm:text-xs" value={pctDesc} onChange={e => setPctDesc(e.target.value)} />
+                <span>%</span>
+              </div>
             </div>
           </div>
         )}

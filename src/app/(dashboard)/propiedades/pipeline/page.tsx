@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { PROPERTY_STAGES, type PropertyStage, PROPERTY_STAGE_KEYS } from '@/lib/crm-config'
 import { useToast } from '@/components/ui/Toast'
-import { Building2, ArrowRight, Eye, Phone, Filter, List, Columns, XCircle, Search } from 'lucide-react'
+import { Building2, ArrowRight, Eye, Phone, Filter, List, Columns, XCircle, Search, ChevronDown, ChevronRight } from 'lucide-react'
 
 type Property = {
   id: string
@@ -53,10 +53,11 @@ export default function PipelinePage() {
   const [properties, setProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [view, setView] = useState<'pipeline' | 'lista'>('pipeline')
+  const [view, setView] = useState<'pipeline' | 'lista'>('lista')
   const [filterAgent, setFilterAgent] = useState('')
   const [filterType, setFilterType] = useState('')
   const [filterAuth, setFilterAuth] = useState<'' | 'expiring' | 'expired'>('')
+  const [filterStage, setFilterStage] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [searchText, setSearchText] = useState('')
   const [advancing, setAdvancing] = useState<string | null>(null)
@@ -96,6 +97,7 @@ export default function PipelinePage() {
       }
       if (filterAgent && p.agent_name !== filterAgent) return false
       if (filterType && p.property_type !== filterType) return false
+      if (filterStage && p.commercial_stage !== filterStage) return false
       if (filterAuth) {
         const remaining = authDaysRemaining(p.authorization_start, p.authorization_days)
         if (filterAuth === 'expired' && (remaining === null || remaining > 0)) return false
@@ -103,7 +105,7 @@ export default function PipelinePage() {
       }
       return true
     })
-  }, [properties, filterAgent, filterType, filterAuth, searchText])
+  }, [properties, filterAgent, filterType, filterAuth, filterStage, searchText])
 
   const byStage = useMemo(() => {
     const map: Record<PropertyStage, Property[]> = {} as any
@@ -168,7 +170,7 @@ export default function PipelinePage() {
   }
 
   return (
-    <div>
+    <div className="min-w-0 overflow-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
@@ -199,7 +201,7 @@ export default function PipelinePage() {
           <div className="flex bg-white border border-gray-200 rounded-lg overflow-hidden">
             <button
               onClick={() => setView('pipeline')}
-              className={`px-3 py-2 text-sm transition-colors ${
+              className={`px-3 py-2 text-sm transition-colors hidden sm:block ${
                 view === 'pipeline' ? 'bg-[#ff007c] text-white' : 'text-gray-600 hover:bg-gray-50'
               }`}
             >
@@ -245,9 +247,20 @@ export default function PipelinePage() {
             <option value="expiring">Por vencer (&lt;30d)</option>
             <option value="expired">Vencidas</option>
           </select>
+          <select
+            value={filterStage}
+            onChange={e => setFilterStage(e.target.value)}
+            className="px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white min-w-[160px]"
+          >
+            <option value="">Etapa: todas</option>
+            <option value="archivada">Archivadas</option>
+            <option value="suspendida">Suspendidas</option>
+            <option value="vencida">Vencidas</option>
+            <option value="vendida">Vendidas</option>
+          </select>
           {(filterAgent || filterType || filterAuth) && (
             <button
-              onClick={() => { setFilterAgent(''); setFilterType(''); setFilterAuth('') }}
+              onClick={() => { setFilterAgent(''); setFilterType(''); setFilterAuth(''); setFilterStage('') }}
               className="text-sm text-[#ff007c] hover:underline px-2"
             >
               Limpiar
@@ -264,14 +277,39 @@ export default function PipelinePage() {
         </div>
       )}
 
+      {/* Filtered stage view (archivadas, suspendidas, etc.) */}
+      {filtered.length > 0 && filterStage && ['archivada', 'suspendida'].includes(filterStage) && (
+        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+            <span className={`text-sm font-bold uppercase tracking-wider px-3 py-1 rounded-full ${PROPERTY_STAGES[filterStage as PropertyStage]?.color || 'bg-gray-100 text-gray-600'}`}>
+              {PROPERTY_STAGES[filterStage as PropertyStage]?.label || filterStage}
+            </span>
+            <span className="text-lg font-black text-gray-800">{filtered.length}</span>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {filtered.map(p => (
+              <PropertyCard
+                key={p.id}
+                property={p}
+                onAdvance={() => advanceStage(p)}
+                onMarkVencida={() => markVencida(p)}
+                advancing={advancing === p.id}
+                compact
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Pipeline / Kanban view — optimized for 30-60 properties */}
-      {filtered.length > 0 && view === 'pipeline' && (
-        <div className="flex gap-3 overflow-x-auto pb-4 lg:grid lg:grid-cols-6 lg:overflow-visible">
-          {PROPERTY_STAGE_KEYS.map(stage => {
+      {filtered.length > 0 && view === 'pipeline' && !filterStage && (
+        <div className="-mx-4 sm:-mx-6 px-4 sm:px-6">
+        <div className="flex gap-3 overflow-x-auto pb-4 snap-x snap-mandatory lg:grid lg:grid-cols-5 lg:overflow-visible">
+          {PROPERTY_STAGE_KEYS.filter(s => s !== 'archivada' && s !== 'suspendida' && s !== 'documentacion').map(stage => {
             const cfg = PROPERTY_STAGES[stage]
             const items = byStage[stage]
             return (
-              <div key={stage} className="min-w-[200px] lg:min-w-0 flex flex-col bg-gray-50/80 rounded-xl border border-gray-100">
+              <div key={stage} className="min-w-[260px] sm:min-w-[240px] lg:min-w-0 flex flex-col bg-gray-50/80 rounded-xl border border-gray-100 snap-start">
                 <div className="px-3 py-2 border-b border-gray-200 sticky top-0 bg-gray-50/95 backdrop-blur-sm rounded-t-xl z-10">
                   <div className="flex items-center justify-between">
                     <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${cfg.color}`}>
@@ -335,38 +373,12 @@ export default function PipelinePage() {
             )
           })}
         </div>
+        </div>
       )}
 
-      {/* List view */}
-      {filtered.length > 0 && view === 'lista' && (
-        <div className="space-y-3">
-          {PROPERTY_STAGE_KEYS.map(stage => {
-            const items = byStage[stage]
-            if (items.length === 0) return null
-            const cfg = PROPERTY_STAGES[stage]
-            return (
-              <div key={stage}>
-                <div className="flex items-center gap-2 mb-2 mt-4 first:mt-0">
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${cfg.color}`}>
-                    {cfg.label}
-                  </span>
-                  <span className="text-xs text-gray-400">{items.length}</span>
-                </div>
-                <div className="space-y-2">
-                  {items.map(p => (
-                    <PropertyCard
-                      key={p.id}
-                      property={p}
-                      onAdvance={() => advanceStage(p)}
-                      onMarkVencida={() => markVencida(p)}
-                      advancing={advancing === p.id}
-                    />
-                  ))}
-                </div>
-              </div>
-            )
-          })}
-        </div>
+      {/* List view — collapsible sections */}
+      {filtered.length > 0 && view === 'lista' && !(filterStage && ['archivada', 'suspendida'].includes(filterStage)) && (
+        <ListViewCollapsible byStage={byStage} advanceStage={advanceStage} markVencida={markVencida} advancing={advancing} />
       )}
     </div>
   )
@@ -454,6 +466,80 @@ function PropertyCard({
           </button>
         )}
       </div>
+    </div>
+  )
+}
+
+// ── Collapsible List View ──
+function ListViewCollapsible({ byStage, advanceStage, markVencida, advancing }: {
+  byStage: Record<string, Property[]>
+  advanceStage: (p: Property) => void
+  markVencida: (p: Property) => void
+  advancing: string | null
+}) {
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({})
+
+  const toggle = (stage: string) => setExpanded(prev => ({ ...prev, [stage]: !prev[stage] }))
+
+  // Auto-expand stages with items on first render
+  useState(() => {
+    const initial: Record<string, boolean> = {}
+    for (const stage of PROPERTY_STAGE_KEYS) {
+      if (byStage[stage]?.length > 0) initial[stage] = false // collapsed by default
+    }
+    // Expand first stage with items
+    const firstWithItems = PROPERTY_STAGE_KEYS.find(s => byStage[s]?.length > 0)
+    if (firstWithItems) initial[firstWithItems] = true
+    setExpanded(initial)
+  })
+
+  return (
+    <div className="space-y-2">
+      {PROPERTY_STAGE_KEYS.filter(s => s !== 'archivada' && s !== 'suspendida' && s !== 'documentacion').map(stage => {
+        const items = byStage[stage] || []
+        if (items.length === 0) return null
+        const cfg = PROPERTY_STAGES[stage]
+        const isExpanded = expanded[stage] ?? false
+
+        return (
+          <div key={stage} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+            {/* Collapsible header */}
+            <button
+              onClick={() => toggle(stage)}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                {isExpanded
+                  ? <ChevronDown className="w-4 h-4 text-gray-400" />
+                  : <ChevronRight className="w-4 h-4 text-gray-400" />
+                }
+                <span className={`text-sm font-bold uppercase tracking-wider px-3 py-1 rounded-full ${cfg.color}`}>
+                  {cfg.label}
+                </span>
+              </div>
+              <span className={`text-lg font-black ${items.length > 0 ? 'text-gray-800' : 'text-gray-300'}`}>
+                {items.length}
+              </span>
+            </button>
+
+            {/* Cards */}
+            {isExpanded && (
+              <div className="border-t border-gray-100 divide-y divide-gray-50">
+                {items.map(p => (
+                  <PropertyCard
+                    key={p.id}
+                    property={p}
+                    onAdvance={() => advanceStage(p)}
+                    onMarkVencida={() => markVencida(p)}
+                    advancing={advancing === p.id}
+                    compact
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }

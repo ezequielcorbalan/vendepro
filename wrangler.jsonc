@@ -3,6 +3,10 @@
   "main": ".open-next/worker.js",
   "compatibility_date": "2025-01-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "workers_dev": true,
+  "routes": [
+    { "pattern": "vendepro.com.ar/*", "zone_name": "vendepro.com.ar" }
+  ],
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"

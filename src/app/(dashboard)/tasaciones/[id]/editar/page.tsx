@@ -49,6 +49,9 @@ export default function EditarTasacionPage() {
   const [coveredArea, setCoveredArea] = useState('')
   const [totalArea, setTotalArea] = useState('')
   const [semiArea, setSemiArea] = useState('')
+  const [pctCubierta, setPctCubierta] = useState('100')
+  const [pctSemi, setPctSemi] = useState('75')
+  const [pctDesc, setPctDesc] = useState('25')
   const [propertyAge, setPropertyAge] = useState('')
 
   const [strengths, setStrengths] = useState('')
@@ -116,7 +119,8 @@ export default function EditarTasacionPage() {
     load()
   }, [id, router])
 
-  const weightedArea = (parseFloat(coveredArea) || 0) + (parseFloat(semiArea) || 0) * 0.75 + ((parseFloat(totalArea) || 0) - (parseFloat(coveredArea) || 0) - (parseFloat(semiArea) || 0)) * 0.25
+  const descArea = Math.max(0, (parseFloat(totalArea) || 0) - (parseFloat(coveredArea) || 0) - (parseFloat(semiArea) || 0))
+  const weightedArea = (parseFloat(coveredArea) || 0) * ((parseFloat(pctCubierta) || 0) / 100) + (parseFloat(semiArea) || 0) * ((parseFloat(pctSemi) || 0) / 100) + descArea * ((parseFloat(pctDesc) || 0) / 100)
   const avgUsdM2 = (() => {
     const prices = comparables.filter(c => parseFloat(c.usd_per_m2) > 0).map(c => parseFloat(c.usd_per_m2))
     return prices.length > 0 ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length) : 0

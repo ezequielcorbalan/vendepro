@@ -49,7 +49,15 @@ export async function GET(request: NextRequest) {
         ).bind(leadId).first()
       } catch { /* column may not exist */ }
 
-      return NextResponse.json({ lead, activities, history, linkedAppraisal })
+      // Get tags
+      let tags: any[] = []
+      try {
+        tags = (await db.prepare(
+          'SELECT t.id, t.name, t.color FROM tags t INNER JOIN lead_tags lt ON t.id = lt.tag_id WHERE lt.lead_id = ?'
+        ).bind(leadId).all()).results as any[]
+      } catch { /* tags table may not exist */ }
+
+      return NextResponse.json({ lead, activities, history, linkedAppraisal, tags })
     }
 
     let query = isAdmin
@@ -67,11 +75,34 @@ export async function GET(request: NextRequest) {
     if (stage) {
       query += ' AND l.stage = ?'
       binds.push(stage)
+    } else {
+      // Excluir archivados por defecto (salvo que se pidan explícitamente)
+      const includeArchived = searchParams.get('include_archived')
+      if (!includeArchived) {
+        query += " AND l.stage != 'archivado'"
+      }
     }
 
-    query += ' ORDER BY l.updated_at DESC'
+    // Ordenar por antigüedad: los más viejos primero (urgentes)
+    const sortBy = searchParams.get('sort')
+    if (sortBy === 'newest') {
+      query += ' ORDER BY l.created_at DESC'
+    } else {
+      query += ' ORDER BY l.created_at ASC'
+    }
 
-    const results = (await db.prepare(query).bind(...binds).all()).results
+    const results = (await db.prepare(query).bind(...binds).all()).results as any[]
+
+    // Attach tags to each lead
+    try {
+      for (const lead of results) {
+        const tags = (await db.prepare(
+          'SELECT t.id, t.name, t.color FROM tags t INNER JOIN lead_tags lt ON t.id = lt.tag_id WHERE lt.lead_id = ?'
+        ).bind(lead.id).all()).results
+        lead.tags = tags
+      }
+    } catch { /* tags table may not exist yet */ }
+
     return NextResponse.json(results)
   } catch {
     return NextResponse.json([])

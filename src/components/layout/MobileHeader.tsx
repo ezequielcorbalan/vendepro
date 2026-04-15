@@ -27,22 +27,20 @@ import type { Profile } from '@/lib/types'
 
 const agentLinks = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/mi-performance', label: 'Mi Performance', icon: Target },
-  { href: '/leads', label: 'Leads', icon: UserPlus },
-  { href: '/contactos', label: 'Contactos', icon: BookUser },
-  { href: '/actividades', label: 'Actividad', icon: Activity },
   { href: '/calendario', label: 'Calendario', icon: CalendarDays },
+  { href: '/leads', label: 'Contactos', icon: BookUser },
+  { href: '/actividades', label: 'Actividad', icon: Activity },
   { href: '/tasaciones', label: 'Tasaciones', icon: ClipboardList },
+  { href: '/propiedades/pipeline', label: 'Pipeline', icon: Building2 },
   { href: '/propiedades', label: 'Reportes', icon: BarChart3 },
   { href: '/vendidas', label: 'Vendidas', icon: DollarSign },
-  { href: '/reservas', label: 'Reservas', icon: Handshake },
+  { href: '/configuracion', label: 'Configuración', icon: Settings },
 ]
 
 const adminLinks = [
   { href: '/admin/agentes', label: 'Agentes', icon: Users },
   { href: '/admin/objetivos', label: 'Objetivos', icon: Target },
   { href: '/admin/auditoria', label: 'Auditoría', icon: FileBarChart },
-  { href: '/perfil', label: 'Mi perfil', icon: UserPlus },
   { href: '/configuracion', label: 'Configuración', icon: Settings },
 ]
 

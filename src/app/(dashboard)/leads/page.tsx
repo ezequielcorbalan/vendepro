@@ -237,15 +237,15 @@ export default function LeadsPage() {
   const activeFilters = [filterStage, filterSource, filterOperation, filterAgent].filter(Boolean).length
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 min-w-0 overflow-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Leads</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Contactos</h1>
           <p className="text-gray-500 text-sm">{leads.length} lead{leads.length !== 1 ? 's' : ''} en el pipeline</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex bg-gray-100 rounded-lg p-0.5">
+          <div className="hidden sm:flex bg-gray-100 rounded-lg p-0.5">
             <button onClick={() => setView('list')} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${view === 'list' ? 'bg-white shadow text-gray-800' : 'text-gray-500'}`}>
               <LayoutList className="w-4 h-4" />
             </button>
@@ -491,6 +491,9 @@ function LeadCard({ lead, onAdvance, onLost, onDelete }: { lead: any; onAdvance:
         {/* Line 1 */}
         <div className="flex items-center gap-2 mb-1">
           <span className="font-semibold text-sm text-gray-800 truncate flex-1">{lead.full_name}</span>
+          {lead.tags?.map((tag: any) => (
+            <span key={tag.id} className="text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 text-white" style={{ background: tag.color }}>{tag.name}</span>
+          ))}
           <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0 ${stage.color}`}>{stage.label}</span>
           {badge && <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold shrink-0 ${badge.class}`}>{badge.text}</span>}
         </div>
@@ -525,8 +528,11 @@ function LeadCard({ lead, onAdvance, onLost, onDelete }: { lead: any; onAdvance:
         ) : (
           <span className="flex-1 py-2.5 flex justify-center text-gray-300 text-xs">Sin tel</span>
         )}
-        {lead.stage !== 'captado' && lead.stage !== 'perdido' && (
+        {lead.stage !== 'captado' && lead.stage !== 'perdido' && lead.stage !== 'archivado' && (
           <button onClick={onAdvance} className="flex-1 py-2.5 flex justify-center text-[#ff007c] hover:bg-pink-50 border-l border-gray-100"><ArrowRight className="w-4 h-4" /></button>
+        )}
+        {(lead.stage === 'perdido') && (
+          <button onClick={() => onAdvance()} className="flex-1 py-2.5 flex justify-center text-gray-400 hover:bg-gray-50 border-l border-gray-100 text-xs font-medium" title="Archivar">Archivar</button>
         )}
         <button onClick={onDelete} className="py-2.5 px-3 flex justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 border-l border-gray-100" title="Eliminar"><Trash2 className="w-3.5 h-3.5" /></button>
       </div>
@@ -548,6 +554,13 @@ function KanbanCard({ lead, onAdvance, onMoveTo }: { lead: any; onAdvance: () =>
           <h4 className="text-sm font-medium text-gray-800 truncate">{lead.full_name}{lead.property_address ? <span className="text-gray-400 font-normal text-[10px] ml-1">· {lead.property_address}</span> : ''}</h4>
           {badge && <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${badge.class}`}>{badge.text}</span>}
         </div>
+        {lead.tags?.length > 0 && (
+          <div className="flex gap-1 mb-1">
+            {lead.tags.map((tag: any) => (
+              <span key={tag.id} className="text-[9px] px-1.5 py-0.5 rounded-full text-white font-medium" style={{ background: tag.color }}>{tag.name}</span>
+            ))}
+          </div>
+        )}
         <div className="space-y-1 text-xs text-gray-500">
           {lead.phone && <p className="flex items-center gap-1"><Phone className="w-3 h-3" />{lead.phone}</p>}
           {lead.operation && <p className="capitalize">{lead.operation}{lead.neighborhood ? ` · ${lead.neighborhood}` : ''}</p>}

@@ -92,11 +92,11 @@ export default async function PropertyDetailPage({
           </div>
         </div>
 
-        {/* Documents + Photos */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <DocumentChecklist propertyId={id} />
-          <PropertyPhotos propertyId={id} />
-        </div>
+        {/* Documents — full width, prominent */}
+        <DocumentChecklist propertyId={id} createdAt={property.created_at as string} />
+
+        {/* Photos */}
+        <PropertyPhotos propertyId={id} />
       </div>
 
       {/* Visit Forms */}

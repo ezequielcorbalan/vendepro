@@ -173,6 +173,30 @@ export interface AppraisalComparable {
 }
 
 // ============================================================
+// Template Blocks (Tasación landing page)
+// ============================================================
+
+export type BlockType = 'service' | 'video' | 'stats' | 'text' | 'custom'
+export type BlockSection = 'commercial' | 'conditions'
+
+export interface TemplateBlock {
+  id: string
+  org_id: string
+  block_type: BlockType
+  title: string
+  description: string | null
+  icon: string | null
+  number_label: string | null
+  video_url: string | null
+  image_url: string | null
+  sort_order: number
+  enabled: number // 0 | 1 (SQLite boolean)
+  section: BlockSection
+  created_at: string
+  updated_at: string
+}
+
+// ============================================================
 // Aggregated types for charts
 // ============================================================
 

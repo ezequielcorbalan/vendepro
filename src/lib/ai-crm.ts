@@ -1,7 +1,13 @@
 // AI CRM — Groq integration for structured entity extraction
 import { LEAD_STAGES, ACTIVITY_TYPES } from './crm-config'
 
-const GROQ_MODEL = 'llama-3.3-70b-specdec'
+// Fallback chain: if one model is decommissioned, try the next
+const GROQ_MODELS = [
+  'llama-3.3-70b-versatile',
+  'llama3-70b-8192',
+  'llama3-8b-8192',
+  'mixtral-8x7b-32768',
+]
 
 // ── System prompt ─────────────────────────────────────────
 const SYSTEM_PROMPT = `Sos un asistente de CRM inmobiliario argentino.
@@ -83,30 +89,41 @@ export async function processWithGroq(
     : text
 
   try {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: GROQ_MODEL,
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: userMessage },
-        ],
-        temperature: 0.1, // Low temp for structured extraction
-        max_tokens: 1500,
-        response_format: { type: 'json_object' },
-      }),
-    })
+    let data: any = null
+    let lastError = ''
 
-    if (!res.ok) {
-      const err = await res.text()
-      return { intents: [], error: `Groq API error ${res.status}: ${err}` }
+    for (const model of GROQ_MODELS) {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: 'system', content: SYSTEM_PROMPT },
+            { role: 'user', content: userMessage },
+          ],
+          temperature: 0.1,
+          max_tokens: 1500,
+          response_format: { type: 'json_object' },
+        }),
+      })
+
+      if (res.ok) {
+        data = (await res.json()) as any
+        break // Model worked, stop trying
+      }
+
+      // Model failed (decommissioned, rate limited, etc.) — try next
+      lastError = await res.text()
+      console.warn(`Groq model ${model} failed, trying next...`)
     }
 
-    const data = (await res.json()) as any
+    if (!data) {
+      return { intents: [], error: `All Groq models failed. Last error: ${lastError}` }
+    }
     const content = data.choices?.[0]?.message?.content || '{}'
 
     let parsed: any

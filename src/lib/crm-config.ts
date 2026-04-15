@@ -18,11 +18,35 @@ export const LEAD_STAGES = {
   seguimiento: { label: 'Seguimiento',  color: 'bg-yellow-100 text-yellow-800',   order: 7 },
   captado:     { label: 'Captado',      color: 'bg-green-100 text-green-800',     order: 8 },
   perdido:     { label: 'Perdido',      color: 'bg-red-100 text-red-800',         order: 9 },
+  archivado:   { label: 'Archivado',   color: 'bg-gray-100 text-gray-500',       order: 10 },
 } as const
 
 export type LeadStage = keyof typeof LEAD_STAGES
 export const LEAD_STAGE_KEYS = Object.keys(LEAD_STAGES) as LeadStage[]
-export const LEAD_PIPELINE_STAGES = LEAD_STAGE_KEYS.filter(s => s !== 'perdido')
+export const LEAD_PIPELINE_STAGES = LEAD_STAGE_KEYS.filter(s => s !== 'perdido' && s !== 'archivado')
+
+// ── LEAD TAGS (etiquetas) ──────────────────────────────────
+export const DEFAULT_TAGS = {
+  propietario: { label: 'Propietario', color: '#ec4899' },
+  comprador:   { label: 'Comprador',   color: '#3b82f6' },
+  inversor:    { label: 'Inversor',    color: '#f59e0b' },
+  aliado:      { label: 'Aliado',      color: '#10b981' },
+} as const
+
+// ── PIPELINES DINÁMICOS POR TAG ────────────────────────────
+// Cada tag tiene su propio pipeline. Si no tiene tag, usa el default (propietario).
+export const TAG_PIPELINES: Record<string, LeadStage[]> = {
+  propietario: ['nuevo', 'asignado', 'contactado', 'calificado', 'en_tasacion', 'presentada', 'seguimiento', 'captado', 'perdido'],
+  comprador:   ['nuevo', 'asignado', 'contactado', 'calificado', 'seguimiento', 'captado', 'perdido'],
+  inversor:    ['nuevo', 'contactado', 'calificado', 'seguimiento', 'captado', 'perdido'],
+  aliado:      ['nuevo', 'contactado'],  // Aliados no necesitan pipeline comercial
+}
+
+export function getPipelineForTag(tagName: string | null): LeadStage[] {
+  if (!tagName) return TAG_PIPELINES.propietario
+  const key = tagName.toLowerCase()
+  return TAG_PIPELINES[key] || TAG_PIPELINES.propietario
+}
 
 // Stages que disparan acciones automáticas
 export const STAGE_AUTO_ACTIONS = {
@@ -36,11 +60,14 @@ export const STAGE_AUTO_ACTIONS = {
 // Lead termina en "captado" → se crea propiedad con stage "captada"
 export const PROPERTY_STAGES = {
   captada:       { label: 'Captada',        color: 'bg-green-100 text-green-800',     order: 1 },
-  documentacion: { label: 'Documentación',  color: 'bg-amber-100 text-amber-800',     order: 2 },
-  publicada:     { label: 'Publicada',      color: 'bg-blue-100 text-blue-800',       order: 3 },
-  reservada:     { label: 'Reservada',      color: 'bg-purple-100 text-purple-800',   order: 4 },
+  publicada:     { label: 'Publicada',      color: 'bg-blue-100 text-blue-800',       order: 2 },
+  reservada:     { label: 'Reservada',      color: 'bg-purple-100 text-purple-800',   order: 3 },
+  suspendida:    { label: 'Suspendida',     color: 'bg-orange-100 text-orange-800',   order: 4 },
   vendida:       { label: 'Vendida',        color: 'bg-emerald-100 text-emerald-800', order: 5 },
   vencida:       { label: 'Vencida',        color: 'bg-red-100 text-red-800',         order: 6 },
+  archivada:     { label: 'Archivada',      color: 'bg-gray-100 text-gray-500',       order: 7 },
+  // documentacion se maneja como checklist dentro de la propiedad, no como stage del pipeline
+  documentacion: { label: 'Documentación',  color: 'bg-amber-100 text-amber-800',     order: 99 },
 } as const
 
 export type PropertyStage = keyof typeof PROPERTY_STAGES

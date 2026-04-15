@@ -9,7 +9,6 @@ import GoogleCalendarSection from '@/components/settings/GoogleCalendarSection'
 export default async function ConfiguracionPage() {
   const user = await getCurrentUser()
   if (!user) redirect('/login')
-  if (user.role !== 'admin' && user.role !== 'owner') redirect('/dashboard')
 
   const db = await getDB()
   let org: any = null
@@ -42,14 +41,29 @@ export default async function ConfiguracionPage() {
           <ProfilePhotoForm userId={user.id} currentName={user.full_name} currentPhoto={(user as any).photo_url || ''} />
         </div>
 
-        {/* Tasacion Config Link */}
-        <Link href="/configuracion/tasacion" className="block bg-white rounded-xl shadow-sm p-4 sm:p-6 hover:shadow-md transition-shadow">
-          <h2 className="text-lg font-semibold text-gray-800 mb-1 flex items-center gap-2">
-            <ClipboardList className="w-5 h-5 text-brand-pink" />
-            Configuraci&oacute;n de tasaciones
-          </h2>
-          <p className="text-sm text-brand-gray">Videos, textos, datos de mercado y CTAs para las landings de tasaci&oacute;n</p>
-        </Link>
+        {/* Quick links */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Link href="/configuracion/tasacion" className="block bg-white rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow">
+            <ClipboardList className="w-5 h-5 text-brand-pink mb-2" />
+            <h3 className="text-sm font-semibold text-gray-800">Tasaciones</h3>
+            <p className="text-xs text-gray-400 mt-0.5">Bloques, marca y datos de mercado</p>
+          </Link>
+          <Link href="/mi-performance" className="block bg-white rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow">
+            <FileText className="w-5 h-5 text-purple-500 mb-2" />
+            <h3 className="text-sm font-semibold text-gray-800">Mi Performance</h3>
+            <p className="text-xs text-gray-400 mt-0.5">Métricas y rendimiento personal</p>
+          </Link>
+          <Link href="/perfil/objetivos" className="block bg-white rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow">
+            <Settings className="w-5 h-5 text-orange-500 mb-2" />
+            <h3 className="text-sm font-semibold text-gray-800">Mis Objetivos</h3>
+            <p className="text-xs text-gray-400 mt-0.5">Metas y seguimiento</p>
+          </Link>
+          <Link href="/fichas/nueva" className="block bg-white rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow">
+            <ClipboardList className="w-5 h-5 text-green-500 mb-2" />
+            <h3 className="text-sm font-semibold text-gray-800">Ficha de tasación</h3>
+            <p className="text-xs text-gray-400 mt-0.5">Formulario de inspección digital</p>
+          </Link>
+        </div>
 
         {/* Organization Info */}
         <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">

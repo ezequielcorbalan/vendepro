@@ -7,7 +7,7 @@ import {
   MessageCircle, User, AlertCircle, Loader2, CheckCircle,
   Activity, ChevronRight, ExternalLink, PlusCircle, Home,
   DollarSign, Briefcase, PawPrint, StickyNote, Target, X,
-  Send, RefreshCw, Link2, Calculator,
+  Send, RefreshCw, Link2, Calculator, ClipboardList,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useToast } from '@/components/ui/Toast'
@@ -86,6 +86,8 @@ export default function LeadDetailPage() {
   const [activities, setActivities] = useState<any[]>([])
   const [history, setHistory] = useState<any[]>([])
   const [linkedAppraisal, setLinkedAppraisal] = useState<any>(null)
+  const [leadTags, setLeadTags] = useState<any[]>([])
+  const [allTags, setAllTags] = useState<any[]>([])
   const [agents, setAgents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -113,6 +115,7 @@ export default function LeadDetailPage() {
       setActivities(data.activities || [])
       setHistory(data.history || [])
       setLinkedAppraisal(data.linkedAppraisal || null)
+      setLeadTags(data.tags || [])
       setError(null)
     } catch (err: any) {
       setError(err.message || 'Error cargando datos')
@@ -124,7 +127,25 @@ export default function LeadDetailPage() {
   useEffect(() => {
     fetchLead()
     fetch('/api/agents').then(r => r.json() as Promise<any>).then(d => { if (Array.isArray(d)) setAgents(d) }).catch(() => {})
+    fetch('/api/tags').then(r => r.json() as Promise<any>).then(d => { if (Array.isArray(d)) setAllTags(d) }).catch(() => {})
   }, [fetchLead])
+
+  async function toggleTag(tagId: string) {
+    if (!lead) return
+    const hasTag = leadTags.some((t: any) => t.id === tagId)
+    if (hasTag) {
+      await fetch(`/api/lead-tags?lead_id=${lead.id}&tag_id=${tagId}`, { method: 'DELETE' })
+      setLeadTags(prev => prev.filter((t: any) => t.id !== tagId))
+    } else {
+      await fetch('/api/lead-tags', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lead_id: lead.id, tag_id: tagId }),
+      })
+      const tag = allTags.find((t: any) => t.id === tagId)
+      if (tag) setLeadTags(prev => [...prev, tag])
+    }
+  }
 
   // ------ Stage advance ------
   async function advanceStage(targetStage: string) {
@@ -404,6 +425,12 @@ export default function LeadDetailPage() {
           <button onClick={openEdit} className="text-xs sm:text-sm font-medium border border-gray-300 text-gray-700 px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center gap-1.5">
             <StickyNote className="w-4 h-4" /> Editar
           </button>
+          <Link href={`/fichas/nueva?lead_id=${lead.id}&address=${encodeURIComponent(lead.property_address || '')}&neighborhood=${encodeURIComponent(lead.neighborhood || '')}`}
+            className="text-xs sm:text-sm font-medium border border-orange-300 text-orange-700 bg-orange-50 px-3 sm:px-4 py-2 rounded-lg hover:bg-orange-100 flex items-center gap-1.5">
+            <ClipboardList className="w-4 h-4" />
+            <span className="hidden sm:inline">Ficha de tasación</span>
+            <span className="sm:hidden">Ficha</span>
+          </Link>
           {lead.stage !== 'captado' && lead.stage !== 'perdido' && lead.stage !== 'en_tasacion' && lead.stage !== 'presentada' && (
             <button
               onClick={handleConvert}
@@ -438,7 +465,22 @@ export default function LeadDetailPage() {
               <span className={`text-xs font-semibold text-white px-3 py-1 rounded-full ${currentStage.color}`}>
                 {currentStage.label}
               </span>
+              {leadTags.map((tag: any) => (
+                <span key={tag.id} className="text-xs font-medium text-white px-3 py-1 rounded-full cursor-pointer hover:opacity-80" style={{ background: tag.color }} onClick={() => toggleTag(tag.id)} title="Click para quitar">{tag.name} &times;</span>
+              ))}
             </div>
+
+            {/* Tag selector */}
+            {allTags.length > 0 && (
+              <div className="flex items-center gap-1.5 mt-2">
+                <span className="text-[10px] text-gray-400 uppercase tracking-wider mr-1">Etiquetas:</span>
+                {allTags.filter((t: any) => !leadTags.some((lt: any) => lt.id === t.id)).map((tag: any) => (
+                  <button key={tag.id} onClick={() => toggleTag(tag.id)} className="text-[10px] px-2 py-0.5 rounded-full border border-gray-200 text-gray-500 hover:text-white hover:border-transparent transition-colors" style={{ ['--tw-hover-bg' as string]: tag.color }} onMouseEnter={e => { (e.target as HTMLElement).style.background = tag.color; (e.target as HTMLElement).style.color = 'white' }} onMouseLeave={e => { (e.target as HTMLElement).style.background = ''; (e.target as HTMLElement).style.color = '' }}>
+                    + {tag.name}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {slaBadge && (
               <div className={`inline-flex items-center gap-1.5 mt-2 text-xs font-medium px-2.5 py-1 rounded-full border ${slaBadge.color}`}>
