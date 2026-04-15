@@ -11,7 +11,7 @@ export default function PrefactibilidadesPage() {
   const [error, setError] = useState(false)
 
   useEffect(() => {
-    apiFetch('analytics', '/prefactibilidades')
+    apiFetch('properties', '/prefactibilidades')
       .then(r => (r.json()) as any)
       .then((d: any) => {
         if (d?.error) { setError(true); setLoading(false); return }

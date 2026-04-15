@@ -191,6 +191,80 @@ app.delete('/appraisals/comparables', async (c) => {
   return c.json({ success: true })
 })
 
+// ── PREFACTIBILIDADES ──────────────────────────────────────────
+
+app.get('/prefactibilidades', async (c) => {
+  const db = c.env.DB
+  const orgId = c.get('orgId')
+  try {
+    const rows = (await db.prepare(
+      `SELECT pf.*, u.full_name as agent_name FROM prefactibilidades pf LEFT JOIN users u ON pf.agent_id = u.id WHERE pf.org_id = ? ORDER BY pf.created_at DESC LIMIT 100`
+    ).bind(orgId).all()).results
+    return c.json(rows)
+  } catch { return c.json([]) }
+})
+
+app.post('/prefactibilidades', async (c) => {
+  const body = (await c.req.json()) as any
+  const db = c.env.DB
+  const orgId = c.get('orgId')
+  const agentId = c.get('userId')
+  const id = crypto.randomUUID().replace(/-/g, '')
+  const slug = `pf-${id.slice(0, 12)}`
+  const now = new Date().toISOString()
+  try {
+    await db.prepare(`
+      INSERT INTO prefactibilidades (
+        id, org_id, agent_id, lead_id, public_slug, status,
+        address, neighborhood, city, lot_area, lot_frontage, lot_depth,
+        zoning, fot, fos, max_height, lot_price, lot_price_per_m2, lot_description,
+        project_name, project_description, buildable_area, total_units,
+        units_mix, parking_spots, amenities,
+        construction_cost_per_m2, total_construction_cost, professional_fees,
+        permits_cost, commercialization_cost, other_costs, total_investment,
+        avg_sale_price_per_m2, total_sellable_area, projected_revenue,
+        gross_margin, margin_pct, comparables, timeline,
+        executive_summary, recommendation, created_at, updated_at
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    `).bind(
+      id, orgId, agentId, body.lead_id ?? null, slug, 'draft',
+      body.address, body.neighborhood ?? null, body.city ?? 'Buenos Aires',
+      body.lot_area ?? null, body.lot_frontage ?? null, body.lot_depth ?? null,
+      body.zoning ?? null, body.fot ?? null, body.fos ?? null, body.max_height ?? null,
+      body.lot_price ?? null, body.lot_price_per_m2 ?? null, body.lot_description ?? null,
+      body.project_name ?? null, body.project_description ?? null,
+      body.buildable_area ?? null, body.total_units ?? null,
+      body.units_mix ? JSON.stringify(body.units_mix) : null,
+      body.parking_spots ?? null,
+      body.amenities ? JSON.stringify(body.amenities) : null,
+      body.construction_cost_per_m2 ?? null, body.total_construction_cost ?? null,
+      body.professional_fees ?? null, body.permits_cost ?? null,
+      body.commercialization_cost ?? null, body.other_costs ?? null, body.total_investment ?? null,
+      body.avg_sale_price_per_m2 ?? null, body.total_sellable_area ?? null,
+      body.projected_revenue ?? null, body.gross_margin ?? null, body.margin_pct ?? null,
+      body.comparables ? JSON.stringify(body.comparables) : null,
+      body.timeline ? JSON.stringify(body.timeline) : null,
+      body.executive_summary ?? null, body.recommendation ?? null,
+      now, now
+    ).run()
+    return c.json({ id, slug }, 201)
+  } catch (e: any) {
+    return c.json({ error: e.message || 'Error creating prefactibilidad' }, 500)
+  }
+})
+
+app.get('/prefactibilidades/:id', async (c) => {
+  const db = c.env.DB
+  const orgId = c.get('orgId')
+  try {
+    const row = await db.prepare(
+      `SELECT pf.*, u.full_name as agent_name FROM prefactibilidades pf LEFT JOIN users u ON pf.agent_id = u.id WHERE pf.id = ? AND pf.org_id = ?`
+    ).bind(c.req.param('id'), orgId).first()
+    if (!row) return c.json({ error: 'Not found' }, 404)
+    return c.json(row)
+  } catch { return c.json({ error: 'Not found' }, 404) }
+})
+
 // ── REPORTS (stub) ─────────────────────────────────────────────
 app.get('/reports', async (c) => {
   const { property_id } = c.req.query()
