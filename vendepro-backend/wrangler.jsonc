@@ -1,13 +1,19 @@
 {
-  // Usado solo para correr migraciones D1 — no es un Worker deployable
-  "name": "vendepro-migrations",
-  "compatibility_date": "2025-01-01",
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "reportes-mg-db",
-      "database_id": "ca41dfff-cc50-45c7-a92a-424eebcabfb8",
-      "migrations_dir": "migrations"
-    }
-  ]
+	// Usado solo para correr migraciones D1 — no es un Worker deployable
+	"name": "vendepro-migrations",
+	"compatibility_date": "2025-01-01",
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "reportes-mg-db",
+			"database_id": "ca41dfff-cc50-45c7-a92a-424eebcabfb8",
+			"migrations_dir": "migrations"
+		},
+		{
+			"binding": "vendepro_db",
+			"database_name": "vendepro-db",
+			"database_id": "45d18f94-807b-466f-8742-32bbc61fc7fb",
+			"migrations_dir": "migrations_v2"
+		}
+	]
 }
