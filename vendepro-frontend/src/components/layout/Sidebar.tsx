@@ -2,65 +2,13 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import { Settings, LogOut, FileBarChart } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import GlobalSearch from './GlobalSearch'
 import NotificationBell from './NotificationBell'
-import {
-  LayoutDashboard,
-  Building2,
-  Users,
-  LogOut,
-  FileBarChart,
-  ClipboardList,
-  Settings,
-  DollarSign,
-  BarChart3,
-  BookUser,
-  Activity,
-  CalendarDays,
-  UserCheck,
-  FileCheck,
-  TrendingUp,
-} from 'lucide-react'
+import { menuSections, adminSection } from '@/lib/nav-config'
 import { apiFetch, clearToken } from '@/lib/api'
 import type { Profile } from '@/lib/types'
-
-const menuSections = [
-  {
-    title: 'Principal',
-    links: [
-      { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-      { href: '/calendario', label: 'Calendario', icon: CalendarDays },
-      { href: '/mi-performance', label: 'Mi Performance', icon: TrendingUp },
-    ],
-  },
-  {
-    title: 'CRM',
-    links: [
-      { href: '/leads', label: 'Leads', icon: BookUser },
-      { href: '/contactos', label: 'Contactos', icon: UserCheck },
-      { href: '/actividades', label: 'Actividad', icon: Activity },
-    ],
-  },
-  {
-    title: 'Comercial',
-    links: [
-      { href: '/tasaciones', label: 'Tasaciones', icon: ClipboardList },
-      { href: '/propiedades/pipeline', label: 'Pipeline', icon: Building2 },
-      { href: '/propiedades', label: 'Propiedades', icon: BarChart3, exact: true },
-      { href: '/reservas', label: 'Reservas', icon: FileCheck },
-      { href: '/vendidas', label: 'Vendidas', icon: DollarSign },
-    ],
-  },
-]
-
-const adminSection = {
-  title: 'Administración',
-  links: [
-    { href: '/admin/agentes', label: 'Equipo', icon: Users },
-    { href: '/admin/auditoria', label: 'Auditoría', icon: FileBarChart },
-  ],
-}
 
 export default function Sidebar({ profile }: { profile: Profile }) {
   const pathname = usePathname()
@@ -71,7 +19,6 @@ export default function Sidebar({ profile }: { profile: Profile }) {
       await apiFetch('auth', '/logout', { method: 'POST' })
     } catch {}
     clearToken()
-    // Clear cookie
     document.cookie = 'vendepro_token=; Max-Age=0; path=/'
     router.push('/login')
     router.refresh()
@@ -89,7 +36,7 @@ export default function Sidebar({ profile }: { profile: Profile }) {
           <NotificationBell />
         </div>
         <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
-          <FileBarChart className="w-3 h-3" /> Gestión inmobiliaria
+          <FileBarChart className="w-3 h-3" aria-hidden="true" /> Gestión inmobiliaria
         </p>
       </div>
 
@@ -97,18 +44,21 @@ export default function Sidebar({ profile }: { profile: Profile }) {
         <GlobalSearch />
       </div>
 
-      <nav className="flex-1 p-4 space-y-4 overflow-y-auto">
+      <nav className="flex-1 p-4 space-y-4 overflow-y-auto" aria-label="Navegación principal">
         {sections.map((section) => (
           <div key={section.title}>
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-3 mb-1">{section.title}</p>
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-3 mb-1">
+              {section.title}
+            </p>
             <div className="space-y-0.5">
               {section.links.map((link) => {
                 const Icon = link.icon
-                const isActive = pathname === link.href || (!(link as any).exact && pathname.startsWith(link.href + '/'))
+                const isActive = pathname === link.href || (!link.exact && pathname.startsWith(link.href + '/'))
                 return (
                   <Link
                     key={link.href}
                     href={link.href}
+                    aria-current={isActive ? 'page' : undefined}
                     className={cn(
                       'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                       isActive
@@ -116,7 +66,7 @@ export default function Sidebar({ profile }: { profile: Profile }) {
                         : 'text-gray-600 hover:bg-gray-100'
                     )}
                   >
-                    <Icon className="w-5 h-5" />
+                    <Icon className="w-5 h-5" aria-hidden="true" />
                     {link.label}
                   </Link>
                 )
@@ -128,7 +78,7 @@ export default function Sidebar({ profile }: { profile: Profile }) {
 
       <div className="p-4 border-t border-gray-100 space-y-1">
         <Link href="/perfil" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors">
-          <div className="w-8 h-8 rounded-full bg-[#ff007c]/20 flex items-center justify-center text-[#ff007c] font-semibold text-sm">
+          <div className="w-8 h-8 rounded-full bg-[#ff007c]/20 flex items-center justify-center text-[#ff007c] font-semibold text-sm" aria-hidden="true">
             {profile.full_name.charAt(0).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
@@ -138,6 +88,7 @@ export default function Sidebar({ profile }: { profile: Profile }) {
         </Link>
         <Link
           href="/configuracion"
+          aria-current={pathname.startsWith('/configuracion') || pathname.startsWith('/perfil') ? 'page' : undefined}
           className={cn(
             'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
             pathname.startsWith('/configuracion') || pathname.startsWith('/perfil')
@@ -145,14 +96,15 @@ export default function Sidebar({ profile }: { profile: Profile }) {
               : 'text-gray-600 hover:bg-gray-100'
           )}
         >
-          <Settings className="w-4 h-4" />
+          <Settings className="w-4 h-4" aria-hidden="true" />
           Configuración
         </Link>
         <button
           onClick={handleLogout}
+          aria-label="Cerrar sesión"
           className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100 w-full transition-colors"
         >
-          <LogOut className="w-4 h-4" />
+          <LogOut className="w-4 h-4" aria-hidden="true" />
           Cerrar sesión
         </button>
       </div>
