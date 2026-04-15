@@ -17,7 +17,11 @@
       "Bash(sed -i 's|\"name\": \"reportes-frontend\"|\"name\": \"vendepro-frontend\"|g' reportes-frontend/package.json)",
       "Bash(find reportes-frontend *)",
       "Bash(sed -i 's|reportes_session|vendepro_session|g' reportes-backend/packages/infrastructure/src/middleware/auth-middleware.ts)",
-      "Bash(git stash *)"
+      "Bash(git stash *)",
+      "Bash(git remote *)",
+      "Bash(git reset *)",
+      "Bash(gh run *)",
+      "Bash(git mv *)"
     ]
   }
 }

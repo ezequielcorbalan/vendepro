@@ -4,11 +4,11 @@ on:
   push:
     branches: [main]
     paths:
-      - "reportes-backend/packages/api-transactions/**"
-      - "reportes-backend/packages/core/**"
-      - "reportes-backend/packages/infrastructure/**"
-      - "reportes-backend/package.json"
-      - "reportes-backend/package-lock.json"
+      - "vendepro-backend/packages/api-transactions/**"
+      - "vendepro-backend/packages/core/**"
+      - "vendepro-backend/packages/infrastructure/**"
+      - "vendepro-backend/package.json"
+      - "vendepro-backend/package-lock.json"
       - ".github/workflows/deploy-api-transactions.yml"
       - ".github/workflows/_deploy-api.yml"
   workflow_dispatch:

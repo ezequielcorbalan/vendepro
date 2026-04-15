@@ -24,15 +24,15 @@ jobs:
         with:
           node-version: "20"
           cache: "npm"
-          cache-dependency-path: reportes-backend/package-lock.json
+          cache-dependency-path: vendepro-backend/package-lock.json
 
       - name: Install dependencies
         run: npm ci
-        working-directory: reportes-backend
+        working-directory: vendepro-backend
 
       - name: Run all tests
         run: npm test
-        working-directory: reportes-backend
+        working-directory: vendepro-backend
         env:
           CI: true
 
@@ -47,15 +47,15 @@ jobs:
         with:
           node-version: "20"
           cache: "npm"
-          cache-dependency-path: reportes-backend/package-lock.json
+          cache-dependency-path: vendepro-backend/package-lock.json
 
       - name: Install dependencies
         run: npm ci
-        working-directory: reportes-backend
+        working-directory: vendepro-backend
 
       - name: Deploy
         run: npx wrangler deploy
-        working-directory: reportes-backend/packages/${{ inputs.api_name }}
+        working-directory: vendepro-backend/packages/${{ inputs.api_name }}
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
