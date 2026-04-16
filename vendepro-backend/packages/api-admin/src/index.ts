@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { corsMiddleware, errorHandler, createAuthMiddleware, D1UserRepository, D1ObjectiveRepository, D1TemplateBlockRepository, JwtAuthService, CryptoIdGenerator } from '@vendepro/infrastructure'
-import { CreateAgentUseCase, GetAgentsUseCase, SetObjectivesUseCase } from '@vendepro/core'
+import { CreateAgentUseCase, GetAgentsUseCase, SetObjectivesUseCase, UpdateAgentRoleUseCase } from '@vendepro/core'
 
 type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket }
 type AuthVars = { Variables: { userId: string; userRole: string; orgId: string } }
@@ -47,6 +47,40 @@ app.delete('/agents', async (c) => {
   const repo = new D1UserRepository(c.env.DB)
   await repo.delete(id, c.get('orgId'))
   return c.json({ success: true })
+})
+
+app.get('/roles', async (c) => {
+  const roles = await c.env.DB
+    .prepare('SELECT id, name, label FROM roles ORDER BY id')
+    .all()
+  return c.json(roles.results)
+})
+
+app.patch('/agents/role', async (c) => {
+  const body = (await c.req.json()) as any
+  const { id, role_id } = body
+
+  if (!id || !role_id) return c.json({ error: 'id y role_id son requeridos' }, 400)
+
+  const role = await c.env.DB
+    .prepare('SELECT id, name, label FROM roles WHERE id = ?')
+    .bind(role_id)
+    .first() as any
+
+  if (!role) return c.json({ error: 'Rol no encontrado' }, 404)
+
+  const repo = new D1UserRepository(c.env.DB)
+  const useCase = new UpdateAgentRoleUseCase(repo)
+
+  await useCase.execute({
+    requestingUserRole: c.get('userRole'),
+    agentId: id,
+    orgId: c.get('orgId'),
+    roleId: role.id,
+    roleName: role.name,
+  })
+
+  return c.json({ success: true, role: { id: role.id, name: role.name, label: role.label } })
 })
 
 // ── OBJECTIVES ─────────────────────────────────────────────────
