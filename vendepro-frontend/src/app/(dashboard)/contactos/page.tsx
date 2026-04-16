@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { Plus, Search, Trash2, Loader2, BookUser, Phone, Mail, MapPin, X } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
@@ -150,7 +151,9 @@ export default function ContactosPage() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-semibold text-gray-800">{c.full_name}</h3>
+                      <Link href={`/contactos/${c.id}`} className="font-semibold text-gray-800 hover:text-[#ff007c] truncate">
+                        {c.full_name}
+                      </Link>
                       <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${t.color}`}>{t.label}</span>
                     </div>
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
@@ -168,9 +171,16 @@ export default function ContactosPage() {
                     </div>
                     {c.notes && <p className="text-xs text-gray-400 mt-1 line-clamp-2">{c.notes}</p>}
                   </div>
-                  <button onClick={() => handleDelete(c.id)} className="text-gray-300 hover:text-red-500 p-1 flex-shrink-0">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="flex gap-1 flex-shrink-0">
+                    <Link href={`/contactos/${c.id}`} className="text-gray-400 hover:text-[#ff007c] p-1">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </Link>
+                    <button onClick={() => handleDelete(c.id)} className="text-gray-300 hover:text-red-500 p-1">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             )
