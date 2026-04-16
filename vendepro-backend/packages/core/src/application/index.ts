@@ -39,6 +39,7 @@ export * from './use-cases/reservations/advance-reservation-stage'
 export * from './use-cases/admin/create-agent'
 export * from './use-cases/admin/get-agents'
 export * from './use-cases/admin/set-objectives'
+export * from './use-cases/admin/update-agent-role'
 
 // Dashboard
 export * from './use-cases/dashboard/get-dashboard-stats'
