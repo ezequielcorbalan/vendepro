@@ -18,8 +18,8 @@ export class D1ContactRepository implements ContactRepository {
 
     if (filters?.agent_id) { query += ' AND agent_id = ?'; binds.push(filters.agent_id) }
     if (filters?.search) {
-      query += ' AND (full_name LIKE ? OR phone LIKE ?)'
-      binds.push(`%${filters.search}%`, `%${filters.search}%`)
+      query += ' AND (full_name LIKE ? OR phone LIKE ? OR email LIKE ?)'
+      binds.push(`%${filters.search}%`, `%${filters.search}%`, `%${filters.search}%`)
     }
     query += ' ORDER BY full_name LIMIT 200'
 
@@ -30,12 +30,17 @@ export class D1ContactRepository implements ContactRepository {
   async save(contact: Contact): Promise<void> {
     const o = contact.toObject()
     await this.db.prepare(`
-      INSERT INTO contacts (id, org_id, full_name, phone, email, role, notes, agent_id, created_at, updated_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?)
+      INSERT INTO contacts (id, org_id, full_name, phone, email, contact_type, neighborhood, notes, source, agent_id, created_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?)
       ON CONFLICT(id) DO UPDATE SET
         full_name=excluded.full_name, phone=excluded.phone, email=excluded.email,
-        role=excluded.role, notes=excluded.notes, updated_at=excluded.updated_at
-    `).bind(o.id, o.org_id, o.full_name, o.phone, o.email, o.role, o.notes, o.agent_id, o.created_at, o.updated_at).run()
+        contact_type=excluded.contact_type, neighborhood=excluded.neighborhood,
+        notes=excluded.notes, source=excluded.source
+    `).bind(
+      o.id, o.org_id, o.full_name, o.phone, o.email,
+      o.contact_type, o.neighborhood, o.notes, o.source,
+      o.agent_id, o.created_at
+    ).run()
   }
 
   async delete(id: string, orgId: string): Promise<void> {
@@ -44,9 +49,17 @@ export class D1ContactRepository implements ContactRepository {
 
   private toEntity(row: any): Contact {
     return Contact.create({
-      id: row.id, org_id: row.org_id, full_name: row.full_name, phone: row.phone ?? null,
-      email: row.email ?? null, role: row.role ?? null, notes: row.notes ?? null,
-      agent_id: row.agent_id, created_at: row.created_at, updated_at: row.updated_at,
+      id: row.id,
+      org_id: row.org_id,
+      full_name: row.full_name,
+      phone: row.phone ?? null,
+      email: row.email ?? null,
+      contact_type: row.contact_type ?? 'propietario',
+      neighborhood: row.neighborhood ?? null,
+      notes: row.notes ?? null,
+      source: row.source ?? null,
+      agent_id: row.agent_id,
+      created_at: row.created_at,
     })
   }
 }

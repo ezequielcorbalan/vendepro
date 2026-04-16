@@ -7,7 +7,9 @@ export interface CreateContactInput {
   full_name: string
   phone?: string | null
   email?: string | null
-  role?: string | null
+  contact_type?: string | null
+  neighborhood?: string | null
+  source?: string | null
   notes?: string | null
   agent_id: string
 }
@@ -25,7 +27,9 @@ export class CreateContactUseCase {
       full_name: input.full_name,
       phone: input.phone ?? null,
       email: input.email ?? null,
-      role: input.role ?? null,
+      contact_type: input.contact_type ?? 'propietario',
+      neighborhood: input.neighborhood ?? null,
+      source: input.source ?? null,
       notes: input.notes ?? null,
       agent_id: input.agent_id,
     })
