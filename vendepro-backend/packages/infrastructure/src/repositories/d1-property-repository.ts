@@ -59,14 +59,23 @@ export class D1PropertyRepository implements PropertyRepository {
   }
 
   private toEntity(row: any): Property {
+    const validTypes = ['departamento', 'casa', 'ph', 'local', 'terreno', 'oficina']
     return Property.create({
-      id: row.id, org_id: row.org_id, address: row.address,
+      id: row.id, org_id: row.org_id,
+      address: row.address || 'Sin dirección',
       neighborhood: row.neighborhood || 'Sin barrio',
-      city: row.city, property_type: row.property_type, rooms: row.rooms ?? null,
-      size_m2: row.size_m2 ?? null, asking_price: row.asking_price ?? null,
-      currency: row.currency, owner_name: row.owner_name, owner_phone: row.owner_phone ?? '',
-      owner_email: row.owner_email ?? null, public_slug: row.public_slug,
-      cover_photo: row.cover_photo ?? null, agent_id: row.agent_id,
+      city: row.city || '',
+      property_type: validTypes.includes(row.property_type) ? row.property_type : 'departamento',
+      rooms: row.rooms ?? null,
+      size_m2: row.size_m2 ?? null,
+      asking_price: row.asking_price ?? null,
+      currency: row.currency || 'USD',
+      owner_name: row.owner_name || 'Sin propietario',
+      owner_phone: row.owner_phone ?? null,
+      owner_email: row.owner_email ?? null,
+      public_slug: row.public_slug || row.id,
+      cover_photo: row.cover_photo ?? null,
+      agent_id: row.agent_id,
       status: row.status, commercial_stage: row.commercial_stage ?? null,
       created_at: row.created_at, updated_at: row.updated_at,
     })
