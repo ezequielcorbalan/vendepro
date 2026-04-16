@@ -91,6 +91,7 @@ app.put('/properties/:id/status', async (c) => {
 // ⚠️ /reorder must be registered BEFORE /:id to prevent Hono matching "reorder" as an :id
 app.put('/property-photos/reorder', async (c) => {
   const items = (await c.req.json()) as { id: string; sort_order: number }[]
+  if (!Array.isArray(items) || items.length === 0) return c.json({ success: true })
   const db = c.env.DB
   const orgId = c.get('orgId')
   for (const item of items) {
@@ -127,7 +128,11 @@ app.delete('/property-photos/:id', async (c) => {
   const row = await db.prepare('SELECT r2_key FROM property_photos WHERE id=? AND org_id=?').bind(photoId, orgId).first() as any
   if (!row) return c.json({ error: 'Not found' }, 404)
   try { await c.env.R2.delete(row.r2_key) } catch {}
-  await db.prepare('DELETE FROM property_photos WHERE id=? AND org_id=?').bind(photoId, orgId).run()
+  try {
+    await db.prepare('DELETE FROM property_photos WHERE id=? AND org_id=?').bind(photoId, orgId).run()
+  } catch {
+    return c.json({ error: 'Error al eliminar la foto' }, 500)
+  }
   return c.json({ success: true })
 })
 
