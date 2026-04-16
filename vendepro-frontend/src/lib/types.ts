@@ -11,6 +11,15 @@ export type AppraisalStatus = 'draft' | 'generated' | 'sent'
 export type BlockType = 'service' | 'video' | 'stats' | 'text' | 'custom'
 export type BlockSection = 'commercial' | 'conditions'
 
+export interface ExtractedMetrics {
+  impressions?: number
+  portal_visits?: number
+  inquiries?: number
+  phone_calls?: number
+  whatsapp?: number
+  ranking_position?: number
+}
+
 export interface Profile {
   id: string
   full_name: string
@@ -156,4 +165,61 @@ export interface HistoricalDataPoint {
   inquiries: number
   in_person_visits: number
   offers: number
+}
+
+// ── LEADS ─────────────────────────────────────────────────────
+export type LeadStage =
+  | 'nuevo' | 'asignado' | 'contactado' | 'calificado'
+  | 'en_tasacion' | 'presentada' | 'seguimiento' | 'captado' | 'perdido'
+
+export type LeadUrgency = 'ok' | 'warning' | 'danger' | 'lost'
+
+export interface LeadTag {
+  id: string
+  org_id: string
+  name: string
+  color: string
+  is_default: boolean
+}
+
+export interface LeadActivity {
+  id: string
+  activity_type: string
+  description: string | null
+  result: string | null
+  agent_name: string | null
+  created_at: string
+  completed_at?: string | null
+}
+
+export interface Lead {
+  id: string
+  org_id: string
+  full_name: string
+  phone: string | null
+  email: string | null
+  source: string | null
+  source_detail: string | null
+  property_address: string | null
+  neighborhood: string | null
+  property_type: string | null
+  operation: string | null
+  stage: LeadStage
+  assigned_to: string | null
+  assigned_name: string | null
+  notes: string | null
+  estimated_value: string | null
+  budget: string | null
+  timing: string | null
+  personas_trabajo: string | null
+  mascotas: string | null
+  next_step: string | null
+  next_step_date: string | null
+  lost_reason: string | null
+  first_contact_at: string | null
+  created_at: string
+  updated_at: string
+  tags: LeadTag[]
+  last_activity_at: string | null
+  appraisal_count?: number
 }
