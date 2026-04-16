@@ -16,7 +16,7 @@
     "r2_buckets": [
       {
         "binding": "R2",
-        "bucket_name": "reportes-mg-assets"
+        "bucket_name": "vendepro-assets"
       }
     ]
 }
