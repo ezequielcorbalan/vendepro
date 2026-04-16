@@ -24,6 +24,8 @@ export interface PropertyProps {
   org_id: string
   status: PropertyStatus
   commercial_stage: string | null
+  contact_id?: string | null
+  lead_id?: string | null
   created_at: string
   updated_at: string
   // Computed / Joined
