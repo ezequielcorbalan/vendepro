@@ -168,11 +168,20 @@ export default function ActividadesPage() {
       </div>
 
       {/* Objectives */}
-      {objectivesWithProgress.length > 0 && (
-        <div className="bg-white rounded-xl border p-5">
-          <h2 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <Target className="w-4 h-4 text-pink-500" /> Objetivos del período
-          </h2>
+      <div className="bg-white rounded-xl border p-5">
+        <h2 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+          <Target className="w-4 h-4 text-pink-500" /> Objetivos del período
+        </h2>
+        {objectivesWithProgress.length === 0 ? (
+          <div className="flex flex-col items-center py-6 text-center">
+            <Target className="w-10 h-10 text-gray-200 mb-2" />
+            <p className="text-sm text-gray-500 mb-3">No hay objetivos configurados para este período</p>
+            <a href="/configuracion/objetivos"
+              className="text-sm text-[#ff007c] font-medium hover:underline">
+              Configurar objetivos →
+            </a>
+          </div>
+        ) : (
           <div className="space-y-4">
             {objectivesWithProgress.map(obj => (
               <div key={obj.id}>
@@ -196,8 +205,8 @@ export default function ActividadesPage() {
               </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Bottom panels */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
