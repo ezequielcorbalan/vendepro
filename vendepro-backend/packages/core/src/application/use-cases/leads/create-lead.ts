@@ -5,7 +5,7 @@ import { Lead } from '../../../domain/entities/lead'
 export interface CreateLeadInput {
   org_id: string
   full_name: string
-  phone: string
+  phone?: string | null
   email?: string | null
   source: string
   source_detail?: string | null
@@ -15,7 +15,11 @@ export interface CreateLeadInput {
   operation?: string
   assigned_to: string
   notes?: string | null
+  estimated_value?: string | null
+  next_step?: string | null
+  next_step_date?: string | null
   budget?: number | null
+  contact_id?: string | null
 }
 
 export class CreateLeadUseCase {
@@ -29,7 +33,7 @@ export class CreateLeadUseCase {
       id: this.idGen.generate(),
       org_id: input.org_id,
       full_name: input.full_name,
-      phone: input.phone,
+      phone: input.phone ?? null,
       email: input.email ?? null,
       source: input.source,
       source_detail: input.source_detail ?? null,
@@ -40,15 +44,16 @@ export class CreateLeadUseCase {
       stage: 'nuevo',
       assigned_to: input.assigned_to,
       notes: input.notes ?? null,
-      estimated_value: null,
+      estimated_value: input.estimated_value ? parseFloat(String(input.estimated_value)) : null,
       budget: input.budget ?? null,
       timing: null,
       personas_trabajo: null,
       mascotas: null,
-      next_step: null,
-      next_step_date: null,
+      next_step: input.next_step ?? null,
+      next_step_date: input.next_step_date ?? null,
       lost_reason: null,
       first_contact_at: null,
+      contact_id: input.contact_id ?? null,
     })
 
     await this.leadRepo.save(lead)
