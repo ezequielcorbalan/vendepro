@@ -99,7 +99,6 @@ describe('api-crm lead routes', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        full_name: 'María González',
         contact_data: { full_name: 'María González', contact_type: 'propietario' },
         source: 'manual',
       }),

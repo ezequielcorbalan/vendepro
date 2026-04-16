@@ -45,6 +45,9 @@ app.post('/leads', async (c) => {
       agent_id: c.get('userId'),
     })
     contact_id = contactResult.id
+    if (!body.full_name && body.contact_data?.full_name) {
+      body.full_name = body.contact_data.full_name
+    }
   }
 
   const repo = new D1LeadRepository(c.env.DB)
