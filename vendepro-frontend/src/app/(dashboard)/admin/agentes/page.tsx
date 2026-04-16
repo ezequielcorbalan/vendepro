@@ -22,6 +22,7 @@ export default function AgentesPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [saving, setSaving] = useState(false)
   const [changingRole, setChangingRole] = useState<string | null>(null)
+  const [updatingRoleId, setUpdatingRoleId] = useState<string | null>(null)
   const [form, setForm] = useState({ full_name: '', email: '', password: '', role: 'agent', phone: '' })
   const currentUser = getCurrentUser()
 
@@ -86,7 +87,9 @@ export default function AgentesPage() {
   }
 
   async function handleRoleChange(agentId: string, roleId: number, roleName: string) {
+    if (updatingRoleId) return
     setChangingRole(null)
+    setUpdatingRoleId(agentId)
     const prev = agents.find(a => a.id === agentId)?.role
     setAgents(list => list.map(a => a.id === agentId ? { ...a, role: roleName } : a))
     try {
@@ -104,6 +107,8 @@ export default function AgentesPage() {
     } catch {
       setAgents(list => list.map(a => a.id === agentId ? { ...a, role: prev } : a))
       toast('Error de conexión', 'error')
+    } finally {
+      setUpdatingRoleId(null)
     }
   }
 
@@ -153,6 +158,7 @@ export default function AgentesPage() {
                     <div className="relative" data-role-popover>
                       <button
                         onClick={() => setChangingRole(changingRole === agent.id ? null : agent.id)}
+                        disabled={!!updatingRoleId}
                         className={`text-[10px] px-2 py-0.5 rounded-full font-medium flex items-center gap-0.5 hover:opacity-80 transition-opacity ${getRoleColor(agent.role)}`}
                       >
                         {getRoleLabel(agent.role)}
