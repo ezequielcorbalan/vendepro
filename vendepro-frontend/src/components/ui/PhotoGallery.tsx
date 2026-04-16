@@ -63,8 +63,10 @@ export function PhotoGallery({ photos: initialPhotos, propertyId, editable = fal
   }
 
   async function handleDelete(id: string) {
-    await apiFetch('properties', `/property-photos/${id}`, { method: 'DELETE' })
-    setPhotos(prev => prev.filter(p => p.id !== id))
+    try {
+      const res = await apiFetch('properties', `/property-photos/${id}`, { method: 'DELETE' })
+      if (res.ok) setPhotos(prev => prev.filter(p => p.id !== id))
+    } catch {}
   }
 
   async function handleDragEnd(event: DragEndEvent) {
@@ -73,11 +75,17 @@ export function PhotoGallery({ photos: initialPhotos, propertyId, editable = fal
     const oldIdx = photos.findIndex(p => p.id === active.id)
     const newIdx = photos.findIndex(p => p.id === over.id)
     const reordered = arrayMove(photos, oldIdx, newIdx)
+    const previous = photos
     setPhotos(reordered)
-    await apiFetch('properties', '/property-photos/reorder', {
-      method: 'PUT',
-      body: JSON.stringify(reordered.map((p, i) => ({ id: p.id, sort_order: i }))),
-    })
+    try {
+      await apiFetch('properties', '/property-photos/reorder', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(reordered.map((p, i) => ({ id: p.id, sort_order: i }))),
+      })
+    } catch {
+      setPhotos(previous)
+    }
   }
 
   if (!photos.length && !editable) return null

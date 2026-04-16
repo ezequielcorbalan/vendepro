@@ -58,7 +58,7 @@ app.put('/properties/:id', async (c) => {
       rooms=COALESCE(?,rooms), size_m2=COALESCE(?,size_m2),
       asking_price=COALESCE(?,asking_price), currency=COALESCE(?,currency),
       owner_name=COALESCE(?,owner_name), owner_phone=COALESCE(?,owner_phone),
-      owner_email=COALESCE(?,owner_email), contact_id=COALESCE(?,contact_id),
+      owner_email=COALESCE(?,owner_email), contact_id=?,
       status=COALESCE(?,status), commercial_stage=COALESCE(?,commercial_stage),
       updated_at=?
     WHERE id = ? AND org_id = ?

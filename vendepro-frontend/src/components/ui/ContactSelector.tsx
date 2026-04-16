@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Search, User, Plus } from 'lucide-react'
 import Link from 'next/link'
 import { apiFetch } from '@/lib/api'
@@ -23,6 +23,8 @@ export function ContactSelector({ value, onChange }: ContactSelectorProps) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const debounce = useRef<ReturnType<typeof setTimeout>>()
+
+  useEffect(() => () => clearTimeout(debounce.current), [])
 
   async function search(q: string) {
     if (!q.trim()) { setResults([]); setOpen(false); return }

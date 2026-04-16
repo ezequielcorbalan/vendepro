@@ -60,7 +60,7 @@ export default function NuevaTasacionPage() {
         }))
       })
       .catch(() => {})
-  }, [])
+  }, [searchParams])
 
   function handlePropertySelect(p: typeof linkedProperty) {
     setLinkedProperty(p)
