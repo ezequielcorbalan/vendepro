@@ -145,6 +145,15 @@ app.get('/profile', async (c) => {
   return c.json(row ?? {})
 })
 
+app.put('/profile', async (c) => {
+  const body = (await c.req.json()) as any
+  const { full_name, phone, photo_url } = body
+  await c.env.DB.prepare(
+    'UPDATE users SET full_name=?, phone=?, photo_url=? WHERE id=?'
+  ).bind(full_name ?? null, phone ?? null, photo_url ?? null, c.get('userId')).run()
+  return c.json({ success: true })
+})
+
 app.get('/notifications', async (c) => {
   try {
     const rows = (await c.env.DB.prepare('SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 20').bind(c.get('userId')).all()).results

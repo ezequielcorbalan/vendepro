@@ -2,35 +2,45 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { Settings, Save, Loader2, Building2, Palette, Link2, CheckCircle, XCircle, Key, Copy, RefreshCw, CheckCircle2 } from 'lucide-react'
+import {
+  Settings, Save, Loader2, Building2, Calendar, User,
+  ClipboardList, FileText, ClipboardCheck, CheckCircle, XCircle,
+} from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
+import { getCurrentUser } from '@/lib/auth'
 
 export default function ConfiguracionPage() {
   const { toast } = useToast()
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [settings, setSettings] = useState<Record<string, string>>({})
-  const [org, setOrg] = useState<any>(null)
+  const isAdmin = getCurrentUser()?.role === 'admin'
+  const [loadingProfile, setLoadingProfile] = useState(true)
+  const [loadingOrg, setLoadingOrg] = useState(true)
+  const [profile, setProfile] = useState<any>(null)
+  const [photoUrl, setPhotoUrl] = useState('')
+  const [savingPhoto, setSavingPhoto] = useState(false)
+
+  const [orgName, setOrgName] = useState('')
   const [slug, setSlug] = useState('')
+  const [savingOrg, setSavingOrg] = useState(false)
   const slugDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [slugStatus, setSlugStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle')
-  const [apiKeyData, setApiKeyData] = useState<{ has_key: boolean; api_key_masked: string | null } | null>(null)
-  const [newApiKey, setNewApiKey] = useState<string | null>(null)
-  const [generatingKey, setGeneratingKey] = useState(false)
-  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
-    Promise.all([
-      apiFetch('admin', '/org-settings').then(r => r.json() as Promise<any>),
-      apiFetch('crm', '/api-key').then(r => r.json() as Promise<any>).catch(() => null),
-    ]).then(([data, keyData]) => {
-      if (data.settings) setSettings(data.settings)
-      if (data.org) setOrg(data.org)
-      if (data.slug) setSlug(data.slug)
-      if (keyData) setApiKeyData(keyData)
-      setLoading(false)
-    }).catch(() => setLoading(false))
+    apiFetch('admin', '/profile').then(r => r.json() as Promise<any>).then(d => {
+      setProfile(d)
+      setPhotoUrl(d.photo_url || '')
+      setLoadingProfile(false)
+    }).catch(() => setLoadingProfile(false))
+
+    if (isAdmin) {
+      apiFetch('admin', '/org-settings').then(r => r.json() as Promise<any>).then(d => {
+        setOrgName(d.name || '')
+        setSlug(d.slug || '')
+        setLoadingOrg(false)
+      }).catch(() => setLoadingOrg(false))
+    } else {
+      setLoadingOrg(false)
+    }
   }, [])
 
   useEffect(() => {
@@ -49,88 +59,163 @@ export default function ConfiguracionPage() {
     }, 500)
   }, [slug])
 
-  const handleSave = async () => {
-    setSaving(true)
+  const handleSavePhoto = async () => {
+    setSavingPhoto(true)
     try {
-      const res = await apiFetch('admin', '/org-settings', {
+      const res = await apiFetch('admin', '/profile', {
         method: 'PUT',
-        body: JSON.stringify({ settings, slug }),
+        body: JSON.stringify({ full_name: profile?.full_name, phone: profile?.phone, photo_url: photoUrl }),
       })
       const data = (await res.json()) as any
       if (data.error) toast(data.error, 'error')
-      else toast('Configuración guardada')
+      else { toast('Foto actualizada'); setProfile((p: any) => ({ ...p, photo_url: photoUrl })) }
     } catch { toast('Error al guardar', 'error') }
-    setSaving(false)
+    setSavingPhoto(false)
   }
 
-  const handleGenerateApiKey = async (isRegenerate = false) => {
-    if (isRegenerate && !confirm('¿Regenerar la API key? La key anterior dejará de funcionar.')) return
-    setGeneratingKey(true)
+  const handleSaveOrg = async () => {
+    setSavingOrg(true)
     try {
-      const res = await apiFetch('crm', '/api-key', { method: 'POST' })
+      const res = await apiFetch('admin', '/org-settings', {
+        method: 'PUT',
+        body: JSON.stringify({ name: orgName, slug }),
+      })
       const data = (await res.json()) as any
-      if (data.api_key) {
-        setNewApiKey(data.api_key)
-        setApiKeyData({ has_key: true, api_key_masked: `vp_live_••••••••••••${data.api_key.slice(-4)}` })
-        toast('API key generada — copiala ahora, no se mostrará completa nuevamente')
-      }
-    } catch { toast('Error al generar API key', 'error') }
-    setGeneratingKey(false)
+      if (data.error) toast(data.error, 'error')
+      else toast('Datos guardados')
+    } catch { toast('Error al guardar', 'error') }
+    setSavingOrg(false)
   }
 
-  const handleCopyKey = (key: string) => {
-    navigator.clipboard.writeText(key).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
-  }
+  const initial = profile?.full_name?.charAt(0)?.toUpperCase() || 'U'
 
-  function setSetting(key: string, value: string) {
-    setSettings(prev => ({ ...prev, [key]: value }))
-  }
-
-  if (loading) {
-    return <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
-  }
+  const navCards = [
+    {
+      href: '/configuracion/tasacion',
+      icon: <ClipboardList className="w-5 h-5" />,
+      iconColor: 'text-[#ff007c]',
+      title: 'Tasaciones',
+      subtitle: 'Bloques, marca y datos de mercado',
+    },
+    {
+      href: '/perfil',
+      icon: <FileText className="w-5 h-5" />,
+      iconColor: 'text-purple-500',
+      title: 'Mi Performance',
+      subtitle: 'Métricas y rendimiento personal',
+    },
+    {
+      href: '/configuracion/objetivos',
+      icon: <Settings className="w-5 h-5" />,
+      iconColor: 'text-orange-500',
+      title: 'Mis Objetivos',
+      subtitle: 'Metas y seguimiento',
+    },
+    {
+      href: '/configuracion/ficha-tasacion',
+      icon: <ClipboardCheck className="w-5 h-5" />,
+      iconColor: 'text-green-600',
+      title: 'Ficha de tasación',
+      subtitle: 'Formulario de inspección digital',
+    },
+  ]
 
   return (
     <div className="max-w-3xl space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Configuración</h1>
-          <p className="text-gray-500 text-sm mt-1">Configuración de la organización</p>
-        </div>
-        <button onClick={handleSave} disabled={saving}
-          className="flex items-center gap-2 bg-[#ff007c] text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50">
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          Guardar
-        </button>
+      <div>
+        <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 flex items-center gap-2">
+          <Settings className="w-6 h-6 text-[#ff007c]" /> Configuración
+        </h1>
+        <p className="text-gray-500 text-sm mt-1">Ajustes de la inmobiliaria</p>
       </div>
 
-      {/* Org info */}
-      {org && (
-        <div className="bg-white rounded-xl border p-6">
-          <h2 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <Building2 className="w-4 h-4 text-[#ff007c]" /> Organización
-          </h2>
-          <div className="space-y-3">
+      {/* Mi perfil */}
+      <div className="bg-white rounded-xl border p-6">
+        <h2 className="font-semibold text-gray-800 mb-5 flex items-center gap-2">
+          <User className="w-4 h-4 text-[#ff007c]" /> Mi perfil
+        </h2>
+        {loadingProfile ? (
+          <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex items-center gap-4">
+              {profile?.photo_url ? (
+                <img src={profile.photo_url} alt={profile.full_name} className="w-14 h-14 rounded-full object-cover" />
+              ) : (
+                <div className="w-14 h-14 rounded-full bg-pink-100 flex items-center justify-center text-xl font-semibold text-[#ff007c]">
+                  {initial}
+                </div>
+              )}
+              <div>
+                <p className="font-medium text-gray-800">{profile?.full_name || 'Usuario'}</p>
+                <p className="text-sm text-gray-500">Esta foto aparece en las tasaciones</p>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">URL de foto de perfil</label>
+              <input
+                type="url"
+                value={photoUrl}
+                onChange={e => setPhotoUrl(e.target.value)}
+                placeholder="https://ejemplo.com/mi-foto.jpg"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50 focus:border-[#ff007c]"
+              />
+              <p className="text-xs text-gray-400 mt-1">Podés subir tu foto a un servicio como imgur.com y pegar el link</p>
+            </div>
+            <button
+              onClick={handleSavePhoto}
+              disabled={savingPhoto}
+              className="flex items-center gap-2 bg-[#ff007c] text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50"
+            >
+              {savingPhoto ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              Guardar foto
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Nav cards 2x2 */}
+      <div className="grid grid-cols-2 gap-4">
+        {navCards.map(card => (
+          <Link
+            key={card.href}
+            href={card.href}
+            className="bg-white rounded-xl border p-5 hover:shadow-sm hover:border-gray-300 transition-all"
+          >
+            <div className={`mb-2 ${card.iconColor}`}>{card.icon}</div>
+            <p className="font-semibold text-gray-800 text-sm">{card.title}</p>
+            <p className="text-xs text-gray-500 mt-0.5">{card.subtitle}</p>
+          </Link>
+        ))}
+      </div>
+
+      {/* Datos de la inmobiliaria — solo admin */}
+      {isAdmin && <div className="bg-white rounded-xl border p-6">
+        <h2 className="font-semibold text-gray-800 mb-5 flex items-center gap-2">
+          <Building2 className="w-4 h-4 text-indigo-500" /> Datos de la inmobiliaria
+        </h2>
+        {loadingOrg ? (
+          <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>
+        ) : (
+          <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
-              <input type="text" value={org.name || ''} disabled className="w-full border rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-400" />
+              <input
+                type="text"
+                value={orgName}
+                disabled
+                className="w-full border rounded-lg px-3 py-2.5 text-sm bg-gray-50 text-gray-500"
+              />
             </div>
-            {/* Slug */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Identificador único (URL)
-                <span className="text-gray-400 font-normal ml-1 text-xs">— aparece en links públicos</span>
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Slug</label>
               <div className="relative">
                 <input
                   type="text"
                   value={slug}
                   onChange={e => setSlug(e.target.value)}
                   placeholder="mi-inmobiliaria"
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50 focus:border-[#ff007c] pr-8"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50 focus:border-[#ff007c] pr-8"
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
                   {slugStatus === 'checking' && <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />}
@@ -140,183 +225,55 @@ export default function ConfiguracionPage() {
               </div>
               {slugStatus === 'taken' && <p className="text-xs text-red-600 mt-1">Ya está en uso</p>}
             </div>
-            {org.logo_url && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Logo</label>
-                <img src={org.logo_url} alt="Logo" className="h-12 object-contain" />
-              </div>
-            )}
+            <button
+              onClick={handleSaveOrg}
+              disabled={savingOrg || slugStatus === 'taken'}
+              className="flex items-center gap-2 bg-[#ff007c] text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50"
+            >
+              {savingOrg ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              Guardar
+            </button>
           </div>
-        </div>
-      )}
+        )}
+      </div>}
 
-      {/* Brand settings */}
+      {/* Google Calendar */}
       <div className="bg-white rounded-xl border p-6">
-        <h2 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-          <Palette className="w-4 h-4 text-[#ff007c]" /> Marca y comunicación
+        <h2 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-blue-500" /> Google Calendar
         </h2>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp de contacto</label>
-            <input
-              type="tel"
-              value={settings.contact_whatsapp || ''}
-              onChange={e => setSetting('contact_whatsapp', e.target.value)}
-              placeholder="+54 9 11 1234-5678"
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#ff007c]/50"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono de oficina</label>
-            <input
-              type="tel"
-              value={settings.contact_phone || ''}
-              onChange={e => setSetting('contact_phone', e.target.value)}
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#ff007c]/50"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email de contacto</label>
-            <input
-              type="email"
-              value={settings.contact_email || ''}
-              onChange={e => setSetting('contact_email', e.target.value)}
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#ff007c]/50"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Links */}
-      <div className="bg-white rounded-xl border p-6">
-        <h2 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-          <Link2 className="w-4 h-4 text-[#ff007c]" /> Integraciones
-        </h2>
-        <div className="space-y-3">
-          <Link href="/configuracion/tasacion" className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
-            <span className="text-sm font-medium text-gray-700">Bloques de tasación</span>
-            <span className="text-xs text-[#ff007c]">Configurar →</span>
-          </Link>
-          <Link href="/configuracion/perfil" className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
-            <span className="text-sm font-medium text-gray-700">Perfil de agente</span>
-            <span className="text-xs text-[#ff007c]">Configurar →</span>
-          </Link>
-        </div>
-      </div>
-
-      {/* Integración web */}
-      <div className="bg-white rounded-xl border p-6">
-        <h2 className="font-semibold text-gray-800 mb-1 flex items-center gap-2">
-          <Key className="w-4 h-4 text-[#ff007c]" /> Integración web
-        </h2>
-        <p className="text-sm text-gray-500 mb-4">
-          Recibí leads automáticamente desde tu sitio web usando tu API key.
+        <p className="text-sm text-gray-600 mb-3">
+          Conectá tu Google Calendar para ver tus eventos en el CRM y sincronizar automáticamente.
         </p>
-
-        {/* Gestión de API key */}
-        <div className="border rounded-lg p-4 mb-4 bg-gray-50">
-          <p className="text-sm font-medium text-gray-700 mb-3">API Key</p>
-
-          {newApiKey && (
-            <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-              <p className="text-xs text-amber-700 mb-2 font-medium">Copiá esta key — no se mostrará nuevamente:</p>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 text-xs font-mono bg-white border rounded px-2 py-1 truncate">{newApiKey}</code>
-                <button
-                  onClick={() => handleCopyKey(newApiKey)}
-                  className="shrink-0 flex items-center gap-1 px-2 py-1 text-xs bg-[#ff007c] text-white rounded hover:opacity-90"
-                >
-                  {copied ? <CheckCircle2 className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                  {copied ? 'Copiado' : 'Copiar'}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {apiKeyData?.has_key ? (
-            <div className="flex items-center gap-2">
-              <code className="flex-1 text-sm font-mono bg-white border rounded px-3 py-2 text-gray-600">
-                {apiKeyData.api_key_masked}
-              </code>
-              <button
-                onClick={() => handleGenerateApiKey(true)}
-                disabled={generatingKey}
-                className="shrink-0 flex items-center gap-1 px-3 py-2 text-sm border rounded-lg hover:bg-gray-100 disabled:opacity-50"
-                title="Regenerar key"
-              >
-                <RefreshCw className={`w-4 h-4 ${generatingKey ? 'animate-spin' : ''}`} />
-                Regenerar
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => handleGenerateApiKey(false)}
-              disabled={generatingKey}
-              className="flex items-center gap-2 px-4 py-2 bg-[#ff007c] text-white rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50"
-            >
-              {generatingKey ? <Loader2 className="w-4 h-4 animate-spin" /> : <Key className="w-4 h-4" />}
-              Generar API key
-            </button>
-          )}
-        </div>
-
-        {/* Snippet de código */}
-        <div className="border rounded-lg overflow-hidden">
-          <div className="bg-gray-800 px-4 py-2 flex items-center justify-between">
-            <span className="text-xs text-gray-400 font-mono">JavaScript</span>
-            <button
-              onClick={() => handleCopyKey(`fetch('https://public.api.vendepro.com.ar/public/leads', {\n  method: 'POST',\n  headers: {\n    'Content-Type': 'application/json',\n    'X-API-Key': 'TU_API_KEY'\n  },\n  body: JSON.stringify({\n    full_name: 'Juan Pérez',\n    phone: '1123456789',\n    email: 'juan@email.com',\n    operation: 'venta',\n    source_detail: 'Formulario Home'\n  })\n})`)}
-              className="text-xs text-gray-400 hover:text-white flex items-center gap-1"
-            >
-              <Copy className="w-3 h-3" /> Copiar
-            </button>
+        <div className="mb-4">
+          <p className="text-xs text-gray-400 mb-2">
+            El CRM clasifica automáticamente tus eventos según palabras clave:
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {[
+              ['"llamada"', 'Llamada'],
+              ['"reunión"', 'Reunión'],
+              ['"visita"', 'Visita'],
+              ['"tasación"', 'Tasación'],
+              ['"seguimiento"', 'Seguimiento'],
+              ['"firma"', 'Firma'],
+            ].map(([kw, label]) => (
+              <span key={kw} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                {kw} → {label}
+              </span>
+            ))}
           </div>
-          <pre className="bg-gray-900 text-green-400 text-xs font-mono p-4 overflow-x-auto whitespace-pre">{`fetch('https://public.api.vendepro.com.ar/public/leads', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'X-API-Key': 'TU_API_KEY'
-  },
-  body: JSON.stringify({
-    full_name: 'Juan Pérez',      // requerido
-    phone: '1123456789',          // opcional
-    email: 'juan@email.com',      // opcional
-    operation: 'venta',           // venta | alquiler | tasacion | otro
-    source_detail: 'Formulario Home'  // texto libre
-  })
-})`}</pre>
+          <p className="text-xs text-gray-400 mt-2">
+            También vincula eventos a leads/contactos si mencionás su nombre en el título.
+          </p>
         </div>
-
-        {/* Tabla de campos */}
-        <div className="mt-4 border rounded-lg overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="text-left px-3 py-2 text-xs font-medium text-gray-600">Campo</th>
-                <th className="text-left px-3 py-2 text-xs font-medium text-gray-600">Tipo</th>
-                <th className="text-left px-3 py-2 text-xs font-medium text-gray-600">Requerido</th>
-                <th className="text-left px-3 py-2 text-xs font-medium text-gray-600 hidden sm:table-cell">Descripción</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {[
-                ['full_name', 'string', 'Sí', 'Nombre completo del contacto'],
-                ['phone', 'string', 'No', 'Teléfono'],
-                ['email', 'string', 'No', 'Email'],
-                ['operation', 'string', 'No', 'venta | alquiler | tasacion | otro'],
-                ['source_detail', 'string', 'No', 'Ej: "Formulario Home"'],
-                ['notes', 'string', 'No', 'Notas adicionales'],
-              ].map(([campo, tipo, req, desc]) => (
-                <tr key={campo} className="hover:bg-gray-50">
-                  <td className="px-3 py-2 font-mono text-xs text-[#ff007c]">{campo}</td>
-                  <td className="px-3 py-2 text-gray-600 text-xs">{tipo}</td>
-                  <td className="px-3 py-2 text-xs">{req === 'Sí' ? <span className="text-green-600 font-medium">Sí</span> : <span className="text-gray-400">No</span>}</td>
-                  <td className="px-3 py-2 text-gray-500 text-xs hidden sm:table-cell">{desc}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <button
+          onClick={() => toast('Integración con Google Calendar próximamente')}
+          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700"
+        >
+          <Calendar className="w-4 h-4" />
+          Conectar Google Calendar
+        </button>
       </div>
     </div>
   )
