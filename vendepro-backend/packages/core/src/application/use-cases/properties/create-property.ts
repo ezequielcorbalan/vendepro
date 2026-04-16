@@ -18,6 +18,8 @@ export interface CreatePropertyInput {
   owner_phone: string
   owner_email?: string | null
   cover_photo?: string | null
+  contact_id?: string | null
+  lead_id?: string | null
 }
 
 export class CreatePropertyUseCase {
@@ -49,6 +51,8 @@ export class CreatePropertyUseCase {
       cover_photo: input.cover_photo ?? null,
       status: 'active',
       commercial_stage: null,
+      contact_id: input.contact_id ?? null,
+      lead_id: input.lead_id ?? null,
     })
 
     await this.propertyRepo.save(property)
