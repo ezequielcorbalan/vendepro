@@ -60,7 +60,8 @@ export class D1PropertyRepository implements PropertyRepository {
 
   private toEntity(row: any): Property {
     return Property.create({
-      id: row.id, org_id: row.org_id, address: row.address, neighborhood: row.neighborhood,
+      id: row.id, org_id: row.org_id, address: row.address,
+      neighborhood: row.neighborhood || 'Sin barrio',
       city: row.city, property_type: row.property_type, rooms: row.rooms ?? null,
       size_m2: row.size_m2 ?? null, asking_price: row.asking_price ?? null,
       currency: row.currency, owner_name: row.owner_name, owner_phone: row.owner_phone ?? '',
