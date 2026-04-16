@@ -9,5 +9,12 @@
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
-  }
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "vendepro-db",
+      "database_id": "45d18f94-807b-466f-8742-32bbc61fc7fb"
+    }
+  ]
 }
