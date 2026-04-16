@@ -44,6 +44,8 @@ export interface Property {
   owner_name: string
   owner_phone: string | null
   owner_email: string | null
+  contact_id?: string | null
+  lead_id?: string | null
   public_slug: string
   cover_photo: string | null
   agent_id: string
@@ -194,6 +196,9 @@ export interface Contact {
   source: string | null
   agent_id: string
   created_at: string
+  // Populated in GET /contacts/:id
+  leads?: Array<{ id: string; full_name: string; stage: string; created_at: string }>
+  properties?: Array<{ id: string; address: string; status: string; asking_price: number | null; currency: string }>
 }
 
 export interface LeadActivity {
