@@ -39,7 +39,10 @@ export default function LeadsPage() {
   const [filterAgent, setFilterAgent] = useState('')
   const [agents, setAgents] = useState<any[]>([])
   const [showFilters, setShowFilters] = useState(false)
-  const [sortBy, setSortBy] = useState<'recent' | 'name' | 'urgency'>((searchParams.get('sort') as any) || 'recent')
+  const sortParam = searchParams.get('sort')
+  const [sortBy, setSortBy] = useState<'recent' | 'name' | 'urgency'>(
+    (['recent', 'name', 'urgency'] as const).includes(sortParam as any) ? sortParam as 'recent' | 'name' | 'urgency' : 'recent'
+  )
   const [showCreate, setShowCreate] = useState(false)
   const [showAI, setShowAI] = useState(false)
   const [activeDragId, setActiveDragId] = useState<string | null>(null)
@@ -127,19 +130,19 @@ export default function LeadsPage() {
       return
     }
 
-    const res = await apiFetch('crm', '/leads/stage', {
-      method: 'POST',
-      body: JSON.stringify({ id: lead.id, stage: nextStage })
-    })
-    const result = (await res.json()) as any
-    const stageLabel = LEAD_STAGES[nextStage as LeadStage]?.label || nextStage
-    toast(`${lead.full_name} → ${stageLabel}`)
-
-    if (result.autoFollowup) {
-      toast(`Seguimiento automático creado para ${result.autoFollowup.date}`)
-    }
-
-    loadLeads()
+    try {
+      const res = await apiFetch('crm', '/leads/stage', {
+        method: 'POST',
+        body: JSON.stringify({ id: lead.id, stage: nextStage })
+      })
+      const result = (await res.json()) as any
+      const stageLabel = LEAD_STAGES[nextStage as LeadStage]?.label || nextStage
+      toast(`${lead.full_name} → ${stageLabel}`)
+      if (result.autoFollowup) {
+        toast(`Seguimiento automático creado para ${result.autoFollowup.date}`)
+      }
+      loadLeads()
+    } catch { toast('Error al cambiar etapa', 'error') }
   }
 
   const handleConvertToAppraisal = async (lead: any, createAppraisal: boolean) => {
@@ -167,30 +170,31 @@ export default function LeadsPage() {
     loadLeads()
   }
 
-  const moveToStage = async (leadId: string, stage: string) => {
+  const moveToStage = useCallback(async (leadId: string, stage: string) => {
     if (stage === 'en_tasacion') {
       const lead = leads.find(l => l.id === leadId)
       if (lead) { setShowConvertModal(lead); return }
     }
-    if (stage === 'perdido') {
-      const reason = prompt('¿Por qué se pierde este lead?')
-      if (reason === null) return
-      await apiFetch('crm', '/leads/stage', {
-        method: 'POST',
-        body: JSON.stringify({ id: leadId, stage: 'perdido', notes: reason || 'Sin motivo' })
-      })
-      toast('Lead marcado como perdido', 'warning')
+    try {
+      if (stage === 'perdido') {
+        const reason = prompt('¿Por qué se pierde este lead?')
+        if (reason === null) return
+        await apiFetch('crm', '/leads/stage', {
+          method: 'POST',
+          body: JSON.stringify({ id: leadId, stage: 'perdido', notes: reason || 'Sin motivo' })
+        })
+        toast('Lead marcado como perdido', 'warning')
+      } else {
+        await apiFetch('crm', '/leads/stage', {
+          method: 'POST',
+          body: JSON.stringify({ id: leadId, stage })
+        })
+        const stageLabel = LEAD_STAGES[stage as LeadStage]?.label || stage
+        toast(`Movido a ${stageLabel}`)
+      }
       loadLeads()
-      return
-    }
-    await apiFetch('crm', '/leads/stage', {
-      method: 'POST',
-      body: JSON.stringify({ id: leadId, stage })
-    })
-    const stageLabel = LEAD_STAGES[stage as LeadStage]?.label || stage
-    toast(`Movido a ${stageLabel}`)
-    loadLeads()
-  }
+    } catch { toast('Error al mover etapa', 'error') }
+  }, [leads])
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event
@@ -206,12 +210,14 @@ export default function LeadsPage() {
   const markLost = async (leadId: string) => {
     const reason = prompt('¿Por qué se pierde este lead?\n\nEj: No responde, presupuesto fuera de rango, eligió otra inmobiliaria, etc.')
     if (reason === null) return // cancelled
-    await apiFetch('crm', '/leads/stage', {
-      method: 'POST',
-      body: JSON.stringify({ id: leadId, stage: 'perdido', notes: reason || 'Sin motivo especificado' })
-    })
-    toast('Lead marcado como perdido', 'warning')
-    loadLeads()
+    try {
+      await apiFetch('crm', '/leads/stage', {
+        method: 'POST',
+        body: JSON.stringify({ id: leadId, stage: 'perdido', notes: reason || 'Sin motivo especificado' })
+      })
+      toast('Lead marcado como perdido', 'warning')
+      loadLeads()
+    } catch { toast('Error al marcar como perdido', 'error') }
   }
 
   const deleteLead = async (leadId: string, leadName: string) => {
@@ -256,7 +262,8 @@ export default function LeadsPage() {
               const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
               const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
               const url = URL.createObjectURL(blob)
-              const a = document.createElement('a'); a.href = url; a.download = 'leads.csv'; a.click()
+              const a = document.createElement('a'); a.href = url; a.download = 'leads.csv'
+              document.body.appendChild(a); a.click(); document.body.removeChild(a)
               URL.revokeObjectURL(url)
             }}
             className="hidden sm:flex items-center gap-1 text-xs text-gray-500 border border-gray-200 px-2.5 py-2 rounded-lg hover:border-gray-400"
@@ -378,7 +385,7 @@ export default function LeadsPage() {
               const stageLeads = filtered.filter(l => l.stage === stage)
               const hasOverdue = stageLeads.some(l => getLeadUrgency(l) === 'danger')
               return (
-                <DroppableColumn key={stage} id={stage} isOver={false}>
+                <DroppableColumn key={stage} id={stage}>
                   <div className={`flex items-center justify-between mb-2 px-2 py-1.5 rounded-lg ${LEAD_STAGES[stage].color}`}>
                     <span className="text-xs font-semibold">{LEAD_STAGES[stage].label}</span>
                     <div className="flex items-center gap-1">
@@ -533,7 +540,7 @@ function LeadCard({ lead, onAdvance, onLost, onDelete }: { lead: any; onAdvance:
         {lead.phone ? (
           <>
             <a href={`tel:${lead.phone}`} className="flex-1 py-2.5 flex justify-center text-blue-500 hover:bg-blue-50"><Phone className="w-4 h-4" /></a>
-            <a href={`https://wa.me/${formatWhatsApp(lead.phone)}`} target="_blank" className="flex-1 py-2.5 flex justify-center text-green-500 hover:bg-green-50 border-l border-gray-100"><MessageCircle className="w-4 h-4" /></a>
+            <a href={`https://wa.me/${formatWhatsApp(lead.phone)}`} target="_blank" rel="noreferrer" className="flex-1 py-2.5 flex justify-center text-green-500 hover:bg-green-50 border-l border-gray-100"><MessageCircle className="w-4 h-4" /></a>
           </>
         ) : (
           <span className="flex-1 py-2.5 flex justify-center text-gray-300 text-xs">Sin tel</span>
@@ -606,7 +613,7 @@ function KanbanCard({ lead, onAdvance, onMoveTo }: { lead: any; onAdvance: () =>
 }
 
 // ── Droppable Column ──
-function DroppableColumn({ id, children, isOver }: { id: string; children: React.ReactNode; isOver: boolean }) {
+function DroppableColumn({ id, children }: { id: string; children: React.ReactNode }) {
   const { setNodeRef, isOver: dropping } = useDroppable({ id })
   return (
     <div ref={setNodeRef} className={`w-64 shrink-0 transition-colors rounded-xl ${dropping ? 'bg-[#ff007c]/5 ring-2 ring-[#ff007c]/30' : ''}`}>

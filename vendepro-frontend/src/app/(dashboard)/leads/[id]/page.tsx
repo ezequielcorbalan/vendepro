@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   ArrowLeft, Phone, MessageCircle, Edit3, Save, X, Trash2,
-  MapPin, Calendar, Clock, ChevronRight, User
+  MapPin, User
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
@@ -64,57 +64,68 @@ export default function LeadDetailPage() {
 
   const handleDelete = async () => {
     if (!confirm(`¿Eliminar "${lead?.full_name}" permanentemente?`)) return
-    await apiFetch('crm', `/leads?id=${leadId}`, { method: 'DELETE' })
-    toast('Lead eliminado', 'warning')
-    router.push('/leads')
+    try {
+      await apiFetch('crm', `/leads?id=${leadId}`, { method: 'DELETE' })
+      toast('Lead eliminado', 'warning')
+      router.push('/leads')
+    } catch { toast('Error al eliminar', 'error') }
   }
 
   const handleStageChange = async (stage: string) => {
     if (editing) return
     if (stage === 'en_tasacion') { setShowConvertModal(true); return }
-    if (stage === 'perdido') {
-      const reason = prompt('¿Por qué se pierde este lead?')
-      if (reason === null) return
-      await apiFetch('crm', '/leads/stage', {
-        method: 'POST',
-        body: JSON.stringify({ id: leadId, stage: 'perdido', notes: reason || 'Sin motivo' }),
-      })
-      toast('Lead marcado como perdido', 'warning')
+    try {
+      if (stage === 'perdido') {
+        const reason = prompt('¿Por qué se pierde este lead?')
+        if (reason === null) return
+        await apiFetch('crm', '/leads/stage', {
+          method: 'POST',
+          body: JSON.stringify({ id: leadId, stage: 'perdido', notes: reason || 'Sin motivo' }),
+        })
+        toast('Lead marcado como perdido', 'warning')
+      } else {
+        const res = await apiFetch('crm', '/leads/stage', {
+          method: 'POST',
+          body: JSON.stringify({ id: leadId, stage }),
+        })
+        const result = (await res.json()) as any
+        toast(`Etapa: ${LEAD_STAGES[stage as LeadStage]?.label || stage}`)
+        if (result.autoFollowup) toast(`Seguimiento automático creado para ${result.autoFollowup.date}`)
+      }
       loadLead()
-      return
-    }
-    const res = await apiFetch('crm', '/leads/stage', {
-      method: 'POST',
-      body: JSON.stringify({ id: leadId, stage }),
-    })
-    const result = (await res.json()) as any
-    toast(`Etapa: ${LEAD_STAGES[stage as LeadStage]?.label || stage}`)
-    if (result.autoFollowup) toast(`Seguimiento automático creado para ${result.autoFollowup.date}`)
-    loadLead()
+    } catch { toast('Error al cambiar etapa', 'error') }
   }
 
   const handleConvertToAppraisal = async (createAppraisal: boolean) => {
-    await apiFetch('crm', '/leads/stage', {
-      method: 'POST',
-      body: JSON.stringify({ id: leadId, stage: 'en_tasacion' }),
-    })
-    if (createAppraisal && lead) {
-      await apiFetch('properties', '/appraisals', {
+    try {
+      await apiFetch('crm', '/leads/stage', {
         method: 'POST',
-        body: JSON.stringify({
-          lead_id: lead.id,
-          contact_name: lead.full_name,
-          contact_phone: lead.phone,
-          contact_email: lead.email,
-          agent_id: lead.assigned_to,
-          neighborhood: lead.neighborhood,
-          property_address: lead.property_address,
-        }),
+        body: JSON.stringify({ id: leadId, stage: 'en_tasacion' }),
       })
-    }
-    setShowConvertModal(false)
-    toast(createAppraisal ? `Tasación creada para ${lead?.full_name}` : `${lead?.full_name} → En tasación`)
-    loadLead()
+      if (createAppraisal && lead) {
+        try {
+          await apiFetch('properties', '/appraisals', {
+            method: 'POST',
+            body: JSON.stringify({
+              lead_id: lead.id,
+              contact_name: lead.full_name,
+              contact_phone: lead.phone,
+              contact_email: lead.email,
+              agent_id: lead.assigned_to,
+              neighborhood: lead.neighborhood,
+              property_address: lead.property_address,
+            }),
+          })
+          toast(`Tasación creada para ${lead.full_name}`)
+        } catch {
+          toast(`${lead.full_name} → En tasación (error al crear tasación)`, 'error')
+        }
+      } else {
+        toast(`${lead?.full_name} → En tasación`)
+      }
+      setShowConvertModal(false)
+      loadLead()
+    } catch { toast('Error al cambiar etapa', 'error') }
   }
 
   if (loading) {
