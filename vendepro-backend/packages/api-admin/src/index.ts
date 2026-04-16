@@ -50,6 +50,10 @@ app.delete('/agents', async (c) => {
 })
 
 app.get('/roles', async (c) => {
+  const userRole = c.get('userRole')
+  if (userRole !== 'admin' && userRole !== 'owner') {
+    return c.json({ error: 'Forbidden' }, 403)
+  }
   const roles = await c.env.DB
     .prepare('SELECT id, name, label FROM roles ORDER BY id')
     .all()
