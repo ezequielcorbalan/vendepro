@@ -37,17 +37,26 @@ app.post('/leads', async (c) => {
 
   // If contact_data provided, create the contact first
   if (!contact_id && body.contact_data) {
-    const contactRepo = new D1ContactRepository(c.env.DB)
-    const createContact = new CreateContactUseCase(contactRepo, new CryptoIdGenerator())
-    const contactResult = await createContact.execute({
-      ...body.contact_data,
-      org_id: c.get('orgId'),
-      agent_id: c.get('userId'),
-    })
-    contact_id = contactResult.id
-    if (!body.full_name && body.contact_data?.full_name) {
-      body.full_name = body.contact_data.full_name
+    try {
+      const contactRepo = new D1ContactRepository(c.env.DB)
+      const createContact = new CreateContactUseCase(contactRepo, new CryptoIdGenerator())
+      const contactResult = await createContact.execute({
+        ...body.contact_data,
+        org_id: c.get('orgId'),
+        agent_id: c.get('userId'),
+      })
+      contact_id = contactResult.id
+      if (!body.full_name && body.contact_data?.full_name) {
+        body.full_name = body.contact_data.full_name
+      }
+    } catch (err: any) {
+      return c.json({ error: err.message || 'Error al crear contacto' }, 400)
     }
+  }
+
+  // Fix 2: validate that we have a contact_id
+  if (!contact_id) {
+    return c.json({ error: 'Se requiere contact_id o contact_data' }, 400)
   }
 
   const repo = new D1LeadRepository(c.env.DB)

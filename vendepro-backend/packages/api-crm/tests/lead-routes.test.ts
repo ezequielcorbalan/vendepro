@@ -64,7 +64,7 @@ describe('api-crm lead routes', () => {
     const res = await app.request('/leads', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ full_name: 'María González', phone: '1134567890', source: 'manual' }),
+      body: JSON.stringify({ full_name: 'María González', phone: '1134567890', source: 'manual', contact_id: 'existing-contact' }),
     }, { DB: {}, JWT_SECRET: 'secret' })
     expect(res.status).toBe(201)
     const body = await res.json() as any
@@ -76,9 +76,21 @@ describe('api-crm lead routes', () => {
     const res = await app.request('/leads', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ full_name: 'X', phone: '123', source: 'manual' }),
+      body: JSON.stringify({ full_name: 'X', phone: '123', source: 'manual', contact_id: 'existing-contact' }),
     }, { DB: {}, JWT_SECRET: 'secret' })
     expect(res.status).toBe(400)
+  })
+
+  it('POST /leads without contact returns 400', async () => {
+    const { default: app } = await import('../src/index')
+    const res = await app.request('/leads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ full_name: 'Test', source: 'manual' }),
+    }, { DB: {}, JWT_SECRET: 'secret' })
+    expect(res.status).toBe(400)
+    const body = await res.json() as any
+    expect(body.error).toMatch(/contact/)
   })
 
   it('GET /tags returns empty array', async () => {
