@@ -8,6 +8,7 @@ export interface StageHistoryEntry {
   changed_by: string
   changed_at: string
   notes: string | null
+  changed_by_name?: string | null
 }
 
 export interface StageHistoryRepository {

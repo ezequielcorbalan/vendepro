@@ -18,6 +18,12 @@ import {
 } from '@/lib/crm-config'
 import { formatDate } from '@/lib/utils'
 
+const STAGE_DOT_COLORS: Record<string, string> = {
+  nuevo: '#3b82f6', asignado: '#6366f1', contactado: '#06b6d4',
+  calificado: '#10b981', en_tasacion: '#8b5cf6', presentada: '#ec4899',
+  seguimiento: '#f59e0b', captado: '#22c55e', perdido: '#ef4444',
+}
+
 export default function LeadDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -572,7 +578,7 @@ export default function LeadDetailPage() {
           ) : (
             <div className="space-y-2">
               {activities.slice(0, 10).map(a => {
-                const mins = Math.floor((Date.now() - new Date(a.completed_at || a.created_at).getTime()) / 60000)
+                const mins = Math.floor((Date.now() - new Date(a.created_at).getTime()) / 60000)
                 const timeAgo = mins < 60 ? `${mins}m` : mins < 1440 ? `${Math.floor(mins / 60)}h` : `${Math.floor(mins / 1440)}d`
                 return (
                   <div key={a.id} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50">
@@ -597,14 +603,9 @@ export default function LeadDetailPage() {
           <div className="space-y-3">
             {stageHistory.map((h: any) => {
               const toStage = LEAD_STAGES[h.to_stage as LeadStage]
-              const stageColors: Record<string, string> = {
-                nuevo: '#3b82f6', asignado: '#6366f1', contactado: '#06b6d4',
-                calificado: '#10b981', en_tasacion: '#8b5cf6', presentada: '#ec4899',
-                seguimiento: '#f59e0b', captado: '#22c55e', perdido: '#ef4444',
-              }
-              const dotColor = stageColors[h.to_stage] ?? '#9ca3af'
+              const dotColor = STAGE_DOT_COLORS[h.to_stage] ?? '#9ca3af'
               return (
-                <div key={h.id} className="flex items-start gap-3">
+                <div key={h.id ?? h.changed_at ?? h.created_at} className="flex items-start gap-3">
                   <span
                     className="w-3 h-3 rounded-full mt-0.5 shrink-0"
                     style={{ background: dotColor }}
