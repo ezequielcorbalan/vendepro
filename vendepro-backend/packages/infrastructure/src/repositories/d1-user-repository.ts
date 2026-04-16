@@ -43,6 +43,13 @@ export class D1UserRepository implements UserRepository {
     await this.db.prepare('UPDATE users SET active = 0 WHERE id = ? AND org_id = ?').bind(id, orgId).run()
   }
 
+  async updateRole(id: string, orgId: string, roleId: number, roleName: string): Promise<void> {
+    await this.db
+      .prepare('UPDATE users SET role_id = ?, role = ? WHERE id = ? AND org_id = ?')
+      .bind(roleId, roleName, id, orgId)
+      .run()
+  }
+
   private toEntity(row: any): User {
     return User.create({
       id: row.id, email: row.email, password_hash: row.password_hash ?? '',
