@@ -27,6 +27,7 @@ export default function LeadDetailPage() {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [editForm, setEditForm] = useState<any>({})
+  const [showConvertModal, setShowConvertModal] = useState(false)
 
   function loadLead() {
     Promise.all([
@@ -69,11 +70,50 @@ export default function LeadDetailPage() {
   }
 
   const handleStageChange = async (stage: string) => {
-    await apiFetch('crm', '/leads', {
-      method: 'PUT',
+    if (editing) return
+    if (stage === 'en_tasacion') { setShowConvertModal(true); return }
+    if (stage === 'perdido') {
+      const reason = prompt('¿Por qué se pierde este lead?')
+      if (reason === null) return
+      await apiFetch('crm', '/leads/stage', {
+        method: 'POST',
+        body: JSON.stringify({ id: leadId, stage: 'perdido', notes: reason || 'Sin motivo' }),
+      })
+      toast('Lead marcado como perdido', 'warning')
+      loadLead()
+      return
+    }
+    const res = await apiFetch('crm', '/leads/stage', {
+      method: 'POST',
       body: JSON.stringify({ id: leadId, stage }),
     })
-    toast(`Etapa actualizada: ${LEAD_STAGES[stage as LeadStage]?.label || stage}`)
+    const result = (await res.json()) as any
+    toast(`Etapa: ${LEAD_STAGES[stage as LeadStage]?.label || stage}`)
+    if (result.autoFollowup) toast(`Seguimiento automático creado para ${result.autoFollowup.date}`)
+    loadLead()
+  }
+
+  const handleConvertToAppraisal = async (createAppraisal: boolean) => {
+    await apiFetch('crm', '/leads/stage', {
+      method: 'POST',
+      body: JSON.stringify({ id: leadId, stage: 'en_tasacion' }),
+    })
+    if (createAppraisal && lead) {
+      await apiFetch('properties', '/appraisals', {
+        method: 'POST',
+        body: JSON.stringify({
+          lead_id: lead.id,
+          contact_name: lead.full_name,
+          contact_phone: lead.phone,
+          contact_email: lead.email,
+          agent_id: lead.assigned_to,
+          neighborhood: lead.neighborhood,
+          property_address: lead.property_address,
+        }),
+      })
+    }
+    setShowConvertModal(false)
+    toast(createAppraisal ? `Tasación creada para ${lead?.full_name}` : `${lead?.full_name} → En tasación`)
     loadLead()
   }
 
@@ -183,6 +223,11 @@ export default function LeadDetailPage() {
                 className="border rounded-lg px-3 py-2 text-sm w-full" />
             </div>
             <div>
+              <label className="text-xs text-gray-500 mb-1 block">Fecha próxima acción</label>
+              <input type="date" value={editForm.next_step_date || ''} onChange={e => setEditForm((f: any) => ({ ...f, next_step_date: e.target.value }))}
+                className="border rounded-lg px-3 py-2 text-sm w-full" />
+            </div>
+            <div>
               <label className="text-xs text-gray-500 mb-1 block">Notas</label>
               <textarea rows={3} value={editForm.notes || ''} onChange={e => setEditForm((f: any) => ({ ...f, notes: e.target.value }))}
                 className="border rounded-lg px-3 py-2 text-sm w-full" />
@@ -199,6 +244,7 @@ export default function LeadDetailPage() {
                   ))}
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${stage.color}`}>{stage.label}</span>
                   {urgency === 'danger' && <span className="text-xs px-2 py-0.5 bg-red-100 text-red-700 rounded-full font-medium">URGENTE</span>}
+                  {urgency === 'warning' && <span className="text-xs px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full font-medium">Atención</span>}
                 </div>
               </div>
               <div className="flex gap-2">
@@ -260,8 +306,8 @@ export default function LeadDetailPage() {
         <p className="text-xs text-gray-400 mb-3 font-medium">Etapa del lead</p>
         <div className="flex flex-wrap gap-2">
           {LEAD_STAGE_KEYS.map(s => (
-            <button key={s} onClick={() => !editing && handleStageChange(s)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${lead.stage === s ? `${LEAD_STAGES[s].color} ring-2 ring-offset-1 ring-gray-300` : `${LEAD_STAGES[s].color} opacity-60 hover:opacity-100`}`}>
+            <button key={s} onClick={() => handleStageChange(s)} disabled={editing}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${lead.stage === s ? `${LEAD_STAGES[s].color} ring-2 ring-offset-1 ring-gray-300` : `${LEAD_STAGES[s].color} opacity-60 hover:opacity-100`} disabled:cursor-not-allowed`}>
               {LEAD_STAGES[s].label}
             </button>
           ))}
@@ -287,6 +333,27 @@ export default function LeadDetailPage() {
                 </div>
               )
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Convert to Appraisal Modal */}
+      {showConvertModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowConvertModal(false)}>
+          <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-5" onClick={e => e.stopPropagation()}>
+            <h3 className="font-semibold text-gray-800 mb-2">Avanzar a tasación</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              <strong>{lead.full_name}</strong> pasará a &ldquo;En tasación&rdquo;. ¿Querés crear una tasación vinculada?
+            </p>
+            <div className="space-y-2">
+              <button onClick={() => handleConvertToAppraisal(true)} className="w-full px-4 py-3 bg-[#ff007c] text-white rounded-xl text-sm font-medium hover:opacity-90">
+                Sí, crear tasación vinculada
+              </button>
+              <button onClick={() => handleConvertToAppraisal(false)} className="w-full px-4 py-3 border rounded-xl text-sm text-gray-600 hover:bg-gray-50">
+                Solo avanzar etapa
+              </button>
+              <button onClick={() => setShowConvertModal(false)} className="w-full px-4 py-2 text-sm text-gray-400">Cancelar</button>
+            </div>
           </div>
         </div>
       )}

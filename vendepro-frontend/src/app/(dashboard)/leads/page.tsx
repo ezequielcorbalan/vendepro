@@ -127,31 +127,24 @@ export default function LeadsPage() {
       return
     }
 
-    const res = await apiFetch('crm', '/leads', {
-      method: 'PUT',
+    const res = await apiFetch('crm', '/leads/stage', {
+      method: 'POST',
       body: JSON.stringify({ id: lead.id, stage: nextStage })
     })
     const result = (await res.json()) as any
-    const stageLabel = LEAD_STAGES[nextStage as keyof typeof LEAD_STAGES]?.label || nextStage
+    const stageLabel = LEAD_STAGES[nextStage as LeadStage]?.label || nextStage
     toast(`${lead.full_name} → ${stageLabel}`)
 
-    // Auto-followup created when "presentada"
     if (result.autoFollowup) {
-      toast(`📅 Seguimiento automático creado para ${result.autoFollowup.date}`)
-    }
-
-    // Captado → offer to create commercial property
-    if (result.captadoTransition) {
-      const ct = result.captadoTransition
-      toast(`✅ ¡${lead.full_name} captado! Podés crear la propiedad comercial desde su ficha.`)
+      toast(`Seguimiento automático creado para ${result.autoFollowup.date}`)
     }
 
     loadLeads()
   }
 
   const handleConvertToAppraisal = async (lead: any, createAppraisal: boolean) => {
-    await apiFetch('crm', '/leads', {
-      method: 'PUT',
+    await apiFetch('crm', '/leads/stage', {
+      method: 'POST',
       body: JSON.stringify({ id: lead.id, stage: 'en_tasacion' })
     })
 
@@ -182,20 +175,20 @@ export default function LeadsPage() {
     if (stage === 'perdido') {
       const reason = prompt('¿Por qué se pierde este lead?')
       if (reason === null) return
-      await apiFetch('crm', '/leads', {
-        method: 'PUT',
-        body: JSON.stringify({ id: leadId, stage: 'perdido', lost_reason: reason || 'Sin motivo' })
+      await apiFetch('crm', '/leads/stage', {
+        method: 'POST',
+        body: JSON.stringify({ id: leadId, stage: 'perdido', notes: reason || 'Sin motivo' })
       })
       toast('Lead marcado como perdido', 'warning')
       loadLeads()
       return
     }
-    await apiFetch('crm', '/leads', {
-      method: 'PUT',
+    await apiFetch('crm', '/leads/stage', {
+      method: 'POST',
       body: JSON.stringify({ id: leadId, stage })
     })
-    const stageLabel = LEAD_STAGES[stage as keyof typeof LEAD_STAGES]?.label || stage
-    toast(stage === 'perdido' ? 'Lead marcado como perdido' : `Movido a ${stageLabel}`, stage === 'perdido' ? 'warning' : 'success')
+    const stageLabel = LEAD_STAGES[stage as LeadStage]?.label || stage
+    toast(`Movido a ${stageLabel}`)
     loadLeads()
   }
 
@@ -213,9 +206,9 @@ export default function LeadsPage() {
   const markLost = async (leadId: string) => {
     const reason = prompt('¿Por qué se pierde este lead?\n\nEj: No responde, presupuesto fuera de rango, eligió otra inmobiliaria, etc.')
     if (reason === null) return // cancelled
-    await apiFetch('crm', '/leads', {
-      method: 'PUT',
-      body: JSON.stringify({ id: leadId, stage: 'perdido', lost_reason: reason || 'Sin motivo especificado' })
+    await apiFetch('crm', '/leads/stage', {
+      method: 'POST',
+      body: JSON.stringify({ id: leadId, stage: 'perdido', notes: reason || 'Sin motivo especificado' })
     })
     toast('Lead marcado como perdido', 'warning')
     loadLeads()
@@ -249,9 +242,27 @@ export default function LeadsPage() {
               <Columns3 className="w-4 h-4" />
             </button>
           </div>
-          <a href="/api/export?type=leads" className="hidden sm:flex items-center gap-1 text-xs text-gray-500 border border-gray-200 px-2.5 py-2 rounded-lg hover:border-gray-400">
+          <button
+            onClick={() => {
+              const rows = [
+                ['Nombre', 'Teléfono', 'Email', 'Operación', 'Etapa', 'Barrio', 'Valor USD', 'Agente', 'Próximo paso', 'Creado'],
+                ...filtered.map(l => [
+                  l.full_name, l.phone || '', l.email || '', l.operation || '',
+                  LEAD_STAGES[l.stage as LeadStage]?.label || l.stage,
+                  l.neighborhood || '', l.estimated_value || '', l.assigned_name || '',
+                  l.next_step || '', new Date(l.created_at).toLocaleDateString('es-AR')
+                ])
+              ]
+              const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+              const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+              const url = URL.createObjectURL(blob)
+              const a = document.createElement('a'); a.href = url; a.download = 'leads.csv'; a.click()
+              URL.revokeObjectURL(url)
+            }}
+            className="hidden sm:flex items-center gap-1 text-xs text-gray-500 border border-gray-200 px-2.5 py-2 rounded-lg hover:border-gray-400"
+          >
             <Download className="w-3.5 h-3.5" /> CSV
-          </a>
+          </button>
           <button onClick={() => setShowAI(true)} className="border border-[#ff007c]/30 text-[#ff007c] px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:bg-[#ff007c]/5">
             <Sparkles className="w-4 h-4" /> <span className="hidden sm:inline">con IA</span>
           </button>
@@ -353,6 +364,9 @@ export default function LeadsPage() {
               <User className="w-12 h-12 mx-auto mb-3 text-gray-300" />
               <p className="font-medium">Sin leads</p>
               <p className="text-sm mt-1">Creá tu primer lead para comenzar</p>
+              <button onClick={() => setShowCreate(true)} className="mt-3 px-4 py-2 bg-[#ff007c] text-white rounded-lg text-sm font-medium hover:opacity-90">
+                Crear primer lead
+              </button>
             </div>
           ) : filtered.map(lead => <LeadCard key={lead.id} lead={lead} onAdvance={() => advanceStage(lead)} onLost={() => markLost(lead.id)} onDelete={() => deleteLead(lead.id, lead.full_name)} />)}
         </div>
@@ -526,9 +540,6 @@ function LeadCard({ lead, onAdvance, onLost, onDelete }: { lead: any; onAdvance:
         )}
         {lead.stage !== 'captado' && lead.stage !== 'perdido' && (
           <button onClick={onAdvance} className="flex-1 py-2.5 flex justify-center text-[#ff007c] hover:bg-pink-50 border-l border-gray-100"><ArrowRight className="w-4 h-4" /></button>
-        )}
-        {(lead.stage === 'perdido') && (
-          <button onClick={() => onAdvance()} className="flex-1 py-2.5 flex justify-center text-gray-400 hover:bg-gray-50 border-l border-gray-100 text-xs font-medium" title="Archivar">Archivar</button>
         )}
         <button onClick={onDelete} className="py-2.5 px-3 flex justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 border-l border-gray-100" title="Eliminar"><Trash2 className="w-3.5 h-3.5" /></button>
       </div>
