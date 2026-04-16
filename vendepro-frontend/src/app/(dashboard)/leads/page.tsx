@@ -1,16 +1,18 @@
 'use client'
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import {
   Plus, Search, Phone, MessageCircle, Filter, X, LayoutList, Columns3,
-  AlertTriangle, Clock, User, MapPin, DollarSign, ArrowRight, ChevronDown, Download, Sparkles, Trash2, GripVertical
+  AlertTriangle, Clock, User, MapPin, DollarSign, ArrowRight, ChevronDown, Download, Sparkles, Trash2, GripVertical,
+  ChevronRight, Check
 } from 'lucide-react'
 import {
   LEAD_STAGES, LEAD_STAGE_KEYS, LEAD_PIPELINE_STAGES, LEAD_SOURCES,
   OPERATION_TYPES, getLeadChecklist, getLeadChecklistScore,
   getLeadUrgency, getUrgencyBadge, formatWhatsApp, type LeadStage
 } from '@/lib/crm-config'
+import type { Lead, Contact } from '@/lib/types'
 import { useToast } from '@/components/ui/Toast'
 import AIChatPanel from '@/components/ai/AIChatPanel'
 import { apiFetch } from '@/lib/api'
@@ -50,9 +52,20 @@ export default function LeadsPage() {
   const [saving, setSaving] = useState(false)
   const [showConvertModal, setShowConvertModal] = useState<any>(null)
 
+  // ── Modal de creación — 2 pasos ──────────────────────────────
+  const [createStep, setCreateStep] = useState<1 | 2>(1)
+  const [contactSearch, setContactSearch] = useState('')
+  const [contactResults, setContactResults] = useState<Contact[]>([])
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
+  const [showNewContactForm, setShowNewContactForm] = useState(false)
+  const [contactForm, setContactForm] = useState({
+    full_name: '', phone: '', email: '', contact_type: 'propietario'
+  })
+  const contactSearchRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   const [form, setForm] = useState({
-    full_name: '', phone: '', email: '', source: 'manual', source_detail: '',
-    property_address: '', neighborhood: '', operation: 'venta', stage: 'nuevo',
+    source: 'manual', source_detail: '',
+    property_address: '', neighborhood: '', operation: 'venta',
     notes: '', estimated_value: '', assigned_to: '', next_step: '', next_step_date: ''
   })
 
@@ -67,6 +80,23 @@ export default function LeadsPage() {
     loadLeads()
     apiFetch('admin', '/agents').then(r => r.json() as Promise<any>).then(d => { if (Array.isArray(d)) setAgents(d) }).catch(() => {})
   }, [])
+
+  useEffect(() => {
+    if (!contactSearch.trim() || selectedContact) {
+      setContactResults([])
+      return
+    }
+    if (contactSearchRef.current) clearTimeout(contactSearchRef.current)
+    contactSearchRef.current = setTimeout(async () => {
+      try {
+        const res = await apiFetch('crm', `/contacts?search=${encodeURIComponent(contactSearch)}`)
+        const data = (await res.json()) as any
+        setContactResults(Array.isArray(data) ? data.slice(0, 5) : [])
+      } catch {
+        setContactResults([])
+      }
+    }, 300)
+  }, [contactSearch, selectedContact])
 
   const filtered = useMemo(() => {
     const result = leads.filter(l => {
@@ -102,20 +132,49 @@ export default function LeadsPage() {
     return counts
   }, [leads])
 
+  const closeCreateModal = () => {
+    setShowCreate(false)
+    setCreateStep(1)
+    setContactSearch('')
+    setContactResults([])
+    setSelectedContact(null)
+    setShowNewContactForm(false)
+    setContactForm({ full_name: '', phone: '', email: '', contact_type: 'propietario' })
+    setForm({
+      source: 'manual', source_detail: '', property_address: '', neighborhood: '',
+      operation: 'venta', notes: '', estimated_value: '', assigned_to: '',
+      next_step: '', next_step_date: ''
+    })
+  }
+
   const handleCreate = async () => {
     setSaving(true)
     try {
-      const res = await apiFetch('crm', '/leads', { method: 'POST', body: JSON.stringify(form) })
+      const payload: any = { ...form }
+
+      if (selectedContact?.id) {
+        payload.contact_id = selectedContact.id
+      } else {
+        payload.contact_data = {
+          full_name: contactForm.full_name.trim(),
+          phone: contactForm.phone || null,
+          email: contactForm.email || null,
+          contact_type: contactForm.contact_type,
+        }
+      }
+
+      const res = await apiFetch('crm', '/leads', { method: 'POST', body: JSON.stringify(payload) })
       const data = (await res.json()) as any
       if (data.id) {
-        setShowCreate(false)
-        setForm({ full_name: '', phone: '', email: '', source: 'manual', source_detail: '', property_address: '', neighborhood: '', operation: 'venta', stage: 'nuevo', notes: '', estimated_value: '', assigned_to: '', next_step: '', next_step_date: '' })
+        closeCreateModal()
         toast('Lead creado correctamente')
         loadLeads()
       } else {
         toast(data.error || 'Error al crear lead', 'error')
       }
-    } catch { toast('Error de conexión', 'error') }
+    } catch {
+      toast('Error de conexión', 'error')
+    }
     setSaving(false)
   }
 
@@ -237,6 +296,9 @@ export default function LeadsPage() {
   }
 
   const activeFilters = [filterStage, filterSource, filterOperation, filterAgent].filter(Boolean).length
+
+  const canProceedStep1 = selectedContact !== null ||
+    (showNewContactForm && contactForm.full_name.trim().length >= 2)
 
   return (
     <div className="space-y-4 min-w-0 overflow-hidden">
@@ -427,42 +489,173 @@ export default function LeadsPage() {
 
       {/* CREATE MODAL */}
       {showCreate && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowCreate(false)}>
-          <div className="bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+          onClick={closeCreateModal}
+        >
+          <div
+            className="bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl max-h-[90vh] overflow-y-auto"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
             <div className="sticky top-0 bg-white border-b px-4 py-3 flex items-center justify-between rounded-t-2xl z-10">
-              <h3 className="font-semibold text-gray-800">Nuevo lead</h3>
-              <button onClick={() => setShowCreate(false)} className="p-1 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
+              <div>
+                <h3 className="font-semibold text-gray-800">Nuevo lead</h3>
+                <p className="text-xs text-gray-400">
+                  {createStep === 1 ? 'Paso 1 de 2 — Contacto' : 'Paso 2 de 2 — Pipeline'}
+                </p>
+              </div>
+              <button onClick={closeCreateModal} className="p-1 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
             </div>
-            <div className="p-4 space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input placeholder="Nombre completo *" value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
-                <input placeholder="Teléfono" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
-                <input placeholder="Email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
-                <select value={form.source} onChange={e => setForm({ ...form, source: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full">
-                  {Object.entries(LEAD_SOURCES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-                </select>
-                <select value={form.operation} onChange={e => setForm({ ...form, operation: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full">
-                  {Object.entries(OPERATION_TYPES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-                </select>
-                <input placeholder="Barrio/Zona" value={form.neighborhood} onChange={e => setForm({ ...form, neighborhood: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
-                <input placeholder="Dirección propiedad" value={form.property_address} onChange={e => setForm({ ...form, property_address: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
-                <input placeholder="Valor estimado (USD)" type="number" value={form.estimated_value} onChange={e => setForm({ ...form, estimated_value: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
-                {agents.length > 0 && (
-                  <select value={form.assigned_to} onChange={e => setForm({ ...form, assigned_to: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full">
-                    <option value="">Asignar agente...</option>
-                    {agents.map((a: any) => <option key={a.id} value={a.id}>{a.full_name}</option>)}
-                  </select>
+
+            {/* PASO 1: Contacto */}
+            {createStep === 1 && (
+              <div className="p-4 space-y-3">
+                {selectedContact ? (
+                  <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Check className="w-4 h-4 text-green-600 shrink-0" />
+                      <span className="font-medium text-gray-800">{selectedContact.full_name}</span>
+                      <span className="text-gray-500">·</span>
+                      <span className="text-gray-500 capitalize">{selectedContact.contact_type}</span>
+                    </div>
+                    <button onClick={() => { setSelectedContact(null); setContactSearch('') }} className="text-gray-400 hover:text-gray-600">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Buscar por nombre, teléfono o email..."
+                        value={contactSearch}
+                        onChange={e => { setContactSearch(e.target.value); setShowNewContactForm(false) }}
+                        className="w-full border rounded-lg pl-9 pr-3 py-2 text-sm focus:ring-2 focus:ring-[#ff007c]/30 focus:border-[#ff007c]"
+                        autoFocus
+                      />
+                    </div>
+
+                    {contactResults.length > 0 && !showNewContactForm && (
+                      <div className="border rounded-lg overflow-hidden">
+                        {contactResults.map(ct => (
+                          <button
+                            key={ct.id}
+                            onClick={() => { setSelectedContact(ct); setContactSearch(''); setContactResults([]) }}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 text-left border-b last:border-b-0"
+                          >
+                            <User className="w-4 h-4 text-gray-400 shrink-0" />
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-gray-800 truncate">{ct.full_name}</p>
+                              <p className="text-xs text-gray-500 truncate">{[ct.phone, ct.contact_type].filter(Boolean).join(' · ')}</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {showNewContactForm ? (
+                      <div className="border rounded-lg p-3 space-y-2 bg-gray-50">
+                        <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Nuevo contacto</p>
+                        <input
+                          placeholder="Nombre completo *"
+                          value={contactForm.full_name}
+                          onChange={e => setContactForm({ ...contactForm, full_name: e.target.value })}
+                          className="w-full border rounded-lg px-3 py-2 text-sm"
+                          autoFocus
+                        />
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            placeholder="Teléfono"
+                            value={contactForm.phone}
+                            onChange={e => setContactForm({ ...contactForm, phone: e.target.value })}
+                            className="border rounded-lg px-3 py-2 text-sm"
+                          />
+                          <input
+                            placeholder="Email"
+                            type="email"
+                            value={contactForm.email}
+                            onChange={e => setContactForm({ ...contactForm, email: e.target.value })}
+                            className="border rounded-lg px-3 py-2 text-sm"
+                          />
+                        </div>
+                        <select
+                          value={contactForm.contact_type}
+                          onChange={e => setContactForm({ ...contactForm, contact_type: e.target.value })}
+                          className="w-full border rounded-lg px-3 py-2 text-sm"
+                        >
+                          <option value="propietario">Propietario</option>
+                          <option value="comprador">Comprador</option>
+                          <option value="inversor">Inversor</option>
+                          <option value="inquilino">Inquilino</option>
+                          <option value="otro">Otro</option>
+                        </select>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => { setShowNewContactForm(true); setContactSearch(''); setContactResults([]) }}
+                        className="w-full text-sm text-[#ff007c] hover:underline text-left px-1"
+                      >
+                        + Crear contacto nuevo
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
-              <input placeholder="Próxima acción" value={form.next_step} onChange={e => setForm({ ...form, next_step: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
-              <input type="date" value={form.next_step_date} onChange={e => setForm({ ...form, next_step_date: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
-              <textarea placeholder="Notas" rows={2} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
-            </div>
+            )}
+
+            {/* PASO 2: Pipeline */}
+            {createStep === 2 && (
+              <div className="p-4 space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <select value={form.source} onChange={e => setForm({ ...form, source: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full">
+                    {Object.entries(LEAD_SOURCES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                  </select>
+                  <select value={form.operation} onChange={e => setForm({ ...form, operation: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full">
+                    {Object.entries(OPERATION_TYPES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                  </select>
+                  <input placeholder="Barrio/Zona" value={form.neighborhood} onChange={e => setForm({ ...form, neighborhood: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
+                  <input placeholder="Dirección propiedad" value={form.property_address} onChange={e => setForm({ ...form, property_address: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
+                  <input placeholder="Valor estimado (USD)" type="number" value={form.estimated_value} onChange={e => setForm({ ...form, estimated_value: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
+                  {agents.length > 0 && (
+                    <select value={form.assigned_to} onChange={e => setForm({ ...form, assigned_to: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full">
+                      <option value="">Asignar agente...</option>
+                      {agents.map((a: any) => <option key={a.id} value={a.id}>{a.full_name}</option>)}
+                    </select>
+                  )}
+                </div>
+                <input placeholder="Próxima acción" value={form.next_step} onChange={e => setForm({ ...form, next_step: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
+                <input type="date" value={form.next_step_date} onChange={e => setForm({ ...form, next_step_date: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
+                <textarea placeholder="Notas" rows={2} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
+              </div>
+            )}
+
+            {/* Footer */}
             <div className="sticky bottom-0 bg-white border-t px-4 py-3 flex gap-2">
-              <button onClick={() => setShowCreate(false)} className="flex-1 px-4 py-2 border rounded-lg text-sm">Cancelar</button>
-              <button onClick={handleCreate} disabled={!form.full_name || saving} className="flex-1 px-4 py-2 bg-pink-600 text-white rounded-lg text-sm font-medium disabled:opacity-50">
-                {saving ? 'Guardando...' : 'Crear lead'}
-              </button>
+              {createStep === 1 ? (
+                <>
+                  <button onClick={closeCreateModal} className="flex-1 px-4 py-2 border rounded-lg text-sm">Cancelar</button>
+                  <button
+                    onClick={() => setCreateStep(2)}
+                    disabled={!canProceedStep1}
+                    className="flex-1 px-4 py-2 bg-[#ff007c] text-white rounded-lg text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-1"
+                  >
+                    Siguiente <ChevronRight className="w-4 h-4" />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button onClick={() => setCreateStep(1)} className="flex-1 px-4 py-2 border rounded-lg text-sm">← Atrás</button>
+                  <button
+                    onClick={handleCreate}
+                    disabled={saving}
+                    className="flex-1 px-4 py-2 bg-[#ff007c] text-white rounded-lg text-sm font-medium disabled:opacity-50"
+                  >
+                    {saving ? 'Guardando...' : 'Crear lead'}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
