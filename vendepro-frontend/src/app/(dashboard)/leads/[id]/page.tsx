@@ -7,7 +7,7 @@ import {
   ArrowLeft, Phone, MessageCircle, Edit3, Save, X, Trash2,
   User, ChevronRight, Plus, Loader2, Calendar, Activity,
   Home, FileText, MapPin, Target, StickyNote, Building2,
-  CheckCircle2, Circle
+  CheckCircle2, Circle, Mail, DollarSign
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
@@ -504,6 +504,15 @@ export default function LeadDetailPage() {
                 </div>
               </div>
             )}
+            {lead.email && (
+              <div className="flex items-start gap-3">
+                <Mail className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Email</p>
+                  <a href={`mailto:${lead.email}`} className="text-sm text-[#ff007c] hover:underline">{lead.email}</a>
+                </div>
+              </div>
+            )}
             {lead.source && (
               <div className="flex items-start gap-3">
                 <Target className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
@@ -519,6 +528,15 @@ export default function LeadDetailPage() {
                 <div>
                   <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Operación</p>
                   <p className="text-sm text-gray-800 capitalize">{OPERATION_TYPES[lead.operation as keyof typeof OPERATION_TYPES]?.label || lead.operation}</p>
+                </div>
+              </div>
+            )}
+            {lead.estimated_value && (
+              <div className="flex items-start gap-3">
+                <DollarSign className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Valor estimado</p>
+                  <p className="text-sm text-gray-800">USD {lead.estimated_value}</p>
                 </div>
               </div>
             )}
@@ -578,7 +596,7 @@ export default function LeadDetailPage() {
           ) : (
             <div className="space-y-2">
               {activities.slice(0, 10).map(a => {
-                const mins = Math.floor((Date.now() - new Date(a.created_at).getTime()) / 60000)
+                const mins = Math.floor((Date.now() - new Date(a.completed_at || a.created_at).getTime()) / 60000)
                 const timeAgo = mins < 60 ? `${mins}m` : mins < 1440 ? `${Math.floor(mins / 60)}h` : `${Math.floor(mins / 1440)}d`
                 return (
                   <div key={a.id} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50">
