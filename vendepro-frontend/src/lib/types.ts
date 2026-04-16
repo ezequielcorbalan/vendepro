@@ -182,6 +182,20 @@ export interface LeadTag {
   is_default: number  // 0 or 1 — SQLite integer convention
 }
 
+export interface Contact {
+  id: string
+  org_id: string
+  full_name: string
+  phone: string | null
+  email: string | null
+  contact_type: string
+  neighborhood: string | null
+  notes: string | null
+  source: string | null
+  agent_id: string
+  created_at: string
+}
+
 export interface LeadActivity {
   id: string
   activity_type: string
@@ -222,4 +236,5 @@ export interface Lead {
   tags: LeadTag[]
   last_activity_at: string | null
   appraisal_count?: number
+  contact_id?: string | null
 }
