@@ -413,17 +413,65 @@ export default function LeadDetailPage() {
         )}
       </div>
 
-      {/* Stage selector */}
+      {/* Pipeline */}
       <div className="bg-white border rounded-xl p-4">
-        <p className="text-xs text-gray-400 mb-3 font-medium">Etapa del lead</p>
-        <div className="flex flex-wrap gap-2">
-          {LEAD_STAGE_KEYS.map(s => (
-            <button key={s} onClick={() => handleStageChange(s)} disabled={editing}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${lead.stage === s ? `${LEAD_STAGES[s].color} ring-2 ring-offset-1 ring-gray-300` : `${LEAD_STAGES[s].color} opacity-60 hover:opacity-100`} disabled:cursor-not-allowed`}>
-              {LEAD_STAGES[s].label}
-            </button>
-          ))}
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Pipeline</p>
+        <div className="overflow-x-auto pb-1">
+          <div className="flex items-center gap-0 min-w-max">
+            {LEAD_PIPELINE_STAGES.map((s, i) => {
+              const stageData = LEAD_STAGES[s]
+              const currentOrder = LEAD_STAGES[lead.stage as LeadStage]?.order ?? 0
+              const isCompleted = stageData.order < currentOrder
+              const isCurrent = s === lead.stage
+              const isLast = i === LEAD_PIPELINE_STAGES.length - 1
+              return (
+                <div key={s} className="flex items-center">
+                  <button
+                    onClick={() => handleStageChange(s)}
+                    disabled={editing}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
+                      isCurrent
+                        ? 'bg-[#ff007c] text-white border-[#ff007c] shadow-sm'
+                        : isCompleted
+                        ? 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'
+                        : 'bg-white text-gray-400 border-gray-200 hover:border-gray-300 hover:text-gray-600'
+                    } disabled:cursor-not-allowed`}
+                  >
+                    {isCompleted ? (
+                      <CheckCircle2 className="w-3.5 h-3.5 text-gray-400" />
+                    ) : isCurrent ? (
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                    ) : (
+                      <Circle className="w-3.5 h-3.5" />
+                    )}
+                    {stageData.label}
+                  </button>
+                  {!isLast && (
+                    <ChevronRight className="w-3.5 h-3.5 text-gray-300 mx-0.5 shrink-0" />
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </div>
+      </div>
+
+      {/* Mover etapa */}
+      <div className="bg-white border rounded-xl p-4">
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Mover etapa</p>
+        <select
+          defaultValue=""
+          disabled={editing}
+          onChange={e => { if (e.target.value) { handleStageChange(e.target.value); e.target.value = '' } }}
+          className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-[#ff007c]/20 disabled:cursor-not-allowed disabled:opacity-50 min-w-[180px]"
+        >
+          <option value="" disabled>Mover a...</option>
+          {LEAD_STAGE_KEYS.map(s => (
+            <option key={s} value={s} disabled={s === lead.stage}>
+              {LEAD_STAGES[s].label}{s === lead.stage ? ' (actual)' : ''}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Activity */}
