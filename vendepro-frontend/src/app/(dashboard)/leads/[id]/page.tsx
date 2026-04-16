@@ -31,16 +31,19 @@ export default function LeadDetailPage() {
   const [orgTags, setOrgTags] = useState<any[]>([])
   const [showTagPicker, setShowTagPicker] = useState(false)
   const [tagsLoading, setTagsLoading] = useState(false)
+  const [stageHistory, setStageHistory] = useState<any[]>([])
 
   function loadLead() {
     Promise.all([
       apiFetch('crm', `/leads?id=${leadId}`).then(r => r.json() as Promise<any>),
       apiFetch('crm', `/activities?lead_id=${leadId}`).then(r => r.json() as Promise<any>).catch(() => []),
-    ]).then(([leadData, actsData]) => {
+      apiFetch('crm', `/stage-history?entity_type=lead&entity_id=${leadId}`).then(r => r.json() as Promise<any>).catch(() => []),
+    ]).then(([leadData, actsData, historyData]) => {
       const l = Array.isArray(leadData) ? leadData[0] : leadData
       setLead(l)
       setEditForm(l || {})
       setActivities(Array.isArray(actsData) ? actsData : [])
+      setStageHistory(Array.isArray(historyData) ? historyData : [])
       setLoading(false)
     }).catch(() => setLoading(false))
   }
