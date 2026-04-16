@@ -165,7 +165,7 @@ export default function AgentesPage() {
                         <ChevronDown className="w-2.5 h-2.5" />
                       </button>
                       {changingRole === agent.id && (
-                        <div className="absolute top-6 left-0 z-20 bg-white border rounded-xl shadow-lg py-1 min-w-[160px]">
+                        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20 bg-white border rounded-xl shadow-lg py-1 min-w-[160px]">
                           {roles.map(r => (
                             <button
                               key={r.id}
