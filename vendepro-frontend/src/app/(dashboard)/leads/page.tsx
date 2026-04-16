@@ -81,6 +81,24 @@ export default function LeadsPage() {
     apiFetch('admin', '/agents').then(r => r.json() as Promise<any>).then(d => { if (Array.isArray(d)) setAgents(d) }).catch(() => {})
   }, [])
 
+  // Auto-open create modal when coming from contact detail (?new=1&contact_id=X)
+  useEffect(() => {
+    const newParam = searchParams.get('new')
+    const contactIdParam = searchParams.get('contact_id')
+    if (newParam !== '1' || !contactIdParam) return
+
+    apiFetch('crm', `/contacts/${contactIdParam}`)
+      .then(r => r.json() as Promise<any>)
+      .then(data => {
+        if (data?.id) {
+          setSelectedContact(data as Contact)
+          setCreateStep(2)
+          setShowCreate(true)
+        }
+      })
+      .catch(() => {})
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (!contactSearch.trim() || selectedContact) {
       setContactResults([])
