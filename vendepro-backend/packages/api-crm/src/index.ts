@@ -4,6 +4,7 @@ import {
   GetLeadsUseCase, CreateLeadUseCase, UpdateLeadUseCase, DeleteLeadUseCase, AdvanceLeadStageUseCase,
   GetContactsUseCase, CreateContactUseCase, DeleteContactUseCase,
   GetCalendarEventsUseCase, CreateCalendarEventUseCase, ToggleEventCompleteUseCase, RescheduleEventUseCase,
+  Tag,
 } from '@vendepro/core'
 
 type Env = { DB: D1Database; JWT_SECRET: string }
@@ -164,25 +165,28 @@ app.delete('/lead-tags', async (c) => {
   return c.json({ success: true })
 })
 
-// ── TAGS MANAGEMENT ───────────────────────────────────────────
 app.post('/tags', async (c) => {
   const body = (await c.req.json()) as any
+  if (!body.name || typeof body.name !== 'string') {
+    return c.json({ error: 'name is required' }, 400)
+  }
   const repo = new D1TagRepository(c.env.DB)
   const idGen = new CryptoIdGenerator()
   const id = idGen.generate()
-  await repo.save({
+  const tag = Tag.create({
     id,
     org_id: c.get('orgId'),
     name: body.name,
     color: body.color || '#6366f1',
-    is_default: false,
-    created_at: new Date().toISOString(),
-  } as any)
+    is_default: 0,
+  })
+  await repo.save(tag)
   return c.json({ id }, 201)
 })
 
 app.delete('/tags', async (c) => {
   const { id } = c.req.query()
+  if (!id) return c.json({ error: 'id is required' }, 400)
   const repo = new D1TagRepository(c.env.DB)
   await repo.delete(id, c.get('orgId'))
   return c.json({ success: true })
@@ -191,6 +195,7 @@ app.delete('/tags', async (c) => {
 // ── STAGE HISTORY ──────────────────────────────────────────────
 app.get('/stage-history', async (c) => {
   const { entity_type, entity_id } = c.req.query()
+  if (!entity_id) return c.json({ error: 'entity_id is required' }, 400)
   const repo = new D1StageHistoryRepository(c.env.DB)
   const history = await repo.findByEntity(entity_type as any, entity_id as any, c.get('orgId'))
   return c.json(history.map((h: any) => h.toObject?.() ?? h))
