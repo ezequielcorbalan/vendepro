@@ -146,28 +146,35 @@ export default function LeadsPage() {
   }
 
   const handleConvertToAppraisal = async (lead: any, createAppraisal: boolean) => {
-    await apiFetch('crm', '/leads/stage', {
-      method: 'POST',
-      body: JSON.stringify({ id: lead.id, stage: 'en_tasacion' })
-    })
-
-    if (createAppraisal) {
-      await apiFetch('properties', '/appraisals', {
+    try {
+      await apiFetch('crm', '/leads/stage', {
         method: 'POST',
-        body: JSON.stringify({
-          lead_id: lead.id,
-          contact_name: lead.full_name,
-          contact_phone: lead.phone,
-          contact_email: lead.email,
-          agent_id: lead.assigned_to,
-          neighborhood: lead.neighborhood,
-          property_address: lead.property_address,
-        })
+        body: JSON.stringify({ id: lead.id, stage: 'en_tasacion' })
       })
-    }
-    setShowConvertModal(null)
-    toast(createAppraisal ? `Tasación creada para ${lead.full_name}` : `${lead.full_name} → En tasación`)
-    loadLeads()
+      if (createAppraisal) {
+        try {
+          await apiFetch('properties', '/appraisals', {
+            method: 'POST',
+            body: JSON.stringify({
+              lead_id: lead.id,
+              contact_name: lead.full_name,
+              contact_phone: lead.phone,
+              contact_email: lead.email,
+              agent_id: lead.assigned_to,
+              neighborhood: lead.neighborhood,
+              property_address: lead.property_address,
+            })
+          })
+          toast(`Tasación creada para ${lead.full_name}`)
+        } catch {
+          toast(`${lead.full_name} → En tasación (error al crear tasación)`, 'error')
+        }
+      } else {
+        toast(`${lead.full_name} → En tasación`)
+      }
+      setShowConvertModal(null)
+      loadLeads()
+    } catch { toast('Error al cambiar etapa', 'error') }
   }
 
   const moveToStage = useCallback(async (leadId: string, stage: string) => {

@@ -168,9 +168,9 @@ export interface HistoricalDataPoint {
 }
 
 // ── LEADS ─────────────────────────────────────────────────────
-export type LeadStage =
-  | 'nuevo' | 'asignado' | 'contactado' | 'calificado'
-  | 'en_tasacion' | 'presentada' | 'seguimiento' | 'captado' | 'perdido'
+// LeadStage source of truth is crm-config.ts (keyof typeof LEAD_STAGES)
+import type { LeadStage } from '@/lib/crm-config'
+export type { LeadStage }
 
 export type LeadUrgency = 'ok' | 'warning' | 'danger' | 'lost'
 
@@ -179,7 +179,7 @@ export interface LeadTag {
   org_id: string
   name: string
   color: string
-  is_default: boolean
+  is_default: number  // 0 or 1 — SQLite integer convention
 }
 
 export interface LeadActivity {
