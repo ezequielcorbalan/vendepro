@@ -105,6 +105,29 @@ app.get('/contacts', async (c) => {
   return c.json(contacts.map(ct => ct.toObject?.() ?? ct))
 })
 
+app.get('/contacts/:id', async (c) => {
+  const id = c.req.param('id')
+  const orgId = c.get('orgId')
+  const repo = new D1ContactRepository(c.env.DB)
+  const contact = await repo.findById(id, orgId)
+  if (!contact) return c.json({ error: 'Contacto no encontrado' }, 404)
+
+  const [leadsResult, propertiesResult] = await Promise.all([
+    c.env.DB.prepare(
+      `SELECT id, full_name, stage, created_at FROM leads WHERE contact_id = ? AND org_id = ? ORDER BY created_at DESC LIMIT 20`
+    ).bind(id, orgId).all(),
+    c.env.DB.prepare(
+      `SELECT id, address, status, asking_price, currency FROM properties WHERE contact_id = ? AND org_id = ? ORDER BY created_at DESC LIMIT 20`
+    ).bind(id, orgId).all(),
+  ])
+
+  return c.json({
+    ...contact.toObject(),
+    leads: leadsResult.results ?? [],
+    properties: propertiesResult.results ?? [],
+  })
+})
+
 app.post('/contacts', async (c) => {
   const body = (await c.req.json()) as any
   const repo = new D1ContactRepository(c.env.DB)
