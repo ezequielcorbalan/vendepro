@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Building2, Loader2, Phone, Mail, User, MapPin, DollarSign, Calendar } from 'lucide-react'
+import { ArrowLeft, Building2, Loader2, Phone, Mail, User, MapPin, DollarSign, Calendar, Plus, Pencil } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
+import { PhotoGallery } from '@/components/ui/PhotoGallery'
 
 const stageLabel: Record<string, string> = {
   captada: 'Captada',
@@ -31,6 +32,7 @@ export default function PropiedadDetailPage() {
   const [property, setProperty] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  const [photos, setPhotos] = useState<{ id: string; url: string; sort_order: number }[]>([])
 
   useEffect(() => {
     if (!id) return
@@ -39,6 +41,7 @@ export default function PropiedadDetailPage() {
       .then((d: any) => {
         if (d?.error) { setError(true); setLoading(false); return }
         setProperty(d)
+        setPhotos(d.photos || [])
         setLoading(false)
       })
       .catch(() => { setError(true); setLoading(false) })
@@ -75,7 +78,7 @@ export default function PropiedadDetailPage() {
 
       {/* Header */}
       <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 rounded-xl bg-[#ff007c]/10 flex items-center justify-center flex-shrink-0">
               <Building2 className="w-6 h-6 text-[#ff007c]" />
@@ -87,9 +90,19 @@ export default function PropiedadDetailPage() {
               </p>
             </div>
           </div>
-          <span className={`text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap ${stageColor[stage] || 'bg-gray-100 text-gray-600'}`}>
-            {stageLabel[stage] || stage}
-          </span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={`text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap ${stageColor[stage] || 'bg-gray-100 text-gray-600'}`}>
+              {stageLabel[stage] || stage}
+            </span>
+            <Link href={`/tasaciones/nueva?property_id=${id}`}
+              className="inline-flex items-center gap-1.5 bg-[#ff007c] text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:opacity-90">
+              <Plus className="w-4 h-4" /> Nueva tasación
+            </Link>
+            <Link href={`/propiedades/${id}/editar`}
+              className="inline-flex items-center gap-1.5 border border-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-gray-50">
+              <Pencil className="w-4 h-4" /> Editar
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -130,11 +143,17 @@ export default function PropiedadDetailPage() {
         {/* Propietario */}
         <div className="bg-white rounded-xl shadow-sm p-6">
           <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">Propietario</h2>
-          {property.owner_name ? (
+          {property.owner_name && property.owner_name !== 'Sin propietario' ? (
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-sm">
                 <User className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                <span className="text-gray-800 font-medium">{property.owner_name}</span>
+                {property.contact_id ? (
+                  <Link href={`/contactos/${property.contact_id}`} className="text-[#ff007c] hover:underline font-medium">
+                    {property.owner_name}
+                  </Link>
+                ) : (
+                  <span className="text-gray-800 font-medium">{property.owner_name}</span>
+                )}
               </div>
               {property.owner_phone && (
                 <div className="flex items-center gap-2 text-sm">
@@ -188,6 +207,14 @@ export default function PropiedadDetailPage() {
           </dl>
         </div>
       </div>
+
+      {/* Galería de fotos */}
+      {photos.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm p-6 mt-6">
+          <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">Fotos</h2>
+          <PhotoGallery photos={photos} propertyId={id} editable={false} />
+        </div>
+      )}
     </div>
   )
 }

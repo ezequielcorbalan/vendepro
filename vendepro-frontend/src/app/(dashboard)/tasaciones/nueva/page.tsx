@@ -1,18 +1,24 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Save, Loader2 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
+import { PropertySelector } from '@/components/ui/PropertySelector'
 
 const PROPERTY_TYPES = ['departamento', 'casa', 'ph', 'local', 'terreno', 'oficina']
 
 export default function NuevaTasacionPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const searchParams = useSearchParams()
   const [saving, setSaving] = useState(false)
+  const [linkedProperty, setLinkedProperty] = useState<{
+    id: string; address: string; neighborhood: string; city: string; property_type: string; size_m2: number | null
+  } | null>(null)
 
   const [form, setForm] = useState({
     property_address: '',
@@ -35,11 +41,47 @@ export default function NuevaTasacionPage() {
     publication_analysis: '',
   })
 
+  useEffect(() => {
+    const pid = searchParams.get('property_id')
+    if (!pid) return
+    apiFetch('properties', `/properties/${pid}`)
+      .then(r => r.json() as any)
+      .then((p: any) => {
+        if (!p.id) return
+        const prop = { id: p.id, address: p.address, neighborhood: p.neighborhood, city: p.city, property_type: p.property_type, size_m2: p.size_m2 ?? null }
+        setLinkedProperty(prop)
+        setForm(f => ({
+          ...f,
+          property_address: p.address || '',
+          neighborhood: p.neighborhood || '',
+          city: p.city || f.city,
+          property_type: p.property_type || f.property_type,
+          total_area: p.size_m2 ? String(p.size_m2) : f.total_area,
+        }))
+      })
+      .catch(() => {})
+  }, [])
+
+  function handlePropertySelect(p: typeof linkedProperty) {
+    setLinkedProperty(p)
+    if (p) {
+      setForm(f => ({
+        ...f,
+        property_address: p.address,
+        neighborhood: p.neighborhood,
+        city: p.city,
+        property_type: p.property_type,
+        total_area: p.size_m2 ? String(p.size_m2) : f.total_area,
+      }))
+    }
+  }
+
   const handleSave = async () => {
     if (!form.property_address) { toast('La dirección es requerida', 'error'); return }
     setSaving(true)
     try {
       const payload: any = { ...form }
+      if (linkedProperty) payload.property_id = linkedProperty.id
       if (form.covered_area) payload.covered_area = Number(form.covered_area)
       if (form.total_area) payload.total_area = Number(form.total_area)
       if (form.semi_area) payload.semi_area = Number(form.semi_area)
@@ -79,6 +121,13 @@ export default function NuevaTasacionPage() {
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Crear tasación
         </button>
+      </div>
+
+      {/* Propiedad vinculada */}
+      <div className="bg-white rounded-xl border p-6 space-y-3">
+        <h2 className="font-semibold text-gray-800">Propiedad existente (opcional)</h2>
+        <p className="text-sm text-gray-500">Seleccioná una propiedad del sistema para vincular esta tasación.</p>
+        <PropertySelector value={linkedProperty} onChange={handlePropertySelect} />
       </div>
 
       {/* Propiedad */}

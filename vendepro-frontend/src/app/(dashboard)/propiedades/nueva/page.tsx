@@ -6,6 +6,7 @@ import { ArrowLeft, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
+import { ContactSelector } from '@/components/ui/ContactSelector'
 
 const PROPERTY_TYPES = [
   { value: 'departamento', label: 'Departamento' },
@@ -20,6 +21,7 @@ export default function NuevaPropiedadPage() {
   const router = useRouter()
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
+  const [ownerContact, setOwnerContact] = useState<{ id: string; full_name: string; phone?: string | null; email?: string | null } | null>(null)
   const [form, setForm] = useState({
     address: '',
     neighborhood: '',
@@ -38,6 +40,15 @@ export default function NuevaPropiedadPage() {
     setForm(prev => ({ ...prev, [field]: value }))
   }
 
+  function handleContactSelect(ct: typeof ownerContact) {
+    setOwnerContact(ct)
+    if (ct) {
+      update('owner_name', ct.full_name)
+      update('owner_phone', ct.phone || '')
+      update('owner_email', ct.email || '')
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!form.address) { toast('La dirección es requerida', 'error'); return }
@@ -48,6 +59,7 @@ export default function NuevaPropiedadPage() {
       if (form.rooms) payload.rooms = Number(form.rooms)
       if (form.size_m2) payload.size_m2 = Number(form.size_m2)
       if (form.asking_price) payload.asking_price = Number(form.asking_price)
+      if (ownerContact) payload.contact_id = ownerContact.id
 
       const res = await apiFetch('properties', '/properties', {
         method: 'POST',
@@ -166,6 +178,12 @@ export default function NuevaPropiedadPage() {
         <hr className="border-gray-200" />
 
         <h2 className="text-lg font-medium text-gray-800">Datos del propietario</h2>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Contacto existente (opcional)</label>
+          <ContactSelector value={ownerContact} onChange={handleContactSelect} />
+          <p className="text-xs text-gray-400 mt-1">Seleccioná un contacto para auto-completar los campos</p>
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="col-span-2">

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, ExternalLink, Ruler, Eye, TrendingUp, Shield, Pencil, Loader2 } from 'lucide-react'
+import { ArrowLeft, Building2, ExternalLink, Ruler, Eye, TrendingUp, Shield, Pencil, Loader2 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 
 export default function TasacionDetailPage() {
@@ -99,6 +99,23 @@ export default function TasacionDetailPage() {
               {a.contact_phone && <span className="text-xs text-gray-500">{a.contact_phone}</span>}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Propiedad vinculada */}
+      {a.linked_property && (
+        <div className="flex flex-wrap items-center gap-3 mb-4">
+          <Link
+            href={`/propiedades/${a.linked_property.id}`}
+            className="flex items-center gap-2 px-3 py-2 bg-[#ff007c]/5 border border-[#ff007c]/20 rounded-xl hover:bg-[#ff007c]/10 transition-colors"
+          >
+            <Building2 className="w-4 h-4 text-[#ff007c]" />
+            <span className="text-xs font-medium text-[#ff007c]">Propiedad:</span>
+            <span className="text-sm text-gray-800 font-semibold">{a.linked_property.address}</span>
+            {a.linked_property.neighborhood && (
+              <span className="text-xs text-gray-500">{a.linked_property.neighborhood}</span>
+            )}
+          </Link>
         </div>
       )}
 
