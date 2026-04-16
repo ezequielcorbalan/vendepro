@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   ArrowLeft, Phone, MessageCircle, Edit3, Save, X, Trash2,
-  MapPin, User, ChevronRight
+  MapPin, User, ChevronRight, Plus, Loader2
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
@@ -28,6 +28,9 @@ export default function LeadDetailPage() {
   const [saving, setSaving] = useState(false)
   const [editForm, setEditForm] = useState<any>({})
   const [showConvertModal, setShowConvertModal] = useState(false)
+  const [orgTags, setOrgTags] = useState<any[]>([])
+  const [showTagPicker, setShowTagPicker] = useState(false)
+  const [tagsLoading, setTagsLoading] = useState(false)
 
   function loadLead() {
     Promise.all([
@@ -90,10 +93,41 @@ export default function LeadDetailPage() {
         })
         const result = (await res.json()) as any
         toast(`Etapa: ${LEAD_STAGES[stage as LeadStage]?.label || stage}`)
-        if (result.autoFollowup) toast(`Seguimiento automático creado para ${result.autoFollowup.date}`)
+        if (result.autoFollowup) toast(`Seguimiento automático creado para ${formatDate(result.autoFollowup.start_at)}`)
       }
       loadLead()
     } catch { toast('Error al cambiar etapa', 'error') }
+  }
+
+  const handleRemoveTag = async (tagId: string) => {
+    try {
+      await apiFetch('crm', `/lead-tags?lead_id=${leadId}&tag_id=${tagId}`, { method: 'DELETE' })
+      loadLead()
+    } catch { toast('Error al quitar tag', 'error') }
+  }
+
+  const handleAddTag = async (tagId: string) => {
+    try {
+      await apiFetch('crm', '/lead-tags', {
+        method: 'POST',
+        body: JSON.stringify({ lead_id: leadId, tag_id: tagId }),
+      })
+      setShowTagPicker(false)
+      loadLead()
+    } catch { toast('Error al agregar tag', 'error') }
+  }
+
+  const handleOpenTagPicker = async () => {
+    if (!showTagPicker && orgTags.length === 0) {
+      setTagsLoading(true)
+      try {
+        const res = await apiFetch('crm', '/tags')
+        const data = (await res.json()) as any
+        setOrgTags(Array.isArray(data) ? data : [])
+      } catch {}
+      setTagsLoading(false)
+    }
+    setShowTagPicker(prev => !prev)
   }
 
   const handleConvertToAppraisal = async (createAppraisal: boolean) => {
@@ -261,10 +295,53 @@ export default function LeadDetailPage() {
                     <ChevronRight className="w-3 h-3 text-gray-400 ml-1" />
                   </Link>
                 )}
-                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                <div className="flex items-center gap-1 mt-1 flex-wrap">
                   {lead.tags?.map((tag: any) => (
-                    <span key={tag.id} className="text-[10px] px-2 py-0.5 rounded-full font-medium text-white" style={{ background: tag.color }}>{tag.name}</span>
+                    <button
+                      key={tag.id}
+                      onClick={() => handleRemoveTag(tag.id)}
+                      className="group flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium text-white hover:opacity-80 transition-opacity"
+                      style={{ background: tag.color }}
+                      title="Quitar tag"
+                    >
+                      {tag.name}
+                      <X className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </button>
                   ))}
+                  <div className="relative">
+                    <button
+                      onClick={handleOpenTagPicker}
+                      className="flex items-center gap-0.5 text-[10px] px-2 py-0.5 rounded-full font-medium border border-dashed border-gray-300 text-gray-400 hover:border-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      <Plus className="w-2.5 h-2.5" /> Tag
+                    </button>
+                    {showTagPicker && (
+                      <>
+                        <div className="fixed inset-0 z-[9]" onClick={() => setShowTagPicker(false)} />
+                        <div className="absolute top-full left-0 mt-1 bg-white border rounded-lg shadow-lg z-10 p-2 min-w-[160px]">
+                          {tagsLoading ? (
+                            <div className="flex items-center gap-2 px-2 py-1"><Loader2 className="w-3 h-3 animate-spin text-gray-400" /><span className="text-xs text-gray-400">Cargando...</span></div>
+                          ) : (
+                            <>
+                              {orgTags.filter(t => !lead.tags?.some((lt: any) => lt.id === t.id)).map(tag => (
+                                <button
+                                  key={tag.id}
+                                  onClick={() => handleAddTag(tag.id)}
+                                  className="flex items-center gap-2 w-full text-left px-2 py-1 rounded hover:bg-gray-50 text-xs text-gray-700"
+                                >
+                                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: tag.color }} />
+                                  {tag.name}
+                                </button>
+                              ))}
+                              {orgTags.filter(t => !lead.tags?.some((lt: any) => lt.id === t.id)).length === 0 && (
+                                <p className="text-xs text-gray-400 px-2 py-1">No hay más tags disponibles</p>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${stage.color}`}>{stage.label}</span>
                   {urgency === 'danger' && <span className="text-xs px-2 py-0.5 bg-red-100 text-red-700 rounded-full font-medium">URGENTE</span>}
                   {urgency === 'warning' && <span className="text-xs px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full font-medium">Atención</span>}
