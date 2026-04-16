@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   ArrowLeft, Phone, MessageCircle, Edit3, Save, X, Trash2,
-  MapPin, User
+  MapPin, User, ChevronRight
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
@@ -249,6 +249,18 @@ export default function LeadDetailPage() {
             <div className="flex items-start justify-between gap-3 mb-3">
               <div>
                 <h1 className="text-xl font-bold text-gray-900">{lead.full_name}</h1>
+                {lead.contact_id && (
+                  <Link
+                    href="/contactos"
+                    className="inline-flex items-center gap-2 text-sm text-gray-600 bg-gray-50 border rounded-lg px-3 py-1.5 hover:bg-gray-100 transition-colors mt-1"
+                  >
+                    <User className="w-4 h-4 text-gray-400 shrink-0" />
+                    <span className="font-medium truncate max-w-[180px]">{lead.full_name}</span>
+                    <span className="text-gray-400">·</span>
+                    <span className="text-gray-500 text-xs">Contacto</span>
+                    <ChevronRight className="w-3 h-3 text-gray-400 ml-1" />
+                  </Link>
+                )}
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                   {lead.tags?.map((tag: any) => (
                     <span key={tag.id} className="text-[10px] px-2 py-0.5 rounded-full font-medium text-white" style={{ background: tag.color }}>{tag.name}</span>
