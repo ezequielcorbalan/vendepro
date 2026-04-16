@@ -13,6 +13,7 @@ const mockUserRepo = {
   findByOrg: vi.fn(),
   save: vi.fn().mockResolvedValue(undefined),
   delete: vi.fn(),
+  updateRole: vi.fn().mockResolvedValue(undefined),
 }
 const mockAuthService = {
   hashPassword: vi.fn().mockResolvedValue('hashed_pass'),

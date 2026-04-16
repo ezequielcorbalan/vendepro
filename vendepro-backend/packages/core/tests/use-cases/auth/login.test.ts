@@ -21,6 +21,7 @@ const mockUserRepo = {
   findByOrg: vi.fn(),
   save: vi.fn(),
   delete: vi.fn(),
+  updateRole: vi.fn().mockResolvedValue(undefined),
 }
 
 const mockAuthService = {

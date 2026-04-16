@@ -6,4 +6,5 @@ export interface UserRepository {
   findByOrg(orgId: string): Promise<User[]>
   save(user: User): Promise<void>
   delete(id: string, orgId: string): Promise<void>
+  updateRole(id: string, orgId: string, roleId: number, roleName: string): Promise<void>
 }
