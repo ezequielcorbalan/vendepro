@@ -13,15 +13,24 @@ export class D1ObjectiveRepository implements ObjectiveRepository {
   }
 
   async findByOrg(orgId: string, filters?: ObjectiveFilters): Promise<Objective[]> {
-    let query = `SELECT o.*, u.full_name as agent_name FROM agent_objectives o LEFT JOIN users u ON o.agent_id = u.id WHERE o.org_id = ? AND o.period_end >= date('now')`
     const binds: unknown[] = [orgId]
 
-    if (filters?.agent_id) { query += ' AND o.agent_id = ?'; binds.push(filters.agent_id) }
-    if (filters?.period_type) { query += ' AND o.period_type = ?'; binds.push(filters.period_type) }
-    query += ' ORDER BY o.period_start DESC'
+    if (filters?.agent_id) {
+      let query = `SELECT o.*, u.full_name as agent_name FROM agent_objectives o LEFT JOIN users u ON o.agent_id = u.id WHERE o.org_id = ? AND o.period_end >= date('now') AND o.agent_id = ?`
+      binds.push(filters.agent_id)
+      if (filters?.period_type) { query += ' AND o.period_type = ?'; binds.push(filters.period_type) }
+      query += ' ORDER BY o.period_start DESC'
+      const rows = (await this.db.prepare(query).bind(...binds).all()).results as any[]
+      return rows.map(r => this.toEntity(r))
+    }
+
+    // No agent filter: aggregate targets by metric across all agents
+    let query = `SELECT metric, SUM(target) as target, MIN(period_start) as period_start, MAX(period_end) as period_end, period_type, org_id FROM agent_objectives WHERE org_id = ? AND period_end >= date('now')`
+    if (filters?.period_type) { query += ' AND period_type = ?'; binds.push(filters.period_type) }
+    query += ' GROUP BY metric, period_type ORDER BY metric'
 
     const rows = (await this.db.prepare(query).bind(...binds).all()).results as any[]
-    return rows.map(r => this.toEntity(r))
+    return rows.map(r => this.toEntity({ ...r, id: r.metric, agent_id: '' }))
   }
 
   async save(objective: Objective): Promise<void> {
