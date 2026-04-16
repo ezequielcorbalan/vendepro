@@ -18,6 +18,7 @@ export interface PropertyProps {
   owner_name: string
   owner_phone: string | null
   owner_email: string | null
+  contact_id: string | null
   public_slug: string
   cover_photo: string | null
   agent_id: string
@@ -67,6 +68,7 @@ export class Property {
   get owner_name() { return this.props.owner_name }
   get owner_phone() { return this.props.owner_phone }
   get owner_email() { return this.props.owner_email }
+  get contact_id() { return this.props.contact_id }
   get public_slug() { return this.props.public_slug }
   get cover_photo() { return this.props.cover_photo }
   get agent_id() { return this.props.agent_id }

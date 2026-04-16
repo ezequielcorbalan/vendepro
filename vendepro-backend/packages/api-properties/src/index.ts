@@ -18,10 +18,10 @@ app.use('*', async (c, next) => {
 
 // ── PROPERTIES ─────────────────────────────────────────────────
 app.get('/properties', async (c) => {
-  const { status, agent_id, neighborhood, property_type } = c.req.query()
+  const { status, agent_id, neighborhood, property_type, q } = c.req.query()
   const repo = new D1PropertyRepository(c.env.DB)
   const useCase = new GetPropertiesUseCase(repo)
-  const items = await useCase.execute(c.get('orgId'), { status, agent_id, neighborhood, property_type })
+  const items = await useCase.execute(c.get('orgId'), { status, agent_id, neighborhood, property_type, search: q })
   return c.json(items.map(p => p.toObject()))
 })
 
@@ -37,7 +37,39 @@ app.get('/properties/:id', async (c) => {
   const repo = new D1PropertyRepository(c.env.DB)
   const prop = await repo.findById(c.req.param('id'), c.get('orgId'))
   if (!prop) return c.json({ error: 'Not found' }, 404)
-  return c.json(prop.toObject())
+  const photos = (await c.env.DB.prepare(
+    'SELECT id, url, sort_order FROM property_photos WHERE property_id = ? AND org_id = ? ORDER BY sort_order'
+  ).bind(c.req.param('id'), c.get('orgId')).all()).results
+  return c.json({ ...prop.toObject(), photos })
+})
+
+app.put('/properties/:id', async (c) => {
+  const body = (await c.req.json()) as any
+  const id = c.req.param('id')
+  const db = c.env.DB
+  const orgId = c.get('orgId')
+  const existing = await db.prepare('SELECT id FROM properties WHERE id = ? AND org_id = ?').bind(id, orgId).first()
+  if (!existing) return c.json({ error: 'Not found' }, 404)
+  const now = new Date().toISOString()
+  await db.prepare(`
+    UPDATE properties SET
+      address=COALESCE(?,address), neighborhood=COALESCE(?,neighborhood),
+      city=COALESCE(?,city), property_type=COALESCE(?,property_type),
+      rooms=COALESCE(?,rooms), size_m2=COALESCE(?,size_m2),
+      asking_price=COALESCE(?,asking_price), currency=COALESCE(?,currency),
+      owner_name=COALESCE(?,owner_name), owner_phone=COALESCE(?,owner_phone),
+      owner_email=COALESCE(?,owner_email), contact_id=?,
+      status=COALESCE(?,status), commercial_stage=COALESCE(?,commercial_stage),
+      updated_at=?
+    WHERE id = ? AND org_id = ?
+  `).bind(
+    body.address ?? null, body.neighborhood ?? null, body.city ?? null, body.property_type ?? null,
+    body.rooms ?? null, body.size_m2 ?? null, body.asking_price ?? null, body.currency ?? null,
+    body.owner_name ?? null, body.owner_phone ?? null, body.owner_email ?? null,
+    body.contact_id ?? null, body.status ?? null, body.commercial_stage ?? null,
+    now, id, orgId
+  ).run()
+  return c.json({ success: true })
 })
 
 app.put('/properties/:id/price', async (c) => {
@@ -53,6 +85,54 @@ app.put('/properties/:id/status', async (c) => {
   const repo = new D1PropertyRepository(c.env.DB)
   const useCase = new UpdatePropertyStatusUseCase(repo)
   await useCase.execute({ propertyId: c.req.param('id'), orgId: c.get('orgId'), newStatus: body.status })
+  return c.json({ success: true })
+})
+
+// ⚠️ /reorder must be registered BEFORE /:id to prevent Hono matching "reorder" as an :id
+app.put('/property-photos/reorder', async (c) => {
+  const items = (await c.req.json()) as { id: string; sort_order: number }[]
+  if (!Array.isArray(items) || items.length === 0) return c.json({ success: true })
+  const db = c.env.DB
+  const orgId = c.get('orgId')
+  for (const item of items) {
+    await db.prepare('UPDATE property_photos SET sort_order=? WHERE id=? AND org_id=?')
+      .bind(item.sort_order, item.id, orgId).run()
+  }
+  return c.json({ success: true })
+})
+
+app.post('/property-photos', async (c) => {
+  const formData = await c.req.formData()
+  const file = formData.get('file') as File | null
+  const propertyId = formData.get('property_id') as string | null
+  if (!file || !propertyId) return c.json({ error: 'file y property_id requeridos' }, 400)
+  const db = c.env.DB
+  const orgId = c.get('orgId')
+  const id = crypto.randomUUID().replace(/-/g, '')
+  const r2Key = `cuentas/${orgId}/propiedades/${propertyId}/fotos/${id}`
+  const storage = new R2StorageService(c.env.R2, c.env.R2_PUBLIC_URL)
+  const buffer = await file.arrayBuffer()
+  const url = await storage.upload(r2Key, buffer, file.type)
+  const now = new Date().toISOString()
+  const count = (await db.prepare('SELECT COUNT(*) as n FROM property_photos WHERE property_id=? AND org_id=?').bind(propertyId, orgId).first()) as any
+  const sortOrder = (count?.n ?? 0)
+  await db.prepare('INSERT INTO property_photos (id, org_id, property_id, url, r2_key, sort_order, created_at) VALUES (?,?,?,?,?,?,?)')
+    .bind(id, orgId, propertyId, url, r2Key, sortOrder, now).run()
+  return c.json({ id, url, r2_key: r2Key, sort_order: sortOrder })
+})
+
+app.delete('/property-photos/:id', async (c) => {
+  const photoId = c.req.param('id')
+  const db = c.env.DB
+  const orgId = c.get('orgId')
+  const row = await db.prepare('SELECT r2_key FROM property_photos WHERE id=? AND org_id=?').bind(photoId, orgId).first() as any
+  if (!row) return c.json({ error: 'Not found' }, 404)
+  try { await c.env.R2.delete(row.r2_key) } catch {}
+  try {
+    await db.prepare('DELETE FROM property_photos WHERE id=? AND org_id=?').bind(photoId, orgId).run()
+  } catch {
+    return c.json({ error: 'Error al eliminar la foto' }, 500)
+  }
   return c.json({ success: true })
 })
 
@@ -92,11 +172,23 @@ app.get('/appraisals', async (c) => {
   const orgId = c.get('orgId')
   if (id) {
     const row = await db.prepare(
-      `SELECT a.*, u.full_name as agent_name FROM appraisals a LEFT JOIN users u ON a.agent_id = u.id WHERE a.id = ? AND a.org_id = ?`
+      `SELECT a.*, u.full_name as agent_name,
+        p.address as linked_property_address, p.neighborhood as linked_property_neighborhood
+       FROM appraisals a
+       LEFT JOIN users u ON a.agent_id = u.id
+       LEFT JOIN properties p ON a.property_id = p.id
+       WHERE a.id = ? AND a.org_id = ?`
     ).bind(id, orgId).first()
     if (!row) return c.json({ error: 'Not found' }, 404)
     const comparables = (await db.prepare('SELECT * FROM appraisal_comparables WHERE appraisal_id = ? ORDER BY sort_order').bind(id).all()).results
-    return c.json({ ...(row as any), comparables })
+    const r = row as any
+    return c.json({
+      ...r,
+      comparables,
+      linked_property: r.property_id
+        ? { id: r.property_id, address: r.linked_property_address, neighborhood: r.linked_property_neighborhood }
+        : null,
+    })
   }
   let query = `SELECT a.*, u.full_name as agent_name FROM appraisals a LEFT JOIN users u ON a.agent_id = u.id WHERE a.org_id = ?`
   const binds: unknown[] = [orgId]
@@ -119,8 +211,8 @@ app.post('/appraisals', async (c) => {
       covered_area, total_area, semi_area, weighted_area,
       strengths, weaknesses, opportunities, threats, publication_analysis,
       suggested_price, test_price, expected_close_price, usd_per_m2,
-      contact_name, contact_phone, contact_email, lead_id, agent_id, status, created_at, updated_at)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      contact_name, contact_phone, contact_email, lead_id, property_id, agent_id, status, created_at, updated_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `).bind(
     id, orgId,
     body.property_address, body.neighborhood || '', body.city || 'Buenos Aires', body.property_type || 'departamento',
@@ -128,7 +220,7 @@ app.post('/appraisals', async (c) => {
     body.strengths ?? null, body.weaknesses ?? null, body.opportunities ?? null, body.threats ?? null, body.publication_analysis ?? null,
     body.suggested_price ?? null, body.test_price ?? null, body.expected_close_price ?? null, body.usd_per_m2 ?? null,
     body.contact_name ?? null, body.contact_phone ?? null, body.contact_email ?? null,
-    body.lead_id ?? null, agentId, 'draft', now, now
+    body.lead_id ?? null, body.property_id ?? null, agentId, 'draft', now, now
   ).run()
   return c.json({ id, status: 'draft' }, 201)
 })
@@ -149,7 +241,8 @@ app.put('/appraisals', async (c) => {
       strengths=?, weaknesses=?, opportunities=?, threats=?, publication_analysis=?,
       suggested_price=?, test_price=?, expected_close_price=?, usd_per_m2=?,
       contact_name=?, contact_phone=?, contact_email=?,
-      lead_id=COALESCE(?,lead_id), status=COALESCE(?,status), updated_at=?
+      property_id=COALESCE(?,property_id), lead_id=COALESCE(?,lead_id),
+      status=COALESCE(?,status), updated_at=?
     WHERE id = ? AND org_id = ?
   `).bind(
     body.property_address ?? null, body.neighborhood ?? null,
@@ -158,7 +251,7 @@ app.put('/appraisals', async (c) => {
     body.strengths ?? null, body.weaknesses ?? null, body.opportunities ?? null, body.threats ?? null, body.publication_analysis ?? null,
     body.suggested_price ?? null, body.test_price ?? null, body.expected_close_price ?? null, body.usd_per_m2 ?? null,
     body.contact_name ?? null, body.contact_phone ?? null, body.contact_email ?? null,
-    body.lead_id ?? null, body.status ?? null, now,
+    body.property_id ?? null, body.lead_id ?? null, body.status ?? null, now,
     id, orgId
   ).run()
   return c.json({ success: true })

@@ -168,6 +168,8 @@ export default function NuevaPropiedadPage() {
     setForm(prev => ({ ...prev, [field]: value }))
   }
 
+
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!form.address) { toast('La dirección es requerida', 'error'); return }
@@ -345,7 +347,6 @@ export default function NuevaPropiedadPage() {
                 </div>
               </div>
             )}
-          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="col-span-2">

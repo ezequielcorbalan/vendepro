@@ -47,12 +47,12 @@ export class CreatePropertyUseCase {
       owner_name: input.owner_name,
       owner_phone: input.owner_phone,
       owner_email: input.owner_email ?? null,
+      contact_id: input.contact_id ?? null,
+      lead_id: input.lead_id ?? null,
       public_slug: slug,
       cover_photo: input.cover_photo ?? null,
       status: 'active',
       commercial_stage: null,
-      contact_id: input.contact_id ?? null,
-      lead_id: input.lead_id ?? null,
     })
 
     await this.propertyRepo.save(property)
