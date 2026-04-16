@@ -34,8 +34,8 @@ export class D1LeadRepository implements LeadRepository {
       INSERT INTO leads (id, org_id, full_name, phone, email, source, source_detail, property_address,
         neighborhood, property_type, operation, stage, assigned_to, notes, estimated_value, budget,
         timing, personas_trabajo, mascotas, next_step, next_step_date, lost_reason, first_contact_at,
-        created_at, updated_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        contact_id, created_at, updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
       ON CONFLICT(id) DO UPDATE SET
         stage=excluded.stage, assigned_to=excluded.assigned_to, notes=excluded.notes,
         estimated_value=excluded.estimated_value, budget=excluded.budget, timing=excluded.timing,
@@ -43,13 +43,14 @@ export class D1LeadRepository implements LeadRepository {
         next_step=excluded.next_step, next_step_date=excluded.next_step_date,
         lost_reason=excluded.lost_reason, first_contact_at=excluded.first_contact_at,
         full_name=excluded.full_name, phone=excluded.phone, email=excluded.email,
-        neighborhood=excluded.neighborhood, updated_at=excluded.updated_at
+        neighborhood=excluded.neighborhood, contact_id=excluded.contact_id,
+        updated_at=excluded.updated_at
     `).bind(
       o.id, o.org_id, o.full_name, o.phone, o.email, o.source, o.source_detail,
       o.property_address, o.neighborhood, o.property_type, o.operation, o.stage,
       o.assigned_to, o.notes, o.estimated_value, o.budget, o.timing, o.personas_trabajo,
       o.mascotas, o.next_step, o.next_step_date, o.lost_reason, o.first_contact_at,
-      o.created_at, o.updated_at
+      o.contact_id ?? null, o.created_at, o.updated_at
     ).run()
   }
 
@@ -67,7 +68,9 @@ export class D1LeadRepository implements LeadRepository {
       budget: row.budget, timing: row.timing, personas_trabajo: row.personas_trabajo,
       mascotas: row.mascotas, next_step: row.next_step, next_step_date: row.next_step_date,
       lost_reason: row.lost_reason, first_contact_at: row.first_contact_at,
+      contact_id: row.contact_id ?? null,
       created_at: row.created_at, updated_at: row.updated_at,
+      assigned_name: row.assigned_name,
     })
   }
 }
