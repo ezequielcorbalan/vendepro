@@ -65,4 +65,62 @@ app.get('/public/prefact/:slug', async (c) => {
   return c.json(row)
 })
 
+// ── PUBLIC LEADS (/public/leads) ─────────────────────────────────
+app.post('/public/leads', async (c) => {
+  const apiKey = c.req.header('X-API-Key')
+  if (!apiKey) return c.json({ error: 'API key requerida' }, 401)
+
+  const db = c.env.DB
+
+  // 1. Buscar organización por api_key
+  const org = await db
+    .prepare('SELECT id FROM organizations WHERE api_key = ?')
+    .bind(apiKey)
+    .first() as any
+  if (!org) return c.json({ error: 'API key inválida' }, 401)
+
+  const orgId = org.id as string
+  const body = (await c.req.json()) as any
+
+  if (!body.full_name?.trim()) {
+    return c.json({ error: 'full_name es requerido' }, 400)
+  }
+
+  // 2. Obtener primer admin de la org (para agent_id)
+  const admin = await db
+    .prepare("SELECT id FROM users WHERE org_id = ? AND role = 'admin' ORDER BY created_at LIMIT 1")
+    .bind(orgId)
+    .first() as any
+  if (!admin) return c.json({ error: 'Organización sin administrador configurado' }, 422)
+
+  const agentId = admin.id as string
+  const now = new Date().toISOString()
+
+  // 3. Crear contacto
+  const contactId = crypto.randomUUID().replace(/-/g, '')
+  await db.prepare(`
+    INSERT INTO contacts (id, org_id, full_name, phone, email, contact_type, notes, source, agent_id, created_at)
+    VALUES (?, ?, ?, ?, ?, 'otro', ?, 'web', ?, ?)
+  `).bind(
+    contactId, orgId, body.full_name.trim(),
+    body.phone ?? null, body.email ?? null,
+    body.notes ?? null, agentId, now
+  ).run()
+
+  // 4. Crear lead
+  const leadId = crypto.randomUUID().replace(/-/g, '')
+  await db.prepare(`
+    INSERT INTO leads (id, org_id, full_name, phone, email, source, source_detail, operation, stage, contact_id, assigned_to, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, 'web', ?, ?, 'nuevo', ?, ?, ?, ?)
+  `).bind(
+    leadId, orgId, body.full_name.trim(),
+    body.phone ?? null, body.email ?? null,
+    body.source_detail ?? null,
+    body.operation ?? 'otro',
+    contactId, agentId, now, now
+  ).run()
+
+  return c.json({ id: leadId, success: true }, 201)
+})
+
 export default app
