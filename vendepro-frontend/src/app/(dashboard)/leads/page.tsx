@@ -524,7 +524,7 @@ function LeadCard({ lead, onAdvance, onLost, onDelete }: { lead: any; onAdvance:
         ) : (
           <span className="flex-1 py-2.5 flex justify-center text-gray-300 text-xs">Sin tel</span>
         )}
-        {lead.stage !== 'captado' && lead.stage !== 'perdido' && lead.stage !== 'archivado' && (
+        {lead.stage !== 'captado' && lead.stage !== 'perdido' && (
           <button onClick={onAdvance} className="flex-1 py-2.5 flex justify-center text-[#ff007c] hover:bg-pink-50 border-l border-gray-100"><ArrowRight className="w-4 h-4" /></button>
         )}
         {(lead.stage === 'perdido') && (

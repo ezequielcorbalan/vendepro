@@ -13,12 +13,11 @@ export const LEAD_STAGES = {
   seguimiento: { label: 'Seguimiento',  color: 'bg-yellow-100 text-yellow-800',   order: 7 },
   captado:     { label: 'Captado',      color: 'bg-green-100 text-green-800',     order: 8 },
   perdido:     { label: 'Perdido',      color: 'bg-red-100 text-red-800',         order: 9 },
-  archivado:   { label: 'Archivado',   color: 'bg-gray-100 text-gray-500',       order: 10 },
 } as const
 
 export type LeadStage = keyof typeof LEAD_STAGES
 export const LEAD_STAGE_KEYS = Object.keys(LEAD_STAGES) as LeadStage[]
-export const LEAD_PIPELINE_STAGES = LEAD_STAGE_KEYS.filter(s => s !== 'perdido' && s !== 'archivado')
+export const LEAD_PIPELINE_STAGES = LEAD_STAGE_KEYS.filter(s => s !== 'perdido')
 
 export const DEFAULT_TAGS = {
   propietario: { label: 'Propietario', color: '#ec4899' },
