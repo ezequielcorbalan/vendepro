@@ -13,7 +13,7 @@ import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
 import {
   LEAD_STAGES, LEAD_STAGE_KEYS, LEAD_SOURCES, OPERATION_TYPES,
-  getLeadUrgency, formatWhatsApp, type LeadStage,
+  formatWhatsApp, type LeadStage,
   LEAD_PIPELINE_STAGES
 } from '@/lib/crm-config'
 import { formatDate } from '@/lib/utils'
@@ -188,7 +188,6 @@ export default function LeadDetailPage() {
   }
 
   const stage = LEAD_STAGES[lead.stage as LeadStage] || LEAD_STAGES.nuevo
-  const urgency = getLeadUrgency(lead)
 
   return (
     <div className="max-w-3xl space-y-4">
@@ -214,7 +213,8 @@ export default function LeadDetailPage() {
           )}
           <button
             onClick={() => handleStageChange('en_tasacion')}
-            className="flex items-center gap-1.5 border border-[#ff8017] text-[#ff8017] px-3 py-1.5 rounded-lg text-sm hover:bg-orange-50 font-medium"
+            disabled={editing}
+            className="flex items-center gap-1.5 border border-[#ff8017] text-[#ff8017] px-3 py-1.5 rounded-lg text-sm hover:bg-orange-50 font-medium disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <FileText className="w-3.5 h-3.5" /> Ficha de tasación
           </button>
