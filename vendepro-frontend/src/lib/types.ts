@@ -184,6 +184,20 @@ export interface LeadTag {
   is_default: number  // 0 or 1 — SQLite integer convention
 }
 
+export interface ContactLead {
+  id: string
+  full_name: string
+  stage: string
+}
+
+export interface ContactProperty {
+  id: string
+  address: string
+  status: string
+  asking_price: number | null
+  currency: 'USD' | 'ARS'
+}
+
 export interface Contact {
   id: string
   org_id: string
@@ -197,8 +211,8 @@ export interface Contact {
   agent_id: string
   created_at: string
   // Populated in GET /contacts/:id
-  leads?: Array<{ id: string; full_name: string; stage: string; created_at: string }>
-  properties?: Array<{ id: string; address: string; status: string; asking_price: number | null; currency: string }>
+  leads?: ContactLead[]
+  properties?: ContactProperty[]
 }
 
 export interface LeadActivity {
