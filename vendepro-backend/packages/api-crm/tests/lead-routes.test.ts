@@ -92,4 +92,51 @@ describe('api-crm lead routes', () => {
     const res = await app.request('/calendar', { method: 'GET' }, { DB: {}, JWT_SECRET: 'secret' })
     expect(res.status).toBe(200)
   })
+
+  it('POST /leads with contact_data creates contact then lead', async () => {
+    const { default: app } = await import('../src/index')
+    const res = await app.request('/leads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        full_name: 'María González',
+        contact_data: { full_name: 'María González', contact_type: 'propietario' },
+        source: 'manual',
+      }),
+    }, { DB: {}, JWT_SECRET: 'secret' })
+    expect(res.status).toBe(201)
+    const body = await res.json() as any
+    expect(body.id).toBe('gen-id')
+  })
+
+  it('POST /api-key returns a new key with correct format', async () => {
+    const mockRun = vi.fn().mockResolvedValue({})
+    const mockDB = {
+      prepare: vi.fn().mockReturnValue({
+        bind: vi.fn().mockReturnValue({ run: mockRun }),
+      }),
+    }
+    const { default: app } = await import('../src/index')
+    const res = await app.request('/api-key', {
+      method: 'POST',
+    }, { DB: mockDB, JWT_SECRET: 'secret' })
+    expect(res.status).toBe(200)
+    const body = await res.json() as any
+    expect(body.api_key).toMatch(/^vp_live_[0-9a-f]{32}$/)
+  })
+
+  it('GET /api-key returns has_key false when no key set', async () => {
+    const mockDB = {
+      prepare: vi.fn().mockReturnValue({
+        bind: vi.fn().mockReturnValue({
+          first: vi.fn().mockResolvedValue({ api_key: null }),
+        }),
+      }),
+    }
+    const { default: app } = await import('../src/index')
+    const res = await app.request('/api-key', { method: 'GET' }, { DB: mockDB, JWT_SECRET: 'secret' })
+    expect(res.status).toBe(200)
+    const body = await res.json() as any
+    expect(body.has_key).toBe(false)
+  })
 })

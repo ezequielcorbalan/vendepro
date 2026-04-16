@@ -32,9 +32,29 @@ app.get('/leads', async (c) => {
 
 app.post('/leads', async (c) => {
   const body = (await c.req.json()) as any
+
+  let contact_id: string | undefined = body.contact_id
+
+  // If contact_data provided, create the contact first
+  if (!contact_id && body.contact_data) {
+    const contactRepo = new D1ContactRepository(c.env.DB)
+    const createContact = new CreateContactUseCase(contactRepo, new CryptoIdGenerator())
+    const contactResult = await createContact.execute({
+      ...body.contact_data,
+      org_id: c.get('orgId'),
+      agent_id: c.get('userId'),
+    })
+    contact_id = contactResult.id
+  }
+
   const repo = new D1LeadRepository(c.env.DB)
   const useCase = new CreateLeadUseCase(repo, new CryptoIdGenerator())
-  const result = await useCase.execute({ ...body, org_id: c.get('orgId'), assigned_to: body.assigned_to || c.get('userId') })
+  const result = await useCase.execute({
+    ...body,
+    contact_id: contact_id ?? null,
+    org_id: c.get('orgId'),
+    assigned_to: body.assigned_to || c.get('userId'),
+  })
   return c.json(result, 201)
 })
 
@@ -190,6 +210,25 @@ app.delete('/tags', async (c) => {
   const repo = new D1TagRepository(c.env.DB)
   await repo.delete(id, c.get('orgId'))
   return c.json({ success: true })
+})
+
+// ── API KEY ────────────────────────────────────────────────────
+app.post('/api-key', async (c) => {
+  const orgId = c.get('orgId')
+  const bytes = crypto.getRandomValues(new Uint8Array(16))
+  const hex = Array.from(bytes).map((b: number) => b.toString(16).padStart(2, '0')).join('')
+  const apiKey = `vp_live_${hex}`
+  await c.env.DB.prepare('UPDATE organizations SET api_key = ? WHERE id = ?').bind(apiKey, orgId).run()
+  return c.json({ api_key: apiKey })
+})
+
+app.get('/api-key', async (c) => {
+  const orgId = c.get('orgId')
+  const row = await c.env.DB.prepare('SELECT api_key FROM organizations WHERE id = ?').bind(orgId).first() as any
+  if (!row?.api_key) return c.json({ has_key: false, api_key_masked: null })
+  const key = row.api_key as string
+  const masked = `vp_live_••••••••••••${key.slice(-4)}`
+  return c.json({ has_key: true, api_key_masked: masked })
 })
 
 // ── STAGE HISTORY ──────────────────────────────────────────────
