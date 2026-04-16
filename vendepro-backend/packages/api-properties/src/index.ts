@@ -278,4 +278,177 @@ app.get('/reports', async (c) => {
   return c.json(rows)
 })
 
+app.post('/reports', async (c) => {
+  const userId = c.get('userId')
+  const db = c.env.DB
+  const body = await c.req.json() as any
+  const id = crypto.randomUUID().replace(/-/g, '')
+  const status = body.publish ? 'published' : 'draft'
+  const publishedAt = body.publish ? new Date().toISOString() : null
+
+  await db.prepare(
+    'INSERT INTO reports (id, property_id, period_label, period_start, period_end, status, created_by, published_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+  ).bind(id, body.propertyId, body.periodLabel, body.periodStart, body.periodEnd, status, userId, publishedAt).run()
+
+  if (Array.isArray(body.metrics)) {
+    for (const m of body.metrics) {
+      await db.prepare(
+        'INSERT INTO report_metrics (id, report_id, source, impressions, portal_visits, inquiries, phone_calls, whatsapp, in_person_visits, offers, ranking_position, avg_market_price) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      ).bind(
+        crypto.randomUUID().replace(/-/g, ''), id, m.source || 'zonaprop',
+        m.impressions ? Number(m.impressions) : null,
+        m.portal_visits ? Number(m.portal_visits) : null,
+        m.inquiries ? Number(m.inquiries) : null,
+        m.phone_calls ? Number(m.phone_calls) : null,
+        m.whatsapp ? Number(m.whatsapp) : null,
+        m.in_person_visits ? Number(m.in_person_visits) : null,
+        m.offers ? Number(m.offers) : null,
+        m.ranking_position ? Number(m.ranking_position) : null,
+        m.avg_market_price ? Number(m.avg_market_price) : null,
+      ).run()
+    }
+  }
+
+  const sections: Array<[string, string]> = [
+    ['strategy', body.strategy || ''],
+    ['marketing', body.marketing || ''],
+    ['conclusion', body.conclusion || ''],
+    ['price_reference', body.priceReference || ''],
+  ]
+  for (const [section, bodyText] of sections) {
+    if (bodyText) {
+      await db.prepare(
+        'INSERT INTO report_content (id, report_id, section, title, body, sort_order) VALUES (?, ?, ?, ?, ?, 0)'
+      ).bind(crypto.randomUUID().replace(/-/g, ''), id, section, '', bodyText).run()
+    }
+  }
+
+  if (Array.isArray(body.competitors)) {
+    await db.prepare('DELETE FROM competitor_links WHERE property_id = ?').bind(body.propertyId).run()
+    for (const comp of body.competitors) {
+      await db.prepare(
+        'INSERT INTO competitor_links (id, property_id, url, address, price, notes) VALUES (?, ?, ?, ?, ?, ?)'
+      ).bind(
+        crypto.randomUUID().replace(/-/g, ''), body.propertyId,
+        comp.url, comp.address || null,
+        comp.price ? Number(comp.price) : null, comp.notes || null,
+      ).run()
+    }
+  }
+
+  return c.json({ reportId: id, propertyId: body.propertyId })
+})
+
+app.get('/reports/:id', async (c) => {
+  const id = c.req.param('id')
+  const db = c.env.DB
+  const report = await db.prepare('SELECT * FROM reports WHERE id = ?').bind(id).first() as any
+  if (!report) return c.json({ error: 'Reporte no encontrado' }, 404)
+  const metrics = (await db.prepare('SELECT * FROM report_metrics WHERE report_id = ?').bind(id).all()).results
+  const content = (await db.prepare('SELECT * FROM report_content WHERE report_id = ?').bind(id).all()).results
+  const competitors = (await db.prepare('SELECT * FROM competitor_links WHERE property_id = ?').bind(report.property_id).all()).results
+  return c.json({ report, metrics, content, competitors })
+})
+
+app.put('/reports/:id', async (c) => {
+  const id = c.req.param('id')
+  const userId = c.get('userId')
+  const userRole = c.get('userRole')
+  const db = c.env.DB
+  const body = await c.req.json() as any
+  const report = await db.prepare('SELECT * FROM reports WHERE id = ?').bind(id).first() as any
+  if (!report) return c.json({ error: 'Reporte no encontrado' }, 404)
+  if (userRole !== 'admin' && report.created_by !== userId) return c.json({ error: 'Sin permisos' }, 403)
+
+  const status = body.publish ? 'published' : 'draft'
+  const publishedAt = body.publish ? new Date().toISOString() : null
+  await db.prepare(
+    'UPDATE reports SET period_label = ?, period_start = ?, period_end = ?, status = ?, published_at = ? WHERE id = ?'
+  ).bind(
+    body.periodLabel || report.period_label,
+    body.periodStart || report.period_start,
+    body.periodEnd || report.period_end,
+    status,
+    publishedAt || report.published_at,
+    id,
+  ).run()
+
+  if (Array.isArray(body.metrics)) {
+    await db.prepare('DELETE FROM report_metrics WHERE report_id = ?').bind(id).run()
+    for (const m of body.metrics) {
+      await db.prepare(
+        'INSERT INTO report_metrics (id, report_id, source, impressions, portal_visits, inquiries, phone_calls, whatsapp, in_person_visits, offers, ranking_position, avg_market_price) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      ).bind(
+        crypto.randomUUID().replace(/-/g, ''), id, m.source || 'zonaprop',
+        m.impressions ? Number(m.impressions) : null,
+        m.portal_visits ? Number(m.portal_visits) : null,
+        m.inquiries ? Number(m.inquiries) : null,
+        m.phone_calls ? Number(m.phone_calls) : null,
+        m.whatsapp ? Number(m.whatsapp) : null,
+        m.in_person_visits ? Number(m.in_person_visits) : null,
+        m.offers ? Number(m.offers) : null,
+        m.ranking_position ? Number(m.ranking_position) : null,
+        m.avg_market_price ? Number(m.avg_market_price) : null,
+      ).run()
+    }
+  }
+
+  await db.prepare('DELETE FROM report_content WHERE report_id = ?').bind(id).run()
+  const sections: Array<[string, string]> = [
+    ['strategy', body.strategy || ''],
+    ['marketing', body.marketing || ''],
+    ['conclusion', body.conclusion || ''],
+    ['price_reference', body.priceReference || ''],
+  ]
+  for (const [section, bodyText] of sections) {
+    if (bodyText) {
+      await db.prepare(
+        'INSERT INTO report_content (id, report_id, section, title, body, sort_order) VALUES (?, ?, ?, ?, ?, 0)'
+      ).bind(crypto.randomUUID().replace(/-/g, ''), id, section, '', bodyText).run()
+    }
+  }
+
+  return c.json({ success: true, id, propertyId: report.property_id })
+})
+
+app.delete('/reports/:id', async (c) => {
+  const id = c.req.param('id')
+  const userId = c.get('userId')
+  const userRole = c.get('userRole')
+  const db = c.env.DB
+  const report = await db.prepare('SELECT * FROM reports WHERE id = ?').bind(id).first() as any
+  if (!report) return c.json({ error: 'Reporte no encontrado' }, 404)
+  if (userRole !== 'admin' && report.created_by !== userId) return c.json({ error: 'Sin permisos' }, 403)
+
+  const photos = (await db.prepare('SELECT * FROM report_photos WHERE report_id = ?').bind(id).all()).results as any[]
+  if (photos.length > 0) {
+    try {
+      for (const photo of photos) {
+        const key = (photo.photo_url as string).replace('/photo/', '')
+        await c.env.R2.delete(key)
+      }
+    } catch { /* R2 cleanup best-effort */ }
+  }
+
+  await db.prepare('DELETE FROM report_photos WHERE report_id = ?').bind(id).run()
+  await db.prepare('DELETE FROM report_content WHERE report_id = ?').bind(id).run()
+  await db.prepare('DELETE FROM report_metrics WHERE report_id = ?').bind(id).run()
+  await db.prepare('DELETE FROM reports WHERE id = ?').bind(id).run()
+
+  return c.json({ success: true, propertyId: report.property_id })
+})
+
+// ── EXTERNAL REPORT TRACKING ─────────────────────────────────
+app.post('/properties/:id/external-report', async (c) => {
+  const id = c.req.param('id')
+  await c.env.DB.prepare("UPDATE properties SET last_external_report_at = datetime('now') WHERE id = ?").bind(id).run()
+  return c.json({ success: true })
+})
+
+app.delete('/properties/:id/external-report', async (c) => {
+  const id = c.req.param('id')
+  await c.env.DB.prepare('UPDATE properties SET last_external_report_at = NULL WHERE id = ?').bind(id).run()
+  return c.json({ success: true })
+})
+
 export default app

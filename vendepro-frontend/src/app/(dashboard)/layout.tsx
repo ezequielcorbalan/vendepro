@@ -19,10 +19,10 @@ export default async function DashboardLayout({
       <div className="flex min-h-screen bg-brand-light">
         {/* Desktop sidebar */}
         <div className="hidden lg:block">
-          <Sidebar profile={user as Profile} />
+          <Sidebar profile={user as unknown as Profile} />
         </div>
         {/* Mobile header */}
-        <MobileHeader profile={user as Profile} />
+        <MobileHeader profile={user as unknown as Profile} />
         <main className="flex-1 min-w-0 lg:ml-64 pt-16 lg:pt-0 p-4 sm:p-6 lg:p-8 overflow-x-hidden">
           {children}
         </main>

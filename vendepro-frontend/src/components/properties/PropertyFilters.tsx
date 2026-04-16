@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { Building2, Search, AlertTriangle, Check, CheckCircle2 } from 'lucide-react'
+import { apiFetch } from '@/lib/api'
 
 const REPORT_DEADLINE_DAYS = 20
 
@@ -80,11 +81,11 @@ export default function PropertyFilters({ properties }: { properties: any[] }) {
   async function toggleExternal(propertyId: string, currentlyMarked: boolean) {
     if (currentlyMarked) {
       setExternalMarks(prev => ({ ...prev, [propertyId]: null }))
-      try { await fetch(`/api/properties/${propertyId}/external-report`, { method: 'DELETE' }) } catch {}
+      try { await apiFetch('properties', `/properties/${propertyId}/external-report`, { method: 'DELETE' }) } catch {}
     } else {
       const nowIso = new Date().toISOString()
       setExternalMarks(prev => ({ ...prev, [propertyId]: nowIso }))
-      try { await fetch(`/api/properties/${propertyId}/external-report`, { method: 'POST' }) } catch {}
+      try { await apiFetch('properties', `/properties/${propertyId}/external-report`, { method: 'POST' }) } catch {}
     }
   }
 

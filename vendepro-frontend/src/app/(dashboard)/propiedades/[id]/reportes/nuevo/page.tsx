@@ -71,7 +71,7 @@ export default function NuevoReporte() {
   // Load existing report if editing
   useEffect(() => {
     if (!editId) return
-    fetch(`/api/reports/${editId}`)
+    apiFetch('properties', `/reports/${editId}`)
       .then(r => r.json() as Promise<any>)
       .then(data => {
         if (data.error) { setError(data.error); setLoadingExisting(false); return }
@@ -269,9 +269,8 @@ export default function NuevoReporte() {
     setError('')
 
     try {
-      const res = await fetch(editId ? `/api/reports/${editId}` : '/api/reports', {
+      const res = await apiFetch('properties', editId ? `/reports/${editId}` : '/reports', {
         method: editId ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           propertyId,
           periodLabel,
