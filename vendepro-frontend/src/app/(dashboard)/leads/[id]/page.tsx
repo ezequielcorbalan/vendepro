@@ -35,6 +35,7 @@ export default function LeadDetailPage() {
   const [showTagPicker, setShowTagPicker] = useState(false)
   const [tagsLoading, setTagsLoading] = useState(false)
   const [stageHistory, setStageHistory] = useState<any[]>([])
+  const [moveToStage, setMoveToStage] = useState('')
 
   function loadLead() {
     Promise.all([
@@ -420,7 +421,8 @@ export default function LeadDetailPage() {
           <div className="flex items-center gap-0 min-w-max">
             {LEAD_PIPELINE_STAGES.map((s, i) => {
               const stageData = LEAD_STAGES[s]
-              const currentOrder = LEAD_STAGES[lead.stage as LeadStage]?.order ?? 0
+              const rawOrder = LEAD_STAGES[lead.stage as LeadStage]?.order ?? 0
+              const currentOrder = lead.stage === 'perdido' ? 0 : rawOrder
               const isCompleted = stageData.order < currentOrder
               const isCurrent = s === lead.stage
               const isLast = i === LEAD_PIPELINE_STAGES.length - 1
@@ -460,9 +462,9 @@ export default function LeadDetailPage() {
       <div className="bg-white border rounded-xl p-4">
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Mover etapa</p>
         <select
-          defaultValue=""
+          value={moveToStage}
           disabled={editing}
-          onChange={e => { if (e.target.value) { handleStageChange(e.target.value); e.target.value = '' } }}
+          onChange={e => { const val = e.target.value; if (val) { handleStageChange(val); setMoveToStage('') } }}
           className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-[#ff007c]/20 disabled:cursor-not-allowed disabled:opacity-50 min-w-[180px]"
         >
           <option value="" disabled>Mover a...</option>
