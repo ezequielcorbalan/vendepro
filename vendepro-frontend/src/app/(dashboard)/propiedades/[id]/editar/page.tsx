@@ -28,6 +28,14 @@ const COMMERCIAL_STAGES = [
   { value: 'archivada', label: 'Archivada' },
 ]
 
+const PROPERTY_STATUSES = [
+  { value: 'active', label: 'Activa' },
+  { value: 'suspended', label: 'Suspendida' },
+  { value: 'inactive', label: 'Inactiva' },
+  { value: 'sold', label: 'Vendida' },
+  { value: 'archived', label: 'Archivada' },
+]
+
 export default function EditarPropiedadPage() {
   const params = useParams()
   const router = useRouter()
@@ -49,6 +57,7 @@ export default function EditarPropiedadPage() {
     owner_name: '',
     owner_phone: '',
     owner_email: '',
+    status: 'active',
     commercial_stage: '',
   })
 
@@ -70,6 +79,7 @@ export default function EditarPropiedadPage() {
           owner_name: p.owner_name || '',
           owner_phone: p.owner_phone || '',
           owner_email: p.owner_email || '',
+          status: p.status || 'active',
           commercial_stage: p.commercial_stage || '',
         })
         if (p.contact_id) {
@@ -96,7 +106,6 @@ export default function EditarPropiedadPage() {
 
   async function handleSave() {
     if (!form.address) { toast('La dirección es requerida', 'error'); return }
-    if (!form.owner_name) { toast('El nombre del propietario es requerido', 'error'); return }
     setSaving(true)
     try {
       const payload: any = {
@@ -189,7 +198,13 @@ export default function EditarPropiedadPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">Precio</label>
             <input type="number" value={form.asking_price} onChange={e => update('asking_price', e.target.value)} className={inputClass} />
           </div>
-          <div className="col-span-2">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+            <select value={form.status} onChange={e => update('status', e.target.value)} className={inputClass}>
+              {PROPERTY_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+            </select>
+          </div>
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Etapa comercial</label>
             <select value={form.commercial_stage} onChange={e => update('commercial_stage', e.target.value)} className={inputClass}>
               <option value="">Sin etapa</option>
