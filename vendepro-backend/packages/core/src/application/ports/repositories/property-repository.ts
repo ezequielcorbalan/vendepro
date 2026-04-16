@@ -5,6 +5,7 @@ export interface PropertyFilters {
   agent_id?: string
   neighborhood?: string
   property_type?: string
+  search?: string
 }
 
 export interface PropertyRepository {

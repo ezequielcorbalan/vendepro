@@ -18,6 +18,7 @@ export interface PropertyProps {
   owner_name: string
   owner_phone: string | null
   owner_email: string | null
+  contact_id: string | null
   public_slug: string
   cover_photo: string | null
   agent_id: string
