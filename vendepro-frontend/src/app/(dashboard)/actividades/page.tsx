@@ -67,7 +67,17 @@ export default function ActividadesPage() {
   }, [activities])
 
   const objectivesWithProgress = useMemo(() => {
-    return objectives.map((obj: any) => {
+    // Aggregate by metric when no agent filter (sum targets across agents)
+    const byMetric = new Map<string, any>()
+    objectives.forEach((obj: any) => {
+      if (byMetric.has(obj.metric)) {
+        byMetric.get(obj.metric).target += obj.target
+      } else {
+        byMetric.set(obj.metric, { ...obj })
+      }
+    })
+
+    return Array.from(byMetric.values()).map(obj => {
       const metricCfg = OBJECTIVE_METRICS[obj.metric as ObjectiveMetric]
       const types = (metricCfg?.activityTypes || []) as readonly string[]
       const realized = types.length > 0 ? activities.filter(a => types.includes(a.activity_type)).length : 0
