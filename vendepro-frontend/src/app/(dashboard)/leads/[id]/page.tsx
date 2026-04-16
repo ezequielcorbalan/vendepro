@@ -476,22 +476,147 @@ export default function LeadDetailPage() {
         </select>
       </div>
 
-      {/* Activity */}
-      {activities.length > 0 && (
-        <div className="bg-white border rounded-xl p-4">
-          <h2 className="font-semibold text-gray-800 mb-3 text-sm">Actividad reciente</h2>
-          <div className="space-y-2">
-            {activities.slice(0, 10).map(a => {
-              const mins = Math.floor((Date.now() - new Date(a.completed_at || a.created_at).getTime()) / 60000)
-              const timeAgo = mins < 60 ? `${mins}m` : mins < 1440 ? `${Math.floor(mins / 60)}h` : `${Math.floor(mins / 1440)}d`
-              return (
-                <div key={a.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
-                  <div className="w-2 h-2 bg-[#ff007c] rounded-full shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-gray-700 truncate">{a.description || a.activity_type}</p>
-                    <p className="text-[10px] text-gray-400">{a.agent_name}</p>
+      {/* Two-column: Datos + Actividades */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+        {/* Datos del lead */}
+        <div className="bg-white border rounded-xl p-5">
+          <h2 className="font-bold text-gray-900 mb-4">Datos del lead</h2>
+          <div className="space-y-4">
+            <div className="flex items-start gap-3">
+              <User className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Nombre</p>
+                <p className="text-sm text-gray-800">{lead.full_name || '—'}</p>
+              </div>
+            </div>
+            {lead.phone && (
+              <div className="flex items-start gap-3">
+                <Phone className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Teléfono</p>
+                  <a href={`tel:${lead.phone}`} className="text-sm text-[#ff007c] hover:underline">{lead.phone}</a>
+                </div>
+              </div>
+            )}
+            {lead.source && (
+              <div className="flex items-start gap-3">
+                <Target className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Fuente</p>
+                  <p className="text-sm text-gray-800">{LEAD_SOURCES[lead.source as keyof typeof LEAD_SOURCES]?.label || lead.source}</p>
+                </div>
+              </div>
+            )}
+            {lead.operation && (
+              <div className="flex items-start gap-3">
+                <Building2 className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Operación</p>
+                  <p className="text-sm text-gray-800 capitalize">{OPERATION_TYPES[lead.operation as keyof typeof OPERATION_TYPES]?.label || lead.operation}</p>
+                </div>
+              </div>
+            )}
+            {(lead.property_address || lead.neighborhood) && (
+              <div className="flex items-start gap-3">
+                <MapPin className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Propiedad</p>
+                  <p className="text-sm text-gray-800">{lead.property_address || lead.neighborhood}</p>
+                </div>
+              </div>
+            )}
+            {lead.notes && (
+              <div className="flex items-start gap-3">
+                <StickyNote className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Notas</p>
+                  <p className="text-sm text-gray-600 whitespace-pre-wrap">{lead.notes}</p>
+                </div>
+              </div>
+            )}
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Próximo paso</p>
+                {lead.next_step ? (
+                  <p className="text-sm text-gray-800">{lead.next_step}{lead.next_step_date && <span className="text-gray-400 text-xs ml-1">· {formatDate(lead.next_step_date)}</span>}</p>
+                ) : (
+                  <button onClick={() => setEditing(true)} className="text-sm text-gray-400 hover:text-[#ff007c] transition-colors">+ Definir próximo paso</button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Actividades */}
+        <div className="bg-white border rounded-xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-bold text-gray-900 flex items-center gap-2">
+              <Activity className="w-4 h-4 text-[#ff007c]" /> Actividades
+            </h2>
+            <Link
+              href={`/actividades?lead_id=${leadId}`}
+              className="flex items-center gap-1 text-xs text-[#ff007c] hover:underline font-medium"
+            >
+              <Plus className="w-3.5 h-3.5" /> Nueva
+            </Link>
+          </div>
+          {activities.length === 0 ? (
+            <div className="flex flex-col items-center py-10 text-center">
+              <Activity className="w-10 h-10 text-gray-200 mb-3" />
+              <p className="text-sm text-gray-400 mb-1">Sin actividades registradas</p>
+              <Link href={`/actividades?lead_id=${leadId}`} className="text-sm text-[#ff007c] hover:underline">
+                Registrar primera actividad
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {activities.slice(0, 10).map(a => {
+                const mins = Math.floor((Date.now() - new Date(a.completed_at || a.created_at).getTime()) / 60000)
+                const timeAgo = mins < 60 ? `${mins}m` : mins < 1440 ? `${Math.floor(mins / 60)}h` : `${Math.floor(mins / 1440)}d`
+                return (
+                  <div key={a.id} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50">
+                    <div className="w-2 h-2 bg-[#ff007c] rounded-full shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-gray-700 truncate">{a.description || a.activity_type}</p>
+                      <p className="text-[10px] text-gray-400">{a.agent_name}</p>
+                    </div>
+                    <span className="text-[10px] text-gray-300 shrink-0">{timeAgo}</span>
                   </div>
-                  <span className="text-[10px] text-gray-300">{timeAgo}</span>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Historial de etapas */}
+      {stageHistory.length > 0 && (
+        <div className="bg-white border rounded-xl p-5">
+          <h2 className="font-bold text-gray-900 mb-4">Historial de etapas</h2>
+          <div className="space-y-3">
+            {stageHistory.map((h: any) => {
+              const toStage = LEAD_STAGES[h.to_stage as LeadStage]
+              const stageColors: Record<string, string> = {
+                nuevo: '#3b82f6', asignado: '#6366f1', contactado: '#06b6d4',
+                calificado: '#10b981', en_tasacion: '#8b5cf6', presentada: '#ec4899',
+                seguimiento: '#f59e0b', captado: '#22c55e', perdido: '#ef4444',
+              }
+              const dotColor = stageColors[h.to_stage] ?? '#9ca3af'
+              return (
+                <div key={h.id} className="flex items-start gap-3">
+                  <span
+                    className="w-3 h-3 rounded-full mt-0.5 shrink-0"
+                    style={{ background: dotColor }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-800">
+                      {LEAD_STAGES[h.from_stage as LeadStage]?.label ?? h.from_stage} → {toStage?.label ?? h.to_stage}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {h.changed_by_name ?? 'Sistema'} · {h.created_at ? formatDate(h.created_at) : ''}
+                    </p>
+                  </div>
                 </div>
               )
             })}
