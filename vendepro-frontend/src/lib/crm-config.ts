@@ -202,9 +202,10 @@ export function getUrgencyBadge(urgency: 'ok' | 'warning' | 'danger' | 'lost') {
 }
 
 export const USER_ROLES = {
-  admin:      { label: 'Administrador', color: 'bg-red-100 text-red-700', level: 3 },
-  supervisor: { label: 'Supervisor',    color: 'bg-purple-100 text-purple-700', level: 2 },
-  agent:      { label: 'Agente',        color: 'bg-blue-100 text-blue-700', level: 1 },
+  owner:      { label: 'Dueño',          color: 'bg-yellow-100 text-yellow-700', level: 4 },
+  admin:      { label: 'Administrador',  color: 'bg-red-100 text-red-700',       level: 3 },
+  supervisor: { label: 'Supervisor',     color: 'bg-purple-100 text-purple-700', level: 2 },
+  agent:      { label: 'Agente',         color: 'bg-blue-100 text-blue-700',     level: 1 },
 } as const
 
 export type RoleKey = keyof typeof USER_ROLES
