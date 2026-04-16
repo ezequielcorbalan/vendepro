@@ -59,6 +59,7 @@ export const menuSections: NavSection[] = [
       { href: '/propiedades', label: 'Propiedades', icon: BarChart3, exact: true },
       { href: '/reservas', label: 'Reservas', icon: FileCheck },
       { href: '/vendidas', label: 'Vendidas', icon: DollarSign },
+      { href: '/reportes', label: 'Reportes', icon: FileBarChart },
     ],
   },
 ]
