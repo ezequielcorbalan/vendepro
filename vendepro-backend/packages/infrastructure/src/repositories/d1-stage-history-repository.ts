@@ -5,7 +5,7 @@ export class D1StageHistoryRepository implements StageHistoryRepository {
 
   async findByEntity(entityType: 'lead' | 'reservation', entityId: string, orgId: string): Promise<StageHistoryEntry[]> {
     const rows = (await this.db
-      .prepare(`SELECT sh.*, u.full_name as changed_by_name FROM stage_history sh LEFT JOIN users u ON sh.changed_by = u.id WHERE sh.org_id = ? AND sh.entity_id = ? AND sh.entity_type = ? ORDER BY sh.created_at DESC`)
+      .prepare(`SELECT sh.*, u.full_name as changed_by_name FROM stage_history sh LEFT JOIN users u ON sh.changed_by = u.id WHERE sh.org_id = ? AND sh.entity_id = ? AND sh.entity_type = ? ORDER BY sh.changed_at DESC`)
       .bind(orgId, entityId, entityType)
       .all()).results as any[]
 
