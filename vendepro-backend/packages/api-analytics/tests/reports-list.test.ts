@@ -22,6 +22,10 @@ vi.mock('../src/reports-queries', () => ({
         portal_visits: 40,
         in_person_visits: 2,
         offers: 1,
+        days_in_period: 30,
+        views_per_day: 16.7,
+        in_person_visits_per_week: 0.5,
+        health_status: 'yellow',
       },
       {
         id: 'r2',
@@ -37,9 +41,27 @@ vi.mock('../src/reports-queries', () => ({
         portal_visits: 0,
         in_person_visits: 0,
         offers: 0,
+        days_in_period: 30,
+        views_per_day: 0,
+        in_person_visits_per_week: 0,
+        health_status: 'red',
       },
     ],
   }),
+  computeHealthStatus: vi.fn(),
+  daysBetween: vi.fn(),
+  BENCHMARKS: {
+    caba: { min_views_per_day: 14, min_in_person_visits_per_week: 1.5 },
+    gba:  { min_views_per_day: 8,  min_in_person_visits_per_week: 1.0 },
+    color_thresholds: {
+      red:          { max_views_per_day: 9 },
+      orange:       { max_views_per_day: 13 },
+      yellow:       { max_views_per_day: 22 },
+      light_green:  { max_views_per_day: 27 },
+      green:        { min_views_per_day: 28 },
+    },
+    source: 'Marcela Genta Operaciones Inmobiliarias — Semáforo de visualizaciones',
+  },
 }))
 
 vi.mock('@vendepro/infrastructure', async (importOriginal) => {
@@ -99,5 +121,17 @@ describe('GET /reports', () => {
         status: 'published',
       }),
     )
+  })
+
+  it('each result includes views_per_day and health_status', async () => {
+    const { default: app } = await import('../src/index')
+    const res = await app.request('/reports', { method: 'GET' }, { DB: {}, JWT_SECRET: 'secret' })
+    const body = await res.json() as any
+
+    expect(body.results[0].views_per_day).toBe(16.7)
+    expect(body.results[0].health_status).toBe('yellow')
+    expect(body.results[1].health_status).toBe('red')
+    expect(body.results[0].days_in_period).toBe(30)
+    expect(body.results[0].in_person_visits_per_week).toBe(0.5)
   })
 })

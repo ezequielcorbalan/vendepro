@@ -10,6 +10,22 @@ const mockKpis = {
   avg_portal_visits_per_report: 40,
   avg_in_person_visits_per_report: 2,
   avg_offers_per_report: 0.5,
+  avg_views_per_day: 16.7,
+  avg_in_person_visits_per_week: 2.3,
+  overall_health_status: 'yellow' as const,
+}
+
+const mockBenchmarks = {
+  caba: { min_views_per_day: 14, min_in_person_visits_per_week: 1.5 },
+  gba:  { min_views_per_day: 8,  min_in_person_visits_per_week: 1.0 },
+  color_thresholds: {
+    red:          { max_views_per_day: 9 },
+    orange:       { max_views_per_day: 13 },
+    yellow:       { max_views_per_day: 22 },
+    light_green:  { max_views_per_day: 27 },
+    green:        { min_views_per_day: 28 },
+  },
+  source: 'Marcela Genta Operaciones Inmobiliarias — Semáforo de visualizaciones',
 }
 
 vi.mock('../src/reports-queries', () => ({
@@ -24,6 +40,9 @@ vi.mock('../src/reports-queries', () => ({
       avg_in_person_visits: 3,
       avg_offers: 0.5,
       total_offers: 2,
+      avg_views_per_day: 20,
+      avg_in_person_visits_per_week: 1.5,
+      health_status: 'yellow',
     },
   ]),
   getTimelinePerformance: vi.fn().mockResolvedValue([
@@ -37,6 +56,9 @@ vi.mock('../src/reports-queries', () => ({
     },
   ]),
   listReportsWithMetrics: vi.fn().mockResolvedValue({ total: 0, results: [] }),
+  computeHealthStatus: vi.fn(),
+  daysBetween: vi.fn(),
+  BENCHMARKS: mockBenchmarks,
 }))
 
 vi.mock('@vendepro/infrastructure', async (importOriginal) => {
@@ -90,5 +112,37 @@ describe('GET /listings-performance', () => {
     expect(res.status).toBe(200)
     const body = await res.json() as any
     expect(body.period).toBe('month')
+  })
+
+  it('includes benchmarks object with CABA/GBA thresholds and color_thresholds', async () => {
+    const { default: app } = await import('../src/index')
+    const res = await app.request('/listings-performance', { method: 'GET' }, { DB: {}, JWT_SECRET: 'secret' })
+    const body = await res.json() as any
+
+    expect(body.benchmarks).toBeDefined()
+    expect(body.benchmarks.caba.min_views_per_day).toBe(14)
+    expect(body.benchmarks.gba.min_views_per_day).toBe(8)
+    expect(body.benchmarks.color_thresholds.red.max_views_per_day).toBe(9)
+    expect(body.benchmarks.color_thresholds.green.min_views_per_day).toBe(28)
+    expect(body.benchmarks.source).toContain('Marcela Genta')
+  })
+
+  it('exposes overall_health_status and avg_views_per_day from KPIs', async () => {
+    const { default: app } = await import('../src/index')
+    const res = await app.request('/listings-performance', { method: 'GET' }, { DB: {}, JWT_SECRET: 'secret' })
+    const body = await res.json() as any
+
+    expect(body.kpis.overall_health_status).toBe('yellow')
+    expect(body.kpis.avg_views_per_day).toBe(16.7)
+    expect(body.kpis.avg_in_person_visits_per_week).toBe(2.3)
+  })
+
+  it('each neighborhood includes health_status and avg_views_per_day', async () => {
+    const { default: app } = await import('../src/index')
+    const res = await app.request('/listings-performance', { method: 'GET' }, { DB: {}, JWT_SECRET: 'secret' })
+    const body = await res.json() as any
+
+    expect(body.by_neighborhood[0].health_status).toBe('yellow')
+    expect(body.by_neighborhood[0].avg_views_per_day).toBe(20)
   })
 })
