@@ -140,23 +140,42 @@ export async function getPerformanceKpis(
   const sourceFilter = source ? ' AND rm.source = ?' : ''
   const binds: unknown[] = source ? [orgId, start, end, source] : [orgId, start, end]
 
-  const row = await db.prepare(`
-    SELECT
-      COUNT(DISTINCT r.id) AS reports_published,
-      COALESCE(SUM(rm.impressions), 0) AS total_impressions,
-      COALESCE(SUM(rm.portal_visits), 0) AS total_portal_visits,
-      COALESCE(SUM(rm.in_person_visits), 0) AS total_in_person_visits,
-      COALESCE(SUM(rm.offers), 0) AS total_offers,
-      COALESCE(SUM(julianday(r.period_end) - julianday(r.period_start)), 0) AS total_period_days
-    FROM reports r
-    JOIN properties p ON p.id = r.property_id
-    LEFT JOIN report_metrics rm ON rm.report_id = r.id
-    WHERE p.org_id = ?
-      AND r.status = 'published'
-      AND date(r.published_at) >= ?
-      AND date(r.published_at) <= ?
-      ${sourceFilter}
-  `).bind(...binds).first() as any
+  // Query 1: métricas agregadas (con JOIN a report_metrics).
+  // Query 2 (separada): días totales del período SIN join a metrics, para
+  // evitar que reports con múltiples fuentes (ej ZonaProp + MercadoLibre)
+  // dupliquen los días al sumar.
+  const [row, daysRow] = await Promise.all([
+    db.prepare(`
+      SELECT
+        COUNT(DISTINCT r.id) AS reports_published,
+        COALESCE(SUM(rm.impressions), 0) AS total_impressions,
+        COALESCE(SUM(rm.portal_visits), 0) AS total_portal_visits,
+        COALESCE(SUM(rm.in_person_visits), 0) AS total_in_person_visits,
+        COALESCE(SUM(rm.offers), 0) AS total_offers
+      FROM reports r
+      JOIN properties p ON p.id = r.property_id
+      LEFT JOIN report_metrics rm ON rm.report_id = r.id
+      WHERE p.org_id = ?
+        AND r.status = 'published'
+        AND date(r.published_at) >= ?
+        AND date(r.published_at) <= ?
+        ${sourceFilter}
+    `).bind(...binds).first() as Promise<any>,
+    db.prepare(`
+      SELECT COALESCE(SUM(julianday(r.period_end) - julianday(r.period_start)), 0) AS total_period_days
+      FROM (
+        SELECT DISTINCT r.id, r.period_start, r.period_end
+        FROM reports r
+        JOIN properties p ON p.id = r.property_id
+        LEFT JOIN report_metrics rm ON rm.report_id = r.id
+        WHERE p.org_id = ?
+          AND r.status = 'published'
+          AND date(r.published_at) >= ?
+          AND date(r.published_at) <= ?
+          ${sourceFilter}
+      ) r
+    `).bind(...binds).first() as Promise<any>,
+  ])
 
   const count = Number(row?.reports_published ?? 0)
   const safeAvg = (total: number): number => count > 0 ? Math.round(total / count) : 0
@@ -166,7 +185,7 @@ export async function getPerformanceKpis(
   const totalPortalVisits = Number(row?.total_portal_visits ?? 0)
   const totalInPersonVisits = Number(row?.total_in_person_visits ?? 0)
   const totalOffers = Number(row?.total_offers ?? 0)
-  const totalPeriodDays = Math.max(1, Math.round(Number(row?.total_period_days ?? 0)))
+  const totalPeriodDays = Math.max(1, Math.round(Number(daysRow?.total_period_days ?? 0)))
 
   // Terminología MG: "visualizaciones" = entradas al aviso = portal_visits
   // (NO impresiones, que son las veces que el aviso aparece en listados).
@@ -203,35 +222,60 @@ export async function getNeighborhoodPerformance(
   const sourceFilter = source ? ' AND rm.source = ?' : ''
   const binds: unknown[] = source ? [orgId, start, end, source] : [orgId, start, end]
 
-  const res = await db.prepare(`
-    SELECT
-      p.neighborhood AS neighborhood,
-      COUNT(DISTINCT r.id) AS reports_count,
-      COALESCE(ROUND(AVG(rm.impressions)), 0) AS avg_impressions,
-      COALESCE(ROUND(AVG(rm.portal_visits)), 0) AS avg_portal_visits,
-      COALESCE(ROUND(AVG(rm.in_person_visits)), 0) AS avg_in_person_visits,
-      COALESCE(ROUND(AVG(rm.offers) * 100) / 100.0, 0) AS avg_offers,
-      COALESCE(SUM(rm.offers), 0) AS total_offers,
-      COALESCE(SUM(rm.portal_visits), 0) AS total_portal_visits,
-      COALESCE(SUM(rm.in_person_visits), 0) AS total_in_person_visits,
-      COALESCE(SUM(julianday(r.period_end) - julianday(r.period_start)), 0) AS total_period_days
-    FROM reports r
-    JOIN properties p ON p.id = r.property_id
-    LEFT JOIN report_metrics rm ON rm.report_id = r.id
-    WHERE p.org_id = ?
-      AND r.status = 'published'
-      AND date(r.published_at) >= ?
-      AND date(r.published_at) <= ?
-      ${sourceFilter}
-    GROUP BY p.neighborhood
-    ORDER BY reports_count DESC, p.neighborhood ASC
-  `).bind(...binds).all()
+  const [metricsRes, daysRes] = await Promise.all([
+    db.prepare(`
+      SELECT
+        p.neighborhood AS neighborhood,
+        COUNT(DISTINCT r.id) AS reports_count,
+        COALESCE(ROUND(AVG(rm.impressions)), 0) AS avg_impressions,
+        COALESCE(ROUND(AVG(rm.portal_visits)), 0) AS avg_portal_visits,
+        COALESCE(ROUND(AVG(rm.in_person_visits)), 0) AS avg_in_person_visits,
+        COALESCE(ROUND(AVG(rm.offers) * 100) / 100.0, 0) AS avg_offers,
+        COALESCE(SUM(rm.offers), 0) AS total_offers,
+        COALESCE(SUM(rm.portal_visits), 0) AS total_portal_visits,
+        COALESCE(SUM(rm.in_person_visits), 0) AS total_in_person_visits
+      FROM reports r
+      JOIN properties p ON p.id = r.property_id
+      LEFT JOIN report_metrics rm ON rm.report_id = r.id
+      WHERE p.org_id = ?
+        AND r.status = 'published'
+        AND date(r.published_at) >= ?
+        AND date(r.published_at) <= ?
+        ${sourceFilter}
+      GROUP BY p.neighborhood
+      ORDER BY reports_count DESC, p.neighborhood ASC
+    `).bind(...binds).all(),
+    // Días del período agrupados por barrio, SIN join a metrics para no duplicar.
+    db.prepare(`
+      SELECT
+        p.neighborhood AS neighborhood,
+        COALESCE(SUM(julianday(r.period_end) - julianday(r.period_start)), 0) AS total_period_days
+      FROM (
+        SELECT DISTINCT r.id, r.period_start, r.period_end, r.property_id
+        FROM reports r
+        JOIN properties p ON p.id = r.property_id
+        LEFT JOIN report_metrics rm ON rm.report_id = r.id
+        WHERE p.org_id = ?
+          AND r.status = 'published'
+          AND date(r.published_at) >= ?
+          AND date(r.published_at) <= ?
+          ${sourceFilter}
+      ) r
+      JOIN properties p ON p.id = r.property_id
+      GROUP BY p.neighborhood
+    `).bind(...binds).all(),
+  ])
 
-  return ((res.results as any[]) ?? []).map(r => {
+  const daysByNeighborhood: Record<string, number> = {}
+  for (const row of (daysRes.results as any[] ?? [])) {
+    daysByNeighborhood[String(row.neighborhood ?? 'Sin barrio')] = Math.max(1, Math.round(Number(row.total_period_days ?? 0)))
+  }
+
+  return ((metricsRes.results as any[]) ?? []).map(r => {
     // "Visualizaciones" en terminología MG = entradas al aviso = portal_visits.
     const totalPortalVisits = Number(r.total_portal_visits ?? 0)
     const totalInPersonVisits = Number(r.total_in_person_visits ?? 0)
-    const totalDays = Math.max(1, Math.round(Number(r.total_period_days ?? 0)))
+    const totalDays = daysByNeighborhood[String(r.neighborhood ?? 'Sin barrio')] ?? 1
     const viewsPerDay = Math.round((totalPortalVisits / totalDays) * 10) / 10
     const visitsPerWeek = Math.round((totalInPersonVisits / (totalDays / 7)) * 10) / 10
     return {
