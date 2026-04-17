@@ -81,6 +81,14 @@ export class D1ContactRepository implements ContactRepository {
     await this.db.prepare('DELETE FROM contacts WHERE id = ? AND org_id = ?').bind(id, orgId).run()
   }
 
+  async searchByName(orgId: string, query: string, limit: number): Promise<Array<{ id: string; full_name: string }>> {
+    const rows = (await this.db
+      .prepare(`SELECT id, full_name FROM contacts WHERE org_id = ? AND full_name LIKE ? LIMIT ?`)
+      .bind(orgId, `%${query}%`, limit)
+      .all()).results as any[]
+    return rows.map(r => ({ id: r.id, full_name: r.full_name }))
+  }
+
   private toEntity(row: any): Contact {
     return Contact.create({
       id: row.id,

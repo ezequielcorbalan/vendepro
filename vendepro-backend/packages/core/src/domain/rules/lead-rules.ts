@@ -64,3 +64,28 @@ export function getLeadChecklistScore(lead: LeadForChecklist): number {
 export function isOverdue(lead: LeadForUrgency): boolean {
   return getLeadUrgency(lead) === 'danger'
 }
+
+// ── Analytics helpers ────────────────────────────────────────────────────────
+
+export function computeLeadFunnel(stageBreakdown: Record<string, number>, totalLeads: number) {
+  const stages = [
+    { key: 'nuevo', label: 'Nuevo' },
+    { key: 'contactado', label: 'Contactado' },
+    { key: 'calificado', label: 'Calificado' },
+    { key: 'en_tasacion', label: 'En tasación' },
+    { key: 'presentada', label: 'Presentada' },
+    { key: 'captado', label: 'Captado' },
+  ]
+  return stages.map(s => ({
+    stage: s.key,
+    label: s.label,
+    count: stageBreakdown[s.key] ?? 0,
+    pct: totalLeads > 0 ? Math.round(((stageBreakdown[s.key] ?? 0) / totalLeads) * 100) : 0,
+  }))
+}
+
+export function computeConversionRate(stageBreakdown: Record<string, number>, totalLeads: number): number {
+  return totalLeads > 0
+    ? Math.round(((stageBreakdown['captado'] ?? 0) / totalLeads) * 100)
+    : 0
+}

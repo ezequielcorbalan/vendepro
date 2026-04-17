@@ -48,6 +48,16 @@ export class D1CalendarRepository implements CalendarRepository {
     await this.db.prepare('DELETE FROM calendar_events WHERE id = ? AND org_id = ?').bind(id, orgId).run()
   }
 
+  async findByOrgAndDate(orgId: string, date: string): Promise<CalendarEvent[]> {
+    // Note: the v2 schema has no `status` column on calendar_events (only `completed` INTEGER).
+    // Filter completed=0 to return only pending events for the day.
+    const rows = (await this.db
+      .prepare(`SELECT e.*, u.full_name as agent_name FROM calendar_events e LEFT JOIN users u ON e.agent_id = u.id WHERE e.org_id = ? AND date(e.start_at) = ? AND COALESCE(e.completed, 0) != 1 ORDER BY e.start_at ASC LIMIT 20`)
+      .bind(orgId, date)
+      .all()).results as any[]
+    return rows.map(r => this.toEntity(r))
+  }
+
   private toEntity(row: any): CalendarEvent {
     return CalendarEvent.create({
       id: row.id, org_id: row.org_id, agent_id: row.agent_id, title: row.title,

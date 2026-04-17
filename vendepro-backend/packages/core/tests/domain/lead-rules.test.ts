@@ -4,6 +4,8 @@ import {
   getLeadChecklist,
   getLeadChecklistScore,
   isOverdue,
+  computeLeadFunnel,
+  computeConversionRate,
   type LeadForUrgency,
   type LeadForChecklist,
 } from '../../src/domain/rules/lead-rules'
@@ -229,6 +231,46 @@ describe('Lead rules', () => {
         updated_at: hoursAgo(100),
       }
       expect(isOverdue(lead)).toBe(false)
+    })
+  })
+
+  describe('computeLeadFunnel', () => {
+    it('returns 6 funnel stages with counts and pct', () => {
+      const sb: Record<string, number> = { nuevo: 10, contactado: 5, captado: 2 }
+      const funnel = computeLeadFunnel(sb, 20)
+      expect(funnel).toHaveLength(6)
+      const nuevo = funnel.find(f => f.stage === 'nuevo')!
+      expect(nuevo.count).toBe(10)
+      expect(nuevo.pct).toBe(50)
+    })
+
+    it('returns 0 pct when totalLeads is 0', () => {
+      const funnel = computeLeadFunnel({}, 0)
+      expect(funnel.every(f => f.pct === 0)).toBe(true)
+    })
+
+    it('fills missing stages with 0', () => {
+      const funnel = computeLeadFunnel({}, 10)
+      expect(funnel.every(f => f.count === 0)).toBe(true)
+    })
+  })
+
+  describe('computeConversionRate', () => {
+    it('returns percentage of captados over total', () => {
+      expect(computeConversionRate({ captado: 2 }, 10)).toBe(20)
+    })
+
+    it('returns 0 when totalLeads is 0', () => {
+      expect(computeConversionRate({ captado: 5 }, 0)).toBe(0)
+    })
+
+    it('returns 0 when no captados', () => {
+      expect(computeConversionRate({}, 20)).toBe(0)
+    })
+
+    it('rounds to nearest integer', () => {
+      // 1 / 3 = 33.33... → 33
+      expect(computeConversionRate({ captado: 1 }, 3)).toBe(33)
     })
   })
 })

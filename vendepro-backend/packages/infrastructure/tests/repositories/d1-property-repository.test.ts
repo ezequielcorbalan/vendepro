@@ -334,4 +334,24 @@ describe('D1PropertyRepository — extended methods', () => {
       .first() as any
     expect(row.last_external_report_at).toBeNull()
   })
+
+  it('searchByAddress returns matching properties', async () => {
+    const repo = new D1PropertyRepository(env.DB)
+    await insertProperty(env.DB, orgId, agentId, { address: 'Av. Corrientes 1234' })
+    await insertProperty(env.DB, orgId, agentId, { address: 'Calle Falsa 742' })
+
+    const results = await repo.searchByAddress(orgId, 'Corrientes', 5)
+    expect(results.length).toBe(1)
+    expect(results[0]!.address).toBe('Av. Corrientes 1234')
+  })
+
+  it('searchByAddress respects limit', async () => {
+    const repo = new D1PropertyRepository(env.DB)
+    await insertProperty(env.DB, orgId, agentId, { address: 'Av. Santa Fe 100' })
+    await insertProperty(env.DB, orgId, agentId, { address: 'Av. Santa Fe 200' })
+    await insertProperty(env.DB, orgId, agentId, { address: 'Av. Santa Fe 300' })
+
+    const results = await repo.searchByAddress(orgId, 'Santa Fe', 2)
+    expect(results.length).toBe(2)
+  })
 })

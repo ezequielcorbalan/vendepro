@@ -56,12 +56,19 @@ export * from './use-cases/admin/get-org-api-key'
 
 // Dashboard
 export * from './use-cases/dashboard/get-dashboard-stats'
+export * from './use-cases/dashboard/get-appraisal-stats'
+export * from './use-cases/dashboard/get-activity-stats'
+export * from './use-cases/dashboard/get-today-events'
+export * from './use-cases/dashboard/get-pending-followups'
+export * from './use-cases/dashboard/get-agent-stats'
 
 // Analytics
 export * from './use-cases/analytics/get-listings-performance'
 export * from './use-cases/analytics/list-reports-with-metrics'
 export * from './use-cases/analytics/get-neighborhood-comparison'
 export * from './use-cases/analytics/get-active-listings-with-benchmark'
+export * from './use-cases/analytics/search-entities'
+export * from './use-cases/analytics/export-leads'
 
 // AI
 export * from './use-cases/ai/extract-property-metrics'

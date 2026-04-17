@@ -41,6 +41,39 @@ export class D1ActivityRepository implements ActivityRepository {
     await this.db.prepare('DELETE FROM activities WHERE id = ? AND org_id = ?').bind(id, orgId).run()
   }
 
+  async findByOrgSince(orgId: string, since: string, agentId?: string, limit = 500): Promise<Activity[]> {
+    let query = `SELECT a.* FROM activities a WHERE a.org_id = ? AND a.created_at >= ?`
+    const binds: unknown[] = [orgId, since]
+    if (agentId) { query += ' AND a.agent_id = ?'; binds.push(agentId) }
+    query += ` LIMIT ?`
+    binds.push(limit)
+    const rows = (await this.db.prepare(query).bind(...binds).all()).results as any[]
+    return rows.map(r => this.toEntity(r))
+  }
+
+  async findLatestByOrg(orgId: string, limit: number): Promise<Array<Activity & { agent_name: string | null }>> {
+    const rows = (await this.db
+      .prepare(`SELECT a.*, u.full_name as agent_name FROM activities a LEFT JOIN users u ON a.agent_id = u.id WHERE a.org_id = ? ORDER BY a.created_at DESC LIMIT ?`)
+      .bind(orgId, limit)
+      .all()).results as any[]
+    // Pass agent_name into Activity.create so it populates the entity's props (getter-only property).
+    return rows.map(r => Activity.create({
+      id: r.id, org_id: r.org_id, agent_id: r.agent_id, activity_type: r.activity_type,
+      description: r.description ?? null, result: r.result ?? null, duration_minutes: r.duration_minutes ?? null,
+      lead_id: r.lead_id ?? null, contact_id: r.contact_id ?? null, property_id: r.property_id ?? null,
+      appraisal_id: r.appraisal_id ?? null, created_at: r.created_at,
+      agent_name: r.agent_name ?? undefined,
+    }) as Activity & { agent_name: string | null })
+  }
+
+  async aggregateByTypeSince(orgId: string, agentId: string, since: string): Promise<Array<{ activity_type: string; count: number }>> {
+    const rows = (await this.db
+      .prepare(`SELECT activity_type, COUNT(*) as count FROM activities WHERE org_id = ? AND agent_id = ? AND created_at >= ? GROUP BY activity_type`)
+      .bind(orgId, agentId, since)
+      .all()).results as any[]
+    return rows.map(r => ({ activity_type: r.activity_type, count: r.count }))
+  }
+
   private toEntity(row: any): Activity {
     return Activity.create({
       id: row.id, org_id: row.org_id, agent_id: row.agent_id, activity_type: row.activity_type,

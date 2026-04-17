@@ -94,3 +94,54 @@ describe('D1ContactRepository — findWithLeadsAndProperties', () => {
     expect(result).toBeNull()
   })
 })
+
+describe('D1ContactRepository — searchByName', () => {
+  let env: TestEnv
+
+  beforeAll(async () => {
+    env = await createTestDB()
+  })
+
+  afterAll(async () => {
+    await closeTestDB(env)
+  })
+
+  it('returns contacts matching the name query', async () => {
+    const repo = new D1ContactRepository(env.DB)
+    const org = await seedOrg(env.DB)
+    const user = await seedUser(env.DB, org.id)
+
+    // Insert contacts with unique names to avoid cross-test contamination
+    const id1 = nextId('contact')
+    const id2 = nextId('contact')
+    await env.DB.prepare(
+      `INSERT INTO contacts (id, org_id, full_name, phone, email, contact_type, agent_id, created_at)
+       VALUES (?, ?, ?, ?, ?, 'propietario', ?, datetime('now'))`,
+    ).bind(id1, org.id, 'María González', '+54111', `${id1}@t.com`, user.id).run()
+    await env.DB.prepare(
+      `INSERT INTO contacts (id, org_id, full_name, phone, email, contact_type, agent_id, created_at)
+       VALUES (?, ?, ?, ?, ?, 'propietario', ?, datetime('now'))`,
+    ).bind(id2, org.id, 'Carlos Pérez', '+54222', `${id2}@t.com`, user.id).run()
+
+    const results = await repo.searchByName(org.id, 'María', 5)
+    expect(results.length).toBe(1)
+    expect(results[0]!.full_name).toBe('María González')
+  })
+
+  it('searchByName respects limit', async () => {
+    const repo = new D1ContactRepository(env.DB)
+    const org = await seedOrg(env.DB)
+    const user = await seedUser(env.DB, org.id)
+
+    for (let i = 0; i < 3; i++) {
+      const id = nextId('contact')
+      await env.DB.prepare(
+        `INSERT INTO contacts (id, org_id, full_name, phone, email, contact_type, agent_id, created_at)
+         VALUES (?, ?, ?, ?, ?, 'propietario', ?, datetime('now'))`,
+      ).bind(id, org.id, `Búsqueda Contacto ${i}`, `+5411${i}`, `${id}@t.com`, user.id).run()
+    }
+
+    const results = await repo.searchByName(org.id, 'Búsqueda Contacto', 2)
+    expect(results.length).toBe(2)
+  })
+})

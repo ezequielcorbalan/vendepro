@@ -279,6 +279,14 @@ export class D1PropertyRepository implements PropertyRepository {
       .run()
   }
 
+  async searchByAddress(orgId: string, query: string, limit: number): Promise<Array<{ id: string; address: string }>> {
+    const rows = (await this.db
+      .prepare(`SELECT id, address FROM properties WHERE org_id = ? AND address LIKE ? LIMIT ?`)
+      .bind(orgId, `%${query}%`, limit)
+      .all()).results as any[]
+    return rows.map(r => ({ id: r.id, address: r.address }))
+  }
+
   private toEntity(row: any): Property {
     const validTypes = ['departamento', 'casa', 'ph', 'local', 'terreno', 'oficina']
     return Property.create({

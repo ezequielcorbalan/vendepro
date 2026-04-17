@@ -1,4 +1,4 @@
-export { getLeadUrgency, getLeadChecklist, getLeadChecklistScore, isOverdue } from './lead-rules'
+export { getLeadUrgency, getLeadChecklist, getLeadChecklistScore, isOverdue, computeLeadFunnel, computeConversionRate } from './lead-rules'
 export type { LeadUrgency, LeadForUrgency, LeadForChecklist } from './lead-rules'
 export { canSeeAll, canManageOrg, canManageAgents, canSetObjectives, isAdmin } from './role-rules'
 export type { UserRole } from './role-rules'

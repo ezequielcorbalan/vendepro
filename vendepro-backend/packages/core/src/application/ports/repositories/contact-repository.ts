@@ -10,6 +10,7 @@ export interface ContactRepository {
   findByOrg(orgId: string, filters?: ContactFilters): Promise<Contact[]>
   save(contact: Contact): Promise<void>
   delete(id: string, orgId: string): Promise<void>
+  searchByName(orgId: string, query: string, limit: number): Promise<Array<{ id: string; full_name: string }>>
   findWithLeadsAndProperties(id: string, orgId: string): Promise<{
     contact: Contact
     leads: Array<{ id: string; full_name: string; stage: string }>

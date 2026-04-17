@@ -108,6 +108,38 @@ export class D1AppraisalRepository implements AppraisalRepository {
     await this.db.prepare('DELETE FROM appraisals WHERE id = ? AND org_id = ?').bind(id, orgId).run()
   }
 
+  async countByOrg(orgId: string): Promise<number> {
+    const row = await this.db
+      .prepare(`SELECT COUNT(*) as cnt FROM appraisals WHERE org_id = ?`)
+      .bind(orgId)
+      .first() as any
+    return row?.cnt ?? 0
+  }
+
+  /**
+   * Counts appraisals by org and a stage value.
+   * Schema note: the appraisals table only has `status` with values ('draft','generated','sent').
+   * The legacy dashboard queried `stage = 'captado'` which is NOT a valid column.
+   * This method queries `status = stage` — for stage='captado' it will always return 0
+   * (no valid status value matches). The GetAppraisalStatsUseCase wraps in try/catch
+   * and returns 0 on any error, preserving the original fallback behavior.
+   */
+  async countByOrgAndStage(orgId: string, stage: string): Promise<number> {
+    const row = await this.db
+      .prepare(`SELECT COUNT(*) as cnt FROM appraisals WHERE org_id = ? AND status = ?`)
+      .bind(orgId, stage)
+      .first() as any
+    return row?.cnt ?? 0
+  }
+
+  async countByAgent(orgId: string, agentId: string): Promise<number> {
+    const row = await this.db
+      .prepare(`SELECT COUNT(*) as cnt FROM appraisals WHERE org_id = ? AND agent_id = ?`)
+      .bind(orgId, agentId)
+      .first() as any
+    return row?.cnt ?? 0
+  }
+
   private async loadComparables(appraisalId: string): Promise<AppraisalComparableProps[]> {
     const rows = ((await this.db
       .prepare(
