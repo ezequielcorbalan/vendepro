@@ -1,10 +1,11 @@
 import { Hono } from 'hono'
-import { corsMiddleware, errorHandler, createAuthMiddleware, D1LeadRepository, D1ContactRepository, D1CalendarRepository, D1ActivityRepository, D1TagRepository, D1StageHistoryRepository, JwtAuthService, CryptoIdGenerator } from '@vendepro/infrastructure'
+import { corsMiddleware, errorHandler, createAuthMiddleware, D1LeadRepository, D1ContactRepository, D1CalendarRepository, D1ActivityRepository, D1TagRepository, D1StageHistoryRepository, D1OrganizationRepository, JwtAuthService, CryptoIdGenerator } from '@vendepro/infrastructure'
 import {
-  GetLeadsUseCase, CreateLeadUseCase, UpdateLeadUseCase, DeleteLeadUseCase, AdvanceLeadStageUseCase,
+  GetLeadsUseCase, UpdateLeadUseCase, DeleteLeadUseCase, AdvanceLeadStageUseCase,
   GetContactsUseCase, CreateContactUseCase, DeleteContactUseCase,
   GetCalendarEventsUseCase, CreateCalendarEventUseCase, ToggleEventCompleteUseCase, RescheduleEventUseCase,
-  Tag,
+  CreateLeadWithContactUseCase, GetContactDetailUseCase, CreateTagUseCase,
+  GenerateOrgApiKeyUseCase, GetOrgApiKeyUseCase,
 } from '@vendepro/core'
 
 type Env = { DB: D1Database; JWT_SECRET: string }
@@ -32,38 +33,11 @@ app.get('/leads', async (c) => {
 
 app.post('/leads', async (c) => {
   const body = (await c.req.json()) as any
-
-  let contact_id: string | undefined = body.contact_id
-
-  // If contact_data provided, create the contact first
-  if (!contact_id && body.contact_data) {
-    try {
-      const contactRepo = new D1ContactRepository(c.env.DB)
-      const createContact = new CreateContactUseCase(contactRepo, new CryptoIdGenerator())
-      const contactResult = await createContact.execute({
-        ...body.contact_data,
-        org_id: c.get('orgId'),
-        agent_id: c.get('userId'),
-      })
-      contact_id = contactResult.id
-      if (!body.full_name && body.contact_data?.full_name) {
-        body.full_name = body.contact_data.full_name
-      }
-    } catch (err: any) {
-      return c.json({ error: err.message || 'Error al crear contacto' }, 400)
-    }
-  }
-
-  // Fix 2: validate that we have a contact_id
-  if (!contact_id) {
-    return c.json({ error: 'Se requiere contact_id o contact_data' }, 400)
-  }
-
-  const repo = new D1LeadRepository(c.env.DB)
-  const useCase = new CreateLeadUseCase(repo, new CryptoIdGenerator())
+  const leadRepo = new D1LeadRepository(c.env.DB)
+  const contactRepo = new D1ContactRepository(c.env.DB)
+  const useCase = new CreateLeadWithContactUseCase(leadRepo, contactRepo, new CryptoIdGenerator())
   const result = await useCase.execute({
     ...body,
-    contact_id: contact_id ?? null,
     org_id: c.get('orgId'),
     assigned_to: body.assigned_to || c.get('userId'),
   })
@@ -107,24 +81,14 @@ app.get('/contacts', async (c) => {
 
 app.get('/contacts/:id', async (c) => {
   const id = c.req.param('id')
-  const orgId = c.get('orgId')
   const repo = new D1ContactRepository(c.env.DB)
-  const contact = await repo.findById(id, orgId)
-  if (!contact) return c.json({ error: 'Contacto no encontrado' }, 404)
-
-  const [leadsResult, propertiesResult] = await Promise.all([
-    c.env.DB.prepare(
-      `SELECT id, full_name, stage, created_at FROM leads WHERE contact_id = ? AND org_id = ? ORDER BY created_at DESC LIMIT 20`
-    ).bind(id, orgId).all(),
-    c.env.DB.prepare(
-      `SELECT id, address, status, asking_price, currency FROM properties WHERE contact_id = ? AND org_id = ? ORDER BY created_at DESC LIMIT 20`
-    ).bind(id, orgId).all(),
-  ])
-
+  const useCase = new GetContactDetailUseCase(repo)
+  const detail = await useCase.execute(id, c.get('orgId'))
+  if (!detail) return c.json({ error: 'Contacto no encontrado' }, 404)
   return c.json({
-    ...contact.toObject(),
-    leads: leadsResult.results ?? [],
-    properties: propertiesResult.results ?? [],
+    ...detail.contact.toObject(),
+    leads: detail.leads,
+    properties: detail.properties,
   })
 })
 
@@ -222,21 +186,10 @@ app.delete('/lead-tags', async (c) => {
 
 app.post('/tags', async (c) => {
   const body = (await c.req.json()) as any
-  if (!body.name || typeof body.name !== 'string') {
-    return c.json({ error: 'name is required' }, 400)
-  }
   const repo = new D1TagRepository(c.env.DB)
-  const idGen = new CryptoIdGenerator()
-  const id = idGen.generate()
-  const tag = Tag.create({
-    id,
-    org_id: c.get('orgId'),
-    name: body.name,
-    color: body.color || '#6366f1',
-    is_default: 0,
-  })
-  await repo.save(tag)
-  return c.json({ id }, 201)
+  const useCase = new CreateTagUseCase(repo, new CryptoIdGenerator())
+  const result = await useCase.execute({ org_id: c.get('orgId'), name: body.name, color: body.color })
+  return c.json(result, 201)
 })
 
 app.delete('/tags', async (c) => {
@@ -249,21 +202,17 @@ app.delete('/tags', async (c) => {
 
 // ── API KEY ────────────────────────────────────────────────────
 app.post('/api-key', async (c) => {
-  const orgId = c.get('orgId')
-  const bytes = crypto.getRandomValues(new Uint8Array(16))
-  const hex = Array.from(bytes).map((b: number) => b.toString(16).padStart(2, '0')).join('')
-  const apiKey = `vp_live_${hex}`
-  await c.env.DB.prepare('UPDATE organizations SET api_key = ? WHERE id = ?').bind(apiKey, orgId).run()
-  return c.json({ api_key: apiKey })
+  const repo = new D1OrganizationRepository(c.env.DB)
+  const useCase = new GenerateOrgApiKeyUseCase(repo)
+  const result = await useCase.execute(c.get('orgId'))
+  return c.json(result)
 })
 
 app.get('/api-key', async (c) => {
-  const orgId = c.get('orgId')
-  const row = await c.env.DB.prepare('SELECT api_key FROM organizations WHERE id = ?').bind(orgId).first() as any
-  if (!row?.api_key) return c.json({ has_key: false, api_key_masked: null })
-  const key = row.api_key as string
-  const masked = `vp_live_••••••••••••${key.slice(-4)}`
-  return c.json({ has_key: true, api_key_masked: masked })
+  const repo = new D1OrganizationRepository(c.env.DB)
+  const useCase = new GetOrgApiKeyUseCase(repo)
+  const result = await useCase.execute(c.get('orgId'))
+  return c.json(result)
 })
 
 // ── STAGE HISTORY ──────────────────────────────────────────────

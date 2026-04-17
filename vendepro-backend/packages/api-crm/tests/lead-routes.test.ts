@@ -35,6 +35,7 @@ vi.mock('@vendepro/infrastructure', async (importOriginal) => {
     D1TagRepository: vi.fn().mockImplementation(() => ({
       findByOrg: vi.fn().mockResolvedValue([]),
       findByLead: vi.fn().mockResolvedValue([]),
+      save: vi.fn().mockResolvedValue(undefined),
       addToLead: vi.fn().mockResolvedValue(undefined),
       removeFromLead: vi.fn().mockResolvedValue(undefined),
       delete: vi.fn().mockResolvedValue(undefined),
@@ -42,6 +43,15 @@ vi.mock('@vendepro/infrastructure', async (importOriginal) => {
     D1StageHistoryRepository: vi.fn().mockImplementation(() => ({
       log: vi.fn().mockResolvedValue(undefined),
       findByEntity: vi.fn().mockResolvedValue([]),
+    })),
+    D1OrganizationRepository: vi.fn().mockImplementation(() => ({
+      findById: vi.fn().mockResolvedValue(null),
+      findBySlug: vi.fn().mockResolvedValue(null),
+      findByApiKey: vi.fn().mockResolvedValue(null),
+      save: vi.fn().mockResolvedValue(undefined),
+      updateSettings: vi.fn().mockResolvedValue(undefined),
+      setApiKey: vi.fn().mockResolvedValue(undefined),
+      getApiKey: vi.fn().mockResolvedValue(null),
     })),
     JwtAuthService: vi.fn().mockImplementation(() => ({})),
     CryptoIdGenerator: vi.fn().mockImplementation(() => ({

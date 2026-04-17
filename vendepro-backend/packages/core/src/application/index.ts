@@ -11,6 +11,7 @@ export * from './use-cases/auth/complete-password-reset'
 // Leads
 export * from './use-cases/leads/get-leads'
 export * from './use-cases/leads/create-lead'
+export * from './use-cases/leads/create-lead-with-contact'
 export * from './use-cases/leads/update-lead'
 export * from './use-cases/leads/advance-lead-stage'
 export * from './use-cases/leads/delete-lead'
@@ -19,6 +20,8 @@ export * from './use-cases/leads/delete-lead'
 export * from './use-cases/contacts/get-contacts'
 export * from './use-cases/contacts/create-contact'
 export * from './use-cases/contacts/delete-contact'
+export * from './use-cases/contacts/get-contact-detail'
+export * from './use-cases/contacts/create-tag'
 
 // Properties
 export * from './use-cases/properties/get-properties'
@@ -48,6 +51,8 @@ export * from './use-cases/admin/update-org-settings'
 export * from './use-cases/admin/get-user-profile'
 export * from './use-cases/admin/update-user-profile'
 export * from './use-cases/admin/get-user-notifications'
+export * from './use-cases/admin/generate-org-api-key'
+export * from './use-cases/admin/get-org-api-key'
 
 // Dashboard
 export * from './use-cases/dashboard/get-dashboard-stats'
