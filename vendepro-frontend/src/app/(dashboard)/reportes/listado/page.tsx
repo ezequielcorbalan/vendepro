@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Filter, ChevronLeft, ChevronRight, FileBarChart } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
+import HealthBadge from '@/components/reports/HealthBadge'
+import { type HealthStatus } from '@/lib/semaforo'
 
 interface ReportItem {
   id: string
@@ -19,6 +21,10 @@ interface ReportItem {
   portal_visits: number
   in_person_visits: number
   offers: number
+  days_in_period: number
+  views_per_day: number
+  in_person_visits_per_week: number
+  health_status: HealthStatus | null
 }
 
 interface ListResponse {
@@ -141,18 +147,26 @@ export default function ListadoPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs font-medium text-gray-500 bg-gray-50 border-b border-gray-100">
+                  <th className="py-2 px-3 w-8"></th>
                   <th className="py-2 px-3">Propiedad</th>
                   <th className="py-2 px-2 hidden sm:table-cell">Barrio</th>
                   <th className="py-2 px-2">Período</th>
                   <th className="py-2 px-2">Estado</th>
-                  <th className="py-2 px-2 text-right hidden md:table-cell">Impres.</th>
-                  <th className="py-2 px-2 text-right hidden md:table-cell">Visitas</th>
+                  <th className="py-2 px-2 text-right">Vis/día</th>
+                  <th className="py-2 px-2 text-right hidden md:table-cell">Visitas portal</th>
                   <th className="py-2 px-2 text-right">Ofertas</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {data.results.map(r => (
                   <tr key={r.id} className="hover:bg-gray-50">
+                    <td className="py-2 px-3">
+                      <HealthBadge
+                        status={r.health_status}
+                        size="md"
+                        title={r.health_status ? `${r.views_per_day} vis/día en ${r.days_in_period} días` : 'Sin datos'}
+                      />
+                    </td>
                     <td className="py-2 px-3">
                       <Link
                         href={`/propiedades/${r.property_id}/reportes`}
@@ -168,7 +182,7 @@ export default function ListadoPage() {
                         {r.status === 'published' ? 'Publicado' : 'Borrador'}
                       </span>
                     </td>
-                    <td className="py-2 px-2 text-right text-gray-700 hidden md:table-cell">{r.impressions}</td>
+                    <td className="py-2 px-2 text-right text-gray-700 font-semibold">{r.views_per_day}</td>
                     <td className="py-2 px-2 text-right text-gray-700 hidden md:table-cell">{r.portal_visits}</td>
                     <td className="py-2 px-2 text-right font-semibold text-gray-800">{r.offers}</td>
                   </tr>
