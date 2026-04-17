@@ -85,12 +85,27 @@ vi.mock('../src/reports-queries', () => ({
   ]),
   getActiveListingsWithBenchmark: vi.fn().mockResolvedValue([
     {
+      property_id: 'prop-no-reports',
+      address: 'Nueva sin reportes',
+      neighborhood: 'Villa Urquiza',
+      reports_count: 0,
+      avg_views_per_day: 0,
+      avg_in_person_visits_per_week: 0,
+      latest_report_published_at: null,
+      latest_report_period_label: null,
+      neighborhood_sold_avg_views_per_day: 45,
+      delta_vs_neighborhood_pct: null,
+      delta_health_status: 'light_green',
+    },
+    {
       property_id: 'prop-1',
       address: 'Bauness 2906',
       neighborhood: 'Villa Urquiza',
       reports_count: 1,
       avg_views_per_day: 34.1,
       avg_in_person_visits_per_week: 0.9,
+      latest_report_published_at: '2026-04-01T10:00:00Z',
+      latest_report_period_label: 'Marzo 2026',
       neighborhood_sold_avg_views_per_day: 45,
       delta_vs_neighborhood_pct: -24.2,
       delta_health_status: 'yellow',
@@ -102,6 +117,8 @@ vi.mock('../src/reports-queries', () => ({
       reports_count: 1,
       avg_views_per_day: 11.5,
       avg_in_person_visits_per_week: 0.3,
+      latest_report_published_at: '2026-03-05T11:30:00Z',
+      latest_report_period_label: 'Febrero 2026',
       neighborhood_sold_avg_views_per_day: 45,
       delta_vs_neighborhood_pct: -74.4,
       delta_health_status: 'red',
@@ -113,6 +130,8 @@ vi.mock('../src/reports-queries', () => ({
       reports_count: 1,
       avg_views_per_day: 15.6,
       avg_in_person_visits_per_week: 0.5,
+      latest_report_published_at: '2026-03-02T09:00:00Z',
+      latest_report_period_label: 'Febrero 2026',
       neighborhood_sold_avg_views_per_day: null,
       delta_vs_neighborhood_pct: null,
       delta_health_status: 'light_green',
@@ -227,12 +246,17 @@ describe('GET /listings-performance', () => {
     const body = await res.json() as any
 
     expect(body.active_listings).toBeDefined()
-    expect(body.active_listings).toHaveLength(3)
-    expect(body.active_listings[0].address).toBe('Bauness 2906')
-    expect(body.active_listings[0].delta_vs_neighborhood_pct).toBe(-24.2)
-    expect(body.active_listings[0].delta_health_status).toBe('yellow')
-    // Property without benchmark (no sold in the neighborhood)
-    expect(body.active_listings[2].delta_vs_neighborhood_pct).toBeNull()
-    expect(body.active_listings[2].delta_health_status).toBe('light_green')
+    expect(body.active_listings).toHaveLength(4)
+    // Primera fila: propiedad sin reportes (caso "sin reportes aún")
+    expect(body.active_listings[0].reports_count).toBe(0)
+    expect(body.active_listings[0].latest_report_published_at).toBeNull()
+    // Segunda fila: Bauness con reportes y benchmark
+    expect(body.active_listings[1].address).toBe('Bauness 2906')
+    expect(body.active_listings[1].delta_vs_neighborhood_pct).toBe(-24.2)
+    expect(body.active_listings[1].delta_health_status).toBe('yellow')
+    expect(body.active_listings[1].latest_report_period_label).toBe('Marzo 2026')
+    // Última fila: propiedad sin benchmark (barrio sin vendidas)
+    expect(body.active_listings[3].delta_vs_neighborhood_pct).toBeNull()
+    expect(body.active_listings[3].delta_health_status).toBe('light_green')
   })
 })

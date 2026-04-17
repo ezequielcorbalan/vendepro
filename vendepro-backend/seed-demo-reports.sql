@@ -122,4 +122,17 @@ INSERT OR IGNORE INTO report_metrics (
   ('rm-urquiza-sold-feb-zp', 'rep-urquiza-sold-feb', 'zonaprop',
    16500, 980, 18, 2, 4, 6, 3);
 
+-- ── Propiedad activa SIN reports (caso edge para mostrar "Sin reportes aún") ──
+INSERT OR IGNORE INTO properties (
+  id, org_id, address, neighborhood, city, property_type,
+  rooms, size_m2, asking_price, currency,
+  owner_name, public_slug, agent_id, status
+) VALUES
+  ('prop-demo-nueva',
+   (SELECT id FROM organizations WHERE slug = 'test-local'),
+   'Nazca 3500', 'Villa Urquiza', 'Capital Federal', 'departamento',
+   2, 48, 95000, 'USD',
+   'Propietario Recién', 'nazca-3500-villa-urquiza',
+   (SELECT id FROM users WHERE email = 'admin@test.com'), 'active');
+
 -- Done.

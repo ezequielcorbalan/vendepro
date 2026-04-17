@@ -472,6 +472,8 @@ export interface ActiveListingWithBenchmark {
   reports_count: number
   avg_views_per_day: number
   avg_in_person_visits_per_week: number
+  latest_report_published_at: string | null
+  latest_report_period_label: string | null
   neighborhood_sold_avg_views_per_day: number | null
   delta_vs_neighborhood_pct: number | null
   delta_health_status: HealthStatus
@@ -615,10 +617,13 @@ export async function getActiveListingsWithBenchmark(
   orgId: string,
 ): Promise<ActiveListingWithBenchmark[]> {
 
-  // Query 1: métricas agregadas por propiedad activa.
-  // Query 2: días totales por propiedad (sin JOIN a metrics).
-  // Query 3: benchmark de vendidas por barrio (vis/día).
-  const [metricsRes, daysRes, benchmarkRes] = await Promise.all([
+  // Q1: lista de TODAS las propiedades activas (con o sin reports) + métricas
+  //     agregadas si las tienen.
+  // Q2: días totales por propiedad (sin JOIN a metrics) — solo para las que
+  //     tienen reports.
+  // Q3: benchmark de vendidas por barrio (vis/día).
+  // Q4: último reporte publicado por propiedad (fecha + período).
+  const [metricsRes, daysRes, benchmarkRes, latestRes] = await Promise.all([
     db.prepare(`
       SELECT
         p.id AS property_id,
@@ -633,7 +638,6 @@ export async function getActiveListingsWithBenchmark(
       WHERE p.org_id = ?
         AND p.status = 'active'
       GROUP BY p.id
-      HAVING COUNT(DISTINCT r.id) > 0
     `).bind(orgId).all(),
     db.prepare(`
       SELECT
@@ -667,6 +671,20 @@ export async function getActiveListingsWithBenchmark(
       LEFT JOIN report_metrics rm ON rm.report_id = rd.id
       GROUP BY p.neighborhood
     `).bind(orgId).all(),
+    db.prepare(`
+      SELECT
+        r.property_id AS property_id,
+        MAX(r.published_at) AS latest_published_at,
+        (SELECT r2.period_label FROM reports r2
+           WHERE r2.property_id = r.property_id AND r2.status = 'published'
+           ORDER BY r2.published_at DESC LIMIT 1) AS latest_period_label
+      FROM reports r
+      JOIN properties p ON p.id = r.property_id
+      WHERE p.org_id = ?
+        AND p.status = 'active'
+        AND r.status = 'published'
+      GROUP BY r.property_id
+    `).bind(orgId).all(),
   ])
 
   const daysByProperty: Record<string, number> = {}
@@ -682,37 +700,57 @@ export async function getActiveListingsWithBenchmark(
       Math.round((portal / days) * 10) / 10
   }
 
+  const latestByProperty: Record<string, { published_at: string | null; period_label: string | null }> = {}
+  for (const row of (latestRes.results as any[] ?? [])) {
+    latestByProperty[String(row.property_id)] = {
+      published_at: row.latest_published_at ?? null,
+      period_label: row.latest_period_label ?? null,
+    }
+  }
+
   const rows = ((metricsRes.results as any[]) ?? []).map(r => {
     const propId = String(r.property_id)
+    const reportsCount = Number(r.reports_count ?? 0)
     const days = daysByProperty[propId] ?? 1
     const portal = Number(r.total_portal_visits ?? 0)
     const inPerson = Number(r.total_in_person_visits ?? 0)
-    const viewsPerDay = Math.round((portal / days) * 10) / 10
-    const visitsPerWeek = Math.round((inPerson / (days / 7)) * 10) / 10
+    const viewsPerDay = reportsCount > 0 ? Math.round((portal / days) * 10) / 10 : 0
+    const visitsPerWeek = reportsCount > 0 ? Math.round((inPerson / (days / 7)) * 10) / 10 : 0
 
     const neighborhood = String(r.neighborhood ?? 'Sin barrio')
     const benchmark = soldBenchmarkByNeighborhood[neighborhood] ?? null
 
     let delta: number | null = null
-    if (benchmark !== null && benchmark > 0) {
+    if (reportsCount > 0 && benchmark !== null && benchmark > 0) {
       delta = Math.round(((viewsPerDay - benchmark) / benchmark) * 1000) / 10
     }
+
+    const latest = latestByProperty[propId] ?? { published_at: null, period_label: null }
 
     return {
       property_id: propId,
       address: String(r.address ?? ''),
       neighborhood,
-      reports_count: Number(r.reports_count ?? 0),
+      reports_count: reportsCount,
       avg_views_per_day: viewsPerDay,
       avg_in_person_visits_per_week: visitsPerWeek,
+      latest_report_published_at: latest.published_at,
+      latest_report_period_label: latest.period_label,
       neighborhood_sold_avg_views_per_day: benchmark,
       delta_vs_neighborhood_pct: delta,
       delta_health_status: computeDeltaHealthStatus(delta),
     }
   })
 
-  // Orden: peores primero (delta ascendente), los sin-benchmark al final.
+  // Orden: primero las que nunca tuvieron reporte (más urgentes de atender),
+  // luego peores delta, luego sin-benchmark.
   return rows.sort((a, b) => {
+    // Sin reports al principio
+    if (a.reports_count === 0 && b.reports_count > 0) return -1
+    if (b.reports_count === 0 && a.reports_count > 0) return 1
+    if (a.reports_count === 0 && b.reports_count === 0) return 0
+
+    // Dentro de las que tienen reports: peores delta primero, null al final
     const aDelta = a.delta_vs_neighborhood_pct
     const bDelta = b.delta_vs_neighborhood_pct
     if (aDelta === null && bDelta === null) return 0
