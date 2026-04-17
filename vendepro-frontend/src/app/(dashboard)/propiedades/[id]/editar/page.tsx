@@ -59,6 +59,7 @@ export default function EditarPropiedadPage() {
     owner_email: '',
     status: 'active',
     commercial_stage: '',
+    operation_type: 'venta',
   })
 
   useEffect(() => {
@@ -81,6 +82,7 @@ export default function EditarPropiedadPage() {
           owner_email: p.owner_email || '',
           status: p.status || 'active',
           commercial_stage: p.commercial_stage || '',
+          operation_type: p.operation_type || 'venta',
         })
         if (p.contact_id) {
           setOwnerContact({ id: p.contact_id, full_name: p.owner_name || '', phone: p.owner_phone, email: p.owner_email })
@@ -209,6 +211,13 @@ export default function EditarPropiedadPage() {
             <select value={form.commercial_stage} onChange={e => update('commercial_stage', e.target.value)} className={inputClass}>
               <option value="">Sin etapa</option>
               {COMMERCIAL_STAGES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Operación</label>
+            <select value={form.operation_type} onChange={e => update('operation_type', e.target.value)} className={inputClass}>
+              <option value="venta">Venta</option>
+              <option value="alquiler">Alquiler</option>
             </select>
           </div>
         </div>

@@ -18,10 +18,10 @@ app.use('*', async (c, next) => {
 
 // ── PROPERTIES ─────────────────────────────────────────────────
 app.get('/properties', async (c) => {
-  const { status, agent_id, neighborhood, property_type, q } = c.req.query()
+  const { status, agent_id, neighborhood, property_type, q, commercial_stage, operation_type } = c.req.query()
   const repo = new D1PropertyRepository(c.env.DB)
   const useCase = new GetPropertiesUseCase(repo)
-  const items = await useCase.execute(c.get('orgId'), { status, agent_id, neighborhood, property_type, search: q })
+  const items = await useCase.execute(c.get('orgId'), { status, agent_id, neighborhood, property_type, search: q, commercial_stage, operation_type })
   return c.json(items.map(p => p.toObject()))
 })
 
@@ -58,8 +58,9 @@ app.put('/properties/:id', async (c) => {
       rooms=COALESCE(?,rooms), size_m2=COALESCE(?,size_m2),
       asking_price=COALESCE(?,asking_price), currency=COALESCE(?,currency),
       owner_name=COALESCE(?,owner_name), owner_phone=COALESCE(?,owner_phone),
-      owner_email=COALESCE(?,owner_email), contact_id=?,
+      owner_email=COALESCE(?,owner_email), contact_id=COALESCE(?,contact_id),
       status=COALESCE(?,status), commercial_stage=COALESCE(?,commercial_stage),
+      operation_type=COALESCE(?,operation_type),
       updated_at=?
     WHERE id = ? AND org_id = ?
   `).bind(
@@ -67,8 +68,18 @@ app.put('/properties/:id', async (c) => {
     body.rooms ?? null, body.size_m2 ?? null, body.asking_price ?? null, body.currency ?? null,
     body.owner_name ?? null, body.owner_phone ?? null, body.owner_email ?? null,
     body.contact_id ?? null, body.status ?? null, body.commercial_stage ?? null,
+    body.operation_type ?? null,
     now, id, orgId
   ).run()
+  return c.json({ success: true })
+})
+
+app.put('/properties/:id/stage', async (c) => {
+  const body = (await c.req.json()) as any
+  const db = c.env.DB
+  const now = new Date().toISOString()
+  await db.prepare('UPDATE properties SET commercial_stage=?, updated_at=? WHERE id=? AND org_id=?')
+    .bind(body.commercial_stage, now, c.req.param('id'), c.get('orgId')).run()
   return c.json({ success: true })
 })
 

@@ -37,6 +37,7 @@ export default function NuevaPropiedadPage() {
     neighborhood: '',
     city: 'Buenos Aires',
     property_type: 'departamento',
+    operation_type: 'venta',
     rooms: '',
     size_m2: '',
     asking_price: '',
@@ -236,6 +237,13 @@ export default function NuevaPropiedadPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
             <select value={form.property_type} onChange={e => update('property_type', e.target.value)} className={inputClass}>
               {PROPERTY_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Operación</label>
+            <select value={form.operation_type} onChange={e => update('operation_type', e.target.value)} className={inputClass}>
+              <option value="venta">Venta</option>
+              <option value="alquiler">Alquiler</option>
             </select>
           </div>
           <div>

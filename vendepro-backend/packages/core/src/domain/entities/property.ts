@@ -25,6 +25,7 @@ export interface PropertyProps {
   org_id: string
   status: PropertyStatus
   commercial_stage: string | null
+  operation_type: string
   contact_id?: string | null
   lead_id?: string | null
   created_at: string
@@ -75,6 +76,7 @@ export class Property {
   get org_id() { return this.props.org_id }
   get status() { return this.props.status }
   get commercial_stage() { return this.props.commercial_stage }
+  get operation_type() { return this.props.operation_type }
   get created_at() { return this.props.created_at }
   get updated_at() { return this.props.updated_at }
   get agent_name() { return this.props.agent_name }

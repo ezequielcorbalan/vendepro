@@ -5,6 +5,8 @@ export interface PropertyFilters {
   agent_id?: string
   neighborhood?: string
   property_type?: string
+  commercial_stage?: string
+  operation_type?: string
   search?: string
 }
 

@@ -18,6 +18,7 @@ import {
   FileCheck,
   TrendingUp,
   Target,
+  Home,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -59,6 +60,7 @@ export const menuSections: NavSection[] = [
       { href: '/propiedades', label: 'Propiedades', icon: BarChart3, exact: true },
       { href: '/reservas', label: 'Reservas', icon: FileCheck },
       { href: '/vendidas', label: 'Vendidas', icon: DollarSign },
+      { href: '/alquiladas', label: 'Alquiladas', icon: Home },
     ],
   },
 ]
