@@ -127,7 +127,6 @@ export class D1PropertyRepository implements PropertyRepository {
       operation_type_id: row.operation_type_id ?? 1,
       commercial_stage_id: row.commercial_stage_id ?? null,
       status_id: row.status_id ?? 1,
-      contact_id: row.contact_id ?? null,
       lead_id: row.lead_id ?? null,
       created_at: row.created_at, updated_at: row.updated_at,
     })
