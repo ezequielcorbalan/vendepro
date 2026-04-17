@@ -42,6 +42,12 @@ export * from './use-cases/admin/create-agent'
 export * from './use-cases/admin/get-agents'
 export * from './use-cases/admin/set-objectives'
 export * from './use-cases/admin/update-agent-role'
+export * from './use-cases/admin/get-roles'
+export * from './use-cases/admin/get-org-settings'
+export * from './use-cases/admin/update-org-settings'
+export * from './use-cases/admin/get-user-profile'
+export * from './use-cases/admin/update-user-profile'
+export * from './use-cases/admin/get-user-notifications'
 
 // Dashboard
 export * from './use-cases/dashboard/get-dashboard-stats'

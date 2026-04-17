@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
-import { corsMiddleware, errorHandler, createAuthMiddleware, D1UserRepository, D1ObjectiveRepository, D1TemplateBlockRepository, JwtAuthService, CryptoIdGenerator } from '@vendepro/infrastructure'
-import { CreateAgentUseCase, GetAgentsUseCase, SetObjectivesUseCase, UpdateAgentRoleUseCase } from '@vendepro/core'
+import { corsMiddleware, errorHandler, createAuthMiddleware, D1UserRepository, D1ObjectiveRepository, D1TemplateBlockRepository, JwtAuthService, CryptoIdGenerator, D1RoleRepository, D1NotificationRepository, D1OrganizationRepository } from '@vendepro/infrastructure'
+import { CreateAgentUseCase, GetAgentsUseCase, SetObjectivesUseCase, UpdateAgentRoleUseCase, GetRolesUseCase, GetOrgSettingsUseCase, UpdateOrgSettingsUseCase, GetUserProfileUseCase, UpdateUserProfileUseCase, GetUserNotificationsUseCase } from '@vendepro/core'
 
 type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket }
 type AuthVars = { Variables: { userId: string; userRole: string; orgId: string } }
@@ -50,41 +50,25 @@ app.delete('/agents', async (c) => {
 })
 
 app.get('/roles', async (c) => {
-  const userRole = c.get('userRole')
-  if (userRole !== 'admin' && userRole !== 'owner') {
-    return c.json({ error: 'Forbidden' }, 403)
-  }
-  const roles = await c.env.DB
-    .prepare('SELECT id, name, label FROM roles ORDER BY id')
-    .all()
-  return c.json(roles.results)
+  const repo = new D1RoleRepository(c.env.DB)
+  const useCase = new GetRolesUseCase(repo)
+  const roles = await useCase.execute(c.get('userRole'))
+  return c.json(roles.map(r => r.toObject()))
 })
 
 app.patch('/agents/role', async (c) => {
   const body = (await c.req.json()) as any
-  const { id, role_id } = body
-
-  if (!id || !role_id) return c.json({ error: 'id y role_id son requeridos' }, 400)
-
-  const role = await c.env.DB
-    .prepare('SELECT id, name, label FROM roles WHERE id = ?')
-    .bind(role_id)
-    .first() as any
-
-  if (!role) return c.json({ error: 'Rol no encontrado' }, 404)
-
-  const repo = new D1UserRepository(c.env.DB)
-  const useCase = new UpdateAgentRoleUseCase(repo)
-
+  if (!body.id || !body.role_id) return c.json({ error: 'id y role_id son requeridos' }, 400)
+  const userRepo = new D1UserRepository(c.env.DB)
+  const roleRepo = new D1RoleRepository(c.env.DB)
+  const useCase = new UpdateAgentRoleUseCase(userRepo, roleRepo)
   await useCase.execute({
     requestingUserRole: c.get('userRole'),
-    agentId: id,
+    agentId: body.id,
     orgId: c.get('orgId'),
-    roleId: role.id,
-    roleName: role.name,
+    roleId: body.role_id,
   })
-
-  return c.json({ success: true, role: { id: role.id, name: role.name, label: role.label } })
+  return c.json({ success: true })
 })
 
 // ── OBJECTIVES ─────────────────────────────────────────────────
@@ -151,51 +135,58 @@ app.post('/tasacion-blocks/reorder', async (c) => {
 
 // ── ORG SETTINGS & PROFILE ─────────────────────────────────────
 app.get('/org-settings', async (c) => {
-  const row = await c.env.DB.prepare('SELECT * FROM organizations WHERE id = ?').bind(c.get('orgId')).first()
-  return c.json(row ?? {})
+  const repo = new D1OrganizationRepository(c.env.DB)
+  const useCase = new GetOrgSettingsUseCase(repo)
+  const org = await useCase.execute(c.get('orgId'))
+  return c.json(org ? org.toObject() : {})
 })
 
 app.put('/org-settings', async (c) => {
   const body = (await c.req.json()) as any
-  const { name, logo_url, brand_color, canva_template_id, canva_report_template_id, slug } = body
-
-  if (slug) {
-    // Verify slug is not already taken by another org
-    const existing = await c.env.DB.prepare(
-      'SELECT id FROM organizations WHERE slug = ? AND id != ?'
-    ).bind(slug, c.get('orgId')).first()
-    if (existing) return c.json({ error: 'El identificador ya está en uso', code: 'CONFLICT_ERROR' }, 409)
-
-    await c.env.DB.prepare(`
-      UPDATE organizations SET name=?, logo_url=?, brand_color=?, canva_template_id=?, canva_report_template_id=?, slug=? WHERE id=?
-    `).bind(name, logo_url, brand_color, canva_template_id, canva_report_template_id, slug, c.get('orgId')).run()
-  } else {
-    await c.env.DB.prepare(`
-      UPDATE organizations SET name=?, logo_url=?, brand_color=?, canva_template_id=?, canva_report_template_id=? WHERE id=?
-    `).bind(name, logo_url, brand_color, canva_template_id, canva_report_template_id, c.get('orgId')).run()
-  }
-
+  const repo = new D1OrganizationRepository(c.env.DB)
+  const useCase = new UpdateOrgSettingsUseCase(repo)
+  await useCase.execute({
+    orgId: c.get('orgId'),
+    patch: {
+      name: body.name,
+      slug: body.slug,
+      logo_url: body.logo_url,
+      brand_color: body.brand_color,
+      canva_template_id: body.canva_template_id,
+      canva_report_template_id: body.canva_report_template_id,
+    },
+  })
   return c.json({ success: true })
 })
 
 app.get('/profile', async (c) => {
-  const row = await c.env.DB.prepare('SELECT id, email, full_name, phone, photo_url, role, org_id FROM users WHERE id = ?').bind(c.get('userId')).first()
-  return c.json(row ?? {})
+  const repo = new D1UserRepository(c.env.DB)
+  const useCase = new GetUserProfileUseCase(repo)
+  const user = await useCase.execute(c.get('userId'))
+  if (!user) return c.json({})
+  const { password_hash, ...rest } = user.toObject()
+  return c.json(rest)
 })
 
 app.put('/profile', async (c) => {
   const body = (await c.req.json()) as any
-  const { full_name, phone, photo_url } = body
-  await c.env.DB.prepare(
-    'UPDATE users SET full_name=?, phone=?, photo_url=? WHERE id=?'
-  ).bind(full_name ?? null, phone ?? null, photo_url ?? null, c.get('userId')).run()
+  const repo = new D1UserRepository(c.env.DB)
+  const useCase = new UpdateUserProfileUseCase(repo)
+  await useCase.execute({
+    userId: c.get('userId'),
+    full_name: body.full_name,
+    phone: body.phone ?? null,
+    photo_url: body.photo_url ?? null,
+  })
   return c.json({ success: true })
 })
 
 app.get('/notifications', async (c) => {
+  const repo = new D1NotificationRepository(c.env.DB)
+  const useCase = new GetUserNotificationsUseCase(repo)
   try {
-    const rows = (await c.env.DB.prepare('SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 20').bind(c.get('userId')).all()).results
-    return c.json(rows)
+    const notifications = await useCase.execute(c.get('userId'), c.get('orgId'), 20)
+    return c.json(notifications.map(n => n.toObject()))
   } catch {
     return c.json([])
   }
