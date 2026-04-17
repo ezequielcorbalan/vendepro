@@ -423,8 +423,8 @@ export default function LeadDetailPage() {
       {/* Pipeline */}
       <div className="bg-white border rounded-xl p-4">
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Pipeline</p>
-        <div className="overflow-x-auto pb-1">
-          <div className="flex items-center gap-0 min-w-max">
+        <div className="overflow-hidden">
+          <div className="flex items-center gap-0 flex-wrap">
             {LEAD_PIPELINE_STAGES.map((s, i) => {
               const stageData = LEAD_STAGES[s]
               const rawOrder = LEAD_STAGES[lead.stage as LeadStage]?.order ?? 0

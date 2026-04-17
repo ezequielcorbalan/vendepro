@@ -23,6 +23,7 @@ export default function ConfiguracionPage() {
   const [slug, setSlug] = useState('')
   const [savingOrg, setSavingOrg] = useState(false)
   const slugDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const initialSlugRef = useRef<string>('')
   const [slugStatus, setSlugStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle')
 
   useEffect(() => {
@@ -36,6 +37,7 @@ export default function ConfiguracionPage() {
       apiFetch('admin', '/org-settings').then(r => r.json() as Promise<any>).then(d => {
         setOrgName(d.name || '')
         setSlug(d.slug || '')
+        initialSlugRef.current = d.slug || ''
         setLoadingOrg(false)
       }).catch(() => setLoadingOrg(false))
     } else {
@@ -44,7 +46,7 @@ export default function ConfiguracionPage() {
   }, [])
 
   useEffect(() => {
-    if (!slug) { setSlugStatus('idle'); return }
+    if (!slug || slug === initialSlugRef.current) { setSlugStatus('idle'); return }
     if (slugDebounceRef.current) clearTimeout(slugDebounceRef.current)
     setSlugStatus('checking')
     slugDebounceRef.current = setTimeout(async () => {
@@ -121,7 +123,7 @@ export default function ConfiguracionPage() {
   ]
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="max-w-3xl mx-auto space-y-6">
       <div>
         <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 flex items-center gap-2">
           <Settings className="w-6 h-6 text-[#ff007c]" /> Configuración
