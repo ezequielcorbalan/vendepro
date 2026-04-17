@@ -7,6 +7,7 @@ import {
   getNeighborhoodPerformance,
   getTimelinePerformance,
   listReportsWithMetrics,
+  BENCHMARKS,
   type Period,
 } from './reports-queries'
 
@@ -271,6 +272,9 @@ app.get('/listings-performance', async (c) => {
     avg_portal_visits_per_report: 0,
     avg_in_person_visits_per_report: 0,
     avg_offers_per_report: 0,
+    avg_views_per_day: 0,
+    avg_in_person_visits_per_week: 0,
+    overall_health_status: 'red' as const,
   }
 
   const [kpis, byNeighborhood, timeline] = await Promise.all([
@@ -286,6 +290,7 @@ app.get('/listings-performance', async (c) => {
     kpis,
     by_neighborhood: byNeighborhood,
     timeline,
+    benchmarks: BENCHMARKS,
   })
 })
 
