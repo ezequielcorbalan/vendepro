@@ -15,20 +15,15 @@ export default function AlquiladasPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    apiFetch('properties', '/properties?commercial_stage=vendida&operation_type=alquiler')
+    // commercial_stage=alquilada (etapa exclusiva de alquiler, ID 13) + operation_type_id=2
+    apiFetch('properties', '/properties?commercial_stage=alquilada&operation_type_id=2')
       .then(r => r.json() as Promise<any>)
       .then(d => { setProperties(Array.isArray(d) ? d : []); setLoading(false) })
       .catch(() => setLoading(false))
   }, [])
 
-  const totalARS = properties.reduce((sum, p) => {
-    if (p.asking_price && p.currency === 'ARS') return sum + Number(p.asking_price)
-    return sum
-  }, 0)
-  const totalUSD = properties.reduce((sum, p) => {
-    if (p.asking_price && p.currency === 'USD') return sum + Number(p.asking_price)
-    return sum
-  }, 0)
+  const totalARS = properties.reduce((s, p) => p.asking_price && p.currency === 'ARS' ? s + Number(p.asking_price) : s, 0)
+  const totalUSD = properties.reduce((s, p) => p.asking_price && p.currency === 'USD' ? s + Number(p.asking_price) : s, 0)
 
   return (
     <div className="space-y-5">
@@ -52,7 +47,7 @@ export default function AlquiladasPage() {
                 <DollarSign className="w-4 h-4 text-[#ff007c]" />
               </div>
               <p className="text-xl font-bold text-gray-800">USD {totalUSD.toLocaleString('es-AR')}</p>
-              <p className="text-xs text-gray-500 mt-0.5">Alquileres en USD</p>
+              <p className="text-xs text-gray-500 mt-0.5">Alquileres USD</p>
             </div>
           )}
           {totalARS > 0 && (
@@ -61,7 +56,7 @@ export default function AlquiladasPage() {
                 <DollarSign className="w-4 h-4 text-[#ff8017]" />
               </div>
               <p className="text-xl font-bold text-gray-800">$ {totalARS.toLocaleString('es-AR')}</p>
-              <p className="text-xs text-gray-500 mt-0.5">Alquileres en ARS</p>
+              <p className="text-xs text-gray-500 mt-0.5">Alquileres ARS</p>
             </div>
           )}
         </div>
@@ -75,7 +70,7 @@ export default function AlquiladasPage() {
         <div className="bg-white rounded-xl border p-8 sm:p-12 text-center">
           <Home className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <h2 className="text-lg font-medium text-gray-800 mb-2">Sin propiedades alquiladas</h2>
-          <p className="text-gray-500">Aquí aparecerán las propiedades de alquiler cuando cambien a etapa "Vendida"</p>
+          <p className="text-gray-500">Aparecerán aquí las propiedades de alquiler con etapa "Alquilada"</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -98,9 +93,7 @@ export default function AlquiladasPage() {
                       {p.updated_at && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{formatDate(p.updated_at)}</span>}
                     </div>
                   </div>
-                  <div className="bg-cyan-100 text-cyan-700 text-[10px] font-medium px-2 py-1 rounded-full shrink-0">
-                    Alquilada
-                  </div>
+                  <span className="bg-cyan-100 text-cyan-700 text-[10px] font-medium px-2 py-1 rounded-full shrink-0">Alquilada</span>
                 </div>
               </div>
             </Link>

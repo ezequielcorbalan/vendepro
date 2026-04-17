@@ -6,6 +6,8 @@ import { ArrowLeft, Loader2, Search, X, UserPlus } from 'lucide-react'
 import Link from 'next/link'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
+import { fetchPropertyConfig, stagesForType, statusesForType } from '@/lib/property-config'
+import type { PropertyConfig } from '@/lib/property-config'
 import type { Contact } from '@/lib/types'
 
 const PROPERTY_TYPES = [
@@ -31,13 +33,16 @@ export default function NuevaPropiedadPage() {
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [initializing, setInitializing] = useState(true)
+  const [config, setConfig] = useState<PropertyConfig | null>(null)
 
   const [form, setForm] = useState({
     address: '',
     neighborhood: '',
     city: 'Buenos Aires',
     property_type: 'departamento',
-    operation_type: 'venta',
+    operation_type_id: 1,
+    commercial_stage_id: null as number | null,
+    status_id: 1,
     rooms: '',
     size_m2: '',
     asking_price: '',
@@ -103,7 +108,7 @@ export default function NuevaPropiedadPage() {
       }
     }
 
-    preload()
+    Promise.all([preload(), fetchPropertyConfig().then(setConfig)])
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Contact search with debounce
@@ -183,6 +188,9 @@ export default function NuevaPropiedadPage() {
       if (form.asking_price) payload.asking_price = Number(form.asking_price)
       if (selectedContact) payload.contact_id = selectedContact.id
       if (linkedLeadId) payload.lead_id = linkedLeadId
+      // Sync legacy text fields from IDs
+      const opType = config?.operation_types.find(t => t.id === form.operation_type_id)
+      if (opType) payload.operation_type = opType.slug
 
       const res = await apiFetch('properties', '/properties', {
         method: 'POST',
@@ -241,9 +249,29 @@ export default function NuevaPropiedadPage() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Operación</label>
-            <select value={form.operation_type} onChange={e => update('operation_type', e.target.value)} className={inputClass}>
-              <option value="venta">Venta</option>
-              <option value="alquiler">Alquiler</option>
+            <select value={form.operation_type_id}
+              onChange={e => setForm(f => ({ ...f, operation_type_id: Number(e.target.value), commercial_stage_id: null }))}
+              className={inputClass}>
+              {(config?.operation_types ?? []).map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Etapa comercial</label>
+            <select value={form.commercial_stage_id ?? ''}
+              onChange={e => setForm(f => ({ ...f, commercial_stage_id: e.target.value ? Number(e.target.value) : null }))}
+              className={inputClass}>
+              <option value="">Sin etapa</option>
+              {stagesForType(config ?? { operation_types: [], commercial_stages: [], property_statuses: [] }, form.operation_type_id)
+                .map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+            <select value={form.status_id}
+              onChange={e => setForm(f => ({ ...f, status_id: Number(e.target.value) }))}
+              className={inputClass}>
+              {statusesForType(config ?? { operation_types: [], commercial_stages: [], property_statuses: [] }, form.operation_type_id)
+                .map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
             </select>
           </div>
           <div>

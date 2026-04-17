@@ -26,6 +26,9 @@ export interface PropertyProps {
   status: PropertyStatus
   commercial_stage: string | null
   operation_type: string
+  operation_type_id: number
+  commercial_stage_id: number | null
+  status_id: number
   contact_id?: string | null
   lead_id?: string | null
   created_at: string
@@ -77,6 +80,9 @@ export class Property {
   get status() { return this.props.status }
   get commercial_stage() { return this.props.commercial_stage }
   get operation_type() { return this.props.operation_type }
+  get operation_type_id() { return this.props.operation_type_id }
+  get commercial_stage_id() { return this.props.commercial_stage_id }
+  get status_id() { return this.props.status_id }
   get created_at() { return this.props.created_at }
   get updated_at() { return this.props.updated_at }
   get agent_name() { return this.props.agent_name }

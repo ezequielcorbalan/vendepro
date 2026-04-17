@@ -15,16 +15,16 @@ export default function VendidasPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    apiFetch('properties', '/properties?commercial_stage=vendida&operation_type=venta')
+    // commercial_stage=vendida + operation_type_id=1 (Venta) → el backend resuelve a ID
+    apiFetch('properties', '/properties?commercial_stage=vendida&operation_type_id=1')
       .then(r => r.json() as Promise<any>)
       .then(d => { setProperties(Array.isArray(d) ? d : []); setLoading(false) })
       .catch(() => setLoading(false))
   }, [])
 
-  const totalUSD = properties.reduce((sum, p) => {
-    if (p.asking_price && (p.currency === 'USD' || !p.currency)) return sum + Number(p.asking_price)
-    return sum
-  }, 0)
+  const totalUSD = properties.reduce((sum, p) =>
+    p.asking_price && (p.currency === 'USD' || !p.currency) ? sum + Number(p.asking_price) : sum
+  , 0)
 
   return (
     <div className="space-y-5">
@@ -62,7 +62,7 @@ export default function VendidasPage() {
         <div className="bg-white rounded-xl border p-8 sm:p-12 text-center">
           <DollarSign className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <h2 className="text-lg font-medium text-gray-800 mb-2">Sin propiedades vendidas</h2>
-          <p className="text-gray-500">Aquí aparecerán las propiedades cuando cambien a etapa "Vendida"</p>
+          <p className="text-gray-500">Aparecerán aquí las propiedades con etapa "Vendida"</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -76,16 +76,12 @@ export default function VendidasPage() {
                       {p.neighborhood && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{p.neighborhood}</span>}
                       {p.property_type && <span className="flex items-center gap-1"><Building2 className="w-3 h-3" />{p.property_type}</span>}
                       {p.owner_name && <span className="flex items-center gap-1"><User className="w-3 h-3" />{p.owner_name}</span>}
-                      {p.asking_price && (
-                        <span className="font-semibold text-[#ff007c]">{formatCurrency(Number(p.asking_price), p.currency || 'USD')}</span>
-                      )}
+                      {p.asking_price && <span className="font-semibold text-[#ff007c]">{formatCurrency(Number(p.asking_price), p.currency || 'USD')}</span>}
                       {p.agent_name && <span className="text-gray-400">{p.agent_name}</span>}
                       {p.updated_at && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{formatDate(p.updated_at)}</span>}
                     </div>
                   </div>
-                  <div className="bg-emerald-100 text-emerald-700 text-[10px] font-medium px-2 py-1 rounded-full shrink-0">
-                    Vendida
-                  </div>
+                  <span className="bg-emerald-100 text-emerald-700 text-[10px] font-medium px-2 py-1 rounded-full shrink-0">Vendida</span>
                 </div>
               </div>
             </Link>

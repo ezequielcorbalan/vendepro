@@ -11,6 +11,7 @@ export default function ReservasPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // commercial_stage=reservada aplica a ambos tipos de operación (IDs 4 y 12)
     apiFetch('properties', '/properties?commercial_stage=reservada')
       .then(r => r.json() as Promise<any>)
       .then(d => { setProperties(Array.isArray(d) ? d : []); setLoading(false) })
@@ -32,12 +33,12 @@ export default function ReservasPage() {
         <div className="bg-white rounded-xl border p-8 sm:p-12 text-center">
           <Handshake className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <h2 className="text-lg font-medium text-gray-800 mb-2">Sin propiedades en reserva</h2>
-          <p className="text-gray-500">Aquí aparecerán las propiedades cuando cambien a etapa "Reservada"</p>
+          <p className="text-gray-500">Aparecerán aquí las propiedades con etapa "Reservada"</p>
         </div>
       ) : (
         <div className="space-y-3">
           {properties.map(p => {
-            const opType = p.operation_type ?? 'venta'
+            const isAlquiler = p.operation_type_id === 2
             return (
               <Link key={p.id} href={`/propiedades/${p.id}`}>
                 <div className="bg-white border rounded-xl p-4 hover:shadow-sm transition-shadow">
@@ -58,8 +59,8 @@ export default function ReservasPage() {
                     </div>
                     <div className="flex flex-col items-end gap-1 shrink-0">
                       <span className="bg-purple-100 text-purple-700 text-[10px] font-medium px-2 py-0.5 rounded-full">Reservada</span>
-                      <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${opType === 'alquiler' ? 'bg-cyan-100 text-cyan-700' : 'bg-indigo-50 text-indigo-600'}`}>
-                        {opType === 'alquiler' ? 'Alquiler' : 'Venta'}
+                      <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${isAlquiler ? 'bg-cyan-100 text-cyan-700' : 'bg-indigo-50 text-indigo-600'}`}>
+                        {isAlquiler ? 'Alquiler' : 'Venta'}
                       </span>
                     </div>
                   </div>

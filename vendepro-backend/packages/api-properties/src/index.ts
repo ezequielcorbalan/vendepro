@@ -16,12 +16,35 @@ app.use('*', async (c, next) => {
   return createAuthMiddleware(new JwtAuthService(c.env.JWT_SECRET))(c, next)
 })
 
+// ── CATALOG ────────────────────────────────────────────────────
+app.get('/property-config', async (c) => {
+  const db = c.env.DB
+  const [opTypes, stages, statuses] = await Promise.all([
+    db.prepare('SELECT id, slug, label FROM operation_types ORDER BY id').all(),
+    db.prepare('SELECT id, operation_type_id, slug, label, sort_order, is_terminal, color FROM commercial_stages ORDER BY operation_type_id, sort_order').all(),
+    db.prepare('SELECT id, operation_type_id, slug, label, color FROM property_statuses ORDER BY id').all(),
+  ])
+  return c.json({
+    operation_types: opTypes.results,
+    commercial_stages: (stages.results as any[]).map(s => ({ ...s, is_terminal: s.is_terminal === 1 })),
+    property_statuses: statuses.results,
+  })
+})
+
 // ── PROPERTIES ─────────────────────────────────────────────────
 app.get('/properties', async (c) => {
   const { status, agent_id, neighborhood, property_type, q, commercial_stage, operation_type } = c.req.query()
+  const qs = c.req.query()
+  const operation_type_id = qs.operation_type_id ? Number(qs.operation_type_id) : undefined
+  const commercial_stage_id = qs.commercial_stage_id ? Number(qs.commercial_stage_id) : undefined
+  const status_id = qs.status_id ? Number(qs.status_id) : undefined
   const repo = new D1PropertyRepository(c.env.DB)
   const useCase = new GetPropertiesUseCase(repo)
-  const items = await useCase.execute(c.get('orgId'), { status, agent_id, neighborhood, property_type, search: q, commercial_stage, operation_type })
+  const items = await useCase.execute(c.get('orgId'), {
+    status, agent_id, neighborhood, property_type, search: q,
+    commercial_stage, operation_type,
+    operation_type_id, commercial_stage_id, status_id,
+  })
   return c.json(items.map(p => p.toObject()))
 })
 
@@ -61,6 +84,9 @@ app.put('/properties/:id', async (c) => {
       owner_email=COALESCE(?,owner_email), contact_id=COALESCE(?,contact_id),
       status=COALESCE(?,status), commercial_stage=COALESCE(?,commercial_stage),
       operation_type=COALESCE(?,operation_type),
+      operation_type_id=COALESCE(?,operation_type_id),
+      commercial_stage_id=COALESCE(?,commercial_stage_id),
+      status_id=COALESCE(?,status_id),
       updated_at=?
     WHERE id = ? AND org_id = ?
   `).bind(
@@ -69,6 +95,9 @@ app.put('/properties/:id', async (c) => {
     body.owner_name ?? null, body.owner_phone ?? null, body.owner_email ?? null,
     body.contact_id ?? null, body.status ?? null, body.commercial_stage ?? null,
     body.operation_type ?? null,
+    body.operation_type_id ?? null,
+    body.commercial_stage_id ?? null,
+    body.status_id ?? null,
     now, id, orgId
   ).run()
   return c.json({ success: true })
@@ -77,9 +106,18 @@ app.put('/properties/:id', async (c) => {
 app.put('/properties/:id/stage', async (c) => {
   const body = (await c.req.json()) as any
   const db = c.env.DB
+  const id = c.req.param('id')
+  const orgId = c.get('orgId')
   const now = new Date().toISOString()
-  await db.prepare('UPDATE properties SET commercial_stage=?, updated_at=? WHERE id=? AND org_id=?')
-    .bind(body.commercial_stage, now, c.req.param('id'), c.get('orgId')).run()
+  // Acepta commercial_stage_id (ID) o commercial_stage (slug legacy)
+  if (body.commercial_stage_id) {
+    const stage = await db.prepare('SELECT slug FROM commercial_stages WHERE id = ?').bind(body.commercial_stage_id).first() as any
+    await db.prepare('UPDATE properties SET commercial_stage_id=?, commercial_stage=?, updated_at=? WHERE id=? AND org_id=?')
+      .bind(body.commercial_stage_id, stage?.slug ?? null, now, id, orgId).run()
+  } else if (body.commercial_stage) {
+    await db.prepare('UPDATE properties SET commercial_stage=?, updated_at=? WHERE id=? AND org_id=?')
+      .bind(body.commercial_stage, now, id, orgId).run()
+  }
   return c.json({ success: true })
 })
 
