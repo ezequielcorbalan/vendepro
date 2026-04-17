@@ -59,6 +59,28 @@ vi.mock('../src/reports-queries', () => ({
   computeHealthStatus: vi.fn(),
   daysBetween: vi.fn(),
   BENCHMARKS: mockBenchmarks,
+  computeDeltaHealthStatus: vi.fn(),
+  getComparisonByNeighborhood: vi.fn().mockResolvedValue([
+    {
+      neighborhood: 'Villa Urquiza',
+      sold: {
+        reports_count: 5,
+        avg_views_per_day: 45,
+        avg_portal_visits_per_report: 500,
+        avg_in_person_visits_per_week: 2.5,
+        avg_inquiries_per_report: 12,
+      },
+      active: {
+        reports_count: 3,
+        avg_views_per_day: 22,
+        avg_portal_visits_per_report: 300,
+        avg_in_person_visits_per_week: 1.2,
+        avg_inquiries_per_report: 6,
+      },
+      delta_views_per_day_pct: -51.1,
+      delta_health_status: 'red',
+    },
+  ]),
 }))
 
 vi.mock('@vendepro/infrastructure', async (importOriginal) => {
@@ -144,5 +166,19 @@ describe('GET /listings-performance', () => {
 
     expect(body.by_neighborhood[0].health_status).toBe('yellow')
     expect(body.by_neighborhood[0].avg_views_per_day).toBe(20)
+  })
+
+  it('includes comparison_by_neighborhood with sold and active groups', async () => {
+    const { default: app } = await import('../src/index')
+    const res = await app.request('/listings-performance', { method: 'GET' }, { DB: {}, JWT_SECRET: 'secret' })
+    const body = await res.json() as any
+
+    expect(body.comparison_by_neighborhood).toBeDefined()
+    expect(body.comparison_by_neighborhood).toHaveLength(1)
+    expect(body.comparison_by_neighborhood[0].neighborhood).toBe('Villa Urquiza')
+    expect(body.comparison_by_neighborhood[0].sold.avg_views_per_day).toBe(45)
+    expect(body.comparison_by_neighborhood[0].active.avg_views_per_day).toBe(22)
+    expect(body.comparison_by_neighborhood[0].delta_views_per_day_pct).toBe(-51.1)
+    expect(body.comparison_by_neighborhood[0].delta_health_status).toBe('red')
   })
 })
