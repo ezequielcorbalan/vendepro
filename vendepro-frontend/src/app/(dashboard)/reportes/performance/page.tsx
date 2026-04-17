@@ -7,6 +7,7 @@ import {
 } from 'recharts'
 import { apiFetch } from '@/lib/api'
 import HealthBadge from '@/components/reports/HealthBadge'
+import NeighborhoodBenchmarkTable, { type NeighborhoodComparison } from '@/components/reports/NeighborhoodBenchmarkTable'
 import { HEALTH_COLORS, type HealthStatus } from '@/lib/semaforo'
 
 type Period = 'week' | 'month' | 'quarter' | 'year'
@@ -54,6 +55,7 @@ interface PerformanceData {
     gba:  { min_views_per_day: number; min_in_person_visits_per_week: number }
     source: string
   }
+  comparison_by_neighborhood?: NeighborhoodComparison[]
 }
 
 function formatNumber(n: number): string {
@@ -165,6 +167,11 @@ export default function PerformancePage() {
           ))}
         </div>
       </div>
+
+      {/* Benchmark comparativo activos vs vendidos */}
+      {data.comparison_by_neighborhood && data.comparison_by_neighborhood.length > 0 && (
+        <NeighborhoodBenchmarkTable data={data.comparison_by_neighborhood} />
+      )}
 
       {/* Leyenda del semáforo */}
       <div className="bg-white border rounded-xl p-3 sm:p-4 text-xs sm:text-sm">
