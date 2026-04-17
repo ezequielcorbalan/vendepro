@@ -5,3 +5,7 @@ logs/
 # Cloudflare Worker local secrets (nunca commitear)
 .dev.vars
 packages/*/.dev.vars
+
+# Turbo cache
+.turbo/
+packages/*/.turbo/

@@ -64,6 +64,7 @@ vi.mock('../src/reports-queries', () => ({
     {
       neighborhood: 'Villa Urquiza',
       sold: {
+        property_count: 3,
         reports_count: 5,
         avg_views_per_day: 45,
         avg_portal_visits_per_report: 500,
@@ -71,6 +72,7 @@ vi.mock('../src/reports-queries', () => ({
         avg_inquiries_per_report: 12,
       },
       active: {
+        property_count: 2,
         reports_count: 3,
         avg_views_per_day: 22,
         avg_portal_visits_per_report: 300,
@@ -79,6 +81,41 @@ vi.mock('../src/reports-queries', () => ({
       },
       delta_views_per_day_pct: -51.1,
       delta_health_status: 'red',
+    },
+  ]),
+  getActiveListingsWithBenchmark: vi.fn().mockResolvedValue([
+    {
+      property_id: 'prop-1',
+      address: 'Bauness 2906',
+      neighborhood: 'Villa Urquiza',
+      reports_count: 1,
+      avg_views_per_day: 34.1,
+      avg_in_person_visits_per_week: 0.9,
+      neighborhood_sold_avg_views_per_day: 45,
+      delta_vs_neighborhood_pct: -24.2,
+      delta_health_status: 'yellow',
+    },
+    {
+      property_id: 'prop-2',
+      address: 'Triunvirato 4180',
+      neighborhood: 'Villa Urquiza',
+      reports_count: 1,
+      avg_views_per_day: 11.5,
+      avg_in_person_visits_per_week: 0.3,
+      neighborhood_sold_avg_views_per_day: 45,
+      delta_vs_neighborhood_pct: -74.4,
+      delta_health_status: 'red',
+    },
+    {
+      property_id: 'prop-3',
+      address: 'Cabildo 2500',
+      neighborhood: 'Belgrano',
+      reports_count: 1,
+      avg_views_per_day: 15.6,
+      avg_in_person_visits_per_week: 0.5,
+      neighborhood_sold_avg_views_per_day: null,
+      delta_vs_neighborhood_pct: null,
+      delta_health_status: 'light_green',
     },
   ]),
 }))
@@ -177,8 +214,25 @@ describe('GET /listings-performance', () => {
     expect(body.comparison_by_neighborhood).toHaveLength(1)
     expect(body.comparison_by_neighborhood[0].neighborhood).toBe('Villa Urquiza')
     expect(body.comparison_by_neighborhood[0].sold.avg_views_per_day).toBe(45)
+    expect(body.comparison_by_neighborhood[0].sold.property_count).toBe(3)
     expect(body.comparison_by_neighborhood[0].active.avg_views_per_day).toBe(22)
+    expect(body.comparison_by_neighborhood[0].active.property_count).toBe(2)
     expect(body.comparison_by_neighborhood[0].delta_views_per_day_pct).toBe(-51.1)
     expect(body.comparison_by_neighborhood[0].delta_health_status).toBe('red')
+  })
+
+  it('includes active_listings with per-property benchmark comparison', async () => {
+    const { default: app } = await import('../src/index')
+    const res = await app.request('/listings-performance', { method: 'GET' }, { DB: {}, JWT_SECRET: 'secret' })
+    const body = await res.json() as any
+
+    expect(body.active_listings).toBeDefined()
+    expect(body.active_listings).toHaveLength(3)
+    expect(body.active_listings[0].address).toBe('Bauness 2906')
+    expect(body.active_listings[0].delta_vs_neighborhood_pct).toBe(-24.2)
+    expect(body.active_listings[0].delta_health_status).toBe('yellow')
+    // Property without benchmark (no sold in the neighborhood)
+    expect(body.active_listings[2].delta_vs_neighborhood_pct).toBeNull()
+    expect(body.active_listings[2].delta_health_status).toBe('light_green')
   })
 })

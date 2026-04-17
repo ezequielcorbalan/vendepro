@@ -457,11 +457,24 @@ export async function listReportsWithMetrics(
 // propio benchmark según su histórico de ventas.
 
 export interface NeighborhoodGroupMetrics {
+  property_count: number
   reports_count: number
   avg_views_per_day: number
   avg_portal_visits_per_report: number
   avg_in_person_visits_per_week: number
   avg_inquiries_per_report: number
+}
+
+export interface ActiveListingWithBenchmark {
+  property_id: string
+  address: string
+  neighborhood: string
+  reports_count: number
+  avg_views_per_day: number
+  avg_in_person_visits_per_week: number
+  neighborhood_sold_avg_views_per_day: number | null
+  delta_vs_neighborhood_pct: number | null
+  delta_health_status: HealthStatus
 }
 
 export interface NeighborhoodComparison {
@@ -490,6 +503,7 @@ export async function getComparisonByNeighborhood(
 
   type GroupRow = {
     neighborhood: string
+    property_count: number
     reports_count: number
     total_portal_visits: number
     total_in_person_visits: number
@@ -502,6 +516,7 @@ export async function getComparisonByNeighborhood(
       db.prepare(`
         SELECT
           p.neighborhood AS neighborhood,
+          COUNT(DISTINCT p.id) AS property_count,
           COUNT(DISTINCT r.id) AS reports_count,
           COALESCE(SUM(rm.portal_visits), 0) AS total_portal_visits,
           COALESCE(SUM(rm.in_person_visits), 0) AS total_in_person_visits,
@@ -538,6 +553,7 @@ export async function getComparisonByNeighborhood(
 
     return ((metricsRes.results as any[]) ?? []).map(r => ({
       neighborhood: String(r.neighborhood ?? 'Sin barrio'),
+      property_count: Number(r.property_count ?? 0),
       reports_count: Number(r.reports_count ?? 0),
       total_portal_visits: Number(r.total_portal_visits ?? 0),
       total_in_person_visits: Number(r.total_in_person_visits ?? 0),
@@ -549,6 +565,7 @@ export async function getComparisonByNeighborhood(
   const toMetrics = (x: GroupRow | undefined): NeighborhoodGroupMetrics | null => {
     if (!x || x.reports_count === 0) return null
     return {
+      property_count: x.property_count,
       reports_count: x.reports_count,
       avg_views_per_day: Math.round((x.total_portal_visits / x.total_days) * 10) / 10,
       avg_portal_visits_per_report: Math.round(x.total_portal_visits / x.reports_count),
@@ -587,5 +604,120 @@ export async function getComparisonByNeighborhood(
     const aActive = a.active?.reports_count ?? 0
     const bActive = b.active?.reports_count ?? 0
     return bActive - aActive
+  })
+}
+
+/** Lista de propiedades activas de la org, cada una con sus promedios
+ *  agregados y comparadas contra el benchmark de vendidas de su barrio.
+ *  Ordenadas por delta ascendente (peores primero). */
+export async function getActiveListingsWithBenchmark(
+  db: D1Database,
+  orgId: string,
+): Promise<ActiveListingWithBenchmark[]> {
+
+  // Query 1: métricas agregadas por propiedad activa.
+  // Query 2: días totales por propiedad (sin JOIN a metrics).
+  // Query 3: benchmark de vendidas por barrio (vis/día).
+  const [metricsRes, daysRes, benchmarkRes] = await Promise.all([
+    db.prepare(`
+      SELECT
+        p.id AS property_id,
+        p.address AS address,
+        p.neighborhood AS neighborhood,
+        COUNT(DISTINCT r.id) AS reports_count,
+        COALESCE(SUM(rm.portal_visits), 0) AS total_portal_visits,
+        COALESCE(SUM(rm.in_person_visits), 0) AS total_in_person_visits
+      FROM properties p
+      LEFT JOIN reports r ON r.property_id = p.id AND r.status = 'published'
+      LEFT JOIN report_metrics rm ON rm.report_id = r.id
+      WHERE p.org_id = ?
+        AND p.status = 'active'
+      GROUP BY p.id
+      HAVING COUNT(DISTINCT r.id) > 0
+    `).bind(orgId).all(),
+    db.prepare(`
+      SELECT
+        p.id AS property_id,
+        COALESCE(SUM(julianday(r.period_end) - julianday(r.period_start)), 0) AS total_period_days
+      FROM properties p
+      JOIN (
+        SELECT DISTINCT r.id, r.period_start, r.period_end, r.property_id
+        FROM reports r
+        JOIN properties p ON p.id = r.property_id
+        WHERE p.org_id = ?
+          AND p.status = 'active'
+          AND r.status = 'published'
+      ) r ON r.property_id = p.id
+      GROUP BY p.id
+    `).bind(orgId).all(),
+    db.prepare(`
+      SELECT
+        p.neighborhood AS neighborhood,
+        COALESCE(SUM(rm.portal_visits), 0) AS total_portal_visits,
+        COALESCE(SUM(julianday(rd.period_end) - julianday(rd.period_start)), 0) AS total_days
+      FROM (
+        SELECT DISTINCT r.id, r.period_start, r.period_end, r.property_id
+        FROM reports r
+        JOIN properties p ON p.id = r.property_id
+        WHERE p.org_id = ?
+          AND p.status = 'sold'
+          AND r.status = 'published'
+      ) rd
+      JOIN properties p ON p.id = rd.property_id
+      LEFT JOIN report_metrics rm ON rm.report_id = rd.id
+      GROUP BY p.neighborhood
+    `).bind(orgId).all(),
+  ])
+
+  const daysByProperty: Record<string, number> = {}
+  for (const row of (daysRes.results as any[] ?? [])) {
+    daysByProperty[String(row.property_id)] = Math.max(1, Math.round(Number(row.total_period_days ?? 0)))
+  }
+
+  const soldBenchmarkByNeighborhood: Record<string, number> = {}
+  for (const row of (benchmarkRes.results as any[] ?? [])) {
+    const portal = Number(row.total_portal_visits ?? 0)
+    const days = Math.max(1, Math.round(Number(row.total_days ?? 0)))
+    soldBenchmarkByNeighborhood[String(row.neighborhood ?? 'Sin barrio')] =
+      Math.round((portal / days) * 10) / 10
+  }
+
+  const rows = ((metricsRes.results as any[]) ?? []).map(r => {
+    const propId = String(r.property_id)
+    const days = daysByProperty[propId] ?? 1
+    const portal = Number(r.total_portal_visits ?? 0)
+    const inPerson = Number(r.total_in_person_visits ?? 0)
+    const viewsPerDay = Math.round((portal / days) * 10) / 10
+    const visitsPerWeek = Math.round((inPerson / (days / 7)) * 10) / 10
+
+    const neighborhood = String(r.neighborhood ?? 'Sin barrio')
+    const benchmark = soldBenchmarkByNeighborhood[neighborhood] ?? null
+
+    let delta: number | null = null
+    if (benchmark !== null && benchmark > 0) {
+      delta = Math.round(((viewsPerDay - benchmark) / benchmark) * 1000) / 10
+    }
+
+    return {
+      property_id: propId,
+      address: String(r.address ?? ''),
+      neighborhood,
+      reports_count: Number(r.reports_count ?? 0),
+      avg_views_per_day: viewsPerDay,
+      avg_in_person_visits_per_week: visitsPerWeek,
+      neighborhood_sold_avg_views_per_day: benchmark,
+      delta_vs_neighborhood_pct: delta,
+      delta_health_status: computeDeltaHealthStatus(delta),
+    }
+  })
+
+  // Orden: peores primero (delta ascendente), los sin-benchmark al final.
+  return rows.sort((a, b) => {
+    const aDelta = a.delta_vs_neighborhood_pct
+    const bDelta = b.delta_vs_neighborhood_pct
+    if (aDelta === null && bDelta === null) return 0
+    if (aDelta === null) return 1
+    if (bDelta === null) return -1
+    return aDelta - bDelta
   })
 }

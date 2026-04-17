@@ -8,6 +8,7 @@ import {
   getTimelinePerformance,
   listReportsWithMetrics,
   getComparisonByNeighborhood,
+  getActiveListingsWithBenchmark,
   BENCHMARKS,
   type Period,
 } from './reports-queries'
@@ -278,11 +279,12 @@ app.get('/listings-performance', async (c) => {
     overall_health_status: 'red' as const,
   }
 
-  const [kpis, byNeighborhood, timeline, comparison] = await Promise.all([
+  const [kpis, byNeighborhood, timeline, comparison, activeListings] = await Promise.all([
     safe(() => getPerformanceKpis(db, orgId, start, end, source), emptyKpis),
     safe(() => getNeighborhoodPerformance(db, orgId, start, end, source), [] as Awaited<ReturnType<typeof getNeighborhoodPerformance>>),
     safe(() => getTimelinePerformance(db, orgId, start, end, source), [] as Awaited<ReturnType<typeof getTimelinePerformance>>),
     safe(() => getComparisonByNeighborhood(db, orgId), [] as Awaited<ReturnType<typeof getComparisonByNeighborhood>>),
+    safe(() => getActiveListingsWithBenchmark(db, orgId), [] as Awaited<ReturnType<typeof getActiveListingsWithBenchmark>>),
   ])
 
   return c.json({
@@ -294,6 +296,7 @@ app.get('/listings-performance', async (c) => {
     timeline,
     benchmarks: BENCHMARKS,
     comparison_by_neighborhood: comparison,
+    active_listings: activeListings,
   })
 })
 
