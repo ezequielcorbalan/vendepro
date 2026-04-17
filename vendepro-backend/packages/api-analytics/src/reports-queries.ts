@@ -168,7 +168,10 @@ export async function getPerformanceKpis(
   const totalOffers = Number(row?.total_offers ?? 0)
   const totalPeriodDays = Math.max(1, Math.round(Number(row?.total_period_days ?? 0)))
 
-  const avgViewsPerDay = count > 0 ? Math.round((totalImpressions / totalPeriodDays) * 10) / 10 : 0
+  // Terminología MG: "visualizaciones" = entradas al aviso = portal_visits
+  // (NO impresiones, que son las veces que el aviso aparece en listados).
+  // El semáforo se calcula sobre visitas al aviso por día.
+  const avgViewsPerDay = count > 0 ? Math.round((totalPortalVisits / totalPeriodDays) * 10) / 10 : 0
   const avgVisitsPerWeek = count > 0 ? Math.round((totalInPersonVisits / (totalPeriodDays / 7)) * 10) / 10 : 0
 
   return {
@@ -209,7 +212,7 @@ export async function getNeighborhoodPerformance(
       COALESCE(ROUND(AVG(rm.in_person_visits)), 0) AS avg_in_person_visits,
       COALESCE(ROUND(AVG(rm.offers) * 100) / 100.0, 0) AS avg_offers,
       COALESCE(SUM(rm.offers), 0) AS total_offers,
-      COALESCE(SUM(rm.impressions), 0) AS total_impressions,
+      COALESCE(SUM(rm.portal_visits), 0) AS total_portal_visits,
       COALESCE(SUM(rm.in_person_visits), 0) AS total_in_person_visits,
       COALESCE(SUM(julianday(r.period_end) - julianday(r.period_start)), 0) AS total_period_days
     FROM reports r
@@ -225,10 +228,11 @@ export async function getNeighborhoodPerformance(
   `).bind(...binds).all()
 
   return ((res.results as any[]) ?? []).map(r => {
-    const totalImpressions = Number(r.total_impressions ?? 0)
+    // "Visualizaciones" en terminología MG = entradas al aviso = portal_visits.
+    const totalPortalVisits = Number(r.total_portal_visits ?? 0)
     const totalInPersonVisits = Number(r.total_in_person_visits ?? 0)
     const totalDays = Math.max(1, Math.round(Number(r.total_period_days ?? 0)))
-    const viewsPerDay = Math.round((totalImpressions / totalDays) * 10) / 10
+    const viewsPerDay = Math.round((totalPortalVisits / totalDays) * 10) / 10
     const visitsPerWeek = Math.round((totalInPersonVisits / (totalDays / 7)) * 10) / 10
     return {
       neighborhood: r.neighborhood ?? 'Sin barrio',
@@ -367,9 +371,11 @@ export async function listReportsWithMetrics(
 
   const results = ((rowsRes.results as any[]) ?? []).map(r => {
     const impressions = Number(r.impressions ?? 0)
+    const portalVisits = Number(r.portal_visits ?? 0)
     const inPersonVisits = Number(r.in_person_visits ?? 0)
     const days = daysBetween(r.period_start ?? '', r.period_end ?? '')
-    const viewsPerDay = Math.round((impressions / days) * 10) / 10
+    // "Visualizaciones" en terminología MG = entradas al aviso = portal_visits.
+    const viewsPerDay = Math.round((portalVisits / days) * 10) / 10
     const visitsPerWeek = Math.round((inPersonVisits / (days / 7)) * 10) / 10
     const healthStatus: HealthStatus | null =
       (r.period_start && r.period_end) ? computeHealthStatus(viewsPerDay) : null
