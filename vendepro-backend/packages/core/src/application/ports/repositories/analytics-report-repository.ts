@@ -4,6 +4,9 @@ export interface PerformanceTotals {
   total_portal_visits: number
   total_in_person_visits: number
   total_offers: number
+  /** Suma de días cubiertos por cada reporte publicado (periodo). Usado
+   *  para normalizar vis/día y visitas presenciales/semana. */
+  total_days: number
 }
 
 export interface NeighborhoodPerformanceRow {
@@ -14,6 +17,10 @@ export interface NeighborhoodPerformanceRow {
   avg_in_person_visits: number
   avg_offers: number
   total_offers: number
+  /** Métricas normalizadas agregadas por barrio para el semáforo. */
+  total_portal_visits: number
+  total_in_person_visits: number
+  total_days: number
 }
 
 export interface TimelinePointRow {

@@ -9,14 +9,15 @@ const makeRepo = () => ({
 })
 
 describe('GetListingsPerformanceUseCase', () => {
-  it('computes per-report averages from totals', async () => {
+  it('computes per-report averages + semáforo KPIs from totals', async () => {
     const repo = makeRepo()
     repo.getPerformanceTotals.mockResolvedValue({
       reports_published: 4,
       total_impressions: 2000,
-      total_portal_visits: 200,
-      total_in_person_visits: 16,
+      total_portal_visits: 600,  // 30 días → 20 vis/día → yellow
+      total_in_person_visits: 9, // 30 días → 2.1 vis/semana
       total_offers: 3,
+      total_days: 30,
     })
     repo.getNeighborhoodPerformance.mockResolvedValue([])
     repo.getTimelinePerformance.mockResolvedValue([])
@@ -31,15 +32,13 @@ describe('GetListingsPerformanceUseCase', () => {
 
     expect(res.kpis.reports_published).toBe(4)
     expect(res.kpis.avg_impressions_per_report).toBe(500)
-    expect(res.kpis.avg_portal_visits_per_report).toBe(50)
-    expect(res.kpis.avg_in_person_visits_per_report).toBe(4)
-    expect(res.kpis.avg_offers_per_report).toBe(0.75)
-    expect(res.period).toBe('month')
-    expect(res.end).toBe('2026-04-17')
-    expect(res.start).toBe('2026-03-17')
+    expect(res.kpis.avg_views_per_day).toBe(20)
+    expect(res.kpis.avg_in_person_visits_per_week).toBe(2.1)
+    expect(res.kpis.overall_health_status).toBe('yellow')
+    expect(res.benchmarks.source).toMatch(/Marcela Genta/)
   })
 
-  it('returns zeros when no reports published', async () => {
+  it('returns zeros + red status when no reports published', async () => {
     const repo = makeRepo()
     repo.getPerformanceTotals.mockResolvedValue({
       reports_published: 0,
@@ -47,6 +46,7 @@ describe('GetListingsPerformanceUseCase', () => {
       total_portal_visits: 0,
       total_in_person_visits: 0,
       total_offers: 0,
+      total_days: 0,
     })
     repo.getNeighborhoodPerformance.mockResolvedValue([])
     repo.getTimelinePerformance.mockResolvedValue([])
@@ -55,17 +55,44 @@ describe('GetListingsPerformanceUseCase', () => {
     const res = await useCase.execute({ orgId: 'org_mg', period: 'week', source: null })
 
     expect(res.kpis.reports_published).toBe(0)
-    expect(res.kpis.avg_impressions_per_report).toBe(0)
-    expect(res.kpis.avg_offers_per_report).toBe(0)
-    expect(res.by_neighborhood).toEqual([])
-    expect(res.timeline).toEqual([])
+    expect(res.kpis.avg_views_per_day).toBe(0)
+    expect(res.kpis.overall_health_status).toBe('red')
+  })
+
+  it('computes health_status per neighborhood', async () => {
+    const repo = makeRepo()
+    repo.getPerformanceTotals.mockResolvedValue({
+      reports_published: 1, total_impressions: 100, total_portal_visits: 10,
+      total_in_person_visits: 1, total_offers: 0, total_days: 30,
+    })
+    repo.getNeighborhoodPerformance.mockResolvedValue([
+      {
+        neighborhood: 'Villa Urquiza',
+        reports_count: 2,
+        avg_impressions: 500,
+        avg_portal_visits: 300,
+        avg_in_person_visits: 4,
+        avg_offers: 0.5,
+        total_offers: 1,
+        total_portal_visits: 600,
+        total_in_person_visits: 8,
+        total_days: 20, // 600/20 = 30 vis/día → green
+      },
+    ])
+    repo.getTimelinePerformance.mockResolvedValue([])
+
+    const useCase = new GetListingsPerformanceUseCase(repo)
+    const res = await useCase.execute({ orgId: 'org_mg', period: 'month', source: null })
+
+    expect(res.by_neighborhood[0]?.avg_views_per_day).toBe(30)
+    expect(res.by_neighborhood[0]?.health_status).toBe('green')
   })
 
   it('maps timeline month_key to Spanish label', async () => {
     const repo = makeRepo()
     repo.getPerformanceTotals.mockResolvedValue({
       reports_published: 1, total_impressions: 100, total_portal_visits: 10,
-      total_in_person_visits: 1, total_offers: 0,
+      total_in_person_visits: 1, total_offers: 0, total_days: 30,
     })
     repo.getNeighborhoodPerformance.mockResolvedValue([])
     repo.getTimelinePerformance.mockResolvedValue([
@@ -83,7 +110,7 @@ describe('GetListingsPerformanceUseCase', () => {
     const repo = makeRepo()
     repo.getPerformanceTotals.mockResolvedValue({
       reports_published: 0, total_impressions: 0, total_portal_visits: 0,
-      total_in_person_visits: 0, total_offers: 0,
+      total_in_person_visits: 0, total_offers: 0, total_days: 0,
     })
     repo.getNeighborhoodPerformance.mockResolvedValue([])
     repo.getTimelinePerformance.mockResolvedValue([])

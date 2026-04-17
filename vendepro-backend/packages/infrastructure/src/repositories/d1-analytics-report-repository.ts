@@ -19,29 +19,45 @@ export class D1AnalyticsReportRepository implements AnalyticsReportRepository {
     const sourceFilter = source ? ' AND rm.source = ?' : ''
     const binds: unknown[] = source ? [orgId, start, end, source] : [orgId, start, end]
 
-    const row = await this.db.prepare(`
-      SELECT
-        COUNT(DISTINCT r.id) AS reports_published,
-        COALESCE(SUM(rm.impressions), 0) AS total_impressions,
-        COALESCE(SUM(rm.portal_visits), 0) AS total_portal_visits,
-        COALESCE(SUM(rm.in_person_visits), 0) AS total_in_person_visits,
-        COALESCE(SUM(rm.offers), 0) AS total_offers
-      FROM reports r
-      JOIN properties p ON p.id = r.property_id
-      LEFT JOIN report_metrics rm ON rm.report_id = r.id
-      WHERE p.org_id = ?
-        AND r.status = 'published'
-        AND date(r.published_at) >= ?
-        AND date(r.published_at) <= ?
-        ${sourceFilter}
-    `).bind(...binds).first() as any
+    // Queries separadas para evitar que el JOIN con report_metrics
+    // multiplique el cálculo de días por cada fila de métricas.
+    const [metricsRow, daysRow] = await Promise.all([
+      this.db.prepare(`
+        SELECT
+          COUNT(DISTINCT r.id) AS reports_published,
+          COALESCE(SUM(rm.impressions), 0) AS total_impressions,
+          COALESCE(SUM(rm.portal_visits), 0) AS total_portal_visits,
+          COALESCE(SUM(rm.in_person_visits), 0) AS total_in_person_visits,
+          COALESCE(SUM(rm.offers), 0) AS total_offers
+        FROM reports r
+        JOIN properties p ON p.id = r.property_id
+        LEFT JOIN report_metrics rm ON rm.report_id = r.id
+        WHERE p.org_id = ?
+          AND r.status = 'published'
+          AND date(r.published_at) >= ?
+          AND date(r.published_at) <= ?
+          ${sourceFilter}
+      `).bind(...binds).first() as Promise<any>,
+      this.db.prepare(`
+        SELECT COALESCE(SUM(
+          MAX(1, CAST(julianday(r.period_end) - julianday(r.period_start) AS INTEGER))
+        ), 0) AS total_days
+        FROM reports r
+        JOIN properties p ON p.id = r.property_id
+        WHERE p.org_id = ?
+          AND r.status = 'published'
+          AND date(r.published_at) >= ?
+          AND date(r.published_at) <= ?
+      `).bind(orgId, start, end).first() as Promise<any>,
+    ])
 
     return {
-      reports_published: Number(row?.reports_published ?? 0),
-      total_impressions: Number(row?.total_impressions ?? 0),
-      total_portal_visits: Number(row?.total_portal_visits ?? 0),
-      total_in_person_visits: Number(row?.total_in_person_visits ?? 0),
-      total_offers: Number(row?.total_offers ?? 0),
+      reports_published: Number(metricsRow?.reports_published ?? 0),
+      total_impressions: Number(metricsRow?.total_impressions ?? 0),
+      total_portal_visits: Number(metricsRow?.total_portal_visits ?? 0),
+      total_in_person_visits: Number(metricsRow?.total_in_person_visits ?? 0),
+      total_offers: Number(metricsRow?.total_offers ?? 0),
+      total_days: Number(daysRow?.total_days ?? 0),
     }
   }
 
@@ -54,28 +70,51 @@ export class D1AnalyticsReportRepository implements AnalyticsReportRepository {
     const sourceFilter = source ? ' AND rm.source = ?' : ''
     const binds: unknown[] = source ? [orgId, start, end, source] : [orgId, start, end]
 
-    const res = await this.db.prepare(`
-      SELECT
-        p.neighborhood AS neighborhood,
-        COUNT(DISTINCT r.id) AS reports_count,
-        COALESCE(ROUND(AVG(rm.impressions)), 0) AS avg_impressions,
-        COALESCE(ROUND(AVG(rm.portal_visits)), 0) AS avg_portal_visits,
-        COALESCE(ROUND(AVG(rm.in_person_visits)), 0) AS avg_in_person_visits,
-        COALESCE(ROUND(AVG(rm.offers) * 100) / 100.0, 0) AS avg_offers,
-        COALESCE(SUM(rm.offers), 0) AS total_offers
-      FROM reports r
-      JOIN properties p ON p.id = r.property_id
-      LEFT JOIN report_metrics rm ON rm.report_id = r.id
-      WHERE p.org_id = ?
-        AND r.status = 'published'
-        AND date(r.published_at) >= ?
-        AND date(r.published_at) <= ?
-        ${sourceFilter}
-      GROUP BY p.neighborhood
-      ORDER BY reports_count DESC, p.neighborhood ASC
-    `).bind(...binds).all()
+    const [metricsRes, daysRes] = await Promise.all([
+      this.db.prepare(`
+        SELECT
+          p.neighborhood AS neighborhood,
+          COUNT(DISTINCT r.id) AS reports_count,
+          COALESCE(ROUND(AVG(rm.impressions)), 0) AS avg_impressions,
+          COALESCE(ROUND(AVG(rm.portal_visits)), 0) AS avg_portal_visits,
+          COALESCE(ROUND(AVG(rm.in_person_visits)), 0) AS avg_in_person_visits,
+          COALESCE(ROUND(AVG(rm.offers) * 100) / 100.0, 0) AS avg_offers,
+          COALESCE(SUM(rm.offers), 0) AS total_offers,
+          COALESCE(SUM(rm.portal_visits), 0) AS total_portal_visits,
+          COALESCE(SUM(rm.in_person_visits), 0) AS total_in_person_visits
+        FROM reports r
+        JOIN properties p ON p.id = r.property_id
+        LEFT JOIN report_metrics rm ON rm.report_id = r.id
+        WHERE p.org_id = ?
+          AND r.status = 'published'
+          AND date(r.published_at) >= ?
+          AND date(r.published_at) <= ?
+          ${sourceFilter}
+        GROUP BY p.neighborhood
+        ORDER BY reports_count DESC, p.neighborhood ASC
+      `).bind(...binds).all(),
+      this.db.prepare(`
+        SELECT
+          p.neighborhood AS neighborhood,
+          COALESCE(SUM(
+            MAX(1, CAST(julianday(r.period_end) - julianday(r.period_start) AS INTEGER))
+          ), 0) AS total_days
+        FROM reports r
+        JOIN properties p ON p.id = r.property_id
+        WHERE p.org_id = ?
+          AND r.status = 'published'
+          AND date(r.published_at) >= ?
+          AND date(r.published_at) <= ?
+        GROUP BY p.neighborhood
+      `).bind(orgId, start, end).all(),
+    ])
 
-    return ((res.results as any[]) ?? []).map(r => ({
+    const daysMap = new Map<string, number>()
+    for (const row of (daysRes.results as any[]) ?? []) {
+      daysMap.set(String(row.neighborhood ?? ''), Number(row.total_days ?? 0))
+    }
+
+    return ((metricsRes.results as any[]) ?? []).map(r => ({
       neighborhood: r.neighborhood ?? 'Sin barrio',
       reports_count: Number(r.reports_count ?? 0),
       avg_impressions: Number(r.avg_impressions ?? 0),
@@ -83,6 +122,9 @@ export class D1AnalyticsReportRepository implements AnalyticsReportRepository {
       avg_in_person_visits: Number(r.avg_in_person_visits ?? 0),
       avg_offers: Number(r.avg_offers ?? 0),
       total_offers: Number(r.total_offers ?? 0),
+      total_portal_visits: Number(r.total_portal_visits ?? 0),
+      total_in_person_visits: Number(r.total_in_person_visits ?? 0),
+      total_days: daysMap.get(String(r.neighborhood ?? '')) ?? 0,
     }))
   }
 
