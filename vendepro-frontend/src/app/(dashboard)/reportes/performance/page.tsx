@@ -6,6 +6,8 @@ import {
   LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid,
 } from 'recharts'
 import { apiFetch } from '@/lib/api'
+import HealthBadge from '@/components/reports/HealthBadge'
+import { HEALTH_COLORS, type HealthStatus } from '@/lib/semaforo'
 
 type Period = 'week' | 'month' | 'quarter' | 'year'
 
@@ -23,6 +25,9 @@ interface PerformanceData {
     avg_portal_visits_per_report: number
     avg_in_person_visits_per_report: number
     avg_offers_per_report: number
+    avg_views_per_day: number
+    avg_in_person_visits_per_week: number
+    overall_health_status: HealthStatus
   }
   by_neighborhood: Array<{
     neighborhood: string
@@ -32,6 +37,9 @@ interface PerformanceData {
     avg_in_person_visits: number
     avg_offers: number
     total_offers: number
+    avg_views_per_day: number
+    avg_in_person_visits_per_week: number
+    health_status: HealthStatus
   }>
   timeline: Array<{
     period_label: string
@@ -41,6 +49,11 @@ interface PerformanceData {
     in_person_visits: number
     offers: number
   }>
+  benchmarks?: {
+    caba: { min_views_per_day: number; min_in_person_visits_per_week: number }
+    gba:  { min_views_per_day: number; min_in_person_visits_per_week: number }
+    source: string
+  }
 }
 
 function formatNumber(n: number): string {
@@ -153,6 +166,24 @@ export default function PerformancePage() {
         </div>
       </div>
 
+      {/* Leyenda del semáforo */}
+      <div className="bg-white border rounded-xl p-3 sm:p-4 text-xs sm:text-sm">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2">
+          <span className="font-medium text-gray-700">Semáforo de visualizaciones/día:</span>
+          <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-red-500" /> 0–9</span>
+          <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-orange-500" /> 10–13</span>
+          <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-yellow-400" /> 14–22</span>
+          <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-lime-500" /> 23–27</span>
+          <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-green-500" /> +28</span>
+        </div>
+        <p className="text-gray-500 leading-snug">
+          <strong>Mínimo para vender en 4 meses:</strong>{' '}
+          CABA <strong>14 vis/día</strong> + 1.5 visitas pres./sem ·{' '}
+          GBA <strong>8 vis/día</strong> + 1 visita pres./sem.
+          <span className="text-gray-400"> — Marcela Genta Op. Inmobiliarias</span>
+        </p>
+      </div>
+
       {!hasData && (
         <div className="bg-gray-50 border border-gray-200 rounded-xl p-8 text-center">
           <FileBarChart className="w-10 h-10 text-gray-300 mx-auto mb-3" aria-hidden="true" />
@@ -165,8 +196,21 @@ export default function PerformancePage() {
 
       {hasData && (
         <>
-          {/* KPIs globales */}
+          {/* KPIs globales — el primero es el KPI destacado con color del semáforo */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className={`rounded-xl border-2 p-3 sm:p-4 ${HEALTH_COLORS[k.overall_health_status].border} ${HEALTH_COLORS[k.overall_health_status].bg}`}>
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2 bg-white/60 border ${HEALTH_COLORS[k.overall_health_status].border}`} aria-hidden="true">
+                <Eye className={`w-5 h-5 ${HEALTH_COLORS[k.overall_health_status].text}`} />
+              </div>
+              <p className={`text-xl sm:text-2xl font-bold ${HEALTH_COLORS[k.overall_health_status].text}`}>
+                {k.avg_views_per_day}
+              </p>
+              <p className="text-xs text-gray-600 mt-0.5">Visualizaciones/día ∅</p>
+              <div className="mt-1">
+                <HealthBadge status={k.overall_health_status} size="sm" withLabel />
+              </div>
+            </div>
+
             <KPICard
               icon={<FileBarChart className="w-5 h-5" />}
               label="Reportes publicados"
@@ -174,34 +218,32 @@ export default function PerformancePage() {
               color="pink"
             />
             <KPICard
-              icon={<Eye className="w-5 h-5" />}
-              label="Impresiones totales"
-              value={formatNumber(k.total_impressions)}
-              sublabel={`${k.avg_impressions_per_report} por aviso`}
-              color="orange"
-            />
-            <KPICard
               icon={<TrendingUp className="w-5 h-5" />}
-              label="Visitas al portal"
-              value={formatNumber(k.total_portal_visits)}
-              sublabel={`${k.avg_portal_visits_per_report} por aviso`}
+              label="Visitas al portal ∅"
+              value={String(k.avg_portal_visits_per_report)}
+              sublabel={`${formatNumber(k.total_portal_visits)} total`}
               color="blue"
             />
             <KPICard
               icon={<Handshake className="w-5 h-5" />}
-              label="Ofertas recibidas"
+              label="Ofertas"
               value={String(k.total_offers)}
               sublabel={`${k.avg_offers_per_report} por aviso`}
               color="green"
             />
           </div>
 
-          <div className="bg-white rounded-xl border p-3 sm:p-4 text-xs text-gray-500">
-            <span className="inline-flex items-center gap-1 mr-4">
+          <div className="bg-white rounded-xl border p-3 sm:p-4 text-xs text-gray-500 flex flex-wrap gap-x-4 gap-y-1">
+            <span className="inline-flex items-center gap-1">
               <Home className="w-3 h-3" aria-hidden="true" />
-              Visitas presenciales totales:{' '}
-              <strong className="text-gray-700">{k.total_in_person_visits}</strong>
-              <span className="text-gray-400">({k.avg_in_person_visits_per_report} por aviso)</span>
+              Visitas presenciales:{' '}
+              <strong className="text-gray-700">{k.avg_in_person_visits_per_week}</strong>/semana ∅
+              <span className="text-gray-400">({k.total_in_person_visits} total · {k.avg_in_person_visits_per_report} por aviso)</span>
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <Eye className="w-3 h-3" aria-hidden="true" />
+              Impresiones totales:{' '}
+              <strong className="text-gray-700">{formatNumber(k.total_impressions)}</strong>
             </span>
           </div>
 
@@ -220,10 +262,11 @@ export default function PerformancePage() {
                     <tr className="text-left text-xs font-medium text-gray-500 border-b border-gray-100">
                       <th className="pb-2 pr-4">Barrio</th>
                       <th className="pb-2 px-2 text-right">Reportes</th>
-                      <th className="pb-2 px-2 text-right">∅ Impresiones</th>
+                      <th className="pb-2 px-2 text-right">∅ Vis/día</th>
                       <th className="pb-2 px-2 text-right hidden sm:table-cell">∅ Visitas portal</th>
-                      <th className="pb-2 px-2 text-right hidden md:table-cell">∅ Vis. presenciales</th>
-                      <th className="pb-2 pl-2 text-right">Ofertas</th>
+                      <th className="pb-2 px-2 text-right hidden md:table-cell">∅ Vis. presenciales/sem</th>
+                      <th className="pb-2 px-2 text-right">Ofertas</th>
+                      <th className="pb-2 pl-2 text-center">Semáforo</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
@@ -231,10 +274,13 @@ export default function PerformancePage() {
                       <tr key={n.neighborhood} className="hover:bg-gray-50">
                         <td className="py-2 pr-4 font-medium text-gray-800">{n.neighborhood}</td>
                         <td className="py-2 px-2 text-right text-gray-700">{n.reports_count}</td>
-                        <td className="py-2 px-2 text-right text-gray-700">{n.avg_impressions}</td>
+                        <td className="py-2 px-2 text-right text-gray-700 font-semibold">{n.avg_views_per_day}</td>
                         <td className="py-2 px-2 text-right text-gray-700 hidden sm:table-cell">{n.avg_portal_visits}</td>
-                        <td className="py-2 px-2 text-right text-gray-700 hidden md:table-cell">{n.avg_in_person_visits}</td>
-                        <td className="py-2 pl-2 text-right font-semibold text-[#ff007c]">{n.total_offers}</td>
+                        <td className="py-2 px-2 text-right text-gray-700 hidden md:table-cell">{n.avg_in_person_visits_per_week}</td>
+                        <td className="py-2 px-2 text-right font-semibold text-[#ff007c]">{n.total_offers}</td>
+                        <td className="py-2 pl-2 text-center">
+                          <HealthBadge status={n.health_status} size="md" title={`${n.avg_views_per_day} vis/día`} />
+                        </td>
                       </tr>
                     ))}
                   </tbody>
