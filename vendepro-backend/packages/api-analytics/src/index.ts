@@ -1,6 +1,13 @@
 import { Hono } from 'hono'
 import { corsMiddleware, errorHandler, createAuthMiddleware, D1LeadRepository, D1PropertyRepository, D1ReservationRepository, D1CalendarRepository, D1AnalyticsReportRepository, JwtAuthService } from '@vendepro/infrastructure'
-import { GetDashboardStatsUseCase, GetListingsPerformanceUseCase, ListReportsWithMetricsUseCase, parseAnalyticsPeriod } from '@vendepro/core'
+import {
+  GetDashboardStatsUseCase,
+  GetListingsPerformanceUseCase,
+  ListReportsWithMetricsUseCase,
+  GetNeighborhoodComparisonUseCase,
+  GetActiveListingsWithBenchmarkUseCase,
+  parseAnalyticsPeriod,
+} from '@vendepro/core'
 
 type Env = { DB: D1Database; JWT_SECRET: string }
 type AuthVars = { Variables: { userId: string; userRole: string; orgId: string } }
@@ -241,9 +248,22 @@ app.get('/listings-performance', async (c) => {
   const source = c.req.query('source') ?? null
   const orgId = c.get('orgId')
 
-  const useCase = new GetListingsPerformanceUseCase(new D1AnalyticsReportRepository(c.env.DB))
-  const result = await useCase.execute({ orgId, period, source })
-  return c.json(result)
+  const repo = new D1AnalyticsReportRepository(c.env.DB)
+  const performance = new GetListingsPerformanceUseCase(repo)
+  const comparison = new GetNeighborhoodComparisonUseCase(repo)
+  const activeListings = new GetActiveListingsWithBenchmarkUseCase(repo)
+
+  const [baseResult, comparisonResult, activeListingsResult] = await Promise.all([
+    performance.execute({ orgId, period, source }),
+    comparison.execute(orgId),
+    activeListings.execute(orgId),
+  ])
+
+  return c.json({
+    ...baseResult,
+    comparison_by_neighborhood: comparisonResult,
+    active_listings: activeListingsResult,
+  })
 })
 
 // ── REPORTS LIST ──────────────────────────────────────────────

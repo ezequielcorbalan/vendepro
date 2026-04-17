@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   REPORT_HEALTH_BENCHMARKS,
   computeHealthStatus,
+  computeDeltaHealthStatus,
   daysBetweenISO,
 } from '../../../src/domain/rules/report-health-rules'
 
@@ -45,5 +46,19 @@ describe('REPORT_HEALTH_BENCHMARKS', () => {
   it('documents CABA and GBA minimums', () => {
     expect(REPORT_HEALTH_BENCHMARKS.caba.min_views_per_day).toBe(14)
     expect(REPORT_HEALTH_BENCHMARKS.gba.min_views_per_day).toBe(8)
+  })
+})
+
+describe('computeDeltaHealthStatus', () => {
+  it.each([
+    [null, 'light_green'],
+    [0, 'green'],
+    [-10, 'green'],
+    [-11, 'yellow'],
+    [-30, 'yellow'],
+    [-31, 'red'],
+    [10, 'green'],
+  ])('delta=%s → %s', (delta, expected) => {
+    expect(computeDeltaHealthStatus(delta as number | null)).toBe(expected)
   })
 })

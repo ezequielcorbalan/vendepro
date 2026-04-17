@@ -27,6 +27,15 @@ export function computeHealthStatus(viewsPerDay: number): HealthStatus {
   return 'green'
 }
 
+/** Semáforo del delta% (activas vs benchmark de vendidas del barrio).
+ *  null → light_green (neutral, sin benchmark). */
+export function computeDeltaHealthStatus(deltaPct: number | null): HealthStatus {
+  if (deltaPct === null) return 'light_green'
+  if (deltaPct >= -10) return 'green'
+  if (deltaPct >= -30) return 'yellow'
+  return 'red'
+}
+
 /** Días completos entre dos fechas ISO (YYYY-MM-DD). Mínimo 1 para evitar div/0. */
 export function daysBetweenISO(startISO: string, endISO: string): number {
   const start = new Date(startISO + 'T00:00:00Z').getTime()

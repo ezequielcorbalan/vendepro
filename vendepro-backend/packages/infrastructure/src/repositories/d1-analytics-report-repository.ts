@@ -1,6 +1,9 @@
 import type {
+  ActiveListingRaw,
   AnalyticsReportRepository,
+  NeighborhoodGroupTotals,
   NeighborhoodPerformanceRow,
+  NeighborhoodSoldBenchmark,
   PaginatedReports,
   PerformanceTotals,
   ReportsListFilters,
@@ -248,5 +251,163 @@ export class D1AnalyticsReportRepository implements AnalyticsReportRepository {
     }))
 
     return { total, results }
+  }
+
+  async getNeighborhoodTotalsByPropertyStatus(
+    orgId: string,
+    propertyStatus: 'sold' | 'active',
+  ): Promise<NeighborhoodGroupTotals[]> {
+    const [metricsRes, daysRes] = await Promise.all([
+      this.db.prepare(`
+        SELECT
+          p.neighborhood AS neighborhood,
+          COUNT(DISTINCT p.id) AS property_count,
+          COUNT(DISTINCT r.id) AS reports_count,
+          COALESCE(SUM(rm.portal_visits), 0) AS total_portal_visits,
+          COALESCE(SUM(rm.in_person_visits), 0) AS total_in_person_visits,
+          COALESCE(SUM(rm.inquiries), 0) AS total_inquiries
+        FROM reports r
+        JOIN properties p ON p.id = r.property_id
+        LEFT JOIN report_metrics rm ON rm.report_id = r.id
+        WHERE p.org_id = ?
+          AND p.status = ?
+          AND r.status = 'published'
+        GROUP BY p.neighborhood
+      `).bind(orgId, propertyStatus).all(),
+      this.db.prepare(`
+        SELECT
+          p.neighborhood AS neighborhood,
+          COALESCE(SUM(julianday(rd.period_end) - julianday(rd.period_start)), 0) AS total_period_days
+        FROM (
+          SELECT DISTINCT r.id, r.period_start, r.period_end, r.property_id
+          FROM reports r
+          JOIN properties p ON p.id = r.property_id
+          WHERE p.org_id = ?
+            AND p.status = ?
+            AND r.status = 'published'
+        ) rd
+        JOIN properties p ON p.id = rd.property_id
+        GROUP BY p.neighborhood
+      `).bind(orgId, propertyStatus).all(),
+    ])
+
+    const daysMap = new Map<string, number>()
+    for (const row of (daysRes.results as any[]) ?? []) {
+      daysMap.set(String(row.neighborhood ?? 'Sin barrio'), Math.max(1, Math.round(Number(row.total_period_days ?? 0))))
+    }
+
+    return ((metricsRes.results as any[]) ?? []).map(r => ({
+      neighborhood: String(r.neighborhood ?? 'Sin barrio'),
+      property_count: Number(r.property_count ?? 0),
+      reports_count: Number(r.reports_count ?? 0),
+      total_portal_visits: Number(r.total_portal_visits ?? 0),
+      total_in_person_visits: Number(r.total_in_person_visits ?? 0),
+      total_inquiries: Number(r.total_inquiries ?? 0),
+      total_days: daysMap.get(String(r.neighborhood ?? 'Sin barrio')) ?? 1,
+    }))
+  }
+
+  async getSoldBenchmarkByNeighborhood(orgId: string): Promise<NeighborhoodSoldBenchmark[]> {
+    const res = await this.db.prepare(`
+      SELECT
+        p.neighborhood AS neighborhood,
+        COALESCE(SUM(rm.portal_visits), 0) AS total_portal_visits,
+        COALESCE(SUM(julianday(rd.period_end) - julianday(rd.period_start)), 0) AS total_days
+      FROM (
+        SELECT DISTINCT r.id, r.period_start, r.period_end, r.property_id
+        FROM reports r
+        JOIN properties p ON p.id = r.property_id
+        WHERE p.org_id = ?
+          AND p.status = 'sold'
+          AND r.status = 'published'
+      ) rd
+      JOIN properties p ON p.id = rd.property_id
+      LEFT JOIN report_metrics rm ON rm.report_id = rd.id
+      GROUP BY p.neighborhood
+    `).bind(orgId).all()
+
+    return ((res.results as any[]) ?? []).map(r => ({
+      neighborhood: String(r.neighborhood ?? 'Sin barrio'),
+      total_portal_visits: Number(r.total_portal_visits ?? 0),
+      total_days: Math.max(1, Math.round(Number(r.total_days ?? 0))),
+    }))
+  }
+
+  async getActiveListingsWithAggregates(orgId: string): Promise<ActiveListingRaw[]> {
+    const [metricsRes, daysRes, latestRes] = await Promise.all([
+      this.db.prepare(`
+        SELECT
+          p.id AS property_id,
+          p.address AS address,
+          p.neighborhood AS neighborhood,
+          COUNT(DISTINCT r.id) AS reports_count,
+          COALESCE(SUM(rm.portal_visits), 0) AS total_portal_visits,
+          COALESCE(SUM(rm.in_person_visits), 0) AS total_in_person_visits
+        FROM properties p
+        LEFT JOIN reports r ON r.property_id = p.id AND r.status = 'published'
+        LEFT JOIN report_metrics rm ON rm.report_id = r.id
+        WHERE p.org_id = ?
+          AND p.status = 'active'
+        GROUP BY p.id
+      `).bind(orgId).all(),
+      this.db.prepare(`
+        SELECT
+          p.id AS property_id,
+          COALESCE(SUM(julianday(rd.period_end) - julianday(rd.period_start)), 0) AS total_period_days
+        FROM properties p
+        JOIN (
+          SELECT DISTINCT r.id, r.period_start, r.period_end, r.property_id
+          FROM reports r
+          JOIN properties p ON p.id = r.property_id
+          WHERE p.org_id = ?
+            AND p.status = 'active'
+            AND r.status = 'published'
+        ) rd ON rd.property_id = p.id
+        GROUP BY p.id
+      `).bind(orgId).all(),
+      this.db.prepare(`
+        SELECT
+          r.property_id AS property_id,
+          MAX(r.published_at) AS latest_published_at,
+          (SELECT r2.period_label FROM reports r2
+             WHERE r2.property_id = r.property_id AND r2.status = 'published'
+             ORDER BY r2.published_at DESC LIMIT 1) AS latest_period_label
+        FROM reports r
+        JOIN properties p ON p.id = r.property_id
+        WHERE p.org_id = ?
+          AND p.status = 'active'
+          AND r.status = 'published'
+        GROUP BY r.property_id
+      `).bind(orgId).all(),
+    ])
+
+    const daysByProperty = new Map<string, number>()
+    for (const row of (daysRes.results as any[]) ?? []) {
+      daysByProperty.set(String(row.property_id), Math.max(1, Math.round(Number(row.total_period_days ?? 0))))
+    }
+
+    const latestByProperty = new Map<string, { published_at: string | null; period_label: string | null }>()
+    for (const row of (latestRes.results as any[]) ?? []) {
+      latestByProperty.set(String(row.property_id), {
+        published_at: row.latest_published_at ? String(row.latest_published_at) : null,
+        period_label: row.latest_period_label ? String(row.latest_period_label) : null,
+      })
+    }
+
+    return ((metricsRes.results as any[]) ?? []).map(r => {
+      const propId = String(r.property_id)
+      const latest = latestByProperty.get(propId) ?? { published_at: null, period_label: null }
+      return {
+        property_id: propId,
+        address: String(r.address ?? ''),
+        neighborhood: String(r.neighborhood ?? 'Sin barrio'),
+        reports_count: Number(r.reports_count ?? 0),
+        total_portal_visits: Number(r.total_portal_visits ?? 0),
+        total_in_person_visits: Number(r.total_in_person_visits ?? 0),
+        total_days: daysByProperty.get(propId) ?? 1,
+        latest_report_published_at: latest.published_at,
+        latest_report_period_label: latest.period_label,
+      }
+    })
   }
 }
