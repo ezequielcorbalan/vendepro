@@ -96,7 +96,7 @@ export default function MisObjetivosPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div>
       <Link href="/perfil" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 mb-4">
         <ArrowLeft className="w-4 h-4" /> Volver a mi perfil
       </Link>

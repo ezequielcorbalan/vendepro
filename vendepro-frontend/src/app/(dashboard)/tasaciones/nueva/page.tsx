@@ -107,7 +107,7 @@ export default function NuevaTasacionPage() {
   const inputClass = 'border rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-[#ff007c]/50 focus:border-[#ff007c]'
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center gap-3">
         <Link href="/tasaciones" className="flex items-center gap-2 text-gray-500 hover:text-gray-700 text-sm">
           <ArrowLeft className="w-4 h-4" /> Tasaciones

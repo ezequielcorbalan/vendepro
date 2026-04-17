@@ -48,7 +48,7 @@ export default function NuevoAgentePage() {
   const inputClass = 'w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50 focus:border-[#ff007c]'
 
   return (
-    <div className="max-w-lg">
+    <div>
       <Link href="/admin/agentes" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 mb-6">
         <ArrowLeft className="w-4 h-4" /> Volver
       </Link>

@@ -182,7 +182,7 @@ export default function ObjetivosConfigPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 flex items-center gap-2">

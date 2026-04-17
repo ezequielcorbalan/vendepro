@@ -327,7 +327,7 @@ export default function NuevoReporte() {
   }
 
   return (
-    <div className="max-w-3xl">
+    <div>
       <Link
         href={`/propiedades/${propertyId}`}
         className="inline-flex items-center gap-2 text-sm text-brand-gray hover:text-gray-800 mb-6"

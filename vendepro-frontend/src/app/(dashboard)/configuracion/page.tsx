@@ -123,7 +123,7 @@ export default function ConfiguracionPage() {
   ]
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="space-y-6">
       <div>
         <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 flex items-center gap-2">
           <Settings className="w-6 h-6 text-[#ff007c]" /> Configuración

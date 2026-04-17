@@ -120,7 +120,7 @@ export default function TasacionDetailPage() {
       )}
 
       {/* Preview pages */}
-      <div className="space-y-4 max-w-3xl mx-auto">
+      <div className="space-y-4">
 
         {/* PAGE 1: Cover */}
         <div className="bg-gradient-to-br from-[#ff007c] via-[#ff3d94] to-[#ff8017] rounded-2xl p-6 sm:p-10 text-white shadow-lg aspect-[794/1123] flex flex-col justify-between relative overflow-hidden">

@@ -259,7 +259,7 @@ export default function EditarTasacionPage() {
   const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div>
       <div className="flex items-center gap-3 mb-6">
         <Link href={`/tasaciones/${id}`} className="p-2 rounded-lg hover:bg-gray-100">
           <ArrowLeft className="w-5 h-5 text-gray-500" />

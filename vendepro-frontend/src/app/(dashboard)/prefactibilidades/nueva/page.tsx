@@ -133,7 +133,7 @@ export default function NuevaPrefactibilidadPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div>
       <Link href="/tasaciones" className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-gray-600 mb-4">
         <ArrowLeft className="w-4 h-4" /> Volver
       </Link>

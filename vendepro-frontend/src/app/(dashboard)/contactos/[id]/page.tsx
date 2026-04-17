@@ -52,7 +52,7 @@ export default function ContactDetailPage() {
   )
 
   if (error || !contact) return (
-    <div className="max-w-3xl">
+    <div>
       <Link href="/contactos" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 mb-6">
         <ArrowLeft className="w-4 h-4" /> Volver a contactos
       </Link>
@@ -68,7 +68,7 @@ export default function ContactDetailPage() {
   }
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="space-y-6">
       <Link href="/contactos" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800">
         <ArrowLeft className="w-4 h-4" /> Volver a contactos
       </Link>

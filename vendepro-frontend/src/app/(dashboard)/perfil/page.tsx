@@ -68,7 +68,7 @@ export default function PerfilPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="space-y-6">
       <div>
         <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Mi Perfil</h1>
         <p className="text-gray-500 text-sm mt-1">Información personal y configuración de seguridad</p>

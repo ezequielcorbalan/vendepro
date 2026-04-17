@@ -197,7 +197,7 @@ export default function LeadDetailPage() {
   const stage = LEAD_STAGES[lead.stage as LeadStage] || LEAD_STAGES.nuevo
 
   return (
-    <div className="max-w-5xl space-y-4">
+    <div className="space-y-4">
       {/* Top bar */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <Link href="/leads" className="flex items-center gap-1.5 text-gray-500 hover:text-gray-700 text-sm font-medium">

@@ -203,14 +203,14 @@ export default function NuevaPropiedadPage() {
 
   if (initializing) {
     return (
-      <div className="max-w-2xl flex items-center justify-center py-16">
+      <div className="flex items-center justify-center py-16">
         <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
       </div>
     )
   }
 
   return (
-    <div className="max-w-2xl">
+    <div>
       <Link href="/propiedades" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 mb-6">
         <ArrowLeft className="w-4 h-4" /> Volver a propiedades
       </Link>
