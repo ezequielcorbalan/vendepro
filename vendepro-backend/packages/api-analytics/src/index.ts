@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
-import { corsMiddleware, errorHandler, createAuthMiddleware, D1LeadRepository, D1PropertyRepository, D1ReservationRepository, D1CalendarRepository, JwtAuthService } from '@vendepro/infrastructure'
-import { GetDashboardStatsUseCase } from '@vendepro/core'
+import { corsMiddleware, errorHandler, createAuthMiddleware, D1LeadRepository, D1PropertyRepository, D1ReservationRepository, D1CalendarRepository, D1AnalyticsReportRepository, JwtAuthService } from '@vendepro/infrastructure'
+import { GetDashboardStatsUseCase, GetListingsPerformanceUseCase, ListReportsWithMetricsUseCase, parseAnalyticsPeriod } from '@vendepro/core'
 
 type Env = { DB: D1Database; JWT_SECRET: string }
 type AuthVars = { Variables: { userId: string; userRole: string; orgId: string } }
@@ -230,6 +230,48 @@ app.get('/export', async (c) => {
   }
 
   return c.json({ error: 'Unknown export type' }, 400)
+})
+
+// ── LISTINGS PERFORMANCE ──────────────────────────────────────
+// KPIs agregados, ranking por barrio y timeline mensual sobre los
+// reportes publicados de la org.
+
+app.get('/listings-performance', async (c) => {
+  const period = parseAnalyticsPeriod(c.req.query('period'))
+  const source = c.req.query('source') ?? null
+  const orgId = c.get('orgId')
+
+  const useCase = new GetListingsPerformanceUseCase(new D1AnalyticsReportRepository(c.env.DB))
+  const result = await useCase.execute({ orgId, period, source })
+  return c.json(result)
+})
+
+// ── REPORTS LIST ──────────────────────────────────────────────
+// Listado paginado con métricas agregadas.
+
+app.get('/reports', async (c) => {
+  const orgId = c.get('orgId')
+
+  const page = parseInt(c.req.query('page') ?? '1', 10) || 1
+  const pageSize = parseInt(c.req.query('page_size') ?? '20', 10) || 20
+
+  const useCase = new ListReportsWithMetricsUseCase(new D1AnalyticsReportRepository(c.env.DB))
+  const data = await useCase.execute(orgId, {
+    page,
+    page_size: pageSize,
+    neighborhood: c.req.query('neighborhood') ?? null,
+    status: c.req.query('status') ?? null,
+    property_id: c.req.query('property_id') ?? null,
+    from: c.req.query('from') ?? null,
+    to: c.req.query('to') ?? null,
+  })
+
+  return c.json({
+    page,
+    page_size: pageSize,
+    total: data.total,
+    results: data.results,
+  })
 })
 
 export default app

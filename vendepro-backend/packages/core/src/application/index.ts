@@ -43,3 +43,7 @@ export * from './use-cases/admin/update-agent-role'
 
 // Dashboard
 export * from './use-cases/dashboard/get-dashboard-stats'
+
+// Analytics
+export * from './use-cases/analytics/get-listings-performance'
+export * from './use-cases/analytics/list-reports-with-metrics'
