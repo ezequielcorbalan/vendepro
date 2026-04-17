@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import {
   Plus, Search, Phone, MessageCircle, Filter, X, LayoutList, Columns3,
   AlertTriangle, Clock, User, MapPin, DollarSign, ArrowRight, ChevronDown, Download, Sparkles, Trash2, GripVertical,
-  ChevronRight, Check
+  ChevronRight, Check, Tag, Loader2
 } from 'lucide-react'
 import {
   LEAD_STAGES, LEAD_STAGE_KEYS, LEAD_PIPELINE_STAGES, LEAD_SOURCES,
@@ -462,7 +462,7 @@ export default function LeadsPage() {
                 Crear primer lead
               </button>
             </div>
-          ) : filtered.map(lead => <LeadCard key={lead.id} lead={lead} onAdvance={() => advanceStage(lead)} onLost={() => markLost(lead.id)} onDelete={() => deleteLead(lead.id, lead.full_name)} />)}
+          ) : filtered.map(lead => <LeadCard key={lead.id} lead={lead} onAdvance={() => advanceStage(lead)} onLost={() => markLost(lead.id)} onDelete={() => deleteLead(lead.id, lead.full_name)} onRefresh={loadLeads} />)}
         </div>
       ) : (
         <DndContext sensors={sensors} onDragStart={e => setActiveDragId(e.active.id as string)} onDragEnd={handleDragEnd} onDragCancel={() => setActiveDragId(null)}>
@@ -729,7 +729,7 @@ function urgencyText(lead: any): { text: string; cls: string } | null {
 }
 
 // ── LeadCard (List view) ──
-function LeadCard({ lead, onAdvance, onLost, onDelete }: { lead: any; onAdvance: () => void; onLost: () => void; onDelete: () => void }) {
+function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any; onAdvance: () => void; onLost: () => void; onDelete: () => void; onRefresh: () => void }) {
   const stage = LEAD_STAGES[lead.stage as LeadStage] || LEAD_STAGES.nuevo
   const urgency = getLeadUrgency(lead)
   const checklist = getLeadChecklist(lead)
@@ -741,8 +741,65 @@ function LeadCard({ lead, onAdvance, onLost, onDelete }: { lead: any; onAdvance:
   const borderColor = STAGE_BORDER[lead.stage] || 'border-l-gray-300'
   const outerBorder = urgency === 'danger' ? 'border-red-200' : urgency === 'warning' ? 'border-yellow-200' : 'border-gray-200'
 
+  const [showTagPicker, setShowTagPicker] = useState(false)
+  const [orgTags, setOrgTags] = useState<any[]>([])
+  const [tagsLoading, setTagsLoading] = useState(false)
+
+  const openTagPicker = async (e: React.MouseEvent) => {
+    e.preventDefault(); e.stopPropagation()
+    if (orgTags.length === 0 && !tagsLoading) {
+      setTagsLoading(true)
+      try {
+        const data = (await (await apiFetch('crm', '/tags')).json()) as any
+        setOrgTags(Array.isArray(data) ? data : [])
+      } catch {}
+      setTagsLoading(false)
+    }
+    setShowTagPicker(v => !v)
+  }
+
+  const addTag = async (tagId: string) => {
+    try {
+      await apiFetch('crm', '/lead-tags', { method: 'POST', body: JSON.stringify({ lead_id: lead.id, tag_id: tagId }) })
+      setShowTagPicker(false); onRefresh()
+    } catch {}
+  }
+
+  const removeTag = async (tagId: string, e: React.MouseEvent) => {
+    e.preventDefault(); e.stopPropagation()
+    try {
+      await apiFetch('crm', `/lead-tags?lead_id=${lead.id}&tag_id=${tagId}`, { method: 'DELETE' })
+      onRefresh()
+    } catch {}
+  }
+
+  const availableTags = orgTags.filter(t => !lead.tags?.some((lt: any) => lt.id === t.id))
+
   return (
-    <div className={`bg-white border ${outerBorder} border-l-4 ${borderColor} rounded-xl overflow-hidden flex flex-col transition-shadow hover:shadow-md`}>
+    <div className={`relative bg-white border ${outerBorder} border-l-4 ${borderColor} rounded-xl overflow-hidden flex flex-col transition-shadow hover:shadow-md`}>
+      {/* Tag picker dropdown */}
+      {showTagPicker && (
+        <>
+          <div className="fixed inset-0 z-[9]" onClick={() => setShowTagPicker(false)} />
+          <div className="absolute bottom-12 sm:bottom-10 left-2 right-2 z-10 bg-white border border-gray-200 rounded-xl shadow-xl p-2">
+            {tagsLoading ? (
+              <div className="flex items-center gap-2 px-2 py-2 text-xs text-gray-400">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Cargando...
+              </div>
+            ) : availableTags.length === 0 ? (
+              <p className="text-xs text-gray-400 px-2 py-2">No hay más etiquetas disponibles</p>
+            ) : (
+              availableTags.map(tag => (
+                <button key={tag.id} onClick={() => addTag(tag.id)}
+                  className="w-full text-left flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-gray-50 text-sm text-gray-700">
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: tag.color }} />
+                  {tag.name}
+                </button>
+              ))
+            )}
+          </div>
+        </>
+      )}
       {/* Card body: en mobile es row (contenido + acciones icono), en desktop es solo contenido */}
       <div className="flex flex-1 min-w-0">
         {/* Main content — clickable */}
@@ -757,7 +814,12 @@ function LeadCard({ lead, onAdvance, onLost, onDelete }: { lead: any; onAdvance:
                 <span className="font-semibold text-sm text-gray-900 truncate">{lead.full_name}</span>
                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0 ${stage.color}`}>{stage.label}</span>
                 {lead.tags?.map((tag: any) => (
-                  <span key={tag.id} className="text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 text-white" style={{ background: tag.color }}>{tag.name}</span>
+                  <button key={tag.id} onClick={(e) => removeTag(tag.id, e)}
+                    className="group inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0 bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">
+                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: tag.color }} />
+                    {tag.name}
+                    <X className="w-2 h-2 opacity-0 group-hover:opacity-60 transition-opacity" />
+                  </button>
                 ))}
                 {hasAppraisal && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium shrink-0">Tasación ✓</span>}
               </div>
@@ -817,6 +879,9 @@ function LeadCard({ lead, onAdvance, onLost, onDelete }: { lead: any; onAdvance:
               <ArrowRight className="w-5 h-5" />
             </button>
           )}
+          <button onClick={openTagPicker} className="flex-1 w-12 flex items-center justify-center text-gray-400 hover:bg-gray-50 border-t border-gray-100 transition-colors">
+            <Tag className="w-4 h-4" />
+          </button>
           <button onClick={onDelete} className="flex-1 w-12 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 border-t border-gray-100 transition-colors">
             <Trash2 className="w-4 h-4" />
           </button>
@@ -843,6 +908,9 @@ function LeadCard({ lead, onAdvance, onLost, onDelete }: { lead: any; onAdvance:
             <ArrowRight className="w-3.5 h-3.5" /> Avanzar
           </button>
         )}
+        <button onClick={openTagPicker} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-gray-500 hover:bg-gray-50 transition-colors">
+          <Tag className="w-3.5 h-3.5" /> Etiquetar
+        </button>
         <button onClick={onDelete} className="px-4 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors">
           <Trash2 className="w-3.5 h-3.5" />
         </button>
