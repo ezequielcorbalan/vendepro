@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { AdvanceReservationStageUseCase } from '../../../src/application/use-cases/reservations/advance-reservation-stage'
+import { AdvanceReservationStageUseCase } from '../../../src/application/use-cases/transactions/advance-reservation-stage'
 import { Reservation } from '../../../src/domain/entities/reservation'
 import { NotFoundError } from '../../../src/domain/errors/not-found'
 import { ValidationError } from '../../../src/domain/errors/validation-error'

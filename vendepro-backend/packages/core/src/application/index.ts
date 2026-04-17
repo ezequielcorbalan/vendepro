@@ -30,10 +30,10 @@ export * from './use-cases/calendar/create-calendar-event'
 export * from './use-cases/calendar/toggle-event-complete'
 export * from './use-cases/calendar/reschedule-event'
 
-// Reservations
-export * from './use-cases/reservations/get-reservations'
-export * from './use-cases/reservations/create-reservation'
-export * from './use-cases/reservations/advance-reservation-stage'
+// Transactions
+export * from './use-cases/transactions/get-reservations'
+export * from './use-cases/transactions/create-reservation'
+export * from './use-cases/transactions/advance-reservation-stage'
 
 // Admin
 export * from './use-cases/admin/create-agent'
