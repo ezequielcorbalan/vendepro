@@ -1,5 +1,6 @@
 import { Report } from '@vendepro/core'
-import type { ReportRepository } from '@vendepro/core'
+import type { ReportRepository, NewReportMetric, NewReportContent } from '@vendepro/core'
+import type { ReportMetricProps, ReportContentProps } from '@vendepro/core'
 
 /**
  * D1 adapter for `reports` plus children (`report_metrics`, `report_content`,
@@ -77,6 +78,23 @@ export class D1ReportRepository implements ReportRepository {
       .run()
   }
 
+  async findByOrg(orgId: string, propertyId?: string): Promise<Report[]> {
+    let query: string
+    let result: any
+    if (propertyId) {
+      result = await this.db
+        .prepare('SELECT * FROM reports WHERE property_id = ? AND org_id = ? ORDER BY created_at DESC')
+        .bind(propertyId, orgId)
+        .all()
+    } else {
+      result = await this.db
+        .prepare('SELECT r.*, p.address FROM reports r LEFT JOIN properties p ON r.property_id = p.id WHERE r.org_id = ? ORDER BY r.created_at DESC')
+        .bind(orgId)
+        .all()
+    }
+    return ((result.results as any[]) || []).map((r) => this.toEntity(r))
+  }
+
   async delete(id: string, orgId: string): Promise<void> {
     // Explicit cascade — also guarded by FK ON DELETE CASCADE, but doing it
     // here makes the behavior portable if FKs are ever disabled.
@@ -99,6 +117,108 @@ export class D1ReportRepository implements ReportRepository {
       .bind(id, orgId)
       .run()
     await this.db.prepare('DELETE FROM reports WHERE id = ? AND org_id = ?').bind(id, orgId).run()
+  }
+
+  async findMetrics(reportId: string): Promise<ReportMetricProps[]> {
+    const rows = ((await this.db
+      .prepare('SELECT * FROM report_metrics WHERE report_id = ?')
+      .bind(reportId)
+      .all()).results as any[]) || []
+    return rows.map((r) => ({
+      id: r.id,
+      report_id: r.report_id,
+      source: r.source,
+      impressions: r.impressions ?? null,
+      portal_visits: r.portal_visits ?? null,
+      inquiries: r.inquiries ?? null,
+      phone_calls: r.phone_calls ?? null,
+      whatsapp: r.whatsapp ?? null,
+      in_person_visits: r.in_person_visits ?? null,
+      offers: r.offers ?? null,
+      ranking_position: r.ranking_position ?? null,
+      avg_market_price: r.avg_market_price ?? null,
+      screenshot_url: r.screenshot_url ?? null,
+      extracted_at: r.extracted_at ?? null,
+    }))
+  }
+
+  async findContent(reportId: string): Promise<ReportContentProps[]> {
+    const rows = ((await this.db
+      .prepare('SELECT * FROM report_content WHERE report_id = ?')
+      .bind(reportId)
+      .all()).results as any[]) || []
+    return rows.map((r) => ({
+      id: r.id,
+      report_id: r.report_id,
+      section: r.section,
+      title: r.title ?? '',
+      body: r.body ?? '',
+      sort_order: r.sort_order ?? 0,
+    }))
+  }
+
+  async replaceMetrics(reportId: string, metrics: NewReportMetric[]): Promise<void> {
+    await this.db.prepare('DELETE FROM report_metrics WHERE report_id = ?').bind(reportId).run()
+    for (const m of metrics) {
+      await this.db
+        .prepare(
+          `INSERT INTO report_metrics (id, report_id, source, impressions, portal_visits, inquiries, phone_calls, whatsapp, in_person_visits, offers, ranking_position, avg_market_price)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        )
+        .bind(
+          m.id, m.report_id, m.source,
+          m.impressions ?? null, m.portal_visits ?? null, m.inquiries ?? null,
+          m.phone_calls ?? null, m.whatsapp ?? null, m.in_person_visits ?? null,
+          m.offers ?? null, m.ranking_position ?? null, m.avg_market_price ?? null,
+        )
+        .run()
+    }
+  }
+
+  async replaceContent(reportId: string, content: NewReportContent[]): Promise<void> {
+    await this.db.prepare('DELETE FROM report_content WHERE report_id = ?').bind(reportId).run()
+    for (const c of content) {
+      if (c.body) {
+        await this.db
+          .prepare(
+            `INSERT INTO report_content (id, report_id, section, title, body, sort_order) VALUES (?, ?, ?, ?, ?, 0)`,
+          )
+          .bind(c.id, c.report_id, c.section, c.title ?? '', c.body)
+          .run()
+      }
+    }
+  }
+
+  async findReportRaw(id: string): Promise<Record<string, unknown> | null> {
+    const row = await this.db.prepare('SELECT * FROM reports WHERE id = ?').bind(id).first() as any
+    return row ?? null
+  }
+
+  async deleteCompetitorLinks(propertyId: string): Promise<void> {
+    await this.db.prepare('DELETE FROM competitor_links WHERE property_id = ?').bind(propertyId).run()
+  }
+
+  async addCompetitorLink(link: { id: string; property_id: string; url: string; address: string | null; price: number | null; notes: string | null }): Promise<void> {
+    await this.db
+      .prepare('INSERT INTO competitor_links (id, property_id, url, address, price, notes) VALUES (?, ?, ?, ?, ?, ?)')
+      .bind(link.id, link.property_id, link.url, link.address ?? null, link.price ?? null, link.notes ?? null)
+      .run()
+  }
+
+  async findCompetitorLinks(propertyId: string): Promise<Record<string, unknown>[]> {
+    const rows = ((await this.db
+      .prepare('SELECT * FROM competitor_links WHERE property_id = ?')
+      .bind(propertyId)
+      .all()).results as any[]) || []
+    return rows
+  }
+
+  async findPhotosByReport(reportId: string): Promise<Array<{ id: string; photo_url: string; r2_key?: string }>> {
+    const rows = ((await this.db
+      .prepare('SELECT * FROM report_photos WHERE report_id = ?')
+      .bind(reportId)
+      .all()).results as any[]) || []
+    return rows.map((r) => ({ id: r.id, photo_url: r.photo_url, r2_key: r.r2_key ?? undefined }))
   }
 
   private toEntity(row: any): Report {

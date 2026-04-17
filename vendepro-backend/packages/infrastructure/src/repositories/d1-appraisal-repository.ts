@@ -1,5 +1,5 @@
 import { Appraisal } from '@vendepro/core'
-import type { AppraisalRepository, AppraisalFilters, AppraisalComparableProps, AppraisalPublicResult } from '@vendepro/core'
+import type { AppraisalRepository, AppraisalFilters, AppraisalComparableProps, AppraisalPublicResult, NewAppraisalComparable } from '@vendepro/core'
 
 export class D1AppraisalRepository implements AppraisalRepository {
   constructor(private readonly db: D1Database) {}
@@ -164,6 +164,82 @@ export class D1AppraisalRepository implements AppraisalRepository {
       .bind(orgId, agentId)
       .first() as any
     return row?.cnt ?? 0
+  }
+
+  async findComparables(appraisalId: string): Promise<AppraisalComparableProps[]> {
+    return this.loadComparables(appraisalId)
+  }
+
+  async addComparable(comparable: NewAppraisalComparable): Promise<void> {
+    await this.db
+      .prepare(
+        `INSERT INTO appraisal_comparables (id, appraisal_id, zonaprop_url, address, total_area, covered_area, price, usd_per_m2, sort_order)
+         VALUES (?,?,?,?,?,?,?,?,?)`,
+      )
+      .bind(
+        comparable.id, comparable.appraisal_id,
+        comparable.zonaprop_url ?? null, comparable.address ?? null,
+        comparable.total_area ?? null, comparable.covered_area ?? null,
+        comparable.price ?? null, comparable.usd_per_m2 ?? null,
+        comparable.sort_order ?? 0,
+      )
+      .run()
+  }
+
+  async removeComparable(comparableId: string): Promise<void> {
+    await this.db
+      .prepare('DELETE FROM appraisal_comparables WHERE id = ?')
+      .bind(comparableId)
+      .run()
+  }
+
+  async update(id: string, orgId: string, patch: Record<string, unknown>): Promise<void> {
+    const now = new Date().toISOString()
+    await this.db
+      .prepare(`
+        UPDATE appraisals SET
+          property_address=COALESCE(?,property_address),
+          neighborhood=COALESCE(?,neighborhood),
+          city=COALESCE(?,city),
+          property_type=COALESCE(?,property_type),
+          covered_area=?,
+          total_area=?,
+          semi_area=?,
+          weighted_area=?,
+          strengths=?,
+          weaknesses=?,
+          opportunities=?,
+          threats=?,
+          publication_analysis=?,
+          suggested_price=?,
+          test_price=?,
+          expected_close_price=?,
+          usd_per_m2=?,
+          contact_name=?,
+          contact_phone=?,
+          contact_email=?,
+          property_id=COALESCE(?,property_id),
+          lead_id=COALESCE(?,lead_id),
+          status=COALESCE(?,status),
+          updated_at=?
+        WHERE id = ? AND org_id = ?
+      `)
+      .bind(
+        patch.property_address ?? null, patch.neighborhood ?? null,
+        patch.city ?? null, patch.property_type ?? null,
+        patch.covered_area ?? null, patch.total_area ?? null,
+        patch.semi_area ?? null, patch.weighted_area ?? null,
+        patch.strengths ?? null, patch.weaknesses ?? null,
+        patch.opportunities ?? null, patch.threats ?? null,
+        patch.publication_analysis ?? null,
+        patch.suggested_price ?? null, patch.test_price ?? null,
+        patch.expected_close_price ?? null, patch.usd_per_m2 ?? null,
+        patch.contact_name ?? null, patch.contact_phone ?? null, patch.contact_email ?? null,
+        patch.property_id ?? null, patch.lead_id ?? null,
+        patch.status ?? null, now,
+        id, orgId,
+      )
+      .run()
   }
 
   private async loadComparables(appraisalId: string): Promise<AppraisalComparableProps[]> {

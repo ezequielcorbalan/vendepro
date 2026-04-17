@@ -1,4 +1,4 @@
-import type { Appraisal } from '../../../domain/entities/appraisal'
+import type { Appraisal, AppraisalComparableProps } from '../../../domain/entities/appraisal'
 
 export interface AppraisalFilters {
   stage?: string
@@ -8,6 +8,18 @@ export interface AppraisalFilters {
 export interface AppraisalPublicResult {
   appraisal: Appraisal
   org: { name: string; logo_url: string | null; brand_color: string | null }
+}
+
+export interface NewAppraisalComparable {
+  id: string
+  appraisal_id: string
+  zonaprop_url: string | null
+  address: string | null
+  total_area: number | null
+  covered_area: number | null
+  price: number | null
+  usd_per_m2: number | null
+  sort_order: number
 }
 
 export interface AppraisalRepository {
@@ -26,4 +38,8 @@ export interface AppraisalRepository {
    */
   countByOrgAndStage(orgId: string, stage: string): Promise<number>
   countByAgent(orgId: string, agentId: string): Promise<number>
+  findComparables(appraisalId: string): Promise<AppraisalComparableProps[]>
+  addComparable(comparable: NewAppraisalComparable): Promise<void>
+  removeComparable(comparableId: string): Promise<void>
+  update(id: string, orgId: string, patch: Record<string, unknown>): Promise<void>
 }

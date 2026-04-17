@@ -64,6 +64,7 @@ export interface PropertyRepository {
   save(property: Property): Promise<void>
   delete(id: string, orgId: string): Promise<void>
   findPhotos(propertyId: string, orgId: string): Promise<PropertyPhoto[]>
+  findPhotoById(photoId: string, orgId: string): Promise<PropertyPhoto | null>
   addPhoto(photo: PropertyPhoto): Promise<void>
   deletePhoto(photoId: string, orgId: string): Promise<void>
   reorderPhotos(propertyId: string, orgId: string, order: Array<{ id: string; sort_order: number }>): Promise<void>

@@ -28,6 +28,36 @@ export * from './use-cases/properties/get-properties'
 export * from './use-cases/properties/create-property'
 export * from './use-cases/properties/update-property-price'
 export * from './use-cases/properties/update-property-status'
+export * from './use-cases/properties/get-property-catalogs'
+export * from './use-cases/properties/get-property-detail'
+export * from './use-cases/properties/update-property'
+export * from './use-cases/properties/update-property-stage'
+export * from './use-cases/properties/mark-external-report'
+export * from './use-cases/properties/delete-property'
+export * from './use-cases/properties/upload-property-photo'
+export * from './use-cases/properties/reorder-property-photos'
+export * from './use-cases/properties/delete-property-photo'
+
+// Appraisals
+export * from './use-cases/appraisals/get-appraisals'
+export * from './use-cases/appraisals/get-appraisal-detail'
+export * from './use-cases/appraisals/create-appraisal'
+export * from './use-cases/appraisals/update-appraisal'
+export * from './use-cases/appraisals/delete-appraisal'
+export * from './use-cases/appraisals/add-appraisal-comparable'
+export * from './use-cases/appraisals/remove-appraisal-comparable'
+
+// Prefactibilidades
+export * from './use-cases/prefactibilidades/get-prefactibilidades'
+export * from './use-cases/prefactibilidades/get-prefactibilidad-detail'
+export * from './use-cases/prefactibilidades/create-prefactibilidad'
+
+// Reports
+export * from './use-cases/reports/get-reports'
+export * from './use-cases/reports/get-report-detail'
+export * from './use-cases/reports/create-report'
+export * from './use-cases/reports/update-report'
+export * from './use-cases/reports/delete-report'
 
 // Calendar
 export * from './use-cases/calendar/get-calendar-events'

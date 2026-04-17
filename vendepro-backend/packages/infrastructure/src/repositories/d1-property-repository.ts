@@ -118,6 +118,23 @@ export class D1PropertyRepository implements PropertyRepository {
     }))
   }
 
+  async findPhotoById(photoId: string, orgId: string): Promise<PropertyPhoto | null> {
+    const row = await this.db
+      .prepare('SELECT * FROM property_photos WHERE id = ? AND org_id = ?')
+      .bind(photoId, orgId)
+      .first() as any
+    if (!row) return null
+    return {
+      id: row.id,
+      property_id: row.property_id,
+      org_id: row.org_id,
+      url: row.url,
+      r2_key: row.r2_key,
+      sort_order: row.sort_order ?? 0,
+      created_at: row.created_at,
+    }
+  }
+
   async addPhoto(photo: PropertyPhoto): Promise<void> {
     await this.db
       .prepare(`
@@ -141,10 +158,17 @@ export class D1PropertyRepository implements PropertyRepository {
     order: Array<{ id: string; sort_order: number }>,
   ): Promise<void> {
     for (const item of order) {
-      await this.db
-        .prepare('UPDATE property_photos SET sort_order = ? WHERE id = ? AND property_id = ? AND org_id = ?')
-        .bind(item.sort_order, item.id, propertyId, orgId)
-        .run()
+      if (propertyId) {
+        await this.db
+          .prepare('UPDATE property_photos SET sort_order = ? WHERE id = ? AND property_id = ? AND org_id = ?')
+          .bind(item.sort_order, item.id, propertyId, orgId)
+          .run()
+      } else {
+        await this.db
+          .prepare('UPDATE property_photos SET sort_order = ? WHERE id = ? AND org_id = ?')
+          .bind(item.sort_order, item.id, orgId)
+          .run()
+      }
     }
   }
 
