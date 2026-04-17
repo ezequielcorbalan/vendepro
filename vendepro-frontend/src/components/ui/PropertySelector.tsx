@@ -24,7 +24,7 @@ export function PropertySelector({ value, onChange }: PropertySelectorProps) {
   const [results, setResults] = useState<PropertyOption[]>([])
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
-  const debounce = useRef<ReturnType<typeof setTimeout>>()
+  const debounce = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   useEffect(() => () => clearTimeout(debounce.current), [])
 

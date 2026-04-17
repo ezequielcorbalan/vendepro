@@ -22,7 +22,7 @@ export function ContactSelector({ value, onChange }: ContactSelectorProps) {
   const [results, setResults] = useState<ContactOption[]>([])
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
-  const debounce = useRef<ReturnType<typeof setTimeout>>()
+  const debounce = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   useEffect(() => () => clearTimeout(debounce.current), [])
 
