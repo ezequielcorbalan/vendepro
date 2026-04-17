@@ -7,6 +7,44 @@
 
 export type Period = 'week' | 'month' | 'quarter' | 'year'
 
+// ── Semáforo ────────────────────────────────────────────────────
+// Clasificación cualitativa de performance de un aviso según
+// visualizaciones por día. Metodología: Marcela Genta Operaciones
+// Inmobiliarias (Semáforo de visualizaciones).
+
+export type HealthStatus = 'red' | 'orange' | 'yellow' | 'light_green' | 'green'
+
+export const BENCHMARKS = {
+  caba: { min_views_per_day: 14, min_in_person_visits_per_week: 1.5 },
+  gba:  { min_views_per_day: 8,  min_in_person_visits_per_week: 1.0 },
+  color_thresholds: {
+    red:          { max_views_per_day: 9 },
+    orange:       { max_views_per_day: 13 },
+    yellow:       { max_views_per_day: 22 },
+    light_green:  { max_views_per_day: 27 },
+    green:        { min_views_per_day: 28 },
+  },
+  source: 'Marcela Genta Operaciones Inmobiliarias — Semáforo de visualizaciones',
+} as const
+
+export function computeHealthStatus(viewsPerDay: number): HealthStatus {
+  if (!Number.isFinite(viewsPerDay) || viewsPerDay <= 9) return 'red'
+  if (viewsPerDay <= 13) return 'orange'
+  if (viewsPerDay <= 22) return 'yellow'
+  if (viewsPerDay <= 27) return 'light_green'
+  return 'green'
+}
+
+/** Días completos entre dos fechas ISO (YYYY-MM-DD). Mínimo 1 para evitar div/0. */
+export function daysBetween(startISO: string, endISO: string): number {
+  const start = new Date(startISO + 'T00:00:00Z').getTime()
+  const end = new Date(endISO + 'T00:00:00Z').getTime()
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return 1
+  const diffMs = end - start
+  const days = Math.round(diffMs / (1000 * 60 * 60 * 24))
+  return Math.max(1, days)
+}
+
 export interface PerformanceKpis {
   reports_published: number
   total_impressions: number
@@ -17,6 +55,9 @@ export interface PerformanceKpis {
   avg_portal_visits_per_report: number
   avg_in_person_visits_per_report: number
   avg_offers_per_report: number
+  avg_views_per_day: number
+  avg_in_person_visits_per_week: number
+  overall_health_status: HealthStatus
 }
 
 export interface NeighborhoodPerformance {
@@ -27,6 +68,9 @@ export interface NeighborhoodPerformance {
   avg_in_person_visits: number
   avg_offers: number
   total_offers: number
+  avg_views_per_day: number
+  avg_in_person_visits_per_week: number
+  health_status: HealthStatus
 }
 
 export interface TimelinePoint {
@@ -52,6 +96,10 @@ export interface ReportListItem {
   portal_visits: number
   in_person_visits: number
   offers: number
+  days_in_period: number
+  views_per_day: number
+  in_person_visits_per_week: number
+  health_status: HealthStatus | null
 }
 
 export interface ReportsListFilters {
@@ -98,7 +146,8 @@ export async function getPerformanceKpis(
       COALESCE(SUM(rm.impressions), 0) AS total_impressions,
       COALESCE(SUM(rm.portal_visits), 0) AS total_portal_visits,
       COALESCE(SUM(rm.in_person_visits), 0) AS total_in_person_visits,
-      COALESCE(SUM(rm.offers), 0) AS total_offers
+      COALESCE(SUM(rm.offers), 0) AS total_offers,
+      COALESCE(SUM(julianday(r.period_end) - julianday(r.period_start)), 0) AS total_period_days
     FROM reports r
     JOIN properties p ON p.id = r.property_id
     LEFT JOIN report_metrics rm ON rm.report_id = r.id
@@ -117,6 +166,10 @@ export async function getPerformanceKpis(
   const totalPortalVisits = Number(row?.total_portal_visits ?? 0)
   const totalInPersonVisits = Number(row?.total_in_person_visits ?? 0)
   const totalOffers = Number(row?.total_offers ?? 0)
+  const totalPeriodDays = Math.max(1, Math.round(Number(row?.total_period_days ?? 0)))
+
+  const avgViewsPerDay = count > 0 ? Math.round((totalImpressions / totalPeriodDays) * 10) / 10 : 0
+  const avgVisitsPerWeek = count > 0 ? Math.round((totalInPersonVisits / (totalPeriodDays / 7)) * 10) / 10 : 0
 
   return {
     reports_published: count,
@@ -128,6 +181,9 @@ export async function getPerformanceKpis(
     avg_portal_visits_per_report: safeAvg(totalPortalVisits),
     avg_in_person_visits_per_report: safeAvg(totalInPersonVisits),
     avg_offers_per_report: avgFloat(totalOffers),
+    avg_views_per_day: avgViewsPerDay,
+    avg_in_person_visits_per_week: avgVisitsPerWeek,
+    overall_health_status: computeHealthStatus(avgViewsPerDay),
   }
 }
 
@@ -152,7 +208,10 @@ export async function getNeighborhoodPerformance(
       COALESCE(ROUND(AVG(rm.portal_visits)), 0) AS avg_portal_visits,
       COALESCE(ROUND(AVG(rm.in_person_visits)), 0) AS avg_in_person_visits,
       COALESCE(ROUND(AVG(rm.offers) * 100) / 100.0, 0) AS avg_offers,
-      COALESCE(SUM(rm.offers), 0) AS total_offers
+      COALESCE(SUM(rm.offers), 0) AS total_offers,
+      COALESCE(SUM(rm.impressions), 0) AS total_impressions,
+      COALESCE(SUM(rm.in_person_visits), 0) AS total_in_person_visits,
+      COALESCE(SUM(julianday(r.period_end) - julianday(r.period_start)), 0) AS total_period_days
     FROM reports r
     JOIN properties p ON p.id = r.property_id
     LEFT JOIN report_metrics rm ON rm.report_id = r.id
@@ -165,15 +224,25 @@ export async function getNeighborhoodPerformance(
     ORDER BY reports_count DESC, p.neighborhood ASC
   `).bind(...binds).all()
 
-  return ((res.results as any[]) ?? []).map(r => ({
-    neighborhood: r.neighborhood ?? 'Sin barrio',
-    reports_count: Number(r.reports_count ?? 0),
-    avg_impressions: Number(r.avg_impressions ?? 0),
-    avg_portal_visits: Number(r.avg_portal_visits ?? 0),
-    avg_in_person_visits: Number(r.avg_in_person_visits ?? 0),
-    avg_offers: Number(r.avg_offers ?? 0),
-    total_offers: Number(r.total_offers ?? 0),
-  }))
+  return ((res.results as any[]) ?? []).map(r => {
+    const totalImpressions = Number(r.total_impressions ?? 0)
+    const totalInPersonVisits = Number(r.total_in_person_visits ?? 0)
+    const totalDays = Math.max(1, Math.round(Number(r.total_period_days ?? 0)))
+    const viewsPerDay = Math.round((totalImpressions / totalDays) * 10) / 10
+    const visitsPerWeek = Math.round((totalInPersonVisits / (totalDays / 7)) * 10) / 10
+    return {
+      neighborhood: r.neighborhood ?? 'Sin barrio',
+      reports_count: Number(r.reports_count ?? 0),
+      avg_impressions: Number(r.avg_impressions ?? 0),
+      avg_portal_visits: Number(r.avg_portal_visits ?? 0),
+      avg_in_person_visits: Number(r.avg_in_person_visits ?? 0),
+      avg_offers: Number(r.avg_offers ?? 0),
+      total_offers: Number(r.total_offers ?? 0),
+      avg_views_per_day: viewsPerDay,
+      avg_in_person_visits_per_week: visitsPerWeek,
+      health_status: computeHealthStatus(viewsPerDay),
+    }
+  })
 }
 
 /**
@@ -296,21 +365,34 @@ export async function listReportsWithMetrics(
     `).bind(...binds, pageSize, offset).all(),
   ])
 
-  const results = ((rowsRes.results as any[]) ?? []).map(r => ({
-    id: r.id,
-    property_id: r.property_id,
-    property_address: r.property_address ?? '',
-    property_neighborhood: r.property_neighborhood ?? 'Sin barrio',
-    period_label: r.period_label ?? '',
-    period_start: r.period_start ?? '',
-    period_end: r.period_end ?? '',
-    status: r.status ?? 'draft',
-    published_at: r.published_at ?? null,
-    impressions: Number(r.impressions ?? 0),
-    portal_visits: Number(r.portal_visits ?? 0),
-    in_person_visits: Number(r.in_person_visits ?? 0),
-    offers: Number(r.offers ?? 0),
-  }))
+  const results = ((rowsRes.results as any[]) ?? []).map(r => {
+    const impressions = Number(r.impressions ?? 0)
+    const inPersonVisits = Number(r.in_person_visits ?? 0)
+    const days = daysBetween(r.period_start ?? '', r.period_end ?? '')
+    const viewsPerDay = Math.round((impressions / days) * 10) / 10
+    const visitsPerWeek = Math.round((inPersonVisits / (days / 7)) * 10) / 10
+    const healthStatus: HealthStatus | null =
+      (r.period_start && r.period_end) ? computeHealthStatus(viewsPerDay) : null
+    return {
+      id: r.id,
+      property_id: r.property_id,
+      property_address: r.property_address ?? '',
+      property_neighborhood: r.property_neighborhood ?? 'Sin barrio',
+      period_label: r.period_label ?? '',
+      period_start: r.period_start ?? '',
+      period_end: r.period_end ?? '',
+      status: r.status ?? 'draft',
+      published_at: r.published_at ?? null,
+      impressions,
+      portal_visits: Number(r.portal_visits ?? 0),
+      in_person_visits: inPersonVisits,
+      offers: Number(r.offers ?? 0),
+      days_in_period: days,
+      views_per_day: viewsPerDay,
+      in_person_visits_per_week: visitsPerWeek,
+      health_status: healthStatus,
+    }
+  })
 
   return {
     total: Number((countRow as any)?.total ?? 0),
