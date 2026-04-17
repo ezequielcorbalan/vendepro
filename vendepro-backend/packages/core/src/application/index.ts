@@ -72,3 +72,11 @@ export * from './use-cases/analytics/export-leads'
 
 // AI
 export * from './use-cases/ai/extract-property-metrics'
+
+// Public
+export * from './use-cases/public/get-public-report'
+export * from './use-cases/public/get-public-appraisal'
+export * from './use-cases/public/get-public-visit-form'
+export * from './use-cases/public/submit-visit-form-response'
+export * from './use-cases/public/get-public-prefactibilidad'
+export * from './use-cases/public/create-public-lead'

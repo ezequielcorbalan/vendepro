@@ -5,9 +5,15 @@ export interface AppraisalFilters {
   agent_id?: string
 }
 
+export interface AppraisalPublicResult {
+  appraisal: Appraisal
+  org: { name: string; logo_url: string | null; brand_color: string | null }
+}
+
 export interface AppraisalRepository {
   findById(id: string, orgId: string): Promise<Appraisal | null>
   findBySlug(slug: string): Promise<Appraisal | null>
+  findPublicByIdOrSlugWithOrg(idOrSlug: string): Promise<AppraisalPublicResult | null>
   findByOrg(orgId: string, filters?: AppraisalFilters): Promise<Appraisal[]>
   save(appraisal: Appraisal): Promise<void>
   delete(id: string, orgId: string): Promise<void>

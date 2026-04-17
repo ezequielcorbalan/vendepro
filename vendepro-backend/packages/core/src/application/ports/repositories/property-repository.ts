@@ -77,4 +77,5 @@ export interface PropertyRepository {
   markExternalReport(id: string, orgId: string): Promise<void>
   clearExternalReport(id: string, orgId: string): Promise<void>
   searchByAddress(orgId: string, query: string, limit: number): Promise<Array<{ id: string; address: string }>>
+  findByPublicSlug(slug: string): Promise<Property | null>
 }

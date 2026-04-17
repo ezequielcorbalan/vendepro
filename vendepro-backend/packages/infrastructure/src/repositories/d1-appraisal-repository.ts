@@ -1,5 +1,5 @@
 import { Appraisal } from '@vendepro/core'
-import type { AppraisalRepository, AppraisalFilters, AppraisalComparableProps } from '@vendepro/core'
+import type { AppraisalRepository, AppraisalFilters, AppraisalComparableProps, AppraisalPublicResult } from '@vendepro/core'
 
 export class D1AppraisalRepository implements AppraisalRepository {
   constructor(private readonly db: D1Database) {}
@@ -32,6 +32,32 @@ export class D1AppraisalRepository implements AppraisalRepository {
     if (!row) return null
     const comparables = await this.loadComparables(row.id)
     return this.toEntity(row, comparables)
+  }
+
+  async findPublicByIdOrSlugWithOrg(idOrSlug: string): Promise<AppraisalPublicResult | null> {
+    const row = (await this.db
+      .prepare(
+        `SELECT a.*, u.full_name AS agent_name,
+                o.name AS org_name, o.logo_url AS org_logo_url, o.brand_color AS org_brand_color
+         FROM appraisals a
+         LEFT JOIN users u ON a.agent_id = u.id
+         LEFT JOIN organizations o ON a.org_id = o.id
+         WHERE a.id = ? OR a.public_slug = ?
+         LIMIT 1`,
+      )
+      .bind(idOrSlug, idOrSlug)
+      .first()) as any
+    if (!row) return null
+    const comparables = await this.loadComparables(row.id)
+    const appraisal = this.toEntity(row, comparables)
+    return {
+      appraisal,
+      org: {
+        name: row.org_name ?? '',
+        logo_url: row.org_logo_url ?? null,
+        brand_color: row.org_brand_color ?? null,
+      },
+    }
   }
 
   async findByOrg(orgId: string, filters?: AppraisalFilters): Promise<Appraisal[]> {

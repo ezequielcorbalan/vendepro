@@ -40,6 +40,16 @@ export class D1ReportRepository implements ReportRepository {
     return null
   }
 
+  async findLatestPublishedByProperty(propertyId: string): Promise<Report | null> {
+    const row = (await this.db
+      .prepare(
+        `SELECT * FROM reports WHERE property_id = ? AND status = 'published' ORDER BY created_at DESC LIMIT 1`,
+      )
+      .bind(propertyId)
+      .first()) as any
+    return row ? this.toEntity(row) : null
+  }
+
   async save(report: Report): Promise<void> {
     const o = report.toObject()
     // Derive org_id from the owning property on insert so scoping works across

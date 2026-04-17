@@ -1,5 +1,5 @@
 import { Prefactibilidad } from '@vendepro/core'
-import type { PrefactibilidadRepository } from '@vendepro/core'
+import type { PrefactibilidadRepository, PrefactPublicResult } from '@vendepro/core'
 
 /**
  * D1 adapter for `prefactibilidades`.
@@ -35,6 +35,27 @@ export class D1PrefactibilidadRepository implements PrefactibilidadRepository {
       .bind(slug)
       .first()) as any
     return row ? this.toEntity(row) : null
+  }
+
+  async findPublicBySlugWithOrg(slug: string): Promise<PrefactPublicResult | null> {
+    const row = (await this.db
+      .prepare(
+        `SELECT pf.*, o.name AS org_name, o.logo_url AS org_logo_url, o.brand_color AS org_brand_color
+         FROM prefactibilidades pf
+         LEFT JOIN organizations o ON pf.org_id = o.id
+         WHERE pf.public_slug = ?`,
+      )
+      .bind(slug)
+      .first()) as any
+    if (!row) return null
+    return {
+      prefact: this.toEntity(row),
+      org: {
+        name: row.org_name ?? '',
+        logo_url: row.org_logo_url ?? null,
+        brand_color: row.org_brand_color ?? null,
+      },
+    }
   }
 
   async save(p: Prefactibilidad): Promise<void> {

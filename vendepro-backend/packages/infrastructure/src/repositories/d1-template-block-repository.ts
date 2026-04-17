@@ -12,6 +12,14 @@ export class D1TemplateBlockRepository implements TemplateBlockRepository {
     return rows.map(r => this.toEntity(r))
   }
 
+  async findEnabledByOrg(orgId: string): Promise<TemplateBlock[]> {
+    const rows = (await this.db
+      .prepare('SELECT * FROM tasacion_template_blocks WHERE org_id = ? AND enabled = 1 ORDER BY sort_order')
+      .bind(orgId)
+      .all()).results as any[]
+    return rows.map(r => this.toEntity(r))
+  }
+
   async findById(id: string, orgId: string): Promise<TemplateBlock | null> {
     const row = await this.db
       .prepare('SELECT * FROM tasacion_template_blocks WHERE id = ? AND org_id = ?')

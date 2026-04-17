@@ -287,6 +287,14 @@ export class D1PropertyRepository implements PropertyRepository {
     return rows.map(r => ({ id: r.id, address: r.address }))
   }
 
+  async findByPublicSlug(slug: string): Promise<Property | null> {
+    const row = await this.db
+      .prepare(`SELECT p.*, u.full_name as agent_name FROM properties p LEFT JOIN users u ON p.agent_id = u.id WHERE p.public_slug = ?`)
+      .bind(slug)
+      .first() as any
+    return row ? this.toEntity(row) : null
+  }
+
   private toEntity(row: any): Property {
     const validTypes = ['departamento', 'casa', 'ph', 'local', 'terreno', 'oficina']
     return Property.create({
