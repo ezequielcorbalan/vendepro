@@ -51,3 +51,6 @@ export * from './use-cases/analytics/get-listings-performance'
 export * from './use-cases/analytics/list-reports-with-metrics'
 export * from './use-cases/analytics/get-neighborhood-comparison'
 export * from './use-cases/analytics/get-active-listings-with-benchmark'
+
+// AI
+export * from './use-cases/ai/extract-property-metrics'
