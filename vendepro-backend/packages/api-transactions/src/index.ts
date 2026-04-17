@@ -61,19 +61,4 @@ app.delete('/reservations', async (c) => {
   return c.json({ success: true })
 })
 
-// ── SOLD PROPERTIES (simple record) ───────────────────────────
-app.post('/sold-properties', async (c) => {
-  const body = (await c.req.json()) as any
-  const db = c.env.DB
-  const id = crypto.randomUUID().replace(/-/g, '')
-  await db.prepare(`
-    INSERT INTO sold_properties (id, org_id, property_id, buyer_name, seller_name, agent_id,
-      sale_price, sale_currency, sale_date, commission, notes, created_at)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,datetime('now'))
-  `).bind(id, c.get('orgId'), body.property_id, body.buyer_name, body.seller_name,
-    body.agent_id || c.get('userId'), body.sale_price, body.sale_currency || 'USD',
-    body.sale_date, body.commission, body.notes).run()
-  return c.json({ id }, 201)
-})
-
 export default app

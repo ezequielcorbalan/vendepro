@@ -128,10 +128,10 @@ Cada fase sigue el mismo patrón:
 
 **Orden y scope por fase:**
 
-**Fase 1 — api-transactions** (1 violación)
-- Nuevo use-case: `CreateSoldPropertyUseCase` en `transactions/`.
-- Refactor `POST /sold-properties`.
-- Tests: use-case + e2e mínimo.
+**Fase 1 — api-transactions** (0 violaciones tras revisión)
+- El endpoint `POST /sold-properties` se **eliminó** — era código muerto (la tabla `sold_properties` no existía en prod, el frontend no lo llamaba, y "vendida" es un estado de `property` no una entidad aparte).
+- Para marcar una venta se usa `UpdatePropertyUseCase` (Fase 8) con `status='sold'`, `sold_price`, `sold_date`, o se avanza la reserva a stage `entregada` (ya funciona).
+- Sin cambios adicionales en este worker.
 
 **Fase 2 — api-auth** (2 violaciones)
 - Nuevos use-cases: `RequestPasswordResetUseCase`, `CompletePasswordResetUseCase`.
