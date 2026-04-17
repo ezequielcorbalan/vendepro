@@ -11,6 +11,7 @@ import {
   getActiveListingsWithBenchmark,
   BENCHMARKS,
   type Period,
+  type ListingFilters,
 } from './reports-queries'
 
 type Env = { DB: D1Database; JWT_SECRET: string }
@@ -279,12 +280,18 @@ app.get('/listings-performance', async (c) => {
     overall_health_status: 'red' as const,
   }
 
+  const filters: ListingFilters = {
+    property_type: c.req.query('property_type') ?? null,
+    price_min: c.req.query('price_min') ? parseFloat(c.req.query('price_min')!) : null,
+    price_max: c.req.query('price_max') ? parseFloat(c.req.query('price_max')!) : null,
+  }
+
   const [kpis, byNeighborhood, timeline, comparison, activeListings] = await Promise.all([
-    safe(() => getPerformanceKpis(db, orgId, start, end, source), emptyKpis),
-    safe(() => getNeighborhoodPerformance(db, orgId, start, end, source), [] as Awaited<ReturnType<typeof getNeighborhoodPerformance>>),
-    safe(() => getTimelinePerformance(db, orgId, start, end, source), [] as Awaited<ReturnType<typeof getTimelinePerformance>>),
-    safe(() => getComparisonByNeighborhood(db, orgId), [] as Awaited<ReturnType<typeof getComparisonByNeighborhood>>),
-    safe(() => getActiveListingsWithBenchmark(db, orgId), [] as Awaited<ReturnType<typeof getActiveListingsWithBenchmark>>),
+    safe(() => getPerformanceKpis(db, orgId, start, end, source, filters), emptyKpis),
+    safe(() => getNeighborhoodPerformance(db, orgId, start, end, source, filters), [] as Awaited<ReturnType<typeof getNeighborhoodPerformance>>),
+    safe(() => getTimelinePerformance(db, orgId, start, end, source, filters), [] as Awaited<ReturnType<typeof getTimelinePerformance>>),
+    safe(() => getComparisonByNeighborhood(db, orgId, filters), [] as Awaited<ReturnType<typeof getComparisonByNeighborhood>>),
+    safe(() => getActiveListingsWithBenchmark(db, orgId, filters), [] as Awaited<ReturnType<typeof getActiveListingsWithBenchmark>>),
   ])
 
   return c.json({

@@ -7,6 +7,35 @@
 
 export type Period = 'week' | 'month' | 'quarter' | 'year'
 
+/** Filtros de propiedad aplicables a cualquier query de analytics.
+ *  Se combinan con AND. null/undefined = no filtrar. */
+export interface ListingFilters {
+  property_type?: string | null
+  price_min?: number | null
+  price_max?: number | null
+}
+
+/** Construye un fragmento SQL `AND ...` sobre la tabla `properties`
+ *  según los filtros. Devuelve string vacío si no hay filtros. */
+export function buildPropertyFilter(filters?: ListingFilters | null): { sql: string; binds: unknown[] } {
+  const parts: string[] = []
+  const binds: unknown[] = []
+  if (!filters) return { sql: '', binds }
+  if (filters.property_type) {
+    parts.push('p.property_type = ?')
+    binds.push(filters.property_type)
+  }
+  if (filters.price_min != null && Number.isFinite(filters.price_min)) {
+    parts.push('p.asking_price >= ?')
+    binds.push(filters.price_min)
+  }
+  if (filters.price_max != null && Number.isFinite(filters.price_max)) {
+    parts.push('p.asking_price <= ?')
+    binds.push(filters.price_max)
+  }
+  return { sql: parts.length > 0 ? ' AND ' + parts.join(' AND ') : '', binds }
+}
+
 // ── Semáforo ────────────────────────────────────────────────────
 // Clasificación cualitativa de performance de un aviso según
 // visualizaciones por día. Metodología: Marcela Genta Operaciones
@@ -136,9 +165,12 @@ export async function getPerformanceKpis(
   start: string,
   end: string,
   source?: string | null,
+  filters?: ListingFilters | null,
 ): Promise<PerformanceKpis> {
   const sourceFilter = source ? ' AND rm.source = ?' : ''
-  const binds: unknown[] = source ? [orgId, start, end, source] : [orgId, start, end]
+  const sourceBinds: unknown[] = source ? [source] : []
+  const pf = buildPropertyFilter(filters)
+  const binds: unknown[] = [orgId, start, end, ...sourceBinds, ...pf.binds]
 
   // Query 1: métricas agregadas (con JOIN a report_metrics).
   // Query 2 (separada): días totales del período SIN join a metrics, para
@@ -160,6 +192,7 @@ export async function getPerformanceKpis(
         AND date(r.published_at) >= ?
         AND date(r.published_at) <= ?
         ${sourceFilter}
+        ${pf.sql}
     `).bind(...binds).first() as Promise<any>,
     db.prepare(`
       SELECT COALESCE(SUM(julianday(r.period_end) - julianday(r.period_start)), 0) AS total_period_days
@@ -173,6 +206,7 @@ export async function getPerformanceKpis(
           AND date(r.published_at) >= ?
           AND date(r.published_at) <= ?
           ${sourceFilter}
+          ${pf.sql}
       ) r
     `).bind(...binds).first() as Promise<any>,
   ])
@@ -218,9 +252,12 @@ export async function getNeighborhoodPerformance(
   start: string,
   end: string,
   source?: string | null,
+  filters?: ListingFilters | null,
 ): Promise<NeighborhoodPerformance[]> {
   const sourceFilter = source ? ' AND rm.source = ?' : ''
-  const binds: unknown[] = source ? [orgId, start, end, source] : [orgId, start, end]
+  const sourceBinds: unknown[] = source ? [source] : []
+  const pf = buildPropertyFilter(filters)
+  const binds: unknown[] = [orgId, start, end, ...sourceBinds, ...pf.binds]
 
   const [metricsRes, daysRes] = await Promise.all([
     db.prepare(`
@@ -242,6 +279,7 @@ export async function getNeighborhoodPerformance(
         AND date(r.published_at) >= ?
         AND date(r.published_at) <= ?
         ${sourceFilter}
+        ${pf.sql}
       GROUP BY p.neighborhood
       ORDER BY reports_count DESC, p.neighborhood ASC
     `).bind(...binds).all(),
@@ -302,9 +340,12 @@ export async function getTimelinePerformance(
   start: string,
   end: string,
   source?: string | null,
+  filters?: ListingFilters | null,
 ): Promise<TimelinePoint[]> {
   const sourceFilter = source ? ' AND rm.source = ?' : ''
-  const binds: unknown[] = source ? [orgId, start, end, source] : [orgId, start, end]
+  const sourceBinds: unknown[] = source ? [source] : []
+  const pf = buildPropertyFilter(filters)
+  const binds: unknown[] = [orgId, start, end, ...sourceBinds, ...pf.binds]
 
   const res = await db.prepare(`
     SELECT
@@ -321,6 +362,7 @@ export async function getTimelinePerformance(
       AND date(r.published_at) >= ?
       AND date(r.published_at) <= ?
       ${sourceFilter}
+      ${pf.sql}
     GROUP BY month_key
     ORDER BY month_key ASC
   `).bind(...binds).all()
@@ -501,6 +543,7 @@ export function computeDeltaHealthStatus(deltaPct: number | null): HealthStatus 
 export async function getComparisonByNeighborhood(
   db: D1Database,
   orgId: string,
+  filters?: ListingFilters | null,
 ): Promise<NeighborhoodComparison[]> {
 
   type GroupRow = {
@@ -512,6 +555,8 @@ export async function getComparisonByNeighborhood(
     total_inquiries: number
     total_days: number
   }
+
+  const pf = buildPropertyFilter(filters)
 
   const queryGroup = async (status: 'sold' | 'active'): Promise<GroupRow[]> => {
     const [metricsRes, daysRes] = await Promise.all([
@@ -529,8 +574,9 @@ export async function getComparisonByNeighborhood(
         WHERE p.org_id = ?
           AND p.status = ?
           AND r.status = 'published'
+          ${pf.sql}
         GROUP BY p.neighborhood
-      `).bind(orgId, status).all(),
+      `).bind(orgId, status, ...pf.binds).all(),
       db.prepare(`
         SELECT
           p.neighborhood AS neighborhood,
@@ -542,10 +588,11 @@ export async function getComparisonByNeighborhood(
           WHERE p.org_id = ?
             AND p.status = ?
             AND r.status = 'published'
+            ${pf.sql}
         ) r
         JOIN properties p ON p.id = r.property_id
         GROUP BY p.neighborhood
-      `).bind(orgId, status).all(),
+      `).bind(orgId, status, ...pf.binds).all(),
     ])
 
     const daysMap: Record<string, number> = {}
@@ -615,7 +662,10 @@ export async function getComparisonByNeighborhood(
 export async function getActiveListingsWithBenchmark(
   db: D1Database,
   orgId: string,
+  filters?: ListingFilters | null,
 ): Promise<ActiveListingWithBenchmark[]> {
+
+  const pf = buildPropertyFilter(filters)
 
   // Q1: lista de TODAS las propiedades activas (con o sin reports) + métricas
   //     agregadas si las tienen.
@@ -637,8 +687,9 @@ export async function getActiveListingsWithBenchmark(
       LEFT JOIN report_metrics rm ON rm.report_id = r.id
       WHERE p.org_id = ?
         AND p.status = 'active'
+        ${pf.sql}
       GROUP BY p.id
-    `).bind(orgId).all(),
+    `).bind(orgId, ...pf.binds).all(),
     db.prepare(`
       SELECT
         p.id AS property_id,
@@ -651,9 +702,10 @@ export async function getActiveListingsWithBenchmark(
         WHERE p.org_id = ?
           AND p.status = 'active'
           AND r.status = 'published'
+          ${pf.sql}
       ) r ON r.property_id = p.id
       GROUP BY p.id
-    `).bind(orgId).all(),
+    `).bind(orgId, ...pf.binds).all(),
     db.prepare(`
       SELECT
         p.neighborhood AS neighborhood,
@@ -666,11 +718,12 @@ export async function getActiveListingsWithBenchmark(
         WHERE p.org_id = ?
           AND p.status = 'sold'
           AND r.status = 'published'
+          ${pf.sql}
       ) rd
       JOIN properties p ON p.id = rd.property_id
       LEFT JOIN report_metrics rm ON rm.report_id = rd.id
       GROUP BY p.neighborhood
-    `).bind(orgId).all(),
+    `).bind(orgId, ...pf.binds).all(),
     db.prepare(`
       SELECT
         r.property_id AS property_id,
@@ -683,8 +736,9 @@ export async function getActiveListingsWithBenchmark(
       WHERE p.org_id = ?
         AND p.status = 'active'
         AND r.status = 'published'
+        ${pf.sql}
       GROUP BY r.property_id
-    `).bind(orgId).all(),
+    `).bind(orgId, ...pf.binds).all(),
   ])
 
   const daysByProperty: Record<string, number> = {}

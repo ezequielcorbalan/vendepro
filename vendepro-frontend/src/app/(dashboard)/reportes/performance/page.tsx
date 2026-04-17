@@ -65,16 +65,33 @@ function KPICard({ icon, label, value, sublabel, gradient, iconBg, iconColor }: 
   )
 }
 
+const PROPERTY_TYPES = [
+  { value: '', label: 'Todos los tipos' },
+  { value: 'departamento', label: 'Departamento' },
+  { value: 'casa', label: 'Casa' },
+  { value: 'ph', label: 'PH' },
+  { value: 'local', label: 'Local comercial' },
+  { value: 'terreno', label: 'Terreno' },
+  { value: 'oficina', label: 'Oficina' },
+] as const
+
 export default function PerformancePage() {
   const [data, setData] = useState<PerformanceData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [period, setPeriod] = useState<Period>('month')
+  const [propertyType, setPropertyType] = useState<string>('')
+  const [priceMin, setPriceMin] = useState<string>('')
+  const [priceMax, setPriceMax] = useState<string>('')
 
   useEffect(() => {
     setLoading(true)
     setError(false)
-    apiFetch('analytics', `/listings-performance?period=${period}`)
+    const params = new URLSearchParams({ period })
+    if (propertyType) params.set('property_type', propertyType)
+    if (priceMin) params.set('price_min', priceMin)
+    if (priceMax) params.set('price_max', priceMax)
+    apiFetch('analytics', `/listings-performance?${params.toString()}`)
       .then(r => r.json() as Promise<any>)
       .then(d => {
         setData(d)
@@ -84,7 +101,10 @@ export default function PerformancePage() {
         setError(true)
         setLoading(false)
       })
-  }, [period])
+  }, [period, propertyType, priceMin, priceMax])
+
+  const hasFilters = propertyType !== '' || priceMin !== '' || priceMax !== ''
+  const clearFilters = () => { setPropertyType(''); setPriceMin(''); setPriceMax('') }
 
   if (loading) {
     return (
@@ -118,27 +138,60 @@ export default function PerformancePage() {
 
   return (
     <div className="space-y-4 sm:space-y-5">
-      {/* Period selector */}
-      <div className="flex justify-end">
-        <div className="flex gap-0.5 bg-gray-100 rounded-lg p-0.5 shadow-inner">
-          {([
-            ['week', 'Sem'],
-            ['month', 'Mes'],
-            ['quarter', 'Trim'],
-            ['year', 'Año'],
-          ] as const).map(([key, label]) => (
+      {/* Filters bar */}
+      <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-white to-gray-50/50 p-3 sm:p-4 shadow-sm">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <select
+            value={propertyType}
+            onChange={e => setPropertyType(e.target.value)}
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#ff007c]/30 focus:border-[#ff007c]"
+          >
+            {PROPERTY_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+          </select>
+          <div className="flex items-center gap-1 text-sm text-gray-500">USD</div>
+          <input
+            type="number"
+            value={priceMin}
+            onChange={e => setPriceMin(e.target.value)}
+            placeholder="Desde"
+            className="w-24 border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#ff007c]/30 focus:border-[#ff007c]"
+          />
+          <input
+            type="number"
+            value={priceMax}
+            onChange={e => setPriceMax(e.target.value)}
+            placeholder="Hasta"
+            className="w-24 border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#ff007c]/30 focus:border-[#ff007c]"
+          />
+          {hasFilters && (
             <button
-              key={key}
-              onClick={() => setPeriod(key)}
-              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
-                period === key
-                  ? 'bg-white shadow-sm text-gray-800'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
+              onClick={clearFilters}
+              className="text-xs text-gray-500 hover:text-[#ff007c] underline"
             >
-              {label}
+              Limpiar filtros
             </button>
-          ))}
+          )}
+          <div className="flex-1" />
+          <div className="flex gap-0.5 bg-gray-100 rounded-lg p-0.5 shadow-inner">
+            {([
+              ['week', 'Sem'],
+              ['month', 'Mes'],
+              ['quarter', 'Trim'],
+              ['year', 'Año'],
+            ] as const).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setPeriod(key)}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+                  period === key
+                    ? 'bg-white shadow-sm text-gray-800'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
