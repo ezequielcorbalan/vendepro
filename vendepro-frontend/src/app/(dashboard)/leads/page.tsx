@@ -452,9 +452,9 @@ export default function LeadsPage() {
           </div>
         ))}</div>
       ) : view === 'list' ? (
-        <div className="space-y-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {filtered.length === 0 ? (
-            <div className="text-center py-12 text-gray-400">
+            <div className="col-span-2 text-center py-12 text-gray-400">
               <User className="w-12 h-12 mx-auto mb-3 text-gray-300" />
               <p className="font-medium">Sin leads</p>
               <p className="text-sm mt-1">Creá tu primer lead para comenzar</p>
@@ -742,85 +742,108 @@ function LeadCard({ lead, onAdvance, onLost, onDelete }: { lead: any; onAdvance:
   const outerBorder = urgency === 'danger' ? 'border-red-200' : urgency === 'warning' ? 'border-yellow-200' : 'border-gray-200'
 
   return (
-    <div className={`bg-white border ${outerBorder} border-l-4 ${borderColor} rounded-xl overflow-hidden flex transition-shadow hover:shadow-md`}>
-      {/* Main content — clickable */}
-      <Link href={`/leads/${lead.id}`} className="flex-1 min-w-0 px-4 py-3 flex flex-col gap-1.5">
-        {/* Row 1: avatar + name + stage + tags */}
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className={`w-8 h-8 rounded-full ${avatarColor(lead.full_name)} text-white text-xs font-bold flex items-center justify-center shrink-0`}>
-            {initial}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="font-semibold text-sm text-gray-900 truncate">{lead.full_name}</span>
-              <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0 ${stage.color}`}>{stage.label}</span>
-              {lead.tags?.map((tag: any) => (
-                <span key={tag.id} className="text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 text-white" style={{ background: tag.color }}>{tag.name}</span>
-              ))}
-              {hasAppraisal && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium shrink-0">Tasación ✓</span>}
+    <div className={`bg-white border ${outerBorder} border-l-4 ${borderColor} rounded-xl overflow-hidden flex flex-col transition-shadow hover:shadow-md`}>
+      {/* Card body: en mobile es row (contenido + acciones icono), en desktop es solo contenido */}
+      <div className="flex flex-1 min-w-0">
+        {/* Main content — clickable */}
+        <Link href={`/leads/${lead.id}`} className="flex-1 min-w-0 px-4 py-3 flex flex-col gap-1.5">
+          {/* Row 1: avatar + name + stage + tags */}
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className={`w-8 h-8 rounded-full ${avatarColor(lead.full_name)} text-white text-xs font-bold flex items-center justify-center shrink-0`}>
+              {initial}
             </div>
-            {/* Row 2: contact + operation + location */}
-            <p className="text-xs text-gray-500 truncate mt-0.5">
-              {lead.phone && <span className="text-gray-600">{lead.phone}</span>}
-              {lead.phone && lead.operation && <span className="text-gray-300 mx-1">·</span>}
-              {lead.operation && <span className="capitalize">{lead.operation}</span>}
-              {lead.neighborhood && <span className="text-gray-300 mx-1">·</span>}
-              {lead.neighborhood && <span>{lead.neighborhood}</span>}
-            </p>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="font-semibold text-sm text-gray-900 truncate">{lead.full_name}</span>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0 ${stage.color}`}>{stage.label}</span>
+                {lead.tags?.map((tag: any) => (
+                  <span key={tag.id} className="text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 text-white" style={{ background: tag.color }}>{tag.name}</span>
+                ))}
+                {hasAppraisal && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium shrink-0">Tasación ✓</span>}
+              </div>
+              <p className="text-xs text-gray-500 truncate mt-0.5">
+                {lead.phone && <span className="text-gray-600">{lead.phone}</span>}
+                {lead.phone && lead.operation && <span className="text-gray-300 mx-1">·</span>}
+                {lead.operation && <span className="capitalize">{lead.operation}</span>}
+                {lead.neighborhood && <><span className="text-gray-300 mx-1">·</span><span>{lead.neighborhood}</span></>}
+              </p>
+            </div>
           </div>
-        </div>
 
-        {/* Row 3: agent + last activity + urgency */}
-        <div className="flex items-center gap-2 text-[11px] text-gray-400 flex-wrap pl-10">
-          {lead.assigned_name && <span>{lead.assigned_name}</span>}
-          {lastActivity && <><span className="text-gray-200">·</span><span>Últ: {lastActivity}</span></>}
-          {urg && <><span className="text-gray-200">·</span><span className={`font-medium ${urg.cls}`}>{urg.text}</span></>}
-        </div>
-
-        {/* Next step band */}
-        {lead.next_step && (
-          <div className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded-lg mt-0.5 ${urgency === 'danger' ? 'bg-red-50 text-red-600' : urgency === 'warning' ? 'bg-amber-50 text-amber-600' : 'bg-pink-50 text-[#ff007c]'}`}>
-            <ArrowRight className="w-3 h-3 shrink-0" />
-            <span className="truncate">{lead.next_step}</span>
-            {lead.next_step_date && <span className="shrink-0 text-[10px] opacity-70">· {lead.next_step_date}</span>}
+          {/* Row 2: agent + activity + urgency */}
+          <div className="flex items-center gap-2 text-[11px] text-gray-400 flex-wrap pl-10">
+            {lead.assigned_name && <span>{lead.assigned_name}</span>}
+            {lastActivity && <><span className="text-gray-200">·</span><span>Últ: {lastActivity}</span></>}
+            {urg && <><span className="text-gray-200">·</span><span className={`font-medium ${urg.cls}`}>{urg.text}</span></>}
           </div>
-        )}
 
-        {/* Progress bar */}
-        <div className="flex items-center gap-2 pl-10">
-          <div className="flex-1 h-1 bg-gray-100 rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all ${score >= 83 ? 'bg-emerald-400' : score >= 50 ? 'bg-yellow-400' : 'bg-red-300'}`}
-              style={{ width: `${score}%` }}
-            />
+          {/* Next step band */}
+          {lead.next_step && (
+            <div className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded-lg mt-0.5 ${urgency === 'danger' ? 'bg-red-50 text-red-600' : urgency === 'warning' ? 'bg-amber-50 text-amber-600' : 'bg-pink-50 text-[#ff007c]'}`}>
+              <ArrowRight className="w-3 h-3 shrink-0" />
+              <span className="truncate">{lead.next_step}</span>
+              {lead.next_step_date && <span className="shrink-0 text-[10px] opacity-70">· {lead.next_step_date}</span>}
+            </div>
+          )}
+
+          {/* Progress bar */}
+          <div className="flex items-center gap-2 pl-10">
+            <div className="flex-1 h-1 bg-gray-100 rounded-full overflow-hidden">
+              <div className={`h-full rounded-full transition-all ${score >= 83 ? 'bg-emerald-400' : score >= 50 ? 'bg-yellow-400' : 'bg-red-300'}`} style={{ width: `${score}%` }} />
+            </div>
+            <span className="text-[10px] text-gray-300 shrink-0">{Object.values(checklist).filter(Boolean).length}/6</span>
           </div>
-          <span className="text-[10px] text-gray-300 shrink-0">{Object.values(checklist).filter(Boolean).length}/6</span>
-        </div>
-      </Link>
+        </Link>
 
-      {/* Right action column */}
-      <div className="flex flex-col border-l border-gray-100 shrink-0" onClick={e => e.stopPropagation()}>
+        {/* MOBILE: botones icono en columna derecha */}
+        <div className="flex sm:hidden flex-col border-l border-gray-100 shrink-0" onClick={e => e.stopPropagation()}>
+          {lead.phone ? (
+            <>
+              <a href={`tel:${lead.phone}`} className="flex-1 w-12 flex items-center justify-center text-blue-400 hover:bg-blue-50 active:bg-blue-100 transition-colors">
+                <Phone className="w-5 h-5" />
+              </a>
+              <a href={`https://wa.me/${formatWhatsApp(lead.phone)}`} target="_blank" rel="noreferrer"
+                className="flex-1 w-12 flex items-center justify-center text-green-500 hover:bg-green-50 active:bg-green-100 border-t border-gray-100 transition-colors">
+                <MessageCircle className="w-5 h-5" />
+              </a>
+            </>
+          ) : (
+            <div className="flex-1 w-12 flex items-center justify-center text-gray-200">
+              <Phone className="w-5 h-5" />
+            </div>
+          )}
+          {lead.stage !== 'captado' && lead.stage !== 'perdido' && (
+            <button onClick={onAdvance} className="flex-1 w-12 flex items-center justify-center text-[#ff007c] hover:bg-pink-50 active:bg-pink-100 border-t border-gray-100 transition-colors">
+              <ArrowRight className="w-5 h-5" />
+            </button>
+          )}
+          <button onClick={onDelete} className="flex-1 w-12 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 border-t border-gray-100 transition-colors">
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* DESKTOP: botones con texto en fila inferior */}
+      <div className="hidden sm:flex border-t border-gray-100 divide-x divide-gray-100" onClick={e => e.stopPropagation()}>
         {lead.phone ? (
           <>
-            <a href={`tel:${lead.phone}`} className="flex-1 px-3 flex items-center justify-center text-blue-400 hover:bg-blue-50 hover:text-blue-600 transition-colors" title="Llamar">
-              <Phone className="w-4 h-4" />
+            <a href={`tel:${lead.phone}`} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-blue-500 hover:bg-blue-50 transition-colors">
+              <Phone className="w-3.5 h-3.5" /> Llamar
             </a>
             <a href={`https://wa.me/${formatWhatsApp(lead.phone)}`} target="_blank" rel="noreferrer"
-              className="flex-1 px-3 flex items-center justify-center text-green-500 hover:bg-green-50 border-t border-gray-100 transition-colors" title="WhatsApp">
-              <MessageCircle className="w-4 h-4" />
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-green-600 hover:bg-green-50 transition-colors">
+              <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
             </a>
           </>
         ) : (
-          <div className="flex-1 px-3 flex items-center justify-center text-gray-200">
-            <Phone className="w-4 h-4" />
-          </div>
+          <span className="flex-1 flex items-center justify-center py-2.5 text-xs text-gray-300">Sin teléfono</span>
         )}
         {lead.stage !== 'captado' && lead.stage !== 'perdido' && (
-          <button onClick={onAdvance} className="flex-1 px-3 flex items-center justify-center text-[#ff007c] hover:bg-pink-50 border-t border-gray-100 transition-colors" title="Avanzar etapa">
-            <ArrowRight className="w-4 h-4" />
+          <button onClick={onAdvance} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-[#ff007c] hover:bg-pink-50 transition-colors">
+            <ArrowRight className="w-3.5 h-3.5" /> Avanzar
           </button>
         )}
-        <button onClick={onDelete} className="flex-1 px-3 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 border-t border-gray-100 transition-colors" title="Eliminar">
+        <button onClick={onDelete} className="px-4 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors">
           <Trash2 className="w-3.5 h-3.5" />
         </button>
       </div>
