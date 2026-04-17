@@ -1,3 +1,7 @@
 .local-pids
 logs/
 .wrangler-local/
+
+# Cloudflare Worker local secrets (nunca commitear)
+.dev.vars
+packages/*/.dev.vars

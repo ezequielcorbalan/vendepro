@@ -1,6 +1,15 @@
 import { Hono } from 'hono'
 import { corsMiddleware, errorHandler, createAuthMiddleware, D1LeadRepository, D1PropertyRepository, D1ReservationRepository, D1CalendarRepository, JwtAuthService } from '@vendepro/infrastructure'
 import { GetDashboardStatsUseCase } from '@vendepro/core'
+import {
+  periodStartDate,
+  getPerformanceKpis,
+  getNeighborhoodPerformance,
+  getTimelinePerformance,
+  listReportsWithMetrics,
+  BENCHMARKS,
+  type Period,
+} from './reports-queries'
 
 type Env = { DB: D1Database; JWT_SECRET: string }
 type AuthVars = { Variables: { userId: string; userRole: string; orgId: string } }
@@ -230,6 +239,99 @@ app.get('/export', async (c) => {
   }
 
   return c.json({ error: 'Unknown export type' }, 400)
+})
+
+// ── LISTINGS PERFORMANCE ──────────────────────────────────────
+// Aggregated metrics across all published reports for the org.
+// Returns: KPIs, by_neighborhood ranking, and monthly timeline.
+
+app.get('/listings-performance', async (c) => {
+  const rawPeriod = c.req.query('period') ?? 'month'
+  const period: Period = (['week', 'month', 'quarter', 'year'] as const).includes(rawPeriod as Period)
+    ? (rawPeriod as Period)
+    : 'month'
+  const source = c.req.query('source') ?? null
+
+  const db = c.env.DB
+  const orgId = c.get('orgId')
+  const now = new Date()
+  const end = now.toISOString().split('T')[0] ?? ''
+  const start = periodStartDate(period, now)
+
+  const safe = async <T>(fn: () => Promise<T>, fallback: T): Promise<T> => {
+    try { return await fn() } catch { return fallback }
+  }
+
+  const emptyKpis = {
+    reports_published: 0,
+    total_impressions: 0,
+    total_portal_visits: 0,
+    total_in_person_visits: 0,
+    total_offers: 0,
+    avg_impressions_per_report: 0,
+    avg_portal_visits_per_report: 0,
+    avg_in_person_visits_per_report: 0,
+    avg_offers_per_report: 0,
+    avg_views_per_day: 0,
+    avg_in_person_visits_per_week: 0,
+    overall_health_status: 'red' as const,
+  }
+
+  const [kpis, byNeighborhood, timeline] = await Promise.all([
+    safe(() => getPerformanceKpis(db, orgId, start, end, source), emptyKpis),
+    safe(() => getNeighborhoodPerformance(db, orgId, start, end, source), [] as Awaited<ReturnType<typeof getNeighborhoodPerformance>>),
+    safe(() => getTimelinePerformance(db, orgId, start, end, source), [] as Awaited<ReturnType<typeof getTimelinePerformance>>),
+  ])
+
+  return c.json({
+    period,
+    start,
+    end,
+    kpis,
+    by_neighborhood: byNeighborhood,
+    timeline,
+    benchmarks: BENCHMARKS,
+  })
+})
+
+// ── REPORTS LIST (global, across properties) ──────────────────
+// Paginated list of all reports in the org with aggregated metrics.
+
+app.get('/reports', async (c) => {
+  const db = c.env.DB
+  const orgId = c.get('orgId')
+
+  const page = parseInt(c.req.query('page') ?? '1', 10) || 1
+  const pageSize = parseInt(c.req.query('page_size') ?? '20', 10) || 20
+  const neighborhood = c.req.query('neighborhood') ?? null
+  const status = c.req.query('status') ?? null
+  const propertyId = c.req.query('property_id') ?? null
+  const from = c.req.query('from') ?? null
+  const to = c.req.query('to') ?? null
+
+  const safe = async <T>(fn: () => Promise<T>, fallback: T): Promise<T> => {
+    try { return await fn() } catch { return fallback }
+  }
+
+  const data = await safe(
+    () => listReportsWithMetrics(db, orgId, {
+      page,
+      page_size: pageSize,
+      neighborhood,
+      status,
+      property_id: propertyId,
+      from,
+      to,
+    }),
+    { total: 0, results: [] as Awaited<ReturnType<typeof listReportsWithMetrics>>['results'] },
+  )
+
+  return c.json({
+    page,
+    page_size: pageSize,
+    total: data.total,
+    results: data.results,
+  })
 })
 
 export default app
