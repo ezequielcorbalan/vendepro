@@ -50,6 +50,47 @@ export class D1UserRepository implements UserRepository {
       .run()
   }
 
+  async findFirstAdminByOrg(orgId: string): Promise<User | null> {
+    const row = await this.db
+      .prepare(`SELECT * FROM users WHERE org_id = ? AND role = 'admin' ORDER BY created_at ASC LIMIT 1`)
+      .bind(orgId)
+      .first() as any
+    return row ? this.toEntity(row) : null
+  }
+
+  async findProfileById(id: string): Promise<User | null> {
+    const row = await this.db
+      .prepare('SELECT * FROM users WHERE id = ?')
+      .bind(id)
+      .first() as any
+    return row ? this.toEntity(row) : null
+  }
+
+  async updateProfile(
+    id: string,
+    patch: Partial<{ full_name: string; email: string; photo_url: string | null; phone: string | null }>,
+  ): Promise<void> {
+    // No-op if patch is empty
+    if (Object.keys(patch).length === 0) return
+    await this.db
+      .prepare(`
+        UPDATE users
+        SET full_name = COALESCE(?, full_name),
+            email = COALESCE(?, email),
+            photo_url = COALESCE(?, photo_url),
+            phone = COALESCE(?, phone)
+        WHERE id = ?
+      `)
+      .bind(
+        patch.full_name ?? null,
+        patch.email ?? null,
+        patch.photo_url ?? null,
+        patch.phone ?? null,
+        id,
+      )
+      .run()
+  }
+
   private toEntity(row: any): User {
     return User.create({
       id: row.id, email: row.email, password_hash: row.password_hash ?? '',

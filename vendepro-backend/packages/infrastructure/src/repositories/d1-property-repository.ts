@@ -1,5 +1,5 @@
 import { Property } from '@vendepro/core'
-import type { PropertyRepository, PropertyFilters } from '@vendepro/core'
+import type { PropertyRepository, PropertyFilters, PropertyProps, PropertyPhoto, OperationType, CommercialStage, PropertyStatusCatalog } from '@vendepro/core'
 
 export class D1PropertyRepository implements PropertyRepository {
   constructor(private readonly db: D1Database) {}
@@ -100,6 +100,183 @@ export class D1PropertyRepository implements PropertyRepository {
 
   async delete(id: string, orgId: string): Promise<void> {
     await this.db.prepare('DELETE FROM properties WHERE id = ? AND org_id = ?').bind(id, orgId).run()
+  }
+
+  async findPhotos(propertyId: string, orgId: string): Promise<PropertyPhoto[]> {
+    const rows = (await this.db
+      .prepare('SELECT * FROM property_photos WHERE property_id = ? AND org_id = ? ORDER BY sort_order')
+      .bind(propertyId, orgId)
+      .all()).results as any[]
+    return rows.map(r => ({
+      id: r.id,
+      property_id: r.property_id,
+      org_id: r.org_id,
+      url: r.url,
+      r2_key: r.r2_key,
+      sort_order: r.sort_order ?? 0,
+      created_at: r.created_at,
+    }))
+  }
+
+  async addPhoto(photo: PropertyPhoto): Promise<void> {
+    await this.db
+      .prepare(`
+        INSERT INTO property_photos (id, org_id, property_id, url, r2_key, sort_order, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `)
+      .bind(photo.id, photo.org_id, photo.property_id, photo.url, photo.r2_key, photo.sort_order, photo.created_at)
+      .run()
+  }
+
+  async deletePhoto(photoId: string, orgId: string): Promise<void> {
+    await this.db
+      .prepare('DELETE FROM property_photos WHERE id = ? AND org_id = ?')
+      .bind(photoId, orgId)
+      .run()
+  }
+
+  async reorderPhotos(
+    propertyId: string,
+    orgId: string,
+    order: Array<{ id: string; sort_order: number }>,
+  ): Promise<void> {
+    for (const item of order) {
+      await this.db
+        .prepare('UPDATE property_photos SET sort_order = ? WHERE id = ? AND property_id = ? AND org_id = ?')
+        .bind(item.sort_order, item.id, propertyId, orgId)
+        .run()
+    }
+  }
+
+  async update(id: string, orgId: string, patch: Partial<PropertyProps>): Promise<void> {
+    if (Object.keys(patch).length === 0) return
+    await this.db
+      .prepare(`
+        UPDATE properties
+        SET address = COALESCE(?, address),
+            neighborhood = COALESCE(?, neighborhood),
+            city = COALESCE(?, city),
+            property_type = COALESCE(?, property_type),
+            rooms = COALESCE(?, rooms),
+            size_m2 = COALESCE(?, size_m2),
+            asking_price = COALESCE(?, asking_price),
+            currency = COALESCE(?, currency),
+            owner_name = COALESCE(?, owner_name),
+            owner_phone = COALESCE(?, owner_phone),
+            owner_email = COALESCE(?, owner_email),
+            contact_id = COALESCE(?, contact_id),
+            status = COALESCE(?, status),
+            commercial_stage = COALESCE(?, commercial_stage),
+            commercial_stage_id = COALESCE(?, commercial_stage_id),
+            operation_type = COALESCE(?, operation_type),
+            operation_type_id = COALESCE(?, operation_type_id),
+            status_id = COALESCE(?, status_id),
+            updated_at = datetime('now')
+        WHERE id = ? AND org_id = ?
+      `)
+      .bind(
+        patch.address ?? null,
+        patch.neighborhood ?? null,
+        patch.city ?? null,
+        patch.property_type ?? null,
+        patch.rooms ?? null,
+        patch.size_m2 ?? null,
+        patch.asking_price ?? null,
+        patch.currency ?? null,
+        patch.owner_name ?? null,
+        patch.owner_phone ?? null,
+        patch.owner_email ?? null,
+        patch.contact_id ?? null,
+        patch.status ?? null,
+        patch.commercial_stage ?? null,
+        patch.commercial_stage_id ?? null,
+        patch.operation_type ?? null,
+        patch.operation_type_id ?? null,
+        patch.status_id ?? null,
+        id,
+        orgId,
+      )
+      .run()
+  }
+
+  async updateStage(id: string, orgId: string, stageSlug: string): Promise<void> {
+    const stageRow = await this.db
+      .prepare(`
+        SELECT cs.id as stage_id, cs.slug as stage_slug
+        FROM commercial_stages cs
+        JOIN properties p ON cs.operation_type_id = p.operation_type_id
+        WHERE p.id = ? AND cs.slug = ?
+      `)
+      .bind(id, stageSlug)
+      .first() as any
+    if (!stageRow) throw new Error('invalid stage')
+
+    await this.db
+      .prepare(`
+        UPDATE properties
+        SET commercial_stage = ?, commercial_stage_id = ?, updated_at = datetime('now')
+        WHERE id = ? AND org_id = ?
+      `)
+      .bind(stageRow.stage_slug, stageRow.stage_id, id, orgId)
+      .run()
+  }
+
+  async findCatalogs(): Promise<{
+    operation_types: OperationType[]
+    commercial_stages: CommercialStage[]
+    property_statuses: PropertyStatusCatalog[]
+  }> {
+    const [opTypesRes, stagesRes, statusesRes] = await Promise.all([
+      this.db.prepare('SELECT id, slug, label FROM operation_types ORDER BY id').all(),
+      this.db
+        .prepare(
+          'SELECT id, operation_type_id, slug, label, sort_order, is_terminal, color FROM commercial_stages ORDER BY operation_type_id, sort_order',
+        )
+        .all(),
+      this.db
+        .prepare('SELECT id, operation_type_id, slug, label, color FROM property_statuses ORDER BY id')
+        .all(),
+    ])
+
+    const operation_types = (opTypesRes.results as any[]).map(r => ({
+      id: r.id,
+      slug: r.slug,
+      label: r.label,
+    })) as OperationType[]
+
+    const commercial_stages = (stagesRes.results as any[]).map(r => ({
+      id: r.id,
+      operation_type_id: r.operation_type_id,
+      slug: r.slug,
+      label: r.label,
+      sort_order: r.sort_order ?? 0,
+      is_terminal: Boolean(r.is_terminal),
+      color: r.color ?? null,
+    })) as CommercialStage[]
+
+    const property_statuses = (statusesRes.results as any[]).map(r => ({
+      id: r.id,
+      operation_type_id: r.operation_type_id,
+      slug: r.slug,
+      label: r.label,
+      color: r.color ?? null,
+    })) as PropertyStatusCatalog[]
+
+    return { operation_types, commercial_stages, property_statuses }
+  }
+
+  async markExternalReport(id: string, orgId: string): Promise<void> {
+    await this.db
+      .prepare(`UPDATE properties SET last_external_report_at = datetime('now') WHERE id = ? AND org_id = ?`)
+      .bind(id, orgId)
+      .run()
+  }
+
+  async clearExternalReport(id: string, orgId: string): Promise<void> {
+    await this.db
+      .prepare('UPDATE properties SET last_external_report_at = NULL WHERE id = ? AND org_id = ?')
+      .bind(id, orgId)
+      .run()
   }
 
   private toEntity(row: any): Property {

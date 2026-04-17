@@ -27,6 +27,40 @@ export class D1ContactRepository implements ContactRepository {
     return rows.map(r => this.toEntity(r))
   }
 
+  async findWithLeadsAndProperties(id: string, orgId: string): Promise<{
+    contact: Contact
+    leads: Array<{ id: string; full_name: string; stage: string }>
+    properties: Array<{ id: string; address: string; status: string }>
+  } | null> {
+    const contactRow = await this.db
+      .prepare('SELECT * FROM contacts WHERE id = ? AND org_id = ?')
+      .bind(id, orgId)
+      .first() as any
+    if (!contactRow) return null
+
+    const leadsRes = await this.db
+      .prepare('SELECT id, full_name, stage FROM leads WHERE contact_id = ? AND org_id = ? ORDER BY created_at DESC')
+      .bind(id, orgId)
+      .all()
+    const propsRes = await this.db
+      .prepare('SELECT id, address, status FROM properties WHERE contact_id = ? AND org_id = ? ORDER BY created_at DESC')
+      .bind(id, orgId)
+      .all()
+
+    const leads = (leadsRes.results as any[]).map(r => ({
+      id: r.id,
+      full_name: r.full_name,
+      stage: r.stage,
+    }))
+    const properties = (propsRes.results as any[]).map(r => ({
+      id: r.id,
+      address: r.address,
+      status: r.status,
+    }))
+
+    return { contact: this.toEntity(contactRow), leads, properties }
+  }
+
   async save(contact: Contact): Promise<void> {
     const o = contact.toObject()
     await this.db.prepare(`

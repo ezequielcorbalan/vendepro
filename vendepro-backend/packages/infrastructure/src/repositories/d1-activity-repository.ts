@@ -18,6 +18,14 @@ export class D1ActivityRepository implements ActivityRepository {
     return rows.map(r => this.toEntity(r))
   }
 
+  async findById(id: string, orgId: string): Promise<Activity | null> {
+    const row = await this.db
+      .prepare('SELECT * FROM activities WHERE id = ? AND org_id = ?')
+      .bind(id, orgId)
+      .first() as any
+    return row ? this.toEntity(row) : null
+  }
+
   async save(activity: Activity): Promise<void> {
     const o = activity.toObject()
     await this.db.prepare(`

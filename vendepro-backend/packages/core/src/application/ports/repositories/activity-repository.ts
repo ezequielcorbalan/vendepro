@@ -9,6 +9,7 @@ export interface ActivityFilters {
 
 export interface ActivityRepository {
   findByOrg(orgId: string, filters?: ActivityFilters): Promise<Activity[]>
+  findById(id: string, orgId: string): Promise<Activity | null>
   save(activity: Activity): Promise<void>
   delete(id: string, orgId: string): Promise<void>
 }
