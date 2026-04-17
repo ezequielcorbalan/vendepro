@@ -31,8 +31,7 @@ vendepro-backend/
 │   ├── api-ai/                    # Worker: vendepro-api-ai
 │   ├── api-admin/                 # Worker: vendepro-api-admin
 │   └── api-public/                # Worker: vendepro-api-public
-├── migrations/                    # 001-007 SQL migrations para D1
-├── schema.sql                     # Schema completo de la DB
+├── migrations_v2/                 # SQL migrations aplicadas a vendepro-db (D1)
 ├── turbo.json                     # Orchestration: build, test, dev
 └── vitest.workspace.ts            # Config raíz de Vitest
 
@@ -87,6 +86,7 @@ Los bindings (DB, R2) van en `wrangler.jsonc`. Los secrets se setean con `wrangl
 
 ## Recursos Cloudflare existentes (NO renombrar)
 
-- D1 database: `reportes-mg-db` / ID: `ca41dfff-cc50-45c7-a92a-424eebcabfb8`
+- D1 database activa: `vendepro-db` / ID: `45d18f94-807b-466f-8742-32bbc61fc7fb`
+- D1 database legacy (deprecada, no se usa): `reportes-mg-db` / ID: `ca41dfff-cc50-45c7-a92a-424eebcabfb8`
 - R2 bucket: `reportes-mg-assets`
 - JWT salt: `reportes-mg-salt-2026` (cambiar invalida todas las contraseñas)

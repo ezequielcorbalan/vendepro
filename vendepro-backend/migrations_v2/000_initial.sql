@@ -230,6 +230,8 @@ CREATE TABLE IF NOT EXISTS properties (
   sold_price REAL,
   sold_date TEXT,
   days_on_market INTEGER,
+  commercial_stage TEXT,
+  contact_id TEXT REFERENCES contacts(id),
   created_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT DEFAULT (datetime('now'))
 );

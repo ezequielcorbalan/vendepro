@@ -1,5 +1,5 @@
 import { Miniflare } from 'miniflare'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -11,32 +11,32 @@ export interface TestEnv {
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
-let schemaSql: string | null = null
+let cachedMigrations: string[] | null = null
 
 /**
- * Loads the canonical hexagonal schema from `vendepro-backend/migrations_v2/000_initial.sql`.
+ * Loads every `.sql` file in `vendepro-backend/migrations_v2/`, sorted alphabetically
+ * (which matches wrangler's execution order). Each file contributes zero or more
+ * statements; they are concatenated and returned.
  *
- * Resolution is anchored to this file's directory (packages/infrastructure/tests/helpers)
- * so it works regardless of where vitest is launched from (monorepo root, package root, etc.).
- *
- * NOTE: We intentionally load the v2 hexagonal initial migration rather than the legacy
- * root-level `schema.sql`, because adapter integration tests built on top of this helper
- * target the hexagonal data model (leads, contacts, stage_history, users with org_id, ...).
+ * Resolution is anchored to __dirname so it works regardless of where vitest is
+ * launched from (monorepo root, package root, etc.).
  */
-function loadSchema(): string {
-  if (schemaSql !== null) return schemaSql
+function loadMigrations(): string[] {
+  if (cachedMigrations !== null) return cachedMigrations
   // __dirname → packages/infrastructure/tests/helpers
   // → ../../../../ → vendepro-backend/
-  const path = join(__dirname, '..', '..', '..', '..', 'migrations_v2', '000_initial.sql')
-  const loaded = readFileSync(path, 'utf-8')
-  schemaSql = loaded
-  return loaded
+  const dir = join(__dirname, '..', '..', '..', '..', 'migrations_v2')
+  const files = readdirSync(dir)
+    .filter((f) => f.endsWith('.sql'))
+    .sort()
+  cachedMigrations = files.map((f) => readFileSync(join(dir, f), 'utf-8'))
+  return cachedMigrations
 }
 
 /**
  * Strips line-level SQL comments and blank lines, then splits on `;` into executable
- * statements. Works for the current schema because it contains no CREATE TRIGGER blocks
- * with inline semicolons. Revisit if triggers are added.
+ * statements. Works for the current migrations because none contain CREATE TRIGGER
+ * blocks with inline semicolons. Revisit if triggers are added.
  */
 function splitStatements(sql: string): string[] {
   const withoutLineComments = sql
@@ -60,9 +60,10 @@ export async function createTestDB(): Promise<TestEnv> {
     d1Databases: { DB: 'test-db-' + crypto.randomUUID() },
   })
   const DB = (await mf.getD1Database('DB')) as unknown as D1Database
-  const statements = splitStatements(loadSchema())
-  for (const stmt of statements) {
-    await DB.prepare(stmt).run()
+  for (const migration of loadMigrations()) {
+    for (const stmt of splitStatements(migration)) {
+      await DB.prepare(stmt).run()
+    }
   }
   return { DB, mf }
 }

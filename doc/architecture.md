@@ -18,7 +18,7 @@ vendepro-frontend/          Next.js 15 en Cloudflare Pages (vendepro.com.ar)
       └── public.api.vendepro.com.ar      vendepro-api-public (sin auth)
               │
               ▼
-    Cloudflare D1 (reportes-mg-db)   ← todos comparten la misma DB
+    Cloudflare D1 (vendepro-db)      ← todos comparten la misma DB
     Cloudflare R2 (reportes-mg-assets) ← todos comparten el mismo bucket
 ```
 
