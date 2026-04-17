@@ -248,15 +248,23 @@ app.get('/listings-performance', async (c) => {
   const source = c.req.query('source') ?? null
   const orgId = c.get('orgId')
 
+  const priceMinRaw = c.req.query('price_min')
+  const priceMaxRaw = c.req.query('price_max')
+  const listingFilters = {
+    property_type: c.req.query('property_type') ?? null,
+    price_min: priceMinRaw ? parseFloat(priceMinRaw) : null,
+    price_max: priceMaxRaw ? parseFloat(priceMaxRaw) : null,
+  }
+
   const repo = new D1AnalyticsReportRepository(c.env.DB)
   const performance = new GetListingsPerformanceUseCase(repo)
   const comparison = new GetNeighborhoodComparisonUseCase(repo)
   const activeListings = new GetActiveListingsWithBenchmarkUseCase(repo)
 
   const [baseResult, comparisonResult, activeListingsResult] = await Promise.all([
-    performance.execute({ orgId, period, source }),
-    comparison.execute(orgId),
-    activeListings.execute(orgId),
+    performance.execute({ orgId, period, source, listingFilters }),
+    comparison.execute(orgId, listingFilters),
+    activeListings.execute(orgId, listingFilters),
   ])
 
   return c.json({

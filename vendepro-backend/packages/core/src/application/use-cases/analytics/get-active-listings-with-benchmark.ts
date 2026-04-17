@@ -1,5 +1,6 @@
 import type {
   AnalyticsReportRepository,
+  ListingFilters,
 } from '../../ports/repositories/analytics-report-repository'
 import {
   computeDeltaHealthStatus,
@@ -23,10 +24,11 @@ export interface ActiveListingWithBenchmark {
 export class GetActiveListingsWithBenchmarkUseCase {
   constructor(private readonly repo: AnalyticsReportRepository) {}
 
-  async execute(orgId: string): Promise<ActiveListingWithBenchmark[]> {
+  async execute(orgId: string, listingFilters?: ListingFilters | null): Promise<ActiveListingWithBenchmark[]> {
+    const filters = listingFilters ?? null
     const [listings, soldBenchmarks] = await Promise.all([
-      this.repo.getActiveListingsWithAggregates(orgId),
-      this.repo.getSoldBenchmarkByNeighborhood(orgId),
+      this.repo.getActiveListingsWithAggregates(orgId, filters),
+      this.repo.getSoldBenchmarkByNeighborhood(orgId, filters),
     ])
 
     const benchmarkByNeighborhood = new Map<string, number>()

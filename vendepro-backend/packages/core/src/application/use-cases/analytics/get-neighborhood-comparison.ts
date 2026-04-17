@@ -1,5 +1,6 @@
 import type {
   AnalyticsReportRepository,
+  ListingFilters,
   NeighborhoodGroupTotals,
 } from '../../ports/repositories/analytics-report-repository'
 import {
@@ -40,10 +41,11 @@ function toMetrics(row: NeighborhoodGroupTotals | undefined): NeighborhoodGroupM
 export class GetNeighborhoodComparisonUseCase {
   constructor(private readonly repo: AnalyticsReportRepository) {}
 
-  async execute(orgId: string): Promise<NeighborhoodComparison[]> {
+  async execute(orgId: string, listingFilters?: ListingFilters | null): Promise<NeighborhoodComparison[]> {
+    const filters = listingFilters ?? null
     const [soldRows, activeRows] = await Promise.all([
-      this.repo.getNeighborhoodTotalsByPropertyStatus(orgId, 'sold'),
-      this.repo.getNeighborhoodTotalsByPropertyStatus(orgId, 'active'),
+      this.repo.getNeighborhoodTotalsByPropertyStatus(orgId, 'sold', filters),
+      this.repo.getNeighborhoodTotalsByPropertyStatus(orgId, 'active', filters),
     ])
 
     const neighborhoods = new Set<string>([

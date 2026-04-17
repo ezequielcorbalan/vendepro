@@ -118,6 +118,24 @@ describe('GetListingsPerformanceUseCase', () => {
     const useCase = new GetListingsPerformanceUseCase(repo)
     await useCase.execute({ orgId: 'org_mg', period: 'month', source: 'zonaprop' })
 
-    expect(repo.getPerformanceTotals).toHaveBeenCalledWith('org_mg', expect.any(String), expect.any(String), 'zonaprop')
+    expect(repo.getPerformanceTotals).toHaveBeenCalledWith('org_mg', expect.any(String), expect.any(String), 'zonaprop', null)
+  })
+
+  it('forwards listingFilters to all repo queries', async () => {
+    const repo = makeRepo()
+    repo.getPerformanceTotals.mockResolvedValue({
+      reports_published: 0, total_impressions: 0, total_portal_visits: 0,
+      total_in_person_visits: 0, total_offers: 0, total_days: 0,
+    })
+    repo.getNeighborhoodPerformance.mockResolvedValue([])
+    repo.getTimelinePerformance.mockResolvedValue([])
+
+    const useCase = new GetListingsPerformanceUseCase(repo)
+    const filters = { property_type: 'departamento', price_min: 50000, price_max: 200000 }
+    await useCase.execute({ orgId: 'org_mg', period: 'month', source: null, listingFilters: filters })
+
+    expect(repo.getPerformanceTotals).toHaveBeenCalledWith('org_mg', expect.any(String), expect.any(String), null, filters)
+    expect(repo.getNeighborhoodPerformance).toHaveBeenCalledWith('org_mg', expect.any(String), expect.any(String), null, filters)
+    expect(repo.getTimelinePerformance).toHaveBeenCalledWith('org_mg', expect.any(String), expect.any(String), null, filters)
   })
 })

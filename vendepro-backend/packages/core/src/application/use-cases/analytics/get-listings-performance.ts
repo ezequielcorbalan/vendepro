@@ -1,5 +1,6 @@
 import type {
   AnalyticsReportRepository,
+  ListingFilters,
   NeighborhoodPerformanceRow,
   TimelinePointRow,
 } from '../../ports/repositories/analytics-report-repository'
@@ -100,16 +101,18 @@ export class GetListingsPerformanceUseCase {
     orgId: string
     period: AnalyticsPeriod
     source: string | null
+    listingFilters?: ListingFilters | null
     now?: Date
   }): Promise<ListingsPerformanceResult> {
     const now = params.now ?? new Date()
     const end = now.toISOString().split('T')[0] ?? ''
     const start = periodStartDate(params.period, now)
+    const filters = params.listingFilters ?? null
 
     const [totals, byNeighborhood, timelineRows] = await Promise.all([
-      this.repo.getPerformanceTotals(params.orgId, start, end, params.source),
-      this.repo.getNeighborhoodPerformance(params.orgId, start, end, params.source),
-      this.repo.getTimelinePerformance(params.orgId, start, end, params.source),
+      this.repo.getPerformanceTotals(params.orgId, start, end, params.source, filters),
+      this.repo.getNeighborhoodPerformance(params.orgId, start, end, params.source, filters),
+      this.repo.getTimelinePerformance(params.orgId, start, end, params.source, filters),
     ])
 
     const count = totals.reports_published

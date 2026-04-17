@@ -1,6 +1,7 @@
 import type {
   ActiveListingRaw,
   AnalyticsReportRepository,
+  ListingFilters,
   NeighborhoodGroupTotals,
   NeighborhoodPerformanceRow,
   NeighborhoodSoldBenchmark,
@@ -10,6 +11,27 @@ import type {
   TimelinePointRow,
 } from '@vendepro/core'
 
+/** Construye un fragmento ` AND ...` sobre la tabla properties p según
+ *  los filtros de listado (tipo/precio). Todos los valores van binded. */
+function buildListingFilterSql(filters?: ListingFilters | null): { sql: string; binds: unknown[] } {
+  const parts: string[] = []
+  const binds: unknown[] = []
+  if (!filters) return { sql: '', binds }
+  if (filters.property_type) {
+    parts.push('p.property_type = ?')
+    binds.push(filters.property_type)
+  }
+  if (filters.price_min != null && Number.isFinite(filters.price_min)) {
+    parts.push('p.asking_price >= ?')
+    binds.push(filters.price_min)
+  }
+  if (filters.price_max != null && Number.isFinite(filters.price_max)) {
+    parts.push('p.asking_price <= ?')
+    binds.push(filters.price_max)
+  }
+  return { sql: parts.length > 0 ? ' AND ' + parts.join(' AND ') : '', binds }
+}
+
 export class D1AnalyticsReportRepository implements AnalyticsReportRepository {
   constructor(private readonly db: D1Database) {}
 
@@ -18,9 +40,12 @@ export class D1AnalyticsReportRepository implements AnalyticsReportRepository {
     start: string,
     end: string,
     source: string | null,
+    listingFilters?: ListingFilters | null,
   ): Promise<PerformanceTotals> {
+    const listingFilter = buildListingFilterSql(listingFilters)
     const sourceFilter = source ? ' AND rm.source = ?' : ''
-    const binds: unknown[] = source ? [orgId, start, end, source] : [orgId, start, end]
+    const metricsBinds: unknown[] = [orgId, start, end, ...listingFilter.binds, ...(source ? [source] : [])]
+    const daysBinds: unknown[] = [orgId, start, end, ...listingFilter.binds]
 
     // Queries separadas para evitar que el JOIN con report_metrics
     // multiplique el cálculo de días por cada fila de métricas.
@@ -39,8 +64,9 @@ export class D1AnalyticsReportRepository implements AnalyticsReportRepository {
           AND r.status = 'published'
           AND date(r.published_at) >= ?
           AND date(r.published_at) <= ?
+          ${listingFilter.sql}
           ${sourceFilter}
-      `).bind(...binds).first() as Promise<any>,
+      `).bind(...metricsBinds).first() as Promise<any>,
       this.db.prepare(`
         SELECT COALESCE(SUM(
           MAX(1, CAST(julianday(r.period_end) - julianday(r.period_start) AS INTEGER))
@@ -51,7 +77,8 @@ export class D1AnalyticsReportRepository implements AnalyticsReportRepository {
           AND r.status = 'published'
           AND date(r.published_at) >= ?
           AND date(r.published_at) <= ?
-      `).bind(orgId, start, end).first() as Promise<any>,
+          ${listingFilter.sql}
+      `).bind(...daysBinds).first() as Promise<any>,
     ])
 
     return {
@@ -69,9 +96,12 @@ export class D1AnalyticsReportRepository implements AnalyticsReportRepository {
     start: string,
     end: string,
     source: string | null,
+    listingFilters?: ListingFilters | null,
   ): Promise<NeighborhoodPerformanceRow[]> {
+    const listingFilter = buildListingFilterSql(listingFilters)
     const sourceFilter = source ? ' AND rm.source = ?' : ''
-    const binds: unknown[] = source ? [orgId, start, end, source] : [orgId, start, end]
+    const metricsBinds: unknown[] = [orgId, start, end, ...listingFilter.binds, ...(source ? [source] : [])]
+    const daysBinds: unknown[] = [orgId, start, end, ...listingFilter.binds]
 
     const [metricsRes, daysRes] = await Promise.all([
       this.db.prepare(`
@@ -92,10 +122,11 @@ export class D1AnalyticsReportRepository implements AnalyticsReportRepository {
           AND r.status = 'published'
           AND date(r.published_at) >= ?
           AND date(r.published_at) <= ?
+          ${listingFilter.sql}
           ${sourceFilter}
         GROUP BY p.neighborhood
         ORDER BY reports_count DESC, p.neighborhood ASC
-      `).bind(...binds).all(),
+      `).bind(...metricsBinds).all(),
       this.db.prepare(`
         SELECT
           p.neighborhood AS neighborhood,
@@ -108,8 +139,9 @@ export class D1AnalyticsReportRepository implements AnalyticsReportRepository {
           AND r.status = 'published'
           AND date(r.published_at) >= ?
           AND date(r.published_at) <= ?
+          ${listingFilter.sql}
         GROUP BY p.neighborhood
-      `).bind(orgId, start, end).all(),
+      `).bind(...daysBinds).all(),
     ])
 
     const daysMap = new Map<string, number>()
@@ -136,9 +168,11 @@ export class D1AnalyticsReportRepository implements AnalyticsReportRepository {
     start: string,
     end: string,
     source: string | null,
+    listingFilters?: ListingFilters | null,
   ): Promise<TimelinePointRow[]> {
+    const listingFilter = buildListingFilterSql(listingFilters)
     const sourceFilter = source ? ' AND rm.source = ?' : ''
-    const binds: unknown[] = source ? [orgId, start, end, source] : [orgId, start, end]
+    const binds: unknown[] = [orgId, start, end, ...listingFilter.binds, ...(source ? [source] : [])]
 
     const res = await this.db.prepare(`
       SELECT
@@ -154,6 +188,7 @@ export class D1AnalyticsReportRepository implements AnalyticsReportRepository {
         AND r.status = 'published'
         AND date(r.published_at) >= ?
         AND date(r.published_at) <= ?
+        ${listingFilter.sql}
         ${sourceFilter}
       GROUP BY month_key
       ORDER BY month_key ASC
@@ -256,7 +291,11 @@ export class D1AnalyticsReportRepository implements AnalyticsReportRepository {
   async getNeighborhoodTotalsByPropertyStatus(
     orgId: string,
     propertyStatus: 'sold' | 'active',
+    listingFilters?: ListingFilters | null,
   ): Promise<NeighborhoodGroupTotals[]> {
+    const listingFilter = buildListingFilterSql(listingFilters)
+    const binds: unknown[] = [orgId, propertyStatus, ...listingFilter.binds]
+
     const [metricsRes, daysRes] = await Promise.all([
       this.db.prepare(`
         SELECT
@@ -272,8 +311,9 @@ export class D1AnalyticsReportRepository implements AnalyticsReportRepository {
         WHERE p.org_id = ?
           AND p.status = ?
           AND r.status = 'published'
+          ${listingFilter.sql}
         GROUP BY p.neighborhood
-      `).bind(orgId, propertyStatus).all(),
+      `).bind(...binds).all(),
       this.db.prepare(`
         SELECT
           p.neighborhood AS neighborhood,
@@ -285,10 +325,11 @@ export class D1AnalyticsReportRepository implements AnalyticsReportRepository {
           WHERE p.org_id = ?
             AND p.status = ?
             AND r.status = 'published'
+            ${listingFilter.sql}
         ) rd
         JOIN properties p ON p.id = rd.property_id
         GROUP BY p.neighborhood
-      `).bind(orgId, propertyStatus).all(),
+      `).bind(...binds).all(),
     ])
 
     const daysMap = new Map<string, number>()
@@ -307,7 +348,13 @@ export class D1AnalyticsReportRepository implements AnalyticsReportRepository {
     }))
   }
 
-  async getSoldBenchmarkByNeighborhood(orgId: string): Promise<NeighborhoodSoldBenchmark[]> {
+  async getSoldBenchmarkByNeighborhood(
+    orgId: string,
+    listingFilters?: ListingFilters | null,
+  ): Promise<NeighborhoodSoldBenchmark[]> {
+    const listingFilter = buildListingFilterSql(listingFilters)
+    const binds: unknown[] = [orgId, ...listingFilter.binds]
+
     const res = await this.db.prepare(`
       SELECT
         p.neighborhood AS neighborhood,
@@ -320,11 +367,12 @@ export class D1AnalyticsReportRepository implements AnalyticsReportRepository {
         WHERE p.org_id = ?
           AND p.status = 'sold'
           AND r.status = 'published'
+          ${listingFilter.sql}
       ) rd
       JOIN properties p ON p.id = rd.property_id
       LEFT JOIN report_metrics rm ON rm.report_id = rd.id
       GROUP BY p.neighborhood
-    `).bind(orgId).all()
+    `).bind(...binds).all()
 
     return ((res.results as any[]) ?? []).map(r => ({
       neighborhood: String(r.neighborhood ?? 'Sin barrio'),
@@ -333,7 +381,13 @@ export class D1AnalyticsReportRepository implements AnalyticsReportRepository {
     }))
   }
 
-  async getActiveListingsWithAggregates(orgId: string): Promise<ActiveListingRaw[]> {
+  async getActiveListingsWithAggregates(
+    orgId: string,
+    listingFilters?: ListingFilters | null,
+  ): Promise<ActiveListingRaw[]> {
+    const listingFilter = buildListingFilterSql(listingFilters)
+    const binds: unknown[] = [orgId, ...listingFilter.binds]
+
     const [metricsRes, daysRes, latestRes] = await Promise.all([
       this.db.prepare(`
         SELECT
@@ -348,8 +402,9 @@ export class D1AnalyticsReportRepository implements AnalyticsReportRepository {
         LEFT JOIN report_metrics rm ON rm.report_id = r.id
         WHERE p.org_id = ?
           AND p.status = 'active'
+          ${listingFilter.sql}
         GROUP BY p.id
-      `).bind(orgId).all(),
+      `).bind(...binds).all(),
       this.db.prepare(`
         SELECT
           p.id AS property_id,
@@ -362,9 +417,10 @@ export class D1AnalyticsReportRepository implements AnalyticsReportRepository {
           WHERE p.org_id = ?
             AND p.status = 'active'
             AND r.status = 'published'
+            ${listingFilter.sql}
         ) rd ON rd.property_id = p.id
         GROUP BY p.id
-      `).bind(orgId).all(),
+      `).bind(...binds).all(),
       this.db.prepare(`
         SELECT
           r.property_id AS property_id,
@@ -377,8 +433,9 @@ export class D1AnalyticsReportRepository implements AnalyticsReportRepository {
         WHERE p.org_id = ?
           AND p.status = 'active'
           AND r.status = 'published'
+          ${listingFilter.sql}
         GROUP BY r.property_id
-      `).bind(orgId).all(),
+      `).bind(...binds).all(),
     ])
 
     const daysByProperty = new Map<string, number>()

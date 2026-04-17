@@ -1,3 +1,11 @@
+/** Filtros aplicables a cualquier query de analytics, se combinan con AND.
+ *  null/undefined = no filtrar. */
+export interface ListingFilters {
+  property_type?: string | null
+  price_min?: number | null
+  price_max?: number | null
+}
+
 export interface PerformanceTotals {
   reports_published: number
   total_impressions: number
@@ -98,6 +106,7 @@ export interface AnalyticsReportRepository {
     start: string,
     end: string,
     source: string | null,
+    listingFilters?: ListingFilters | null,
   ): Promise<PerformanceTotals>
 
   getNeighborhoodPerformance(
@@ -105,6 +114,7 @@ export interface AnalyticsReportRepository {
     start: string,
     end: string,
     source: string | null,
+    listingFilters?: ListingFilters | null,
   ): Promise<NeighborhoodPerformanceRow[]>
 
   getTimelinePerformance(
@@ -112,6 +122,7 @@ export interface AnalyticsReportRepository {
     start: string,
     end: string,
     source: string | null,
+    listingFilters?: ListingFilters | null,
   ): Promise<TimelinePointRow[]>
 
   listReportsWithMetrics(
@@ -123,11 +134,18 @@ export interface AnalyticsReportRepository {
   getNeighborhoodTotalsByPropertyStatus(
     orgId: string,
     propertyStatus: 'sold' | 'active',
+    listingFilters?: ListingFilters | null,
   ): Promise<NeighborhoodGroupTotals[]>
 
   /** Benchmark del barrio para propiedades vendidas (vis totales + días). */
-  getSoldBenchmarkByNeighborhood(orgId: string): Promise<NeighborhoodSoldBenchmark[]>
+  getSoldBenchmarkByNeighborhood(
+    orgId: string,
+    listingFilters?: ListingFilters | null,
+  ): Promise<NeighborhoodSoldBenchmark[]>
 
   /** Todas las propiedades activas (con o sin reports) con métricas agregadas. */
-  getActiveListingsWithAggregates(orgId: string): Promise<ActiveListingRaw[]>
+  getActiveListingsWithAggregates(
+    orgId: string,
+    listingFilters?: ListingFilters | null,
+  ): Promise<ActiveListingRaw[]>
 }
