@@ -20,7 +20,9 @@ vi.mock('@vendepro/infrastructure', async (importOriginal) => {
       verifyToken: vi.fn().mockResolvedValue(null),
     })),
     CryptoIdGenerator: vi.fn().mockImplementation(() => ({
-      generate: vi.fn().mockReturnValue('test-id'),
+      // 32-char hex returned on every call; the use-case concatenates
+      // two calls for a 64-char token — deterministic for assertions.
+      generate: vi.fn().mockReturnValue('a'.repeat(32)),
     })),
   }
 })
@@ -44,13 +46,15 @@ const mockUser = {
   }),
 }
 
+// Build a D1Database-like mock whose prepare().bind().first() returns `tokenRow`.
+// The new D1PasswordResetTokenRepository.findByToken uses SELECT * … .first().
+// INSERT (save) and UPDATE (markUsed) use .run().
 function makeMockDb(tokenRow: any = null) {
+  const first = vi.fn().mockResolvedValue(tokenRow)
+  const run = vi.fn().mockResolvedValue({ success: true, meta: { changes: 1 } })
   return {
     prepare: vi.fn().mockReturnValue({
-      bind: vi.fn().mockReturnValue({
-        first: vi.fn().mockResolvedValue(tokenRow),
-        run: vi.fn().mockResolvedValue({ success: true }),
-      }),
+      bind: vi.fn().mockReturnValue({ first, run }),
     }),
   }
 }
@@ -58,7 +62,7 @@ function makeMockDb(tokenRow: any = null) {
 const ENV_BASE = { JWT_SECRET: 'test-secret', EMBLUE_API_KEY: 'test-api-key' }
 
 beforeEach(() => {
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) }))
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({}) }))
   mockUser.updatePassword.mockClear()
 })
 
@@ -126,6 +130,7 @@ describe('POST /forgot-password', () => {
     expect(res.status).toBe(200)
     const body = await res.json() as any
     expect(body.success).toBe(true)
+    // D1PasswordResetTokenRepository.save() issues an INSERT (with ON CONFLICT upsert)
     expect(mockDb.prepare).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO password_reset_tokens'))
     expect(fetch).toHaveBeenCalledWith(
       'https://api.embluemail.com/v2.3/send',
@@ -156,15 +161,21 @@ describe('POST /forgot-password', () => {
 
 // ── POST /reset-password ──────────────────────────────────────
 describe('POST /reset-password', () => {
-  const futureDate = new Date(Date.now() + 60 * 60 * 1000).toISOString().replace('T', ' ').slice(0, 19)
-  const pastDate   = new Date(Date.now() - 60 * 60 * 1000).toISOString().replace('T', ' ').slice(0, 19)
+  // The domain entity requires token length >= 32
+  const VALID_TOKEN = 'v'.repeat(64)
+
+  // D1PasswordResetTokenRepository.findByToken passes row.expires_at directly into
+  // PasswordResetToken.create — must be parseable by `new Date(...)`. ISO works.
+  const futureIso = new Date(Date.now() + 60 * 60 * 1000).toISOString()
+  const pastIso   = new Date(Date.now() - 60 * 60 * 1000).toISOString()
 
   const validTokenRow = {
-    token: 'validtoken123',
+    token: VALID_TOKEN,
     user_id: 'user-1',
     org_id: 'org_mg',
-    expires_at: futureDate,
+    expires_at: futureIso,
     used: 0,
+    created_at: '2026-01-01T00:00:00.000Z',
   }
 
   it('returns 400 when token not found', async () => {
@@ -172,7 +183,7 @@ describe('POST /reset-password', () => {
     const res = await app.request('/reset-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: 'invalid', password: 'newpass123' }),
+      body: JSON.stringify({ token: VALID_TOKEN, password: 'newpass123' }),
     }, { DB: makeMockDb(null), ...ENV_BASE })
     expect(res.status).toBe(400)
     const body = await res.json() as any
@@ -184,11 +195,12 @@ describe('POST /reset-password', () => {
     const res = await app.request('/reset-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: 'usedtoken', password: 'newpass123' }),
+      body: JSON.stringify({ token: VALID_TOKEN, password: 'newpass123' }),
     }, { DB: makeMockDb({ ...validTokenRow, used: 1 }), ...ENV_BASE })
     expect(res.status).toBe(400)
     const body = await res.json() as any
-    expect(body.error).toBe('Token ya utilizado')
+    // Unified message from CompletePasswordResetUseCase.canBeUsed() branch
+    expect(body.error).toBe('Token inválido o expirado')
   })
 
   it('returns 400 when token expired', async () => {
@@ -196,11 +208,11 @@ describe('POST /reset-password', () => {
     const res = await app.request('/reset-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: 'expiredtoken', password: 'newpass123' }),
-    }, { DB: makeMockDb({ ...validTokenRow, expires_at: pastDate }), ...ENV_BASE })
+      body: JSON.stringify({ token: VALID_TOKEN, password: 'newpass123' }),
+    }, { DB: makeMockDb({ ...validTokenRow, expires_at: pastIso }), ...ENV_BASE })
     expect(res.status).toBe(400)
     const body = await res.json() as any
-    expect(body.error).toBe('Token expirado')
+    expect(body.error).toBe('Token inválido o expirado')
   })
 
   it('returns 400 when password too short', async () => {
@@ -208,7 +220,7 @@ describe('POST /reset-password', () => {
     const res = await app.request('/reset-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: 'validtoken123', password: 'short' }),
+      body: JSON.stringify({ token: VALID_TOKEN, password: 'short' }),
     }, { DB: makeMockDb(validTokenRow), ...ENV_BASE })
     expect(res.status).toBe(400)
     const body = await res.json() as any
@@ -228,7 +240,7 @@ describe('POST /reset-password', () => {
     const res = await app.request('/reset-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: 'validtoken123', password: 'newpass123' }),
+      body: JSON.stringify({ token: VALID_TOKEN, password: 'newpass123' }),
     }, { DB: mockDb, ...ENV_BASE })
     expect(res.status).toBe(200)
     const body = await res.json() as any

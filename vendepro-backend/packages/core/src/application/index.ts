@@ -5,6 +5,8 @@ export * from './use-cases/auth/login'
 export * from './use-cases/auth/change-password'
 export * from './use-cases/auth/create-user'
 export * from './use-cases/auth/register-with-org'
+export * from './use-cases/auth/request-password-reset'
+export * from './use-cases/auth/complete-password-reset'
 
 // Leads
 export * from './use-cases/leads/get-leads'
