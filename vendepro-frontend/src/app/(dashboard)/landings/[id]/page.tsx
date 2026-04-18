@@ -13,6 +13,7 @@ import VersionsDrawer from '@/components/landings/VersionsDrawer'
 import ConfigDrawer from '@/components/landings/ConfigDrawer'
 import PublishReviewBanner from '@/components/landings/PublishReviewBanner'
 import AnalyticsDashboard from '@/components/landings/analytics/AnalyticsDashboard'
+import LandingMobileInfo from '@/components/landings/LandingMobileInfo'
 import { X } from 'lucide-react'
 
 export default function LandingEditorPage() {
@@ -75,12 +76,19 @@ export default function LandingEditorPage() {
     setLanding(r.landing); setBlocks(r.landing.blocks); setDirty(false)
   }
 
-  if (!landing) return <div className="p-12 text-center text-gray-500">Cargando editor…</div>
+  if (!landing) return <div className="p-12 text-center text-gray-500">Cargando…</div>
 
   const viewportClass = viewport === 'mobile' ? 'max-w-[420px]' : 'max-w-5xl'
 
   return (
-    <div className="h-[calc(100vh-0px)] flex flex-col bg-gray-50">
+    <>
+      {/* Mobile (< lg): info + URL, sin editor */}
+      <div className="lg:hidden">
+        <LandingMobileInfo landing={landing} />
+      </div>
+
+      {/* Desktop (>= lg): editor completo 3-panes */}
+      <div className="hidden lg:flex h-[calc(100vh-0px)] flex-col bg-gray-50">
       <EditorToolbar
         landing={landing} isAdmin={isAdmin} dirty={dirty} saving={saving}
         onOpenVersions={() => setShowVersions(true)}
@@ -162,6 +170,7 @@ export default function LandingEditorPage() {
           </aside>
         </div>
       )}
-    </div>
+      </div>
+    </>
   )
 }
