@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { X, ChevronRight, Loader2 } from 'lucide-react'
 import { templatesApi, landingsApi } from '@/lib/landings/api'
 import type { LandingTemplate, LandingKind } from '@/lib/landings/types'
-import { slugifyBase, isValidSlugBase } from '@/lib/landings/slug'
+import { slugifyBase, isValidSlugBase, publicLandingHostPath } from '@/lib/landings/slug'
 
 type Step = 'template' | 'name'
 
@@ -104,7 +104,7 @@ export default function NewLandingModal({ onClose }: { onClose: () => void }) {
             />
             {slugBase && (
               <p className="mt-2 text-xs text-gray-500">
-                URL final: <code>{slugifyBase(slugBase) || 'slug'}-XXXXX.landings.vendepro.com.ar</code> (se agrega un sufijo aleatorio de 5 chars)
+                URL final: <code>{publicLandingHostPath(`${slugifyBase(slugBase) || 'slug'}-XXXXX`)}</code> (se agrega un sufijo aleatorio de 5 chars)
               </p>
             )}
             {error && <p className="mt-3 text-sm text-red-600">{error}</p>}

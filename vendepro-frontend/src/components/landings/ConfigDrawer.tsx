@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { X, Save } from 'lucide-react'
 import { landingsApi } from '@/lib/landings/api'
-import { slugifyBase, isValidSlugBase } from '@/lib/landings/slug'
+import { slugifyBase, isValidSlugBase, publicLandingHostPath } from '@/lib/landings/slug'
 import type { Landing } from '@/lib/landings/types'
 
 export default function ConfigDrawer({
@@ -84,7 +84,7 @@ export default function ConfigDrawer({
             <p className="text-xs text-gray-500 mt-1">
               URL:{' '}
               <code>
-                {slugifyBase(slugBase)}-{landing.slug_suffix}.landings.vendepro.com.ar
+                {publicLandingHostPath(`${slugifyBase(slugBase)}-${landing.slug_suffix}`)}
               </code>
             </p>
           </div>

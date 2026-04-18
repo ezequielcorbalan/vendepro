@@ -11,13 +11,14 @@ export const corsMiddleware = cors({
       'https://vendepro.com.ar',
       'https://www.vendepro.com.ar',
       'https://app.vendepro.com.ar',
+      'https://landings.vendepro.com.ar',
     ]
 
     if (
       allowed.includes(origin) ||
       origin.endsWith('.api.vendepro.com.ar') || // *.api.vendepro.com.ar
       origin.endsWith('.pages.dev') ||           // CF Pages preview deployments
-      /^https:\/\/[a-z0-9-]+\.landings\.vendepro\.com\.ar$/i.test(origin) // landing subdomains
+      /^https:\/\/[a-z0-9-]+\.landings\.vendepro\.com\.ar$/i.test(origin) // wildcard landing subdomains (SaaS future)
     ) {
       return origin
     }
