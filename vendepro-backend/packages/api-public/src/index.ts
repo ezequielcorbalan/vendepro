@@ -12,6 +12,9 @@ import {
   D1ContactRepository,
   D1LeadRepository,
   CryptoIdGenerator,
+  D1LandingRepository,
+  D1LandingVersionRepository,
+  D1LandingEventRepository,
 } from '@vendepro/infrastructure'
 import {
   GetPublicReportUseCase,
@@ -20,6 +23,9 @@ import {
   SubmitVisitFormResponseUseCase,
   GetPublicPrefactibilidadUseCase,
   CreatePublicLeadUseCase,
+  GetPublicLandingUseCase,
+  RecordLandingEventUseCase,
+  SubmitLeadFromLandingUseCase,
 } from '@vendepro/core'
 
 type Env = { DB: D1Database }
@@ -114,6 +120,60 @@ app.post('/public/leads', async (c) => {
   })
 
   return c.json(result, 201)
+})
+
+// ── PUBLIC LANDINGS ───────────────────────────────────────────
+app.get('/l/:slug', async (c) => {
+  const landings = new D1LandingRepository(c.env.DB)
+  const versions = new D1LandingVersionRepository(c.env.DB)
+  const uc = new GetPublicLandingUseCase(landings, versions)
+  const view = await uc.execute({ fullSlug: c.req.param('slug') })
+  c.header('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=3600')
+  return c.json({ landing: view })
+})
+
+app.post('/l/:slug/submit', async (c) => {
+  const body = (await c.req.json()) as any
+  const landings = new D1LandingRepository(c.env.DB)
+  const events = new D1LandingEventRepository(c.env.DB)
+  const leads = new D1LeadRepository(c.env.DB)
+  const idGen = new CryptoIdGenerator()
+
+  const uc = new SubmitLeadFromLandingUseCase(landings, events, leads, idGen)
+  const r = await uc.execute({
+    fullSlug: c.req.param('slug'),
+    fields: {
+      name: String(body.name ?? ''),
+      phone: String(body.phone ?? ''),
+      email: body.email ?? null,
+      address: body.address ?? null,
+      message: body.message ?? null,
+    },
+    visitorId: body.visitorId ?? null,
+    utm: body.utm ?? undefined,
+  })
+  c.header('Cache-Control', 'no-store')
+  return c.json(r, 201)
+})
+
+app.post('/l/:slug/event', async (c) => {
+  const body = (await c.req.json()) as any
+  const landings = new D1LandingRepository(c.env.DB)
+  const events = new D1LandingEventRepository(c.env.DB)
+  const idGen = new CryptoIdGenerator()
+  const uc = new RecordLandingEventUseCase(landings, events, idGen)
+  await uc.execute({
+    fullSlug: c.req.param('slug'),
+    eventType: body.type,
+    visitorId: body.visitorId ?? null,
+    sessionId: body.sessionId ?? null,
+    utmSource: body.utm?.source ?? null,
+    utmMedium: body.utm?.medium ?? null,
+    utmCampaign: body.utm?.campaign ?? null,
+    referrer: body.utm?.referrer ?? null,
+    userAgent: c.req.header('user-agent') ?? null,
+  })
+  return new Response(null, { status: 204 })
 })
 
 export default app
