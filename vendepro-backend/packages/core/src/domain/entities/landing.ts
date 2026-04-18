@@ -109,7 +109,10 @@ export class Landing {
   get created_at() { return this.props.created_at }
   get updated_at() { return this.props.updated_at }
 
-  toObject(): LandingProps { return { ...this.props, blocks: [...this.props.blocks] } }
+  toObject(): LandingProps & { full_slug: string } {
+    // Incluye full_slug computado — los consumidores (api JSON, frontend) lo esperan.
+    return { ...this.props, blocks: [...this.props.blocks], full_slug: this.full_slug }
+  }
 
   replaceBlocks(blocks: Block[]): Landing {
     const v = validateBlocks(blocks)
