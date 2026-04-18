@@ -32,7 +32,9 @@ jobs:
         working-directory: vendepro-backend
 
       - name: Run all tests
-        run: npm test
+        # --concurrency=1: evita flake de miniflare al correr varios paquetes en
+        # paralelo. Los tests pasan individualmente; el throughput agregado es ~30-40s.
+        run: npx turbo run test --concurrency=1
         working-directory: vendepro-backend
         env:
           CI: true
