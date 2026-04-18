@@ -3,6 +3,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, BarChart3, History, Settings, Eye, Send, CheckCircle2, XCircle } from 'lucide-react'
 import type { Landing } from '@/lib/landings/types'
+import { publicLandingHostPath } from '@/lib/landings/slug'
 import StatusBadge from './StatusBadge'
 
 interface Props {
@@ -38,7 +39,7 @@ export default function EditorToolbar({ landing, isAdmin, dirty, saving, onOpenV
           {saving && <span className="text-xs text-gray-500">Guardando…</span>}
           {!saving && dirty && <span className="text-xs text-amber-600">Sin guardar</span>}
         </div>
-        <p className="text-xs text-gray-500 truncate">{landing.full_slug}.landings.vendepro.com.ar</p>
+        <p className="text-xs text-gray-500 truncate">{publicLandingHostPath(landing.full_slug)}</p>
       </div>
 
       <button onClick={onOpenVersions} className="p-2 hover:bg-gray-100 rounded-lg" title="Versiones"><History className="w-4 h-4 text-gray-600" /></button>

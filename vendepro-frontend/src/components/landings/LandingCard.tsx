@@ -2,10 +2,11 @@
 import Link from 'next/link'
 import { ExternalLink } from 'lucide-react'
 import type { Landing } from '@/lib/landings/types'
+import { publicLandingUrl, publicLandingHostPath } from '@/lib/landings/slug'
 import StatusBadge from './StatusBadge'
 
 export default function LandingCard({ landing }: { landing: Landing }) {
-  const publicUrl = `https://${landing.full_slug}.landings.vendepro.com.ar`
+  const publicUrl = publicLandingUrl(landing.full_slug)
   const kindLabel = landing.kind === 'lead_capture' ? 'Captación' : 'Propiedad'
 
   return (
@@ -21,7 +22,7 @@ export default function LandingCard({ landing }: { landing: Landing }) {
             <h3 className="font-semibold text-gray-900 line-clamp-1">{landing.seo_title || landing.full_slug}</h3>
             <StatusBadge status={landing.status} />
           </div>
-          <p className="text-xs text-gray-500 truncate">{landing.full_slug}.landings.vendepro.com.ar</p>
+          <p className="text-xs text-gray-500 truncate">{publicLandingHostPath(landing.full_slug)}</p>
           <div className="flex items-center gap-2 text-xs text-gray-500">
             <span className="px-2 py-0.5 rounded-md bg-gray-100">{kindLabel}</span>
             <span>{new Date(landing.updated_at).toLocaleDateString('es-AR')}</span>
