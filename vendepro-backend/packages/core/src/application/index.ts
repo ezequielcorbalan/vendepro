@@ -103,6 +103,9 @@ export * from './use-cases/analytics/export-leads'
 // AI
 export * from './use-cases/ai/extract-property-metrics'
 
+// Landings
+export * from './use-cases/landings/index'
+
 // Public
 export * from './use-cases/public/get-public-report'
 export * from './use-cases/public/get-public-appraisal'
