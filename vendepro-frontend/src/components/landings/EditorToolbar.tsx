@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, History, Settings, Eye, Send, CheckCircle2, XCircle } from 'lucide-react'
+import { ArrowLeft, BarChart3, History, Settings, Eye, Send, CheckCircle2, XCircle } from 'lucide-react'
 import type { Landing } from '@/lib/landings/types'
 import StatusBadge from './StatusBadge'
 
@@ -12,13 +12,14 @@ interface Props {
   saving: boolean
   onOpenVersions: () => void
   onOpenConfig: () => void
+  onOpenAnalytics: () => void
   onOpenPreview: () => void
   onRequestPublish: () => Promise<void>
   onPublish: () => Promise<void>
   onRejectPublish: (note: string) => Promise<void>
 }
 
-export default function EditorToolbar({ landing, isAdmin, dirty, saving, onOpenVersions, onOpenConfig, onOpenPreview, onRequestPublish, onPublish, onRejectPublish }: Props) {
+export default function EditorToolbar({ landing, isAdmin, dirty, saving, onOpenVersions, onOpenConfig, onOpenAnalytics, onOpenPreview, onRequestPublish, onPublish, onRejectPublish }: Props) {
   const [busy, setBusy] = useState(false)
   const [showReject, setShowReject] = useState(false)
   const [note, setNote] = useState('')
@@ -42,6 +43,7 @@ export default function EditorToolbar({ landing, isAdmin, dirty, saving, onOpenV
 
       <button onClick={onOpenVersions} className="p-2 hover:bg-gray-100 rounded-lg" title="Versiones"><History className="w-4 h-4 text-gray-600" /></button>
       <button onClick={onOpenConfig} className="p-2 hover:bg-gray-100 rounded-lg" title="Configuración"><Settings className="w-4 h-4 text-gray-600" /></button>
+      <button onClick={onOpenAnalytics} className="p-2 hover:bg-gray-100 rounded-lg" title="Analytics"><BarChart3 className="w-4 h-4 text-gray-600" /></button>
       <button onClick={onOpenPreview} className="p-2 hover:bg-gray-100 rounded-lg" title="Vista previa"><Eye className="w-4 h-4 text-gray-600" /></button>
 
       {landing.status === 'draft' && !isAdmin && (

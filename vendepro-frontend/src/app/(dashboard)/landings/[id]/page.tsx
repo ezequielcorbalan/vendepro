@@ -12,6 +12,8 @@ import EditorToolbar from '@/components/landings/EditorToolbar'
 import VersionsDrawer from '@/components/landings/VersionsDrawer'
 import ConfigDrawer from '@/components/landings/ConfigDrawer'
 import PublishReviewBanner from '@/components/landings/PublishReviewBanner'
+import AnalyticsDashboard from '@/components/landings/analytics/AnalyticsDashboard'
+import { X } from 'lucide-react'
 
 export default function LandingEditorPage() {
   const params = useParams<{ id: string }>()
@@ -28,6 +30,7 @@ export default function LandingEditorPage() {
   const [saving, setSaving] = useState(false)
   const [showVersions, setShowVersions] = useState(false)
   const [showConfig, setShowConfig] = useState(false)
+  const [showAnalytics, setShowAnalytics] = useState(false)
   const saveTimer = useRef<any>(null)
 
   useEffect(() => {
@@ -82,6 +85,7 @@ export default function LandingEditorPage() {
         landing={landing} isAdmin={isAdmin} dirty={dirty} saving={saving}
         onOpenVersions={() => setShowVersions(true)}
         onOpenConfig={() => setShowConfig(true)}
+        onOpenAnalytics={() => setShowAnalytics(true)}
         onOpenPreview={() => window.open(`/landings/${landing.id}/preview`, '_blank')}
         onRequestPublish={async () => { await manualSave(); await landingsApi.requestPublish(landing.id); await refresh() }}
         onPublish={async () => { await manualSave(); await landingsApi.publish(landing.id); await refresh() }}
@@ -145,6 +149,19 @@ export default function LandingEditorPage() {
 
       {showVersions && <VersionsDrawer landingId={landing.id} onClose={() => setShowVersions(false)} onRollback={refresh} />}
       {showConfig && <ConfigDrawer landing={landing} onClose={() => setShowConfig(false)} onSaved={refresh} />}
+      {showAnalytics && (
+        <div className="fixed inset-0 z-40 bg-black/40" onClick={() => setShowAnalytics(false)}>
+          <aside className="absolute right-0 top-0 h-full w-[520px] bg-gray-50 shadow-xl overflow-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
+              <h2 className="font-semibold text-gray-900">Analytics</h2>
+              <button onClick={() => setShowAnalytics(false)} className="p-2 hover:bg-gray-100 rounded-lg"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="p-4">
+              <AnalyticsDashboard landingId={landing.id} />
+            </div>
+          </aside>
+        </div>
+      )}
     </div>
   )
 }
