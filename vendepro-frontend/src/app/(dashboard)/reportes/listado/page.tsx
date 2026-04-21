@@ -62,8 +62,12 @@ export default function ListadoPage() {
     if (to) params.set('to', to)
 
     apiFetch('analytics', `/reports?${params.toString()}`)
-      .then(r => r.json() as Promise<any>)
+      .then(async r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json() as Promise<any>
+      })
       .then(d => {
+        if (!Array.isArray(d?.results)) throw new Error('respuesta inválida')
         setData(d)
         setLoading(false)
       })
