@@ -1,0 +1,815 @@
+// ============================================================
+// Analytics helpers — reports & listings performance queries
+// ============================================================
+// Read-only aggregated queries over `reports`, `report_metrics` and
+// `properties`. No domain logic: these are SQL-level aggregations used
+// by the `/listings-performance` and `/reports` endpoints in api-analytics.
+
+export type Period = 'week' | 'month' | 'quarter' | 'year'
+
+/** Filtros de propiedad aplicables a cualquier query de analytics.
+ *  Se combinan con AND. null/undefined = no filtrar. */
+export interface ListingFilters {
+  property_type?: string | null
+  price_min?: number | null
+  price_max?: number | null
+}
+
+/** Construye un fragmento SQL `AND ...` sobre la tabla `properties`
+ *  según los filtros. Devuelve string vacío si no hay filtros. */
+export function buildPropertyFilter(filters?: ListingFilters | null): { sql: string; binds: unknown[] } {
+  const parts: string[] = []
+  const binds: unknown[] = []
+  if (!filters) return { sql: '', binds }
+  if (filters.property_type) {
+    parts.push('p.property_type = ?')
+    binds.push(filters.property_type)
+  }
+  if (filters.price_min != null && Number.isFinite(filters.price_min)) {
+    parts.push('p.asking_price >= ?')
+    binds.push(filters.price_min)
+  }
+  if (filters.price_max != null && Number.isFinite(filters.price_max)) {
+    parts.push('p.asking_price <= ?')
+    binds.push(filters.price_max)
+  }
+  return { sql: parts.length > 0 ? ' AND ' + parts.join(' AND ') : '', binds }
+}
+
+// ── Semáforo ────────────────────────────────────────────────────
+// Clasificación cualitativa de performance de un aviso según
+// visualizaciones por día. Metodología: Marcela Genta Operaciones
+// Inmobiliarias (Semáforo de visualizaciones).
+
+export type HealthStatus = 'red' | 'orange' | 'yellow' | 'light_green' | 'green'
+
+export const BENCHMARKS = {
+  caba: { min_views_per_day: 14, min_in_person_visits_per_week: 1.5 },
+  gba:  { min_views_per_day: 8,  min_in_person_visits_per_week: 1.0 },
+  color_thresholds: {
+    red:          { max_views_per_day: 9 },
+    orange:       { max_views_per_day: 13 },
+    yellow:       { max_views_per_day: 22 },
+    light_green:  { max_views_per_day: 27 },
+    green:        { min_views_per_day: 28 },
+  },
+  source: 'Marcela Genta Operaciones Inmobiliarias — Semáforo de visualizaciones',
+} as const
+
+export function computeHealthStatus(viewsPerDay: number): HealthStatus {
+  if (!Number.isFinite(viewsPerDay) || viewsPerDay <= 9) return 'red'
+  if (viewsPerDay <= 13) return 'orange'
+  if (viewsPerDay <= 22) return 'yellow'
+  if (viewsPerDay <= 27) return 'light_green'
+  return 'green'
+}
+
+/** Días completos entre dos fechas ISO (YYYY-MM-DD). Mínimo 1 para evitar div/0. */
+export function daysBetween(startISO: string, endISO: string): number {
+  const start = new Date(startISO + 'T00:00:00Z').getTime()
+  const end = new Date(endISO + 'T00:00:00Z').getTime()
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return 1
+  const diffMs = end - start
+  const days = Math.round(diffMs / (1000 * 60 * 60 * 24))
+  return Math.max(1, days)
+}
+
+export interface PerformanceKpis {
+  reports_published: number
+  total_impressions: number
+  total_portal_visits: number
+  total_in_person_visits: number
+  total_offers: number
+  avg_impressions_per_report: number
+  avg_portal_visits_per_report: number
+  avg_in_person_visits_per_report: number
+  avg_offers_per_report: number
+  avg_views_per_day: number
+  avg_in_person_visits_per_week: number
+  overall_health_status: HealthStatus
+}
+
+export interface NeighborhoodPerformance {
+  neighborhood: string
+  reports_count: number
+  avg_impressions: number
+  avg_portal_visits: number
+  avg_in_person_visits: number
+  avg_offers: number
+  total_offers: number
+  avg_views_per_day: number
+  avg_in_person_visits_per_week: number
+  health_status: HealthStatus
+}
+
+export interface TimelinePoint {
+  period_label: string
+  period_start: string
+  impressions: number
+  portal_visits: number
+  in_person_visits: number
+  offers: number
+}
+
+export interface ReportListItem {
+  id: string
+  property_id: string
+  property_address: string
+  property_neighborhood: string
+  period_label: string
+  period_start: string
+  period_end: string
+  status: string
+  published_at: string | null
+  impressions: number
+  portal_visits: number
+  in_person_visits: number
+  offers: number
+  days_in_period: number
+  views_per_day: number
+  in_person_visits_per_week: number
+  health_status: HealthStatus | null
+}
+
+export interface ReportsListFilters {
+  page: number
+  page_size: number
+  neighborhood?: string | null
+  status?: string | null
+  property_id?: string | null
+  from?: string | null
+  to?: string | null
+}
+
+/**
+ * Returns the ISO date (YYYY-MM-DD) that is N units ago from `now`, in UTC.
+ */
+export function periodStartDate(period: Period, now: Date = new Date()): string {
+  const d = new Date(now)
+  switch (period) {
+    case 'week': d.setDate(d.getDate() - 7); break
+    case 'month': d.setMonth(d.getMonth() - 1); break
+    case 'quarter': d.setMonth(d.getMonth() - 3); break
+    case 'year': d.setFullYear(d.getFullYear() - 1); break
+  }
+  return d.toISOString().split('T')[0] ?? ''
+}
+
+/**
+ * Aggregated KPIs for all published reports in the given date range.
+ * Reports are filtered by `published_at` ∈ [start, end].
+ */
+export async function getPerformanceKpis(
+  db: D1Database,
+  orgId: string,
+  start: string,
+  end: string,
+  source?: string | null,
+  filters?: ListingFilters | null,
+): Promise<PerformanceKpis> {
+  const sourceFilter = source ? ' AND rm.source = ?' : ''
+  const sourceBinds: unknown[] = source ? [source] : []
+  const pf = buildPropertyFilter(filters)
+  const binds: unknown[] = [orgId, start, end, ...sourceBinds, ...pf.binds]
+
+  // Query 1: métricas agregadas (con JOIN a report_metrics).
+  // Query 2 (separada): días totales del período SIN join a metrics, para
+  // evitar que reports con múltiples fuentes (ej ZonaProp + MercadoLibre)
+  // dupliquen los días al sumar.
+  const [row, daysRow] = await Promise.all([
+    db.prepare(`
+      SELECT
+        COUNT(DISTINCT r.id) AS reports_published,
+        COALESCE(SUM(rm.impressions), 0) AS total_impressions,
+        COALESCE(SUM(rm.portal_visits), 0) AS total_portal_visits,
+        COALESCE(SUM(rm.in_person_visits), 0) AS total_in_person_visits,
+        COALESCE(SUM(rm.offers), 0) AS total_offers
+      FROM reports r
+      JOIN properties p ON p.id = r.property_id
+      LEFT JOIN report_metrics rm ON rm.report_id = r.id
+      WHERE p.org_id = ?
+        AND r.status = 'published'
+        AND date(r.published_at) >= ?
+        AND date(r.published_at) <= ?
+        ${sourceFilter}
+        ${pf.sql}
+    `).bind(...binds).first() as Promise<any>,
+    db.prepare(`
+      SELECT COALESCE(SUM(julianday(r.period_end) - julianday(r.period_start)), 0) AS total_period_days
+      FROM (
+        SELECT DISTINCT r.id, r.period_start, r.period_end
+        FROM reports r
+        JOIN properties p ON p.id = r.property_id
+        LEFT JOIN report_metrics rm ON rm.report_id = r.id
+        WHERE p.org_id = ?
+          AND r.status = 'published'
+          AND date(r.published_at) >= ?
+          AND date(r.published_at) <= ?
+          ${sourceFilter}
+          ${pf.sql}
+      ) r
+    `).bind(...binds).first() as Promise<any>,
+  ])
+
+  const count = Number(row?.reports_published ?? 0)
+  const safeAvg = (total: number): number => count > 0 ? Math.round(total / count) : 0
+  const avgFloat = (total: number): number => count > 0 ? Math.round((total / count) * 100) / 100 : 0
+
+  const totalImpressions = Number(row?.total_impressions ?? 0)
+  const totalPortalVisits = Number(row?.total_portal_visits ?? 0)
+  const totalInPersonVisits = Number(row?.total_in_person_visits ?? 0)
+  const totalOffers = Number(row?.total_offers ?? 0)
+  const totalPeriodDays = Math.max(1, Math.round(Number(daysRow?.total_period_days ?? 0)))
+
+  // Terminología MG: "visualizaciones" = entradas al aviso = portal_visits
+  // (NO impresiones, que son las veces que el aviso aparece en listados).
+  // El semáforo se calcula sobre visitas al aviso por día.
+  const avgViewsPerDay = count > 0 ? Math.round((totalPortalVisits / totalPeriodDays) * 10) / 10 : 0
+  const avgVisitsPerWeek = count > 0 ? Math.round((totalInPersonVisits / (totalPeriodDays / 7)) * 10) / 10 : 0
+
+  return {
+    reports_published: count,
+    total_impressions: totalImpressions,
+    total_portal_visits: totalPortalVisits,
+    total_in_person_visits: totalInPersonVisits,
+    total_offers: totalOffers,
+    avg_impressions_per_report: safeAvg(totalImpressions),
+    avg_portal_visits_per_report: safeAvg(totalPortalVisits),
+    avg_in_person_visits_per_report: safeAvg(totalInPersonVisits),
+    avg_offers_per_report: avgFloat(totalOffers),
+    avg_views_per_day: avgViewsPerDay,
+    avg_in_person_visits_per_week: avgVisitsPerWeek,
+    overall_health_status: computeHealthStatus(avgViewsPerDay),
+  }
+}
+
+/**
+ * Per-neighborhood aggregated metrics, ordered by reports_count desc.
+ */
+export async function getNeighborhoodPerformance(
+  db: D1Database,
+  orgId: string,
+  start: string,
+  end: string,
+  source?: string | null,
+  filters?: ListingFilters | null,
+): Promise<NeighborhoodPerformance[]> {
+  const sourceFilter = source ? ' AND rm.source = ?' : ''
+  const sourceBinds: unknown[] = source ? [source] : []
+  const pf = buildPropertyFilter(filters)
+  const binds: unknown[] = [orgId, start, end, ...sourceBinds, ...pf.binds]
+
+  const [metricsRes, daysRes] = await Promise.all([
+    db.prepare(`
+      SELECT
+        p.neighborhood AS neighborhood,
+        COUNT(DISTINCT r.id) AS reports_count,
+        COALESCE(ROUND(AVG(rm.impressions)), 0) AS avg_impressions,
+        COALESCE(ROUND(AVG(rm.portal_visits)), 0) AS avg_portal_visits,
+        COALESCE(ROUND(AVG(rm.in_person_visits)), 0) AS avg_in_person_visits,
+        COALESCE(ROUND(AVG(rm.offers) * 100) / 100.0, 0) AS avg_offers,
+        COALESCE(SUM(rm.offers), 0) AS total_offers,
+        COALESCE(SUM(rm.portal_visits), 0) AS total_portal_visits,
+        COALESCE(SUM(rm.in_person_visits), 0) AS total_in_person_visits
+      FROM reports r
+      JOIN properties p ON p.id = r.property_id
+      LEFT JOIN report_metrics rm ON rm.report_id = r.id
+      WHERE p.org_id = ?
+        AND r.status = 'published'
+        AND date(r.published_at) >= ?
+        AND date(r.published_at) <= ?
+        ${sourceFilter}
+        ${pf.sql}
+      GROUP BY p.neighborhood
+      ORDER BY reports_count DESC, p.neighborhood ASC
+    `).bind(...binds).all(),
+    // Días del período agrupados por barrio, SIN join a metrics para no duplicar.
+    db.prepare(`
+      SELECT
+        p.neighborhood AS neighborhood,
+        COALESCE(SUM(julianday(r.period_end) - julianday(r.period_start)), 0) AS total_period_days
+      FROM (
+        SELECT DISTINCT r.id, r.period_start, r.period_end, r.property_id
+        FROM reports r
+        JOIN properties p ON p.id = r.property_id
+        LEFT JOIN report_metrics rm ON rm.report_id = r.id
+        WHERE p.org_id = ?
+          AND r.status = 'published'
+          AND date(r.published_at) >= ?
+          AND date(r.published_at) <= ?
+          ${sourceFilter}
+      ) r
+      JOIN properties p ON p.id = r.property_id
+      GROUP BY p.neighborhood
+    `).bind(...binds).all(),
+  ])
+
+  const daysByNeighborhood: Record<string, number> = {}
+  for (const row of (daysRes.results as any[] ?? [])) {
+    daysByNeighborhood[String(row.neighborhood ?? 'Sin barrio')] = Math.max(1, Math.round(Number(row.total_period_days ?? 0)))
+  }
+
+  return ((metricsRes.results as any[]) ?? []).map(r => {
+    // "Visualizaciones" en terminología MG = entradas al aviso = portal_visits.
+    const totalPortalVisits = Number(r.total_portal_visits ?? 0)
+    const totalInPersonVisits = Number(r.total_in_person_visits ?? 0)
+    const totalDays = daysByNeighborhood[String(r.neighborhood ?? 'Sin barrio')] ?? 1
+    const viewsPerDay = Math.round((totalPortalVisits / totalDays) * 10) / 10
+    const visitsPerWeek = Math.round((totalInPersonVisits / (totalDays / 7)) * 10) / 10
+    return {
+      neighborhood: r.neighborhood ?? 'Sin barrio',
+      reports_count: Number(r.reports_count ?? 0),
+      avg_impressions: Number(r.avg_impressions ?? 0),
+      avg_portal_visits: Number(r.avg_portal_visits ?? 0),
+      avg_in_person_visits: Number(r.avg_in_person_visits ?? 0),
+      avg_offers: Number(r.avg_offers ?? 0),
+      total_offers: Number(r.total_offers ?? 0),
+      avg_views_per_day: viewsPerDay,
+      avg_in_person_visits_per_week: visitsPerWeek,
+      health_status: computeHealthStatus(viewsPerDay),
+    }
+  })
+}
+
+/**
+ * Monthly aggregated metrics over the period, ordered chronologically.
+ */
+export async function getTimelinePerformance(
+  db: D1Database,
+  orgId: string,
+  start: string,
+  end: string,
+  source?: string | null,
+  filters?: ListingFilters | null,
+): Promise<TimelinePoint[]> {
+  const sourceFilter = source ? ' AND rm.source = ?' : ''
+  const sourceBinds: unknown[] = source ? [source] : []
+  const pf = buildPropertyFilter(filters)
+  const binds: unknown[] = [orgId, start, end, ...sourceBinds, ...pf.binds]
+
+  const res = await db.prepare(`
+    SELECT
+      strftime('%Y-%m', r.published_at) AS month_key,
+      COALESCE(SUM(rm.impressions), 0) AS impressions,
+      COALESCE(SUM(rm.portal_visits), 0) AS portal_visits,
+      COALESCE(SUM(rm.in_person_visits), 0) AS in_person_visits,
+      COALESCE(SUM(rm.offers), 0) AS offers
+    FROM reports r
+    JOIN properties p ON p.id = r.property_id
+    LEFT JOIN report_metrics rm ON rm.report_id = r.id
+    WHERE p.org_id = ?
+      AND r.status = 'published'
+      AND date(r.published_at) >= ?
+      AND date(r.published_at) <= ?
+      ${sourceFilter}
+      ${pf.sql}
+    GROUP BY month_key
+    ORDER BY month_key ASC
+  `).bind(...binds).all()
+
+  const MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+
+  return ((res.results as any[]) ?? []).map(r => {
+    const parts = (r.month_key as string ?? '').split('-')
+    const y = parts[0] ?? ''
+    const m = parts[1] ?? '01'
+    const monthIdx = parseInt(m, 10) - 1
+    return {
+      period_label: `${MONTHS[monthIdx] ?? m} ${y}`.trim(),
+      period_start: `${y}-${m}-01`,
+      impressions: Number(r.impressions ?? 0),
+      portal_visits: Number(r.portal_visits ?? 0),
+      in_person_visits: Number(r.in_person_visits ?? 0),
+      offers: Number(r.offers ?? 0),
+    }
+  })
+}
+
+/**
+ * Paginated list of reports with aggregated metrics, joined with property info.
+ */
+export async function listReportsWithMetrics(
+  db: D1Database,
+  orgId: string,
+  filters: ReportsListFilters,
+): Promise<{ total: number; results: ReportListItem[] }> {
+  const page = Math.max(1, Math.floor(filters.page) || 1)
+  const pageSize = Math.min(100, Math.max(1, Math.floor(filters.page_size) || 20))
+  const offset = (page - 1) * pageSize
+
+  const where: string[] = ['p.org_id = ?']
+  const binds: unknown[] = [orgId]
+
+  if (filters.neighborhood) {
+    where.push('p.neighborhood = ?')
+    binds.push(filters.neighborhood)
+  }
+  if (filters.status) {
+    where.push('r.status = ?')
+    binds.push(filters.status)
+  }
+  if (filters.property_id) {
+    where.push('r.property_id = ?')
+    binds.push(filters.property_id)
+  }
+  if (filters.from) {
+    where.push('date(r.period_end) >= ?')
+    binds.push(filters.from)
+  }
+  if (filters.to) {
+    where.push('date(r.period_end) <= ?')
+    binds.push(filters.to)
+  }
+
+  const whereSql = where.join(' AND ')
+
+  const [countRow, rowsRes] = await Promise.all([
+    db.prepare(`
+      SELECT COUNT(DISTINCT r.id) AS total
+      FROM reports r
+      JOIN properties p ON p.id = r.property_id
+      WHERE ${whereSql}
+    `).bind(...binds).first() as Promise<any>,
+    db.prepare(`
+      SELECT
+        r.id AS id,
+        r.property_id AS property_id,
+        p.address AS property_address,
+        p.neighborhood AS property_neighborhood,
+        r.period_label AS period_label,
+        r.period_start AS period_start,
+        r.period_end AS period_end,
+        r.status AS status,
+        r.published_at AS published_at,
+        COALESCE(SUM(rm.impressions), 0) AS impressions,
+        COALESCE(SUM(rm.portal_visits), 0) AS portal_visits,
+        COALESCE(SUM(rm.in_person_visits), 0) AS in_person_visits,
+        COALESCE(SUM(rm.offers), 0) AS offers
+      FROM reports r
+      JOIN properties p ON p.id = r.property_id
+      LEFT JOIN report_metrics rm ON rm.report_id = r.id
+      WHERE ${whereSql}
+      GROUP BY r.id
+      ORDER BY COALESCE(r.published_at, r.period_end) DESC
+      LIMIT ? OFFSET ?
+    `).bind(...binds, pageSize, offset).all(),
+  ])
+
+  const results = ((rowsRes.results as any[]) ?? []).map(r => {
+    const impressions = Number(r.impressions ?? 0)
+    const portalVisits = Number(r.portal_visits ?? 0)
+    const inPersonVisits = Number(r.in_person_visits ?? 0)
+    const days = daysBetween(r.period_start ?? '', r.period_end ?? '')
+    // "Visualizaciones" en terminología MG = entradas al aviso = portal_visits.
+    const viewsPerDay = Math.round((portalVisits / days) * 10) / 10
+    const visitsPerWeek = Math.round((inPersonVisits / (days / 7)) * 10) / 10
+    const healthStatus: HealthStatus | null =
+      (r.period_start && r.period_end) ? computeHealthStatus(viewsPerDay) : null
+    return {
+      id: r.id,
+      property_id: r.property_id,
+      property_address: r.property_address ?? '',
+      property_neighborhood: r.property_neighborhood ?? 'Sin barrio',
+      period_label: r.period_label ?? '',
+      period_start: r.period_start ?? '',
+      period_end: r.period_end ?? '',
+      status: r.status ?? 'draft',
+      published_at: r.published_at ?? null,
+      impressions,
+      portal_visits: Number(r.portal_visits ?? 0),
+      in_person_visits: inPersonVisits,
+      offers: Number(r.offers ?? 0),
+      days_in_period: days,
+      views_per_day: viewsPerDay,
+      in_person_visits_per_week: visitsPerWeek,
+      health_status: healthStatus,
+    }
+  })
+
+  return {
+    total: Number((countRow as any)?.total ?? 0),
+    results,
+  }
+}
+
+// ── Comparison Activos vs Vendidos ─────────────────────────────
+// Benchmark interno: compara las métricas de los avisos activos
+// contra los avisos que se vendieron, agrupados por barrio. Reemplaza
+// conceptualmente los umbrales fijos MG (14/8) — cada org tiene su
+// propio benchmark según su histórico de ventas.
+
+export interface NeighborhoodGroupMetrics {
+  property_count: number
+  reports_count: number
+  avg_views_per_day: number
+  avg_portal_visits_per_report: number
+  avg_in_person_visits_per_week: number
+  avg_inquiries_per_report: number
+}
+
+export interface ActiveListingWithBenchmark {
+  property_id: string
+  address: string
+  neighborhood: string
+  reports_count: number
+  avg_views_per_day: number
+  avg_in_person_visits_per_week: number
+  latest_report_published_at: string | null
+  latest_report_period_label: string | null
+  neighborhood_sold_avg_views_per_day: number | null
+  delta_vs_neighborhood_pct: number | null
+  delta_health_status: HealthStatus
+}
+
+export interface NeighborhoodComparison {
+  neighborhood: string
+  sold: NeighborhoodGroupMetrics | null
+  active: NeighborhoodGroupMetrics | null
+  delta_views_per_day_pct: number | null
+  delta_health_status: HealthStatus
+}
+
+/** Semáforo basado en el delta% vs benchmark del barrio.
+ *  null delta (sin vendidas en el barrio) → light_green (neutral). */
+export function computeDeltaHealthStatus(deltaPct: number | null): HealthStatus {
+  if (deltaPct === null) return 'light_green'
+  if (deltaPct >= -10) return 'green'
+  if (deltaPct >= -30) return 'yellow'
+  return 'red'
+}
+
+/** Devuelve por barrio los promedios ponderados de las métricas,
+ *  separados entre propiedades 'sold' y 'active'. */
+export async function getComparisonByNeighborhood(
+  db: D1Database,
+  orgId: string,
+  filters?: ListingFilters | null,
+): Promise<NeighborhoodComparison[]> {
+
+  type GroupRow = {
+    neighborhood: string
+    property_count: number
+    reports_count: number
+    total_portal_visits: number
+    total_in_person_visits: number
+    total_inquiries: number
+    total_days: number
+  }
+
+  const pf = buildPropertyFilter(filters)
+
+  const queryGroup = async (status: 'sold' | 'active'): Promise<GroupRow[]> => {
+    const [metricsRes, daysRes] = await Promise.all([
+      db.prepare(`
+        SELECT
+          p.neighborhood AS neighborhood,
+          COUNT(DISTINCT p.id) AS property_count,
+          COUNT(DISTINCT r.id) AS reports_count,
+          COALESCE(SUM(rm.portal_visits), 0) AS total_portal_visits,
+          COALESCE(SUM(rm.in_person_visits), 0) AS total_in_person_visits,
+          COALESCE(SUM(rm.inquiries), 0) AS total_inquiries
+        FROM reports r
+        JOIN properties p ON p.id = r.property_id
+        LEFT JOIN report_metrics rm ON rm.report_id = r.id
+        WHERE p.org_id = ?
+          AND p.status = ?
+          AND r.status = 'published'
+          ${pf.sql}
+        GROUP BY p.neighborhood
+      `).bind(orgId, status, ...pf.binds).all(),
+      db.prepare(`
+        SELECT
+          p.neighborhood AS neighborhood,
+          COALESCE(SUM(julianday(r.period_end) - julianday(r.period_start)), 0) AS total_period_days
+        FROM (
+          SELECT DISTINCT r.id, r.period_start, r.period_end, r.property_id
+          FROM reports r
+          JOIN properties p ON p.id = r.property_id
+          WHERE p.org_id = ?
+            AND p.status = ?
+            AND r.status = 'published'
+            ${pf.sql}
+        ) r
+        JOIN properties p ON p.id = r.property_id
+        GROUP BY p.neighborhood
+      `).bind(orgId, status, ...pf.binds).all(),
+    ])
+
+    const daysMap: Record<string, number> = {}
+    for (const row of (daysRes.results as any[] ?? [])) {
+      daysMap[String(row.neighborhood ?? 'Sin barrio')] = Math.max(1, Math.round(Number(row.total_period_days ?? 0)))
+    }
+
+    return ((metricsRes.results as any[]) ?? []).map(r => ({
+      neighborhood: String(r.neighborhood ?? 'Sin barrio'),
+      property_count: Number(r.property_count ?? 0),
+      reports_count: Number(r.reports_count ?? 0),
+      total_portal_visits: Number(r.total_portal_visits ?? 0),
+      total_in_person_visits: Number(r.total_in_person_visits ?? 0),
+      total_inquiries: Number(r.total_inquiries ?? 0),
+      total_days: daysMap[String(r.neighborhood ?? 'Sin barrio')] ?? 1,
+    }))
+  }
+
+  const toMetrics = (x: GroupRow | undefined): NeighborhoodGroupMetrics | null => {
+    if (!x || x.reports_count === 0) return null
+    return {
+      property_count: x.property_count,
+      reports_count: x.reports_count,
+      avg_views_per_day: Math.round((x.total_portal_visits / x.total_days) * 10) / 10,
+      avg_portal_visits_per_report: Math.round(x.total_portal_visits / x.reports_count),
+      avg_in_person_visits_per_week: Math.round((x.total_in_person_visits / (x.total_days / 7)) * 10) / 10,
+      avg_inquiries_per_report: Math.round((x.total_inquiries / x.reports_count) * 10) / 10,
+    }
+  }
+
+  const [soldRows, activeRows] = await Promise.all([queryGroup('sold'), queryGroup('active')])
+
+  const neighborhoods = new Set<string>([
+    ...soldRows.map(r => r.neighborhood),
+    ...activeRows.map(r => r.neighborhood),
+  ])
+
+  return [...neighborhoods].map(n => {
+    const soldRow = soldRows.find(r => r.neighborhood === n)
+    const activeRow = activeRows.find(r => r.neighborhood === n)
+    const sold = toMetrics(soldRow)
+    const active = toMetrics(activeRow)
+
+    let delta: number | null = null
+    if (sold && active && sold.avg_views_per_day > 0) {
+      delta = Math.round(((active.avg_views_per_day - sold.avg_views_per_day) / sold.avg_views_per_day) * 1000) / 10
+    }
+
+    return {
+      neighborhood: n,
+      sold,
+      active,
+      delta_views_per_day_pct: delta,
+      delta_health_status: computeDeltaHealthStatus(delta),
+    }
+  }).sort((a, b) => {
+    // Barrios con más reports activos primero
+    const aActive = a.active?.reports_count ?? 0
+    const bActive = b.active?.reports_count ?? 0
+    return bActive - aActive
+  })
+}
+
+/** Lista de propiedades activas de la org, cada una con sus promedios
+ *  agregados y comparadas contra el benchmark de vendidas de su barrio.
+ *  Ordenadas por delta ascendente (peores primero). */
+export async function getActiveListingsWithBenchmark(
+  db: D1Database,
+  orgId: string,
+  filters?: ListingFilters | null,
+): Promise<ActiveListingWithBenchmark[]> {
+
+  const pf = buildPropertyFilter(filters)
+
+  // Q1: lista de TODAS las propiedades activas (con o sin reports) + métricas
+  //     agregadas si las tienen.
+  // Q2: días totales por propiedad (sin JOIN a metrics) — solo para las que
+  //     tienen reports.
+  // Q3: benchmark de vendidas por barrio (vis/día).
+  // Q4: último reporte publicado por propiedad (fecha + período).
+  const [metricsRes, daysRes, benchmarkRes, latestRes] = await Promise.all([
+    db.prepare(`
+      SELECT
+        p.id AS property_id,
+        p.address AS address,
+        p.neighborhood AS neighborhood,
+        COUNT(DISTINCT r.id) AS reports_count,
+        COALESCE(SUM(rm.portal_visits), 0) AS total_portal_visits,
+        COALESCE(SUM(rm.in_person_visits), 0) AS total_in_person_visits
+      FROM properties p
+      LEFT JOIN reports r ON r.property_id = p.id AND r.status = 'published'
+      LEFT JOIN report_metrics rm ON rm.report_id = r.id
+      WHERE p.org_id = ?
+        AND p.status = 'active'
+        ${pf.sql}
+      GROUP BY p.id
+    `).bind(orgId, ...pf.binds).all(),
+    db.prepare(`
+      SELECT
+        p.id AS property_id,
+        COALESCE(SUM(julianday(r.period_end) - julianday(r.period_start)), 0) AS total_period_days
+      FROM properties p
+      JOIN (
+        SELECT DISTINCT r.id, r.period_start, r.period_end, r.property_id
+        FROM reports r
+        JOIN properties p ON p.id = r.property_id
+        WHERE p.org_id = ?
+          AND p.status = 'active'
+          AND r.status = 'published'
+          ${pf.sql}
+      ) r ON r.property_id = p.id
+      GROUP BY p.id
+    `).bind(orgId, ...pf.binds).all(),
+    db.prepare(`
+      SELECT
+        p.neighborhood AS neighborhood,
+        COALESCE(SUM(rm.portal_visits), 0) AS total_portal_visits,
+        COALESCE(SUM(julianday(rd.period_end) - julianday(rd.period_start)), 0) AS total_days
+      FROM (
+        SELECT DISTINCT r.id, r.period_start, r.period_end, r.property_id
+        FROM reports r
+        JOIN properties p ON p.id = r.property_id
+        WHERE p.org_id = ?
+          AND p.status = 'sold'
+          AND r.status = 'published'
+          ${pf.sql}
+      ) rd
+      JOIN properties p ON p.id = rd.property_id
+      LEFT JOIN report_metrics rm ON rm.report_id = rd.id
+      GROUP BY p.neighborhood
+    `).bind(orgId, ...pf.binds).all(),
+    db.prepare(`
+      SELECT
+        r.property_id AS property_id,
+        MAX(r.published_at) AS latest_published_at,
+        (SELECT r2.period_label FROM reports r2
+           WHERE r2.property_id = r.property_id AND r2.status = 'published'
+           ORDER BY r2.published_at DESC LIMIT 1) AS latest_period_label
+      FROM reports r
+      JOIN properties p ON p.id = r.property_id
+      WHERE p.org_id = ?
+        AND p.status = 'active'
+        AND r.status = 'published'
+        ${pf.sql}
+      GROUP BY r.property_id
+    `).bind(orgId, ...pf.binds).all(),
+  ])
+
+  const daysByProperty: Record<string, number> = {}
+  for (const row of (daysRes.results as any[] ?? [])) {
+    daysByProperty[String(row.property_id)] = Math.max(1, Math.round(Number(row.total_period_days ?? 0)))
+  }
+
+  const soldBenchmarkByNeighborhood: Record<string, number> = {}
+  for (const row of (benchmarkRes.results as any[] ?? [])) {
+    const portal = Number(row.total_portal_visits ?? 0)
+    const days = Math.max(1, Math.round(Number(row.total_days ?? 0)))
+    soldBenchmarkByNeighborhood[String(row.neighborhood ?? 'Sin barrio')] =
+      Math.round((portal / days) * 10) / 10
+  }
+
+  const latestByProperty: Record<string, { published_at: string | null; period_label: string | null }> = {}
+  for (const row of (latestRes.results as any[] ?? [])) {
+    latestByProperty[String(row.property_id)] = {
+      published_at: row.latest_published_at ?? null,
+      period_label: row.latest_period_label ?? null,
+    }
+  }
+
+  const rows = ((metricsRes.results as any[]) ?? []).map(r => {
+    const propId = String(r.property_id)
+    const reportsCount = Number(r.reports_count ?? 0)
+    const days = daysByProperty[propId] ?? 1
+    const portal = Number(r.total_portal_visits ?? 0)
+    const inPerson = Number(r.total_in_person_visits ?? 0)
+    const viewsPerDay = reportsCount > 0 ? Math.round((portal / days) * 10) / 10 : 0
+    const visitsPerWeek = reportsCount > 0 ? Math.round((inPerson / (days / 7)) * 10) / 10 : 0
+
+    const neighborhood = String(r.neighborhood ?? 'Sin barrio')
+    const benchmark = soldBenchmarkByNeighborhood[neighborhood] ?? null
+
+    let delta: number | null = null
+    if (reportsCount > 0 && benchmark !== null && benchmark > 0) {
+      delta = Math.round(((viewsPerDay - benchmark) / benchmark) * 1000) / 10
+    }
+
+    const latest = latestByProperty[propId] ?? { published_at: null, period_label: null }
+
+    return {
+      property_id: propId,
+      address: String(r.address ?? ''),
+      neighborhood,
+      reports_count: reportsCount,
+      avg_views_per_day: viewsPerDay,
+      avg_in_person_visits_per_week: visitsPerWeek,
+      latest_report_published_at: latest.published_at,
+      latest_report_period_label: latest.period_label,
+      neighborhood_sold_avg_views_per_day: benchmark,
+      delta_vs_neighborhood_pct: delta,
+      delta_health_status: computeDeltaHealthStatus(delta),
+    }
+  })
+
+  // Orden: primero las que nunca tuvieron reporte (más urgentes de atender),
+  // luego peores delta, luego sin-benchmark.
+  return rows.sort((a, b) => {
+    // Sin reports al principio
+    if (a.reports_count === 0 && b.reports_count > 0) return -1
+    if (b.reports_count === 0 && a.reports_count > 0) return 1
+    if (a.reports_count === 0 && b.reports_count === 0) return 0
+
+    // Dentro de las que tienen reports: peores delta primero, null al final
+    const aDelta = a.delta_vs_neighborhood_pct
+    const bDelta = b.delta_vs_neighborhood_pct
+    if (aDelta === null && bDelta === null) return 0
+    if (aDelta === null) return 1
+    if (bDelta === null) return -1
+    return aDelta - bDelta
+  })
+}

@@ -23,22 +23,28 @@ trap cleanup EXIT
 # ── 1. Migraciones D1 local ──────────────────────────────────────
 echo ""
 echo "--- Corriendo migraciones D1 local ---"
+
+# 000_initial.sql usa CREATE TABLE IF NOT EXISTS — idempotente
 npx wrangler d1 execute DB --local \
   --persist-to "$PERSIST_DIR" \
   --file=migrations_v2/000_initial.sql \
   --config packages/api-auth/wrangler.jsonc
 
-# migrations_v2/000_initial.sql ya incluye 001-008 de migrations/
-# Solo aplicar las migraciones posteriores
-npx wrangler d1 execute DB --local \
-  --persist-to "$PERSIST_DIR" \
-  --file=migrations_v2/001_appraisals_extra_cols.sql \
-  --config packages/api-auth/wrangler.jsonc
+# 001 y 002 usan ALTER TABLE ADD COLUMN — fallan si la columna ya existe.
+# Toleramos el error para que re-ejecutar el script no rompa.
+run_alter_migration() {
+  local file=$1
+  npx wrangler d1 execute DB --local \
+    --persist-to "$PERSIST_DIR" \
+    --file="$file" \
+    --config packages/api-auth/wrangler.jsonc 2>&1 | tee /tmp/migration.log || true
+  if grep -qi "duplicate column name" /tmp/migration.log; then
+    echo "  (columna ya existía — ignorado)"
+  fi
+}
 
-npx wrangler d1 execute DB --local \
-  --persist-to "$PERSIST_DIR" \
-  --file=migrations_v2/002_org_brand_accent_color.sql \
-  --config packages/api-auth/wrangler.jsonc
+run_alter_migration migrations_v2/001_appraisals_extra_cols.sql
+run_alter_migration migrations_v2/002_org_brand_accent_color.sql
 
 echo "✓ Migraciones aplicadas"
 
