@@ -71,10 +71,13 @@ start_worker() {
   local name=$1
   local port=$2
   local config=$3
+  # JWT_SECRET se pasa via --var para evitar problemas con cómo wrangler
+  # carga .dev.vars en Windows/Git Bash (jose tiraba "HMAC key length 0").
   npx wrangler dev --port "$port" \
     --config "$config" \
     --persist-to "$PERSIST_DIR" \
     --inspector-port $((port + 1000)) \
+    --var "JWT_SECRET:$DEV_JWT_SECRET" \
     > "$BACKEND_DIR/logs/${name}.log" 2>&1 &
   echo $! >> "$PIDS_FILE"
   echo "  ↑ $name  →  http://localhost:$port  (PID $!)"
