@@ -32,6 +32,7 @@ export default function LeadDetailPage() {
 
   const [lead, setLead] = useState<any>(null)
   const [activities, setActivities] = useState<any[]>([])
+  const [fichas, setFichas] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -48,12 +49,14 @@ export default function LeadDetailPage() {
       apiFetch('crm', `/leads?id=${leadId}`).then(r => r.json() as Promise<any>),
       apiFetch('crm', `/activities?lead_id=${leadId}`).then(r => r.json() as Promise<any>).catch(() => []),
       apiFetch('crm', `/stage-history?entity_type=lead&entity_id=${leadId}`).then(r => r.json() as Promise<any>).catch(() => []),
-    ]).then(([leadData, actsData, historyData]) => {
+      apiFetch('properties', `/fichas?lead_id=${leadId}`).then(r => r.json() as Promise<any>).catch(() => []),
+    ]).then(([leadData, actsData, historyData, fichasData]) => {
       const l = Array.isArray(leadData) ? leadData[0] : leadData
       setLead(l)
       setEditForm(l || {})
       setActivities(Array.isArray(actsData) ? actsData : [])
       setStageHistory(Array.isArray(historyData) ? historyData : [])
+      setFichas(Array.isArray(fichasData) ? fichasData : [])
       setLoading(false)
     }).catch(() => setLoading(false))
   }
@@ -219,7 +222,12 @@ export default function LeadDetailPage() {
             </>
           )}
           <button
-            onClick={() => handleStageChange('en_tasacion')}
+            onClick={() => {
+              const qs = new URLSearchParams({ lead_id: leadId })
+              if (lead?.property_address) qs.set('address', lead.property_address)
+              if (lead?.neighborhood) qs.set('neighborhood', lead.neighborhood)
+              router.push(`/fichas/nueva?${qs.toString()}`)
+            }}
             disabled={editing}
             className="flex items-center gap-1.5 border border-[#ff8017] text-[#ff8017] px-3 py-1.5 rounded-lg text-sm hover:bg-orange-50 font-medium disabled:opacity-40 disabled:cursor-not-allowed"
           >
@@ -612,6 +620,55 @@ export default function LeadDetailPage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Fichas de tasación */}
+      <div className="bg-white border rounded-xl p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-bold text-gray-900 flex items-center gap-2">
+            <FileText className="w-4 h-4 text-[#ff007c]" /> Fichas de tasación
+          </h2>
+          <button
+            onClick={() => {
+              const qs = new URLSearchParams({ lead_id: leadId })
+              if (lead?.property_address) qs.set('address', lead.property_address)
+              if (lead?.neighborhood) qs.set('neighborhood', lead.neighborhood)
+              router.push(`/fichas/nueva?${qs.toString()}`)
+            }}
+            className="flex items-center gap-1 text-xs text-[#ff007c] hover:underline font-medium"
+          >
+            <Plus className="w-3.5 h-3.5" /> Nueva
+          </button>
+        </div>
+        {fichas.length === 0 ? (
+          <div className="flex flex-col items-center py-8 text-center">
+            <FileText className="w-10 h-10 text-gray-200 mb-3" />
+            <p className="text-sm text-gray-400">Sin fichas registradas</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {fichas.map((ficha: any) => (
+              <div key={ficha.id} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#ff007c] to-[#ff8017] flex items-center justify-center shrink-0">
+                  <FileText className="w-4 h-4 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-800 truncate">{ficha.address || 'Sin dirección'}</p>
+                  <p className="text-xs text-gray-400">
+                    {ficha.inspection_date ? formatDate(ficha.inspection_date) : (ficha.created_at ? formatDate(ficha.created_at) : '—')}
+                    {ficha.neighborhood ? ` · ${ficha.neighborhood}` : ''}
+                  </p>
+                </div>
+                <Link
+                  href={`/fichas/${ficha.id}`}
+                  className="text-xs text-[#ff007c] hover:underline font-medium px-2 py-1 shrink-0"
+                >
+                  Ver
+                </Link>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Historial de etapas */}
