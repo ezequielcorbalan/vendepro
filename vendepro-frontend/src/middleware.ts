@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
+const LANDING_HOST_RE = /^([a-z0-9][a-z0-9-]{1,60}[a-z0-9])\.landings\.vendepro\.com\.ar$/i
+
 // Routes that don't require authentication
 const PUBLIC_PATHS = [
   '/login',
@@ -13,6 +15,7 @@ const PUBLIC_PREFIXES = [
   '/t/',   // public appraisal pages
   '/v/',   // public visit forms
   '/p/',   // public prefactibilidades
+  '/l/',   // landings públicas
   '/_next',
   '/favicon',
   '/logo',
@@ -26,6 +29,18 @@ function isPublic(pathname: string): boolean {
 }
 
 export function middleware(request: NextRequest) {
+  // === Landing subdomain rewrite ===
+  const host = request.headers.get('host')?.toLowerCase() ?? ''
+  const landingMatch = host.match(LANDING_HOST_RE)
+  if (landingMatch) {
+    const slug = landingMatch[1]
+    const url = request.nextUrl.clone()
+    if (!url.pathname.startsWith('/l/')) {
+      url.pathname = `/l/${slug}`
+    }
+    return NextResponse.rewrite(url)
+  }
+
   const { pathname } = request.nextUrl
 
   if (isPublic(pathname)) {

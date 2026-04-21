@@ -19,6 +19,7 @@ import {
   TrendingUp,
   Target,
   Home,
+  Globe,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -48,6 +49,7 @@ export const menuSections: NavSection[] = [
     title: 'CRM',
     links: [
       { href: '/leads', label: 'Leads', icon: BookUser },
+      { href: '/landings', label: 'Landings', icon: Globe },
       { href: '/contactos', label: 'Contactos', icon: UserCheck },
       { href: '/actividades', label: 'Actividad', icon: Activity },
     ],

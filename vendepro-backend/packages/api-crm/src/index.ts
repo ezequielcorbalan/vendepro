@@ -7,6 +7,19 @@ import {
   CreateLeadWithContactUseCase, GetContactDetailUseCase, CreateTagUseCase,
   GenerateOrgApiKeyUseCase, GetOrgApiKeyUseCase,
 } from '@vendepro/core'
+import {
+  CreateLandingFromTemplateUseCase, UpdateLandingBlocksUseCase, AddBlockUseCase,
+  RemoveBlockUseCase, ReorderBlocksUseCase, ToggleBlockVisibilityUseCase,
+  RequestPublishUseCase, PublishLandingUseCase, RejectPublishRequestUseCase,
+  ArchiveLandingUseCase, UnarchiveLandingUseCase, RollbackLandingUseCase,
+  ListTemplatesUseCase, CreateTemplateUseCase, UpdateTemplateUseCase,
+  ListLandingsUseCase, GetLandingUseCase, UpdateLandingMetadataUseCase,
+  GetLandingAnalyticsUseCase,
+} from '@vendepro/core'
+import {
+  D1LandingRepository, D1LandingTemplateRepository,
+  D1LandingVersionRepository, D1LandingEventRepository,
+} from '@vendepro/infrastructure'
 
 type Env = { DB: D1Database; JWT_SECRET: string }
 type AuthVars = { Variables: { userId: string; userRole: string; orgId: string } }
@@ -222,6 +235,196 @@ app.get('/stage-history', async (c) => {
   const repo = new D1StageHistoryRepository(c.env.DB)
   const history = await repo.findByEntity(entity_type as any, entity_id as any, c.get('orgId'))
   return c.json(history.map((h: any) => h.toObject?.() ?? h))
+})
+
+// ── LANDINGS helpers ───────────────────────────────────────────
+const landingDeps = (env: { DB: D1Database }) => ({
+  landings: new D1LandingRepository(env.DB),
+  templates: new D1LandingTemplateRepository(env.DB),
+  versions: new D1LandingVersionRepository(env.DB),
+  events: new D1LandingEventRepository(env.DB),
+  idGen: new CryptoIdGenerator(),
+})
+
+const actor = (c: any) => ({ role: c.get('userRole') as 'admin' | 'agent', userId: c.get('userId') as string })
+const orgId = (c: any) => c.get('orgId') as string
+
+// === Landings ===
+app.get('/landings', async (c) => {
+  const { landings } = landingDeps(c.env)
+  const uc = new ListLandingsUseCase(landings)
+  const scope = (c.req.query('scope') as any) || 'mine'
+  const kind = c.req.query('kind') as any
+  const status = c.req.query('status') as any
+  const result = await uc.execute({ actor: actor(c), orgId: orgId(c), scope, filters: { kind, status } })
+  return c.json({ landings: result.map(l => l.toObject()) })
+})
+
+app.get('/landings/:id', async (c) => {
+  const { landings } = landingDeps(c.env)
+  const uc = new GetLandingUseCase(landings)
+  const l = await uc.execute({ actor: actor(c), orgId: orgId(c), landingId: c.req.param('id') })
+  return c.json({ landing: l.toObject() })
+})
+
+app.post('/landings', async (c) => {
+  const body = (await c.req.json()) as any
+  const { landings, templates, versions, idGen } = landingDeps(c.env)
+  const uc = new CreateLandingFromTemplateUseCase(templates, landings, versions, idGen)
+  const r = await uc.execute({
+    actor: actor(c), orgId: orgId(c),
+    templateId: body.templateId,
+    slugBase: body.slugBase,
+    brandVoice: body.brandVoice ?? null,
+    leadRules: body.leadRules ?? null,
+    seoTitle: body.seoTitle ?? null,
+    seoDescription: body.seoDescription ?? null,
+    ogImageUrl: body.ogImageUrl ?? null,
+  })
+  return c.json(r, 201)
+})
+
+app.patch('/landings/:id', async (c) => {
+  const body = (await c.req.json()) as any
+  const { landings } = landingDeps(c.env)
+  await new UpdateLandingMetadataUseCase(landings).execute({
+    actor: actor(c), orgId: orgId(c), landingId: c.req.param('id'), patch: body.patch,
+  })
+  return c.json({ ok: true })
+})
+
+app.patch('/landings/:id/blocks', async (c) => {
+  const body = (await c.req.json()) as any
+  const { landings, versions, idGen } = landingDeps(c.env)
+  const r = await new UpdateLandingBlocksUseCase(landings, versions, idGen).execute({
+    actor: actor(c), orgId: orgId(c), landingId: c.req.param('id'),
+    blocks: body.blocks, label: body.label ?? 'manual-save',
+  })
+  return c.json(r)
+})
+
+app.post('/landings/:id/blocks', async (c) => {
+  const body = (await c.req.json()) as any
+  const { landings, versions, idGen } = landingDeps(c.env)
+  const r = await new AddBlockUseCase(landings, versions, idGen).execute({
+    actor: actor(c), orgId: orgId(c), landingId: c.req.param('id'),
+    block: body.block, insertAtIndex: body.insertAtIndex,
+  })
+  return c.json(r, 201)
+})
+
+app.delete('/landings/:id/blocks/:blockId', async (c) => {
+  const { landings, versions, idGen } = landingDeps(c.env)
+  await new RemoveBlockUseCase(landings, versions, idGen).execute({
+    actor: actor(c), orgId: orgId(c), landingId: c.req.param('id'), blockId: c.req.param('blockId'),
+  })
+  return c.json({ ok: true })
+})
+
+app.post('/landings/:id/blocks/reorder', async (c) => {
+  const body = (await c.req.json()) as any
+  const { landings, versions, idGen } = landingDeps(c.env)
+  await new ReorderBlocksUseCase(landings, versions, idGen).execute({
+    actor: actor(c), orgId: orgId(c), landingId: c.req.param('id'),
+    orderedBlockIds: body.orderedBlockIds,
+  })
+  return c.json({ ok: true })
+})
+
+app.patch('/landings/:id/blocks/:blockId/visibility', async (c) => {
+  const body = (await c.req.json()) as any
+  const { landings, versions, idGen } = landingDeps(c.env)
+  await new ToggleBlockVisibilityUseCase(landings, versions, idGen).execute({
+    actor: actor(c), orgId: orgId(c), landingId: c.req.param('id'),
+    blockId: c.req.param('blockId'), visible: body.visible,
+  })
+  return c.json({ ok: true })
+})
+
+app.get('/landings/:id/versions', async (c) => {
+  const { versions } = landingDeps(c.env)
+  const list = await versions.listByLanding(c.req.param('id'), 50)
+  return c.json({ versions: list.map(v => v.toObject()) })
+})
+
+app.post('/landings/:id/rollback/:versionId', async (c) => {
+  const { landings, versions, idGen } = landingDeps(c.env)
+  const r = await new RollbackLandingUseCase(landings, versions, idGen).execute({
+    actor: actor(c), orgId: orgId(c), landingId: c.req.param('id'), versionId: c.req.param('versionId'),
+  })
+  return c.json(r)
+})
+
+app.post('/landings/:id/request-publish', async (c) => {
+  const { landings } = landingDeps(c.env)
+  await new RequestPublishUseCase(landings).execute({ actor: actor(c), orgId: orgId(c), landingId: c.req.param('id') })
+  return c.json({ ok: true })
+})
+
+app.post('/landings/:id/publish', async (c) => {
+  const { landings, versions, idGen } = landingDeps(c.env)
+  const r = await new PublishLandingUseCase(landings, versions, idGen).execute({
+    actor: actor(c), orgId: orgId(c), landingId: c.req.param('id'),
+  })
+  return c.json(r)
+})
+
+app.post('/landings/:id/reject-publish', async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as any
+  const { landings } = landingDeps(c.env)
+  await new RejectPublishRequestUseCase(landings).execute({
+    actor: actor(c), orgId: orgId(c), landingId: c.req.param('id'), note: body.note,
+  })
+  return c.json({ ok: true })
+})
+
+app.post('/landings/:id/archive', async (c) => {
+  const { landings } = landingDeps(c.env)
+  await new ArchiveLandingUseCase(landings).execute({ actor: actor(c), orgId: orgId(c), landingId: c.req.param('id') })
+  return c.json({ ok: true })
+})
+
+app.post('/landings/:id/unarchive', async (c) => {
+  const { landings } = landingDeps(c.env)
+  await new UnarchiveLandingUseCase(landings).execute({ actor: actor(c), orgId: orgId(c), landingId: c.req.param('id') })
+  return c.json({ ok: true })
+})
+
+app.get('/landings/:id/analytics', async (c) => {
+  const { landings, events } = landingDeps(c.env)
+  const rangeDays = (parseInt(c.req.query('rangeDays') || '7', 10) as 7 | 14 | 30)
+  const r = await new GetLandingAnalyticsUseCase(landings, events).execute({
+    actor: actor(c), orgId: orgId(c), landingId: c.req.param('id'), rangeDays,
+  })
+  return c.json({ summary: r })
+})
+
+// === Templates ===
+app.get('/landing-templates', async (c) => {
+  const { templates } = landingDeps(c.env)
+  const kind = c.req.query('kind') as any
+  const list = await new ListTemplatesUseCase(templates).execute({ orgId: orgId(c), kind })
+  return c.json({ templates: list.map(t => t.toObject()) })
+})
+
+app.post('/landing-templates', async (c) => {
+  const body = (await c.req.json()) as any
+  const { templates, idGen } = landingDeps(c.env)
+  const r = await new CreateTemplateUseCase(templates, idGen).execute({
+    actor: actor(c), orgId: body.global === true ? null : orgId(c),
+    name: body.name, kind: body.kind, description: body.description,
+    previewImageUrl: body.previewImageUrl, blocks: body.blocks, sortOrder: body.sortOrder,
+  })
+  return c.json(r, 201)
+})
+
+app.patch('/landing-templates/:id', async (c) => {
+  const body = (await c.req.json()) as any
+  const { templates } = landingDeps(c.env)
+  await new UpdateTemplateUseCase(templates).execute({
+    actor: actor(c), orgId: orgId(c), templateId: c.req.param('id'), patch: body.patch,
+  })
+  return c.json({ ok: true })
 })
 
 export default app

@@ -51,4 +51,13 @@ export class AnthropicAIService implements AIService {
       return {}
     }
   }
+
+  async editLandingBlock(_input: import('@vendepro/core').EditBlockInput): Promise<import('@vendepro/core').EditBlockResult> {
+    // Implemented in Task 22.
+    return { status: 'error', reason: 'provider_error', detail: 'not implemented yet' }
+  }
+
+  async editLandingGlobal(_input: import('@vendepro/core').EditGlobalInput): Promise<import('@vendepro/core').EditGlobalResult> {
+    return { status: 'error', reason: 'provider_error', detail: 'not implemented yet' }
+  }
 }
