@@ -4,6 +4,7 @@ import { registerPropertyRoutes } from './routes/properties'
 import { registerPhotoRoutes } from './routes/photos'
 import { registerAppraisalRoutes } from './routes/appraisals'
 import { registerPrefactibilidadRoutes } from './routes/prefactibilidades'
+import { registerFichaRoutes } from './routes/fichas'
 import { registerReportRoutes } from './routes/reports'
 
 type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket; R2_PUBLIC_URL: string }
@@ -24,6 +25,7 @@ registerPropertyRoutes(app)
 registerPhotoRoutes(app)
 registerAppraisalRoutes(app)
 registerPrefactibilidadRoutes(app)
+registerFichaRoutes(app)
 registerReportRoutes(app)
 
 export default app

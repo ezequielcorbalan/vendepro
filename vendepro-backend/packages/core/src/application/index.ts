@@ -52,6 +52,13 @@ export * from './use-cases/prefactibilidades/get-prefactibilidades'
 export * from './use-cases/prefactibilidades/get-prefactibilidad-detail'
 export * from './use-cases/prefactibilidades/create-prefactibilidad'
 
+// Fichas de Tasación
+export * from './use-cases/fichas/create-ficha'
+export * from './use-cases/fichas/get-ficha'
+export * from './use-cases/fichas/list-fichas'
+export * from './use-cases/fichas/update-ficha'
+export * from './use-cases/fichas/delete-ficha'
+
 // Reports
 export * from './use-cases/reports/get-reports'
 export * from './use-cases/reports/get-report-detail'
