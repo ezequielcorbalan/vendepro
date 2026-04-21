@@ -17,6 +17,28 @@ export interface AppraisalComparableProps {
   sort_order: number
 }
 
+export interface AppraisalProposalBlock {
+  title?: string
+  subtitle?: string | null
+  body?: string | null
+  show_agent_signature?: boolean
+}
+
+export interface AppraisalMarketSituationBlock {
+  title?: string
+  body?: string | null
+  media_urls?: string[]
+}
+
+export interface AppraisalWorkConditionsBlock {
+  honorarios_pct?: number | null
+  honorarios_usd?: number | null
+  exclusividad?: boolean
+  exclusividad_meses?: number | null
+  extras?: string[]
+  legal_text?: string | null
+}
+
 export interface AppraisalProps {
   id: string
   org_id: string
@@ -43,6 +65,11 @@ export interface AppraisalProps {
   lead_id: string | null
   status: AppraisalStatus
   public_slug: string | null
+  // New block fields (stored as JSON text columns in D1)
+  proposal: AppraisalProposalBlock | null
+  market_situation: AppraisalMarketSituationBlock | null
+  work_conditions: AppraisalWorkConditionsBlock | null
+  video_links: string[] | null
   created_at: string
   updated_at: string
   // Joined
@@ -55,13 +82,27 @@ const VALID_STATUSES: AppraisalStatus[] = ['draft', 'generated', 'sent']
 export class Appraisal {
   private constructor(private props: AppraisalProps) {}
 
-  static create(props: Omit<AppraisalProps, 'created_at' | 'updated_at'> & { created_at?: string; updated_at?: string }): Appraisal {
+  static create(
+    props: Omit<AppraisalProps, 'created_at' | 'updated_at' | 'proposal' | 'market_situation' | 'work_conditions' | 'video_links'>
+      & {
+        created_at?: string
+        updated_at?: string
+        proposal?: AppraisalProposalBlock | null
+        market_situation?: AppraisalMarketSituationBlock | null
+        work_conditions?: AppraisalWorkConditionsBlock | null
+        video_links?: string[] | null
+      },
+  ): Appraisal {
     if (!props.property_address?.trim()) throw new ValidationError('Dirección es requerida')
     if (!props.neighborhood?.trim()) throw new ValidationError('Barrio es requerido')
     if (!VALID_STATUSES.includes(props.status)) throw new ValidationError(`Estado inválido: "${props.status}"`)
     const now = new Date().toISOString()
     return new Appraisal({
       ...props,
+      proposal: props.proposal ?? null,
+      market_situation: props.market_situation ?? null,
+      work_conditions: props.work_conditions ?? null,
+      video_links: props.video_links ?? null,
       created_at: props.created_at ?? now,
       updated_at: props.updated_at ?? now,
     })
@@ -92,6 +133,10 @@ export class Appraisal {
   get lead_id() { return this.props.lead_id }
   get status() { return this.props.status }
   get public_slug() { return this.props.public_slug }
+  get proposal() { return this.props.proposal }
+  get market_situation() { return this.props.market_situation }
+  get work_conditions() { return this.props.work_conditions }
+  get video_links() { return this.props.video_links }
   get created_at() { return this.props.created_at }
   get updated_at() { return this.props.updated_at }
   get comparables() { return this.props.comparables }

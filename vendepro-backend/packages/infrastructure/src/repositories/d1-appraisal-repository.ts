@@ -90,8 +90,10 @@ export class D1AppraisalRepository implements AppraisalRepository {
           strengths, weaknesses, opportunities, threats, publication_analysis,
           suggested_price, test_price, expected_close_price, usd_per_m2,
           canva_design_id, canva_edit_url, agent_id, lead_id, status,
-          public_slug, created_at, updated_at
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+          public_slug,
+          proposal_json, market_situation_json, work_conditions_json, video_links_json,
+          created_at, updated_at
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT(id) DO UPDATE SET
           property_address=excluded.property_address,
           neighborhood=excluded.neighborhood,
@@ -116,6 +118,10 @@ export class D1AppraisalRepository implements AppraisalRepository {
           lead_id=excluded.lead_id,
           status=excluded.status,
           public_slug=excluded.public_slug,
+          proposal_json=excluded.proposal_json,
+          market_situation_json=excluded.market_situation_json,
+          work_conditions_json=excluded.work_conditions_json,
+          video_links_json=excluded.video_links_json,
           updated_at=excluded.updated_at`,
       )
       .bind(
@@ -124,7 +130,12 @@ export class D1AppraisalRepository implements AppraisalRepository {
         o.strengths, o.weaknesses, o.opportunities, o.threats, o.publication_analysis,
         o.suggested_price, o.test_price, o.expected_close_price, o.usd_per_m2,
         o.canva_design_id, o.canva_edit_url, o.agent_id, o.lead_id, o.status,
-        o.public_slug, o.created_at, o.updated_at,
+        o.public_slug,
+        o.proposal ? JSON.stringify(o.proposal) : null,
+        o.market_situation ? JSON.stringify(o.market_situation) : null,
+        o.work_conditions ? JSON.stringify(o.work_conditions) : null,
+        o.video_links ? JSON.stringify(o.video_links) : null,
+        o.created_at, o.updated_at,
       )
       .run()
   }
@@ -195,6 +206,17 @@ export class D1AppraisalRepository implements AppraisalRepository {
 
   async update(id: string, orgId: string, patch: Record<string, unknown>): Promise<void> {
     const now = new Date().toISOString()
+    // Serialize JSON block fields if present. `undefined` => keep; `null` => clear.
+    const toJson = (v: unknown) => {
+      if (v === undefined) return undefined
+      if (v === null) return null
+      return JSON.stringify(v)
+    }
+    const proposalJson = toJson(patch.proposal)
+    const marketJson = toJson(patch.market_situation)
+    const workJson = toJson(patch.work_conditions)
+    const videoLinksJson = toJson(patch.video_links)
+
     await this.db
       .prepare(`
         UPDATE appraisals SET
@@ -221,6 +243,11 @@ export class D1AppraisalRepository implements AppraisalRepository {
           property_id=COALESCE(?,property_id),
           lead_id=COALESCE(?,lead_id),
           status=COALESCE(?,status),
+          public_slug=COALESCE(?,public_slug),
+          proposal_json=COALESCE(?,proposal_json),
+          market_situation_json=COALESCE(?,market_situation_json),
+          work_conditions_json=COALESCE(?,work_conditions_json),
+          video_links_json=COALESCE(?,video_links_json),
           updated_at=?
         WHERE id = ? AND org_id = ?
       `)
@@ -236,7 +263,13 @@ export class D1AppraisalRepository implements AppraisalRepository {
         patch.expected_close_price ?? null, patch.usd_per_m2 ?? null,
         patch.contact_name ?? null, patch.contact_phone ?? null, patch.contact_email ?? null,
         patch.property_id ?? null, patch.lead_id ?? null,
-        patch.status ?? null, now,
+        patch.status ?? null,
+        (patch.public_slug as any) ?? null,
+        proposalJson ?? null,
+        marketJson ?? null,
+        workJson ?? null,
+        videoLinksJson ?? null,
+        now,
         id, orgId,
       )
       .run()
@@ -266,6 +299,10 @@ export class D1AppraisalRepository implements AppraisalRepository {
   }
 
   private toEntity(row: any, comparables: AppraisalComparableProps[]): Appraisal {
+    const parseJson = <T,>(v: unknown): T | null => {
+      if (!v || typeof v !== 'string') return null
+      try { return JSON.parse(v) as T } catch { return null }
+    }
     return Appraisal.create({
       id: row.id,
       org_id: row.org_id,
@@ -292,6 +329,10 @@ export class D1AppraisalRepository implements AppraisalRepository {
       lead_id: row.lead_id ?? null,
       status: row.status,
       public_slug: row.public_slug ?? null,
+      proposal: parseJson(row.proposal_json),
+      market_situation: parseJson(row.market_situation_json),
+      work_conditions: parseJson(row.work_conditions_json),
+      video_links: parseJson<string[]>(row.video_links_json),
       created_at: row.created_at,
       updated_at: row.updated_at,
       comparables,

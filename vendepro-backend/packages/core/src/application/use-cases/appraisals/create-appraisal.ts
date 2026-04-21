@@ -1,6 +1,11 @@
 import type { AppraisalRepository } from '../../ports/repositories/appraisal-repository'
 import type { IdGenerator } from '../../ports/id-generator'
-import { Appraisal } from '../../../domain/entities/appraisal'
+import {
+  Appraisal,
+  type AppraisalProposalBlock,
+  type AppraisalMarketSituationBlock,
+  type AppraisalWorkConditionsBlock,
+} from '../../../domain/entities/appraisal'
 
 export interface CreateAppraisalInput {
   org_id: string
@@ -24,6 +29,10 @@ export interface CreateAppraisalInput {
   usd_per_m2?: number | null
   lead_id?: string | null
   property_id?: string | null
+  proposal?: AppraisalProposalBlock | null
+  market_situation?: AppraisalMarketSituationBlock | null
+  work_conditions?: AppraisalWorkConditionsBlock | null
+  video_links?: string[] | null
 }
 
 export class CreateAppraisalUseCase {
@@ -60,6 +69,10 @@ export class CreateAppraisalUseCase {
       lead_id: input.lead_id ?? null,
       status: 'draft',
       public_slug: null,
+      proposal: input.proposal ?? null,
+      market_situation: input.market_situation ?? null,
+      work_conditions: input.work_conditions ?? null,
+      video_links: input.video_links ?? null,
       comparables: [],
     })
     await this.repo.save(appraisal)
