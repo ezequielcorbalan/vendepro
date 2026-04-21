@@ -1,5 +1,19 @@
 import { FichaTasacion } from '@vendepro/core'
-import type { FichaRepository } from '@vendepro/core'
+import type { FichaRepository, FichaFilters } from '@vendepro/core'
+
+// Columns allowed on update via patch — whitelist mirrors the `fichas_tasacion`
+// schema, excluding identity / ownership columns that must never change via patch.
+const FICHA_UPDATABLE_COLUMNS = [
+  'agent_id', 'lead_id', 'appraisal_id', 'inspection_date',
+  'address', 'neighborhood', 'property_type', 'floor_number', 'elevators', 'age',
+  'building_category', 'property_condition', 'covered_area', 'semi_area', 'uncovered_area',
+  'm2_value_neighborhood', 'm2_value_zone', 'bedrooms', 'bathrooms', 'storage_rooms',
+  'parking_spots', 'air_conditioning', 'bedroom_dimensions', 'living_dimensions',
+  'kitchen_dimensions', 'bathroom_dimensions', 'floor_type', 'disposition', 'orientation',
+  'balcony_type', 'heating_type', 'noise_level', 'amenities',
+  'is_professional', 'is_occupied', 'is_credit_eligible', 'sells_to_buy',
+  'expenses', 'abl', 'aysa', 'notes', 'photos',
+] as const
 
 /**
  * D1 adapter for the `fichas_tasacion` table.
@@ -27,6 +41,28 @@ export class D1FichaRepository implements FichaRepository {
         `SELECT * FROM fichas_tasacion WHERE appraisal_id = ? AND org_id = ? ORDER BY created_at DESC`,
       )
       .bind(appraisalId, orgId)
+      .all()).results as any[]) || []
+    return rows.map((r) => this.toEntity(r))
+  }
+
+  async findByLead(leadId: string, orgId: string): Promise<FichaTasacion[]> {
+    const rows = ((await this.db
+      .prepare(
+        `SELECT * FROM fichas_tasacion WHERE lead_id = ? AND org_id = ? ORDER BY created_at DESC`,
+      )
+      .bind(leadId, orgId)
+      .all()).results as any[]) || []
+    return rows.map((r) => this.toEntity(r))
+  }
+
+  async findByOrg(orgId: string, filters?: FichaFilters): Promise<FichaTasacion[]> {
+    const clauses: string[] = ['org_id = ?']
+    const binds: any[] = [orgId]
+    if (filters?.lead_id) { clauses.push('lead_id = ?'); binds.push(filters.lead_id) }
+    if (filters?.agent_id) { clauses.push('agent_id = ?'); binds.push(filters.agent_id) }
+    const rows = ((await this.db
+      .prepare(`SELECT * FROM fichas_tasacion WHERE ${clauses.join(' AND ')} ORDER BY created_at DESC`)
+      .bind(...binds)
       .all()).results as any[]) || []
     return rows.map((r) => this.toEntity(r))
   }
@@ -107,6 +143,25 @@ export class D1FichaRepository implements FichaRepository {
         o.is_occupied, o.is_credit_eligible, o.sells_to_buy, o.expenses, o.abl, o.aysa,
         o.notes, o.photos, o.created_at, o.updated_at,
       )
+      .run()
+  }
+
+  async update(id: string, orgId: string, patch: Record<string, unknown>): Promise<void> {
+    const sets: string[] = []
+    const binds: any[] = []
+    for (const col of FICHA_UPDATABLE_COLUMNS) {
+      if (Object.prototype.hasOwnProperty.call(patch, col)) {
+        sets.push(`${col} = ?`)
+        binds.push((patch as any)[col])
+      }
+    }
+    if (sets.length === 0) return
+    sets.push(`updated_at = ?`)
+    binds.push(new Date().toISOString())
+    binds.push(id, orgId)
+    await this.db
+      .prepare(`UPDATE fichas_tasacion SET ${sets.join(', ')} WHERE id = ? AND org_id = ?`)
+      .bind(...binds)
       .run()
   }
 

@@ -92,8 +92,12 @@ export default function PerformancePage() {
     if (priceMin) params.set('price_min', priceMin)
     if (priceMax) params.set('price_max', priceMax)
     apiFetch('analytics', `/listings-performance?${params.toString()}`)
-      .then(r => r.json() as Promise<any>)
+      .then(async r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json() as Promise<any>
+      })
       .then(d => {
+        if (!d?.kpis) throw new Error('respuesta sin kpis')
         setData(d)
         setLoading(false)
       })
