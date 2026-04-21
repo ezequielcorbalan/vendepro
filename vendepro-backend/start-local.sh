@@ -48,6 +48,20 @@ run_alter_migration migrations_v2/002_org_brand_accent_color.sql
 
 echo "✓ Migraciones aplicadas"
 
+# ── 1b. Generar .dev.vars con JWT_SECRET compartido ──────────────
+# Los workers necesitan JWT_SECRET para firmar/verificar tokens. Sin
+# esto, jose tira "HMAC key length (0)" y todo endpoint autenticado
+# devuelve 500/401.
+echo ""
+echo "--- Generando .dev.vars (JWT_SECRET compartido) ---"
+DEV_JWT_SECRET="vendepro-local-dev-secret-do-not-use-in-prod"
+for w in api-auth api-crm api-properties api-transactions api-analytics api-ai api-admin api-public; do
+  cat > "$BACKEND_DIR/packages/$w/.dev.vars" << DEVVARS
+JWT_SECRET=$DEV_JWT_SECRET
+DEVVARS
+done
+echo "✓ .dev.vars generados para los 8 workers"
+
 # ── 2. Levantar 8 Workers en background ─────────────────────────
 echo ""
 echo "--- Levantando Workers ---"
