@@ -30,6 +30,7 @@ describe('CreateReportUseCase', () => {
     const useCase = new CreateReportUseCase(mockRepo as any, mockIdGen)
     const result = await useCase.execute({
       propertyId: 'prop-1',
+      orgId: 'org-1',
       periodLabel: 'Abril 2026',
       periodStart: '2026-04-01',
       periodEnd: '2026-04-30',
@@ -40,7 +41,7 @@ describe('CreateReportUseCase', () => {
     expect(result.reportId).toBeDefined()
     expect(result.propertyId).toBe('prop-1')
     expect(mockRepo.save).toHaveBeenCalled()
-    expect(mockRepo.replaceMetrics).toHaveBeenCalledWith(expect.any(String), expect.arrayContaining([
+    expect(mockRepo.replaceMetrics).toHaveBeenCalledWith(expect.any(String), 'org-1', expect.arrayContaining([
       expect.objectContaining({ source: 'zonaprop', impressions: 1200 }),
     ]))
     expect(mockRepo.replaceContent).toHaveBeenCalled()
@@ -50,14 +51,15 @@ describe('CreateReportUseCase', () => {
     const useCase = new CreateReportUseCase(mockRepo as any, mockIdGen)
     await useCase.execute({
       propertyId: 'prop-1',
+      orgId: 'org-1',
       periodLabel: 'Abril 2026',
       periodStart: '2026-04-01',
       periodEnd: '2026-04-30',
       createdBy: 'user-1',
       competitors: [{ url: 'https://zonaprop.com/123', address: 'Calle 1', price: 180000 }],
     })
-    expect(mockRepo.deleteCompetitorLinks).toHaveBeenCalledWith('prop-1')
-    expect(mockRepo.addCompetitorLink).toHaveBeenCalledWith(expect.objectContaining({ url: 'https://zonaprop.com/123' }))
+    expect(mockRepo.deleteCompetitorLinks).toHaveBeenCalledWith('prop-1', 'org-1')
+    expect(mockRepo.addCompetitorLink).toHaveBeenCalledWith(expect.objectContaining({ url: 'https://zonaprop.com/123' }), 'org-1')
   })
 })
 

@@ -12,15 +12,13 @@ export class GetReportDetailUseCase {
   constructor(private readonly repo: ReportRepository) {}
 
   async execute(id: string, orgId: string): Promise<ReportDetailResult | null> {
-    const report = await this.repo.findReportRaw(id)
+    const report = await this.repo.findReportRaw(id, orgId)
     if (!report) return null
-    // Security: check org_id matches if available
-    if (report.org_id && report.org_id !== orgId) return null
 
     const [metrics, content, competitors] = await Promise.all([
-      this.repo.findMetrics(id),
-      this.repo.findContent(id),
-      this.repo.findCompetitorLinks(report.property_id as string),
+      this.repo.findMetrics(id, orgId),
+      this.repo.findContent(id, orgId),
+      this.repo.findCompetitorLinks(report.property_id as string, orgId),
     ])
 
     return { report, metrics, content, competitors }

@@ -130,4 +130,82 @@ describe('D1ReportRepository', () => {
     expect(afterContent.c).toBe(0)
     expect(afterPhotos.c).toBe(0)
   })
+
+  it('findReportRaw / findMetrics / findContent / findPhotosByReport scope by org_id', async () => {
+    const repo = new D1ReportRepository(env.DB)
+    const r = buildReport()
+    await repo.save(r)
+
+    await env.DB
+      .prepare(`INSERT INTO report_metrics (id, report_id, source, impressions) VALUES (?, ?, 'zonaprop', 100)`)
+      .bind(nextId('met'), r.id)
+      .run()
+    await env.DB
+      .prepare(`INSERT INTO report_content (id, report_id, section, title, body, sort_order) VALUES (?, ?, 'strategy', 'T', 'B', 0)`)
+      .bind(nextId('cnt'), r.id)
+      .run()
+    await env.DB
+      .prepare(`INSERT INTO report_photos (id, report_id, photo_url, photo_type, sort_order) VALUES (?, ?, 'u', 'property', 0)`)
+      .bind(nextId('pho'), r.id)
+      .run()
+
+    // Right org sees everything
+    expect(await repo.findReportRaw(r.id, orgId)).not.toBeNull()
+    expect((await repo.findMetrics(r.id, orgId)).length).toBe(1)
+    expect((await repo.findContent(r.id, orgId)).length).toBe(1)
+    expect((await repo.findPhotosByReport(r.id, orgId)).length).toBe(1)
+
+    // Wrong org sees nothing
+    const otherOrg = await seedOrg(env.DB)
+    expect(await repo.findReportRaw(r.id, otherOrg.id)).toBeNull()
+    expect(await repo.findMetrics(r.id, otherOrg.id)).toEqual([])
+    expect(await repo.findContent(r.id, otherOrg.id)).toEqual([])
+    expect(await repo.findPhotosByReport(r.id, otherOrg.id)).toEqual([])
+  })
+
+  it('replaceMetrics / replaceContent are no-ops for wrong org', async () => {
+    const repo = new D1ReportRepository(env.DB)
+    const r = buildReport()
+    await repo.save(r)
+
+    await env.DB
+      .prepare(`INSERT INTO report_metrics (id, report_id, source, impressions) VALUES (?, ?, 'zonaprop', 100)`)
+      .bind(nextId('met'), r.id)
+      .run()
+
+    const otherOrg = await seedOrg(env.DB)
+    // Attempting to replace from wrong org must not wipe existing data
+    await repo.replaceMetrics(r.id, otherOrg.id, [])
+    await repo.replaceContent(r.id, otherOrg.id, [])
+
+    const stillThere = (await env.DB.prepare('SELECT COUNT(*) as c FROM report_metrics WHERE report_id = ?').bind(r.id).first()) as any
+    expect(stillThere.c).toBe(1)
+  })
+
+  it('competitor_links operations scope by property org_id', async () => {
+    const repo = new D1ReportRepository(env.DB)
+
+    // Add a competitor link legitimately
+    await repo.addCompetitorLink(
+      { id: nextId('cl'), property_id: propertyId, url: 'https://x', address: null, price: null, notes: null },
+      orgId,
+    )
+    expect((await repo.findCompetitorLinks(propertyId, orgId)).length).toBe(1)
+
+    // Wrong org cannot read
+    const otherOrg = await seedOrg(env.DB)
+    expect(await repo.findCompetitorLinks(propertyId, otherOrg.id)).toEqual([])
+
+    // Wrong org cannot delete
+    await repo.deleteCompetitorLinks(propertyId, otherOrg.id)
+    expect((await repo.findCompetitorLinks(propertyId, orgId)).length).toBe(1)
+
+    // Wrong org cannot insert — must throw
+    await expect(
+      repo.addCompetitorLink(
+        { id: nextId('cl'), property_id: propertyId, url: 'https://y', address: null, price: null, notes: null },
+        otherOrg.id,
+      ),
+    ).rejects.toThrow('Propiedad no encontrada')
+  })
 })

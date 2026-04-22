@@ -8,7 +8,7 @@ export class DeleteReportUseCase {
   ) {}
 
   async execute(id: string, orgId: string, userId: string, userRole: string): Promise<{ success: boolean; propertyId: string }> {
-    const report = await this.repo.findReportRaw(id)
+    const report = await this.repo.findReportRaw(id, orgId)
     if (!report) {
       const err = new Error('Reporte no encontrado')
       ;(err as any).statusCode = 404
@@ -24,7 +24,7 @@ export class DeleteReportUseCase {
 
     // Best-effort R2 cleanup for report photos
     try {
-      const photos = await this.repo.findPhotosByReport(id)
+      const photos = await this.repo.findPhotosByReport(id, orgId)
       for (const photo of photos) {
         const key = photo.r2_key ?? photo.photo_url.replace('/photo/', '')
         try { await this.storageService.delete(key) } catch { /* best-effort */ }

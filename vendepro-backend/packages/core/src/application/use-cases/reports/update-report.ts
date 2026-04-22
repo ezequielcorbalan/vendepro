@@ -35,7 +35,7 @@ export class UpdateReportUseCase {
   ) {}
 
   async execute(input: UpdateReportInput): Promise<{ success: boolean; id: string; propertyId: string }> {
-    const report = await this.repo.findReportRaw(input.id)
+    const report = await this.repo.findReportRaw(input.id, input.orgId)
     if (!report) {
       const err = new Error('Reporte no encontrado')
       ;(err as any).statusCode = 404
@@ -82,7 +82,7 @@ export class UpdateReportUseCase {
         ranking_position: m.ranking_position ? Number(m.ranking_position) : null,
         avg_market_price: m.avg_market_price ? Number(m.avg_market_price) : null,
       }))
-      await this.repo.replaceMetrics(input.id, metrics)
+      await this.repo.replaceMetrics(input.id, input.orgId, metrics)
     }
 
     const sections: Array<[string, string]> = [
@@ -99,7 +99,7 @@ export class UpdateReportUseCase {
       body,
       sort_order: 0,
     }))
-    await this.repo.replaceContent(input.id, content)
+    await this.repo.replaceContent(input.id, input.orgId, content)
 
     return { success: true, id: input.id, propertyId: report.property_id as string }
   }

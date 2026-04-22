@@ -24,7 +24,7 @@ export function registerReportRoutes(app: Hono<{ Bindings: Env } & AuthVars>) {
     const body = (await c.req.json()) as any
     const repo = new D1ReportRepository(c.env.DB)
     const useCase = new CreateReportUseCase(repo, new CryptoIdGenerator())
-    const result = await useCase.execute({ ...body, createdBy: c.get('userId') })
+    const result = await useCase.execute({ ...body, orgId: c.get('orgId'), createdBy: c.get('userId') })
     return c.json(result)
   })
 

@@ -43,20 +43,18 @@ run_alter_migration() {
   fi
 }
 
-run_alter_migration migrations_v2/001_appraisals_extra_cols.sql
-run_alter_migration migrations_v2/002_org_brand_accent_color.sql
-run_alter_migration migrations_v2/003_appraisal_blocks.sql
-run_alter_migration migrations_v2/012_property_visit_forms.sql
-run_alter_migration migrations_v2/013_property_auth.sql
-run_alter_migration migrations_v2/014_property_doc_status.sql
-run_alter_migration migrations_v2/015_landing_templates.sql
-# 016_marketing_meta.sql — CREATE TABLE IF NOT EXISTS ya es idempotente,
-# pero usamos run_alter_migration para uniformidad y tolerancia a errores.
-run_alter_migration migrations_v2/016_marketing_meta.sql
-# 017_marketing_ga4.sql — ALTER TABLE ADD COLUMN, tolera "duplicate column"
-run_alter_migration migrations_v2/017_marketing_ga4.sql
+# Aplicar todas las migraciones en orden numérico excepto 000_initial.sql
+# (que ya se aplicó arriba). El loop reemplaza las llamadas hardcodeadas
+# anteriores para que nuevas migraciones se apliquen automáticamente sin
+# tener que editar este script.
+_migration_count=0
+for f in migrations_v2/0*.sql; do
+  [[ "$f" == "migrations_v2/000_initial.sql" ]] && continue
+  run_alter_migration "$f"
+  _migration_count=$((_migration_count + 1))
+done
 
-echo "✓ Migraciones aplicadas"
+echo "✓ $_migration_count migraciones aplicadas"
 
 # ── 1b. Generar .dev.vars con JWT_SECRET compartido ──────────────
 # Los workers necesitan JWT_SECRET para firmar/verificar tokens. Sin

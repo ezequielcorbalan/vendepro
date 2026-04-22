@@ -1,0 +1,67 @@
+name: Validate migrations
+
+on:
+  pull_request:
+    paths:
+      - "vendepro-backend/migrations_v2/**"
+  push:
+    branches: [main]
+    paths:
+      - "vendepro-backend/migrations_v2/**"
+  workflow_dispatch:
+
+jobs:
+  validate-migrations:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: vendepro-backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply migrations to local D1
+        run: |
+          MIGRATIONS_DIR="migrations_v2"
+          WRANGLER_CONFIG="packages/api-auth/wrangler.jsonc"
+          PERSIST="--persist-to ./.wrangler-ci"
+
+          run_migration() {
+            local file="$1"
+            local output
+            output=$(npx wrangler d1 execute DB --local \
+              --config "$WRANGLER_CONFIG" \
+              $PERSIST \
+              --file "$file" 2>&1)
+            local exit_code=$?
+
+            if [ $exit_code -ne 0 ]; then
+              # Tolerate duplicate-column errors (ALTER TABLE re-runs)
+              if echo "$output" | grep -qi "duplicate column"; then
+                echo "  [skipped — duplicate column] $file"
+                return 0
+              fi
+              echo "ERROR applying migration: $file"
+              echo "$output"
+              exit 1
+            fi
+
+            echo "  [ok] $file"
+          }
+
+          echo "=== Applying 000_initial.sql ==="
+          run_migration "$MIGRATIONS_DIR/000_initial.sql"
+
+          echo "=== Applying remaining migrations (sorted) ==="
+          for f in $(ls "$MIGRATIONS_DIR"/*.sql | sort | grep -v "000_initial.sql"); do
+            run_migration "$f"
+          done
+
+          echo "=== All migrations validated successfully ==="

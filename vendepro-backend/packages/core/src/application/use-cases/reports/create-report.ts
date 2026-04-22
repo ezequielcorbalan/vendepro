@@ -4,6 +4,7 @@ import { Report } from '../../../domain/entities/report'
 
 export interface CreateReportInput {
   propertyId: string
+  orgId: string
   periodLabel: string
   periodStart: string
   periodEnd: string
@@ -67,7 +68,7 @@ export class CreateReportUseCase {
         ranking_position: m.ranking_position ? Number(m.ranking_position) : null,
         avg_market_price: m.avg_market_price ? Number(m.avg_market_price) : null,
       }))
-      await this.repo.replaceMetrics(id, metrics)
+      await this.repo.replaceMetrics(id, input.orgId, metrics)
     }
 
     const sections: Array<[string, string]> = [
@@ -87,11 +88,11 @@ export class CreateReportUseCase {
         sort_order: 0,
       }))
     if (content.length > 0) {
-      await this.repo.replaceContent(id, content)
+      await this.repo.replaceContent(id, input.orgId, content)
     }
 
     if (Array.isArray(input.competitors) && input.competitors.length > 0) {
-      await this.repo.deleteCompetitorLinks(input.propertyId)
+      await this.repo.deleteCompetitorLinks(input.propertyId, input.orgId)
       for (const comp of input.competitors) {
         await this.repo.addCompetitorLink({
           id: this.idGen.generate(),
@@ -100,7 +101,7 @@ export class CreateReportUseCase {
           address: comp.address ?? null,
           price: comp.price ? Number(comp.price) : null,
           notes: comp.notes ?? null,
-        })
+        }, input.orgId)
       }
     }
 
