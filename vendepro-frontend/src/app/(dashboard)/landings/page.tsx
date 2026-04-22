@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Plus, Search } from 'lucide-react'
 import { landingsApi } from '@/lib/landings/api'
 import type { Landing } from '@/lib/landings/types'
@@ -11,6 +12,7 @@ type Tab = 'mine' | 'org' | 'pending_review'
 type TypeTab = 'all' | 'marketing' | 'tasacion'
 
 export default function LandingsPage() {
+  const searchParams = useSearchParams()
   const [landings, setLandings] = useState<Landing[]>([])
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<Tab>('mine')
@@ -20,6 +22,13 @@ export default function LandingsPage() {
   const [createAsTasacionTemplate, setCreateAsTasacionTemplate] = useState(false)
   const user = typeof window !== 'undefined' ? getCurrentUser() : null
   const isAdmin = user?.role === 'admin' || user?.role === 'owner'
+
+  useEffect(() => {
+    if (searchParams.get('create_template') === '1') {
+      setCreateAsTasacionTemplate(true)
+      setShowCreate(true)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     let alive = true
