@@ -4,12 +4,14 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Save, Loader2 } from 'lucide-react'
+import { ArrowLeft, Save, Loader2, Plus, Sparkles } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
 import { PropertySelector } from '@/components/ui/PropertySelector'
 
 const PROPERTY_TYPES = ['departamento', 'casa', 'ph', 'local', 'terreno', 'oficina']
+
+type TasacionTemplate = { id: string; name: string; slug?: string }
 
 export default function NuevaTasacionPage() {
   const router = useRouter()
@@ -19,6 +21,11 @@ export default function NuevaTasacionPage() {
   const [linkedProperty, setLinkedProperty] = useState<{
     id: string; address: string; neighborhood: string; city: string; property_type: string; size_m2: number | null
   } | null>(null)
+
+  const [templates, setTemplates] = useState<TasacionTemplate[]>([])
+  const [templatesLoading, setTemplatesLoading] = useState(true)
+  const [templatesAvailable, setTemplatesAvailable] = useState(true)
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null)
 
   const [form, setForm] = useState({
     property_address: '',
@@ -62,6 +69,34 @@ export default function NuevaTasacionPage() {
       .catch(() => {})
   }, [searchParams])
 
+  useEffect(() => {
+    let alive = true
+    setTemplatesLoading(true)
+    apiFetch('properties', '/landings/templates?type=tasacion')
+      .then(async (r) => {
+        if (!r.ok) {
+          // 404 u otro: API no disponible aún -> empty state graceful
+          if (alive) { setTemplatesAvailable(false); setTemplates([]) }
+          return
+        }
+        const data = (await r.json()) as any
+        const list: TasacionTemplate[] = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.templates)
+            ? data.templates
+            : Array.isArray(data?.landings)
+              ? data.landings
+              : []
+        if (alive) {
+          setTemplates(list)
+          setTemplatesAvailable(true)
+        }
+      })
+      .catch(() => { if (alive) { setTemplatesAvailable(false); setTemplates([]) } })
+      .finally(() => { if (alive) setTemplatesLoading(false) })
+    return () => { alive = false }
+  }, [])
+
   function handlePropertySelect(p: typeof linkedProperty) {
     setLinkedProperty(p)
     if (p) {
@@ -80,6 +115,35 @@ export default function NuevaTasacionPage() {
     if (!form.property_address) { toast('La dirección es requerida', 'error'); return }
     setSaving(true)
     try {
+      // Si hay plantilla seleccionada → clonar landing como tasación
+      if (selectedTemplateId) {
+        const cloneBody: any = { address: form.property_address }
+        if (linkedProperty) cloneBody.property_id = linkedProperty.id
+        const cloneRes = await apiFetch('properties', `/landings/${selectedTemplateId}/clone-as-tasacion`, {
+          method: 'POST',
+          body: JSON.stringify(cloneBody),
+        })
+        if (!cloneRes.ok) {
+          if (cloneRes.status === 404) {
+            toast('Plantilla no disponible aún', 'error')
+          } else {
+            toast('No se pudo crear la tasación desde plantilla', 'error')
+          }
+          setSaving(false)
+          return
+        }
+        const cloneData = (await cloneRes.json()) as any
+        if (cloneData?.appraisal_id) {
+          toast('Tasación creada desde plantilla')
+          router.push(`/tasaciones/${cloneData.appraisal_id}/editar`)
+          return
+        }
+        toast('Respuesta inesperada del servidor', 'error')
+        setSaving(false)
+        return
+      }
+
+      // Flujo actual sin plantilla
       const payload: any = { ...form }
       if (linkedProperty) payload.property_id = linkedProperty.id
       if (form.covered_area) payload.covered_area = Number(form.covered_area)
@@ -121,6 +185,74 @@ export default function NuevaTasacionPage() {
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Crear tasación
         </button>
+      </div>
+
+      {/* Plantilla de tasación (opcional) */}
+      <div className="bg-white rounded-xl border p-6 space-y-4">
+        <div className="flex items-start gap-3">
+          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#ff007c] to-[#ff8017] text-white flex items-center justify-center shrink-0">
+            <Sparkles className="w-4 h-4" />
+          </div>
+          <div>
+            <h2 className="font-semibold text-gray-800">Crear desde plantilla (opcional)</h2>
+            <p className="text-sm text-gray-500">
+              Elegí una plantilla con bloques pre-armados (propuesta, FODA, etc.).
+              Solo vas a editar las partes variables de cada tasación.
+            </p>
+          </div>
+        </div>
+
+        {templatesLoading ? (
+          <div className="text-sm text-gray-400">Cargando plantillas…</div>
+        ) : !templatesAvailable || templates.length === 0 ? (
+          <div className="text-sm text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-lg px-4 py-3">
+            Sin plantillas disponibles.{' '}
+            <Link href="/landings/nueva?template_type=tasacion" className="text-[#ff007c] font-medium hover:underline">
+              + Crear plantilla nueva
+            </Link>
+          </div>
+        ) : (
+          <>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedTemplateId(null)}
+                className={`px-3 py-1.5 rounded-full text-sm border transition ${
+                  selectedTemplateId === null
+                    ? 'bg-[#ff007c] text-white border-[#ff007c]'
+                    : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                Sin plantilla
+              </button>
+              {templates.map(t => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setSelectedTemplateId(t.id)}
+                  className={`px-3 py-1.5 rounded-full text-sm border transition ${
+                    selectedTemplateId === t.id
+                      ? 'bg-[#ff007c] text-white border-[#ff007c]'
+                      : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  {t.name}
+                </button>
+              ))}
+            </div>
+            <Link
+              href="/landings/nueva?template_type=tasacion"
+              className="inline-flex items-center gap-1.5 text-sm text-[#ff007c] font-medium hover:underline"
+            >
+              <Plus className="w-3.5 h-3.5" /> Crear plantilla nueva
+            </Link>
+            {selectedTemplateId && (
+              <p className="text-xs text-gray-500">
+                Al crear se clonarán los bloques de la plantilla en la tasación. Solo necesitás la dirección.
+              </p>
+            )}
+          </>
+        )}
       </div>
 
       {/* Propiedad vinculada */}
