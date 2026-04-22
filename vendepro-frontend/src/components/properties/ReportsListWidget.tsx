@@ -72,10 +72,9 @@ export default function ReportsListWidget({ propertyId }: Props) {
       ) : (
         <div className="space-y-2">
           {reports.slice(0, 5).map(r => (
-            <Link
+            <div
               key={r.id}
-              href={`/reportes/${r.id}`}
-              className="flex items-center justify-between border border-gray-100 rounded-xl px-3 py-2 hover:border-[#ff007c]/30 hover:bg-[#ff007c]/5 transition-colors group"
+              className="flex items-center justify-between border border-gray-100 rounded-xl px-3 py-2"
             >
               <div>
                 <p className="text-sm font-medium text-gray-800">
@@ -87,17 +86,14 @@ export default function ReportsListWidget({ propertyId }: Props) {
                   {r.in_person_visits != null && `${r.in_person_visits} visitas`}
                 </p>
               </div>
-              <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-[#ff007c] transition-colors" />
-            </Link>
+            </div>
           ))}
-          {reports.length > 5 && (
-            <Link
-              href={`/reportes/listado?property_id=${propertyId}`}
-              className="block text-center text-xs text-[#ff007c] font-medium hover:underline pt-2"
-            >
-              Ver los {reports.length} reportes →
-            </Link>
-          )}
+          <Link
+            href={`/propiedades/${propertyId}/reportes`}
+            className="block text-center text-xs text-[#ff007c] font-medium hover:underline pt-2"
+          >
+            Ver todos los reportes →
+          </Link>
         </div>
       )}
     </div>
