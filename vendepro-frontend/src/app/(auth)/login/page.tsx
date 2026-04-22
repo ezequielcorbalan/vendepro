@@ -62,8 +62,21 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="bg-white rounded-2xl shadow-lg p-5 sm:p-8 w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#ff007c]/5 via-white to-[#ff8017]/5 px-4 relative overflow-hidden">
+      <img
+        src="/brand/GV-27.png"
+        alt=""
+        aria-hidden="true"
+        className="absolute -top-20 -left-20 w-96 h-96 opacity-20 pointer-events-none"
+      />
+      <img
+        src="/brand/ELEMENTOS-28.png"
+        alt=""
+        aria-hidden="true"
+        className="absolute -bottom-24 -right-16 w-80 h-80 opacity-10 pointer-events-none"
+      />
+      <div className="bg-white rounded-2xl shadow-xl p-5 sm:p-8 w-full max-w-md relative z-10 border border-white/50">
+        <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[#ff007c] to-[#ff8017] rounded-t-2xl" />
         <div className="text-center mb-6 sm:mb-8">
           <img src="/logo.png" alt="VendéPro" className="h-12 sm:h-16 mx-auto mb-3 sm:mb-4" />
           <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">CRM Inmobiliario</h1>
@@ -100,7 +113,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#ff007c] text-white font-medium py-2.5 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+            className="w-full bg-gradient-to-br from-[#ff007c] to-[#ff8017] text-white font-medium py-2.5 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 shadow-sm"
           >
             {loading ? 'Ingresando...' : 'Ingresar'}
           </button>
