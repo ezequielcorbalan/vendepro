@@ -1,7 +1,7 @@
 import type { MetaIntegrationRepository } from '../../ports/repositories/meta-integration-repository'
 import type { MetaEventLogRepository } from '../../ports/repositories/meta-event-log-repository'
 import type { MetaConversionAPI } from '../../ports/services/meta-conversion-api'
-import type { TokenDecryptor } from './send-meta-conversion-event'
+import type { TokenDecryptor } from './send-marketing-event'
 
 export interface RetryFailedMetaEventsInput {
   orgId: string

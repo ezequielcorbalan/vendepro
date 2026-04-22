@@ -53,6 +53,8 @@ run_alter_migration migrations_v2/015_landing_templates.sql
 # 016_marketing_meta.sql — CREATE TABLE IF NOT EXISTS ya es idempotente,
 # pero usamos run_alter_migration para uniformidad y tolerancia a errores.
 run_alter_migration migrations_v2/016_marketing_meta.sql
+# 017_marketing_ga4.sql — ALTER TABLE ADD COLUMN, tolera "duplicate column"
+run_alter_migration migrations_v2/017_marketing_ga4.sql
 
 echo "✓ Migraciones aplicadas"
 

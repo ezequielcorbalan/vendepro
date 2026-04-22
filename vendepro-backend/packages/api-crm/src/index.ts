@@ -5,7 +5,8 @@ import {
   D1TagRepository, D1StageHistoryRepository, D1OrganizationRepository,
   D1MetaIntegrationRepository, D1StageEventMappingRepository, D1MetaEventLogRepository,
   JwtAuthService, CryptoIdGenerator,
-  MetaConversionAPIHttp, encrypt, decrypt,
+  encrypt,
+  createMarketingSender, fireMarketingEvent,
 } from '@vendepro/infrastructure'
 import {
   GetLeadsUseCase, UpdateLeadUseCase, DeleteLeadUseCase, AdvanceLeadStageUseCase,
@@ -15,7 +16,7 @@ import {
   GenerateOrgApiKeyUseCase, GetOrgApiKeyUseCase,
   GetMetaIntegrationUseCase, SaveMetaIntegrationUseCase,
   ListStageMappingsUseCase, SaveStageMappingUseCase, DeleteStageMappingUseCase,
-  SendMetaConversionEventUseCase, ListMetaEventLogUseCase,
+  ListMetaEventLogUseCase,
 } from '@vendepro/core'
 import {
   CreateLandingFromTemplateUseCase, UpdateLandingBlocksUseCase, AddBlockUseCase,
@@ -64,7 +65,22 @@ app.post('/leads', async (c) => {
     org_id: c.get('orgId'),
     assigned_to: body.assigned_to || c.get('userId'),
   })
-  return c.json(result, 201)
+  // Hook marketing: evento `lead_created` (Meta + GA4 si están mapeados).
+  const mk = await fireMarketingEvent(c.env, {
+    orgId: c.get('orgId'),
+    eventKey: 'lead_created',
+    entityType: 'lead',
+    entityId: result.id,
+    leadId: result.id,
+    userData: {
+      full_name: body.full_name ?? body.contact_data?.full_name ?? null,
+      email: body.email ?? body.contact_data?.email ?? null,
+      phone: body.phone ?? body.contact_data?.phone ?? null,
+      estimated_value: typeof body.estimated_value === 'number' ? body.estimated_value : null,
+    },
+    actionSource: 'system_generated',
+  })
+  return c.json({ ...result, marketing: mk ?? null }, 201)
 })
 
 app.put('/leads', async (c) => {
@@ -89,24 +105,24 @@ app.post('/leads/stage', async (c) => {
   const calRepo = new D1CalendarRepository(c.env.DB)
   const historyRepo = new D1StageHistoryRepository(c.env.DB)
   const idGen = new CryptoIdGenerator()
-  const metaSender = buildMetaSender(c.env, idGen)
-  const useCase = new AdvanceLeadStageUseCase(repo, calRepo, historyRepo, idGen, metaSender)
+  // metaSender interno desactivado: el hook multi-provider de abajo cubre
+  // Meta + GA4 y además expone event_id al frontend (dedup Pixel+CAPI).
+  const useCase = new AdvanceLeadStageUseCase(repo, calRepo, historyRepo, idGen)
   const result = await useCase.execute({ leadId: body.id, orgId: c.get('orgId'), newStage: body.stage, changedBy: c.get('userId'), notes: body.notes })
-  return c.json(result)
+
+  const mk = await fireMarketingEvent(c.env, {
+    orgId: c.get('orgId'),
+    eventKey: body.stage,
+    entityType: 'lead',
+    entityId: body.id,
+    leadId: body.id,
+    actionSource: 'system_generated',
+    ga4ClientId: body.ga4_client_id ?? null,
+  })
+  return c.json({ ...result, marketing: mk ?? null })
 })
 
-// ── MARKETING (Meta Conversion API) ────────────────────────────
-function buildMetaSender(env: Env, idGen: CryptoIdGenerator): SendMetaConversionEventUseCase {
-  return new SendMetaConversionEventUseCase(
-    new D1MetaIntegrationRepository(env.DB),
-    new D1StageEventMappingRepository(env.DB),
-    new D1MetaEventLogRepository(env.DB),
-    new D1LeadRepository(env.DB),
-    new MetaConversionAPIHttp(),
-    idGen,
-    (cipher: string) => decrypt(cipher, env.JWT_SECRET),
-  )
-}
+// ── MARKETING (Meta CAPI + GA4 MP + Stape sGTM) ────────────────
 
 function requireAdmin(c: any) {
   const role = c.get('userRole') as string
@@ -136,6 +152,9 @@ app.put('/marketing/integration', async (c) => {
     gtm_container_id: body.gtm_container_id ?? null,
     test_event_code: body.test_event_code ?? null,
     enabled: typeof body.enabled === 'boolean' ? body.enabled : undefined,
+    ga4_measurement_id: body.ga4_measurement_id ?? null,
+    ga4_api_secret: body.ga4_api_secret,
+    ga4_enabled: typeof body.ga4_enabled === 'boolean' ? body.ga4_enabled : undefined,
   })
   return c.json({ success: true })
 })
@@ -156,6 +175,7 @@ app.post('/marketing/mappings', async (c) => {
     orgId: c.get('orgId'),
     stage_key: body.stage_key,
     meta_event_name: body.meta_event_name,
+    ga4_event_name: body.ga4_event_name ?? undefined,
     enabled: body.enabled,
   })
   return c.json(result, 201)
@@ -174,12 +194,14 @@ app.post('/marketing/test-event', async (c) => {
   const body = (await c.req.json().catch(() => ({}))) as any
   const stageKey = body.stage_key as string
   if (!stageKey) return c.json({ error: 'stage_key es requerido' }, 400)
-  const sender = buildMetaSender(c.env, new CryptoIdGenerator())
+  const sender = createMarketingSender(c.env)
   const result = await sender.execute({
     orgId: c.get('orgId'),
+    eventKey: stageKey,
+    entityType: 'lead',
+    entityId: `test-${Date.now()}`,
     leadId: `test-${Date.now()}`,
-    stageKey,
-    leadDataOverride: {
+    userData: {
       full_name: 'Test Lead',
       email: 'test@vendepro.test',
       phone: '+5491100000000',
@@ -187,6 +209,7 @@ app.post('/marketing/test-event', async (c) => {
     },
     actionSource: 'system_generated',
     testEventCodeOverride: body.test_event_code ?? null,
+    ga4ClientId: `test.${Date.now()}`,
   })
   return c.json(result)
 })

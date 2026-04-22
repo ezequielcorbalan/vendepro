@@ -1,24 +1,37 @@
 import type { MetaIntegrationRepository } from '../../ports/repositories/meta-integration-repository'
 import { MetaIntegration } from '../../../domain/entities/meta-integration'
 
-/**
- * Encriptador inyectable. La infraestructura proveerá una implementación
- * que use AES-GCM con la clave derivada del JWT_SECRET.
- */
 export type TokenEncryptor = (plaintext: string) => Promise<string>
 
 export interface SaveMetaIntegrationInput {
   orgId: string
   pixel_id?: string | null
-  /** Si viene undefined o '********' (placeholder), no se actualiza el token. */
+  /** '********' (placeholder) → no actualiza; '' → limpia. */
   access_token?: string | null
   stape_endpoint?: string | null
   gtm_container_id?: string | null
   test_event_code?: string | null
   enabled?: boolean
+  // GA4 Measurement Protocol
+  ga4_measurement_id?: string | null
+  /** '********' → no actualiza; '' → limpia. */
+  ga4_api_secret?: string | null
+  ga4_enabled?: boolean
 }
 
 const TOKEN_PLACEHOLDER = '********'
+
+function applySecretPatch(
+  incoming: string | null | undefined,
+  existingCipher: string | null,
+  encrypt: TokenEncryptor,
+): Promise<string | null> {
+  if (incoming === undefined || incoming === null || incoming === TOKEN_PLACEHOLDER) {
+    return Promise.resolve(existingCipher)
+  }
+  if (incoming === '') return Promise.resolve(null)
+  return encrypt(incoming)
+}
 
 export class SaveMetaIntegrationUseCase {
   constructor(
@@ -29,17 +42,16 @@ export class SaveMetaIntegrationUseCase {
   async execute(input: SaveMetaIntegrationInput): Promise<{ ok: true }> {
     const existing = await this.repo.findByOrg(input.orgId)
 
-    let encryptedToken: string | null = existing?.access_token_encrypted ?? null
-    const incoming = input.access_token
-
-    // Sólo re-encriptamos si el cliente mandó un valor real (distinto a undefined,
-    // null, '' o el placeholder de la UI).
-    if (incoming !== undefined && incoming !== null && incoming !== '' && incoming !== TOKEN_PLACEHOLDER) {
-      encryptedToken = await this.encryptToken(incoming)
-    } else if (incoming === '') {
-      // String vacío explícito = limpiar token
-      encryptedToken = null
-    }
+    const encryptedToken = await applySecretPatch(
+      input.access_token,
+      existing?.access_token_encrypted ?? null,
+      this.encryptToken,
+    )
+    const encryptedGa4Secret = await applySecretPatch(
+      input.ga4_api_secret,
+      existing?.ga4_api_secret_encrypted ?? null,
+      this.encryptToken,
+    )
 
     const next = existing ?? MetaIntegration.create({
       org_id: input.orgId,
@@ -48,6 +60,8 @@ export class SaveMetaIntegrationUseCase {
       stape_endpoint: null,
       gtm_container_id: null,
       test_event_code: null,
+      ga4_measurement_id: null,
+      ga4_api_secret_encrypted: null,
     })
 
     next.update({
@@ -57,6 +71,9 @@ export class SaveMetaIntegrationUseCase {
       gtm_container_id: input.gtm_container_id ?? next.gtm_container_id,
       test_event_code: input.test_event_code ?? next.test_event_code,
       enabled: input.enabled !== undefined ? input.enabled : next.enabled,
+      ga4_measurement_id: input.ga4_measurement_id ?? next.ga4_measurement_id,
+      ga4_api_secret_encrypted: encryptedGa4Secret,
+      ga4_enabled: input.ga4_enabled !== undefined ? input.ga4_enabled : next.ga4_enabled,
     })
 
     await this.repo.save(next)
