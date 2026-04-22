@@ -10,6 +10,7 @@ import { VisitFormsSection } from '@/components/properties/VisitFormsSection'
 import AuthorizationWidget from '@/components/properties/AuthorizationWidget'
 import PriceHistoryWidget from '@/components/properties/PriceHistoryWidget'
 import DocChecklistWidget from '@/components/properties/DocChecklistWidget'
+import ReportsListWidget from '@/components/properties/ReportsListWidget'
 
 const stageLabel: Record<string, string> = {
   captada: 'Captada',
@@ -140,12 +141,13 @@ export default function PropiedadDetailPage() {
         />
       </div>
 
-      <div className="mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <DocChecklistWidget
           propertyId={id}
           docStatusJson={property.doc_status_json || null}
           capturedAt={property.created_at || null}
         />
+        <ReportsListWidget propertyId={id} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
