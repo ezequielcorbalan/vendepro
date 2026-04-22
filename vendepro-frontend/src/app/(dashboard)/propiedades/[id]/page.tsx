@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Building2, Loader2, Phone, Mail, User, MapPin, DollarSign, Calendar, Plus, Pencil, Send } from 'lucide-react'
@@ -290,20 +290,42 @@ function GenerateVisitFormModal({
   const [error, setError] = useState<string | null>(null)
   const [slug, setSlug] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const fired = useRef(false)
 
   useEffect(() => {
-    apiFetch('properties', '/visit-forms/generate', {
-      method: 'POST',
-      body: JSON.stringify({ property_id: propertyId }),
-    })
-      .then(async (r) => {
-        const body = (await r.json()) as any
-        if (!r.ok) throw new Error(body?.error || 'No se pudo generar el link')
-        setSlug(body.slug)
+    // Guard against React StrictMode double-fire that creates duplicate links
+    // and may cause race conditions / weird response shapes.
+    if (fired.current) return
+    fired.current = true
+
+    ;(async () => {
+      try {
+        const res = await apiFetch('properties', '/visit-forms/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ property_id: propertyId }),
+        })
+        const text = await res.text()
+        if (!res.ok) {
+          let msg = text
+          try { msg = (JSON.parse(text) as any)?.error || text } catch { /* keep raw */ }
+          throw new Error(msg || `HTTP ${res.status}`)
+        }
+        let parsed: any
+        try {
+          parsed = JSON.parse(text)
+        } catch {
+          throw new Error(`Respuesta inválida del servidor: ${text.slice(0, 80)}`)
+        }
+        if (!parsed?.slug) throw new Error('La respuesta no incluyó el slug')
+        setSlug(parsed.slug)
         onGenerated()
-      })
-      .catch((e) => setError(e?.message || 'Error generando el link'))
-      .finally(() => setLoading(false))
+      } catch (e: any) {
+        setError(e?.message || 'Error generando el link')
+      } finally {
+        setLoading(false)
+      }
+    })()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [propertyId])
 
