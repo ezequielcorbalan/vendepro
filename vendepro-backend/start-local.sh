@@ -50,6 +50,9 @@ run_alter_migration migrations_v2/012_property_visit_forms.sql
 run_alter_migration migrations_v2/013_property_auth.sql
 run_alter_migration migrations_v2/014_property_doc_status.sql
 run_alter_migration migrations_v2/015_landing_templates.sql
+# 016_marketing_meta.sql — CREATE TABLE IF NOT EXISTS ya es idempotente,
+# pero usamos run_alter_migration para uniformidad y tolerancia a errores.
+run_alter_migration migrations_v2/016_marketing_meta.sql
 
 echo "✓ Migraciones aplicadas"
 
