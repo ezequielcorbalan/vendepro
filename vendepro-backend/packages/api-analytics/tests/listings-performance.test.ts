@@ -1,143 +1,124 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const mockKpis = {
+// ── Raw totals returned by the repo ──────────────────────────
+// Design values so the use cases compute the expected final shapes.
+
+const performanceTotals = {
   reports_published: 10,
   total_impressions: 5000,
-  total_portal_visits: 400,
-  total_in_person_visits: 20,
+  total_portal_visits: 500,     // 500 / 30 days → 16.67 views/day → yellow
+  total_in_person_visits: 10,   // (10/30) * 7 → 2.33 / week
   total_offers: 5,
-  avg_impressions_per_report: 500,
-  avg_portal_visits_per_report: 40,
-  avg_in_person_visits_per_report: 2,
-  avg_offers_per_report: 0.5,
-  avg_views_per_day: 16.7,
-  avg_in_person_visits_per_week: 2.3,
-  overall_health_status: 'yellow' as const,
+  total_days: 30,
 }
 
-const mockBenchmarks = {
-  caba: { min_views_per_day: 14, min_in_person_visits_per_week: 1.5 },
-  gba:  { min_views_per_day: 8,  min_in_person_visits_per_week: 1.0 },
-  color_thresholds: {
-    red:          { max_views_per_day: 9 },
-    orange:       { max_views_per_day: 13 },
-    yellow:       { max_views_per_day: 22 },
-    light_green:  { max_views_per_day: 27 },
-    green:        { min_views_per_day: 28 },
+const neighborhoodRows = [
+  {
+    neighborhood: 'Villa Urquiza',
+    reports_count: 4,
+    avg_impressions: 600,
+    avg_portal_visits: 50,
+    avg_in_person_visits: 3,
+    avg_offers: 0.5,
+    total_offers: 2,
+    total_portal_visits: 600,   // 600/30 = 20 → yellow
+    total_in_person_visits: 6,
+    total_days: 30,
   },
-  source: 'Marcela Genta Operaciones Inmobiliarias — Semáforo de visualizaciones',
-}
+]
 
-vi.mock('../src/reports-queries', () => ({
-  periodStartDate: vi.fn().mockReturnValue('2026-03-16'),
-  getPerformanceKpis: vi.fn().mockResolvedValue(mockKpis),
-  getNeighborhoodPerformance: vi.fn().mockResolvedValue([
-    {
-      neighborhood: 'Villa Urquiza',
-      reports_count: 4,
-      avg_impressions: 600,
-      avg_portal_visits: 50,
-      avg_in_person_visits: 3,
-      avg_offers: 0.5,
-      total_offers: 2,
-      avg_views_per_day: 20,
-      avg_in_person_visits_per_week: 1.5,
-      health_status: 'yellow',
-    },
-  ]),
-  getTimelinePerformance: vi.fn().mockResolvedValue([
-    {
-      period_label: 'Marzo 2026',
-      period_start: '2026-03-01',
-      impressions: 2500,
-      portal_visits: 200,
-      in_person_visits: 10,
-      offers: 3,
-    },
-  ]),
-  listReportsWithMetrics: vi.fn().mockResolvedValue({ total: 0, results: [] }),
-  computeHealthStatus: vi.fn(),
-  daysBetween: vi.fn(),
-  BENCHMARKS: mockBenchmarks,
-  computeDeltaHealthStatus: vi.fn(),
-  getComparisonByNeighborhood: vi.fn().mockResolvedValue([
-    {
-      neighborhood: 'Villa Urquiza',
-      sold: {
-        property_count: 3,
-        reports_count: 5,
-        avg_views_per_day: 45,
-        avg_portal_visits_per_report: 500,
-        avg_in_person_visits_per_week: 2.5,
-        avg_inquiries_per_report: 12,
-      },
-      active: {
-        property_count: 2,
-        reports_count: 3,
-        avg_views_per_day: 22,
-        avg_portal_visits_per_report: 300,
-        avg_in_person_visits_per_week: 1.2,
-        avg_inquiries_per_report: 6,
-      },
-      delta_views_per_day_pct: -51.1,
-      delta_health_status: 'red',
-    },
-  ]),
-  getActiveListingsWithBenchmark: vi.fn().mockResolvedValue([
-    {
-      property_id: 'prop-no-reports',
-      address: 'Nueva sin reportes',
-      neighborhood: 'Villa Urquiza',
-      reports_count: 0,
-      avg_views_per_day: 0,
-      avg_in_person_visits_per_week: 0,
-      latest_report_published_at: null,
-      latest_report_period_label: null,
-      neighborhood_sold_avg_views_per_day: 45,
-      delta_vs_neighborhood_pct: null,
-      delta_health_status: 'light_green',
-    },
-    {
-      property_id: 'prop-1',
-      address: 'Bauness 2906',
-      neighborhood: 'Villa Urquiza',
-      reports_count: 1,
-      avg_views_per_day: 34.1,
-      avg_in_person_visits_per_week: 0.9,
-      latest_report_published_at: '2026-04-01T10:00:00Z',
-      latest_report_period_label: 'Marzo 2026',
-      neighborhood_sold_avg_views_per_day: 45,
-      delta_vs_neighborhood_pct: -24.2,
-      delta_health_status: 'yellow',
-    },
-    {
-      property_id: 'prop-2',
-      address: 'Triunvirato 4180',
-      neighborhood: 'Villa Urquiza',
-      reports_count: 1,
-      avg_views_per_day: 11.5,
-      avg_in_person_visits_per_week: 0.3,
-      latest_report_published_at: '2026-03-05T11:30:00Z',
-      latest_report_period_label: 'Febrero 2026',
-      neighborhood_sold_avg_views_per_day: 45,
-      delta_vs_neighborhood_pct: -74.4,
-      delta_health_status: 'red',
-    },
-    {
-      property_id: 'prop-3',
-      address: 'Cabildo 2500',
-      neighborhood: 'Belgrano',
-      reports_count: 1,
-      avg_views_per_day: 15.6,
-      avg_in_person_visits_per_week: 0.5,
-      latest_report_published_at: '2026-03-02T09:00:00Z',
-      latest_report_period_label: 'Febrero 2026',
-      neighborhood_sold_avg_views_per_day: null,
-      delta_vs_neighborhood_pct: null,
-      delta_health_status: 'light_green',
-    },
-  ]),
-}))
+const timelineRows = [
+  { month_key: '2026-03', impressions: 2500, portal_visits: 200, in_person_visits: 10, offers: 3 },
+]
+
+const soldTotals = [
+  {
+    neighborhood: 'Villa Urquiza',
+    property_count: 3,
+    reports_count: 5,
+    total_portal_visits: 1350,   // 1350/30 = 45
+    total_in_person_visits: 15,
+    total_inquiries: 60,
+    total_days: 30,
+  },
+]
+
+const activeTotals = [
+  {
+    neighborhood: 'Villa Urquiza',
+    property_count: 2,
+    reports_count: 3,
+    total_portal_visits: 660,    // 660/30 = 22 → delta (22-45)/45 = -51.1%
+    total_in_person_visits: 7,
+    total_inquiries: 18,
+    total_days: 30,
+  },
+]
+
+const soldBenchmarks = [
+  { neighborhood: 'Villa Urquiza', total_portal_visits: 1350, total_days: 30 }, // benchmark 45
+]
+
+// Four active listings — order below is shuffled to verify the use case sorts
+// (reports=0 first, then most negative delta, then null delta last).
+const activeListings = [
+  {
+    property_id: 'prop-1',
+    address: 'Bauness 2906',
+    neighborhood: 'Villa Urquiza',
+    reports_count: 1,
+    total_portal_visits: 1023,   // 1023/30 = 34.1 → delta (34.1-45)/45 = -24.2%
+    total_in_person_visits: 4,
+    total_days: 30,
+    latest_report_published_at: '2026-04-01T10:00:00Z',
+    latest_report_period_label: 'Marzo 2026',
+  },
+  {
+    property_id: 'prop-other',
+    address: 'Triunvirato 4180',
+    neighborhood: 'Villa Urquiza',
+    reports_count: 1,
+    total_portal_visits: 1200,   // 1200/30 = 40 → delta (40-45)/45 = -11.1%
+    total_in_person_visits: 4,
+    total_days: 30,
+    latest_report_published_at: '2026-03-20T10:00:00Z',
+    latest_report_period_label: 'Marzo 2026',
+  },
+  {
+    property_id: 'prop-belgrano',
+    address: 'Cabildo 2500',
+    neighborhood: 'Belgrano',    // no benchmark → null delta → light_green, goes last
+    reports_count: 1,
+    total_portal_visits: 468,
+    total_in_person_visits: 2,
+    total_days: 30,
+    latest_report_published_at: '2026-03-02T09:00:00Z',
+    latest_report_period_label: 'Febrero 2026',
+  },
+  {
+    property_id: 'prop-no-reports',
+    address: 'Nueva sin reportes',
+    neighborhood: 'Villa Urquiza',
+    reports_count: 0,            // reports=0 → listing sin reportes, goes first
+    total_portal_visits: 0,
+    total_in_person_visits: 0,
+    total_days: 0,
+    latest_report_published_at: null,
+    latest_report_period_label: null,
+  },
+]
+
+const repoStub = {
+  getPerformanceTotals: vi.fn().mockResolvedValue(performanceTotals),
+  getNeighborhoodPerformance: vi.fn().mockResolvedValue(neighborhoodRows),
+  getTimelinePerformance: vi.fn().mockResolvedValue(timelineRows),
+  getNeighborhoodTotalsByPropertyStatus: vi.fn().mockImplementation((_org: string, status: string) =>
+    status === 'sold' ? soldTotals : activeTotals,
+  ),
+  getSoldBenchmarkByNeighborhood: vi.fn().mockResolvedValue(soldBenchmarks),
+  getActiveListingsWithAggregates: vi.fn().mockResolvedValue(activeListings),
+  listReportsWithMetrics: vi.fn(),
+}
 
 vi.mock('@vendepro/infrastructure', async (importOriginal) => {
   const actual = await importOriginal() as any
@@ -156,11 +137,19 @@ vi.mock('@vendepro/infrastructure', async (importOriginal) => {
     D1PropertyRepository: vi.fn().mockImplementation(() => ({})),
     D1ReservationRepository: vi.fn().mockImplementation(() => ({})),
     D1CalendarRepository: vi.fn().mockImplementation(() => ({})),
+    D1AnalyticsReportRepository: vi.fn().mockImplementation(() => repoStub),
   }
 })
 
 describe('GET /listings-performance', () => {
-  beforeEach(() => { vi.clearAllMocks() })
+  beforeEach(() => {
+    repoStub.getPerformanceTotals.mockClear()
+    repoStub.getNeighborhoodPerformance.mockClear()
+    repoStub.getTimelinePerformance.mockClear()
+    repoStub.getNeighborhoodTotalsByPropertyStatus.mockClear()
+    repoStub.getSoldBenchmarkByNeighborhood.mockClear()
+    repoStub.getActiveListingsWithAggregates.mockClear()
+  })
 
   it('returns KPIs, by_neighborhood and timeline with default period (month)', async () => {
     const { default: app } = await import('../src/index')
@@ -247,15 +236,15 @@ describe('GET /listings-performance', () => {
 
     expect(body.active_listings).toBeDefined()
     expect(body.active_listings).toHaveLength(4)
-    // Primera fila: propiedad sin reportes (caso "sin reportes aún")
+    // [0]: propiedad sin reportes (reports_count=0 va primero)
     expect(body.active_listings[0].reports_count).toBe(0)
     expect(body.active_listings[0].latest_report_published_at).toBeNull()
-    // Segunda fila: Bauness con reportes y benchmark
+    // [1]: Bauness — peor delta (-24.2) de los que tienen reportes
     expect(body.active_listings[1].address).toBe('Bauness 2906')
     expect(body.active_listings[1].delta_vs_neighborhood_pct).toBe(-24.2)
     expect(body.active_listings[1].delta_health_status).toBe('yellow')
     expect(body.active_listings[1].latest_report_period_label).toBe('Marzo 2026')
-    // Última fila: propiedad sin benchmark (barrio sin vendidas)
+    // [3]: propiedad sin benchmark (barrio Belgrano, sin vendidas) → delta null
     expect(body.active_listings[3].delta_vs_neighborhood_pct).toBeNull()
     expect(body.active_listings[3].delta_health_status).toBe('light_green')
   })
