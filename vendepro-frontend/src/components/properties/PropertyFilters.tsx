@@ -183,8 +183,8 @@ export default function PropertyFilters({ properties, config }: { properties: an
           return (
             <div key={property.id} className={`bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden ${isOverdue ? 'ring-2 ring-orange-300' : ''}`}>
               <Link href={`/propiedades/${property.id}`}>
-                <div className="h-36 bg-gradient-to-br from-[#ff007c]/10 to-[#ff8017]/10 flex items-center justify-center relative">
-                  <Building2 className="w-10 h-10 text-[#ff007c]/30" />
+                <div className="h-20 bg-gradient-to-br from-[#ff007c]/10 to-[#ff8017]/10 flex items-center justify-center relative">
+                  <Building2 className="w-7 h-7 text-[#ff007c]/30" />
                   {isOverdue && (
                     <div className="absolute top-2 left-2 bg-orange-500 text-white text-[10px] font-bold uppercase px-2 py-1 rounded-full flex items-center gap-1 shadow-md">
                       <AlertTriangle className="w-3 h-3" /> {info.days === null ? 'Sin reportes' : `Hace ${info.days}d`}
