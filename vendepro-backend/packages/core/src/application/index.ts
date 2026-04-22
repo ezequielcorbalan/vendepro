@@ -113,6 +113,9 @@ export * from './use-cases/ai/extract-property-metrics'
 // Landings
 export * from './use-cases/landings/index'
 
+// Property Visit Forms (Ficha de Visita)
+export * from './use-cases/visit-forms/index'
+
 // Public
 export * from './use-cases/public/get-public-report'
 export * from './use-cases/public/get-public-appraisal'
