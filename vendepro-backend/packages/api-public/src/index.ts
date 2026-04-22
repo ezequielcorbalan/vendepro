@@ -315,11 +315,13 @@ app.post('/l/:slug/event', async (c) => {
     userAgent: c.req.header('user-agent') ?? null,
   })
 
-  // Hook marketing — disparamos sólo en view (otros eventos ya se capturan).
-  if (body.type === 'view') {
+  // Hook marketing — sólo en pageview (los otros eventos no necesitan CAPI).
+  // En este caso devolvemos JSON con `marketing.event_id` para que el cliente
+  // pueda pushearlo al dataLayer y dedupear con el Pixel.
+  if (body.type === 'pageview') {
     const landing = await landings.findByFullSlug(c.req.param('slug'))
     if (landing) {
-      await fireMarketingEvent(c.env, {
+      const mk = await fireMarketingEvent(c.env, {
         orgId: landing.org_id,
         eventKey: 'landing_viewed',
         entityType: 'landing',
@@ -339,6 +341,7 @@ app.post('/l/:slug/event', async (c) => {
         eventSourceUrl: c.req.header('referer') ?? null,
         ga4ClientId: body.visitorId ?? null,
       })
+      return c.json({ marketing: mk ?? null })
     }
   }
   return new Response(null, { status: 204 })

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import VisitFormClient from './VisitFormClient'
+import GtmScript from '@/components/marketing/GtmScript'
 
 const API_PUBLIC = process.env.NEXT_PUBLIC_API_PUBLIC_URL ?? 'http://localhost:8794'
 
@@ -38,5 +39,13 @@ export default async function VisitFormPage({
   const data = await fetchForm(slug)
   if (!data) notFound()
 
-  return <VisitFormClient slug={slug} data={data} apiPublic={API_PUBLIC} />
+  return (
+    <>
+      <GtmScript
+        containerId={data.org?.gtm_container_id ?? data.gtm_container_id ?? null}
+        stapeEndpoint={data.org?.stape_endpoint ?? data.stape_endpoint ?? null}
+      />
+      <VisitFormClient slug={slug} data={data} apiPublic={API_PUBLIC} />
+    </>
+  )
 }
