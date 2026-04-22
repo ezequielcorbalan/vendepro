@@ -119,10 +119,14 @@ export class D1ReportRepository implements ReportRepository {
     await this.db.prepare('DELETE FROM reports WHERE id = ? AND org_id = ?').bind(id, orgId).run()
   }
 
-  async findMetrics(reportId: string): Promise<ReportMetricProps[]> {
+  async findMetrics(reportId: string, orgId: string): Promise<ReportMetricProps[]> {
     const rows = ((await this.db
-      .prepare('SELECT * FROM report_metrics WHERE report_id = ?')
-      .bind(reportId)
+      .prepare(
+        `SELECT m.* FROM report_metrics m
+         JOIN reports r ON m.report_id = r.id
+         WHERE m.report_id = ? AND r.org_id = ?`,
+      )
+      .bind(reportId, orgId)
       .all()).results as any[]) || []
     return rows.map((r) => ({
       id: r.id,
@@ -142,10 +146,14 @@ export class D1ReportRepository implements ReportRepository {
     }))
   }
 
-  async findContent(reportId: string): Promise<ReportContentProps[]> {
+  async findContent(reportId: string, orgId: string): Promise<ReportContentProps[]> {
     const rows = ((await this.db
-      .prepare('SELECT * FROM report_content WHERE report_id = ?')
-      .bind(reportId)
+      .prepare(
+        `SELECT c.* FROM report_content c
+         JOIN reports r ON c.report_id = r.id
+         WHERE c.report_id = ? AND r.org_id = ?`,
+      )
+      .bind(reportId, orgId)
       .all()).results as any[]) || []
     return rows.map((r) => ({
       id: r.id,
@@ -157,7 +165,13 @@ export class D1ReportRepository implements ReportRepository {
     }))
   }
 
-  async replaceMetrics(reportId: string, metrics: NewReportMetric[]): Promise<void> {
+  async replaceMetrics(reportId: string, orgId: string, metrics: NewReportMetric[]): Promise<void> {
+    // Gate parent: no-op if the report doesn't belong to this org.
+    const parent = await this.db
+      .prepare('SELECT 1 FROM reports WHERE id = ? AND org_id = ?')
+      .bind(reportId, orgId)
+      .first()
+    if (!parent) return
     await this.db.prepare('DELETE FROM report_metrics WHERE report_id = ?').bind(reportId).run()
     for (const m of metrics) {
       await this.db
@@ -175,7 +189,12 @@ export class D1ReportRepository implements ReportRepository {
     }
   }
 
-  async replaceContent(reportId: string, content: NewReportContent[]): Promise<void> {
+  async replaceContent(reportId: string, orgId: string, content: NewReportContent[]): Promise<void> {
+    const parent = await this.db
+      .prepare('SELECT 1 FROM reports WHERE id = ? AND org_id = ?')
+      .bind(reportId, orgId)
+      .first()
+    if (!parent) return
     await this.db.prepare('DELETE FROM report_content WHERE report_id = ?').bind(reportId).run()
     for (const c of content) {
       if (c.body) {
@@ -189,34 +208,65 @@ export class D1ReportRepository implements ReportRepository {
     }
   }
 
-  async findReportRaw(id: string): Promise<Record<string, unknown> | null> {
-    const row = await this.db.prepare('SELECT * FROM reports WHERE id = ?').bind(id).first() as any
+  async findReportRaw(id: string, orgId: string): Promise<Record<string, unknown> | null> {
+    const row = await this.db
+      .prepare('SELECT * FROM reports WHERE id = ? AND org_id = ?')
+      .bind(id, orgId)
+      .first() as any
     return row ?? null
   }
 
-  async deleteCompetitorLinks(propertyId: string): Promise<void> {
-    await this.db.prepare('DELETE FROM competitor_links WHERE property_id = ?').bind(propertyId).run()
+  async deleteCompetitorLinks(propertyId: string, orgId: string): Promise<void> {
+    await this.db
+      .prepare(
+        `DELETE FROM competitor_links
+         WHERE property_id IN (SELECT id FROM properties WHERE id = ? AND org_id = ?)`,
+      )
+      .bind(propertyId, orgId)
+      .run()
   }
 
-  async addCompetitorLink(link: { id: string; property_id: string; url: string; address: string | null; price: number | null; notes: string | null }): Promise<void> {
+  async addCompetitorLink(
+    link: { id: string; property_id: string; url: string; address: string | null; price: number | null; notes: string | null },
+    orgId: string,
+  ): Promise<void> {
+    // Gate: the property must belong to this org. INSERT can't JOIN, so we
+    // pre-check and throw if the property is out of scope.
+    const owned = await this.db
+      .prepare('SELECT 1 FROM properties WHERE id = ? AND org_id = ?')
+      .bind(link.property_id, orgId)
+      .first()
+    if (!owned) {
+      const err = new Error('Propiedad no encontrada')
+      ;(err as any).statusCode = 404
+      throw err
+    }
     await this.db
       .prepare('INSERT INTO competitor_links (id, property_id, url, address, price, notes) VALUES (?, ?, ?, ?, ?, ?)')
       .bind(link.id, link.property_id, link.url, link.address ?? null, link.price ?? null, link.notes ?? null)
       .run()
   }
 
-  async findCompetitorLinks(propertyId: string): Promise<Record<string, unknown>[]> {
+  async findCompetitorLinks(propertyId: string, orgId: string): Promise<Record<string, unknown>[]> {
     const rows = ((await this.db
-      .prepare('SELECT * FROM competitor_links WHERE property_id = ?')
-      .bind(propertyId)
+      .prepare(
+        `SELECT cl.* FROM competitor_links cl
+         JOIN properties p ON cl.property_id = p.id
+         WHERE cl.property_id = ? AND p.org_id = ?`,
+      )
+      .bind(propertyId, orgId)
       .all()).results as any[]) || []
     return rows
   }
 
-  async findPhotosByReport(reportId: string): Promise<Array<{ id: string; photo_url: string; r2_key?: string }>> {
+  async findPhotosByReport(reportId: string, orgId: string): Promise<Array<{ id: string; photo_url: string; r2_key?: string }>> {
     const rows = ((await this.db
-      .prepare('SELECT * FROM report_photos WHERE report_id = ?')
-      .bind(reportId)
+      .prepare(
+        `SELECT ph.* FROM report_photos ph
+         JOIN reports r ON ph.report_id = r.id
+         WHERE ph.report_id = ? AND r.org_id = ?`,
+      )
+      .bind(reportId, orgId)
       .all()).results as any[]) || []
     return rows.map((r) => ({ id: r.id, photo_url: r.photo_url, r2_key: r.r2_key ?? undefined }))
   }
