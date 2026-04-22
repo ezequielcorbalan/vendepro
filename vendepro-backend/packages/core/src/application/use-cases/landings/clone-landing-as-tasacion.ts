@@ -8,6 +8,7 @@ import {
   type AppraisalMarketSituationBlock,
   type AppraisalWorkConditionsBlock,
 } from '../../../domain/entities/appraisal'
+import { Landing } from '../../../domain/entities/landing'
 import { NotFoundError } from '../../../domain/errors/not-found'
 
 export interface CloneLandingAsTasacionInput {
@@ -23,6 +24,7 @@ export interface CloneLandingAsTasacionInput {
 export interface CloneLandingAsTasacionOutput {
   appraisal_id: string
   public_slug: string | null
+  landing_id: string
 }
 
 /**
@@ -94,8 +96,43 @@ export class CloneLandingAsTasacionUseCase {
     if (input.property_id) patch.property_id = input.property_id
     await this.appraisals.update(id, input.orgId, patch)
 
+    // Clone the template landing for this specific tasación
+    const landingId = this.idGen.generate()
+    const slugSuffix = `tas-${id.slice(0, 8)}`
+
+    // Use fromPersistence to bypass lead-form validation for flexible templates
+    const clonedLanding = Landing.fromPersistence({
+      id: landingId,
+      org_id: input.orgId,
+      agent_id: input.actor.userId,
+      template_id: landing.id, // points to original template
+      kind: landing.kind,
+      slug_base: landing.slug_base,
+      slug_suffix: slugSuffix,
+      status: 'draft',
+      blocks: landing.blocks.map(b => ({ ...b })), // shallow copy
+      brand_voice: landing.brand_voice,
+      lead_rules: landing.lead_rules,
+      seo_title: landing.seo_title,
+      seo_description: landing.seo_description,
+      og_image_url: landing.og_image_url,
+      published_version_id: null,
+      published_at: null,
+      published_by: null,
+      last_review_note: null,
+      template_type: null, // not a template — it's an instance
+      appraisal_id: id, // link to appraisal
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+
+    await this.landings.save(clonedLanding)
+
+    // Store landing_id in appraisal
+    await this.appraisals.updateLandingId(id, input.orgId, landingId)
+
     const refreshed = await this.appraisals.findById(id, input.orgId)
-    return { appraisal_id: id, public_slug: refreshed?.public_slug ?? null }
+    return { appraisal_id: id, public_slug: refreshed?.public_slug ?? null, landing_id: landingId }
   }
 }
 

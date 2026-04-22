@@ -95,6 +95,7 @@ export default function EditarTasacionPage() {
   const [workConditions, setWorkConditions] = useState<AppraisalWorkConditions>({})
   const [videoLinks, setVideoLinks] = useState<string[]>([])
   const [publicSlug, setPublicSlug] = useState<string>('')
+  const [landingId, setLandingId] = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -134,6 +135,7 @@ export default function EditarTasacionPage() {
         setWorkConditions(parseJson<AppraisalWorkConditions>(data.work_conditions_json, {}))
         setVideoLinks(parseJson<string[]>(data.video_links_json, []))
         setPublicSlug(data.public_slug || '')
+        setLandingId(data.landing_id || null)
 
         if (data.comparables?.length > 0) {
           setComparables(data.comparables.map((c: any) => ({
@@ -232,6 +234,49 @@ export default function EditarTasacionPage() {
     setComparables(updated)
   }
 
+  async function syncLandingBlocks(lid: string) {
+    try {
+      const res = await apiFetch('crm', `/landings/${lid}`)
+      if (!res.ok) return
+      const payload = (await res.json()) as any
+      const landing = payload?.landing ?? payload
+      if (!landing?.blocks) return
+
+      const updatedBlocks = landing.blocks.map((b: any) => {
+        if (b.type === 'appraisal-foda') {
+          return { ...b, data: { ...b.data, strengths, weaknesses, opportunities, threats } }
+        }
+        if (b.type === 'appraisal-competition') {
+          const items = comparables
+            .filter(c => c.zonaprop_url || c.address)
+            .map(c => ({
+              address: c.address || undefined,
+              price: parseFloat(c.price) || undefined,
+              currency: 'USD',
+              usd_per_m2: parseFloat(c.usd_per_m2) || undefined,
+              covered_area: parseFloat(c.covered_area) || undefined,
+              total_area: parseFloat(c.total_area) || undefined,
+              days_on_market: parseInt(c.days_on_market) || undefined,
+              zonaprop_url: c.zonaprop_url || undefined,
+            }))
+          return { ...b, data: { ...b.data, items } }
+        }
+        if (b.type === 'appraisal-market') {
+          return { ...b, data: { ...b.data, body: (marketSituation as any).body || undefined, media_urls: (marketSituation as any).media_urls || undefined } }
+        }
+        return b
+      })
+
+      await apiFetch('crm', `/landings/${lid}/blocks`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ blocks: updatedBlocks, label: 'auto-save' }),
+      })
+    } catch {
+      // silent fail - landing sync is best-effort
+    }
+  }
+
   async function handleSubmit() {
     setSaving(true)
     try {
@@ -276,6 +321,9 @@ export default function EditarTasacionPage() {
       const data = (await res.json()) as any
       if (data.success) {
         toast('Tasación guardada')
+        if (landingId) {
+          await syncLandingBlocks(landingId)
+        }
         router.push(`/tasaciones/${id}`)
       } else {
         toast(data.error || 'Error al guardar', 'error')

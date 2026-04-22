@@ -6,6 +6,9 @@ import GalleryBlock from './GalleryBlock'
 import BenefitsListBlock from './BenefitsListBlock'
 import LeadFormBlock from './LeadFormBlock'
 import FooterBlock from './FooterBlock'
+import AppraisalFodaBlock from './AppraisalFodaBlock'
+import AppraisalCompetitionBlock from './AppraisalCompetitionBlock'
+import AppraisalMarketBlock from './AppraisalMarketBlock'
 import type { BlockType } from '@/lib/landings/types'
 import type { ComponentType } from 'react'
 
@@ -18,6 +21,9 @@ export const BLOCK_COMPONENTS: Record<BlockType, ComponentType<any>> = {
   'benefits-list': BenefitsListBlock,
   'lead-form': LeadFormBlock,
   'footer': FooterBlock,
+  'appraisal-foda': AppraisalFodaBlock,
+  'appraisal-competition': AppraisalCompetitionBlock,
+  'appraisal-market': AppraisalMarketBlock,
 }
 
 export const BLOCK_LABELS: Record<BlockType, string> = {
@@ -29,6 +35,9 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
   'benefits-list': 'Beneficios',
   'lead-form': 'Formulario',
   'footer': 'Footer',
+  'appraisal-foda': 'FODA',
+  'appraisal-competition': 'Competencia',
+  'appraisal-market': 'Situación de mercado',
 }
 
-export { HeroBlock, HeroSplitBlock, FeaturesGridBlock, AmenitiesChipsBlock, GalleryBlock, BenefitsListBlock, LeadFormBlock, FooterBlock }
+export { HeroBlock, HeroSplitBlock, FeaturesGridBlock, AmenitiesChipsBlock, GalleryBlock, BenefitsListBlock, LeadFormBlock, FooterBlock, AppraisalFodaBlock, AppraisalCompetitionBlock, AppraisalMarketBlock }

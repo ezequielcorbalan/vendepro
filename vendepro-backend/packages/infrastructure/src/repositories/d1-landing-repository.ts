@@ -50,8 +50,8 @@ export class D1LandingRepository implements LandingRepository {
     await this.db.prepare(`
       INSERT INTO landings (id, org_id, agent_id, template_id, kind, slug_base, slug_suffix, full_slug,
         status, blocks_json, brand_voice, lead_rules_json, seo_title, seo_description, og_image_url,
-        published_version_id, published_at, published_by, last_review_note, template_type, created_at, updated_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        published_version_id, published_at, published_by, last_review_note, template_type, appraisal_id, created_at, updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
       ON CONFLICT(id) DO UPDATE SET
         slug_base=excluded.slug_base,
         slug_suffix=excluded.slug_suffix,
@@ -68,12 +68,13 @@ export class D1LandingRepository implements LandingRepository {
         published_by=excluded.published_by,
         last_review_note=excluded.last_review_note,
         template_type=excluded.template_type,
+        appraisal_id=excluded.appraisal_id,
         updated_at=excluded.updated_at
     `).bind(
       o.id, o.org_id, o.agent_id, o.template_id, o.kind, o.slug_base, o.slug_suffix, `${o.slug_base}-${o.slug_suffix}`,
       o.status, JSON.stringify(o.blocks), o.brand_voice, o.lead_rules ? JSON.stringify(o.lead_rules) : null,
       o.seo_title, o.seo_description, o.og_image_url,
-      o.published_version_id, o.published_at, o.published_by, o.last_review_note, o.template_type,
+      o.published_version_id, o.published_at, o.published_by, o.last_review_note, o.template_type, o.appraisal_id ?? null,
       o.created_at, o.updated_at,
     ).run()
   }
@@ -106,6 +107,7 @@ export class D1LandingRepository implements LandingRepository {
       published_by: row.published_by,
       last_review_note: row.last_review_note,
       template_type: row.template_type ?? null,
+      appraisal_id: row.appraisal_id ?? null,
       created_at: row.created_at,
       updated_at: row.updated_at,
     })

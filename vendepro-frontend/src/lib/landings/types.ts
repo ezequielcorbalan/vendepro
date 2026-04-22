@@ -10,6 +10,9 @@ export type BlockType =
   | 'benefits-list'
   | 'lead-form'
   | 'footer'
+  | 'appraisal-foda'
+  | 'appraisal-competition'
+  | 'appraisal-market'
 
 export interface CtaData { label: string; href: string }
 
@@ -87,6 +90,36 @@ export interface FooterData {
   disclaimer?: string
 }
 
+export interface AppraisalFodaData {
+  title?: string
+  strengths?: string
+  weaknesses?: string
+  opportunities?: string
+  threats?: string
+}
+
+export interface AppraisalCompetitionItem {
+  address?: string
+  price?: number
+  currency?: string
+  usd_per_m2?: number
+  covered_area?: number
+  total_area?: number
+  days_on_market?: number
+  zonaprop_url?: string
+}
+
+export interface AppraisalCompetitionData {
+  title?: string
+  items?: AppraisalCompetitionItem[]
+}
+
+export interface AppraisalMarketData {
+  title?: string
+  body?: string
+  media_urls?: string[]
+}
+
 export type BlockDataMap = {
   'hero': HeroData
   'hero-split': HeroSplitData
@@ -96,6 +129,9 @@ export type BlockDataMap = {
   'benefits-list': BenefitsListData
   'lead-form': LeadFormData
   'footer': FooterData
+  'appraisal-foda': AppraisalFodaData
+  'appraisal-competition': AppraisalCompetitionData
+  'appraisal-market': AppraisalMarketData
 }
 
 export type Block<T extends BlockType = BlockType> = {
@@ -148,6 +184,10 @@ export interface Landing {
    * Backend lo agrega más adelante; mientras tanto puede venir undefined.
    */
   template_type?: 'tasacion' | null
+  /**
+   * Si la landing fue clonada para una tasación, este campo referencia el appraisal_id.
+   */
+  appraisal_id?: string | null
   created_at: string
   updated_at: string
 }

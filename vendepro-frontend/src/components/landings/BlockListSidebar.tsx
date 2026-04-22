@@ -15,6 +15,12 @@ const AVAILABLE_BLOCK_TYPES: Array<{ type: BlockType; label: string; seedData: a
   { type: 'benefits-list', label: 'Beneficios', seedData: { items: [{ title: 'Beneficio 1' }, { title: 'Beneficio 2' }] } },
 ]
 
+const APPRAISAL_BLOCK_TYPES: Array<{ type: BlockType; label: string; seedData: any }> = [
+  { type: 'appraisal-foda', label: 'Análisis FODA', seedData: { title: 'Análisis FODA' } },
+  { type: 'appraisal-competition', label: 'Competencia', seedData: { title: 'Competencia de mercado', items: [] } },
+  { type: 'appraisal-market', label: 'Situación de mercado', seedData: { title: 'Situación del mercado' } },
+]
+
 interface Props {
   blocks: Block[]
   selectedId: string | null
@@ -69,6 +75,18 @@ export default function BlockListSidebar({ blocks, selectedId, onSelect, onReord
                 setShowAdd(false)
               }} className="w-full text-left text-sm px-3 py-2 rounded-lg hover:bg-white">{t.label}</button>
             ))}
+            <div className="pt-1 pb-0.5 px-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#ff8017]">Tasación</span>
+            </div>
+            {APPRAISAL_BLOCK_TYPES.map(t => (
+              <button key={t.type} onClick={async () => {
+                await onAdd({ type: t.type, visible: true, data: t.seedData })
+                setShowAdd(false)
+              }} className="w-full text-left text-sm px-3 py-2 rounded-lg hover:bg-white flex items-center gap-2">
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-gradient-to-br from-[#ff8017] to-[#ff007c] text-white">TAS</span>
+                {t.label}
+              </button>
+            ))}
           </div>
         )}
       </div>
@@ -82,6 +100,7 @@ function SortableBlockRow({ block, selected, onSelect, onRemove, onToggleVisibil
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: block.id })
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }
   const isRequired = block.type === 'lead-form'
+  const isAppraisalBlock = block.type.startsWith('appraisal-')
 
   return (
     <div ref={setNodeRef} style={style}
@@ -92,6 +111,9 @@ function SortableBlockRow({ block, selected, onSelect, onRemove, onToggleVisibil
       </button>
       <span className={`flex-1 truncate ${block.visible ? 'text-gray-800' : 'text-gray-400'}`}>
         {BLOCK_LABELS[block.type]}
+        {isAppraisalBlock && (
+          <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded bg-gradient-to-br from-[#ff8017] to-[#ff007c] text-white" title="Bloque de tasación">TAS</span>
+        )}
         {block.is_variable && (
           <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded bg-gradient-to-br from-[#ff007c] to-[#ff8017] text-white" title="Variable por tasación">VAR</span>
         )}
