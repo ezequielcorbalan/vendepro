@@ -163,7 +163,7 @@ export default function RegisterPage() {
       <div className="bg-white rounded-2xl shadow-lg p-5 sm:p-8 w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-6">
-          <img src="/logo.png" alt="VendéPro" className="h-12 mx-auto mb-3" />
+          <img src="/brand/logo-horizontal.png" alt="VendéPro" className="h-12 mx-auto mb-3" />
           <h1 className="text-xl font-semibold text-gray-800">Registrá tu inmobiliaria</h1>
         </div>
 

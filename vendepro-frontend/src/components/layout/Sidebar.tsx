@@ -39,7 +39,7 @@ export default function Sidebar({ profile }: { profile: Profile }) {
       <div className="p-6 border-b border-gray-100 relative">
         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#ff007c] to-[#ff8017]" />
         <div className="flex items-center justify-between">
-          <img src="/logo.png" alt="VendéPro" className="h-10" />
+          <img src="/brand/logo-horizontal.png" alt="VendéPro" className="h-10" />
           <NotificationBell />
         </div>
         <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">

@@ -78,7 +78,7 @@ export default function LoginPage() {
       <div className="bg-white rounded-2xl shadow-xl p-5 sm:p-8 w-full max-w-md relative z-10 border border-white/50">
         <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[#ff007c] to-[#ff8017] rounded-t-2xl" />
         <div className="text-center mb-6 sm:mb-8">
-          <img src="/logo.png" alt="VendéPro" className="h-12 sm:h-16 mx-auto mb-3 sm:mb-4" />
+          <img src="/brand/logo-horizontal.png" alt="VendéPro" className="h-12 sm:h-16 mx-auto mb-3 sm:mb-4" />
           <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">CRM Inmobiliario</h1>
           <p className="text-gray-500 text-sm mt-1">Ingresá con tu cuenta de agente</p>
         </div>

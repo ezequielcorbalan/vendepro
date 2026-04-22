@@ -32,7 +32,7 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="bg-white rounded-2xl shadow-lg p-5 sm:p-8 w-full max-w-md">
         <div className="text-center mb-6">
-          <img src="/logo.png" alt="VendéPro" className="h-12 sm:h-16 mx-auto mb-3" />
+          <img src="/brand/logo-horizontal.png" alt="VendéPro" className="h-12 sm:h-16 mx-auto mb-3" />
           <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Recuperar contraseña</h1>
           <p className="text-gray-500 text-sm mt-1">
             {sent

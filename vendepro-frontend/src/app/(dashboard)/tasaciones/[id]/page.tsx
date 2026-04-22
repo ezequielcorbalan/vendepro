@@ -125,7 +125,7 @@ export default function TasacionDetailPage() {
         {/* PAGE 1: Cover */}
         <div className="bg-gradient-to-br from-[#ff007c] via-[#ff3d94] to-[#ff8017] rounded-2xl p-6 sm:p-10 text-white shadow-lg aspect-[794/1123] flex flex-col justify-between relative overflow-hidden">
           <div>
-            <img src="/logo.png" alt="Logo" className="h-8 sm:h-12 brightness-0 invert mb-4" />
+            <img src="/brand/logo-horizontal.png" alt="Logo" className="h-8 sm:h-12 brightness-0 invert mb-4" />
             <p className="text-white/70 text-xs sm:text-sm font-medium tracking-wider uppercase">Propuesta de tasación</p>
           </div>
           <div>
@@ -328,7 +328,7 @@ export default function TasacionDetailPage() {
 
         {/* Footer */}
         <div className="bg-white rounded-2xl shadow-sm p-5 sm:p-8 text-center">
-          <img src="/logo.png" alt="Logo" className="h-8 sm:h-10 mx-auto mb-3" />
+          <img src="/brand/logo-horizontal.png" alt="Logo" className="h-8 sm:h-10 mx-auto mb-3" />
           <p className="text-sm font-semibold text-gray-800">Marcela Genta · Operaciones Inmobiliarias</p>
           <p className="text-xs text-gray-500 mt-1">{a.agent_name} · {a.agent_phone}</p>
           <p className="text-xs text-gray-400 mt-1">{a.agent_email}</p>

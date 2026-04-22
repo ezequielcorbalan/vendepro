@@ -52,7 +52,7 @@ export default async function PublicReportPage({
       <div className="bg-white border-b">
         <div className="max-w-4xl mx-auto px-4 py-6">
           <div className="flex items-center gap-4 mb-4">
-            <img src="/logo.png" alt="Logo" className="h-10" />
+            <img src="/brand/logo-horizontal.png" alt="Logo" className="h-10" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">{property.address}</h1>
           <p className="text-gray-500 mt-1">{property.neighborhood} · {property.city}</p>
