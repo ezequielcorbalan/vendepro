@@ -29,6 +29,7 @@ interface DocData {
   status: Record<string, DocState>
   cloud_url?: string
   custom?: Array<{ key: string; label: string }>
+  hidden?: string[]
 }
 
 interface Props {
@@ -48,6 +49,7 @@ function parseData(raw: string | null): DocData {
           status: parsed.status || {},
           cloud_url: parsed.cloud_url || '',
           custom: Array.isArray(parsed.custom) ? parsed.custom : [],
+          hidden: Array.isArray(parsed.hidden) ? parsed.hidden : [],
         }
       }
       // Legacy format: flat status map
@@ -70,13 +72,15 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
   }, [docStatusJson])
 
   const customDocs = data.custom ?? []
-  const allDocs = [...DEFAULT_DOCS, ...customDocs]
+  const hidden = data.hidden ?? []
+  const visibleDefaults = DEFAULT_DOCS.filter(d => !hidden.includes(d.key))
+  const allDocs = [...visibleDefaults, ...customDocs]
   const totalItems = allDocs.length
   const resolvedItems = allDocs.filter(d => {
     const s = data.status[d.key]
     return s === 'done' || s === 'na'
   }).length
-  const progressPct = Math.round((resolvedItems / totalItems) * 100)
+  const progressPct = totalItems > 0 ? Math.round((resolvedItems / totalItems) * 100) : 0
 
   const daysSinceCapture = capturedAt
     ? Math.floor((Date.now() - new Date(capturedAt).getTime()) / 86400000)
@@ -124,6 +128,20 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
       status: newStatus,
       custom: customDocs.filter(c => c.key !== key),
     })
+  }
+
+  function hideDefaultDoc(key: string) {
+    const newStatus = { ...data.status }
+    delete newStatus[key]
+    persist({
+      ...data,
+      status: newStatus,
+      hidden: [...hidden, key],
+    })
+  }
+
+  function restoreAllHidden() {
+    persist({ ...data, hidden: [] })
   }
 
   return (
@@ -226,15 +244,13 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
                 {isCustom && <span className="ml-1 text-[10px] text-gray-400">(custom)</span>}
               </span>
               <div className="flex items-center gap-1">
-                {isCustom && (
-                  <button
-                    onClick={() => removeCustomDoc(doc.key)}
-                    title="Eliminar item"
-                    className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity p-1"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
-                )}
+                <button
+                  onClick={() => isCustom ? removeCustomDoc(doc.key) : hideDefaultDoc(doc.key)}
+                  title="Eliminar item"
+                  className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity p-1"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
                 <button
                   onClick={() => updateStatus(doc.key, s === 'done' ? 'pending' : 'done')}
                   title="Tengo el documento"
@@ -267,6 +283,18 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
           )
         })}
       </div>
+
+      {/* Restaurar items eliminados */}
+      {hidden.length > 0 && (
+        <div className="mt-2">
+          <button
+            onClick={restoreAllHidden}
+            className="text-xs text-gray-400 hover:text-[#ff007c] hover:underline"
+          >
+            Restaurar {hidden.length} {hidden.length === 1 ? 'item eliminado' : 'items eliminados'}
+          </button>
+        </div>
+      )}
 
       {/* Add custom item */}
       <div className="mt-3 pt-3 border-t border-gray-100">
