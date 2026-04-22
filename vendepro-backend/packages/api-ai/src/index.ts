@@ -22,6 +22,13 @@ app.post('/extract-metrics', async (c) => {
   return c.json({ metrics })
 })
 
+app.post('/extract-entity', async (c) => {
+  const body = (await c.req.json()) as any
+  const ai = new GroqAIService(c.env.GROQ_API_KEY)
+  const fields = await ai.extractLeadIntent(body.text ?? '')
+  return c.json({ fields })
+})
+
 app.post('/landings/:id/edit-block', async (c) => {
   const body = (await c.req.json()) as any
   const landings = new D1LandingRepository(c.env.DB)
