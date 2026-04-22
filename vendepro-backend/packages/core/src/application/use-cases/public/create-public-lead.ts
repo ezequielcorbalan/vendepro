@@ -20,6 +20,7 @@ export interface CreatePublicLeadInput {
 export interface CreatePublicLeadResult {
   id: string
   contact_id: string
+  org_id: string
   success: true
 }
 
@@ -71,6 +72,6 @@ export class CreatePublicLeadUseCase {
       },
     })
 
-    return { id: result.id, contact_id: result.contact_id, success: true }
+    return { id: result.id, contact_id: result.contact_id, org_id: org.id, success: true }
   }
 }

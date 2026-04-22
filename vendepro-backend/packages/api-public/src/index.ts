@@ -204,7 +204,33 @@ app.post('/public/leads', async (c) => {
     notes: body.notes ?? null,
   })
 
-  return c.json(result, 201)
+  // Hook marketing: evento `lead_created` tracked en el Meta/GA4 de la org
+  // dueña de la API key. Esto permite que inmobiliarias externas que usan
+  // VendéPro como CRM tengan conversion tracking en SUS cuentas.
+  const mk = await fireMarketingEvent(c.env, {
+    orgId: result.org_id,
+    eventKey: 'lead_created',
+    entityType: 'lead',
+    entityId: result.id,
+    leadId: result.id,
+    userData: {
+      full_name: body.full_name,
+      email: body.email ?? null,
+      phone: body.phone ?? null,
+      client_ip_address: c.req.header('CF-Connecting-IP') ?? c.req.header('x-forwarded-for') ?? null,
+      client_user_agent: c.req.header('user-agent') ?? null,
+      external_id: body.visitorId ?? null,
+    },
+    customData: {
+      source: 'public_api',
+      source_detail: body.source_detail ?? null,
+    },
+    actionSource: 'website',
+    eventSourceUrl: c.req.header('referer') ?? null,
+    ga4ClientId: body.visitorId ?? null,
+  })
+
+  return c.json({ ...result, marketing: mk ?? null }, 201)
 })
 
 // ── PUBLIC LANDINGS ───────────────────────────────────────────
