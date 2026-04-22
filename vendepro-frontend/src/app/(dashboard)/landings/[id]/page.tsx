@@ -61,6 +61,11 @@ export default function LandingEditorPage() {
     setDirty(true)
   }, [])
 
+  const updateBlockMeta = useCallback((blockId: string, patch: Partial<Pick<Block, 'is_variable' | 'visible'>>) => {
+    setBlocks(prev => prev.map(b => b.id === blockId ? { ...b, ...patch } as Block : b))
+    setDirty(true)
+  }, [])
+
   const selectedBlock = useMemo(() => blocks.find(b => b.id === selectedId) ?? null, [blocks, selectedId])
 
   async function manualSave() {
@@ -142,7 +147,11 @@ export default function LandingEditorPage() {
           </div>
           <div className="flex-1 overflow-auto">
             {rightTab === 'inspector' && selectedBlock && (
-              <InspectorPanel block={selectedBlock} onChange={(patch) => updateBlock(selectedBlock.id, patch)} />
+              <InspectorPanel
+                block={selectedBlock}
+                onChange={(patch) => updateBlock(selectedBlock.id, patch)}
+                onBlockChange={(patch) => updateBlockMeta(selectedBlock.id, patch)}
+              />
             )}
             {rightTab === 'ai' && (
               <AIChatPanel

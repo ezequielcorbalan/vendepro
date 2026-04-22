@@ -103,6 +103,12 @@ export type Block<T extends BlockType = BlockType> = {
   type: T
   visible: boolean
   data: BlockDataMap[T]
+  /**
+   * Si true, este bloque se podrá editar al crear cada tasación
+   * (cuando la landing se usa como plantilla de tasación). Si false/undefined,
+   * el contenido es fijo y se hereda de la plantilla.
+   */
+  is_variable?: boolean
 }
 
 export type LandingKind = 'lead_capture' | 'property'
