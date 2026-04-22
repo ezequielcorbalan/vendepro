@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Building2, Loader2, Phone, Mail, User, MapPin, DollarSign, Calendar, Plus, Pencil } from 'lucide-react'
+import { ArrowLeft, Building2, Loader2, Phone, Mail, User, MapPin, DollarSign, Calendar, Plus, Pencil, Send } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { PhotoGallery } from '@/components/ui/PhotoGallery'
+import { VisitFormsSection } from '@/components/properties/VisitFormsSection'
 
 const stageLabel: Record<string, string> = {
   captada: 'Captada',
@@ -33,6 +34,8 @@ export default function PropiedadDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [photos, setPhotos] = useState<{ id: string; url: string; sort_order: number }[]>([])
+  const [showGenerate, setShowGenerate] = useState(false)
+  const [visitRefreshKey, setVisitRefreshKey] = useState(0)
 
   useEffect(() => {
     if (!id) return
@@ -98,6 +101,12 @@ export default function PropiedadDetailPage() {
               className="inline-flex items-center gap-1.5 bg-[#ff007c] text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:opacity-90">
               <Plus className="w-4 h-4" /> Nueva tasación
             </Link>
+            <button
+              onClick={() => setShowGenerate(true)}
+              className="inline-flex items-center gap-1.5 bg-[#ff8017] text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:opacity-90"
+            >
+              <Send className="w-4 h-4" /> Enviar ficha de visita
+            </button>
             <Link href={`/propiedades/${id}/editar`}
               className="inline-flex items-center gap-1.5 border border-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-gray-50">
               <Pencil className="w-4 h-4" /> Editar
@@ -215,6 +224,141 @@ export default function PropiedadDetailPage() {
           <PhotoGallery photos={photos} propertyId={id} editable={false} />
         </div>
       )}
+
+      {/* Fichas de visita */}
+      <div className="mt-6">
+        <VisitFormsSection propertyId={id} refreshKey={visitRefreshKey} />
+      </div>
+
+      {showGenerate && (
+        <GenerateVisitFormModal
+          propertyId={id}
+          onClose={() => setShowGenerate(false)}
+          onGenerated={() => setVisitRefreshKey((k) => k + 1)}
+        />
+      )}
+    </div>
+  )
+}
+
+// ── Modal para generar link de ficha de visita ─────────────────────
+function GenerateVisitFormModal({
+  propertyId,
+  onClose,
+  onGenerated,
+}: {
+  propertyId: string
+  onClose: () => void
+  onGenerated: () => void
+}) {
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [slug, setSlug] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    apiFetch('properties', '/visit-forms/generate', {
+      method: 'POST',
+      body: JSON.stringify({ property_id: propertyId }),
+    })
+      .then(async (r) => {
+        const body = (await r.json()) as any
+        if (!r.ok) throw new Error(body?.error || 'No se pudo generar el link')
+        setSlug(body.slug)
+        onGenerated()
+      })
+      .catch((e) => setError(e?.message || 'Error generando el link'))
+      .finally(() => setLoading(false))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propertyId])
+
+  const publicUrl = slug
+    ? `${typeof window !== 'undefined' ? window.location.origin : 'https://app.vendepro.com.ar'}/v/${slug}`
+    : ''
+
+  const whatsappText = encodeURIComponent(
+    `Hola, te mando la ficha de visita de la propiedad. Si podés completarla nos ayuda un montón:\n${publicUrl}`,
+  )
+
+  async function copyLink() {
+    if (!publicUrl) return
+    try {
+      await navigator.clipboard.writeText(publicUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // Fallback no-op
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="bg-[#ff8017] h-1.5" />
+        <div className="p-6">
+          <h3 className="text-lg font-semibold text-gray-900">Ficha de visita</h3>
+          <p className="text-sm text-gray-500 mt-1">
+            Compartí este link con la persona que visitó la propiedad. Se guardará la respuesta
+            automáticamente.
+          </p>
+
+          {loading && (
+            <div className="py-10 flex items-center justify-center">
+              <Loader2 className="w-6 h-6 animate-spin text-[#ff007c]" />
+            </div>
+          )}
+
+          {error && (
+            <div className="mt-4 bg-red-50 border border-red-100 text-red-700 text-sm rounded-lg px-3 py-2">
+              {error}
+            </div>
+          )}
+
+          {!loading && !error && slug && (
+            <>
+              <div className="mt-5">
+                <label className="block text-xs text-gray-500 mb-1">Link público</label>
+                <div className="flex items-stretch gap-2">
+                  <input
+                    readOnly
+                    value={publicUrl}
+                    onFocus={(e) => e.currentTarget.select()}
+                    className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-700"
+                  />
+                  <button
+                    onClick={copyLink}
+                    className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium px-3 rounded-lg whitespace-nowrap"
+                  >
+                    {copied ? '¡Copiado!' : 'Copiar'}
+                  </button>
+                </div>
+              </div>
+
+              <a
+                href={`https://wa.me/?text=${whatsappText}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 w-full inline-flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1ebe5b] text-white font-medium py-2.5 rounded-lg"
+              >
+                Abrir WhatsApp
+              </a>
+            </>
+          )}
+
+          <button
+            onClick={onClose}
+            className="mt-5 w-full border border-gray-200 text-gray-700 text-sm font-medium py-2 rounded-lg hover:bg-gray-50"
+          >
+            Cerrar
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
