@@ -233,12 +233,16 @@ export default function LeadDetailPage() {
           >
             <FileText className="w-3.5 h-3.5" /> Ficha de tasación
           </button>
-          <Link
-            href={`/propiedades/nueva?lead_id=${leadId}`}
+          <button
+            onClick={() => {
+              const qs = new URLSearchParams({ lead_id: leadId })
+              if (fichas.length > 0) qs.set('ficha_id', fichas[0].id)
+              router.push(`/propiedades/nueva?${qs.toString()}`)
+            }}
             className="flex items-center gap-1.5 bg-green-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-green-700 font-medium"
           >
             <Home className="w-3.5 h-3.5" /> Crear propiedad
-          </Link>
+          </button>
           <button onClick={handleDelete} className="p-1.5 border rounded-lg text-gray-400 hover:text-red-500 hover:border-red-200">
             <Trash2 className="w-4 h-4" />
           </button>

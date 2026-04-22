@@ -199,33 +199,6 @@ export default function PerformancePage() {
         </div>
       </div>
 
-      {/* Benchmark comparativo activos vs vendidos — tabla por barrio */}
-      {data.comparison_by_neighborhood && data.comparison_by_neighborhood.length > 0 && (
-        <NeighborhoodBenchmarkTable data={data.comparison_by_neighborhood} />
-      )}
-
-      {/* Mis avisos activos — detalle por propiedad */}
-      {data.active_listings && data.active_listings.length > 0 && (
-        <ActiveListingsTable data={data.active_listings} />
-      )}
-
-      {/* Leyenda del semáforo — referencia MG */}
-      <div className="rounded-xl border border-gray-200 p-3 sm:p-4 text-xs sm:text-sm bg-gradient-to-br from-gray-50 to-white shadow-sm">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2">
-          <span className="font-medium text-gray-700">Referencia MG — visualizaciones/día:</span>
-          <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-sm" /> 0–9</span>
-          <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-sm" /> 10–13</span>
-          <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-yellow-400 shadow-sm" /> 14–22</span>
-          <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-lime-500 shadow-sm" /> 23–27</span>
-          <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-sm" /> +28</span>
-        </div>
-        <p className="text-gray-500 leading-snug">
-          <strong>Mínimo para vender en 4 meses:</strong>{' '}
-          CABA <strong>14 vis/día</strong> + 1.5 visitas pres./sem ·{' '}
-          GBA <strong>8 vis/día</strong> + 1 visita pres./sem.
-        </p>
-      </div>
-
       {!hasData && (
         <div className="rounded-2xl border border-gray-200 p-8 text-center bg-gradient-to-br from-gray-50 to-white shadow-sm">
           <FileBarChart className="w-10 h-10 text-gray-300 mx-auto mb-3" aria-hidden="true" />
@@ -297,6 +270,33 @@ export default function PerformancePage() {
           </div>
         </>
       )}
+
+      {/* Benchmark comparativo activos vs vendidos — tabla por barrio */}
+      {data.comparison_by_neighborhood && data.comparison_by_neighborhood.length > 0 && (
+        <NeighborhoodBenchmarkTable data={data.comparison_by_neighborhood} />
+      )}
+
+      {/* Mis avisos activos — detalle por propiedad */}
+      {data.active_listings && data.active_listings.length > 0 && (
+        <ActiveListingsTable data={data.active_listings} />
+      )}
+
+      {/* Leyenda del semáforo — referencia MG */}
+      <div className="rounded-xl border border-gray-200 p-3 sm:p-4 text-xs sm:text-sm bg-gradient-to-br from-gray-50 to-white shadow-sm">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2">
+          <span className="font-medium text-gray-700">Referencia MG — visualizaciones/día:</span>
+          <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-sm" /> 0–9</span>
+          <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-sm" /> 10–13</span>
+          <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-yellow-400 shadow-sm" /> 14–22</span>
+          <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-lime-500 shadow-sm" /> 23–27</span>
+          <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-sm" /> +28</span>
+        </div>
+        <p className="text-gray-500 leading-snug">
+          <strong>Mínimo para vender en 4 meses:</strong>{' '}
+          CABA <strong>14 vis/día</strong> + 1.5 visitas pres./sem ·{' '}
+          GBA <strong>8 vis/día</strong> + 1 visita pres./sem.
+        </p>
+      </div>
     </div>
   )
 }
