@@ -1,6 +1,11 @@
 import { Hono } from 'hono'
 import { corsMiddleware, errorHandler, createAuthMiddleware, JwtAuthService, AnthropicAIService, D1LandingRepository, GroqAIService } from '@vendepro/infrastructure'
-import { ExtractPropertyMetricsUseCase, EditBlockWithAIUseCase } from '@vendepro/core'
+import {
+  ExtractPropertyMetricsUseCase,
+  ExtractLeadFromTextUseCase,
+  ExtractLeadFromImageUseCase,
+  EditBlockWithAIUseCase,
+} from '@vendepro/core'
 
 type Env = { DB: D1Database; JWT_SECRET: string; ANTHROPIC_API_KEY: string; GROQ_API_KEY: string }
 type AuthVars = { Variables: { userId: string; userRole: string; orgId: string } }
@@ -24,16 +29,26 @@ app.post('/extract-metrics', async (c) => {
 
 app.post('/extract-entity', async (c) => {
   const body = (await c.req.json()) as any
-  const ai = new GroqAIService(c.env.GROQ_API_KEY)
-  const fields = await ai.extractLeadIntent(body.text ?? '')
-  return c.json({ fields })
+  const useCase = new ExtractLeadFromTextUseCase(new GroqAIService(c.env.GROQ_API_KEY))
+  try {
+    const fields = await useCase.execute({ text: body.text ?? '' })
+    return c.json({ fields })
+  } catch (e: any) {
+    if (e.statusCode === 400 || e.statusCode === 413) return c.json({ error: e.message }, e.statusCode)
+    throw e
+  }
 })
 
 app.post('/extract-image', async (c) => {
   const body = (await c.req.json()) as any
-  const ai = new GroqAIService(c.env.GROQ_API_KEY)
-  const fields = await ai.extractLeadFromImage(body.imageBase64 ?? '', body.mimeType)
-  return c.json({ fields })
+  const useCase = new ExtractLeadFromImageUseCase(new GroqAIService(c.env.GROQ_API_KEY))
+  try {
+    const fields = await useCase.execute({ imageBase64: body.imageBase64 ?? '', mimeType: body.mimeType })
+    return c.json({ fields })
+  } catch (e: any) {
+    if (e.statusCode === 400 || e.statusCode === 413) return c.json({ error: e.message }, e.statusCode)
+    throw e
+  }
 })
 
 app.post('/landings/:id/edit-block', async (c) => {
