@@ -49,6 +49,7 @@ run_alter_migration migrations_v2/003_appraisal_blocks.sql
 run_alter_migration migrations_v2/012_property_visit_forms.sql
 run_alter_migration migrations_v2/013_property_auth.sql
 run_alter_migration migrations_v2/014_property_doc_status.sql
+run_alter_migration migrations_v2/015_landing_templates.sql
 
 echo "✓ Migraciones aplicadas"
 
