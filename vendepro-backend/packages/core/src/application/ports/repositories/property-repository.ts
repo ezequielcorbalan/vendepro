@@ -57,6 +57,17 @@ export interface PropertyStatusCatalog {
   color: string | null
 }
 
+export interface PropertyPriceHistoryEntry {
+  id: string
+  property_id: string
+  org_id: string
+  price_usd: number
+  previous_price_usd: number | null
+  reason: string | null
+  changed_by: string | null
+  changed_at: string
+}
+
 export interface PropertyRepository {
   findById(id: string, orgId: string): Promise<Property | null>
   findBySlug(slug: string): Promise<Property | null>
@@ -79,4 +90,6 @@ export interface PropertyRepository {
   clearExternalReport(id: string, orgId: string): Promise<void>
   searchByAddress(orgId: string, query: string, limit: number): Promise<Array<{ id: string; address: string }>>
   findByPublicSlug(slug: string): Promise<Property | null>
+  addPriceHistory(entry: PropertyPriceHistoryEntry): Promise<void>
+  findPriceHistory(propertyId: string, orgId: string): Promise<PropertyPriceHistoryEntry[]>
 }

@@ -46,6 +46,9 @@ run_alter_migration() {
 run_alter_migration migrations_v2/001_appraisals_extra_cols.sql
 run_alter_migration migrations_v2/002_org_brand_accent_color.sql
 run_alter_migration migrations_v2/003_appraisal_blocks.sql
+run_alter_migration migrations_v2/012_property_visit_forms.sql
+run_alter_migration migrations_v2/013_property_auth.sql
+run_alter_migration migrations_v2/014_property_doc_status.sql
 
 echo "✓ Migraciones aplicadas"
 

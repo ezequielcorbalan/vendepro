@@ -13,6 +13,8 @@ import { useToast } from '@/components/ui/Toast'
 import ProposalStep from '@/components/tasaciones/steps/ProposalStep'
 import MarketSituationStep from '@/components/tasaciones/steps/MarketSituationStep'
 import WorkConditionsStep from '@/components/tasaciones/steps/WorkConditionsStep'
+import PreviewPane from '@/components/tasaciones/PreviewPane'
+import type { PublicAppraisalData } from '@/components/tasaciones/PublicAppraisalShell'
 import type {
   AppraisalProposal,
   AppraisalMarketSituation,
@@ -56,6 +58,7 @@ export default function EditarTasacionPage() {
   const [step, setStep] = useState(0)
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [mobilePanel, setMobilePanel] = useState<'edit' | 'preview'>('edit')
 
   const [address, setAddress] = useState('')
   const [neighborhood, setNeighborhood] = useState('')
@@ -292,6 +295,47 @@ export default function EditarTasacionPage() {
   const inputClass = 'w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-[#ff007c]/20 focus:border-[#ff007c] outline-none'
   const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
 
+  const previewData: PublicAppraisalData = {
+    appraisal: {
+      property_address: address,
+      neighborhood,
+      city,
+      property_type: propertyType,
+      covered_area: coveredArea,
+      total_area: totalArea,
+      semi_area: semiArea,
+      weighted_area: weightedArea > 0 ? weightedArea : null,
+      usd_per_m2: avgUsdM2 || null,
+      suggested_price: suggestedPrice,
+      test_price: testPrice,
+      expected_close_price: expectedClose,
+      strengths,
+      weaknesses,
+      opportunities,
+      threats,
+      publication_analysis: pubAnalysis,
+      agent_notes: agentNotes,
+      video_tasacion_url: videoTasacionUrl,
+      zone_avg_price: zoneAvgPrice,
+      zone_avg_m2: zoneAvgM2,
+      zone_avg_usd_m2: zoneAvgUsdM2,
+      proposal,
+      market_situation: marketSituation,
+      work_conditions: workConditions,
+      video_links: videoLinks.filter(u => u && u.trim() !== ''),
+    },
+    comparables: comparables
+      .filter(c => c.zonaprop_url || c.address)
+      .map(c => ({
+        zonaprop_url: c.zonaprop_url,
+        address: c.address,
+        total_area: parseFloat(c.total_area) || null,
+        covered_area: parseFloat(c.covered_area) || null,
+        price: parseFloat(c.price) || null,
+        usd_per_m2: parseFloat(c.usd_per_m2) || null,
+      })),
+  }
+
   return (
     <div>
       <div className="flex items-center gap-3 mb-6">
@@ -304,25 +348,48 @@ export default function EditarTasacionPage() {
         </div>
       </div>
 
-      {/* Step tabs */}
-      <div className="flex gap-1 sm:gap-2 mb-6 overflow-x-auto pb-2">
-        {steps.map((s, i) => {
-          const Icon = s.icon
-          return (
-            <button key={i} onClick={() => setStep(i)}
-              className={`flex items-center gap-1.5 px-2.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
-                i === step
-                  ? 'bg-[#ff007c] text-white'
-                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200 cursor-pointer'
-              }`}>
-              <Icon className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{s.label}</span>
-            </button>
-          )
-        })}
+      {/* Mobile toggle: Editar / Preview */}
+      <div className="lg:hidden flex gap-2 mb-4 bg-gray-100 p-1 rounded-lg">
+        <button
+          onClick={() => setMobilePanel('edit')}
+          className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+            mobilePanel === 'edit' ? 'bg-white text-[#ff007c] shadow-sm' : 'text-gray-500'
+          }`}
+        >
+          Editar
+        </button>
+        <button
+          onClick={() => setMobilePanel('preview')}
+          className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+            mobilePanel === 'preview' ? 'bg-white text-[#ff007c] shadow-sm' : 'text-gray-500'
+          }`}
+        >
+          Preview
+        </button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        {/* Form column */}
+        <div className={`lg:col-span-3 ${mobilePanel === 'edit' ? '' : 'hidden lg:block'}`}>
+          {/* Step tabs */}
+          <div className="flex gap-1 sm:gap-2 mb-6 overflow-x-auto pb-2">
+            {steps.map((s, i) => {
+              const Icon = s.icon
+              return (
+                <button key={i} onClick={() => setStep(i)}
+                  className={`flex items-center gap-1.5 px-2.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
+                    i === step
+                      ? 'bg-[#ff007c] text-white'
+                      : 'bg-gray-100 text-gray-500 hover:bg-gray-200 cursor-pointer'
+                  }`}>
+                  <Icon className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">{s.label}</span>
+                </button>
+              )
+            })}
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
 
         {/* STEP 0: Propuesta */}
         {step === 0 && (
@@ -758,6 +825,15 @@ export default function EditarTasacionPage() {
               Guardar cambios
             </button>
           )}
+        </div>
+          </div>
+        </div>
+
+        {/* Preview column */}
+        <div className={`lg:col-span-2 ${mobilePanel === 'preview' ? '' : 'hidden lg:block'}`}>
+          <div className="lg:sticky lg:top-4 lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto">
+            <PreviewPane data={previewData} />
+          </div>
         </div>
       </div>
     </div>

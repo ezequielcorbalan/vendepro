@@ -3,9 +3,13 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Building2, Loader2, Phone, Mail, User, MapPin, DollarSign, Calendar, Plus, Pencil } from 'lucide-react'
+import { ArrowLeft, Building2, Loader2, Phone, Mail, User, MapPin, DollarSign, Calendar, Plus, Pencil, Send } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { PhotoGallery } from '@/components/ui/PhotoGallery'
+import { VisitFormsSection } from '@/components/properties/VisitFormsSection'
+import AuthorizationWidget from '@/components/properties/AuthorizationWidget'
+import PriceHistoryWidget from '@/components/properties/PriceHistoryWidget'
+import DocChecklistWidget from '@/components/properties/DocChecklistWidget'
 
 const stageLabel: Record<string, string> = {
   captada: 'Captada',
@@ -33,6 +37,8 @@ export default function PropiedadDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [photos, setPhotos] = useState<{ id: string; url: string; sort_order: number }[]>([])
+  const [showGenerate, setShowGenerate] = useState(false)
+  const [visitRefreshKey, setVisitRefreshKey] = useState(0)
 
   useEffect(() => {
     if (!id) return
@@ -77,11 +83,17 @@ export default function PropiedadDetailPage() {
       </Link>
 
       {/* Header */}
-      <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
+      <div className="bg-white rounded-2xl shadow-sm p-6 mb-6 relative overflow-hidden border border-gray-200">
+        <img
+          src="/brand/GV-27.png"
+          alt=""
+          aria-hidden="true"
+          className="absolute -top-6 -right-6 w-40 h-40 opacity-10 pointer-events-none"
+        />
+        <div className="relative flex items-start justify-between gap-4 flex-wrap">
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-[#ff007c]/10 flex items-center justify-center flex-shrink-0">
-              <Building2 className="w-6 h-6 text-[#ff007c]" />
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#ff007c] to-[#ff8017] flex items-center justify-center flex-shrink-0 shadow-sm">
+              <Building2 className="w-6 h-6 text-white" />
             </div>
             <div>
               <h1 className="text-xl font-semibold text-gray-800">{property.address}</h1>
@@ -98,12 +110,42 @@ export default function PropiedadDetailPage() {
               className="inline-flex items-center gap-1.5 bg-[#ff007c] text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:opacity-90">
               <Plus className="w-4 h-4" /> Nueva tasación
             </Link>
+            <button
+              onClick={() => setShowGenerate(true)}
+              className="inline-flex items-center gap-1.5 bg-[#ff8017] text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:opacity-90"
+            >
+              <Send className="w-4 h-4" /> Enviar ficha de visita
+            </button>
             <Link href={`/propiedades/${id}/editar`}
               className="inline-flex items-center gap-1.5 border border-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-gray-50">
               <Pencil className="w-4 h-4" /> Editar
             </Link>
           </div>
         </div>
+      </div>
+
+      {/* Widgets operativos: autorización + precio + docs */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <AuthorizationWidget
+          propertyId={id}
+          authStartDate={property.auth_start_date || null}
+          authDurationDays={property.auth_duration_days || null}
+          onUpdate={v => setProperty({ ...property, ...v })}
+        />
+        <PriceHistoryWidget
+          propertyId={id}
+          currentPrice={property.asking_price}
+          currency={property.currency || 'USD'}
+          onPriceChanged={newPrice => setProperty({ ...property, asking_price: newPrice })}
+        />
+      </div>
+
+      <div className="mb-6">
+        <DocChecklistWidget
+          propertyId={id}
+          docStatusJson={property.doc_status_json || null}
+          capturedAt={property.created_at || null}
+        />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -215,6 +257,141 @@ export default function PropiedadDetailPage() {
           <PhotoGallery photos={photos} propertyId={id} editable={false} />
         </div>
       )}
+
+      {/* Fichas de visita */}
+      <div className="mt-6">
+        <VisitFormsSection propertyId={id} refreshKey={visitRefreshKey} />
+      </div>
+
+      {showGenerate && (
+        <GenerateVisitFormModal
+          propertyId={id}
+          onClose={() => setShowGenerate(false)}
+          onGenerated={() => setVisitRefreshKey((k) => k + 1)}
+        />
+      )}
+    </div>
+  )
+}
+
+// ── Modal para generar link de ficha de visita ─────────────────────
+function GenerateVisitFormModal({
+  propertyId,
+  onClose,
+  onGenerated,
+}: {
+  propertyId: string
+  onClose: () => void
+  onGenerated: () => void
+}) {
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [slug, setSlug] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    apiFetch('properties', '/visit-forms/generate', {
+      method: 'POST',
+      body: JSON.stringify({ property_id: propertyId }),
+    })
+      .then(async (r) => {
+        const body = (await r.json()) as any
+        if (!r.ok) throw new Error(body?.error || 'No se pudo generar el link')
+        setSlug(body.slug)
+        onGenerated()
+      })
+      .catch((e) => setError(e?.message || 'Error generando el link'))
+      .finally(() => setLoading(false))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propertyId])
+
+  const publicUrl = slug
+    ? `${typeof window !== 'undefined' ? window.location.origin : 'https://app.vendepro.com.ar'}/v/${slug}`
+    : ''
+
+  const whatsappText = encodeURIComponent(
+    `Hola, te mando la ficha de visita de la propiedad. Si podés completarla nos ayuda un montón:\n${publicUrl}`,
+  )
+
+  async function copyLink() {
+    if (!publicUrl) return
+    try {
+      await navigator.clipboard.writeText(publicUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // Fallback no-op
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="bg-[#ff8017] h-1.5" />
+        <div className="p-6">
+          <h3 className="text-lg font-semibold text-gray-900">Ficha de visita</h3>
+          <p className="text-sm text-gray-500 mt-1">
+            Compartí este link con la persona que visitó la propiedad. Se guardará la respuesta
+            automáticamente.
+          </p>
+
+          {loading && (
+            <div className="py-10 flex items-center justify-center">
+              <Loader2 className="w-6 h-6 animate-spin text-[#ff007c]" />
+            </div>
+          )}
+
+          {error && (
+            <div className="mt-4 bg-red-50 border border-red-100 text-red-700 text-sm rounded-lg px-3 py-2">
+              {error}
+            </div>
+          )}
+
+          {!loading && !error && slug && (
+            <>
+              <div className="mt-5">
+                <label className="block text-xs text-gray-500 mb-1">Link público</label>
+                <div className="flex items-stretch gap-2">
+                  <input
+                    readOnly
+                    value={publicUrl}
+                    onFocus={(e) => e.currentTarget.select()}
+                    className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-700"
+                  />
+                  <button
+                    onClick={copyLink}
+                    className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium px-3 rounded-lg whitespace-nowrap"
+                  >
+                    {copied ? '¡Copiado!' : 'Copiar'}
+                  </button>
+                </div>
+              </div>
+
+              <a
+                href={`https://wa.me/?text=${whatsappText}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 w-full inline-flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1ebe5b] text-white font-medium py-2.5 rounded-lg"
+              >
+                Abrir WhatsApp
+              </a>
+            </>
+          )}
+
+          <button
+            onClick={onClose}
+            className="mt-5 w-full border border-gray-200 text-gray-700 text-sm font-medium py-2 rounded-lg hover:bg-gray-50"
+          >
+            Cerrar
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
