@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { FileCheck2, Check, X, Circle } from 'lucide-react'
+import { FileCheck2, Check, X, Circle, FolderOpen, Plus, ExternalLink, Trash2 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 
 type DocState = 'done' | 'na' | 'pending'
@@ -25,31 +25,55 @@ const DEFAULT_DOCS: Array<{ key: string; label: string }> = [
   { key: 'plano_actualizado', label: 'Plano actualizado' },
 ]
 
+interface DocData {
+  status: Record<string, DocState>
+  cloud_url?: string
+  custom?: Array<{ key: string; label: string }>
+}
+
 interface Props {
   propertyId: string
   docStatusJson: string | null
   capturedAt: string | null
 }
 
-function parseStatus(raw: string | null): Record<string, DocState> {
-  if (!raw) return {}
+function parseData(raw: string | null): DocData {
+  if (!raw) return { status: {} }
   try {
     const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw
-    return parsed || {}
-  } catch { return {} }
+    if (parsed && typeof parsed === 'object') {
+      // New format
+      if ('status' in parsed) {
+        return {
+          status: parsed.status || {},
+          cloud_url: parsed.cloud_url || '',
+          custom: Array.isArray(parsed.custom) ? parsed.custom : [],
+        }
+      }
+      // Legacy format: flat status map
+      return { status: parsed }
+    }
+    return { status: {} }
+  } catch { return { status: {} } }
 }
 
 export default function DocChecklistWidget({ propertyId, docStatusJson, capturedAt }: Props) {
-  const [status, setStatus] = useState<Record<string, DocState>>(() => parseStatus(docStatusJson))
+  const [data, setData] = useState<DocData>(() => parseData(docStatusJson))
   const [saving, setSaving] = useState(false)
+  const [showCloudInput, setShowCloudInput] = useState(false)
+  const [cloudInput, setCloudInput] = useState('')
+  const [showCustomInput, setShowCustomInput] = useState(false)
+  const [customInput, setCustomInput] = useState('')
 
   useEffect(() => {
-    setStatus(parseStatus(docStatusJson))
+    setData(parseData(docStatusJson))
   }, [docStatusJson])
 
-  const totalItems = DEFAULT_DOCS.length
-  const resolvedItems = DEFAULT_DOCS.filter(d => {
-    const s = status[d.key]
+  const customDocs = data.custom ?? []
+  const allDocs = [...DEFAULT_DOCS, ...customDocs]
+  const totalItems = allDocs.length
+  const resolvedItems = allDocs.filter(d => {
+    const s = data.status[d.key]
     return s === 'done' || s === 'na'
   }).length
   const progressPct = Math.round((resolvedItems / totalItems) * 100)
@@ -59,9 +83,8 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
     : null
   const daysRemaining = daysSinceCapture !== null ? Math.max(0, 15 - daysSinceCapture) : null
 
-  async function updateStatus(key: string, newState: DocState) {
-    const next = { ...status, [key]: newState }
-    setStatus(next)
+  async function persist(next: DocData) {
+    setData(next)
     setSaving(true)
     try {
       await apiFetch('properties', `/properties/${propertyId}`, {
@@ -70,6 +93,37 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
       })
     } catch { /* noop */ }
     setSaving(false)
+  }
+
+  function updateStatus(key: string, newState: DocState) {
+    persist({ ...data, status: { ...data.status, [key]: newState } })
+  }
+
+  function saveCloudUrl() {
+    persist({ ...data, cloud_url: cloudInput.trim() })
+    setShowCloudInput(false)
+  }
+
+  function addCustomDoc() {
+    const label = customInput.trim()
+    if (!label) return
+    const key = `custom_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`
+    persist({
+      ...data,
+      custom: [...customDocs, { key, label }],
+    })
+    setCustomInput('')
+    setShowCustomInput(false)
+  }
+
+  function removeCustomDoc(key: string) {
+    const newStatus = { ...data.status }
+    delete newStatus[key]
+    persist({
+      ...data,
+      status: newStatus,
+      custom: customDocs.filter(c => c.key !== key),
+    })
   }
 
   return (
@@ -104,19 +158,83 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
         </div>
       )}
 
+      {/* Cloud folder link */}
+      <div className="mb-3">
+        {data.cloud_url && !showCloudInput ? (
+          <div className="flex items-center justify-between bg-gradient-to-br from-[#ff007c]/5 to-[#ff8017]/5 border border-[#ff007c]/20 rounded-lg px-3 py-2">
+            <a
+              href={data.cloud_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-sm text-[#ff007c] font-medium hover:underline truncate"
+            >
+              <FolderOpen className="w-4 h-4 flex-shrink-0" />
+              <span className="truncate">Abrir carpeta de documentos</span>
+              <ExternalLink className="w-3 h-3 flex-shrink-0" />
+            </a>
+            <button
+              onClick={() => { setCloudInput(data.cloud_url || ''); setShowCloudInput(true) }}
+              className="text-xs text-gray-400 hover:text-gray-600 ml-2"
+            >
+              Editar
+            </button>
+          </div>
+        ) : showCloudInput ? (
+          <div className="flex gap-2">
+            <input
+              type="url"
+              value={cloudInput}
+              onChange={e => setCloudInput(e.target.value)}
+              placeholder="https://drive.google.com/..."
+              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#ff007c]/20 focus:border-[#ff007c] outline-none"
+            />
+            <button
+              onClick={saveCloudUrl}
+              className="bg-gradient-to-br from-[#ff007c] to-[#ff8017] text-white px-3 py-2 rounded-lg text-xs font-medium hover:opacity-90"
+            >
+              Guardar
+            </button>
+            <button
+              onClick={() => { setShowCloudInput(false); setCloudInput('') }}
+              className="text-gray-400 hover:text-gray-600 px-2"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => { setCloudInput(''); setShowCloudInput(true) }}
+            className="flex items-center gap-2 text-xs text-gray-500 hover:text-[#ff007c] border border-dashed border-gray-300 hover:border-[#ff007c] rounded-lg px-3 py-2 w-full transition-colors"
+          >
+            <FolderOpen className="w-3.5 h-3.5" /> Agregar link a carpeta en la nube (Drive, OneDrive...)
+          </button>
+        )}
+      </div>
+
       <div className="space-y-1">
-        {DEFAULT_DOCS.map(doc => {
-          const s = status[doc.key] ?? 'pending'
+        {allDocs.map(doc => {
+          const s = data.status[doc.key] ?? 'pending'
+          const isCustom = customDocs.some(c => c.key === doc.key)
           return (
-            <div key={doc.key} className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-gray-50">
+            <div key={doc.key} className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-gray-50 group">
               <span className={`text-sm flex-1 ${
                 s === 'done' ? 'text-gray-700' :
                 s === 'na' ? 'text-gray-400 line-through' :
                 'text-gray-700'
               }`}>
                 {doc.label}
+                {isCustom && <span className="ml-1 text-[10px] text-gray-400">(custom)</span>}
               </span>
               <div className="flex items-center gap-1">
+                {isCustom && (
+                  <button
+                    onClick={() => removeCustomDoc(doc.key)}
+                    title="Eliminar item"
+                    className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity p-1"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                )}
                 <button
                   onClick={() => updateStatus(doc.key, s === 'done' ? 'pending' : 'done')}
                   title="Tengo el documento"
@@ -148,6 +266,43 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
             </div>
           )
         })}
+      </div>
+
+      {/* Add custom item */}
+      <div className="mt-3 pt-3 border-t border-gray-100">
+        {showCustomInput ? (
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={customInput}
+              onChange={e => setCustomInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') addCustomDoc() }}
+              autoFocus
+              placeholder="Ej: Aprobación banco hipotecario"
+              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#ff007c]/20 focus:border-[#ff007c] outline-none"
+            />
+            <button
+              onClick={addCustomDoc}
+              disabled={!customInput.trim()}
+              className="bg-gradient-to-br from-[#ff007c] to-[#ff8017] text-white px-3 py-2 rounded-lg text-xs font-medium hover:opacity-90 disabled:opacity-50"
+            >
+              Agregar
+            </button>
+            <button
+              onClick={() => { setShowCustomInput(false); setCustomInput('') }}
+              className="text-gray-400 hover:text-gray-600 px-2"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowCustomInput(true)}
+            className="flex items-center gap-1 text-xs text-[#ff007c] font-medium hover:underline"
+          >
+            <Plus className="w-3 h-3" /> Agregar documento custom
+          </button>
+        )}
       </div>
 
       {saving && <p className="text-xs text-gray-400 text-center mt-2">Guardando...</p>}
