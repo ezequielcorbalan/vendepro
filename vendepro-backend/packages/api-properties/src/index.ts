@@ -6,6 +6,7 @@ import { registerAppraisalRoutes } from './routes/appraisals'
 import { registerPrefactibilidadRoutes } from './routes/prefactibilidades'
 import { registerFichaRoutes } from './routes/fichas'
 import { registerReportRoutes } from './routes/reports'
+import { registerVisitFormRoutes } from './routes/visit-forms'
 
 type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket; R2_PUBLIC_URL: string }
 type AuthVars = { Variables: { userId: string; userRole: string; orgId: string } }
@@ -27,5 +28,6 @@ registerAppraisalRoutes(app)
 registerPrefactibilidadRoutes(app)
 registerFichaRoutes(app)
 registerReportRoutes(app)
+registerVisitFormRoutes(app)
 
 export default app

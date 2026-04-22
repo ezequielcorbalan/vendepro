@@ -6,6 +6,7 @@ import {
   D1AppraisalRepository,
   D1TemplateBlockRepository,
   D1VisitFormRepository,
+  D1PropertyVisitFormRepository,
   D1PrefactibilidadRepository,
   D1OrganizationRepository,
   D1UserRepository,
@@ -21,6 +22,8 @@ import {
   GetPublicAppraisalUseCase,
   GetPublicVisitFormUseCase,
   SubmitVisitFormResponseUseCase,
+  GetVisitFormBySlugUseCase,
+  SubmitVisitFormUseCase,
   GetPublicPrefactibilidadUseCase,
   CreatePublicLeadUseCase,
   GetPublicLandingUseCase,
@@ -80,6 +83,63 @@ app.post('/public/visit-form/:slug', async (c) => {
     visitor_phone: body.phone ?? body.visitor_phone ?? null,
     visitor_email: body.email ?? body.visitor_email ?? null,
     responses: body.responses ?? {},
+  })
+  return c.json(result, 201)
+})
+
+// ── FICHA DE VISITA (/v/:slug) — nuevo modelo simple ───────────
+// Público: obtiene ficha + datos de la propiedad para pre-poblar el form.
+app.get('/public/property-visit-form/:slug', async (c) => {
+  const uc = new GetVisitFormBySlugUseCase(
+    new D1PropertyVisitFormRepository(c.env.DB),
+  )
+  const result = await uc.execute(c.req.param('slug'))
+  if (!result) return c.json({ error: 'Not found' }, 404)
+
+  const formObj = result.form.toObject()
+  return c.json({
+    slug: formObj.slug,
+    submitted: formObj.submitted_at !== null,
+    property: result.property,
+    org: result.org,
+    // Si ya fue submitted, podemos mostrar read-only con las respuestas.
+    response: formObj.submitted_at
+      ? {
+          visitor_name: formObj.visitor_name,
+          visitor_email: formObj.visitor_email,
+          visitor_phone: formObj.visitor_phone,
+          liked: formObj.liked,
+          disliked: formObj.disliked,
+          subjective_price_usd: formObj.subjective_price_usd,
+          buy_intention: formObj.buy_intention,
+          observations: formObj.observations,
+          submitted_at: formObj.submitted_at,
+        }
+      : null,
+  })
+})
+
+// Público: recibe las respuestas del visitante.
+app.post('/public/property-visit-form/:slug/submit', async (c) => {
+  const body = (await c.req.json()) as any
+  const uc = new SubmitVisitFormUseCase(
+    new D1PropertyVisitFormRepository(c.env.DB),
+  )
+  const priceRaw = body.subjective_price_usd
+  const price =
+    priceRaw === null || priceRaw === undefined || priceRaw === ''
+      ? null
+      : Number(priceRaw)
+  const result = await uc.execute({
+    slug: c.req.param('slug'),
+    visitor_name: body.visitor_name ?? body.name ?? null,
+    visitor_email: body.visitor_email ?? body.email ?? null,
+    visitor_phone: body.visitor_phone ?? body.phone ?? null,
+    liked: body.liked ?? null,
+    disliked: body.disliked ?? null,
+    subjective_price_usd: price,
+    buy_intention: body.buy_intention ?? null,
+    observations: body.observations ?? null,
   })
   return c.json(result, 201)
 })
