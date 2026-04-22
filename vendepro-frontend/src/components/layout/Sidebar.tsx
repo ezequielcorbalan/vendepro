@@ -29,8 +29,15 @@ export default function Sidebar({ profile }: { profile: Profile }) {
     : menuSections
 
   return (
-    <aside className="w-64 bg-white border-r border-gray-200 flex flex-col h-screen fixed left-0 top-0">
-      <div className="p-6 border-b border-gray-100">
+    <aside className="w-64 bg-white border-r border-gray-200 flex flex-col h-screen fixed left-0 top-0 relative overflow-hidden">
+      <img
+        src="/brand/GV-27.png"
+        alt=""
+        aria-hidden="true"
+        className="absolute -bottom-12 -right-12 w-48 h-48 opacity-5 pointer-events-none"
+      />
+      <div className="p-6 border-b border-gray-100 relative">
+        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#ff007c] to-[#ff8017]" />
         <div className="flex items-center justify-between">
           <img src="/logo.png" alt="VendéPro" className="h-10" />
           <NotificationBell />
@@ -60,13 +67,16 @@ export default function Sidebar({ profile }: { profile: Profile }) {
                     href={link.href}
                     aria-current={isActive ? 'page' : undefined}
                     className={cn(
-                      'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                      'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all relative group',
                       isActive
-                        ? 'bg-[#ff007c]/10 text-[#ff007c]'
-                        : 'text-gray-600 hover:bg-gray-100'
+                        ? 'bg-gradient-to-r from-[#ff007c]/10 to-[#ff8017]/10 text-[#ff007c] shadow-sm'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                     )}
                   >
-                    <Icon className="w-5 h-5" aria-hidden="true" />
+                    {isActive && (
+                      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-gradient-to-b from-[#ff007c] to-[#ff8017] rounded-r-full" />
+                    )}
+                    <Icon className={cn('w-5 h-5 transition-transform', isActive && 'scale-110')} aria-hidden="true" />
                     {link.label}
                   </Link>
                 )
@@ -78,7 +88,7 @@ export default function Sidebar({ profile }: { profile: Profile }) {
 
       <div className="p-4 border-t border-gray-100 space-y-1">
         <Link href="/perfil" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors">
-          <div className="w-8 h-8 rounded-full bg-[#ff007c]/20 flex items-center justify-center text-[#ff007c] font-semibold text-sm" aria-hidden="true">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#ff007c] to-[#ff8017] flex items-center justify-center text-white font-semibold text-sm shadow-sm" aria-hidden="true">
             {(profile.full_name || profile.email || '?').charAt(0).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
