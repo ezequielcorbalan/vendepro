@@ -154,6 +154,46 @@ Pedido del usuario: ${input.prompt}`
     } catch { return null }
   }
 
+  async extractLeadFromImage(imageBase64: string, mimeType = 'image/jpeg'): Promise<LeadIntent> {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 20_000)
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        signal: controller.signal,
+        headers: { 'Authorization': `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'image_url', image_url: { url: `data:${mimeType};base64,${imageBase64}` } },
+              {
+                type: 'text',
+                text: `Sos asistente de CRM inmobiliario argentino. Extraé datos del cliente/lead de esta imagen.
+Puede ser: conversación de WhatsApp, mail, tarjeta de presentación, nota manuscrita o consulta de portal.
+Devolvé SOLO un JSON válido con los campos que puedas identificar:
+{ "full_name": "", "phone": "", "email": "", "neighborhood": "", "property_type": "", "operation": "", "notes": "", "budget": "" }
+Solo incluí campos con datos concretos que veas claramente. No inventes nada.`,
+              },
+            ],
+          }],
+          temperature: 0.1,
+          max_tokens: 500,
+        }),
+      })
+      if (!res.ok) throw new Error(`Groq vision ${res.status}`)
+      const data = await res.json() as any
+      const content = data.choices?.[0]?.message?.content ?? '{}'
+      try {
+        const match = content.match(/\{[\s\S]*\}/)
+        return match ? JSON.parse(match[0]) : {}
+      } catch { return {} }
+    } finally {
+      clearTimeout(timeout)
+    }
+  }
+
   private async callGroq(system: string, user: string): Promise<string> {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 15_000)

@@ -29,6 +29,13 @@ app.post('/extract-entity', async (c) => {
   return c.json({ fields })
 })
 
+app.post('/extract-image', async (c) => {
+  const body = (await c.req.json()) as any
+  const ai = new GroqAIService(c.env.GROQ_API_KEY)
+  const fields = await ai.extractLeadFromImage(body.imageBase64 ?? '', body.mimeType)
+  return c.json({ fields })
+})
+
 app.post('/landings/:id/edit-block', async (c) => {
   const body = (await c.req.json()) as any
   const landings = new D1LandingRepository(c.env.DB)
