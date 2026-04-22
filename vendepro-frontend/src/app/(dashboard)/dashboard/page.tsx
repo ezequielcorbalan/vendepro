@@ -66,22 +66,34 @@ function KPICard({ icon, label, value, color, href }: { icon: React.ReactNode; l
     cyan: 'bg-cyan-50 text-cyan-600',
     purple: 'bg-purple-50 text-purple-600',
     green: 'bg-green-50 text-green-600',
-    pink: 'bg-pink-50 text-pink-600',
+    pink: 'bg-gradient-to-br from-[#ff007c] to-[#ff8017] text-white',
     amber: 'bg-amber-50 text-amber-600',
   }
   const inner = (
     <>
-      <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2 ${colorMap[color]}`}>
+      <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-2 shadow-sm ${colorMap[color]}`}>
         {icon}
       </div>
       <p className="text-xl sm:text-2xl font-bold text-gray-800">{value}</p>
       <p className="text-xs text-gray-500 mt-0.5">{label}</p>
     </>
   )
+  const baseClass = 'bg-white rounded-2xl border border-gray-200 p-3 sm:p-4 shadow-sm relative overflow-hidden'
+  const accent = <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-[#ff007c] to-[#ff8017] opacity-60" />
   if (href) {
-    return <a href={href} className="bg-white rounded-xl border p-3 sm:p-4 hover:shadow-md hover:border-gray-300 transition-all block">{inner}</a>
+    return (
+      <a href={href} className={`${baseClass} hover:shadow-md hover:border-[#ff007c]/30 transition-all block`}>
+        {accent}
+        {inner}
+      </a>
+    )
   }
-  return <div className="bg-white rounded-xl border p-3 sm:p-4">{inner}</div>
+  return (
+    <div className={baseClass}>
+      {accent}
+      {inner}
+    </div>
+  )
 }
 
 export default function DashboardCRM() {
