@@ -204,6 +204,13 @@ export class D1AppraisalRepository implements AppraisalRepository {
       .run()
   }
 
+  async updateLandingId(id: string, orgId: string, landingId: string): Promise<void> {
+    await this.db
+      .prepare(`UPDATE appraisals SET landing_id = ?, updated_at = datetime('now') WHERE id = ? AND org_id = ?`)
+      .bind(landingId, id, orgId)
+      .run()
+  }
+
   async update(id: string, orgId: string, patch: Record<string, unknown>): Promise<void> {
     const now = new Date().toISOString()
     // Serialize JSON block fields if present. `undefined` => keep; `null` => clear.
@@ -333,6 +340,7 @@ export class D1AppraisalRepository implements AppraisalRepository {
       market_situation: parseJson(row.market_situation_json),
       work_conditions: parseJson(row.work_conditions_json),
       video_links: parseJson<string[]>(row.video_links_json),
+      landing_id: row.landing_id ?? null,
       created_at: row.created_at,
       updated_at: row.updated_at,
       comparables,

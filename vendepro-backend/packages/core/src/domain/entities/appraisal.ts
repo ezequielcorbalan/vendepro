@@ -70,6 +70,7 @@ export interface AppraisalProps {
   market_situation: AppraisalMarketSituationBlock | null
   work_conditions: AppraisalWorkConditionsBlock | null
   video_links: string[] | null
+  landing_id?: string | null
   created_at: string
   updated_at: string
   // Joined
@@ -91,6 +92,7 @@ export class Appraisal {
         market_situation?: AppraisalMarketSituationBlock | null
         work_conditions?: AppraisalWorkConditionsBlock | null
         video_links?: string[] | null
+        landing_id?: string | null
       },
   ): Appraisal {
     if (!props.property_address?.trim()) throw new ValidationError('Dirección es requerida')
@@ -103,6 +105,7 @@ export class Appraisal {
       market_situation: props.market_situation ?? null,
       work_conditions: props.work_conditions ?? null,
       video_links: props.video_links ?? null,
+      landing_id: props.landing_id ?? null,
       created_at: props.created_at ?? now,
       updated_at: props.updated_at ?? now,
     })
@@ -137,6 +140,7 @@ export class Appraisal {
   get market_situation() { return this.props.market_situation }
   get work_conditions() { return this.props.work_conditions }
   get video_links() { return this.props.video_links }
+  get landing_id() { return this.props.landing_id }
   get created_at() { return this.props.created_at }
   get updated_at() { return this.props.updated_at }
   get comparables() { return this.props.comparables }

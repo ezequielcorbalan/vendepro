@@ -84,6 +84,34 @@ const FooterDataSchema = z.object({
   disclaimer: z.string().max(500).optional(),
 })
 
+const AppraisalFodaDataSchema = z.object({
+  title: z.string().max(200).optional(),
+  strengths: z.string().max(3000).optional(),
+  weaknesses: z.string().max(3000).optional(),
+  opportunities: z.string().max(3000).optional(),
+  threats: z.string().max(3000).optional(),
+})
+
+const AppraisalCompetitionDataSchema = z.object({
+  title: z.string().max(200).optional(),
+  items: z.array(z.object({
+    address: z.string().max(300).optional(),
+    price: z.number().optional(),
+    currency: z.string().max(5).optional(),
+    usd_per_m2: z.number().optional(),
+    covered_area: z.number().optional(),
+    total_area: z.number().optional(),
+    days_on_market: z.number().optional(),
+    zonaprop_url: z.string().optional(),
+  })).max(12).optional(),
+})
+
+const AppraisalMarketDataSchema = z.object({
+  title: z.string().max(200).optional(),
+  body: z.string().max(6000).optional(),
+  media_urls: z.array(z.string()).max(8).optional(),
+})
+
 // === Registry ===
 
 export const BLOCK_TYPES = [
@@ -95,6 +123,9 @@ export const BLOCK_TYPES = [
   'benefits-list',
   'lead-form',
   'footer',
+  'appraisal-foda',
+  'appraisal-competition',
+  'appraisal-market',
 ] as const
 
 export type BlockType = typeof BLOCK_TYPES[number]
@@ -108,6 +139,9 @@ export const BLOCK_DATA_SCHEMAS: Record<BlockType, z.ZodTypeAny> = {
   'benefits-list': BenefitsListDataSchema,
   'lead-form': LeadFormDataSchema,
   'footer': FooterDataSchema,
+  'appraisal-foda': AppraisalFodaDataSchema,
+  'appraisal-competition': AppraisalCompetitionDataSchema,
+  'appraisal-market': AppraisalMarketDataSchema,
 }
 
 // === Envelope schemas ===

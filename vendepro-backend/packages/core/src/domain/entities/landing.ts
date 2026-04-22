@@ -32,13 +32,14 @@ export interface LandingProps {
   published_by: string | null
   last_review_note: string | null
   template_type: string | null
+  appraisal_id?: string | null
   created_at: string
   updated_at: string
 }
 
 export type LandingCreateInput =
-  Omit<LandingProps, 'status' | 'brand_voice' | 'lead_rules' | 'seo_title' | 'seo_description' | 'og_image_url' | 'published_version_id' | 'published_at' | 'published_by' | 'last_review_note' | 'template_type' | 'created_at' | 'updated_at'>
-  & Partial<Pick<LandingProps, 'status' | 'brand_voice' | 'lead_rules' | 'seo_title' | 'seo_description' | 'og_image_url' | 'template_type' | 'created_at' | 'updated_at'>>
+  Omit<LandingProps, 'status' | 'brand_voice' | 'lead_rules' | 'seo_title' | 'seo_description' | 'og_image_url' | 'published_version_id' | 'published_at' | 'published_by' | 'last_review_note' | 'template_type' | 'appraisal_id' | 'created_at' | 'updated_at'>
+  & Partial<Pick<LandingProps, 'status' | 'brand_voice' | 'lead_rules' | 'seo_title' | 'seo_description' | 'og_image_url' | 'template_type' | 'appraisal_id' | 'created_at' | 'updated_at'>>
 
 const VALID_KINDS: LandingKind[] = ['lead_capture', 'property']
 
@@ -80,6 +81,7 @@ export class Landing {
       published_by: null,
       last_review_note: null,
       template_type: input.template_type ?? null,
+      appraisal_id: input.appraisal_id ?? null,
       created_at: input.created_at ?? now,
       updated_at: input.updated_at ?? now,
     })
@@ -109,19 +111,23 @@ export class Landing {
   get published_by() { return this.props.published_by }
   get last_review_note() { return this.props.last_review_note }
   get template_type() { return this.props.template_type }
+  get appraisal_id() { return this.props.appraisal_id }
   get created_at() { return this.props.created_at }
   get updated_at() { return this.props.updated_at }
 
   toObject(): LandingProps & { full_slug: string } {
     // Incluye full_slug computado — los consumidores (api JSON, frontend) lo esperan.
-    return { ...this.props, blocks: [...this.props.blocks], full_slug: this.full_slug }
+    return { ...this.props, blocks: [...this.props.blocks], full_slug: this.full_slug, appraisal_id: this.props.appraisal_id ?? null }
   }
 
   replaceBlocks(blocks: Block[]): Landing {
     const v = validateBlocks(blocks)
     if (!v.success) throw new ValidationError(`Bloques inválidos: ${v.error}`)
-    const leadForms = v.data.filter(b => b.type === 'lead-form')
-    if (leadForms.length !== 1) throw new ValidationError('La landing debe tener un único bloque lead-form')
+    // Las landings de tasación (appraisal_id presente) no requieren lead-form
+    if (!this.props.appraisal_id) {
+      const leadForms = v.data.filter(b => b.type === 'lead-form')
+      if (leadForms.length !== 1) throw new ValidationError('La landing debe tener un único bloque lead-form')
+    }
     return new Landing({ ...this.props, blocks: v.data, updated_at: new Date().toISOString() })
   }
 

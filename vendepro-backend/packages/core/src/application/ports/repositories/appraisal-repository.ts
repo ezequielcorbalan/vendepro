@@ -42,4 +42,5 @@ export interface AppraisalRepository {
   addComparable(comparable: NewAppraisalComparable): Promise<void>
   removeComparable(comparableId: string): Promise<void>
   update(id: string, orgId: string, patch: Record<string, unknown>): Promise<void>
+  updateLandingId(id: string, orgId: string, landingId: string): Promise<void>
 }
