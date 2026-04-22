@@ -32,13 +32,13 @@ export interface ReportRepository {
   findLatestPublishedByProperty(propertyId: string): Promise<Report | null>
   save(report: Report): Promise<void>
   delete(id: string, orgId: string): Promise<void>
-  findMetrics(reportId: string): Promise<ReportMetricProps[]>
-  findContent(reportId: string): Promise<ReportContentProps[]>
-  replaceMetrics(reportId: string, metrics: NewReportMetric[]): Promise<void>
-  replaceContent(reportId: string, content: NewReportContent[]): Promise<void>
-  findReportRaw(id: string): Promise<Record<string, unknown> | null>
-  deleteCompetitorLinks(propertyId: string): Promise<void>
-  addCompetitorLink(link: { id: string; property_id: string; url: string; address: string | null; price: number | null; notes: string | null }): Promise<void>
-  findCompetitorLinks(propertyId: string): Promise<Record<string, unknown>[]>
-  findPhotosByReport(reportId: string): Promise<Array<{ id: string; photo_url: string; r2_key?: string }>>
+  findMetrics(reportId: string, orgId: string): Promise<ReportMetricProps[]>
+  findContent(reportId: string, orgId: string): Promise<ReportContentProps[]>
+  replaceMetrics(reportId: string, orgId: string, metrics: NewReportMetric[]): Promise<void>
+  replaceContent(reportId: string, orgId: string, content: NewReportContent[]): Promise<void>
+  findReportRaw(id: string, orgId: string): Promise<Record<string, unknown> | null>
+  deleteCompetitorLinks(propertyId: string, orgId: string): Promise<void>
+  addCompetitorLink(link: { id: string; property_id: string; url: string; address: string | null; price: number | null; notes: string | null }, orgId: string): Promise<void>
+  findCompetitorLinks(propertyId: string, orgId: string): Promise<Record<string, unknown>[]>
+  findPhotosByReport(reportId: string, orgId: string): Promise<Array<{ id: string; photo_url: string; r2_key?: string }>>
 }
