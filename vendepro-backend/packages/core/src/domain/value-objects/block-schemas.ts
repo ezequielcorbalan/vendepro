@@ -117,6 +117,11 @@ export const BlockSchema = z.discriminatedUnion('type', BLOCK_TYPES.map((t) =>
     id: z.string().min(1),
     type: z.literal(t),
     visible: z.boolean(),
+    // Marca opcional usada por las landings que actúan como plantilla de
+    // tasación: bloques `is_variable=true` cambian por tasación (ej: FODA,
+    // comparativos), los demás son fijos para todas las copias. No se valida
+    // en endpoints — el frontend escribe/lee este flag.
+    is_variable: z.boolean().optional(),
     data: BLOCK_DATA_SCHEMAS[t],
   })
 ) as any)
