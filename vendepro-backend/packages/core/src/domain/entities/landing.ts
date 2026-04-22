@@ -31,13 +31,14 @@ export interface LandingProps {
   published_at: string | null
   published_by: string | null
   last_review_note: string | null
+  template_type: string | null
   created_at: string
   updated_at: string
 }
 
 export type LandingCreateInput =
-  Omit<LandingProps, 'status' | 'brand_voice' | 'lead_rules' | 'seo_title' | 'seo_description' | 'og_image_url' | 'published_version_id' | 'published_at' | 'published_by' | 'last_review_note' | 'created_at' | 'updated_at'>
-  & Partial<Pick<LandingProps, 'status' | 'brand_voice' | 'lead_rules' | 'seo_title' | 'seo_description' | 'og_image_url' | 'created_at' | 'updated_at'>>
+  Omit<LandingProps, 'status' | 'brand_voice' | 'lead_rules' | 'seo_title' | 'seo_description' | 'og_image_url' | 'published_version_id' | 'published_at' | 'published_by' | 'last_review_note' | 'template_type' | 'created_at' | 'updated_at'>
+  & Partial<Pick<LandingProps, 'status' | 'brand_voice' | 'lead_rules' | 'seo_title' | 'seo_description' | 'og_image_url' | 'template_type' | 'created_at' | 'updated_at'>>
 
 const VALID_KINDS: LandingKind[] = ['lead_capture', 'property']
 
@@ -78,6 +79,7 @@ export class Landing {
       published_at: null,
       published_by: null,
       last_review_note: null,
+      template_type: input.template_type ?? null,
       created_at: input.created_at ?? now,
       updated_at: input.updated_at ?? now,
     })
@@ -106,6 +108,7 @@ export class Landing {
   get published_at() { return this.props.published_at }
   get published_by() { return this.props.published_by }
   get last_review_note() { return this.props.last_review_note }
+  get template_type() { return this.props.template_type }
   get created_at() { return this.props.created_at }
   get updated_at() { return this.props.updated_at }
 

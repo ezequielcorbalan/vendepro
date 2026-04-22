@@ -40,7 +40,7 @@ export default function MobileHeader({ profile }: { profile: Profile }) {
           >
             <Menu className="w-5 h-5 text-gray-700" aria-hidden="true" />
           </button>
-          <img src="/logo.png" alt="VendéPro" className="h-7" />
+          <img src="/brand/logo-horizontal.png" alt="VendéPro" className="h-7" />
         </div>
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full bg-[#ff007c]/20 flex items-center justify-center text-[#ff007c] font-semibold text-sm" aria-hidden="true">
@@ -63,7 +63,7 @@ export default function MobileHeader({ profile }: { profile: Profile }) {
           >
             <div className="p-5 border-b border-gray-100 flex items-center justify-between">
               <div>
-                <img src="/logo.png" alt="VendéPro" className="h-8" />
+                <img src="/brand/logo-horizontal.png" alt="VendéPro" className="h-8" />
                 <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
                   <FileBarChart className="w-3 h-3" aria-hidden="true" /> CRM Inmobiliario
                 </p>

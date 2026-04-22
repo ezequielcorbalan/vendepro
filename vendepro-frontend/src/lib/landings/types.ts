@@ -103,6 +103,12 @@ export type Block<T extends BlockType = BlockType> = {
   type: T
   visible: boolean
   data: BlockDataMap[T]
+  /**
+   * Si true, este bloque se podrá editar al crear cada tasación
+   * (cuando la landing se usa como plantilla de tasación). Si false/undefined,
+   * el contenido es fijo y se hereda de la plantilla.
+   */
+  is_variable?: boolean
 }
 
 export type LandingKind = 'lead_capture' | 'property'
@@ -114,6 +120,8 @@ export interface LeadRules {
   campaign?: string
   notify_channels?: Array<'email' | 'whatsapp'>
 }
+
+export type LandingTemplateType = 'tasacion' | null
 
 export interface Landing {
   id: string
@@ -135,6 +143,11 @@ export interface Landing {
   published_at: string | null
   published_by: string | null
   last_review_note: string | null
+  /**
+   * Si la landing es plantilla de tasación, se setea a 'tasacion'.
+   * Backend lo agrega más adelante; mientras tanto puede venir undefined.
+   */
+  template_type?: 'tasacion' | null
   created_at: string
   updated_at: string
 }

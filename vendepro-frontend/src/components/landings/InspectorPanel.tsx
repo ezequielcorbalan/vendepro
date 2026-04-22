@@ -6,6 +6,7 @@ import ImageUpload from './ImageUpload'
 interface Props {
   block: Block
   onChange: (patch: any) => void
+  onBlockChange?: (patch: Partial<Pick<Block, 'is_variable' | 'visible'>>) => void
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -25,13 +26,31 @@ function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return <textarea {...props} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#ff007c] min-h-[60px] resize-y" />
 }
 
-export default function InspectorPanel({ block, onChange }: Props) {
+export default function InspectorPanel({ block, onChange, onBlockChange }: Props) {
+  const isVariable = block.is_variable === true
   return (
     <div className="p-4 space-y-4">
       <div>
         <p className="text-xs uppercase tracking-wider font-semibold text-[#ff007c]">Block · {block.type}</p>
         <p className="text-sm text-gray-900 font-medium">{BLOCK_LABELS[block.type]}</p>
       </div>
+
+      {onBlockChange && (
+        <label className="flex items-start gap-2.5 p-3 rounded-lg border border-gray-200 bg-gray-50 cursor-pointer hover:border-[#ff007c]/40 transition-colors">
+          <input
+            type="checkbox"
+            className="mt-0.5 w-4 h-4 accent-[#ff007c] cursor-pointer"
+            checked={isVariable}
+            onChange={(e) => onBlockChange({ is_variable: e.target.checked })}
+          />
+          <span className="flex-1">
+            <span className="block text-sm font-medium text-gray-900">Variable por tasación</span>
+            <span className="block text-xs text-gray-500 mt-0.5">
+              Este bloque se podrá editar al crear cada tasación. Si está desmarcado, el contenido es fijo y se hereda de esta plantilla.
+            </span>
+          </span>
+        </label>
+      )}
 
       {block.type === 'hero' && <HeroFields data={block.data as HeroData} onChange={onChange} />}
       {block.type === 'hero-split' && <HeroSplitFields data={block.data as HeroSplitData} onChange={onChange} />}

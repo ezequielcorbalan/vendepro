@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import PublicAppraisalShell from '@/components/tasaciones/PublicAppraisalShell'
+import GtmScript from '@/components/marketing/GtmScript'
 
 const API_PUBLIC = process.env.NEXT_PUBLIC_API_PUBLIC_URL ?? 'http://localhost:8708'
 
@@ -62,18 +63,24 @@ export default async function PublicTasacionPage({
   }
 
   return (
-    <PublicAppraisalShell
-      data={{
-        appraisal: {
-          ...appraisal,
-          proposal,
-          market_situation,
-          work_conditions,
-          video_links,
-        },
-        comparables: data.comparables || appraisal.comparables || [],
-        branding,
-      }}
-    />
+    <>
+      <GtmScript
+        containerId={org.gtm_container_id ?? data.gtm_container_id ?? null}
+        stapeEndpoint={org.stape_endpoint ?? data.stape_endpoint ?? null}
+      />
+      <PublicAppraisalShell
+        data={{
+          appraisal: {
+            ...appraisal,
+            proposal,
+            market_situation,
+            work_conditions,
+            video_links,
+          },
+          comparables: data.comparables || appraisal.comparables || [],
+          branding,
+        }}
+      />
+    </>
   )
 }

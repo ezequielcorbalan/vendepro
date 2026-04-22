@@ -116,6 +116,9 @@ export * from './use-cases/landings/index'
 // Property Visit Forms (Ficha de Visita)
 export * from './use-cases/visit-forms/index'
 
+// Marketing (Meta Conversion API)
+export * from './use-cases/marketing/index'
+
 // Public
 export * from './use-cases/public/get-public-report'
 export * from './use-cases/public/get-public-appraisal'

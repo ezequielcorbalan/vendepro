@@ -8,6 +8,7 @@ import StatusBadge from './StatusBadge'
 export default function LandingCard({ landing }: { landing: Landing }) {
   const publicUrl = publicLandingUrl(landing.full_slug)
   const kindLabel = landing.kind === 'lead_capture' ? 'Captación' : 'Propiedad'
+  const isTasacionTemplate = landing.template_type === 'tasacion'
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
@@ -23,8 +24,11 @@ export default function LandingCard({ landing }: { landing: Landing }) {
             <StatusBadge status={landing.status} />
           </div>
           <p className="text-xs text-gray-500 truncate">{publicLandingHostPath(landing.full_slug)}</p>
-          <div className="flex items-center gap-2 text-xs text-gray-500">
+          <div className="flex items-center gap-2 text-xs text-gray-500 flex-wrap">
             <span className="px-2 py-0.5 rounded-md bg-gray-100">{kindLabel}</span>
+            {isTasacionTemplate && (
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-gradient-to-br from-[#ff007c] to-[#ff8017] text-white">PLANTILLA TASACIÓN</span>
+            )}
             <span>{new Date(landing.updated_at).toLocaleDateString('es-AR')}</span>
           </div>
         </div>

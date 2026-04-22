@@ -90,7 +90,12 @@ function SortableBlockRow({ block, selected, onSelect, onRemove, onToggleVisibil
       <button {...attributes} {...listeners} className="text-gray-400 cursor-grab active:cursor-grabbing" aria-label="Reordenar" onClick={e => e.stopPropagation()}>
         <GripVertical className="w-3.5 h-3.5" />
       </button>
-      <span className={`flex-1 truncate ${block.visible ? 'text-gray-800' : 'text-gray-400'}`}>{BLOCK_LABELS[block.type]}</span>
+      <span className={`flex-1 truncate ${block.visible ? 'text-gray-800' : 'text-gray-400'}`}>
+        {BLOCK_LABELS[block.type]}
+        {block.is_variable && (
+          <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded bg-gradient-to-br from-[#ff007c] to-[#ff8017] text-white" title="Variable por tasación">VAR</span>
+        )}
+      </span>
       {isRequired && <span className="text-[10px] text-[#ff007c]" title="Requerido">◆</span>}
       <button onClick={(e) => { e.stopPropagation(); onToggleVisibility() }} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-700" title={block.visible ? 'Ocultar' : 'Mostrar'}>
         {block.visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}

@@ -1,11 +1,21 @@
 import { Hono } from 'hono'
-import { corsMiddleware, errorHandler, createAuthMiddleware, D1LeadRepository, D1ContactRepository, D1CalendarRepository, D1ActivityRepository, D1TagRepository, D1StageHistoryRepository, D1OrganizationRepository, JwtAuthService, CryptoIdGenerator } from '@vendepro/infrastructure'
+import {
+  corsMiddleware, errorHandler, createAuthMiddleware,
+  D1LeadRepository, D1ContactRepository, D1CalendarRepository, D1ActivityRepository,
+  D1TagRepository, D1StageHistoryRepository, D1OrganizationRepository,
+  D1MetaIntegrationRepository, D1StageEventMappingRepository, D1MetaEventLogRepository,
+  JwtAuthService, CryptoIdGenerator,
+  MetaConversionAPIHttp, encrypt, decrypt,
+} from '@vendepro/infrastructure'
 import {
   GetLeadsUseCase, UpdateLeadUseCase, DeleteLeadUseCase, AdvanceLeadStageUseCase,
   GetContactsUseCase, CreateContactUseCase, DeleteContactUseCase,
   GetCalendarEventsUseCase, CreateCalendarEventUseCase, ToggleEventCompleteUseCase, RescheduleEventUseCase,
   CreateLeadWithContactUseCase, GetContactDetailUseCase, CreateTagUseCase,
   GenerateOrgApiKeyUseCase, GetOrgApiKeyUseCase,
+  GetMetaIntegrationUseCase, SaveMetaIntegrationUseCase,
+  ListStageMappingsUseCase, SaveStageMappingUseCase, DeleteStageMappingUseCase,
+  SendMetaConversionEventUseCase, ListMetaEventLogUseCase,
 } from '@vendepro/core'
 import {
   CreateLandingFromTemplateUseCase, UpdateLandingBlocksUseCase, AddBlockUseCase,
@@ -78,9 +88,115 @@ app.post('/leads/stage', async (c) => {
   const repo = new D1LeadRepository(c.env.DB)
   const calRepo = new D1CalendarRepository(c.env.DB)
   const historyRepo = new D1StageHistoryRepository(c.env.DB)
-  const useCase = new AdvanceLeadStageUseCase(repo, calRepo, historyRepo, new CryptoIdGenerator())
+  const idGen = new CryptoIdGenerator()
+  const metaSender = buildMetaSender(c.env, idGen)
+  const useCase = new AdvanceLeadStageUseCase(repo, calRepo, historyRepo, idGen, metaSender)
   const result = await useCase.execute({ leadId: body.id, orgId: c.get('orgId'), newStage: body.stage, changedBy: c.get('userId'), notes: body.notes })
   return c.json(result)
+})
+
+// ── MARKETING (Meta Conversion API) ────────────────────────────
+function buildMetaSender(env: Env, idGen: CryptoIdGenerator): SendMetaConversionEventUseCase {
+  return new SendMetaConversionEventUseCase(
+    new D1MetaIntegrationRepository(env.DB),
+    new D1StageEventMappingRepository(env.DB),
+    new D1MetaEventLogRepository(env.DB),
+    new D1LeadRepository(env.DB),
+    new MetaConversionAPIHttp(),
+    idGen,
+    (cipher: string) => decrypt(cipher, env.JWT_SECRET),
+  )
+}
+
+function requireAdmin(c: any) {
+  const role = c.get('userRole') as string
+  if (role !== 'admin' && role !== 'owner') {
+    return c.json({ error: 'Sin permisos (sólo admin/owner)' }, 403)
+  }
+  return null
+}
+
+app.get('/marketing/integration', async (c) => {
+  const repo = new D1MetaIntegrationRepository(c.env.DB)
+  const useCase = new GetMetaIntegrationUseCase(repo)
+  const result = await useCase.execute(c.get('orgId'))
+  return c.json(result)
+})
+
+app.put('/marketing/integration', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const body = (await c.req.json()) as any
+  const repo = new D1MetaIntegrationRepository(c.env.DB)
+  const useCase = new SaveMetaIntegrationUseCase(repo, (plain) => encrypt(plain, c.env.JWT_SECRET))
+  await useCase.execute({
+    orgId: c.get('orgId'),
+    pixel_id: body.pixel_id ?? null,
+    access_token: body.access_token,
+    stape_endpoint: body.stape_endpoint ?? null,
+    gtm_container_id: body.gtm_container_id ?? null,
+    test_event_code: body.test_event_code ?? null,
+    enabled: typeof body.enabled === 'boolean' ? body.enabled : undefined,
+  })
+  return c.json({ success: true })
+})
+
+app.get('/marketing/mappings', async (c) => {
+  const repo = new D1StageEventMappingRepository(c.env.DB)
+  const useCase = new ListStageMappingsUseCase(repo)
+  const list = await useCase.execute(c.get('orgId'))
+  return c.json(list.map(m => m.toObject()))
+})
+
+app.post('/marketing/mappings', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const body = (await c.req.json()) as any
+  const repo = new D1StageEventMappingRepository(c.env.DB)
+  const useCase = new SaveStageMappingUseCase(repo, new CryptoIdGenerator())
+  const result = await useCase.execute({
+    orgId: c.get('orgId'),
+    stage_key: body.stage_key,
+    meta_event_name: body.meta_event_name,
+    enabled: body.enabled,
+  })
+  return c.json(result, 201)
+})
+
+app.delete('/marketing/mappings/:id', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const repo = new D1StageEventMappingRepository(c.env.DB)
+  const useCase = new DeleteStageMappingUseCase(repo)
+  await useCase.execute(c.req.param('id'), c.get('orgId'))
+  return c.json({ success: true })
+})
+
+app.post('/marketing/test-event', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const body = (await c.req.json().catch(() => ({}))) as any
+  const stageKey = body.stage_key as string
+  if (!stageKey) return c.json({ error: 'stage_key es requerido' }, 400)
+  const sender = buildMetaSender(c.env, new CryptoIdGenerator())
+  const result = await sender.execute({
+    orgId: c.get('orgId'),
+    leadId: `test-${Date.now()}`,
+    stageKey,
+    leadDataOverride: {
+      full_name: 'Test Lead',
+      email: 'test@vendepro.test',
+      phone: '+5491100000000',
+      estimated_value: 100000,
+    },
+    actionSource: 'system_generated',
+    testEventCodeOverride: body.test_event_code ?? null,
+  })
+  return c.json(result)
+})
+
+app.get('/marketing/event-log', async (c) => {
+  const limit = parseInt(c.req.query('limit') ?? '50', 10)
+  const repo = new D1MetaEventLogRepository(c.env.DB)
+  const useCase = new ListMetaEventLogUseCase(repo)
+  const list = await useCase.execute(c.get('orgId'), Number.isFinite(limit) ? limit : 50)
+  return c.json(list.map(l => l.toObject()))
 })
 
 // ── CONTACTS ───────────────────────────────────────────────────

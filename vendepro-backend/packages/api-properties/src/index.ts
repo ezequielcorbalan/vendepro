@@ -7,6 +7,7 @@ import { registerPrefactibilidadRoutes } from './routes/prefactibilidades'
 import { registerFichaRoutes } from './routes/fichas'
 import { registerReportRoutes } from './routes/reports'
 import { registerVisitFormRoutes } from './routes/visit-forms'
+import { registerLandingTemplateRoutes } from './routes/landings'
 
 type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket; R2_PUBLIC_URL: string }
 type AuthVars = { Variables: { userId: string; userRole: string; orgId: string } }
@@ -29,5 +30,6 @@ registerPrefactibilidadRoutes(app)
 registerFichaRoutes(app)
 registerReportRoutes(app)
 registerVisitFormRoutes(app)
+registerLandingTemplateRoutes(app)
 
 export default app

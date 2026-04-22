@@ -775,22 +775,26 @@ export default function EditarTasacionPage() {
                 </>
               ) : (
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs text-gray-600">Aún no tiene link público. Generá uno a partir de la dirección.</p>
+                  <p className="text-xs text-gray-600">Aún no está publicada. Al publicar se genera un link único.</p>
                   <button
                     type="button"
-                    onClick={() => {
-                      const base = (address || 'tasacion')
-                        .toLowerCase()
-                        .normalize('NFD').replace(/[̀-ͯ]/g, '')
-                        .replace(/[^a-z0-9]+/g, '-')
-                        .replace(/^-+|-+$/g, '')
-                      const suffix = Math.random().toString(36).slice(2, 6)
-                      setPublicSlug(`${base}-${suffix}`)
-                      toast('Slug generado. Guardá la tasación para publicarlo.')
+                    onClick={async () => {
+                      try {
+                        const res = await apiFetch('properties', `/appraisals/publish?id=${id}`, { method: 'POST' })
+                        const data = (await res.json()) as any
+                        if (data?.public_slug) {
+                          setPublicSlug(data.public_slug)
+                          toast('Tasación publicada')
+                        } else {
+                          toast(data?.error || 'No se pudo publicar', 'error')
+                        }
+                      } catch {
+                        toast('Error de conexión', 'error')
+                      }
                     }}
-                    className="bg-white border border-[#ff007c]/30 text-[#ff007c] px-3 py-2 rounded-lg text-xs font-medium hover:bg-[#ff007c]/5 whitespace-nowrap"
+                    className="bg-gradient-to-br from-[#ff007c] to-[#ff8017] text-white px-3 py-2 rounded-lg text-xs font-medium hover:opacity-90 whitespace-nowrap"
                   >
-                    Generar slug
+                    Publicar
                   </button>
                 </div>
               )}
