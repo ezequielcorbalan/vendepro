@@ -7,6 +7,9 @@ import { ArrowLeft, Building2, Loader2, Phone, Mail, User, MapPin, DollarSign, C
 import { apiFetch } from '@/lib/api'
 import { PhotoGallery } from '@/components/ui/PhotoGallery'
 import { VisitFormsSection } from '@/components/properties/VisitFormsSection'
+import AuthorizationWidget from '@/components/properties/AuthorizationWidget'
+import PriceHistoryWidget from '@/components/properties/PriceHistoryWidget'
+import DocChecklistWidget from '@/components/properties/DocChecklistWidget'
 
 const stageLabel: Record<string, string> = {
   captada: 'Captada',
@@ -80,11 +83,17 @@ export default function PropiedadDetailPage() {
       </Link>
 
       {/* Header */}
-      <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
+      <div className="bg-white rounded-2xl shadow-sm p-6 mb-6 relative overflow-hidden border border-gray-200">
+        <img
+          src="/brand/GV-27.png"
+          alt=""
+          aria-hidden="true"
+          className="absolute -top-6 -right-6 w-40 h-40 opacity-10 pointer-events-none"
+        />
+        <div className="relative flex items-start justify-between gap-4 flex-wrap">
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-[#ff007c]/10 flex items-center justify-center flex-shrink-0">
-              <Building2 className="w-6 h-6 text-[#ff007c]" />
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#ff007c] to-[#ff8017] flex items-center justify-center flex-shrink-0 shadow-sm">
+              <Building2 className="w-6 h-6 text-white" />
             </div>
             <div>
               <h1 className="text-xl font-semibold text-gray-800">{property.address}</h1>
@@ -113,6 +122,30 @@ export default function PropiedadDetailPage() {
             </Link>
           </div>
         </div>
+      </div>
+
+      {/* Widgets operativos: autorización + precio + docs */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <AuthorizationWidget
+          propertyId={id}
+          authStartDate={property.auth_start_date || null}
+          authDurationDays={property.auth_duration_days || null}
+          onUpdate={v => setProperty({ ...property, ...v })}
+        />
+        <PriceHistoryWidget
+          propertyId={id}
+          currentPrice={property.asking_price}
+          currency={property.currency || 'USD'}
+          onPriceChanged={newPrice => setProperty({ ...property, asking_price: newPrice })}
+        />
+      </div>
+
+      <div className="mb-6">
+        <DocChecklistWidget
+          propertyId={id}
+          docStatusJson={property.doc_status_json || null}
+          capturedAt={property.created_at || null}
+        />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
