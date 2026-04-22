@@ -8,7 +8,7 @@ import { slugifyBase, isValidSlugBase, publicLandingHostPath } from '@/lib/landi
 
 type Step = 'template' | 'name'
 
-export default function NewLandingModal({ onClose }: { onClose: () => void }) {
+export default function NewLandingModal({ onClose, asTasacionTemplate = false }: { onClose: () => void; asTasacionTemplate?: boolean }) {
   const router = useRouter()
   const [step, setStep] = useState<Step>('template')
   const [templates, setTemplates] = useState<LandingTemplate[]>([])
@@ -34,7 +34,11 @@ export default function NewLandingModal({ onClose }: { onClose: () => void }) {
     }
     setCreating(true); setError(null)
     try {
-      const r = await landingsApi.create({ templateId: selectedTemplate.id, slugBase: normalized })
+      const r = await landingsApi.create({
+        templateId: selectedTemplate.id,
+        slugBase: normalized,
+        ...(asTasacionTemplate ? { templateType: 'tasacion' as const } : {}),
+      })
       router.push(`/landings/${r.landingId}`)
     } catch (e: any) {
       setError(e.message ?? 'No se pudo crear la landing.')
@@ -47,7 +51,16 @@ export default function NewLandingModal({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-xl flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Nueva landing</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-semibold text-gray-900">
+              {asTasacionTemplate ? 'Nueva plantilla de tasación' : 'Nueva landing'}
+            </h2>
+            {asTasacionTemplate && (
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-gradient-to-br from-[#ff007c] to-[#ff8017] text-white">
+                PLANTILLA TASACIÓN
+              </span>
+            )}
+          </div>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
         </div>
 

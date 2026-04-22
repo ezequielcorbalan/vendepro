@@ -24,7 +24,7 @@ export const landingsApi = {
     return json<{ landing: Landing }>(res)
   },
 
-  async create(body: { templateId: string; slugBase: string; brandVoice?: string; leadRules?: LeadRules; seoTitle?: string; seoDescription?: string; ogImageUrl?: string }) {
+  async create(body: { templateId: string; slugBase: string; brandVoice?: string; leadRules?: LeadRules; seoTitle?: string; seoDescription?: string; ogImageUrl?: string; templateType?: 'tasacion' }) {
     const res = await apiFetch('crm', `/landings`, { method: 'POST', body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' } })
     return json<{ landingId: string; fullSlug: string }>(res)
   },

@@ -17,6 +17,7 @@ export default function LandingsPage() {
   const [typeTab, setTypeTab] = useState<TypeTab>('all')
   const [search, setSearch] = useState('')
   const [showCreate, setShowCreate] = useState(false)
+  const [createAsTasacionTemplate, setCreateAsTasacionTemplate] = useState(false)
   const user = typeof window !== 'undefined' ? getCurrentUser() : null
   const isAdmin = user?.role === 'admin' || user?.role === 'owner'
 
@@ -44,17 +45,25 @@ export default function LandingsPage() {
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Landings</h1>
           <p className="text-sm text-gray-500 mt-1">Creá landings con IA a partir de templates curados.</p>
         </div>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="inline-flex items-center gap-2 bg-[#ff007c] hover:bg-[#e60070] text-white font-semibold px-5 py-2.5 rounded-full"
-        >
-          <Plus className="w-4 h-4" /> Nueva landing
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => { setCreateAsTasacionTemplate(true); setShowCreate(true) }}
+            className="inline-flex items-center gap-2 bg-white border border-[#ff007c] text-[#ff007c] hover:bg-[#ff007c]/5 font-semibold px-4 py-2.5 rounded-full text-sm"
+          >
+            <Plus className="w-4 h-4" /> Nueva plantilla de tasación
+          </button>
+          <button
+            onClick={() => { setCreateAsTasacionTemplate(false); setShowCreate(true) }}
+            className="inline-flex items-center gap-2 bg-[#ff007c] hover:bg-[#e60070] text-white font-semibold px-5 py-2.5 rounded-full"
+          >
+            <Plus className="w-4 h-4" /> Nueva landing
+          </button>
+        </div>
       </div>
 
       <div className="flex items-center gap-4 border-b border-gray-200 mb-4">
@@ -118,7 +127,12 @@ export default function LandingsPage() {
         </div>
       )}
 
-      {showCreate && <NewLandingModal onClose={() => setShowCreate(false)} />}
+      {showCreate && (
+        <NewLandingModal
+          onClose={() => { setShowCreate(false); setCreateAsTasacionTemplate(false) }}
+          asTasacionTemplate={createAsTasacionTemplate}
+        />
+      )}
     </div>
   )
 }
