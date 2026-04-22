@@ -5,6 +5,7 @@ import type { IdGenerator } from '../../ports/id-generator'
 import { NotFoundError } from '../../../domain/errors/not-found'
 import { CalendarEvent } from '../../../domain/entities/calendar-event'
 import type { LeadStageValue } from '../../../domain/value-objects/lead-stage'
+import type { SendMetaConversionEventUseCase } from '../marketing/send-meta-conversion-event'
 
 export interface AdvanceLeadStageInput {
   leadId: string
@@ -18,12 +19,18 @@ export interface AdvanceLeadStageOutput {
   autoFollowup: object | null
 }
 
+/**
+ * `metaSender` es opcional para no romper consumidores existentes. Si se
+ * inyecta, se gatilla el evento de Meta CAPI tras persistir el cambio de
+ * etapa, dentro de un try/catch para nunca bloquear la respuesta.
+ */
 export class AdvanceLeadStageUseCase {
   constructor(
     private readonly leadRepo: LeadRepository,
     private readonly calendarRepo: CalendarRepository,
     private readonly stageHistoryRepo: StageHistoryRepository,
     private readonly idGen: IdGenerator,
+    private readonly metaSender?: SendMetaConversionEventUseCase,
   ) {}
 
   async execute(input: AdvanceLeadStageInput): Promise<AdvanceLeadStageOutput> {
@@ -69,6 +76,21 @@ export class AdvanceLeadStageUseCase {
       })
       await this.calendarRepo.save(event)
       autoFollowup = event.toObject()
+    }
+
+    // Hook Meta Conversion API — fire-and-forget, no debe bloquear ni romper.
+    if (this.metaSender) {
+      try {
+        await this.metaSender.execute({
+          orgId: input.orgId,
+          leadId: lead.id,
+          stageKey: input.newStage,
+        })
+      } catch (err) {
+        // No-op: errores de Meta CAPI ya quedan en meta_event_log; no propagar.
+        // eslint-disable-next-line no-console
+        console.error('[meta-capi] sender failed (swallowed):', (err as Error)?.message ?? err)
+      }
     }
 
     return { autoFollowup }
