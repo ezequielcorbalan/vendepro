@@ -64,7 +64,42 @@ export function registerAppraisalRoutes(app: Hono<{ Bindings: Env } & AuthVars>)
       if (e.statusCode === 404) return c.json({ error: 'Not found' }, 404)
       throw e
     }
-    return c.json({ success: true })
+    const refreshed = await repo.findById(id ?? '', orgId)
+    return c.json({ success: true, public_slug: refreshed?.public_slug ?? null })
+  })
+
+  // Publish / ensure public_slug. Auto-generates a slug from the address if empty.
+  app.post('/appraisals/publish', async (c) => {
+    const { id } = c.req.query()
+    const repo = new D1AppraisalRepository(c.env.DB)
+    const orgId = c.get('orgId')
+    const existing = await repo.findById(id ?? '', orgId)
+    if (!existing) return c.json({ error: 'Not found' }, 404)
+    if (existing.public_slug) {
+      return c.json({ success: true, public_slug: existing.public_slug })
+    }
+    const slugify = (raw: string) => raw
+      .toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 60) || 'tasacion'
+    let base = slugify(existing.property_address || 'tasacion')
+    let slug = base
+    // Ensure uniqueness: try a few suffixes; DB has a unique index so we still
+    // check by findBySlug.
+    let attempt = 0
+    while (attempt < 5) {
+      const hit = await repo.findBySlug(slug)
+      if (!hit || hit.id === existing.id) break
+      attempt += 1
+      slug = `${base}-${attempt + 1}`
+    }
+    if (attempt >= 5) {
+      slug = `${base}-${existing.id.slice(0, 6)}`
+    }
+    await repo.update(existing.id, orgId, { public_slug: slug })
+    return c.json({ success: true, public_slug: slug })
   })
 
   app.delete('/appraisals', async (c) => {

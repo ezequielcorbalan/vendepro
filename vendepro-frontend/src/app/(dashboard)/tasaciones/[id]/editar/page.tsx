@@ -4,11 +4,20 @@ import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import {
   ArrowLeft, ArrowRight, Home, Shield, Search, DollarSign, Eye,
-  Plus, Trash2, Loader2, MapPin, CheckCircle, Clipboard
+  Plus, Trash2, Loader2, MapPin, CheckCircle, Clipboard,
+  Megaphone, TrendingUp, FileCheck, Copy, Link2
 } from 'lucide-react'
 import Link from 'next/link'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
+import ProposalStep from '@/components/tasaciones/steps/ProposalStep'
+import MarketSituationStep from '@/components/tasaciones/steps/MarketSituationStep'
+import WorkConditionsStep from '@/components/tasaciones/steps/WorkConditionsStep'
+import type {
+  AppraisalProposal,
+  AppraisalMarketSituation,
+  AppraisalWorkConditions,
+} from '@/components/tasaciones/wizardTypes'
 
 interface Comparable {
   zonaprop_url: string
@@ -29,10 +38,13 @@ const emptyComparable = (): Comparable => ({
 })
 
 const steps = [
+  { label: 'Propuesta', icon: Megaphone },
   { label: 'Propiedad', icon: Home },
   { label: 'FODA', icon: Shield },
   { label: 'Competencia', icon: Search },
+  { label: 'Mercado', icon: TrendingUp },
   { label: 'Tasación', icon: DollarSign },
+  { label: 'Condiciones', icon: FileCheck },
   { label: 'Guardar', icon: Eye },
 ]
 
@@ -75,6 +87,12 @@ export default function EditarTasacionPage() {
   const [zoneAvgM2, setZoneAvgM2] = useState('')
   const [zoneAvgUsdM2, setZoneAvgUsdM2] = useState('')
 
+  const [proposal, setProposal] = useState<AppraisalProposal>({ show_agent_signature: true })
+  const [marketSituation, setMarketSituation] = useState<AppraisalMarketSituation>({})
+  const [workConditions, setWorkConditions] = useState<AppraisalWorkConditions>({})
+  const [videoLinks, setVideoLinks] = useState<string[]>([])
+  const [publicSlug, setPublicSlug] = useState<string>('')
+
   useEffect(() => {
     async function load() {
       try {
@@ -102,6 +120,17 @@ export default function EditarTasacionPage() {
         setZoneAvgPrice(data.zone_avg_price?.toString() || '')
         setZoneAvgM2(data.zone_avg_m2?.toString() || '')
         setZoneAvgUsdM2(data.zone_avg_usd_m2?.toString() || '')
+
+        const parseJson = <T,>(raw: unknown, fallback: T): T => {
+          if (!raw) return fallback
+          if (typeof raw === 'object') return raw as T
+          try { return JSON.parse(raw as string) as T } catch { return fallback }
+        }
+        setProposal(parseJson<AppraisalProposal>(data.proposal_json, { show_agent_signature: true }))
+        setMarketSituation(parseJson<AppraisalMarketSituation>(data.market_situation_json, {}))
+        setWorkConditions(parseJson<AppraisalWorkConditions>(data.work_conditions_json, {}))
+        setVideoLinks(parseJson<string[]>(data.video_links_json, []))
+        setPublicSlug(data.public_slug || '')
 
         if (data.comparables?.length > 0) {
           setComparables(data.comparables.map((c: any) => ({
@@ -223,6 +252,11 @@ export default function EditarTasacionPage() {
           zone_avg_price: parseFloat(zoneAvgPrice) || null,
           zone_avg_m2: parseFloat(zoneAvgM2) || null,
           zone_avg_usd_m2: parseFloat(zoneAvgUsdM2) || null,
+          proposal_json: JSON.stringify(proposal),
+          market_situation_json: JSON.stringify(marketSituation),
+          work_conditions_json: JSON.stringify(workConditions),
+          video_links_json: JSON.stringify(videoLinks.filter(u => u.trim() !== '')),
+          public_slug: publicSlug || null,
           comparables: comparables.filter(c => c.zonaprop_url || c.address).map((c, i) => ({
             ...c,
             total_area: parseFloat(c.total_area) || null,
@@ -290,8 +324,13 @@ export default function EditarTasacionPage() {
 
       <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
 
-        {/* STEP 0: Propiedad */}
+        {/* STEP 0: Propuesta */}
         {step === 0 && (
+          <ProposalStep value={proposal} onChange={setProposal} />
+        )}
+
+        {/* STEP 1: Propiedad */}
+        {step === 1 && (
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">Datos de la propiedad</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -379,11 +418,47 @@ export default function EditarTasacionPage() {
                 </div>
               </div>
             </div>
+
+            <div className="border-t border-gray-100 pt-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold text-gray-700">Videos / Links</h3>
+                <button
+                  type="button"
+                  onClick={() => setVideoLinks([...videoLinks, ''])}
+                  className="flex items-center gap-1 text-xs text-[#ff007c] font-medium hover:underline"
+                >
+                  <Plus className="w-3 h-3" /> Agregar link
+                </button>
+              </div>
+              {videoLinks.length === 0 && (
+                <p className="text-xs text-gray-400">Sin links todavía. YouTube, Vimeo o enlaces externos.</p>
+              )}
+              <div className="space-y-2">
+                {videoLinks.map((url, i) => (
+                  <div key={i} className="flex gap-2">
+                    <input
+                      className={inputClass}
+                      value={url}
+                      onChange={e => { const next = [...videoLinks]; next[i] = e.target.value; setVideoLinks(next) }}
+                      placeholder="https://..."
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setVideoLinks(videoLinks.filter((_, idx) => idx !== i))}
+                      className="text-red-400 hover:text-red-600 p-2"
+                      aria-label="Eliminar"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
-        {/* STEP 1: FODA */}
-        {step === 1 && (
+        {/* STEP 2: FODA */}
+        {step === 2 && (
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">Análisis FODA</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -411,8 +486,8 @@ export default function EditarTasacionPage() {
           </div>
         )}
 
-        {/* STEP 2: Competencia */}
-        {step === 2 && (
+        {/* STEP 3: Competencia */}
+        {step === 3 && (
           <div className="space-y-4">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-800">Competencia ZonaProp</h2>
@@ -514,8 +589,13 @@ export default function EditarTasacionPage() {
           </div>
         )}
 
-        {/* STEP 3: Tasación */}
-        {step === 3 && (
+        {/* STEP 4: Mercado */}
+        {step === 4 && (
+          <MarketSituationStep value={marketSituation} onChange={setMarketSituation} />
+        )}
+
+        {/* STEP 5: Tasación */}
+        {step === 5 && (
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">Tasación proyectada</h2>
             <div className="bg-gray-50 rounded-xl p-4 grid grid-cols-2 gap-4 text-center">
@@ -567,8 +647,13 @@ export default function EditarTasacionPage() {
           </div>
         )}
 
-        {/* STEP 4: Resumen */}
-        {step === 4 && (
+        {/* STEP 6: Condiciones */}
+        {step === 6 && (
+          <WorkConditionsStep value={workConditions} onChange={setWorkConditions} />
+        )}
+
+        {/* STEP 7: Resumen */}
+        {step === 7 && (
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">Resumen</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -592,6 +677,56 @@ export default function EditarTasacionPage() {
                   {expectedClose && <p>Cierre: <span className="font-semibold">USD {Number(expectedClose).toLocaleString('es-AR')}</span></p>}
                 </div>
               </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-[#ff007c]/5 to-[#ff8017]/5 border border-[#ff007c]/20 rounded-xl p-4">
+              <h3 className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                <Link2 className="w-4 h-4 text-[#ff007c]" />
+                Publicación de la tasación
+              </h3>
+              {publicSlug ? (
+                <>
+                  <p className="text-xs text-gray-500 mb-2">Link público (compartilo con el propietario):</p>
+                  <div className="flex gap-2">
+                    <input
+                      className={`${inputClass} text-xs`}
+                      readOnly
+                      value={`${typeof window !== 'undefined' ? window.location.origin : ''}/t/${publicSlug}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const url = `${window.location.origin}/t/${publicSlug}`
+                        navigator.clipboard.writeText(url)
+                        toast('Link copiado al portapapeles')
+                      }}
+                      className="flex items-center gap-1 bg-[#ff007c] text-white px-3 py-2 rounded-lg text-xs font-medium hover:opacity-90"
+                    >
+                      <Copy className="w-3.5 h-3.5" /> Copiar
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs text-gray-600">Aún no tiene link público. Generá uno a partir de la dirección.</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const base = (address || 'tasacion')
+                        .toLowerCase()
+                        .normalize('NFD').replace(/[̀-ͯ]/g, '')
+                        .replace(/[^a-z0-9]+/g, '-')
+                        .replace(/^-+|-+$/g, '')
+                      const suffix = Math.random().toString(36).slice(2, 6)
+                      setPublicSlug(`${base}-${suffix}`)
+                      toast('Slug generado. Guardá la tasación para publicarlo.')
+                    }}
+                    className="bg-white border border-[#ff007c]/30 text-[#ff007c] px-3 py-2 rounded-lg text-xs font-medium hover:bg-[#ff007c]/5 whitespace-nowrap"
+                  >
+                    Generar slug
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -9,7 +9,14 @@ export type { PropertyProps, PropertyType, Currency } from './property'
 export { Report } from './report'
 export type { ReportProps, ReportMetricProps, ReportContentProps, ReportPhotoProps, ReportStatus, MetricSource, ReportSection, PhotoType } from './report'
 export { Appraisal } from './appraisal'
-export type { AppraisalProps, AppraisalComparableProps, AppraisalStatus } from './appraisal'
+export type {
+  AppraisalProps,
+  AppraisalComparableProps,
+  AppraisalStatus,
+  AppraisalProposalBlock,
+  AppraisalMarketSituationBlock,
+  AppraisalWorkConditionsBlock,
+} from './appraisal'
 export { CalendarEvent } from './calendar-event'
 export type { CalendarEventProps } from './calendar-event'
 export { Reservation } from './reservation'
