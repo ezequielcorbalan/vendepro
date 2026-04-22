@@ -121,6 +121,8 @@ export interface LeadRules {
   notify_channels?: Array<'email' | 'whatsapp'>
 }
 
+export type LandingTemplateType = 'tasacion' | null
+
 export interface Landing {
   id: string
   org_id: string
@@ -141,6 +143,11 @@ export interface Landing {
   published_at: string | null
   published_by: string | null
   last_review_note: string | null
+  /**
+   * Si la landing es plantilla de tasación, se setea a 'tasacion'.
+   * Backend lo agrega más adelante; mientras tanto puede venir undefined.
+   */
+  template_type?: 'tasacion' | null
   created_at: string
   updated_at: string
 }

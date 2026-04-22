@@ -8,11 +8,13 @@ import NewLandingModal from '@/components/landings/NewLandingModal'
 import { getCurrentUser } from '@/lib/auth'
 
 type Tab = 'mine' | 'org' | 'pending_review'
+type TypeTab = 'all' | 'marketing' | 'tasacion'
 
 export default function LandingsPage() {
   const [landings, setLandings] = useState<Landing[]>([])
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<Tab>('mine')
+  const [typeTab, setTypeTab] = useState<TypeTab>('all')
   const [search, setSearch] = useState('')
   const [showCreate, setShowCreate] = useState(false)
   const user = typeof window !== 'undefined' ? getCurrentUser() : null
@@ -28,9 +30,17 @@ export default function LandingsPage() {
     return () => { alive = false }
   }, [tab])
 
-  const filtered = landings.filter(l =>
-    !search || l.full_slug.includes(search.toLowerCase()) || (l.seo_title ?? '').toLowerCase().includes(search.toLowerCase())
-  )
+  const filtered = landings.filter(l => {
+    if (typeTab === 'tasacion' && l.template_type !== 'tasacion') return false
+    if (typeTab === 'marketing' && l.template_type === 'tasacion') return false
+    if (search) {
+      const q = search.toLowerCase()
+      const inSlug = l.full_slug.includes(q)
+      const inTitle = (l.seo_title ?? '').toLowerCase().includes(q)
+      if (!inSlug && !inTitle) return false
+    }
+    return true
+  })
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto">
@@ -47,7 +57,7 @@ export default function LandingsPage() {
         </button>
       </div>
 
-      <div className="flex items-center gap-4 border-b border-gray-200 mb-6">
+      <div className="flex items-center gap-4 border-b border-gray-200 mb-4">
         <button onClick={() => setTab('mine')} className={`pb-3 px-1 text-sm font-medium ${tab === 'mine' ? 'border-b-2 border-[#ff007c] text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
           Mías
         </button>
@@ -61,6 +71,26 @@ export default function LandingsPage() {
             </button>
           </>
         )}
+      </div>
+
+      <div className="flex items-center gap-2 mb-6 flex-wrap">
+        {([
+          { id: 'all', label: 'Todas' },
+          { id: 'marketing', label: 'Marketing' },
+          { id: 'tasacion', label: 'Plantillas de tasación' },
+        ] as const).map(t => (
+          <button
+            key={t.id}
+            onClick={() => setTypeTab(t.id)}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${
+              typeTab === t.id
+                ? 'bg-[#ff007c] text-white border-[#ff007c]'
+                : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
       <div className="relative mb-5 max-w-sm">
