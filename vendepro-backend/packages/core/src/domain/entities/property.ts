@@ -31,6 +31,9 @@ export interface PropertyProps {
   status_id: number
   contact_id?: string | null
   lead_id?: string | null
+  auth_start_date?: string | null
+  auth_duration_days?: number | null
+  doc_status_json?: string | null
   created_at: string
   updated_at: string
   // Computed / Joined
@@ -87,6 +90,9 @@ export class Property {
   get updated_at() { return this.props.updated_at }
   get agent_name() { return this.props.agent_name }
   get report_count() { return this.props.report_count }
+  get auth_start_date() { return this.props.auth_start_date ?? null }
+  get auth_duration_days() { return this.props.auth_duration_days ?? null }
+  get doc_status_json() { return this.props.doc_status_json ?? null }
 
   // Domain methods
   updateStatus(newStatus: PropertyStatus): void {

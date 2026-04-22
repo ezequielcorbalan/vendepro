@@ -108,6 +108,46 @@ export function registerPropertyRoutes(app: Hono<{ Bindings: Env } & AuthVars>) 
     return c.json({ success: true })
   })
 
+  // ── PRICE HISTORY ────────────────────────────────────────────
+  app.get('/properties/:id/price-history', async (c) => {
+    const repo = new D1PropertyRepository(c.env.DB)
+    const items = await repo.findPriceHistory(c.req.param('id'), c.get('orgId'))
+    return c.json(items)
+  })
+
+  app.post('/properties/:id/price-change', async (c) => {
+    const propertyId = c.req.param('id')
+    const orgId = c.get('orgId')
+    const body = (await c.req.json()) as any
+    const newPrice = Number(body.price)
+    if (!Number.isFinite(newPrice) || newPrice <= 0) {
+      return c.json({ error: 'Precio inválido' }, 400)
+    }
+    const repo = new D1PropertyRepository(c.env.DB)
+    const existing = await repo.findById(propertyId, orgId)
+    if (!existing) return c.json({ error: 'Not found' }, 404)
+    const previous = existing.asking_price ?? null
+    const idGen = new CryptoIdGenerator()
+    await repo.addPriceHistory({
+      id: idGen.generate(),
+      property_id: propertyId,
+      org_id: orgId,
+      price_usd: newPrice,
+      previous_price_usd: previous,
+      reason: typeof body.reason === 'string' ? body.reason : null,
+      changed_by: c.get('userId'),
+      changed_at: new Date().toISOString(),
+    })
+    const useCase = new UpdatePropertyPriceUseCase(repo)
+    await useCase.execute({
+      propertyId,
+      orgId,
+      newPrice,
+      currency: (body.currency as 'USD' | 'ARS') || 'USD',
+    })
+    return c.json({ success: true })
+  })
+
   app.put('/properties/:id/status', async (c) => {
     const body = (await c.req.json()) as any
     const repo = new D1PropertyRepository(c.env.DB)

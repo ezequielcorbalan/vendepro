@@ -1,5 +1,5 @@
 import { Property } from '@vendepro/core'
-import type { PropertyRepository, PropertyFilters, PropertyProps, PropertyPhoto, OperationType, CommercialStage, PropertyStatusCatalog } from '@vendepro/core'
+import type { PropertyRepository, PropertyFilters, PropertyProps, PropertyPhoto, OperationType, CommercialStage, PropertyStatusCatalog, PropertyPriceHistoryEntry } from '@vendepro/core'
 
 export class D1PropertyRepository implements PropertyRepository {
   constructor(private readonly db: D1Database) {}
@@ -195,6 +195,9 @@ export class D1PropertyRepository implements PropertyRepository {
             operation_type = COALESCE(?, operation_type),
             operation_type_id = COALESCE(?, operation_type_id),
             status_id = COALESCE(?, status_id),
+            auth_start_date = COALESCE(?, auth_start_date),
+            auth_duration_days = COALESCE(?, auth_duration_days),
+            doc_status_json = COALESCE(?, doc_status_json),
             updated_at = datetime('now')
         WHERE id = ? AND org_id = ?
       `)
@@ -217,6 +220,9 @@ export class D1PropertyRepository implements PropertyRepository {
         patch.operation_type ?? null,
         patch.operation_type_id ?? null,
         patch.status_id ?? null,
+        patch.auth_start_date ?? null,
+        patch.auth_duration_days ?? null,
+        patch.doc_status_json ?? null,
         id,
         orgId,
       )
@@ -311,6 +317,42 @@ export class D1PropertyRepository implements PropertyRepository {
     return rows.map(r => ({ id: r.id, address: r.address }))
   }
 
+  async addPriceHistory(entry: PropertyPriceHistoryEntry): Promise<void> {
+    await this.db
+      .prepare(`
+        INSERT INTO property_price_history (id, property_id, org_id, price_usd, previous_price_usd, reason, changed_by, changed_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `)
+      .bind(
+        entry.id,
+        entry.property_id,
+        entry.org_id,
+        entry.price_usd,
+        entry.previous_price_usd ?? null,
+        entry.reason ?? null,
+        entry.changed_by ?? null,
+        entry.changed_at,
+      )
+      .run()
+  }
+
+  async findPriceHistory(propertyId: string, orgId: string): Promise<PropertyPriceHistoryEntry[]> {
+    const rows = (await this.db
+      .prepare('SELECT * FROM property_price_history WHERE property_id = ? AND org_id = ? ORDER BY changed_at DESC')
+      .bind(propertyId, orgId)
+      .all()).results as any[]
+    return rows.map(r => ({
+      id: r.id,
+      property_id: r.property_id,
+      org_id: r.org_id,
+      price_usd: Number(r.price_usd),
+      previous_price_usd: r.previous_price_usd != null ? Number(r.previous_price_usd) : null,
+      reason: r.reason ?? null,
+      changed_by: r.changed_by ?? null,
+      changed_at: r.changed_at,
+    }))
+  }
+
   async findByPublicSlug(slug: string): Promise<Property | null> {
     const row = await this.db
       .prepare(`SELECT p.*, u.full_name as agent_name FROM properties p LEFT JOIN users u ON p.agent_id = u.id WHERE p.public_slug = ?`)
@@ -345,6 +387,9 @@ export class D1PropertyRepository implements PropertyRepository {
       commercial_stage_id: row.commercial_stage_id ?? null,
       status_id: row.status_id ?? 1,
       lead_id: row.lead_id ?? null,
+      auth_start_date: row.auth_start_date ?? null,
+      auth_duration_days: row.auth_duration_days ?? null,
+      doc_status_json: row.doc_status_json ?? null,
       created_at: row.created_at, updated_at: row.updated_at,
     })
   }
