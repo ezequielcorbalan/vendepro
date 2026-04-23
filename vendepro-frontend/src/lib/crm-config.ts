@@ -163,6 +163,25 @@ export const OBJECTIVE_TEMPLATES = {
 
 export type ObjectiveTemplate = keyof typeof OBJECTIVE_TEMPLATES
 
+export const PERIOD_SCALE: Record<string, number> = {
+  weekly:    0.25,  // mensual ÷ 4
+  monthly:   1,
+  quarterly: 3,     // mensual × 3
+  yearly:    12,    // mensual × 12
+}
+
+export function scaleMetrics(
+  metrics: Record<string, number>,
+  period: string,
+): Record<string, number> {
+  const factor = PERIOD_SCALE[period] ?? 1
+  const result: Record<string, number> = {}
+  for (const [k, v] of Object.entries(metrics)) {
+    result[k] = Math.max(1, Math.round(v * factor))
+  }
+  return result
+}
+
 export const PERIOD_TYPES = {
   weekly:    { label: 'Semanal' },
   monthly:   { label: 'Mensual' },

@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Target, Plus, Trash2, Save, Users, ChevronDown, ChevronUp, Loader2, Zap, DollarSign } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
-import { OBJECTIVE_METRICS, OBJECTIVE_TEMPLATES, type ObjectiveMetric, type ObjectiveTemplate } from '@/lib/crm-config'
+import { OBJECTIVE_METRICS, OBJECTIVE_TEMPLATES, scaleMetrics, type ObjectiveMetric, type ObjectiveTemplate } from '@/lib/crm-config'
 import { apiFetch } from '@/lib/api'
 
 const METRIC_KEYS = Object.keys(OBJECTIVE_METRICS) as ObjectiveMetric[]
@@ -126,15 +126,17 @@ export default function ObjetivosConfigPage() {
 
   const periodRange = PERIOD_PRESETS[batchPeriod].getRange()
 
-  function applyTemplate(key: ObjectiveTemplate) {
+  function applyTemplate(key: ObjectiveTemplate, period?: string) {
     const tpl = OBJECTIVE_TEMPLATES[key]
+    const targetPeriod = period ?? batchPeriod
     setSelectedTemplate(key)
-    setBatchPeriod(tpl.period)
-    const newTargets: Record<string, number> = { ...batchTargets }
-    for (const [metric, value] of Object.entries(tpl.metrics)) {
-      newTargets[metric] = value
-    }
-    setBatchTargets(newTargets)
+    const scaled = scaleMetrics(tpl.metrics as Record<string, number>, targetPeriod)
+    setBatchTargets(prev => ({ ...prev, ...scaled }))
+  }
+
+  function handlePeriodChange(period: 'weekly' | 'monthly' | 'quarterly' | 'yearly') {
+    setBatchPeriod(period)
+    if (selectedTemplate) applyTemplate(selectedTemplate, period)
   }
 
   const facturacionMensual = useMemo(() => {
@@ -254,7 +256,7 @@ export default function ObjetivosConfigPage() {
               {(Object.entries(PERIOD_PRESETS) as [string, any][]).map(([k, v]) => (
                 <button
                   key={k}
-                  onClick={() => setBatchPeriod(k as any)}
+                  onClick={() => handlePeriodChange(k as any)}
                   className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${batchPeriod === k ? 'bg-white shadow text-gray-800' : 'text-gray-500'}`}
                 >
                   {v.label}

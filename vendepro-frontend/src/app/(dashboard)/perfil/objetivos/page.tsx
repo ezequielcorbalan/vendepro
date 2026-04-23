@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Target, Plus, Trash2, Loader2, Save, Zap, SlidersHorizontal, DollarSign, ChevronRight } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
-import { OBJECTIVE_METRICS, OBJECTIVE_TEMPLATES, PERIOD_TYPES, type ObjectiveMetric, type ObjectiveTemplate } from '@/lib/crm-config'
+import { OBJECTIVE_METRICS, OBJECTIVE_TEMPLATES, PERIOD_TYPES, scaleMetrics, type ObjectiveMetric, type ObjectiveTemplate } from '@/lib/crm-config'
 import { apiFetch } from '@/lib/api'
 
 type Mode = null | 'method' | 'custom'
@@ -42,6 +42,7 @@ export default function MisObjetivosPage() {
 
   // Método
   const [selectedTemplate, setSelectedTemplate] = useState<ObjectiveTemplate | null>(null)
+  const [methodPeriod, setMethodPeriod] = useState<string>('monthly')
   const [ticketPromedio, setTicketPromedio] = useState<number>(0)
   const [comisionPct, setComisionPct] = useState<number>(3)
 
@@ -57,9 +58,10 @@ export default function MisObjetivosPage() {
       .catch(() => setLoading(false))
   }, [])
 
-  const tplMetrics = selectedTemplate ? OBJECTIVE_TEMPLATES[selectedTemplate].metrics : null
-  const tplPeriod = selectedTemplate ? OBJECTIVE_TEMPLATES[selectedTemplate].period : 'monthly'
-  const cierresCount = tplMetrics ? (tplMetrics as any)['cierres'] || 0 : 0
+  const tplMetrics = selectedTemplate
+    ? scaleMetrics(OBJECTIVE_TEMPLATES[selectedTemplate].metrics as Record<string, number>, methodPeriod)
+    : null
+  const cierresCount = tplMetrics ? tplMetrics['cierres'] || 0 : 0
   const facturacionMensual = useMemo(() => {
     if (!cierresCount || !ticketPromedio || !comisionPct) return 0
     return Math.round(cierresCount * ticketPromedio * (comisionPct / 100))
@@ -67,19 +69,19 @@ export default function MisObjetivosPage() {
   const facturacionAnual = facturacionMensual * 12
 
   function cancel() {
-    setMode(null); setSelectedTemplate(null); setTicketPromedio(0); setTarget('')
+    setMode(null); setSelectedTemplate(null); setTicketPromedio(0); setTarget(''); setMethodPeriod('monthly')
   }
 
   async function saveMethod() {
     if (!selectedTemplate) { toast('Seleccioná un método', 'error'); return }
-    const tpl = OBJECTIVE_TEMPLATES[selectedTemplate]
-    const dates = getPeriodDates(tpl.period)
-    const items: any[] = Object.entries(tpl.metrics).map(([m, v]) => ({
-      metric: m, target: v, period_type: tpl.period,
+    const scaled = scaleMetrics(OBJECTIVE_TEMPLATES[selectedTemplate].metrics as Record<string, number>, methodPeriod)
+    const dates = getPeriodDates(methodPeriod)
+    const items: any[] = Object.entries(scaled).map(([m, v]) => ({
+      metric: m, target: v, period_type: methodPeriod,
       period_start: dates.start, period_end: dates.end,
     }))
-    if (ticketPromedio > 0) items.push({ metric: 'ticket_promedio', target: ticketPromedio, period_type: tpl.period, period_start: dates.start, period_end: dates.end })
-    if (facturacionMensual > 0) items.push({ metric: 'facturacion', target: facturacionMensual, period_type: tpl.period, period_start: dates.start, period_end: dates.end })
+    if (ticketPromedio > 0) items.push({ metric: 'ticket_promedio', target: ticketPromedio, period_type: methodPeriod, period_start: dates.start, period_end: dates.end })
+    if (facturacionMensual > 0) items.push({ metric: 'facturacion', target: facturacionMensual, period_type: methodPeriod, period_start: dates.start, period_end: dates.end })
 
     setSaving(true)
     try {
@@ -220,16 +222,30 @@ export default function MisObjetivosPage() {
 
           {selectedTemplate && (
             <>
+              <div>
+                <label className="text-xs text-gray-500 mb-1.5 block">Período</label>
+                <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5 w-fit">
+                  {Object.entries(PERIOD_TYPES).map(([k, v]) => (
+                    <button
+                      key={k}
+                      onClick={() => setMethodPeriod(k)}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${methodPeriod === k ? 'bg-white shadow text-gray-800' : 'text-gray-500'}`}
+                    >
+                      {v.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="bg-gray-50 rounded-lg p-3">
-                <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Métricas incluidas</p>
+                <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Métricas incluidas ({PERIOD_TYPES[methodPeriod as keyof typeof PERIOD_TYPES]?.label})</p>
                 <div className="flex flex-wrap gap-x-4 gap-y-1">
-                  {Object.entries(OBJECTIVE_TEMPLATES[selectedTemplate].metrics).map(([m, v]) => (
+                  {tplMetrics && Object.entries(tplMetrics).map(([m, v]) => (
                     <span key={m} className="text-xs text-gray-600">
                       <span className="font-medium text-gray-800">{v}</span> {(OBJECTIVE_METRICS as any)[m]?.label}
                     </span>
                   ))}
                 </div>
-                <p className="text-[10px] text-gray-400 mt-2">Período: {tplPeriod === 'monthly' ? 'Mensual' : tplPeriod === 'weekly' ? 'Semanal' : tplPeriod === 'quarterly' ? 'Trimestral' : 'Anual'}</p>
               </div>
 
               <div className="border border-orange-200 bg-orange-50 rounded-xl p-4 space-y-3">
