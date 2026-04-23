@@ -128,6 +128,41 @@ export const OBJECTIVE_METRICS = {
 
 export type ObjectiveMetric = keyof typeof OBJECTIVE_METRICS
 
+export const OBJECTIVE_TEMPLATES = {
+  keller: {
+    label: 'Método Keller',
+    description: 'The Millionaire Real Estate Agent — alto volumen de prospección',
+    period: 'monthly' as const,
+    metrics: {
+      llamadas: 200, reuniones_verdes: 8, visitas: 15,
+      seguimientos: 50, prospeccion_bc: 30, pre_listing: 4,
+      referidos: 2, tasaciones: 4, captaciones: 2, cierres: 1,
+    },
+  },
+  magnin: {
+    label: 'Método Magnin',
+    description: 'Prospección sistemática e intensiva — foco en captaciones',
+    period: 'monthly' as const,
+    metrics: {
+      llamadas: 300, reuniones_verdes: 12, visitas: 20,
+      seguimientos: 80, prospeccion_bc: 60, pre_listing: 6,
+      referidos: 3, tasaciones: 6, captaciones: 3, cierres: 1,
+    },
+  },
+  agenda: {
+    label: 'Agenda Productiva',
+    description: 'Actividad diaria consistente — equilibrio entre prospección y resultados',
+    period: 'monthly' as const,
+    metrics: {
+      llamadas: 100, reuniones_verdes: 6, visitas: 10,
+      seguimientos: 30, prospeccion_bc: 20, pre_listing: 3,
+      referidos: 2, tasaciones: 3, captaciones: 2, cierres: 1,
+    },
+  },
+} as const
+
+export type ObjectiveTemplate = keyof typeof OBJECTIVE_TEMPLATES
+
 export const PERIOD_TYPES = {
   weekly:    { label: 'Semanal' },
   monthly:   { label: 'Mensual' },
