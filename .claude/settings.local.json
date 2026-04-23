@@ -21,7 +21,15 @@
       "Bash(git remote *)",
       "Bash(git reset *)",
       "Bash(gh run *)",
-      "Bash(git mv *)"
+      "Bash(git mv *)",
+      "Bash(git config *)",
+      "PowerShell($cred = Get-StoredCredential -Target \"git:https://github.com\" -ErrorAction SilentlyContinue; if \\($cred\\) { $cred.UserName } else { \"No credential found\" })",
+      "Bash(xargs cat *)",
+      "Bash(curl -s -X POST http://localhost:8701/login -H 'Content-Type: application/json' -d '{\"email\":\"admin@admin.com\",\"password\":\"qwerty\"}')",
+      "Bash(npx wrangler *)",
+      "Bash(curl -s -X POST http://localhost:8704/login -H \"Content-Type: application/json\" -d '{\"email\":\"admin@admin.com\",\"password\":\"qwerty\"}')",
+      "Bash(npx tsc *)",
+      "Bash(curl -s -X POST http://localhost:8701/login -H \"Content-Type: application/json\" -d '{\"email\":\"admin@admin.com\",\"password\":\"qwerty\"}')"
     ]
   }
 }

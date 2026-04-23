@@ -37,3 +37,20 @@ export function logout(): void {
   localStorage.removeItem('vendepro_token')
   document.cookie = 'vendepro_token=; Max-Age=0; path=/'
 }
+
+const ONBOARDING_KEY = 'vendepro_onboarding_done_'
+
+export function isOnboardingDone(userId: string): boolean {
+  if (typeof window === 'undefined') return true
+  return localStorage.getItem(ONBOARDING_KEY + userId) === '1'
+}
+
+export function markOnboardingDone(userId: string): void {
+  if (typeof window === 'undefined') return
+  localStorage.setItem(ONBOARDING_KEY + userId, '1')
+}
+
+export function resetOnboarding(userId: string): void {
+  if (typeof window === 'undefined') return
+  localStorage.removeItem(ONBOARDING_KEY + userId)
+}

@@ -5,13 +5,16 @@ import Link from 'next/link'
 import {
   Settings, Save, Loader2, Building2, Calendar, User,
   ClipboardList, FileText, ClipboardCheck, CheckCircle, XCircle, Megaphone,
+  HelpCircle, PlayCircle,
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
-import { getCurrentUser } from '@/lib/auth'
+import { getCurrentUser, resetOnboarding } from '@/lib/auth'
+import { useRouter } from 'next/navigation'
 
 export default function ConfiguracionPage() {
   const { toast } = useToast()
+  const router = useRouter()
   const isAdmin = getCurrentUser()?.role === 'admin'
   const [loadingProfile, setLoadingProfile] = useState(true)
   const [loadingOrg, setLoadingOrg] = useState(true)
@@ -245,6 +248,26 @@ export default function ConfiguracionPage() {
           </div>
         )}
       </div>}
+
+      {/* Ayuda */}
+      <div className="bg-white rounded-xl border p-6">
+        <h2 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+          <HelpCircle className="w-4 h-4 text-[#ff007c]" /> Ayuda
+        </h2>
+        <p className="text-sm text-gray-600 mb-4">
+          Volvé a ver el tutorial de bienvenida para repasar cómo funciona el sistema.
+        </p>
+        <button
+          onClick={() => {
+            const user = getCurrentUser()
+            if (user) { resetOnboarding(user.id); router.push('/dashboard') }
+          }}
+          className="flex items-center gap-2 bg-gradient-to-r from-[#ff007c] to-[#ff8017] text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+        >
+          <PlayCircle className="w-4 h-4" />
+          Ver tutorial de nuevo
+        </button>
+      </div>
 
       {/* Google Calendar */}
       <div className="bg-white rounded-xl border p-6">
