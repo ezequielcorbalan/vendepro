@@ -16,6 +16,7 @@ import type { Lead, Contact } from '@/lib/types'
 import { useToast } from '@/components/ui/Toast'
 import AIChatPanel from '@/components/ai/AIChatPanel'
 import { apiFetch } from '@/lib/api'
+import { pushFromApiResponse } from '@/components/marketing/dataLayer'
 import { DndContext, DragOverlay, useDraggable, useDroppable, type DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 
 function timeAgo(dateStr: string): string {
@@ -213,6 +214,7 @@ export default function LeadsPage() {
         body: JSON.stringify({ id: lead.id, stage: nextStage })
       })
       const result = (await res.json()) as any
+      pushFromApiResponse(result, { entity_type: 'lead', entity_id: lead.id, event_name_fallback: nextStage })
       const stageLabel = LEAD_STAGES[nextStage as LeadStage]?.label || nextStage
       toast(`${lead.full_name} → ${stageLabel}`)
       if (result.autoFollowup) {
@@ -224,10 +226,11 @@ export default function LeadsPage() {
 
   const handleConvertToAppraisal = async (lead: any, createAppraisal: boolean) => {
     try {
-      await apiFetch('crm', '/leads/stage', {
+      const stageRes = await apiFetch('crm', '/leads/stage', {
         method: 'POST',
         body: JSON.stringify({ id: lead.id, stage: 'en_tasacion' })
       })
+      pushFromApiResponse(await stageRes.json().catch(() => ({})), { entity_type: 'lead', entity_id: lead.id, event_name_fallback: 'en_tasacion' })
       if (createAppraisal) {
         try {
           await apiFetch('properties', '/appraisals', {
@@ -263,16 +266,18 @@ export default function LeadsPage() {
       if (stage === 'perdido') {
         const reason = prompt('¿Por qué se pierde este lead?')
         if (reason === null) return
-        await apiFetch('crm', '/leads/stage', {
+        const r = await apiFetch('crm', '/leads/stage', {
           method: 'POST',
           body: JSON.stringify({ id: leadId, stage: 'perdido', notes: reason || 'Sin motivo' })
         })
+        pushFromApiResponse(await r.json().catch(() => ({})), { entity_type: 'lead', entity_id: leadId, event_name_fallback: 'perdido' })
         toast('Lead marcado como perdido', 'warning')
       } else {
-        await apiFetch('crm', '/leads/stage', {
+        const r = await apiFetch('crm', '/leads/stage', {
           method: 'POST',
           body: JSON.stringify({ id: leadId, stage })
         })
+        pushFromApiResponse(await r.json().catch(() => ({})), { entity_type: 'lead', entity_id: leadId, event_name_fallback: stage })
         const stageLabel = LEAD_STAGES[stage as LeadStage]?.label || stage
         toast(`Movido a ${stageLabel}`)
       }
@@ -295,10 +300,11 @@ export default function LeadsPage() {
     const reason = prompt('¿Por qué se pierde este lead?\n\nEj: No responde, presupuesto fuera de rango, eligió otra inmobiliaria, etc.')
     if (reason === null) return // cancelled
     try {
-      await apiFetch('crm', '/leads/stage', {
+      const r = await apiFetch('crm', '/leads/stage', {
         method: 'POST',
         body: JSON.stringify({ id: leadId, stage: 'perdido', notes: reason || 'Sin motivo especificado' })
       })
+      pushFromApiResponse(await r.json().catch(() => ({})), { entity_type: 'lead', entity_id: leadId, event_name_fallback: 'perdido' })
       toast('Lead marcado como perdido', 'warning')
       loadLeads()
     } catch { toast('Error al marcar como perdido', 'error') }

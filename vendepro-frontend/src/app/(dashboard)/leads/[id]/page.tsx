@@ -10,6 +10,7 @@ import {
   CheckCircle2, Circle, Mail, DollarSign
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
+import { pushFromApiResponse } from '@/components/marketing/dataLayer'
 import { useToast } from '@/components/ui/Toast'
 import {
   LEAD_STAGES, LEAD_STAGE_KEYS, LEAD_SOURCES, OPERATION_TYPES,
@@ -97,10 +98,11 @@ export default function LeadDetailPage() {
       if (stage === 'perdido') {
         const reason = prompt('¿Por qué se pierde este lead?')
         if (reason === null) return
-        await apiFetch('crm', '/leads/stage', {
+        const r = await apiFetch('crm', '/leads/stage', {
           method: 'POST',
           body: JSON.stringify({ id: leadId, stage: 'perdido', notes: reason || 'Sin motivo' }),
         })
+        pushFromApiResponse(await r.json().catch(() => ({})), { entity_type: 'lead', entity_id: leadId, event_name_fallback: 'perdido' })
         toast('Lead marcado como perdido', 'warning')
       } else {
         const res = await apiFetch('crm', '/leads/stage', {
@@ -108,6 +110,7 @@ export default function LeadDetailPage() {
           body: JSON.stringify({ id: leadId, stage }),
         })
         const result = (await res.json()) as any
+        pushFromApiResponse(result, { entity_type: 'lead', entity_id: leadId, event_name_fallback: stage })
         toast(`Etapa: ${LEAD_STAGES[stage as LeadStage]?.label || stage}`)
         if (result.autoFollowup) toast(`Seguimiento automático creado para ${formatDate(result.autoFollowup.start_at)}`)
       }
@@ -148,10 +151,11 @@ export default function LeadDetailPage() {
 
   const handleConvertToAppraisal = async (createAppraisal: boolean) => {
     try {
-      await apiFetch('crm', '/leads/stage', {
+      const stageRes = await apiFetch('crm', '/leads/stage', {
         method: 'POST',
         body: JSON.stringify({ id: leadId, stage: 'en_tasacion' }),
       })
+      pushFromApiResponse(await stageRes.json().catch(() => ({})), { entity_type: 'lead', entity_id: leadId, event_name_fallback: 'en_tasacion' })
       if (createAppraisal && lead) {
         try {
           await apiFetch('properties', '/appraisals', {

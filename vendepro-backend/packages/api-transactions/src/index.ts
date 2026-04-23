@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { corsMiddleware, errorHandler, createAuthMiddleware, D1ReservationRepository, D1StageHistoryRepository, JwtAuthService, CryptoIdGenerator } from '@vendepro/infrastructure'
+import { corsMiddleware, errorHandler, createAuthMiddleware, D1ReservationRepository, D1StageHistoryRepository, JwtAuthService, CryptoIdGenerator, fireMarketingEvent } from '@vendepro/infrastructure'
 import {
   GetReservationsUseCase, CreateReservationUseCase, AdvanceReservationStageUseCase,
 } from '@vendepro/core'
@@ -30,8 +30,25 @@ app.post('/reservations', async (c) => {
   const repo = new D1ReservationRepository(c.env.DB)
   const historyRepo = new D1StageHistoryRepository(c.env.DB)
   const useCase = new CreateReservationUseCase(repo, historyRepo, new CryptoIdGenerator())
-  const result = await useCase.execute({ ...body, org_id: c.get('orgId'), agent_id: body.agent_id || c.get('userId') })
-  return c.json(result, 201)
+  const orgId = c.get('orgId')
+  const result = await useCase.execute({ ...body, org_id: orgId, agent_id: body.agent_id || c.get('userId') })
+  // Hook marketing: evento `reservation_created`.
+  const mk = await fireMarketingEvent(c.env, {
+    orgId,
+    eventKey: 'reservation_created',
+    entityType: 'reservation',
+    entityId: result.id,
+    userData: {
+      full_name: body.buyer_name ?? null,
+      estimated_value: typeof body.offer_amount === 'number' ? body.offer_amount : null,
+    },
+    customData: {
+      property_address: body.property_address ?? null,
+      offer_currency: body.offer_currency ?? 'USD',
+    },
+    actionSource: 'system_generated',
+  })
+  return c.json({ ...result, marketing: mk ?? null }, 201)
 })
 
 app.put('/reservations/stage', async (c) => {
@@ -39,8 +56,19 @@ app.put('/reservations/stage', async (c) => {
   const repo = new D1ReservationRepository(c.env.DB)
   const historyRepo = new D1StageHistoryRepository(c.env.DB)
   const useCase = new AdvanceReservationStageUseCase(repo, historyRepo)
-  await useCase.execute({ reservationId: body.id, orgId: c.get('orgId'), newStage: body.stage, changedBy: c.get('userId') })
-  return c.json({ success: true })
+  const orgId = c.get('orgId')
+  await useCase.execute({ reservationId: body.id, orgId, newStage: body.stage, changedBy: c.get('userId') })
+  // Hook marketing: evento por stage de reserva (configurable por mapping).
+  // Mapeos recomendados: 'reservada'→InitiateCheckout, 'escriturada'→Purchase.
+  const mk = await fireMarketingEvent(c.env, {
+    orgId,
+    eventKey: `reservation_${body.stage}`,
+    entityType: 'reservation',
+    entityId: body.id,
+    actionSource: 'system_generated',
+    ga4ClientId: body.ga4_client_id ?? null,
+  })
+  return c.json({ success: true, marketing: mk ?? null })
 })
 
 app.put('/reservations', async (c) => {

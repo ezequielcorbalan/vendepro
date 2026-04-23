@@ -8,6 +8,11 @@ export interface MetaIntegrationProps {
   gtm_container_id: string | null
   test_event_code: string | null
   enabled: boolean
+  // GA4 Measurement Protocol (server-side) — opcional, se fan-out via
+  // el mismo stape_endpoint si está configurado.
+  ga4_measurement_id: string | null
+  ga4_api_secret_encrypted: string | null
+  ga4_enabled: boolean
   created_at: string
   updated_at: string
 }
@@ -16,8 +21,9 @@ export class MetaIntegration {
   private constructor(private props: MetaIntegrationProps) {}
 
   static create(
-    input: Omit<MetaIntegrationProps, 'created_at' | 'updated_at' | 'enabled'> & {
+    input: Omit<MetaIntegrationProps, 'created_at' | 'updated_at' | 'enabled' | 'ga4_enabled'> & {
       enabled?: boolean
+      ga4_enabled?: boolean
       created_at?: string
       updated_at?: string
     },
@@ -34,6 +40,9 @@ export class MetaIntegration {
       gtm_container_id: input.gtm_container_id ?? null,
       test_event_code: input.test_event_code ?? null,
       enabled: input.enabled ?? false,
+      ga4_measurement_id: input.ga4_measurement_id ?? null,
+      ga4_api_secret_encrypted: input.ga4_api_secret_encrypted ?? null,
+      ga4_enabled: input.ga4_enabled ?? false,
       created_at: input.created_at ?? now,
       updated_at: input.updated_at ?? now,
     })
@@ -51,6 +60,9 @@ export class MetaIntegration {
   get gtm_container_id() { return this.props.gtm_container_id }
   get test_event_code() { return this.props.test_event_code }
   get enabled() { return this.props.enabled }
+  get ga4_measurement_id() { return this.props.ga4_measurement_id }
+  get ga4_api_secret_encrypted() { return this.props.ga4_api_secret_encrypted }
+  get ga4_enabled() { return this.props.ga4_enabled }
   get created_at() { return this.props.created_at }
   get updated_at() { return this.props.updated_at }
 
@@ -63,9 +75,14 @@ export class MetaIntegration {
     return { ...this.props }
   }
 
-  // Public-safe view: token nunca se expone en plaintext.
-  toPublicView(): Omit<MetaIntegrationProps, 'access_token_encrypted'> & { has_access_token: boolean } {
-    const { access_token_encrypted, ...rest } = this.props
-    return { ...rest, has_access_token: !!access_token_encrypted }
+  // Vista pública: nunca se expone tokens/api_secret en plaintext.
+  toPublicView(): Omit<MetaIntegrationProps, 'access_token_encrypted' | 'ga4_api_secret_encrypted'>
+    & { has_access_token: boolean; has_ga4_api_secret: boolean } {
+    const { access_token_encrypted, ga4_api_secret_encrypted, ...rest } = this.props
+    return {
+      ...rest,
+      has_access_token: !!access_token_encrypted,
+      has_ga4_api_secret: !!ga4_api_secret_encrypted,
+    }
   }
 }

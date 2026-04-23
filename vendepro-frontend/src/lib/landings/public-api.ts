@@ -31,14 +31,30 @@ export interface SubmitInput {
   utm?: { source?: string | null; medium?: string | null; campaign?: string | null; referrer?: string | null }
 }
 
-export async function submitLandingForm(slug: string, input: SubmitInput): Promise<{ leadId: string; successMessage: string }> {
+export interface MarketingApiResult {
+  event_id: string
+  meta?: { status: string; event_name?: string; http_status?: number }
+  ga4?: { status: string; event_name?: string; http_status?: number }
+}
+
+export interface SubmitLandingResponse {
+  leadId: string
+  successMessage: string
+  marketing?: MarketingApiResult | null
+}
+
+export async function submitLandingForm(slug: string, input: SubmitInput): Promise<SubmitLandingResponse> {
   const res = await fetch(`${PUBLIC_BASE}/l/${encodeURIComponent(slug)}/submit`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   })
   if (!res.ok) throw new Error(`submit ${res.status}: ${await res.text()}`)
-  return (await res.json()) as any
+  return (await res.json()) as SubmitLandingResponse
+}
+
+export interface RecordEventResponse {
+  marketing?: MarketingApiResult | null
 }
 
 export async function recordLandingEvent(slug: string, event: {
@@ -46,11 +62,15 @@ export async function recordLandingEvent(slug: string, event: {
   visitorId?: string | null
   sessionId?: string | null
   utm?: { source?: string | null; medium?: string | null; campaign?: string | null; referrer?: string | null }
-}) {
-  await fetch(`${PUBLIC_BASE}/l/${encodeURIComponent(slug)}/event`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(event),
-    keepalive: true,            // permite que salga en beforeunload
-  }).catch(() => { /* silent */ })
+}): Promise<RecordEventResponse | void> {
+  try {
+    const res = await fetch(`${PUBLIC_BASE}/l/${encodeURIComponent(slug)}/event`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(event),
+      keepalive: true,            // permite que salga en beforeunload
+    })
+    if (!res.ok || res.status === 204) return
+    return (await res.json().catch(() => ({}))) as RecordEventResponse
+  } catch { return }
 }

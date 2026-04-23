@@ -190,4 +190,54 @@ app.get('/reports', async (c) => {
   })
 })
 
+// ── MARKETING DASHBOARD ──────────────────────────────────────
+app.get('/marketing', async (c) => {
+  const orgId = c.get('orgId')
+  const db = c.env.DB
+  const period = c.req.query('period') ?? 'month'
+
+  const now = new Date()
+  let fromDate: string
+  if (period === 'quarter') {
+    const q = new Date(now); q.setMonth(q.getMonth() - 3)
+    fromDate = q.toISOString().slice(0, 10)
+  } else if (period === 'year') {
+    fromDate = `${now.getFullYear()}-01-01`
+  } else {
+    fromDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+  }
+
+  const [leadsBySource, leadsByDay, stageBreakdown, metaEvents, metaIntegration] = await Promise.all([
+    db.prepare(`SELECT source, COUNT(*) as count FROM leads WHERE org_id = ? AND created_at >= ? GROUP BY source ORDER BY count DESC`).bind(orgId, fromDate).all(),
+    db.prepare(`SELECT substr(created_at, 1, 10) as day, COUNT(*) as count FROM leads WHERE org_id = ? AND created_at >= ? GROUP BY day ORDER BY day ASC`).bind(orgId, fromDate).all(),
+    db.prepare(`SELECT stage, COUNT(*) as count FROM leads WHERE org_id = ? AND created_at >= ? GROUP BY stage`).bind(orgId, fromDate).all(),
+    db.prepare(`SELECT event_name, status, COUNT(*) as count FROM meta_event_log WHERE org_id = ? GROUP BY event_name, status`).bind(orgId).all().catch(() => ({ results: [] })),
+    db.prepare(`SELECT enabled, pixel_id, ga4_enabled, ga4_measurement_id FROM meta_integration WHERE org_id = ?`).bind(orgId).first().catch(() => null),
+  ])
+
+  const sb: Record<string, number> = {}
+  for (const r of (stageBreakdown.results as any[])) sb[r.stage] = r.count
+  const totalLeads = Object.values(sb).reduce((a, b) => a + b, 0)
+  const funnel = computeLeadFunnel(sb, totalLeads)
+  const conversionRate = computeConversionRate(sb, totalLeads)
+
+  const eventMap: Record<string, { sent: number; failed: number }> = {}
+  for (const r of (metaEvents.results as any[])) {
+    if (!eventMap[r.event_name]) eventMap[r.event_name] = { sent: 0, failed: 0 }
+    if (r.status === 'sent') eventMap[r.event_name].sent += r.count
+    else if (r.status === 'failed') eventMap[r.event_name].failed += r.count
+  }
+
+  return c.json({
+    period, from: fromDate, totalLeads, conversionRate, funnel,
+    leadsBySource: leadsBySource.results,
+    leadsByDay: leadsByDay.results,
+    metaEvents: eventMap,
+    integration: {
+      meta: { enabled: !!metaIntegration && (metaIntegration as any).enabled === 1, pixelId: (metaIntegration as any)?.pixel_id ?? null },
+      ga4: { enabled: !!metaIntegration && (metaIntegration as any).ga4_enabled === 1, measurementId: (metaIntegration as any)?.ga4_measurement_id ?? null },
+    },
+  })
+})
+
 export default app
