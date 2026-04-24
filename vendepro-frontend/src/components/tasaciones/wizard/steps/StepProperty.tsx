@@ -1,16 +1,15 @@
 'use client'
+import { PropertySelector } from '@/components/ui/PropertySelector'
 import type { WizardState } from '../use-wizard-form'
-
-// PropertySelector searches properties, not leads.
-// Since no lead-specific selector component exists, lead_id is captured
-// via a plain text input. (Flagged: no <PropertySelector kind="lead"/>.)
 
 const PROPERTY_TYPES = ['departamento', 'casa', 'ph', 'local', 'terreno', 'oficina', 'otro']
 
 interface Props {
   property: WizardState['property']
+  propertyId: string | null
   leadId: string | null
   onPatchProperty: (patch: Partial<WizardState['property']>) => void
+  onSetPropertyId: (id: string | null) => void
   onSetLead: (id: string | null) => void
 }
 
@@ -18,12 +17,64 @@ const inputClass =
   'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-[#ff007c] focus:outline-none focus:ring-2 focus:ring-[#ff007c]/30'
 const labelClass = 'mb-1 block text-sm font-medium text-slate-700'
 
-export function StepProperty({ property, leadId, onPatchProperty, onSetLead }: Props) {
+export function StepProperty({
+  property,
+  propertyId,
+  leadId,
+  onPatchProperty,
+  onSetPropertyId,
+  onSetLead,
+}: Props) {
+  const selectedValue = propertyId
+    ? {
+        id: propertyId,
+        address: property.address,
+        neighborhood: property.neighborhood ?? '',
+        city: property.city ?? '',
+        property_type: property.property_type ?? '',
+        size_m2: property.total_area ?? null,
+      }
+    : null
+
+  function handleSelectProperty(p: {
+    id: string
+    address: string
+    neighborhood: string
+    city: string
+    property_type: string
+    size_m2: number | null
+  } | null) {
+    if (p) {
+      onSetPropertyId(p.id)
+      onPatchProperty({
+        address: p.address,
+        neighborhood: p.neighborhood || '',
+        city: p.city || '',
+        property_type: p.property_type || '',
+        total_area: p.size_m2 ?? null,
+      })
+    } else {
+      onSetPropertyId(null)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <p className="text-sm text-slate-500">
-        Completá los datos de la propiedad a tasar. Solo la dirección es obligatoria.
+        Buscá una propiedad del CRM para autocompletar los datos, o completá el formulario manualmente.
+        Solo la dirección es obligatoria.
       </p>
+
+      {/* Property selector */}
+      <div>
+        <label className={labelClass}>Propiedad del CRM (opcional)</label>
+        <PropertySelector value={selectedValue} onChange={handleSelectProperty} />
+        {propertyId && (
+          <p className="mt-1 text-xs text-slate-400">
+            La tasación quedará vinculada a esta propiedad. Podés editar los campos igualmente.
+          </p>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {/* Address — required, full width */}

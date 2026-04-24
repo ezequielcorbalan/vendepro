@@ -38,6 +38,7 @@ export function WizardShell({ initialTemplateId }: Props) {
       const { address, ...restProperty } = state.property
       const { id } = await createAppraisal({
         template_id: state.template_id,
+        property_id: state.property_id,
         property_address: address,
         ...restProperty,
         lead_id: state.lead_id,
@@ -109,8 +110,10 @@ export function WizardShell({ initialTemplateId }: Props) {
         {state.step === 2 && (
           <StepProperty
             property={state.property}
+            propertyId={state.property_id}
             leadId={state.lead_id}
             onPatchProperty={(p) => dispatch({ type: 'patch_property', patch: p })}
+            onSetPropertyId={(id) => dispatch({ type: 'set_property_id', id })}
             onSetLead={(id) => dispatch({ type: 'set_lead', id })}
           />
         )}

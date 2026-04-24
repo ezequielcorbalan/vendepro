@@ -1,10 +1,22 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import type { WizardState } from '../use-wizard-form'
-import { getTemplate } from '../../shared/api'
+import { getTemplate, listVariables } from '../../shared/api'
 import { TemplateRenderer } from '../../renderer/TemplateRenderer'
-import type { AppraisalContext, TemplateBlock } from '../../renderer/types'
+import type { AppraisalContext, ResolvedVars, TemplateBlock } from '../../renderer/types'
+
+function extractVarKeys(snapshot: TemplateBlock[]): string[] {
+  const keys = new Set<string>()
+  for (const b of snapshot) {
+    const data = (b as any)?.data
+    if (!data) continue
+    if (Array.isArray(data.vars)) for (const k of data.vars) keys.add(String(k))
+    if (data.chart_1_var) keys.add(String(data.chart_1_var))
+    if (data.chart_2_var) keys.add(String(data.chart_2_var))
+  }
+  return Array.from(keys)
+}
 
 interface Props {
   templateId: string | null
@@ -56,6 +68,7 @@ function buildCtx(
 
 export function StepReview({ templateId, property, details, comparables, generatePublicSlug, onTogglePublicSlug }: Props) {
   const [snapshot, setSnapshot] = useState<TemplateBlock[] | null>(null)
+  const [variables, setVariables] = useState<Array<{ key: string; value: string; value_type: string }> | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -66,18 +79,32 @@ export function StepReview({ templateId, property, details, comparables, generat
     }
     setLoading(true)
     setError(null)
-    getTemplate(templateId)
-      .then((t: any) => {
+    Promise.all([
+      getTemplate(templateId).then((t: any) => {
         const blocks: TemplateBlock[] = Array.isArray(t.blocks)
           ? t.blocks
           : Array.isArray(t.snapshot)
             ? t.snapshot
             : []
         setSnapshot(blocks)
-      })
+      }),
+      listVariables()
+        .then((vars) => setVariables(vars as any))
+        .catch(() => setVariables([])),
+    ])
       .catch(() => setError('No se pudo cargar la plantilla para la previsualización'))
       .finally(() => setLoading(false))
   }, [templateId])
+
+  const resolvedVars: ResolvedVars = useMemo(() => {
+    if (!snapshot || !variables) return {}
+    const referenced = new Set(extractVarKeys(snapshot))
+    const out: ResolvedVars = {}
+    for (const v of variables) {
+      if (referenced.has(v.key)) out[v.key] = { value: v.value, type: v.value_type }
+    }
+    return out
+  }, [snapshot, variables])
 
   const ctx = buildCtx(property, details, comparables)
 
@@ -137,7 +164,7 @@ export function StepReview({ templateId, property, details, comparables, generat
               </div>
             ) : (
               <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-                <TemplateRenderer snapshot={snapshot} appraisal={ctx} mode="web" />
+                <TemplateRenderer snapshot={snapshot} appraisal={ctx} resolvedVars={resolvedVars} mode="web" />
               </div>
             )}
           </>

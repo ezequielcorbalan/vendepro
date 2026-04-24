@@ -7,6 +7,7 @@ export type WizardStep = 1 | 2 | 3 | 4
 export interface WizardState {
   step: WizardStep
   template_id: string | null
+  property_id: string | null
   property: {
     address: string
     neighborhood?: string
@@ -38,6 +39,7 @@ type Action =
   | { type: 'goto'; step: WizardStep }
   | { type: 'set_template'; id: string | null }
   | { type: 'patch_property'; patch: Partial<WizardState['property']> }
+  | { type: 'set_property_id'; id: string | null }
   | { type: 'set_lead'; id: string | null }
   | { type: 'patch_details'; patch: Partial<WizardState['details']> }
   | { type: 'add_comparable'; comparable: WizardState['comparables'][number] }
@@ -47,6 +49,7 @@ type Action =
 export const initialState: WizardState = {
   step: 1,
   template_id: null,
+  property_id: null,
   lead_id: null,
   property: { address: '' },
   details: {},
@@ -66,6 +69,8 @@ export function wizardReducer(state: WizardState, action: Action): WizardState {
       return { ...state, template_id: action.id }
     case 'patch_property':
       return { ...state, property: { ...state.property, ...action.patch } }
+    case 'set_property_id':
+      return { ...state, property_id: action.id }
     case 'set_lead':
       return { ...state, lead_id: action.id }
     case 'patch_details':
