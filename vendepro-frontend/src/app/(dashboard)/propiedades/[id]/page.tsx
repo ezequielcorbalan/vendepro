@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Building2, Loader2, Phone, Mail, User, MapPin, DollarSign, Calendar, Plus, Pencil, Send } from 'lucide-react'
+import { ArrowLeft, Building2, Loader2, Phone, Mail, User, MapPin, DollarSign, Calendar, Plus, Pencil, Send, Trash2 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { PhotoGallery } from '@/components/ui/PhotoGallery'
 import { VisitFormsSection } from '@/components/properties/VisitFormsSection'
@@ -33,6 +33,7 @@ const stageColor: Record<string, string> = {
 
 export default function PropiedadDetailPage() {
   const params = useParams()
+  const router = useRouter()
   const id = params?.id as string
   const [property, setProperty] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -40,6 +41,21 @@ export default function PropiedadDetailPage() {
   const [photos, setPhotos] = useState<{ id: string; url: string; sort_order: number }[]>([])
   const [showGenerate, setShowGenerate] = useState(false)
   const [visitRefreshKey, setVisitRefreshKey] = useState(0)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  async function handleDelete() {
+    setDeleting(true)
+    try {
+      const res = await apiFetch('properties', `/properties/${id}`, { method: 'DELETE' })
+      if (res.ok) {
+        router.push('/propiedades')
+      }
+    } finally {
+      setDeleting(false)
+      setShowDeleteConfirm(false)
+    }
+  }
 
   useEffect(() => {
     if (!id) return
@@ -121,6 +137,12 @@ export default function PropiedadDetailPage() {
               className="inline-flex items-center gap-1.5 border border-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-gray-50">
               <Pencil className="w-4 h-4" /> Editar
             </Link>
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="inline-flex items-center gap-1.5 border border-red-200 text-red-600 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-red-50"
+            >
+              <Trash2 className="w-4 h-4" /> Eliminar
+            </button>
           </div>
         </div>
       </div>
@@ -271,6 +293,41 @@ export default function PropiedadDetailPage() {
           onClose={() => setShowGenerate(false)}
           onGenerated={() => setVisitRefreshKey((k) => k + 1)}
         />
+      )}
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowDeleteConfirm(false)}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <Trash2 className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">Eliminar propiedad</h3>
+                <p className="text-sm text-gray-500">Esta acción no se puede deshacer.</p>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600 mb-6">
+              ¿Estás segura de que querés eliminar <span className="font-medium">{property?.address}</span>? Se eliminarán también sus fotos y datos asociados.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-60 flex items-center justify-center gap-2"
+              >
+                {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

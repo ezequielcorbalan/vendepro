@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { CheckCircle2, Loader2, Home, MapPin } from 'lucide-react'
+import { getOrCreateVisitorId } from '@/lib/landings/tracker'
+import { pushMarketingEvent } from '@/components/marketing/dataLayer'
 
 interface Props {
   slug: string
@@ -75,6 +77,7 @@ export default function VisitFormClient({ slug, apiPublic, data }: Props) {
 
     setSubmitting(true)
     try {
+      const visitorId = getOrCreateVisitorId()
       const res = await fetch(`${apiPublic}/public/property-visit-form/${slug}/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -88,11 +91,24 @@ export default function VisitFormClient({ slug, apiPublic, data }: Props) {
             form.subjective_price_usd.trim() === '' ? null : Number(form.subjective_price_usd),
           buy_intention: form.buy_intention || null,
           observations: form.observations.trim() || null,
+          ga4_client_id: visitorId,
         }),
       })
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as any
         throw new Error(body?.error || 'No se pudo enviar el formulario.')
+      }
+      const body = (await res.json().catch(() => ({}))) as any
+      if (body?.marketing?.event_id) {
+        pushMarketingEvent({
+          event_id: body.marketing.event_id,
+          event_name:
+            body.marketing.meta?.event_name ||
+            body.marketing.ga4?.event_name ||
+            'visit_form_submitted',
+          entity_type: 'visit_form',
+          entity_id: slug,
+        })
       }
       setDone(true)
     } catch (e: any) {

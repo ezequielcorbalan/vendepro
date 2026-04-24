@@ -34,6 +34,7 @@ export type EditGlobalResult =
 
 export interface AIService {
   extractLeadIntent(text: string): Promise<LeadIntent>
+  extractLeadFromImage(imageBase64: string, mimeType?: string): Promise<LeadIntent>
   transcribeAudio(audioBuffer: ArrayBuffer, mimeType: string): Promise<string>
   extractMetricsFromScreenshot(imageBase64: string): Promise<Record<string, unknown>>
 

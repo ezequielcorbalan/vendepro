@@ -173,59 +173,51 @@ export class D1PropertyRepository implements PropertyRepository {
   }
 
   async update(id: string, orgId: string, patch: Partial<PropertyProps>): Promise<void> {
-    if (Object.keys(patch).length === 0) return
+    // Build SQL dynamically to avoid referencing columns that may not yet exist
+    // in older DB instances (e.g. auth_start_date, doc_status_json from later migrations).
+    const COLUMN_MAP: Array<[keyof PropertyProps, string]> = [
+      ['address', 'address'],
+      ['neighborhood', 'neighborhood'],
+      ['city', 'city'],
+      ['property_type', 'property_type'],
+      ['rooms', 'rooms'],
+      ['size_m2', 'size_m2'],
+      ['asking_price', 'asking_price'],
+      ['currency', 'currency'],
+      ['owner_name', 'owner_name'],
+      ['owner_phone', 'owner_phone'],
+      ['owner_email', 'owner_email'],
+      ['contact_id', 'contact_id'],
+      ['status', 'status'],
+      ['commercial_stage', 'commercial_stage'],
+      ['commercial_stage_id', 'commercial_stage_id'],
+      ['operation_type', 'operation_type'],
+      ['operation_type_id', 'operation_type_id'],
+      ['status_id', 'status_id'],
+      ['auth_start_date', 'auth_start_date'],
+      ['auth_duration_days', 'auth_duration_days'],
+      ['doc_status_json', 'doc_status_json'],
+    ]
+
+    const setClauses: string[] = []
+    const bindings: unknown[] = []
+
+    for (const [field, col] of COLUMN_MAP) {
+      const val = patch[field]
+      if (val !== undefined && val !== null) {
+        setClauses.push(`${col} = ?`)
+        bindings.push(val)
+      }
+    }
+
+    if (setClauses.length === 0) return
+
+    setClauses.push(`updated_at = datetime('now')`)
+    bindings.push(id, orgId)
+
     await this.db
-      .prepare(`
-        UPDATE properties
-        SET address = COALESCE(?, address),
-            neighborhood = COALESCE(?, neighborhood),
-            city = COALESCE(?, city),
-            property_type = COALESCE(?, property_type),
-            rooms = COALESCE(?, rooms),
-            size_m2 = COALESCE(?, size_m2),
-            asking_price = COALESCE(?, asking_price),
-            currency = COALESCE(?, currency),
-            owner_name = COALESCE(?, owner_name),
-            owner_phone = COALESCE(?, owner_phone),
-            owner_email = COALESCE(?, owner_email),
-            contact_id = COALESCE(?, contact_id),
-            status = COALESCE(?, status),
-            commercial_stage = COALESCE(?, commercial_stage),
-            commercial_stage_id = COALESCE(?, commercial_stage_id),
-            operation_type = COALESCE(?, operation_type),
-            operation_type_id = COALESCE(?, operation_type_id),
-            status_id = COALESCE(?, status_id),
-            auth_start_date = COALESCE(?, auth_start_date),
-            auth_duration_days = COALESCE(?, auth_duration_days),
-            doc_status_json = COALESCE(?, doc_status_json),
-            updated_at = datetime('now')
-        WHERE id = ? AND org_id = ?
-      `)
-      .bind(
-        patch.address ?? null,
-        patch.neighborhood ?? null,
-        patch.city ?? null,
-        patch.property_type ?? null,
-        patch.rooms ?? null,
-        patch.size_m2 ?? null,
-        patch.asking_price ?? null,
-        patch.currency ?? null,
-        patch.owner_name ?? null,
-        patch.owner_phone ?? null,
-        patch.owner_email ?? null,
-        patch.contact_id ?? null,
-        patch.status ?? null,
-        patch.commercial_stage ?? null,
-        patch.commercial_stage_id ?? null,
-        patch.operation_type ?? null,
-        patch.operation_type_id ?? null,
-        patch.status_id ?? null,
-        patch.auth_start_date ?? null,
-        patch.auth_duration_days ?? null,
-        patch.doc_status_json ?? null,
-        id,
-        orgId,
-      )
+      .prepare(`UPDATE properties SET ${setClauses.join(', ')} WHERE id = ? AND org_id = ?`)
+      .bind(...(bindings as any[]))
       .run()
   }
 

@@ -10,6 +10,11 @@ export interface GetMetaIntegrationOutput {
   has_access_token: boolean
   /** Mascarilla cliente: nunca enviamos el token plain */
   access_token: string
+  // GA4
+  ga4_measurement_id: string | null
+  ga4_enabled: boolean
+  has_ga4_api_secret: boolean
+  ga4_api_secret: string
   created_at?: string
   updated_at?: string
 }
@@ -29,6 +34,10 @@ export class GetMetaIntegrationUseCase {
         enabled: false,
         has_access_token: false,
         access_token: '',
+        ga4_measurement_id: null,
+        ga4_enabled: false,
+        has_ga4_api_secret: false,
+        ga4_api_secret: '',
       }
     }
     const pub = integration.toPublicView()
@@ -41,6 +50,10 @@ export class GetMetaIntegrationUseCase {
       enabled: pub.enabled,
       has_access_token: pub.has_access_token,
       access_token: pub.has_access_token ? '********' : '',
+      ga4_measurement_id: pub.ga4_measurement_id,
+      ga4_enabled: pub.ga4_enabled,
+      has_ga4_api_secret: pub.has_ga4_api_secret,
+      ga4_api_secret: pub.has_ga4_api_secret ? '********' : '',
       created_at: pub.created_at,
       updated_at: pub.updated_at,
     }

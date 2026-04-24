@@ -207,7 +207,7 @@ export default function NuevaTasacionPage() {
         ) : !templatesAvailable || templates.length === 0 ? (
           <div className="text-sm text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-lg px-4 py-3">
             Sin plantillas disponibles.{' '}
-            <Link href="/landings/nueva?template_type=tasacion" className="text-[#ff007c] font-medium hover:underline">
+            <Link href="/landings?create_template=1" className="text-[#ff007c] font-medium hover:underline">
               + Crear plantilla nueva
             </Link>
           </div>
@@ -241,7 +241,7 @@ export default function NuevaTasacionPage() {
               ))}
             </div>
             <Link
-              href="/landings/nueva?template_type=tasacion"
+              href="/landings?create_template=1"
               className="inline-flex items-center gap-1.5 text-sm text-[#ff007c] font-medium hover:underline"
             >
               <Plus className="w-3.5 h-3.5" /> Crear plantilla nueva

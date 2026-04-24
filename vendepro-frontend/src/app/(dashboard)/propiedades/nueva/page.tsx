@@ -66,9 +66,25 @@ export default function NuevaPropiedadPage() {
   useEffect(() => {
     const leadId = searchParams.get('lead_id')
     const contactId = searchParams.get('contact_id')
+    const fichaId = searchParams.get('ficha_id')
 
     async function preload() {
       try {
+        if (fichaId) {
+          const fichaRes = await apiFetch('properties', `/fichas/${fichaId}`)
+          if (fichaRes.ok) {
+            const ficha = (await fichaRes.json()) as any
+            setForm(prev => ({
+              ...prev,
+              address: ficha.address || prev.address,
+              neighborhood: ficha.neighborhood || prev.neighborhood,
+              property_type: ficha.property_type || prev.property_type,
+              rooms: ficha.bedrooms != null ? String(ficha.bedrooms) : prev.rooms,
+              size_m2: ficha.covered_area != null ? String(ficha.covered_area) : prev.size_m2,
+            }))
+            if (ficha.lead_id) setLinkedLeadId(ficha.lead_id)
+          }
+        }
         if (leadId) {
           setLinkedLeadId(leadId)
           const res = await apiFetch('crm', `/leads`)

@@ -14,9 +14,11 @@ dist/
 
 # cloudflare
 .wrangler/
+.wrangler-local-state/
 
 # env files
 .env*
+!.env*.example
 
 # cloudflare worker secrets (never commit)
 .dev.vars

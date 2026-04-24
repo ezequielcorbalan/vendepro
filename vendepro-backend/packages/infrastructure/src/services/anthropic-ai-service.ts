@@ -7,6 +7,10 @@ export class AnthropicAIService implements AIService {
     throw new Error('Use GroqAIService for text intent extraction')
   }
 
+  async extractLeadFromImage(_imageBase64: string, _mimeType?: string): Promise<LeadIntent> {
+    throw new Error('Use GroqAIService for lead image extraction')
+  }
+
   async transcribeAudio(_audioBuffer: ArrayBuffer, _mimeType: string): Promise<string> {
     throw new Error('Use GroqAIService for audio transcription')
   }
