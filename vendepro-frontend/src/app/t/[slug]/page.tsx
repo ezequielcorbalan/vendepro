@@ -6,7 +6,7 @@ import type { AppraisalContext, TemplateBlock, BlockOverrides, ResolvedVars } fr
 import GtmScript from '@/components/marketing/GtmScript'
 import '@/components/tasaciones/renderer/print.css'
 
-const API_PUBLIC = process.env.NEXT_PUBLIC_API_PUBLIC_URL ?? 'http://localhost:8708'
+const API_PUBLIC = process.env.NEXT_PUBLIC_API_PUBLIC_URL ?? 'https://public.api.vendepro.com.ar'
 
 function parseJson<T>(v: unknown): T | null {
   if (!v) return null
