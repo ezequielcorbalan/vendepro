@@ -1,17 +1,59 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import PublicAppraisalShell from '@/components/tasaciones/PublicAppraisalShell'
+import PublicAppraisalShell from '@/components/tasaciones/legacy/PublicAppraisalShell'
+import { TemplateRenderer } from '@/components/tasaciones/renderer/TemplateRenderer'
+import type { AppraisalContext, TemplateBlock, BlockOverrides, ResolvedVars } from '@/components/tasaciones/renderer/types'
 import GtmScript from '@/components/marketing/GtmScript'
+import '@/components/tasaciones/renderer/print.css'
 
 const API_PUBLIC = process.env.NEXT_PUBLIC_API_PUBLIC_URL ?? 'http://localhost:8708'
 
-function parseJsonField<T>(v: unknown): T | null {
+function parseJson<T>(v: unknown): T | null {
   if (!v) return null
   if (typeof v === 'object') return v as T
-  if (typeof v === 'string') {
-    try { return JSON.parse(v) as T } catch { return null }
-  }
+  if (typeof v === 'string') { try { return JSON.parse(v) as T } catch { return null } }
   return null
+}
+
+function buildAppraisalContext(data: any): AppraisalContext {
+  const a = data.appraisal
+
+  // NOTE: The backend /public/appraisal/:slug endpoint currently returns a
+  // flat appraisal row without a full JOIN to users (agent) or the full
+  // organizations row. This means `data.agent` and `data.org.brand_accent_color`
+  // may be null even when those records exist in D1. Block components are
+  // defensive (AgentContactCardBlock returns null when no name), so the
+  // renderer degrades gracefully. If a future phase wants live agent data
+  // in public landings, extend the backend's GetPublicAppraisalUseCase to
+  // include agent/org JOIN fields. Today the admin can wire agent info
+  // statically inside a block's `data` (e.g. name/phone in agent_contact_card).
+
+  return {
+    id: a.id,
+    property_address: a.property_address,
+    neighborhood: a.neighborhood ?? null,
+    city: a.city ?? null,
+    property_type: a.property_type ?? null,
+    covered_area: a.covered_area ?? null,
+    total_area: a.total_area ?? null,
+    semi_area: a.semi_area ?? null,
+    weighted_area: a.weighted_area ?? null,
+    swot: {
+      strengths: a.strengths ?? null,
+      weaknesses: a.weaknesses ?? null,
+      opportunities: a.opportunities ?? null,
+      threats: a.threats ?? null,
+    },
+    prices: {
+      suggested: a.suggested_price ?? null,
+      test: a.test_price ?? null,
+      expected_close: a.expected_close_price ?? null,
+      usd_per_m2: a.usd_per_m2 ?? null,
+    },
+    comparables: a.comparables ?? [],
+    agent: data.agent ?? null,
+    org: data.org ?? data.branding ?? null,
+  }
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -34,53 +76,41 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 }
 
 export default async function PublicTasacionPage({
-  params,
+  params, searchParams,
 }: {
   params: Promise<{ slug: string }>
+  searchParams: Promise<{ print?: string }>
 }) {
   const { slug } = await params
+  const qp = await searchParams
 
   const res = await fetch(`${API_PUBLIC}/public/appraisal/${slug}`, { cache: 'no-store' })
   if (!res.ok) notFound()
-
   const data = (await res.json()) as any
-  if (!data || !data.appraisal) notFound()
+  if (!data?.appraisal) notFound()
 
-  const appraisal = data.appraisal || {}
-  // The backend may have already parsed these (when toObject keeps typed blocks)
-  // or they may arrive as *_json strings depending on the worker response shape.
-  const proposal = appraisal.proposal ?? parseJsonField<any>(appraisal.proposal_json)
-  const market_situation = appraisal.market_situation ?? parseJsonField<any>(appraisal.market_situation_json)
-  const work_conditions = appraisal.work_conditions ?? parseJsonField<any>(appraisal.work_conditions_json)
-  const video_links = appraisal.video_links ?? parseJsonField<string[]>(appraisal.video_links_json)
+  const isPrint = qp?.print === '1'
+  const snapshot = parseJson<TemplateBlock[]>(data.appraisal.template_snapshot_json)
+  const hasTemplate = !!data.appraisal.template_id && snapshot !== null && snapshot.length > 0
 
-  const org = data.org || {}
-  const branding = {
-    name: org.name ?? data.branding?.name ?? 'Inmobiliaria',
-    logo_url: org.logo_url ?? data.branding?.logo_url ?? null,
-    primary: org.brand_color ?? data.branding?.primary ?? '#ff007c',
-    accent: data.branding?.accent ?? '#ff8017',
+  if (hasTemplate) {
+    const overrides = parseJson<BlockOverrides>(data.appraisal.block_overrides_json) ?? {}
+    const appraisal = buildAppraisalContext(data)
+    const resolvedVars = (data.resolved_vars as ResolvedVars | undefined) ?? {}
+    return (
+      <>
+        <TemplateRenderer
+          snapshot={snapshot}
+          overrides={overrides}
+          appraisal={appraisal}
+          resolvedVars={resolvedVars}
+          mode={isPrint ? 'print' : 'web'}
+          className="min-h-screen bg-white"
+        />
+        <GtmScript />
+      </>
+    )
   }
 
-  return (
-    <>
-      <GtmScript
-        containerId={org.gtm_container_id ?? data.gtm_container_id ?? null}
-        stapeEndpoint={org.stape_endpoint ?? data.stape_endpoint ?? null}
-      />
-      <PublicAppraisalShell
-        data={{
-          appraisal: {
-            ...appraisal,
-            proposal,
-            market_situation,
-            work_conditions,
-            video_links,
-          },
-          comparables: data.comparables || appraisal.comparables || [],
-          branding,
-        }}
-      />
-    </>
-  )
+  return <PublicAppraisalShell data={data} />
 }
