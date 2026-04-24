@@ -1,0 +1,16 @@
+{
+  "name": "vendepro-alquileres",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2025-01-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "routes": [
+    { "pattern": "alquileres.vendepro.com.ar", "custom_domain": true }
+  ],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "vars": {
+    "NEXT_PUBLIC_USE_MOCK": "false"
+  }
+}
