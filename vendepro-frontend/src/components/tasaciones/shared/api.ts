@@ -1,8 +1,8 @@
 // ============================================================
 // Tasaciones API wrappers
-// All functions call apiFetch(api, path, options?) following
-// the real signature: first arg = ApiName, second = path.
-// JSON responses are cast `as any` per project rules.
+// Alineados con las rutas reales del backend:
+//   - admin API: /appraisal-templates, /org-variables
+//   - properties API: /appraisals (query ?id=), /appraisals/publish, /appraisals/comparables
 // ============================================================
 
 import { apiFetch } from '@/lib/api'
@@ -33,7 +33,7 @@ export async function createTemplate(body: any): Promise<any> {
 
 export async function updateTemplate(id: string, body: any): Promise<any> {
   const r = await apiFetch('admin', `/appraisal-templates/${id}`, {
-    method: 'PATCH',
+    method: 'PUT',
     body: JSON.stringify(body),
   })
   return (await r.json()) as any
@@ -51,25 +51,34 @@ export async function duplicateTemplate(id: string, body?: { new_name?: string }
   return (await r.json()) as any
 }
 
+// Archive = DELETE en la API admin (archiva, no borra físico).
 export async function archiveTemplate(id: string): Promise<any> {
-  const r = await apiFetch('admin', `/appraisal-templates/${id}/archive`, {
-    method: 'POST',
+  const r = await apiFetch('admin', `/appraisal-templates/${id}`, {
+    method: 'DELETE',
   })
+  if (!r.ok) {
+    const err = (await r.json().catch(() => ({}))) as any
+    throw new Error(err?.error ?? `HTTP ${r.status}`)
+  }
   return (await r.json()) as any
 }
 
-// ── Variables (admin API) ─────────────────────────────────
+// ── Variables (admin API, ruta real: /org-variables) ──────
 
-export async function listVariables(params?: { scope?: string }): Promise<any[]> {
+export async function listVariables(params?: { namespace?: string }): Promise<any[]> {
   const qs = new URLSearchParams()
-  if (params?.scope) qs.set('scope', params.scope)
+  if (params?.namespace) qs.set('namespace', params.namespace)
   const query = qs.size ? `?${qs}` : ''
-  const r = await apiFetch('admin', `/appraisal-variables${query}`)
+  const r = await apiFetch('admin', `/org-variables${query}`)
+  if (!r.ok) {
+    const err = (await r.json().catch(() => ({}))) as any
+    throw new Error(err?.error ?? `HTTP ${r.status}`)
+  }
   return (await r.json()) as any
 }
 
 export async function createVariable(body: any): Promise<{ id: string }> {
-  const r = await apiFetch('admin', `/appraisal-variables`, {
+  const r = await apiFetch('admin', `/org-variables`, {
     method: 'POST',
     body: JSON.stringify(body),
   })
@@ -80,9 +89,9 @@ export async function createVariable(body: any): Promise<{ id: string }> {
   return (await r.json()) as any
 }
 
-export async function updateVariable(id: string, body: { value?: string; label?: string }): Promise<{ updated: boolean }> {
-  const r = await apiFetch('admin', `/appraisal-variables/${id}`, {
-    method: 'PATCH',
+export async function updateVariable(id: string, body: { value?: string; label?: string }): Promise<any> {
+  const r = await apiFetch('admin', `/org-variables/${id}`, {
+    method: 'PUT',
     body: JSON.stringify(body),
   })
   if (!r.ok) {
@@ -93,7 +102,7 @@ export async function updateVariable(id: string, body: { value?: string; label?:
 }
 
 export async function deleteVariable(id: string): Promise<void> {
-  const r = await apiFetch('admin', `/appraisal-variables/${id}`, {
+  const r = await apiFetch('admin', `/org-variables/${id}`, {
     method: 'DELETE',
   })
   if (!r.ok) {
@@ -102,11 +111,17 @@ export async function deleteVariable(id: string): Promise<void> {
   }
 }
 
-// ── Appraisals (properties API) ───────────────────────────
+// ── Appraisals (properties API, ruta real: /appraisals?id=) ─
 
 export async function getAppraisal(id: string): Promise<any> {
-  const r = await apiFetch('properties', `/appraisals/${id}`)
-  return (await r.json()) as any
+  const r = await apiFetch('properties', `/appraisals?id=${encodeURIComponent(id)}`)
+  if (!r.ok) {
+    const err = (await r.json().catch(() => ({}))) as any
+    throw new Error(err?.error ?? `HTTP ${r.status}`)
+  }
+  const data = (await r.json()) as any
+  if (data?.error || !data?.id) throw new Error(data?.error ?? 'Tasación no encontrada')
+  return data
 }
 
 export async function createAppraisal(body: any): Promise<{ id: string; status: string }> {
@@ -122,8 +137,8 @@ export async function createAppraisal(body: any): Promise<{ id: string; status: 
 }
 
 export async function updateAppraisal(id: string, body: any): Promise<any> {
-  const r = await apiFetch('properties', `/appraisals/${id}`, {
-    method: 'PATCH',
+  const r = await apiFetch('properties', `/appraisals?id=${encodeURIComponent(id)}`, {
+    method: 'PUT',
     body: JSON.stringify(body),
   })
   if (!r.ok) {
@@ -134,7 +149,7 @@ export async function updateAppraisal(id: string, body: any): Promise<any> {
 }
 
 export async function publishAppraisal(id: string): Promise<any> {
-  const r = await apiFetch('properties', `/appraisals/${id}/publish`, {
+  const r = await apiFetch('properties', `/appraisals/publish?id=${encodeURIComponent(id)}`, {
     method: 'POST',
   })
   if (!r.ok) {
@@ -169,10 +184,10 @@ export async function patchBlockOverride(
   return (await r.json()) as any
 }
 
-// ── Comparables (properties API) ──────────────────────────
+// ── Comparables (properties API, ruta real: /appraisals/comparables) ──
 
 export async function addComparable(body: any): Promise<any> {
-  const r = await apiFetch('properties', `/appraisal-comparables`, {
+  const r = await apiFetch('properties', `/appraisals/comparables`, {
     method: 'POST',
     body: JSON.stringify(body),
   })
@@ -184,8 +199,12 @@ export async function addComparable(body: any): Promise<any> {
 }
 
 export async function deleteComparable(id: string): Promise<any> {
-  const r = await apiFetch('properties', `/appraisal-comparables/${id}`, {
+  const r = await apiFetch('properties', `/appraisals/comparables?id=${encodeURIComponent(id)}`, {
     method: 'DELETE',
   })
+  if (!r.ok) {
+    const err = (await r.json().catch(() => ({}))) as any
+    throw new Error(err?.error ?? `HTTP ${r.status}`)
+  }
   return (await r.json()) as any
 }

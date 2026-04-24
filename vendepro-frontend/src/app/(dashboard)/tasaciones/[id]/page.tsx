@@ -5,6 +5,47 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Building2, ExternalLink, Ruler, Eye, TrendingUp, Shield, Pencil, Loader2 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
+import { TemplateRenderer } from '@/components/tasaciones/renderer/TemplateRenderer'
+import type {
+  AppraisalContext, TemplateBlock, BlockOverrides,
+} from '@/components/tasaciones/renderer/types'
+import '@/components/tasaciones/renderer/print.css'
+
+function parseJson<T>(v: unknown): T | null {
+  if (!v) return null
+  if (typeof v === 'object') return v as T
+  if (typeof v === 'string') { try { return JSON.parse(v) as T } catch { return null } }
+  return null
+}
+
+function buildCtx(a: any): AppraisalContext {
+  return {
+    id: a.id,
+    property_address: a.property_address,
+    neighborhood: a.neighborhood ?? null,
+    city: a.city ?? null,
+    property_type: a.property_type ?? null,
+    covered_area: a.covered_area ?? null,
+    total_area: a.total_area ?? null,
+    semi_area: a.semi_area ?? null,
+    weighted_area: a.weighted_area ?? null,
+    swot: {
+      strengths: a.strengths ?? null,
+      weaknesses: a.weaknesses ?? null,
+      opportunities: a.opportunities ?? null,
+      threats: a.threats ?? null,
+    },
+    prices: {
+      suggested: a.suggested_price ?? null,
+      test: a.test_price ?? null,
+      expected_close: a.expected_close_price ?? null,
+      usd_per_m2: a.usd_per_m2 ?? null,
+    },
+    comparables: a.comparables ?? [],
+    agent: a.agent ?? null,
+    org: a.org ?? null,
+  }
+}
 
 export default function TasacionDetailPage() {
   const params = useParams()
@@ -48,12 +89,12 @@ export default function TasacionDetailPage() {
   if (!appraisal) return null
 
   const a = appraisal
-  const weighted = Number(a.weighted_area) || 0
-  const usdM2 = Number(a.usd_per_m2) || 0
+  const snapshot = parseJson<TemplateBlock[]>(a.template_snapshot_json) ?? []
+  const hasTemplate = !!a.template_id && snapshot.length > 0
 
-  return (
-    <div>
-      {/* Header */}
+  // Header compartido (aplica para ambos modos).
+  const header = (
+    <>
       <div className="flex items-center gap-3 mb-6">
         <Link href="/tasaciones" className="p-2 rounded-lg hover:bg-gray-100">
           <ArrowLeft className="w-5 h-5 text-gray-500" />
@@ -82,7 +123,6 @@ export default function TasacionDetailPage() {
         </div>
       </div>
 
-      {/* Lead/Contact origin */}
       {(linkedLead || a.contact_name) && (
         <div className="flex flex-wrap items-center gap-3 mb-4">
           {linkedLead && (
@@ -102,7 +142,6 @@ export default function TasacionDetailPage() {
         </div>
       )}
 
-      {/* Propiedad vinculada */}
       {a.linked_property && (
         <div className="flex flex-wrap items-center gap-3 mb-4">
           <Link
@@ -118,11 +157,36 @@ export default function TasacionDetailPage() {
           </Link>
         </div>
       )}
+    </>
+  )
 
-      {/* Preview pages */}
+  if (hasTemplate) {
+    const overrides = parseJson<BlockOverrides>(a.block_overrides_json) ?? {}
+    const ctx = buildCtx(a)
+    return (
+      <div>
+        {header}
+        <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+          <TemplateRenderer
+            snapshot={snapshot}
+            overrides={overrides}
+            appraisal={ctx}
+            mode="web"
+          />
+        </div>
+      </div>
+    )
+  }
+
+  // Fallback: layout hardcodeado para tasaciones previas al sistema de templates.
+  const weighted = Number(a.weighted_area) || 0
+  const usdM2 = Number(a.usd_per_m2) || 0
+
+  return (
+    <div>
+      {header}
+
       <div className="space-y-4">
-
-        {/* PAGE 1: Cover */}
         <div className="bg-gradient-to-br from-[#ff007c] via-[#ff3d94] to-[#ff8017] rounded-2xl p-6 sm:p-10 text-white shadow-lg aspect-[794/1123] flex flex-col justify-between relative overflow-hidden">
           <div>
             <img src="/brand/logo-horizontal.png" alt="Logo" className="h-8 sm:h-12 brightness-0 invert mb-4" />
@@ -143,7 +207,6 @@ export default function TasacionDetailPage() {
           </div>
         </div>
 
-        {/* PAGE 2: Property Data + FODA */}
         <div className="bg-white rounded-2xl shadow-sm p-5 sm:p-8">
           <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
             <Ruler className="w-5 h-5 text-[#ff007c]" />
@@ -169,7 +232,6 @@ export default function TasacionDetailPage() {
             </div>
           </div>
 
-          {/* FODA */}
           {(a.strengths || a.weaknesses || a.opportunities || a.threats) && (
             <div>
               <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
@@ -213,7 +275,6 @@ export default function TasacionDetailPage() {
           )}
         </div>
 
-        {/* PAGE 3: Comparables */}
         {comparables.length > 0 && (
           <div className="bg-white rounded-2xl shadow-sm p-5 sm:p-8">
             <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
@@ -261,7 +322,6 @@ export default function TasacionDetailPage() {
           </div>
         )}
 
-        {/* PAGE 4: Valuation */}
         <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-5 sm:p-8 text-white shadow-lg">
           <h2 className="text-lg sm:text-xl font-bold mb-6 flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-[#ff007c]" />
@@ -326,7 +386,6 @@ export default function TasacionDetailPage() {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="bg-white rounded-2xl shadow-sm p-5 sm:p-8 text-center">
           <img src="/brand/logo-horizontal.png" alt="Logo" className="h-8 sm:h-10 mx-auto mb-3" />
           <p className="text-sm font-semibold text-gray-800">Marcela Genta · Operaciones Inmobiliarias</p>
