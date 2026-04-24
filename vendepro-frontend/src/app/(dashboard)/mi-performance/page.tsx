@@ -214,7 +214,7 @@ export default function MiPerformancePage() {
           </h2>
           <div className="space-y-2">
             {Object.entries(PROPERTY_STAGES).map(([key, cfg]) => {
-              const statKey = key === 'captada' ? 'captadas' : key === 'publicada' ? 'publicadas' : key === 'reservada' ? 'reservadas' : key === 'vendida' ? 'vendidas' : 'captadas'
+              const statKey = key === 'captacion' ? 'captadas' : key === 'publicada' ? 'publicadas' : key === 'reservada' ? 'reservadas' : key === 'vendida' ? 'vendidas' : 'captadas'
               const val = data.propertyStats?.[statKey] || 0
               return (
                 <div key={key} className="flex items-center gap-3">

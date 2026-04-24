@@ -8,8 +8,8 @@ import { useToast } from '@/components/ui/Toast'
 import { PROPERTY_STAGES, type PropertyStage } from '@/lib/crm-config'
 import { formatCurrency } from '@/lib/utils'
 
-// Progresión lineal del pipeline — captada → publicada → reservada → vendida
-const MAIN_STAGES: PropertyStage[] = ['captada', 'publicada', 'reservada', 'vendida']
+// Progresión lineal del pipeline — captacion → publicada → reservada → vendida
+const MAIN_STAGES: PropertyStage[] = ['captacion', 'publicada', 'reservada', 'vendida']
 // Suspendida aparece aparte — solo se puede archivar, no avanzar
 const ALL_PIPELINE_STAGES: PropertyStage[] = [...MAIN_STAGES, 'suspendida']
 // Días sin cambio para mostrar alerta de archivo
@@ -154,7 +154,7 @@ export default function PipelinePage() {
         </div>
       ) : view === 'kanban' ? (
         <>
-          {/* Pipeline principal: captada → publicada → reservada → vendida */}
+          {/* Pipeline principal: captacion → publicada → reservada → vendida */}
           <div className="overflow-x-auto -mx-2 px-2">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 min-w-[700px]">
               {MAIN_STAGES.map(stage => {
