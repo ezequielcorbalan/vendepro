@@ -1,0 +1,26 @@
+name: Deploy api-rentals
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "vendepro-backend/packages/api-rentals/**"
+      - "vendepro-backend/packages/infrastructure/**"
+      - "vendepro-backend/package.json"
+      - "vendepro-backend/package-lock.json"
+      - ".github/workflows/deploy-api-rentals.yml"
+      - ".github/workflows/_deploy-api.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-api-rentals
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/_deploy-api.yml
+    with:
+      api_name: api-rentals
+    secrets:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
