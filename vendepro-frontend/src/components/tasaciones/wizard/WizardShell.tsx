@@ -35,9 +35,11 @@ export function WizardShell({ initialTemplateId }: Props) {
     }
     let appraisalId: string | null = null
     try {
+      const { address, ...restProperty } = state.property
       const { id } = await createAppraisal({
         template_id: state.template_id,
-        ...state.property,
+        property_address: address,
+        ...restProperty,
         lead_id: state.lead_id,
         ...state.details,
       })
