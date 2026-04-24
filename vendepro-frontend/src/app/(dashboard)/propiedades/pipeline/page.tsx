@@ -36,25 +36,27 @@ export default function PipelinePage() {
     const map: Record<string, any[]> = {}
     PIPELINE_STAGES.forEach(s => { map[s] = [] })
     properties.forEach(p => {
-      if (map[p.stage]) map[p.stage].push(p)
+      const s = p.commercial_stage
+      if (s && map[s]) map[s].push(p)
     })
     return map
   }, [properties])
 
   const sortedProperties = useMemo(() =>
     [...properties]
-      .filter(p => PIPELINE_STAGES.includes(p.stage))
-      .sort((a, b) => (PROPERTY_STAGES[a.stage as PropertyStage]?.order ?? 99) - (PROPERTY_STAGES[b.stage as PropertyStage]?.order ?? 99)),
+      .filter(p => PIPELINE_STAGES.includes(p.commercial_stage))
+      .sort((a, b) => (PROPERTY_STAGES[a.commercial_stage as PropertyStage]?.order ?? 99) - (PROPERTY_STAGES[b.commercial_stage as PropertyStage]?.order ?? 99)),
     [properties]
   )
 
   const advanceStage = async (property: any) => {
-    const currentIdx = PIPELINE_STAGES.indexOf(property.stage)
+    const currentIdx = PIPELINE_STAGES.indexOf(property.commercial_stage)
     if (currentIdx < 0 || currentIdx >= PIPELINE_STAGES.length - 1) return
     const nextStage = PIPELINE_STAGES[currentIdx + 1]
-    await apiFetch('properties', '/properties', {
+    await apiFetch('properties', `/properties/${property.id}/stage`, {
       method: 'PUT',
-      body: JSON.stringify({ id: property.id, stage: nextStage }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ commercial_stage: nextStage }),
     })
     const label = PROPERTY_STAGES[nextStage]?.label || nextStage
     toast(`${property.address} → ${label}`)
@@ -66,7 +68,7 @@ export default function PipelinePage() {
     localStorage.setItem('pipeline_view', v)
   }
 
-  const activeCount = properties.filter(p => PIPELINE_STAGES.includes(p.stage)).length
+  const activeCount = properties.filter(p => PIPELINE_STAGES.includes(p.commercial_stage)).length
 
   return (
     <div className="space-y-4">
@@ -161,14 +163,14 @@ export default function PipelinePage() {
                 </tr>
               ) : (
                 sortedProperties.map((p, i) => {
-                  const stageCfg = PROPERTY_STAGES[p.stage as PropertyStage]
-                  const canAdvance = p.stage !== 'reservada' && p.stage !== 'suspendida'
-                  const prevStage = i > 0 ? sortedProperties[i - 1].stage : null
-                  const isNewGroup = p.stage !== prevStage
+                  const stageCfg = PROPERTY_STAGES[p.commercial_stage as PropertyStage]
+                  const canAdvance = p.commercial_stage !== 'reservada' && p.commercial_stage !== 'suspendida'
+                  const prevStage = i > 0 ? sortedProperties[i - 1].commercial_stage : null
+                  const isNewGroup = p.commercial_stage !== prevStage
                   return (
                     <>
                       {isNewGroup && i > 0 && (
-                        <tr key={`sep-${p.stage}`} className="border-t-2 border-gray-100" />
+                        <tr key={`sep-${p.commercial_stage}`} className="border-t-2 border-gray-100" />
                       )}
                       <tr key={p.id} className="border-b last:border-0 hover:bg-gray-50 transition-colors">
                         <td className="px-4 py-2.5">
