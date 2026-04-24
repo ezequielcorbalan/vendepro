@@ -2,6 +2,7 @@
 import { useEffect } from 'react'
 import { recordLandingEvent } from '@/lib/landings/public-api'
 import { getOrCreateVisitorId, getOrCreateSessionId, readUtmFromUrl } from '@/lib/landings/tracker'
+import { pushMarketingEvent } from '@/components/marketing/dataLayer'
 
 export default function Tracker({ slug }: { slug: string }) {
   useEffect(() => {
@@ -9,7 +10,19 @@ export default function Tracker({ slug }: { slug: string }) {
     const sessionId = getOrCreateSessionId()
     const utm = readUtmFromUrl()
 
-    recordLandingEvent(slug, { type: 'pageview', visitorId, sessionId, utm })
+    recordLandingEvent(slug, { type: 'pageview', visitorId, sessionId, utm }).then(resp => {
+      if (resp?.marketing?.event_id) {
+        pushMarketingEvent({
+          event_id: resp.marketing.event_id,
+          event_name:
+            resp.marketing.meta?.event_name ||
+            resp.marketing.ga4?.event_name ||
+            'landing_viewed',
+          entity_type: 'landing',
+          entity_id: slug,
+        })
+      }
+    })
 
     function onClickCta(e: MouseEvent) {
       const target = (e.target as HTMLElement).closest('a, button') as HTMLElement | null

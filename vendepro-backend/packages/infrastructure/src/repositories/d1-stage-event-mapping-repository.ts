@@ -24,16 +24,18 @@ export class D1StageEventMappingRepository implements StageEventMappingRepositor
     const o = mapping.toObject()
     // Upsert por (org_id, stage_key) gracias al UNIQUE INDEX
     await this.db.prepare(`
-      INSERT INTO stage_event_mappings (id, org_id, stage_key, meta_event_name, enabled, created_at)
-      VALUES (?,?,?,?,?,?)
+      INSERT INTO stage_event_mappings (id, org_id, stage_key, meta_event_name, ga4_event_name, enabled, created_at)
+      VALUES (?,?,?,?,?,?,?)
       ON CONFLICT(org_id, stage_key) DO UPDATE SET
         meta_event_name=excluded.meta_event_name,
+        ga4_event_name=excluded.ga4_event_name,
         enabled=excluded.enabled
     `).bind(
       o.id,
       o.org_id,
       o.stage_key,
       o.meta_event_name,
+      o.ga4_event_name,
       o.enabled ? 1 : 0,
       o.created_at,
     ).run()
@@ -52,6 +54,7 @@ export class D1StageEventMappingRepository implements StageEventMappingRepositor
       org_id: row.org_id,
       stage_key: row.stage_key,
       meta_event_name: row.meta_event_name,
+      ga4_event_name: row.ga4_event_name ?? null,
       enabled: !!row.enabled,
       created_at: row.created_at,
     })

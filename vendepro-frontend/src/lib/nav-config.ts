@@ -20,6 +20,7 @@ import {
   Target,
   Home,
   Globe,
+  Megaphone,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -50,6 +51,7 @@ export const menuSections: NavSection[] = [
     links: [
       { href: '/leads', label: 'Leads', icon: BookUser },
       { href: '/landings', label: 'Landings', icon: Globe },
+      { href: '/marketing', label: 'Marketing', icon: Megaphone },
       { href: '/contactos', label: 'Contactos', icon: UserCheck },
       { href: '/actividades', label: 'Actividad', icon: Activity },
     ],

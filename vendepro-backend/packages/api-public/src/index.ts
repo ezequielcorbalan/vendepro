@@ -16,6 +16,7 @@ import {
   D1LandingRepository,
   D1LandingVersionRepository,
   D1LandingEventRepository,
+  fireMarketingEvent,
 } from '@vendepro/infrastructure'
 import {
   GetPublicReportUseCase,
@@ -31,7 +32,7 @@ import {
   SubmitLeadFromLandingUseCase,
 } from '@vendepro/core'
 
-type Env = { DB: D1Database }
+type Env = { DB: D1Database; JWT_SECRET: string }
 
 const app = new Hono<{ Bindings: Env }>()
 
@@ -122,9 +123,8 @@ app.get('/public/property-visit-form/:slug', async (c) => {
 // Público: recibe las respuestas del visitante.
 app.post('/public/property-visit-form/:slug/submit', async (c) => {
   const body = (await c.req.json()) as any
-  const uc = new SubmitVisitFormUseCase(
-    new D1PropertyVisitFormRepository(c.env.DB),
-  )
+  const visitFormRepo = new D1PropertyVisitFormRepository(c.env.DB)
+  const uc = new SubmitVisitFormUseCase(visitFormRepo)
   const priceRaw = body.subjective_price_usd
   const price =
     priceRaw === null || priceRaw === undefined || priceRaw === ''
@@ -141,6 +141,31 @@ app.post('/public/property-visit-form/:slug/submit', async (c) => {
     buy_intention: body.buy_intention ?? null,
     observations: body.observations ?? null,
   })
+  // Hook marketing — necesitamos resolver org_id desde la ficha.
+  const form = await visitFormRepo.findBySlug(c.req.param('slug'))
+  if (form) {
+    const mk = await fireMarketingEvent(c.env, {
+      orgId: form.org_id,
+      eventKey: 'visit_form_submitted',
+      entityType: 'visit_form',
+      entityId: form.id,
+      userData: {
+        full_name: body.visitor_name ?? body.name ?? null,
+        email: body.visitor_email ?? body.email ?? null,
+        phone: body.visitor_phone ?? body.phone ?? null,
+        estimated_value: typeof price === 'number' ? price : null,
+        client_ip_address: c.req.header('CF-Connecting-IP') ?? c.req.header('x-forwarded-for') ?? null,
+        client_user_agent: c.req.header('user-agent') ?? null,
+      },
+      customData: {
+        buy_intention: body.buy_intention ?? null,
+      },
+      actionSource: 'website',
+      eventSourceUrl: c.req.header('referer') ?? null,
+      ga4ClientId: body.ga4_client_id ?? null,
+    })
+    return c.json({ ...result, marketing: mk ?? null }, 201)
+  }
   return c.json(result, 201)
 })
 
@@ -179,7 +204,33 @@ app.post('/public/leads', async (c) => {
     notes: body.notes ?? null,
   })
 
-  return c.json(result, 201)
+  // Hook marketing: evento `lead_created` tracked en el Meta/GA4 de la org
+  // dueña de la API key. Esto permite que inmobiliarias externas que usan
+  // VendéPro como CRM tengan conversion tracking en SUS cuentas.
+  const mk = await fireMarketingEvent(c.env, {
+    orgId: result.org_id,
+    eventKey: 'lead_created',
+    entityType: 'lead',
+    entityId: result.id,
+    leadId: result.id,
+    userData: {
+      full_name: body.full_name,
+      email: body.email ?? null,
+      phone: body.phone ?? null,
+      client_ip_address: c.req.header('CF-Connecting-IP') ?? c.req.header('x-forwarded-for') ?? null,
+      client_user_agent: c.req.header('user-agent') ?? null,
+      external_id: body.visitorId ?? null,
+    },
+    customData: {
+      source: 'public_api',
+      source_detail: body.source_detail ?? null,
+    },
+    actionSource: 'website',
+    eventSourceUrl: c.req.header('referer') ?? null,
+    ga4ClientId: body.visitorId ?? null,
+  })
+
+  return c.json({ ...result, marketing: mk ?? null }, 201)
 })
 
 // ── PUBLIC LANDINGS ───────────────────────────────────────────
@@ -213,6 +264,36 @@ app.post('/l/:slug/submit', async (c) => {
     utm: body.utm ?? undefined,
   })
   c.header('Cache-Control', 'no-store')
+
+  // Hook marketing — resolver org desde la landing pública.
+  const landing = await landings.findByFullSlug(c.req.param('slug'))
+  if (landing && (r as any).leadId) {
+    const mk = await fireMarketingEvent(c.env, {
+      orgId: landing.org_id,
+      eventKey: 'landing_lead_submitted',
+      entityType: 'lead',
+      entityId: (r as any).leadId,
+      leadId: (r as any).leadId,
+      userData: {
+        full_name: body.name ?? null,
+        email: body.email ?? null,
+        phone: body.phone ?? null,
+        client_ip_address: c.req.header('CF-Connecting-IP') ?? c.req.header('x-forwarded-for') ?? null,
+        client_user_agent: c.req.header('user-agent') ?? null,
+        external_id: body.visitorId ?? null,
+      },
+      customData: {
+        landing_slug: c.req.param('slug'),
+        utm_source: body.utm?.source ?? null,
+        utm_medium: body.utm?.medium ?? null,
+        utm_campaign: body.utm?.campaign ?? null,
+      },
+      actionSource: 'website',
+      eventSourceUrl: c.req.header('referer') ?? null,
+      ga4ClientId: body.visitorId ?? null,
+    })
+    return c.json({ ...r, marketing: mk ?? null }, 201)
+  }
   return c.json(r, 201)
 })
 
@@ -233,6 +314,36 @@ app.post('/l/:slug/event', async (c) => {
     referrer: body.utm?.referrer ?? null,
     userAgent: c.req.header('user-agent') ?? null,
   })
+
+  // Hook marketing — sólo en pageview (los otros eventos no necesitan CAPI).
+  // En este caso devolvemos JSON con `marketing.event_id` para que el cliente
+  // pueda pushearlo al dataLayer y dedupear con el Pixel.
+  if (body.type === 'pageview') {
+    const landing = await landings.findByFullSlug(c.req.param('slug'))
+    if (landing) {
+      const mk = await fireMarketingEvent(c.env, {
+        orgId: landing.org_id,
+        eventKey: 'landing_viewed',
+        entityType: 'landing',
+        entityId: landing.id,
+        userData: {
+          client_ip_address: c.req.header('CF-Connecting-IP') ?? c.req.header('x-forwarded-for') ?? null,
+          client_user_agent: c.req.header('user-agent') ?? null,
+          external_id: body.visitorId ?? null,
+        },
+        customData: {
+          landing_slug: c.req.param('slug'),
+          utm_source: body.utm?.source ?? null,
+          utm_medium: body.utm?.medium ?? null,
+          utm_campaign: body.utm?.campaign ?? null,
+        },
+        actionSource: 'website',
+        eventSourceUrl: c.req.header('referer') ?? null,
+        ga4ClientId: body.visitorId ?? null,
+      })
+      return c.json({ marketing: mk ?? null })
+    }
+  }
   return new Response(null, { status: 204 })
 })
 

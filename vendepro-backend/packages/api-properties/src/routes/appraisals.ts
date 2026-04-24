@@ -1,5 +1,5 @@
 import type { Hono } from 'hono'
-import { D1AppraisalRepository, D1AppraisalTemplateRepository, CryptoIdGenerator } from '@vendepro/infrastructure'
+import { D1AppraisalRepository, D1AppraisalTemplateRepository, CryptoIdGenerator, fireMarketingEvent } from '@vendepro/infrastructure'
 import {
   GetAppraisalsUseCase,
   GetAppraisalDetailUseCase,
@@ -55,7 +55,23 @@ export function registerAppraisalRoutes(app: Hono<{ Bindings: Env } & AuthVars>)
       new D1AppraisalTemplateRepository(c.env.DB),
     )
     const result = await useCase.execute({ ...body, org_id: orgId, agent_id: agentId })
-    return c.json(result, 201)
+    // Hook marketing: evento `appraisal_created`.
+    const mk = await fireMarketingEvent(c.env, {
+      orgId,
+      eventKey: 'appraisal_created',
+      entityType: 'appraisal',
+      entityId: result.id,
+      leadId: body.lead_id ?? null,
+      userData: {
+        estimated_value: typeof body.suggested_price === 'number' ? body.suggested_price : null,
+      },
+      customData: {
+        property_address: body.property_address ?? null,
+        neighborhood: body.neighborhood ?? null,
+      },
+      actionSource: 'system_generated',
+    })
+    return c.json({ ...result, marketing: mk ?? null }, 201)
   })
 
   app.put('/appraisals', async (c) => {

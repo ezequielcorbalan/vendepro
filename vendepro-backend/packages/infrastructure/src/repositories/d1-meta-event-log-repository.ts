@@ -8,10 +8,11 @@ export class D1MetaEventLogRepository implements MetaEventLogRepository {
     const o = log.toObject()
     await this.db.prepare(`
       INSERT INTO meta_event_log (
-        id, org_id, lead_id, event_id, event_name, status,
+        id, org_id, provider, entity_type, entity_id, lead_id,
+        event_id, event_name, status,
         response_code, response_body, attempts, last_error, sent_at, created_at
       )
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
       ON CONFLICT(id) DO UPDATE SET
         status=excluded.status,
         response_code=excluded.response_code,
@@ -22,6 +23,9 @@ export class D1MetaEventLogRepository implements MetaEventLogRepository {
     `).bind(
       o.id,
       o.org_id,
+      o.provider,
+      o.entity_type,
+      o.entity_id,
       o.lead_id,
       o.event_id,
       o.event_name,
@@ -71,6 +75,9 @@ export class D1MetaEventLogRepository implements MetaEventLogRepository {
     return MetaEventLog.fromPersistence({
       id: row.id,
       org_id: row.org_id,
+      provider: (row.provider ?? 'meta') as any,
+      entity_type: row.entity_type ?? null,
+      entity_id: row.entity_id ?? null,
       lead_id: row.lead_id ?? null,
       event_id: row.event_id,
       event_name: row.event_name,

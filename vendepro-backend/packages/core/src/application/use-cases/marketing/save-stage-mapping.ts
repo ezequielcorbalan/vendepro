@@ -6,6 +6,8 @@ export interface SaveStageMappingInput {
   orgId: string
   stage_key: string
   meta_event_name: string
+  /** Opcional — si null/'' no se envía a GA4. */
+  ga4_event_name?: string | null
   enabled?: boolean
 }
 
@@ -16,10 +18,17 @@ export class SaveStageMappingUseCase {
   ) {}
 
   async execute(input: SaveStageMappingInput): Promise<{ id: string }> {
+    const normalizedGa4 = input.ga4_event_name === undefined
+      ? undefined
+      : (input.ga4_event_name ?? '').trim() === ''
+        ? null
+        : (input.ga4_event_name as string).trim()
+
     const existing = await this.repo.findByOrgAndStage(input.orgId, input.stage_key)
     if (existing) {
       existing.update({
         meta_event_name: input.meta_event_name,
+        ga4_event_name: normalizedGa4,
         enabled: input.enabled ?? existing.enabled,
       })
       await this.repo.save(existing)
@@ -31,6 +40,7 @@ export class SaveStageMappingUseCase {
       org_id: input.orgId,
       stage_key: input.stage_key,
       meta_event_name: input.meta_event_name,
+      ga4_event_name: normalizedGa4 ?? null,
       enabled: input.enabled ?? true,
     })
     await this.repo.save(mapping)
