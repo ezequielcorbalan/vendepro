@@ -23,7 +23,7 @@ export default async function DashboardLayout({
         </div>
         {/* Mobile header */}
         <MobileHeader profile={user as unknown as Profile} />
-        <main className="flex-1 min-w-0 lg:ml-64 pt-16 lg:pt-0 p-4 sm:p-6 lg:p-8 overflow-x-hidden">
+        <main className="flex-1 min-w-0 lg:ml-0 pt-16 lg:pt-0 p-4 lg:px-6 lg:py-5 overflow-x-hidden">
           {children}
         </main>
         <AIFloatingButton />
