@@ -20,6 +20,7 @@ import {
   Target,
   Home,
   Globe,
+  KeyRound,
   Megaphone,
   type LucideIcon,
 } from 'lucide-react'
@@ -30,6 +31,8 @@ export interface NavLink {
   icon: LucideIcon
   /** When true, only exact path match triggers active state */
   exact?: boolean
+  /** When true, renders as <a target="_blank"> instead of Next.js Link */
+  external?: boolean
 }
 
 export interface NavSection {
@@ -66,6 +69,7 @@ export const menuSections: NavSection[] = [
       { href: '/vendidas', label: 'Vendidas', icon: DollarSign },
       { href: '/alquiladas', label: 'Alquiladas', icon: Home },
       { href: '/reportes', label: 'Reportes', icon: FileBarChart },
+      { href: 'https://alquileres.vendepro.com.ar', label: 'Alquileres', icon: KeyRound, external: true },
     ],
   },
 ]

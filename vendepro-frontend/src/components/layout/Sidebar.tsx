@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Settings, LogOut, FileBarChart } from 'lucide-react'
+import { Settings, LogOut, FileBarChart, ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import GlobalSearch from './GlobalSearch'
 import NotificationBell from './NotificationBell'
@@ -60,24 +60,41 @@ export default function Sidebar({ profile }: { profile: Profile }) {
             <div className="space-y-0.5">
               {section.links.map((link) => {
                 const Icon = link.icon
-                const isActive = pathname === link.href || (!link.exact && pathname.startsWith(link.href + '/'))
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    aria-current={isActive ? 'page' : undefined}
-                    className={cn(
-                      'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all relative group',
-                      isActive
-                        ? 'bg-gradient-to-r from-[#ff007c]/10 to-[#ff8017]/10 text-[#ff007c] shadow-sm'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    )}
-                  >
+                const isActive = !link.external && (pathname === link.href || (!link.exact && pathname.startsWith(link.href + '/')))
+                const className = cn(
+                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all relative group',
+                  isActive
+                    ? 'bg-gradient-to-r from-[#ff007c]/10 to-[#ff8017]/10 text-[#ff007c] shadow-sm'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                )
+                const inner = (
+                  <>
                     {isActive && (
                       <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-gradient-to-b from-[#ff007c] to-[#ff8017] rounded-r-full" />
                     )}
                     <Icon className={cn('w-5 h-5 transition-transform', isActive && 'scale-110')} aria-hidden="true" />
                     {link.label}
+                    {link.external && <ExternalLink className="w-3 h-3 ml-auto opacity-40" aria-hidden="true" />}
+                  </>
+                )
+                return link.external ? (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={className}
+                  >
+                    {inner}
+                  </a>
+                ) : (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={className}
+                  >
+                    {inner}
                   </Link>
                 )
               })}
