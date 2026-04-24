@@ -1,0 +1,22 @@
+{
+  "name": "vendepro-api-rentals",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-01-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "routes": [
+    { "pattern": "rentals.api.vendepro.com.ar", "custom_domain": true }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "vendepro-rentals-db",
+      "database_id": "REPLACE_WITH_ACTUAL_D1_ID"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "R2",
+      "bucket_name": "vendepro-rentals-docs"
+    }
+  ]
+}
