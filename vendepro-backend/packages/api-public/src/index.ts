@@ -16,6 +16,7 @@ import {
   D1LandingRepository,
   D1LandingVersionRepository,
   D1LandingEventRepository,
+  D1OrgVariableRepository,
   fireMarketingEvent,
 } from '@vendepro/infrastructure'
 import {
@@ -55,6 +56,7 @@ app.get('/public/appraisal/:slug', async (c) => {
   const uc = new GetPublicAppraisalUseCase(
     new D1AppraisalRepository(c.env.DB),
     new D1TemplateBlockRepository(c.env.DB),
+    new D1OrgVariableRepository(c.env.DB),
   )
   const result = await uc.execute(c.req.param('slug'))
   if (!result) return c.json({ error: 'Not found' }, 404)

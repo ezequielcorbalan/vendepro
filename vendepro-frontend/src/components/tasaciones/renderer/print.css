@@ -1,0 +1,14 @@
+@media print {
+  [data-block-web-only="true"] { display: none !important; }
+  [data-block] { page-break-inside: avoid; break-inside: avoid; }
+  [data-block-page-break="true"] { page-break-before: always; break-before: page; }
+  .no-print, nav, header[role="banner"] { display: none !important; }
+  body { font-size: 10pt; }
+}
+
+[data-force-print="true"] [data-block-web-only="true"] { display: none !important; }
+[data-force-print="true"] [data-block] { page-break-inside: avoid; break-inside: avoid; }
+[data-force-print="true"] [data-block-page-break="true"] { break-before: page; page-break-before: always; }
+[data-force-print="true"] .no-print { display: none !important; }
+
+@page { size: A4; margin: 12mm; }

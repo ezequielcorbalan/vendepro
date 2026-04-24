@@ -1,0 +1,40 @@
+'use client'
+interface Props { data: any; onPatch: (p: Record<string, unknown>) => void }
+
+interface FunnelStep { label: string; value: number | null; color?: string }
+
+export function FunnelChartForm({ data, onPatch }: Props) {
+  const funnel: FunnelStep[] = data.funnel ?? []
+
+  const setStep = (i: number, field: keyof FunnelStep, val: string) => {
+    const next = funnel.map((s, idx) => idx === i ? { ...s, [field]: field === 'value' ? (val ? Number(val) : null) : val } : s)
+    onPatch({ funnel: next })
+  }
+  const add = () => onPatch({ funnel: [...funnel, { label: '', value: null }] })
+  const remove = (i: number) => onPatch({ funnel: funnel.filter((_, idx) => idx !== i) })
+
+  return (
+    <div className="space-y-3 p-3">
+      <label className="flex flex-col gap-1">
+        <span className="text-xs uppercase tracking-wide text-slate-600">Título</span>
+        <input type="text" value={data.title ?? ''} onChange={e => onPatch({ title: e.target.value })} className="rounded border border-slate-300 px-2 py-1 text-sm" />
+      </label>
+      <div>
+        <div className="mb-1 flex items-center justify-between">
+          <span className="text-xs uppercase tracking-wide text-slate-600">Etapas del funnel</span>
+          <button onClick={add} className="text-xs text-[#ff007c]">+ Agregar</button>
+        </div>
+        <div className="space-y-2">
+          {funnel.map((step, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <input placeholder="Etapa" value={step.label} onChange={e => setStep(i, 'label', e.target.value)} className="flex-1 rounded border border-slate-300 px-2 py-1 text-xs" />
+              <input type="number" placeholder="Valor" value={step.value ?? ''} onChange={e => setStep(i, 'value', e.target.value)} className="w-20 rounded border border-slate-300 px-2 py-1 text-xs" />
+              <input type="color" value={step.color ?? '#ff007c'} onChange={e => setStep(i, 'color', e.target.value)} className="h-7 w-7 rounded border border-slate-300 p-0.5" />
+              <button onClick={() => remove(i)} className="text-xs text-rose-500">✕</button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
