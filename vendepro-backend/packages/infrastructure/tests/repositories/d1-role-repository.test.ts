@@ -13,12 +13,14 @@ describe('D1RoleRepository', () => {
     await closeTestDB(env)
   })
 
-  it('findAll returns the 2 seeded roles ordered by id', async () => {
+  it('findAll returns the 4 seeded roles ordered by id', async () => {
     const repo = new D1RoleRepository(env.DB)
     const roles = await repo.findAll()
-    expect(roles.length).toBe(2)
+    expect(roles.length).toBe(4)
     expect(roles[0]!.toObject()).toEqual({ id: 1, name: 'admin', label: 'Administrador' })
     expect(roles[1]!.toObject()).toEqual({ id: 2, name: 'agent', label: 'Agente' })
+    expect(roles[2]!.toObject()).toEqual({ id: 3, name: 'supervisor', label: 'Supervisor' })
+    expect(roles[3]!.toObject()).toEqual({ id: 4, name: 'owner', label: 'Propietario de cuenta' })
   })
 
   it('findById(1) returns admin', async () => {
