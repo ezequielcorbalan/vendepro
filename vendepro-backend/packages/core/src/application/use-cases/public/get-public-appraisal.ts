@@ -1,13 +1,13 @@
 import type { AppraisalRepository } from '../../ports/repositories/appraisal-repository'
 import type { TemplateBlockRepository } from '../../ports/repositories/template-block-repository'
 import type { OrgVariableRepository } from '../../ports/repositories/org-variable-repository'
-import type { Appraisal } from '../../../domain/entities/appraisal'
+import type { AppraisalProps } from '../../../domain/entities/appraisal'
 import type { TemplateBlock } from '../../../domain/entities/template-block'
 
 export type ResolvedVars = Record<string, { value: string; type: string }>
 
 export interface GetPublicAppraisalResult {
-  appraisal: Appraisal
+  appraisal: AppraisalProps
   org: { name: string; logo_url: string | null; brand_color: string | null }
   blocks: TemplateBlock[]
   resolved_vars: ResolvedVars
@@ -61,7 +61,7 @@ export class GetPublicAppraisalUseCase {
     }
 
     return {
-      appraisal: result.appraisal,
+      appraisal: result.appraisal.toObject(),
       org: result.org,
       blocks,
       resolved_vars,
