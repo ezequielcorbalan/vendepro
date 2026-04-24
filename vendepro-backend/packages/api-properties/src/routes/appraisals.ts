@@ -1,5 +1,5 @@
 import type { Hono } from 'hono'
-import { D1AppraisalRepository, CryptoIdGenerator } from '@vendepro/infrastructure'
+import { D1AppraisalRepository, D1AppraisalTemplateRepository, CryptoIdGenerator } from '@vendepro/infrastructure'
 import {
   GetAppraisalsUseCase,
   GetAppraisalDetailUseCase,
@@ -8,6 +8,8 @@ import {
   DeleteAppraisalUseCase,
   AddAppraisalComparableUseCase,
   RemoveAppraisalComparableUseCase,
+  SyncTemplateSnapshotUseCase,
+  SetBlockOverridesUseCase,
 } from '@vendepro/core'
 
 type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket; R2_PUBLIC_URL: string }
@@ -47,7 +49,11 @@ export function registerAppraisalRoutes(app: Hono<{ Bindings: Env } & AuthVars>)
     const repo = new D1AppraisalRepository(c.env.DB)
     const orgId = c.get('orgId')
     const agentId = body.agent_id || c.get('userId')
-    const useCase = new CreateAppraisalUseCase(repo, new CryptoIdGenerator())
+    const useCase = new CreateAppraisalUseCase(
+      repo,
+      new CryptoIdGenerator(),
+      new D1AppraisalTemplateRepository(c.env.DB),
+    )
     const result = await useCase.execute({ ...body, org_id: orgId, agent_id: agentId })
     return c.json(result, 201)
   })
@@ -125,5 +131,26 @@ export function registerAppraisalRoutes(app: Hono<{ Bindings: Env } & AuthVars>)
     const useCase = new RemoveAppraisalComparableUseCase(repo)
     await useCase.execute(id ?? '')
     return c.json({ success: true })
+  })
+
+  app.post('/appraisals/:id/sync-template', async (c) => {
+    const uc = new SyncTemplateSnapshotUseCase(
+      new D1AppraisalRepository(c.env.DB),
+      new D1AppraisalTemplateRepository(c.env.DB),
+    )
+    const r = await uc.execute({ appraisalId: c.req.param('id'), orgId: c.get('orgId') })
+    return c.json(r)
+  })
+
+  app.patch('/appraisals/:id/blocks/:block_id', async (c) => {
+    const body = (await c.req.json().catch(() => ({}))) as any
+    const uc = new SetBlockOverridesUseCase(new D1AppraisalRepository(c.env.DB))
+    await uc.execute({
+      appraisalId: c.req.param('id'),
+      orgId: c.get('orgId'),
+      blockId: c.req.param('block_id'),
+      patch: body ?? {},
+    })
+    return c.json({ ok: true })
   })
 }

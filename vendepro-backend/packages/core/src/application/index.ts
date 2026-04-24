@@ -128,3 +128,27 @@ export * from './use-cases/public/get-public-visit-form'
 export * from './use-cases/public/submit-visit-form-response'
 export * from './use-cases/public/get-public-prefactibilidad'
 export * from './use-cases/public/create-public-lead'
+
+// Appraisal Templates
+export { ListAppraisalTemplatesUseCase } from './use-cases/appraisal-templates/list-appraisal-templates'
+export type { ListAppraisalTemplatesInput } from './use-cases/appraisal-templates/list-appraisal-templates'
+export { GetAppraisalTemplateUseCase } from './use-cases/appraisal-templates/get-appraisal-template'
+export { CreateAppraisalTemplateUseCase } from './use-cases/appraisal-templates/create-appraisal-template'
+export type { CreateAppraisalTemplateInput } from './use-cases/appraisal-templates/create-appraisal-template'
+export { UpdateAppraisalTemplateUseCase } from './use-cases/appraisal-templates/update-appraisal-template'
+export type { UpdateAppraisalTemplateInput } from './use-cases/appraisal-templates/update-appraisal-template'
+export { DuplicateAppraisalTemplateUseCase } from './use-cases/appraisal-templates/duplicate-appraisal-template'
+export { ArchiveAppraisalTemplateUseCase } from './use-cases/appraisal-templates/archive-appraisal-template'
+
+// Org Variables
+export { ListOrgVariablesUseCase } from './use-cases/org-variables/list-org-variables'
+export { CreateOrgVariableUseCase } from './use-cases/org-variables/create-org-variable'
+export type { CreateOrgVariableInput } from './use-cases/org-variables/create-org-variable'
+export { UpdateOrgVariableUseCase } from './use-cases/org-variables/update-org-variable'
+export { DeleteOrgVariableUseCase } from './use-cases/org-variables/delete-org-variable'
+
+// Appraisal Rendering
+export { HydrateTemplateBlocksUseCase } from './use-cases/appraisal-rendering/hydrate-template-blocks'
+export type { HydratedBlock, HydrateInput } from './use-cases/appraisal-rendering/hydrate-template-blocks'
+export { SyncTemplateSnapshotUseCase } from './use-cases/appraisal-rendering/sync-template-snapshot'
+export { SetBlockOverridesUseCase } from './use-cases/appraisal-rendering/set-block-overrides'

@@ -22,8 +22,6 @@ const baseProps = {
   test_price: null,
   expected_close_price: null,
   usd_per_m2: null,
-  canva_design_id: null,
-  canva_edit_url: null,
   agent_id: 'agent-1',
   lead_id: null,
   status: 'draft' as const,
@@ -80,6 +78,24 @@ describe('Appraisal entity', () => {
     expect(apr.suggested_price).toBe(200000)
     expect(apr.status).toBe('generated')
     expect(apr.updated_at).not.toBe(created)
+  })
+
+  it('defaults new template fields to null when not provided', () => {
+    const a = Appraisal.create({
+      id: 'a1', org_id: 'o1', property_address: 'Addr 123',
+      neighborhood: 'N', city: 'C', property_type: 'depto',
+      covered_area: null, total_area: null, semi_area: null, weighted_area: null,
+      strengths: null, weaknesses: null, opportunities: null, threats: null,
+      publication_analysis: null, suggested_price: null, test_price: null,
+      expected_close_price: null, usd_per_m2: null,
+      agent_id: 'ag1', lead_id: null, status: 'draft', public_slug: null,
+      proposal: null, market_situation: null, work_conditions: null, video_links: null,
+      comparables: [],
+    } as any)
+    expect(a.template_id).toBeNull()
+    expect(a.template_snapshot_json).toBeNull()
+    expect(a.template_synced_at).toBeNull()
+    expect(a.block_overrides_json).toBeNull()
   })
 
   it('toObject round-trips main fields', () => {

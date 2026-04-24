@@ -103,8 +103,6 @@ const buildAppraisal = (overrides: Partial<Parameters<typeof Appraisal.create>[0
     test_price: null,
     expected_close_price: null,
     usd_per_m2: null,
-    canva_design_id: null,
-    canva_edit_url: null,
     agent_id: agentId,
     lead_id: null,
     status: 'draft',

@@ -45,8 +45,6 @@ describe('D1AppraisalRepository', () => {
       test_price: null,
       expected_close_price: 190000,
       usd_per_m2: 2500,
-      canva_design_id: null,
-      canva_edit_url: null,
       agent_id: agentId,
       lead_id: null,
       status: 'draft',
@@ -110,8 +108,8 @@ describe('D1AppraisalRepository', () => {
       covered_area: null, total_area: null, semi_area: null, weighted_area: null,
       strengths: null, weaknesses: null, opportunities: null, threats: null,
       publication_analysis: null, suggested_price: null, test_price: null,
-      expected_close_price: null, usd_per_m2: null, canva_design_id: null,
-      canva_edit_url: null, agent_id: user2.id, lead_id: null, status: 'draft',
+      expected_close_price: null, usd_per_m2: null,
+      agent_id: user2.id, lead_id: null, status: 'draft',
       public_slug: null,
     })
     await repo.save(otherApp)

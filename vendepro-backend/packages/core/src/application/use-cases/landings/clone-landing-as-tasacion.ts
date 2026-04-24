@@ -74,8 +74,6 @@ export class CloneLandingAsTasacionUseCase {
       test_price: null,
       expected_close_price: null,
       usd_per_m2: null,
-      canva_design_id: null,
-      canva_edit_url: null,
       agent_id: input.actor.userId,
       lead_id: input.lead_id ?? null,
       status: 'draft',
