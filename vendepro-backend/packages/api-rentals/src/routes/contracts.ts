@@ -149,48 +149,104 @@ r.post('/:id/adjust-price', async (c) => {
   return c.json({ ok: true, new_price: newPrice })
 })
 
-/** AI contract extraction */
+const EXTRACTION_SYSTEM_PROMPT = `Sos un asistente especializado en contratos de alquiler argentinos.
+Extraé los datos del contrato del archivo y devolvé SOLO un JSON válido con estos campos (null si no encontrás el dato):
+{
+  "alias": "descripción breve del contrato (ej: Av. Corrientes 1234 - Dpto 3B)",
+  "rental_type": "residencial|comercial",
+  "start_date": "YYYY-MM-DD",
+  "duration_months": número,
+  "currency": "ARS|USD",
+  "initial_price": número,
+  "payment_day": número entre 1 y 28,
+  "adjustment_type": "tasa_fija|ipc_2m|ipc_1m|icl|personalizado|sin_ajuste",
+  "adjustment_fixed_rate": número (porcentaje, ej: 15 para 15%),
+  "adjustment_frequency": "mensual|bimestral|trimestral|cuatrimestral|semestral|anual",
+  "guarantee_type": "sin_garantia|real|personal_fiador|seguro_caucion",
+  "notes": "notas relevantes del contrato"
+}
+Solo incluí campos con datos concretos. No inventes valores.`
+
+/** AI contract extraction — uses Groq (image: llama-4-scout vision, text: llama-3.3-70b) */
 r.post('/extract-from-file', async (c) => {
-  // This endpoint requires ANTHROPIC_API_KEY — handled via Workers env
   try {
     const formData = await c.req.formData()
     const file = formData.get('file') as File | null
     if (!file) return c.json({ error: 'No file provided' }, 400)
 
+    const groqKey = (c.env as any).GROQ_API_KEY
+    if (!groqKey) return c.json({ error: 'GROQ_API_KEY no configurada' }, 500)
+
+    const isImage = file.type.startsWith('image/')
     const bytes = await file.arrayBuffer()
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(bytes)))
-    const mediaType = file.type || 'application/pdf'
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': (c.env as any).ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1024,
-        messages: [{
-          role: 'user',
-          content: [
-            {
-              type: mediaType.startsWith('image') ? 'image' : 'document',
-              source: { type: 'base64', media_type: mediaType, data: base64 },
-            },
-            {
-              type: 'text',
-              text: 'Extract rental contract data and return ONLY a JSON object with these fields (use null for missing): alias (string), rental_type (residencial|comercial), start_date (YYYY-MM-DD), duration_months (number), currency (ARS|USD), initial_price (number), payment_day (number 1-28), adjustment_type (string), adjustment_fixed_rate (number), notes (string)',
-            },
-          ],
-        }],
-      }),
-    })
+    let extracted: any = {}
 
-    const data = await response.json() as any
-    const text = data.content?.[0]?.text || '{}'
-    const match = text.match(/\{[\s\S]*\}/)
-    const extracted = match ? JSON.parse(match[0]) : {}
+    if (isImage) {
+      // Vision model — same as api-ai extractLeadFromImage
+      const base64 = btoa(String.fromCharCode(...new Uint8Array(bytes)))
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 20_000)
+      try {
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          signal: controller.signal,
+          headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+            messages: [{
+              role: 'user',
+              content: [
+                { type: 'image_url', image_url: { url: `data:${file.type};base64,${base64}` } },
+                { type: 'text', text: EXTRACTION_SYSTEM_PROMPT },
+              ],
+            }],
+            temperature: 0.1,
+            max_tokens: 800,
+          }),
+        })
+        if (!res.ok) throw new Error(`Groq vision ${res.status}`)
+        const data = await res.json() as any
+        const content = data.choices?.[0]?.message?.content ?? '{}'
+        const match = content.match(/\{[\s\S]*\}/)
+        extracted = match ? JSON.parse(match[0]) : {}
+      } finally {
+        clearTimeout(timeout)
+      }
+    } else {
+      // Text/PDF — decode as UTF-8 text then send to llama-3.3-70b
+      const text = new TextDecoder('utf-8', { fatal: false }).decode(bytes)
+        .replace(/[^\x20-\x7E\n\r\táéíóúüñÁÉÍÓÚÜÑ]/g, ' ')
+        .slice(0, 12000) // stay within token limit
+
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 15_000)
+      try {
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          signal: controller.signal,
+          headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            messages: [
+              { role: 'system', content: EXTRACTION_SYSTEM_PROMPT },
+              { role: 'user', content: `Contrato a analizar:\n\n${text}` },
+            ],
+            temperature: 0.1,
+            max_tokens: 800,
+            response_format: { type: 'json_object' },
+          }),
+        })
+        if (!res.ok) throw new Error(`Groq text ${res.status}`)
+        const data = await res.json() as any
+        const content = data.choices?.[0]?.message?.content ?? '{}'
+        const match = content.match(/\{[\s\S]*\}/)
+        extracted = match ? JSON.parse(match[0]) : {}
+      } finally {
+        clearTimeout(timeout)
+      }
+    }
+
     return c.json(extracted)
   } catch (e: any) {
     return c.json({ error: e.message || 'Extraction failed' }, 500)
