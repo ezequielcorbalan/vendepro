@@ -2,31 +2,34 @@
 -- Expande el CHECK constraint de users.role a ('owner', 'admin', 'supervisor', 'agent')
 -- y agrega esos roles al catálogo `roles`.
 --
--- D1 corre cada migration dentro de una transacción implícita, por lo que
--- `PRAGMA foreign_keys = OFF` (que solo opera fuera de transacciones) falla.
--- Usamos `PRAGMA defer_foreign_keys = ON`, que pospone la validación de FKs
--- hasta el COMMIT — momento en el que la tabla `users` ya fue recreada con
--- todos los IDs originales y las FKs vuelven a resolverse correctamente.
+-- ⚠️ Por qué este approach (RENAME COLUMN + ADD + UPDATE + DROP COLUMN):
+--
+-- El approach clásico de SQLite "12-step" — recrear users_v2 + DROP TABLE users
+-- + RENAME — falla en D1 remote con `internal error [code: 7500]` o `D1_RESET_DO`
+-- aun usando `PRAGMA defer_foreign_keys = ON`. La ejecución del DROP TABLE rompe
+-- el Durable Object porque hay 13 tablas con FKs apuntando a `users(id)`, y D1
+-- no permite `PRAGMA writable_schema = ON` (devuelve SQLITE_AUTH).
+--
+-- El approach de abajo NO recrea la tabla — solo modifica la columna `role`:
+--   1) ALTER TABLE users RENAME COLUMN role TO role_old;
+--   2) ALTER TABLE users ADD COLUMN role ... CHECK (rol nuevo);
+--   3) UPDATE users SET role = role_old;
+--   4) ALTER TABLE users DROP COLUMN role_old;
+-- Esto deja las FKs intactas y aplica el nuevo CHECK constraint.
+--
+-- Esta migration ya fue aplicada manualmente en remoto el 2026-04-25 vía
+-- `wrangler d1 execute --remote --command` statement por statement. Quedó
+-- registrada en d1_migrations para que `wrangler d1 migrations apply` la saltee.
+-- Para aplicarla local: `npx wrangler d1 migrations apply vendepro-db`.
 
-PRAGMA defer_foreign_keys = ON;
+ALTER TABLE users RENAME COLUMN role TO role_old;
 
-CREATE TABLE users_v2 (
-  id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
-  org_id TEXT NOT NULL DEFAULT 'org_mg',
-  email TEXT UNIQUE NOT NULL,
-  password_hash TEXT NOT NULL,
-  full_name TEXT NOT NULL,
-  phone TEXT,
-  photo_url TEXT,
-  role TEXT NOT NULL DEFAULT 'agent' CHECK (role IN ('owner', 'admin', 'supervisor', 'agent')),
-  active INTEGER NOT NULL DEFAULT 1,
-  created_at TEXT DEFAULT (datetime('now'))
-);
+ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'agent'
+  CHECK (role IN ('owner', 'admin', 'supervisor', 'agent'));
 
-INSERT INTO users_v2 SELECT id, org_id, email, password_hash, full_name, phone, photo_url, role, active, created_at FROM users;
+UPDATE users SET role = role_old;
 
-DROP TABLE users;
-ALTER TABLE users_v2 RENAME TO users;
+ALTER TABLE users DROP COLUMN role_old;
 
 INSERT OR IGNORE INTO roles (id, name, label) VALUES
   (3, 'supervisor', 'Supervisor'),
