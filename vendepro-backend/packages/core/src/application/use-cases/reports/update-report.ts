@@ -1,5 +1,7 @@
 import type { ReportRepository, NewReportMetric, NewReportContent } from '../../ports/repositories/report-repository'
+import type { PropertyRepository } from '../../ports/repositories/property-repository'
 import type { IdGenerator } from '../../ports/id-generator'
+import { makeReportPublicSlug } from '../../../shared/report-public-slug'
 
 export interface UpdateReportInput {
   id: string
@@ -31,6 +33,7 @@ export interface UpdateReportInput {
 export class UpdateReportUseCase {
   constructor(
     private readonly repo: ReportRepository,
+    private readonly propertyRepo: PropertyRepository,
     private readonly idGen: IdGenerator,
   ) {}
 
@@ -52,6 +55,15 @@ export class UpdateReportUseCase {
     const status = input.publish ? 'published' : 'draft'
     const publishedAt = input.publish ? new Date().toISOString() : null
 
+    let publicSlug = (report.public_slug as string | null) ?? null
+    if (!publicSlug) {
+      const propertyId = report.property_id as string
+      const property = await this.propertyRepo.findById(propertyId, input.orgId)
+      const address = property?.toObject().address ?? propertyId
+      const periodLabel = input.periodLabel ?? (report.period_label as string)
+      publicSlug = makeReportPublicSlug(address, periodLabel, this.idGen)
+    }
+
     // Update core report via save (upsert)
     const { Report } = await import('../../../domain/entities/report')
     const updatedReport = Report.create({
@@ -64,6 +76,7 @@ export class UpdateReportUseCase {
       created_by: report.created_by as string,
       created_at: report.created_at as string,
       published_at: publishedAt ?? (report.published_at as string | null),
+      public_slug: publicSlug,
     })
     await this.repo.save(updatedReport)
 

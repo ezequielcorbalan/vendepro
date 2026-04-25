@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { CreateReportUseCase } from '../../../src/application/use-cases/reports/create-report'
 import { GetReportsUseCase } from '../../../src/application/use-cases/reports/get-reports'
 
@@ -23,11 +23,17 @@ const mockRepo = {
   findPhotosByReport: vi.fn().mockResolvedValue([]),
 }
 
+const mockPropertyRepo = {
+  findById: vi.fn().mockResolvedValue({
+    toObject: () => ({ address: 'Av. Corrientes 1234' }),
+  }),
+} as any
+
 describe('CreateReportUseCase', () => {
   beforeEach(() => { idCounter = 0; vi.clearAllMocks() })
 
   it('creates report and saves metrics + content', async () => {
-    const useCase = new CreateReportUseCase(mockRepo as any, mockIdGen)
+    const useCase = new CreateReportUseCase(mockRepo as any, mockPropertyRepo, mockIdGen)
     const result = await useCase.execute({
       propertyId: 'prop-1',
       orgId: 'org-1',
@@ -47,8 +53,23 @@ describe('CreateReportUseCase', () => {
     expect(mockRepo.replaceContent).toHaveBeenCalled()
   })
 
+  it('generates a public_slug from address + period + uid', async () => {
+    const useCase = new CreateReportUseCase(mockRepo as any, mockPropertyRepo, mockIdGen)
+    await useCase.execute({
+      propertyId: 'prop-1',
+      orgId: 'org-1',
+      periodLabel: 'Abril 2026',
+      periodStart: '2026-04-01',
+      periodEnd: '2026-04-30',
+      createdBy: 'user-1',
+    })
+    const saved = mockRepo.save.mock.calls[0][0]
+    const slug = saved.public_slug
+    expect(slug).toMatch(/^av-corrientes-1234-abril-2026-[a-z0-9]+$/)
+  })
+
   it('handles competitors when provided', async () => {
-    const useCase = new CreateReportUseCase(mockRepo as any, mockIdGen)
+    const useCase = new CreateReportUseCase(mockRepo as any, mockPropertyRepo, mockIdGen)
     await useCase.execute({
       propertyId: 'prop-1',
       orgId: 'org-1',

@@ -42,43 +42,54 @@ const makeReport = () =>
     status: 'published',
     created_by: 'agent-1',
     published_at: '2024-01-15T00:00:00.000Z',
+    public_slug: 'av-libertador-100-enero-2024-a3f9b2',
   })
 
 describe('GetPublicReportUseCase', () => {
-  it('returns property and latest published report when both exist', async () => {
-    const propertyRepo = { findByPublicSlug: vi.fn().mockResolvedValue(makeProperty()) } as any
-    const reportRepo = { findLatestPublishedByProperty: vi.fn().mockResolvedValue(makeReport()) } as any
+  it('returns property and report when slug matches a published report', async () => {
+    const reportRepo = {
+      findPublicBySlug: vi.fn().mockResolvedValue({
+        report: makeReport(),
+        propertyId: 'prop-1',
+        orgId: 'org-1',
+      }),
+    } as any
+    const propertyRepo = { findById: vi.fn().mockResolvedValue(makeProperty()) } as any
 
     const uc = new GetPublicReportUseCase(propertyRepo, reportRepo)
-    const result = await uc.execute('libertador-100')
+    const result = await uc.execute('av-libertador-100-enero-2024-a3f9b2')
 
     expect(result).not.toBeNull()
     expect(result!.property.id).toBe('prop-1')
-    expect(result!.report).not.toBeNull()
-    expect(result!.report!.id).toBe('report-1')
-    expect(reportRepo.findLatestPublishedByProperty).toHaveBeenCalledWith('prop-1')
+    expect(result!.report.id).toBe('report-1')
+    expect(reportRepo.findPublicBySlug).toHaveBeenCalledWith('av-libertador-100-enero-2024-a3f9b2')
+    expect(propertyRepo.findById).toHaveBeenCalledWith('prop-1', 'org-1')
   })
 
-  it('returns null when property not found', async () => {
-    const propertyRepo = { findByPublicSlug: vi.fn().mockResolvedValue(null) } as any
-    const reportRepo = { findLatestPublishedByProperty: vi.fn() } as any
+  it('returns null when slug does not match any published report', async () => {
+    const reportRepo = { findPublicBySlug: vi.fn().mockResolvedValue(null) } as any
+    const propertyRepo = { findById: vi.fn() } as any
 
     const uc = new GetPublicReportUseCase(propertyRepo, reportRepo)
     const result = await uc.execute('no-such-slug')
 
     expect(result).toBeNull()
-    expect(reportRepo.findLatestPublishedByProperty).not.toHaveBeenCalled()
+    expect(propertyRepo.findById).not.toHaveBeenCalled()
   })
 
-  it('returns property with null report when no published report exists', async () => {
-    const propertyRepo = { findByPublicSlug: vi.fn().mockResolvedValue(makeProperty()) } as any
-    const reportRepo = { findLatestPublishedByProperty: vi.fn().mockResolvedValue(null) } as any
+  it('returns null when the linked property is missing', async () => {
+    const reportRepo = {
+      findPublicBySlug: vi.fn().mockResolvedValue({
+        report: makeReport(),
+        propertyId: 'prop-1',
+        orgId: 'org-1',
+      }),
+    } as any
+    const propertyRepo = { findById: vi.fn().mockResolvedValue(null) } as any
 
     const uc = new GetPublicReportUseCase(propertyRepo, reportRepo)
-    const result = await uc.execute('libertador-100')
+    const result = await uc.execute('av-libertador-100-enero-2024-a3f9b2')
 
-    expect(result).not.toBeNull()
-    expect(result!.property.id).toBe('prop-1')
-    expect(result!.report).toBeNull()
+    expect(result).toBeNull()
   })
 })

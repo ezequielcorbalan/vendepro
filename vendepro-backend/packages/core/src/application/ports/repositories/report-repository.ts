@@ -28,7 +28,7 @@ export interface ReportRepository {
   findById(id: string, orgId: string): Promise<Report | null>
   findByOrg(orgId: string, propertyId?: string): Promise<Report[]>
   findByProperty(propertyId: string, orgId: string): Promise<Report[]>
-  findPublicBySlug(slug: string): Promise<Report | null>
+  findPublicBySlug(slug: string): Promise<{ report: Report; propertyId: string; orgId: string } | null>
   findLatestPublishedByProperty(propertyId: string): Promise<Report | null>
   save(report: Report): Promise<void>
   delete(id: string, orgId: string): Promise<void>

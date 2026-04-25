@@ -5,7 +5,7 @@ import type { Report } from '../../../domain/entities/report'
 
 export interface GetPublicReportResult {
   property: Property
-  report: Report | null
+  report: Report
 }
 
 export class GetPublicReportUseCase {
@@ -15,11 +15,12 @@ export class GetPublicReportUseCase {
   ) {}
 
   async execute(slug: string): Promise<GetPublicReportResult | null> {
-    const property = await this.propertyRepo.findByPublicSlug(slug)
+    const found = await this.reportRepo.findPublicBySlug(slug)
+    if (!found) return null
+
+    const property = await this.propertyRepo.findById(found.propertyId, found.orgId)
     if (!property) return null
 
-    const report = await this.reportRepo.findLatestPublishedByProperty(property.id)
-
-    return { property, report }
+    return { property, report: found.report }
   }
 }
