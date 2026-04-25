@@ -1,5 +1,15 @@
 import type { Hono } from 'hono'
-import { D1AppraisalRepository, D1AppraisalTemplateRepository, CryptoIdGenerator, fireMarketingEvent } from '@vendepro/infrastructure'
+import {
+  D1AppraisalRepository,
+  D1AppraisalTemplateRepository,
+  D1AppraisalPdfRepository,
+  D1OrgVariableRepository,
+  CryptoIdGenerator,
+  fireMarketingEvent,
+  CfBrowserRenderingService,
+  R2PdfStorage,
+  PdfDownloadTokenSignerImpl,
+} from '@vendepro/infrastructure'
 import {
   GetAppraisalsUseCase,
   GetAppraisalDetailUseCase,
@@ -10,9 +20,14 @@ import {
   RemoveAppraisalComparableUseCase,
   SyncTemplateSnapshotUseCase,
   SetBlockOverridesUseCase,
+  GenerateAppraisalPdfUseCase,
+  QuotaExceededError,
+  RenderTimeoutError,
+  RenderFailedError,
+  AppraisalNotFoundError,
 } from '@vendepro/core'
 
-type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket; R2_PUBLIC_URL: string }
+type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket; R2_PUBLIC_URL: string; BROWSER: Fetcher; API_PUBLIC_URL: string }
 type AuthVars = { Variables: { userId: string; userRole: string; orgId: string } }
 
 export function registerAppraisalRoutes(app: Hono<{ Bindings: Env } & AuthVars>) {
@@ -168,5 +183,36 @@ export function registerAppraisalRoutes(app: Hono<{ Bindings: Env } & AuthVars>)
       patch: body ?? {},
     })
     return c.json({ ok: true })
+  })
+
+  app.post('/appraisals/:id/pdf', async (c) => {
+    const useCase = new GenerateAppraisalPdfUseCase({
+      appraisalRepo: new D1AppraisalRepository(c.env.DB),
+      pdfRepo: new D1AppraisalPdfRepository(c.env.DB),
+      orgVarRepo: new D1OrgVariableRepository(c.env.DB),
+      templateRepo: new D1AppraisalTemplateRepository(c.env.DB),
+      browserRendering: new CfBrowserRenderingService(c.env.BROWSER),
+      pdfStorage: new R2PdfStorage(c.env.R2),
+      tokenSigner: new PdfDownloadTokenSignerImpl({ secret: c.env.JWT_SECRET, apiPublicBaseUrl: c.env.API_PUBLIC_URL }),
+      idGen: new CryptoIdGenerator(),
+      now: () => new Date(),
+    })
+    try {
+      const result = await useCase.execute({
+        appraisalId: c.req.param('id'),
+        orgId: c.get('orgId'),
+        userId: c.get('userId'),
+      })
+      return c.json(result)
+    } catch (e: any) {
+      if (e instanceof QuotaExceededError) {
+        return c.json({ error: 'quota_exceeded', limit: e.limit, used: e.used, reset_at: e.resetAt }, 429)
+      }
+      if (e instanceof RenderTimeoutError) return c.json({ error: 'render_timeout' }, 503)
+      if (e instanceof RenderFailedError) return c.json({ error: 'render_failed', message: e.message }, 500)
+      if (e instanceof AppraisalNotFoundError) return c.json({ error: 'not_found' }, 404)
+      console.error('generate-pdf unhandled', e)
+      return c.json({ error: 'internal' }, 500)
+    }
   })
 }

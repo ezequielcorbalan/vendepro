@@ -208,3 +208,22 @@ export async function deleteComparable(id: string): Promise<any> {
   }
   return (await r.json()) as any
 }
+
+// ── PDF generation (properties API) ──────────────────────────
+
+export async function generatePdf(appraisalId: string): Promise<{
+  pdf_url: string
+  expires_at: string
+  from_cache: boolean
+  monthly_used: number
+}> {
+  const r = await apiFetch('properties', `/appraisals/${appraisalId}/pdf`, { method: 'POST' })
+  if (!r.ok) {
+    const err = (await r.json().catch(() => ({}))) as any
+    const e = new Error(err?.error ?? `HTTP ${r.status}`) as any
+    e.code = err?.error
+    e.details = err
+    throw e
+  }
+  return (await r.json()) as any
+}

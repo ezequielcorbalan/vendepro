@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { corsMiddleware, errorHandler } from '@vendepro/infrastructure'
+import { corsMiddleware, errorHandler, R2PdfStorage, PdfDownloadTokenSignerImpl } from '@vendepro/infrastructure'
 import {
   D1PropertyRepository,
   D1ReportRepository,
@@ -33,7 +33,7 @@ import {
   SubmitLeadFromLandingUseCase,
 } from '@vendepro/core'
 
-type Env = { DB: D1Database; JWT_SECRET: string }
+type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket }
 
 const app = new Hono<{ Bindings: Env }>()
 
@@ -347,6 +347,33 @@ app.post('/l/:slug/event', async (c) => {
     }
   }
   return new Response(null, { status: 204 })
+})
+
+// ── PDF DOWNLOAD (JWT-gated) ──────────────────────────────────────
+app.get('/public/pdf/:orgId/:appraisalId/:filename', async (c) => {
+  const token = c.req.query('token')
+  if (!token) return c.text('Missing token', 401)
+
+  const signer = new PdfDownloadTokenSignerImpl({ secret: c.env.JWT_SECRET, apiPublicBaseUrl: '' })
+  const payload = await signer.verify(token)
+  if (!payload) return c.text('Invalid or expired token', 401)
+
+  if (payload.orgId !== c.req.param('orgId') || payload.appraisalId !== c.req.param('appraisalId')) {
+    return c.text('Token mismatch', 403)
+  }
+
+  const storage = new R2PdfStorage(c.env.R2)
+  const obj = await storage.get(payload.r2Key)
+  if (!obj) return c.text('PDF not found', 404)
+
+  return new Response(obj.body, {
+    headers: {
+      'Content-Type': obj.contentType,
+      'Content-Disposition': obj.contentDisposition,
+      'Content-Length': obj.size.toString(),
+      'Cache-Control': 'private, max-age=900',
+    },
+  })
 })
 
 export default app

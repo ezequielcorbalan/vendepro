@@ -7,7 +7,7 @@ import { useAutosave } from './useAutosave'
 import { BlockList } from './BlockList'
 import { SyncBanner } from './SyncBanner'
 import { TemplateRenderer } from '../renderer/TemplateRenderer'
-import { publishAppraisal } from '../shared/api'
+import { publishAppraisal, generatePdf } from '../shared/api'
 import type { TemplateBlock, AppraisalContext, RenderMode } from '../renderer/types'
 
 interface Props {
@@ -39,6 +39,8 @@ export function EditorShell({ initial, snapshot, context }: Props) {
   const [state, dispatch] = useEditorState(initial)
   const [mode, setMode] = useState<RenderMode>('web')
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false)
+  const [pdfStatus, setPdfStatus] = useState<'idle' | 'generating' | 'error'>('idle')
+  const [monthlyUsed, setMonthlyUsed] = useState<number | null>(null)
 
   const onConsume = useCallback((saved: { appraisal: Record<string, unknown>; overrides: Record<string, Record<string, unknown>> }) => dispatch({ type: 'consume', saved }), [dispatch])
   const { status, lastSavedAt, retry } = useAutosave({
@@ -47,6 +49,28 @@ export function EditorShell({ initial, snapshot, context }: Props) {
     dirty: state.dirty,
     onConsume,
   })
+
+  const handleDownloadPdf = async () => {
+    if (!state.appraisal.public_slug) {
+      if (!confirm('El PDF incluye un link público a /t/... ¿Continuar?')) return
+    }
+    setPdfStatus('generating')
+    try {
+      const result = await generatePdf(state.appraisal.id)
+      setMonthlyUsed(result.monthly_used)
+      window.location.href = result.pdf_url
+      setPdfStatus('idle')
+    } catch (e: any) {
+      setPdfStatus('error')
+      if (e.code === 'quota_exceeded') {
+        alert(`Alcanzaste el límite de ${e.details.limit} PDFs este mes (se resetea el ${String(e.details.reset_at).slice(0, 10)}).`)
+      } else if (e.code === 'render_timeout') {
+        alert('La generación tardó más de lo esperado. Reintentá en unos segundos.')
+      } else {
+        alert(e.message ?? 'Error al generar PDF')
+      }
+    }
+  }
 
   const ctx = buildCtx(state.appraisal)
 
@@ -79,8 +103,20 @@ export function EditorShell({ initial, snapshot, context }: Props) {
               Ver pública <ExternalLink className="h-3 w-3" />
             </a>
           )}
+          <button
+            onClick={handleDownloadPdf}
+            disabled={pdfStatus === 'generating' || (monthlyUsed !== null && monthlyUsed >= 50)}
+            className="rounded bg-slate-900 px-3 py-1 text-xs font-semibold text-white disabled:opacity-50"
+          >
+            {pdfStatus === 'generating' ? 'Generando...' : pdfStatus === 'error' ? 'Error, reintentar' : 'Descargar PDF'}
+          </button>
         </div>
       </header>
+      {monthlyUsed !== null && (
+        <div className={`px-4 py-1 text-xs ${monthlyUsed >= 40 ? (monthlyUsed >= 50 ? 'text-rose-600' : 'text-amber-600') : 'text-slate-500'}`}>
+          PDFs este mes: {monthlyUsed} / 50
+        </div>
+      )}
 
       {state.appraisal.template_id && (
         <SyncBanner
