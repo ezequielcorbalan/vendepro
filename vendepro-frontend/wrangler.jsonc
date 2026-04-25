@@ -4,7 +4,8 @@
   "compatibility_date": "2025-01-01",
   "compatibility_flags": ["nodejs_compat"],
   "routes": [
-    { "pattern": "app.vendepro.com.ar", "custom_domain": true }
+    { "pattern": "app.vendepro.com.ar", "custom_domain": true },
+    { "pattern": "*landings.vendepro.com.ar/*", "zone_name": "vendepro.com.ar" }
   ],
   "assets": {
     "directory": ".open-next/assets",
