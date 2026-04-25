@@ -17,6 +17,7 @@ export async function getCurrentUserServer(): Promise<CurrentUser | null> {
     const payload = JSON.parse(
       Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf-8')
     )
+    if (typeof payload.exp === 'number' && Date.now() >= payload.exp * 1000) return null
     return {
       id: payload.sub ?? '',
       email: payload.email ?? '',

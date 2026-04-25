@@ -59,7 +59,14 @@ export async function apiFetch(
     }
   }
 
-  return fetch(url, { ...options, headers })
+  const response = await fetch(url, { ...options, headers })
+  if (response.status === 401 && typeof window !== 'undefined') {
+    clearToken()
+    if (!window.location.pathname.startsWith('/login')) {
+      window.location.href = '/login'
+    }
+  }
+  return response
 }
 
 // ── Server-side fetch (for Server Components) ─────────────
