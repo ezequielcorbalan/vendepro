@@ -1,8 +1,14 @@
--- 017_users_extend_roles.sql
--- Expand role CHECK constraint to include 'supervisor' and 'owner'
--- Also adds supervisor and owner to the roles catalog
+-- 018_users_extend_roles.sql
+-- Expande el CHECK constraint de users.role a ('owner', 'admin', 'supervisor', 'agent')
+-- y agrega esos roles al catálogo `roles`.
+--
+-- D1 corre cada migration dentro de una transacción implícita, por lo que
+-- `PRAGMA foreign_keys = OFF` (que solo opera fuera de transacciones) falla.
+-- Usamos `PRAGMA defer_foreign_keys = ON`, que pospone la validación de FKs
+-- hasta el COMMIT — momento en el que la tabla `users` ya fue recreada con
+-- todos los IDs originales y las FKs vuelven a resolverse correctamente.
 
-PRAGMA foreign_keys=off;
+PRAGMA defer_foreign_keys = ON;
 
 CREATE TABLE users_v2 (
   id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
@@ -21,8 +27,6 @@ INSERT INTO users_v2 SELECT id, org_id, email, password_hash, full_name, phone, 
 
 DROP TABLE users;
 ALTER TABLE users_v2 RENAME TO users;
-
-PRAGMA foreign_keys=on;
 
 INSERT OR IGNORE INTO roles (id, name, label) VALUES
   (3, 'supervisor', 'Supervisor'),
