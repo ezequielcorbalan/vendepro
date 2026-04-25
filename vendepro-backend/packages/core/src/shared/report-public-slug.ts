@@ -9,6 +9,13 @@ const slugify = (input: string): string =>
     .replace(/^-+|-+$/g, '')
     .slice(0, 60)
 
+export function sanitizePeriodLabel(input: string): string {
+  return input
+    .replace(/[^\p{L}\p{N}\s()\-]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 export function makeReportPublicSlug(
   address: string,
   periodLabel: string,

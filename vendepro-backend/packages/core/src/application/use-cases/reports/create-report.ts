@@ -2,7 +2,7 @@ import type { ReportRepository, NewReportMetric, NewReportContent } from '../../
 import type { PropertyRepository } from '../../ports/repositories/property-repository'
 import type { IdGenerator } from '../../ports/id-generator'
 import { Report } from '../../../domain/entities/report'
-import { makeReportPublicSlug } from '../../../shared/report-public-slug'
+import { makeReportPublicSlug, sanitizePeriodLabel } from '../../../shared/report-public-slug'
 
 export interface CreateReportInput {
   propertyId: string
@@ -45,12 +45,13 @@ export class CreateReportUseCase {
 
     const property = await this.propertyRepo.findById(input.propertyId, input.orgId)
     const address = property?.toObject().address ?? input.propertyId
-    const publicSlug = makeReportPublicSlug(address, input.periodLabel, this.idGen)
+    const periodLabel = sanitizePeriodLabel(input.periodLabel)
+    const publicSlug = makeReportPublicSlug(address, periodLabel, this.idGen)
 
     const report = Report.create({
       id,
       property_id: input.propertyId,
-      period_label: input.periodLabel,
+      period_label: periodLabel,
       period_start: input.periodStart,
       period_end: input.periodEnd,
       status: status as 'draft' | 'published',

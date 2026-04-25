@@ -49,6 +49,7 @@ export interface ReportListRow {
   period_end: string
   status: string
   published_at: string | null
+  public_slug: string | null
   impressions: number
   portal_visits: number
   in_person_visits: number
