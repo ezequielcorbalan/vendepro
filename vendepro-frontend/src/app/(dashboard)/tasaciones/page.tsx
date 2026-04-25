@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Plus, ClipboardList, MapPin, ExternalLink, Pencil, Trash2 } from 'lucide-react'
+import { Plus, ClipboardList, MapPin, ExternalLink, Pencil, Trash2, Download, Loader2 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
 import { formatDate } from '@/lib/utils'
+import { generatePdf } from '@/components/tasaciones/shared/api'
 
 const statusLabels: Record<string, { label: string; color: string }> = {
   draft: { label: 'Borrador', color: 'bg-gray-100 text-gray-700' },
@@ -17,6 +18,7 @@ export default function TasacionesPage() {
   const { toast } = useToast()
   const [appraisals, setAppraisals] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [pdfLoading, setPdfLoading] = useState<Set<string>>(new Set())
 
   function loadAppraisals() {
     apiFetch('properties', '/appraisals')
@@ -34,6 +36,22 @@ export default function TasacionesPage() {
       toast('Tasación eliminada', 'warning')
       loadAppraisals()
     } catch { toast('Error al eliminar', 'error') }
+  }
+
+  async function handleDownloadPdf(id: string) {
+    setPdfLoading(prev => new Set(prev).add(id))
+    try {
+      const result = await generatePdf(id)
+      window.open(result.pdf_url, '_blank', 'noopener,noreferrer')
+    } catch (e: any) {
+      if (e.code === 'quota_exceeded') {
+        toast(`Alcanzaste el límite de ${e.details?.limit ?? '—'} PDFs este mes`, 'error')
+      } else {
+        toast('Error al generar el PDF', 'error')
+      }
+    } finally {
+      setPdfLoading(prev => { const next = new Set(prev); next.delete(id); return next })
+    }
   }
 
   return (
@@ -94,6 +112,14 @@ export default function TasacionesPage() {
                       <ExternalLink className="w-4 h-4" />
                     </a>
                   )}
+                  <button
+                    onClick={() => handleDownloadPdf(a.id)}
+                    disabled={pdfLoading.has(a.id)}
+                    className="p-2 border rounded-lg hover:bg-gray-50 text-gray-500 disabled:opacity-50 disabled:cursor-wait"
+                    title="Descargar PDF"
+                  >
+                    {pdfLoading.has(a.id) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                  </button>
                   <Link href={`/tasaciones/${a.id}`} className="p-2 border rounded-lg hover:bg-gray-50 text-gray-500" title="Editar">
                     <Pencil className="w-4 h-4" />
                   </Link>
