@@ -1,10 +1,10 @@
 'use client'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Plus, GripVertical, Loader2, CheckCircle2 } from 'lucide-react'
+import { Plus, GripVertical, Loader2, CheckCircle2, Save, AlertCircle } from 'lucide-react'
 import { getTemplate, updateTemplate, duplicateTemplate } from '../shared/api'
 import { apiFetch } from '@/lib/api'
 import { TemplateRenderer } from '../renderer/TemplateRenderer'
@@ -67,21 +67,27 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
 
   useEffect(() => { blocksRef.current = blocks }, [blocks])
 
+  const saveNow = useCallback(async () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current)
+      timerRef.current = null
+    }
+    setStatus('saving')
+    try {
+      await updateTemplate(templateId, { blocks: blocksRef.current })
+      setStatus('saved')
+      setDirty(false)
+    } catch {
+      setStatus('error')
+    }
+  }, [templateId])
+
   useEffect(() => {
     if (!dirty) return
     if (timerRef.current) clearTimeout(timerRef.current)
-    timerRef.current = setTimeout(async () => {
-      setStatus('saving')
-      try {
-        await updateTemplate(templateId, { blocks: blocksRef.current })
-        setStatus('saved')
-        setDirty(false)
-      } catch (e: any) {
-        setStatus('error')
-      }
-    }, DEBOUNCE_MS)
+    timerRef.current = setTimeout(() => { saveNow() }, DEBOUNCE_MS)
     return () => { if (timerRef.current) clearTimeout(timerRef.current) }
-  }, [dirty, templateId])
+  }, [dirty, saveNow])
 
   const handleDragEnd = (e: any) => {
     if (isSystemRef.current) return
@@ -117,7 +123,18 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
         <h1 className="text-sm font-semibold">{template.name}</h1>
         <div className="flex items-center gap-3 text-xs">
           {status === 'saving' && <span className="flex items-center gap-1 text-slate-500"><Loader2 className="h-3 w-3 animate-spin" /> Guardando...</span>}
-          {status === 'saved' && <span className="flex items-center gap-1 text-emerald-600"><CheckCircle2 className="h-3 w-3" /> Guardado</span>}
+          {status === 'saved' && !dirty && <span className="flex items-center gap-1 text-emerald-600"><CheckCircle2 className="h-3 w-3" /> Guardado</span>}
+          {status === 'error' && <span className="flex items-center gap-1 text-rose-600"><AlertCircle className="h-3 w-3" /> Error al guardar</span>}
+          {dirty && status !== 'saving' && <span className="text-slate-500">Cambios sin guardar</span>}
+          {!isSystem && (
+            <button
+              onClick={() => saveNow()}
+              disabled={status === 'saving' || (!dirty && status !== 'error')}
+              className="flex items-center gap-1 rounded bg-[#ff007c] px-3 py-1.5 text-xs font-medium text-white disabled:opacity-40"
+            >
+              <Save className="h-3 w-3" /> Guardar cambios
+            </button>
+          )}
         </div>
       </header>
 
