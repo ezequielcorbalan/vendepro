@@ -49,10 +49,13 @@ export class GenerateVisitFormLinkUseCase {
       visitor_name: null,
       visitor_email: null,
       visitor_phone: null,
+      rating: null,
       liked: null,
       disliked: null,
       subjective_price_usd: null,
       buy_intention: null,
+      source: null,
+      situation: null,
       observations: null,
     })
 
