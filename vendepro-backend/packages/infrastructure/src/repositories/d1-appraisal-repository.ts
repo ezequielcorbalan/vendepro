@@ -205,6 +205,39 @@ export class D1AppraisalRepository implements AppraisalRepository {
       .run()
   }
 
+  async updateComparable(
+    comparableId: string,
+    patch: Partial<{
+      zonaprop_url: string | null
+      address: string | null
+      total_area: number | null
+      covered_area: number | null
+      price: number | null
+      usd_per_m2: number | null
+      days_on_market: number | null
+      views_per_day: number | null
+      age: number | null
+      sort_order: number
+    }>,
+  ): Promise<void> {
+    // Build dynamic UPDATE solo con los campos presentes en el patch.
+    const fields: string[] = []
+    const binds: unknown[] = []
+    const allowed = ['zonaprop_url','address','total_area','covered_area','price','usd_per_m2','days_on_market','views_per_day','age','sort_order'] as const
+    for (const k of allowed) {
+      if (k in patch) {
+        fields.push(`${k} = ?`)
+        binds.push((patch as any)[k] ?? null)
+      }
+    }
+    if (fields.length === 0) return
+    binds.push(comparableId)
+    await this.db
+      .prepare(`UPDATE appraisal_comparables SET ${fields.join(', ')} WHERE id = ?`)
+      .bind(...binds)
+      .run()
+  }
+
   async removeComparable(comparableId: string): Promise<void> {
     await this.db
       .prepare('DELETE FROM appraisal_comparables WHERE id = ?')

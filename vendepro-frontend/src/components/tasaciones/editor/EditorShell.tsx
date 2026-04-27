@@ -1,5 +1,5 @@
 'use client'
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, ExternalLink, Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
 import { useEditorState } from './useEditorState'
@@ -7,7 +7,9 @@ import { useAutosave } from './useAutosave'
 import { BlockList } from './BlockList'
 import { SyncBanner } from './SyncBanner'
 import { TemplateRenderer } from '../renderer/TemplateRenderer'
-import { publishAppraisal, generatePdf } from '../shared/api'
+import { publishAppraisal, generatePdf, addComparable, updateComparable, deleteComparable } from '../shared/api'
+import { ComparableCard, type ComparableData } from '../shared/ComparableCard'
+import { Plus } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import {
   calcWeightedArea,
@@ -51,11 +53,56 @@ export function EditorShell({ initial, snapshot, context }: Props) {
 
   const [weights, setWeights] = useState<SurfaceWeights>(DEFAULT_SURFACE_WEIGHTS)
 
+  // Comparables se manejan aparte del autosave del appraisal: cada uno tiene
+  // su propia tabla y endpoints. Mantenemos una lista local que sincronizamos
+  // contra los endpoints add/update/delete.
+  const [comparables, setComparables] = useState<Array<ComparableData & { id: string; sort_order?: number }>>(
+    () => (initial.comparables ?? []).map((c: any) => ({ ...c }))
+  )
+  const compSaveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
+
   useEffect(() => {
     apiFetch('admin', '/org-settings').then(r => r.json() as Promise<any>).then(d => {
       if (isValidWeights(d.surface_weights)) setWeights(d.surface_weights)
     }).catch(() => { /* fallback al default */ })
   }, [])
+
+  const handleAddComparable = async () => {
+    try {
+      const result = await addComparable({
+        appraisal_id: state.appraisal.id,
+        sort_order: comparables.length,
+        zonaprop_url: null, address: null,
+        total_area: null, covered_area: null,
+        price: null, usd_per_m2: null,
+        days_on_market: null, views_per_day: null, age: null,
+      })
+      setComparables(prev => [...prev, { id: result.id, sort_order: prev.length }])
+    } catch (e: any) {
+      alert(e?.message ?? 'No se pudo agregar el comparable')
+    }
+  }
+
+  const handlePatchComparable = (id: string, patch: Partial<ComparableData>) => {
+    setComparables(prev => prev.map(c => c.id === id ? { ...c, ...patch } : c))
+    if (compSaveTimers.current[id]) clearTimeout(compSaveTimers.current[id])
+    compSaveTimers.current[id] = setTimeout(() => {
+      updateComparable(id, patch).catch((e: any) => {
+        // No revertimos el estado local — el usuario puede reintentar editando.
+        console.error('No se pudo guardar el comparable', e)
+      })
+    }, 800)
+  }
+
+  const handleRemoveComparable = async (id: string) => {
+    if (!confirm('¿Eliminar este comparable?')) return
+    try {
+      await deleteComparable(id)
+      setComparables(prev => prev.filter(c => c.id !== id))
+    } catch (e: any) {
+      alert(e?.message ?? 'No se pudo eliminar el comparable')
+    }
+  }
 
   const computedWeighted = calcWeightedArea(
     state.appraisal.covered_area,
@@ -100,7 +147,7 @@ export function EditorShell({ initial, snapshot, context }: Props) {
     }
   }
 
-  const ctx = buildCtx(state.appraisal)
+  const ctx = buildCtx({ ...state.appraisal, comparables })
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -202,6 +249,36 @@ export function EditorShell({ initial, snapshot, context }: Props) {
                 </label>
               ))}
             </div>
+          </section>
+
+          <section className="mt-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Comparables</h2>
+              <button
+                type="button"
+                onClick={handleAddComparable}
+                className="flex items-center gap-1.5 rounded-lg bg-[#ff007c] px-3 py-1.5 text-xs text-white hover:opacity-90"
+              >
+                <Plus className="h-3.5 w-3.5" /> Agregar
+              </button>
+            </div>
+            {comparables.length === 0 ? (
+              <p className="mt-3 rounded-lg border border-dashed border-slate-200 px-4 py-6 text-center text-xs text-slate-400">
+                Sin comparables. Sumá publicaciones similares para fundamentar la tasación.
+              </p>
+            ) : (
+              <div className="mt-3 space-y-4">
+                {comparables.map((c, i) => (
+                  <ComparableCard
+                    key={c.id}
+                    index={i}
+                    comparable={c}
+                    onPatch={(patch) => handlePatchComparable(c.id, patch)}
+                    onRemove={() => handleRemoveComparable(c.id)}
+                  />
+                ))}
+              </div>
+            )}
           </section>
 
           {snapshot.length > 0 && (

@@ -17,6 +17,7 @@ import {
   UpdateAppraisalUseCase,
   DeleteAppraisalUseCase,
   AddAppraisalComparableUseCase,
+  UpdateAppraisalComparableUseCase,
   RemoveAppraisalComparableUseCase,
   SyncTemplateSnapshotUseCase,
   SetBlockOverridesUseCase,
@@ -154,6 +155,16 @@ export function registerAppraisalRoutes(app: Hono<{ Bindings: Env } & AuthVars>)
     const useCase = new AddAppraisalComparableUseCase(repo, new CryptoIdGenerator())
     const result = await useCase.execute(body)
     return c.json(result, 201)
+  })
+
+  app.put('/appraisals/comparables', async (c) => {
+    const body = (await c.req.json()) as any
+    if (!body?.id) return c.json({ error: 'id es requerido' }, 400)
+    const repo = new D1AppraisalRepository(c.env.DB)
+    const useCase = new UpdateAppraisalComparableUseCase(repo)
+    const { id, ...patch } = body
+    await useCase.execute({ id, patch })
+    return c.json({ success: true })
   })
 
   app.delete('/appraisals/comparables', async (c) => {
