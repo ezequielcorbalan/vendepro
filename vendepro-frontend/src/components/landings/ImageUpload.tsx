@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { Upload, Link as LinkIcon, Home } from 'lucide-react'
-import { apiFetch } from '@/lib/api'
+import { apiFetch, getApiBase } from '@/lib/api'
 import PropertyPhotoPicker from './PropertyPhotoPicker'
 
 interface Props {
@@ -25,7 +25,10 @@ export default function ImageUpload({ value, onChange, allowPropertyPicker }: Pr
       form.append('file', file)
       const res = await apiFetch('properties', '/upload-photo', { method: 'POST', body: form } as any)
       if (!res.ok) throw new Error('Upload falló')
-      const { url } = (await res.json()) as any
+      const { key, url: rawUrl } = (await res.json()) as any
+      // Preferimos el proxy público /photo/{key} sobre el mismo worker en lugar de
+      // confiar en R2_PUBLIC_URL (que puede estar mal configurado en el worker).
+      const url = key ? `${getApiBase('properties')}/photo/${key}` : rawUrl
       onChange(url, 'upload')
     } catch (e: any) {
       alert('Error subiendo imagen: ' + e.message)

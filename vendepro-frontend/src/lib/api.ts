@@ -15,6 +15,10 @@ const APIS = {
 
 export type ApiName = keyof typeof APIS
 
+export function getApiBase(api: ApiName): string {
+  return APIS[api]
+}
+
 // ── Token helpers (localStorage for client, cookie for SSR) ─
 const TOKEN_KEY = 'vendepro_token'
 
