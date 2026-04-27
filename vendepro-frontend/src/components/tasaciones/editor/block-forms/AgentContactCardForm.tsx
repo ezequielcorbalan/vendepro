@@ -1,4 +1,6 @@
 'use client'
+import ImageUpload from '@/components/landings/ImageUpload'
+
 interface Props { data: any; onPatch: (p: Record<string, unknown>) => void }
 
 export function AgentContactCardForm({ data, onPatch }: Props) {
@@ -20,10 +22,13 @@ export function AgentContactCardForm({ data, onPatch }: Props) {
         <span className="text-xs uppercase tracking-wide text-slate-600">Email</span>
         <input type="email" value={data.email ?? ''} onChange={e => onPatch({ email: e.target.value })} className="rounded border border-slate-300 px-2 py-1 text-sm" />
       </label>
-      <label className="flex flex-col gap-1">
-        <span className="text-xs uppercase tracking-wide text-slate-600">URL foto de perfil</span>
-        <input type="url" value={data.avatar_url ?? ''} onChange={e => onPatch({ avatar_url: e.target.value })} className="rounded border border-slate-300 px-2 py-1 text-sm" placeholder="https://..." />
-      </label>
+      <div className="flex flex-col gap-1">
+        <span className="text-xs uppercase tracking-wide text-slate-600">Foto de perfil</span>
+        <ImageUpload
+          value={data.avatar_url ?? ''}
+          onChange={(url) => onPatch({ avatar_url: url })}
+        />
+      </div>
     </div>
   )
 }
