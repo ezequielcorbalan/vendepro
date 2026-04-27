@@ -8,6 +8,7 @@ export interface UpdateOrgSettingsInput {
     slug?: string
     logo_url?: string | null
     brand_color?: string | null
+    brand_accent_color?: string | null
     canva_template_id?: string | null
     canva_report_template_id?: string | null
   }

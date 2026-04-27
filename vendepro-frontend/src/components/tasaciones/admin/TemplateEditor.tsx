@@ -6,11 +6,13 @@ import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } 
 import { CSS } from '@dnd-kit/utilities'
 import { Plus, GripVertical, Loader2, CheckCircle2 } from 'lucide-react'
 import { getTemplate, updateTemplate, duplicateTemplate } from '../shared/api'
+import { apiFetch } from '@/lib/api'
 import { TemplateRenderer } from '../renderer/TemplateRenderer'
 import { BlockAdminForm } from './BlockAdminForm'
 import { MOCK_APPRAISAL } from './MOCK_APPRAISAL'
 import type { TemplateBlock, AppraisalBlockType } from '../renderer/types'
 import { APPRAISAL_BLOCK_TYPES, WEB_ONLY_TYPES } from '../renderer/types'
+import { getBlockMeta } from '../renderer/block-catalog'
 
 const DEBOUNCE_MS = 2000
 
@@ -25,7 +27,7 @@ function SortableBlock({ block, isReadOnly, children }: { block: TemplateBlock; 
             <GripVertical className="h-4 w-4" />
           </button>
         )}
-        <span className="text-sm font-medium">{block.type.replace(/_/g, ' ')}</span>
+        <span className="text-sm font-medium">{getBlockMeta(block.type).label}</span>
       </div>
       {children}
     </div>
@@ -35,6 +37,7 @@ function SortableBlock({ block, isReadOnly, children }: { block: TemplateBlock; 
 export function TemplateEditor({ templateId }: { templateId: string }) {
   const router = useRouter()
   const [template, setTemplate] = useState<any>(null)
+  const [orgBrand, setOrgBrand] = useState<{ name?: string; logo_url?: string | null; brand_color?: string | null; brand_accent_color?: string | null } | null>(null)
   const [blocks, setBlocks] = useState<TemplateBlock[]>([])
   const [dirty, setDirty] = useState(false)
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
@@ -51,6 +54,15 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
       setBlocks(t.blocks ?? [])
       isSystemRef.current = !!t.is_system
     })
+    apiFetch('admin', '/org-settings')
+      .then(r => r.json() as Promise<any>)
+      .then(d => setOrgBrand({
+        name: d.name,
+        logo_url: d.logo_url,
+        brand_color: d.brand_color,
+        brand_accent_color: d.brand_accent_color,
+      }))
+      .catch(() => { /* silencioso: cae al MOCK */ })
   }, [templateId])
 
   useEffect(() => { blocksRef.current = blocks }, [blocks])
@@ -160,23 +172,36 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
         </div>
         <div className="hidden lg:block">
           <div className="sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto">
-            <TemplateRenderer snapshot={blocks} appraisal={MOCK_APPRAISAL} mode="web" />
+            <TemplateRenderer
+              snapshot={blocks}
+              appraisal={orgBrand ? { ...MOCK_APPRAISAL, org: { ...MOCK_APPRAISAL.org, ...orgBrand } as any } : MOCK_APPRAISAL}
+              mode="web"
+            />
           </div>
         </div>
       </div>
 
       {adding && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="w-full max-w-sm rounded-lg bg-white p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-lg bg-white p-6">
             <h3 className="text-lg font-semibold">Agregar bloque</h3>
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              {APPRAISAL_BLOCK_TYPES.map(t => (
-                <button key={t} onClick={() => addBlock(t)} className="rounded border border-slate-300 px-2 py-2 text-xs hover:border-[#ff007c]">
-                  {t.replace(/_/g, ' ')}
-                </button>
-              ))}
+            <p className="mt-1 text-xs text-slate-500">Elegí qué información querés sumar a la tasación.</p>
+            <div className="mt-4 grid grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2">
+              {APPRAISAL_BLOCK_TYPES.map(t => {
+                const meta = getBlockMeta(t)
+                return (
+                  <button
+                    key={t}
+                    onClick={() => addBlock(t)}
+                    className="rounded border border-slate-300 px-3 py-2 text-left hover:border-[#ff007c] hover:bg-rose-50/30"
+                  >
+                    <div className="text-sm font-medium text-slate-900">{meta.label}</div>
+                    <div className="mt-0.5 text-xs leading-snug text-slate-500">{meta.description}</div>
+                  </button>
+                )
+              })}
             </div>
-            <button onClick={() => setAdding(false)} className="mt-4 rounded px-4 py-2 text-sm">Cancelar</button>
+            <button onClick={() => setAdding(false)} className="mt-4 self-end rounded px-4 py-2 text-sm text-slate-600 hover:bg-slate-100">Cancelar</button>
           </div>
         </div>
       )}

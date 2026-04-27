@@ -24,6 +24,9 @@ export default function ConfiguracionPage() {
 
   const [orgName, setOrgName] = useState('')
   const [slug, setSlug] = useState('')
+  const [brandColor, setBrandColor] = useState('#ff007c')
+  const [brandAccentColor, setBrandAccentColor] = useState('#e17a2a')
+  const [logoUrl, setLogoUrl] = useState('')
   const [savingOrg, setSavingOrg] = useState(false)
   const slugDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const initialSlugRef = useRef<string>('')
@@ -40,6 +43,9 @@ export default function ConfiguracionPage() {
       apiFetch('admin', '/org-settings').then(r => r.json() as Promise<any>).then(d => {
         setOrgName(d.name || '')
         setSlug(d.slug || '')
+        setBrandColor(d.brand_color || '#ff007c')
+        setBrandAccentColor(d.brand_accent_color || '#e17a2a')
+        setLogoUrl(d.logo_url || '')
         initialSlugRef.current = d.slug || ''
         setLoadingOrg(false)
       }).catch(() => setLoadingOrg(false))
@@ -83,7 +89,13 @@ export default function ConfiguracionPage() {
     try {
       const res = await apiFetch('admin', '/org-settings', {
         method: 'PUT',
-        body: JSON.stringify({ name: orgName, slug }),
+        body: JSON.stringify({
+          name: orgName,
+          slug,
+          brand_color: brandColor,
+          brand_accent_color: brandAccentColor,
+          logo_url: logoUrl || null,
+        }),
       })
       const data = (await res.json()) as any
       if (data.error) toast(data.error, 'error')
@@ -237,6 +249,77 @@ export default function ConfiguracionPage() {
               </div>
               {slugStatus === 'taken' && <p className="text-xs text-red-600 mt-1">Ya está en uso</p>}
             </div>
+
+            <div className="border-t pt-4">
+              <h3 className="text-sm font-semibold text-gray-700 mb-1">Marca</h3>
+              <p className="text-xs text-gray-500 mb-3">
+                Estos colores y el logo se usan en las tasaciones que ven tus clientes.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Color principal</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={brandColor}
+                      onChange={e => setBrandColor(e.target.value)}
+                      className="h-10 w-12 cursor-pointer rounded border border-gray-300"
+                    />
+                    <input
+                      type="text"
+                      value={brandColor}
+                      onChange={e => setBrandColor(e.target.value)}
+                      placeholder="#ff007c"
+                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Color secundario</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={brandAccentColor}
+                      onChange={e => setBrandAccentColor(e.target.value)}
+                      className="h-10 w-12 cursor-pointer rounded border border-gray-300"
+                    />
+                    <input
+                      type="text"
+                      value={brandAccentColor}
+                      onChange={e => setBrandAccentColor(e.target.value)}
+                      placeholder="#e17a2a"
+                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-3">
+                <p className="text-xs text-gray-500 mb-1">Vista previa del gradient:</p>
+                <div
+                  className="h-10 rounded-lg"
+                  style={{ background: `linear-gradient(180deg, ${brandColor} 0%, ${brandAccentColor} 100%)` }}
+                />
+              </div>
+
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Logo (URL)</label>
+                <input
+                  type="url"
+                  value={logoUrl}
+                  onChange={e => setLogoUrl(e.target.value)}
+                  placeholder="https://ejemplo.com/logo.png"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50 focus:border-[#ff007c]"
+                />
+                {logoUrl && (
+                  <div className="mt-2 inline-block rounded border border-gray-200 bg-gray-50 p-2">
+                    <img src={logoUrl} alt="Logo" className="h-10 max-w-[200px] object-contain" />
+                  </div>
+                )}
+              </div>
+            </div>
+
             <button
               onClick={handleSaveOrg}
               disabled={savingOrg || slugStatus === 'taken'}

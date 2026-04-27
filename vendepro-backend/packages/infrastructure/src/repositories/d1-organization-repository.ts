@@ -31,7 +31,7 @@ export class D1OrganizationRepository implements OrganizationRepository {
 
   async updateSettings(
     id: string,
-    patch: Partial<{ name: string; slug: string; logo_url: string | null; brand_color: string | null; canva_template_id: string | null; canva_report_template_id: string | null }>,
+    patch: Partial<{ name: string; slug: string; logo_url: string | null; brand_color: string | null; brand_accent_color: string | null; canva_template_id: string | null; canva_report_template_id: string | null }>,
   ): Promise<void> {
     if (patch.slug !== undefined) {
       const conflict = await this.db
@@ -47,6 +47,7 @@ export class D1OrganizationRepository implements OrganizationRepository {
             slug = COALESCE(?, slug),
             logo_url = COALESCE(?, logo_url),
             brand_color = COALESCE(?, brand_color),
+            brand_accent_color = COALESCE(?, brand_accent_color),
             canva_template_id = COALESCE(?, canva_template_id),
             canva_report_template_id = COALESCE(?, canva_report_template_id)
         WHERE id = ?
@@ -56,6 +57,7 @@ export class D1OrganizationRepository implements OrganizationRepository {
         patch.slug ?? null,
         patch.logo_url ?? null,
         patch.brand_color ?? null,
+        patch.brand_accent_color ?? null,
         patch.canva_template_id ?? null,
         patch.canva_report_template_id ?? null,
         id,

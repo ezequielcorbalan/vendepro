@@ -32,6 +32,9 @@ export function clearToken(): void {
   if (typeof window === 'undefined') return
   localStorage.removeItem(TOKEN_KEY)
   localStorage.removeItem('vendepro_user')
+  // También limpiar la cookie usada por el middleware/SSR para que no quede
+  // un estado inconsistente (cookie viva + localStorage vacío) que genera bucles.
+  document.cookie = 'vendepro_token=; path=/; Max-Age=0; SameSite=Lax'
 }
 
 // ── Fetch helper with auth header ─────────────────────────
