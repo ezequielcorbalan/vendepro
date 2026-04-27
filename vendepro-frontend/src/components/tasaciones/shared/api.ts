@@ -9,17 +9,25 @@ import { apiFetch } from '@/lib/api'
 
 // ── Templates (admin API) ─────────────────────────────────
 
+async function throwIfNotOk(r: Response, fallback: string): Promise<void> {
+  if (r.ok) return
+  const err = (await r.json().catch(() => ({}))) as any
+  throw new Error(err?.error ?? `${fallback} (HTTP ${r.status})`)
+}
+
 export async function listTemplates(params?: { active?: boolean; kind?: string }): Promise<any[]> {
   const qs = new URLSearchParams()
   if (params?.active !== undefined) qs.set('active', params.active ? '1' : '0')
   if (params?.kind) qs.set('kind', params.kind)
   const query = qs.size ? `?${qs}` : ''
   const r = await apiFetch('admin', `/appraisal-templates${query}`)
+  await throwIfNotOk(r, 'Error al listar templates')
   return (await r.json()) as any
 }
 
 export async function getTemplate(id: string): Promise<any> {
   const r = await apiFetch('admin', `/appraisal-templates/${id}`)
+  await throwIfNotOk(r, 'Error al cargar template')
   return (await r.json()) as any
 }
 
@@ -28,6 +36,7 @@ export async function createTemplate(body: any): Promise<any> {
     method: 'POST',
     body: JSON.stringify(body),
   })
+  await throwIfNotOk(r, 'Error al crear template')
   return (await r.json()) as any
 }
 
@@ -36,6 +45,7 @@ export async function updateTemplate(id: string, body: any): Promise<any> {
     method: 'PUT',
     body: JSON.stringify(body),
   })
+  await throwIfNotOk(r, 'Error al guardar template')
   return (await r.json()) as any
 }
 
