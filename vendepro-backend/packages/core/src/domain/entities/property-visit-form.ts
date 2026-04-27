@@ -2,6 +2,38 @@ import { ValidationError } from '../errors/validation-error'
 
 export type BuyIntention = 'compraria' | 'tal_vez' | 'no'
 
+export type VisitSource =
+  | 'argenprop'
+  | 'mercadolibre'
+  | 'zonaprop'
+  | 'instagram'
+  | 'recomendacion'
+  | 'otro'
+
+export type VisitSituation =
+  | 'mudanza'
+  | 'primera_vivienda'
+  | 'inversion'
+  | 'downsizing'
+  | 'otro'
+
+export const VISIT_SOURCE_VALUES: VisitSource[] = [
+  'argenprop',
+  'mercadolibre',
+  'zonaprop',
+  'instagram',
+  'recomendacion',
+  'otro',
+]
+
+export const VISIT_SITUATION_VALUES: VisitSituation[] = [
+  'mudanza',
+  'primera_vivienda',
+  'inversion',
+  'downsizing',
+  'otro',
+]
+
 export interface PropertyVisitFormProps {
   id: string
   org_id: string
@@ -11,10 +43,13 @@ export interface PropertyVisitFormProps {
   visitor_name: string | null
   visitor_email: string | null
   visitor_phone: string | null
+  rating: number | null
   liked: string | null
   disliked: string | null
   subjective_price_usd: number | null
   buy_intention: BuyIntention | null
+  source: VisitSource | null
+  situation: VisitSituation | null
   observations: string | null
   submitted_at: string | null
   sent_at: string
@@ -64,10 +99,13 @@ export class PropertyVisitForm {
     visitor_name?: string | null
     visitor_email?: string | null
     visitor_phone?: string | null
+    rating?: number | null
     liked?: string | null
     disliked?: string | null
     subjective_price_usd?: number | null
     buy_intention?: BuyIntention | null
+    source?: VisitSource | null
+    situation?: VisitSituation | null
     observations?: string | null
   }): void {
     if (input.buy_intention && !['compraria', 'tal_vez', 'no'].includes(input.buy_intention)) {
@@ -75,15 +113,33 @@ export class PropertyVisitForm {
         buy_intention: 'Debe ser compraria | tal_vez | no',
       })
     }
+    if (input.rating != null) {
+      if (!Number.isInteger(input.rating) || input.rating < 1 || input.rating > 5) {
+        throw new ValidationError('rating inválido', { rating: 'Debe ser un entero entre 1 y 5' })
+      }
+    }
+    if (input.source && !VISIT_SOURCE_VALUES.includes(input.source)) {
+      throw new ValidationError('source inválido', {
+        source: `Debe ser uno de: ${VISIT_SOURCE_VALUES.join(' | ')}`,
+      })
+    }
+    if (input.situation && !VISIT_SITUATION_VALUES.includes(input.situation)) {
+      throw new ValidationError('situation inválido', {
+        situation: `Debe ser uno de: ${VISIT_SITUATION_VALUES.join(' | ')}`,
+      })
+    }
     this.props = {
       ...this.props,
       visitor_name: input.visitor_name ?? this.props.visitor_name,
       visitor_email: input.visitor_email ?? this.props.visitor_email,
       visitor_phone: input.visitor_phone ?? this.props.visitor_phone,
+      rating: input.rating ?? this.props.rating,
       liked: input.liked ?? this.props.liked,
       disliked: input.disliked ?? this.props.disliked,
       subjective_price_usd: input.subjective_price_usd ?? this.props.subjective_price_usd,
       buy_intention: input.buy_intention ?? this.props.buy_intention,
+      source: input.source ?? this.props.source,
+      situation: input.situation ?? this.props.situation,
       observations: input.observations ?? this.props.observations,
       submitted_at: new Date().toISOString(),
     }
@@ -97,10 +153,13 @@ export class PropertyVisitForm {
   get visitor_name() { return this.props.visitor_name }
   get visitor_email() { return this.props.visitor_email }
   get visitor_phone() { return this.props.visitor_phone }
+  get rating() { return this.props.rating }
   get liked() { return this.props.liked }
   get disliked() { return this.props.disliked }
   get subjective_price_usd() { return this.props.subjective_price_usd }
   get buy_intention() { return this.props.buy_intention }
+  get source() { return this.props.source }
+  get situation() { return this.props.situation }
   get observations() { return this.props.observations }
   get submitted_at() { return this.props.submitted_at }
   get sent_at() { return this.props.sent_at }

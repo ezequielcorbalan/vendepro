@@ -39,8 +39,13 @@ export { VisitForm } from './visit-form'
 export type { VisitFormProps, VisitFormField } from './visit-form'
 export { VisitFormResponse } from './visit-form-response'
 export type { VisitFormResponseProps } from './visit-form-response'
-export { PropertyVisitForm } from './property-visit-form'
-export type { PropertyVisitFormProps, BuyIntention } from './property-visit-form'
+export { PropertyVisitForm, VISIT_SOURCE_VALUES, VISIT_SITUATION_VALUES } from './property-visit-form'
+export type {
+  PropertyVisitFormProps,
+  BuyIntention,
+  VisitSource,
+  VisitSituation,
+} from './property-visit-form'
 export { PasswordResetToken } from './password-reset-token'
 export type { PasswordResetTokenProps } from './password-reset-token'
 export { Role } from './role'

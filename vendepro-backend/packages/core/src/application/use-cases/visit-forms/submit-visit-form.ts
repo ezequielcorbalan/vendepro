@@ -1,16 +1,23 @@
 import type { PropertyVisitFormRepository } from '../../ports/repositories/property-visit-form-repository'
 import { NotFoundError } from '../../../domain/errors/not-found'
-import type { BuyIntention } from '../../../domain/entities/property-visit-form'
+import type {
+  BuyIntention,
+  VisitSource,
+  VisitSituation,
+} from '../../../domain/entities/property-visit-form'
 
 export interface SubmitVisitFormInput {
   slug: string
   visitor_name?: string | null
   visitor_email?: string | null
   visitor_phone?: string | null
+  rating?: number | null
   liked?: string | null
   disliked?: string | null
   subjective_price_usd?: number | null
   buy_intention?: BuyIntention | null
+  source?: VisitSource | null
+  situation?: VisitSituation | null
   observations?: string | null
 }
 
@@ -30,6 +37,8 @@ export class SubmitVisitFormUseCase {
       visitor_name: input.visitor_name ?? null,
       visitor_email: input.visitor_email ?? null,
       visitor_phone: input.visitor_phone ?? null,
+      rating:
+        typeof input.rating === 'number' && !Number.isNaN(input.rating) ? input.rating : null,
       liked: input.liked ?? null,
       disliked: input.disliked ?? null,
       subjective_price_usd:
@@ -37,6 +46,8 @@ export class SubmitVisitFormUseCase {
           ? input.subjective_price_usd
           : null,
       buy_intention: input.buy_intention ?? null,
+      source: input.source ?? null,
+      situation: input.situation ?? null,
       observations: input.observations ?? null,
     })
 
