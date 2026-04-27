@@ -93,7 +93,7 @@ describe('hydrateBlocks', () => {
   })
 
   it('resolves comparables', () => {
-    const appraisal = { ...baseAppraisal, comparables: [{ id: 'c1', appraisal_id: 'a1', zonaprop_url: null, address: 'X', total_area: 100, covered_area: 80, price: 300000, usd_per_m2: 3000, sort_order: 0 }] }
+    const appraisal = { ...baseAppraisal, comparables: [{ id: 'c1', appraisal_id: 'a1', zonaprop_url: null, address: 'X', total_area: 100, covered_area: 80, price: 300000, usd_per_m2: 3000, days_on_market: null, views_per_day: null, age: null, sort_order: 0 }] }
     const snapshot: TemplateBlock[] = [
       { id: 'b1', type: 'comparables_list', binding_mode: 'tasacion', include_in_pdf: true, sort_order: 0, data: { source: 'appraisal.comparables', variant: 'published' } },
     ]

@@ -9,7 +9,7 @@ const appraisal: AppraisalContext = {
   covered_area: 100, total_area: 120, semi_area: 10, weighted_area: 110,
   swot: { strengths: 's', weaknesses: 'w', opportunities: 'o', threats: 't' },
   prices: { suggested: 300000, test: 320000, expected_close: 280000, usd_per_m2: 3000 },
-  comparables: [{ id: 'c1', appraisal_id: 'a1', zonaprop_url: null, address: 'Z', total_area: 100, covered_area: 80, price: 300000, usd_per_m2: 3000, sort_order: 0 }],
+  comparables: [{ id: 'c1', appraisal_id: 'a1', zonaprop_url: null, address: 'Z', total_area: 100, covered_area: 80, price: 300000, usd_per_m2: 3000, days_on_market: null, views_per_day: null, age: null, sort_order: 0 }],
   agent: { name: 'M', phone: '+5411', email: 'm@x.com', avatar_url: null },
   org: { name: 'MG', logo_url: null, brand_color: '#ff007c', brand_accent_color: null },
 }

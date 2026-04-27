@@ -115,6 +115,7 @@ export * from './use-cases/analytics/export-leads'
 
 // AI
 export * from './use-cases/ai/extract-property-metrics'
+export * from './use-cases/ai/extract-comparable-from-screenshot'
 export * from './use-cases/ai/extract-lead-from-text'
 export * from './use-cases/ai/extract-lead-from-image'
 

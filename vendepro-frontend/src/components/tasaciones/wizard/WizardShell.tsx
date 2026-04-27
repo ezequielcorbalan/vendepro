@@ -6,6 +6,7 @@ import { useWizardForm, canAdvance } from './use-wizard-form'
 import { StepTemplate } from './steps/StepTemplate'
 import { StepProperty } from './steps/StepProperty'
 import { StepDetails } from './steps/StepDetails'
+import { StepCompetencia } from './steps/StepCompetencia'
 import { StepReview } from './steps/StepReview'
 import { createAppraisal, publishAppraisal, addComparable } from '../shared/api'
 import { useToast } from '@/components/ui/Toast'
@@ -14,7 +15,7 @@ interface Props {
   initialTemplateId?: string | null
 }
 
-const STEP_LABELS = ['Template', 'Propiedad', 'FODA + Precios', 'Revisar']
+const STEP_LABELS = ['Template', 'Propiedad', 'FODA + Precios', 'Competencia', 'Revisar']
 
 export function WizardShell({ initialTemplateId }: Props) {
   const [state, dispatch] = useWizardForm({
@@ -78,7 +79,7 @@ export function WizardShell({ initialTemplateId }: Props) {
       {/* Stepper */}
       <div className="mb-8 flex gap-2">
         {STEP_LABELS.map((label, i) => {
-          const n = (i + 1) as 1 | 2 | 3 | 4
+          const n = (i + 1) as 1 | 2 | 3 | 4 | 5
           const done = n < state.step
           const active = n === state.step
           return (
@@ -120,13 +121,18 @@ export function WizardShell({ initialTemplateId }: Props) {
         {state.step === 3 && (
           <StepDetails
             details={state.details}
-            comparables={state.comparables}
             onPatchDetails={(p) => dispatch({ type: 'patch_details', patch: p })}
-            onAddComparable={(c) => dispatch({ type: 'add_comparable', comparable: c })}
-            onRemoveComparable={(i) => dispatch({ type: 'remove_comparable', index: i })}
           />
         )}
         {state.step === 4 && (
+          <StepCompetencia
+            comparables={state.comparables}
+            onAddComparable={(c) => dispatch({ type: 'add_comparable', comparable: c })}
+            onPatchComparable={(i, patch) => dispatch({ type: 'patch_comparable', index: i, patch })}
+            onRemoveComparable={(i) => dispatch({ type: 'remove_comparable', index: i })}
+          />
+        )}
+        {state.step === 5 && (
           <StepReview
             templateId={state.template_id}
             property={state.property}
@@ -148,7 +154,7 @@ export function WizardShell({ initialTemplateId }: Props) {
           <ArrowLeft className="h-4 w-4" /> Atrás
         </button>
 
-        {state.step < 4 ? (
+        {state.step < 5 ? (
           <button
             onClick={() => dispatch({ type: 'next' })}
             disabled={!canAdvance(state)}

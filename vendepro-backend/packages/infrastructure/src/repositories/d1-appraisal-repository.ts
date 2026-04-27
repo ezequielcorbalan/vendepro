@@ -191,14 +191,15 @@ export class D1AppraisalRepository implements AppraisalRepository {
   async addComparable(comparable: NewAppraisalComparable): Promise<void> {
     await this.db
       .prepare(
-        `INSERT INTO appraisal_comparables (id, appraisal_id, zonaprop_url, address, total_area, covered_area, price, usd_per_m2, sort_order)
-         VALUES (?,?,?,?,?,?,?,?,?)`,
+        `INSERT INTO appraisal_comparables (id, appraisal_id, zonaprop_url, address, total_area, covered_area, price, usd_per_m2, days_on_market, views_per_day, age, sort_order)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
       )
       .bind(
         comparable.id, comparable.appraisal_id,
         comparable.zonaprop_url ?? null, comparable.address ?? null,
         comparable.total_area ?? null, comparable.covered_area ?? null,
         comparable.price ?? null, comparable.usd_per_m2 ?? null,
+        comparable.days_on_market ?? null, comparable.views_per_day ?? null, comparable.age ?? null,
         comparable.sort_order ?? 0,
       )
       .run()
