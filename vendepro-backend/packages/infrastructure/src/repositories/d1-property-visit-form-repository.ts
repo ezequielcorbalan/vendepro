@@ -3,6 +3,8 @@ import type {
   PropertyVisitFormRepository,
   PropertyVisitFormWithContext,
   BuyIntention,
+  VisitSource,
+  VisitSituation,
 } from '@vendepro/core'
 
 export class D1PropertyVisitFormRepository implements PropertyVisitFormRepository {
@@ -15,17 +17,21 @@ export class D1PropertyVisitFormRepository implements PropertyVisitFormRepositor
         `INSERT INTO property_visit_forms (
            id, org_id, property_id, agent_id, slug,
            visitor_name, visitor_email, visitor_phone,
-           liked, disliked, subjective_price_usd, buy_intention, observations,
+           rating, liked, disliked, subjective_price_usd,
+           buy_intention, source, situation, observations,
            submitted_at, sent_at, created_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(id) DO UPDATE SET
            visitor_name = excluded.visitor_name,
            visitor_email = excluded.visitor_email,
            visitor_phone = excluded.visitor_phone,
+           rating = excluded.rating,
            liked = excluded.liked,
            disliked = excluded.disliked,
            subjective_price_usd = excluded.subjective_price_usd,
            buy_intention = excluded.buy_intention,
+           source = excluded.source,
+           situation = excluded.situation,
            observations = excluded.observations,
            submitted_at = excluded.submitted_at`,
       )
@@ -38,10 +44,13 @@ export class D1PropertyVisitFormRepository implements PropertyVisitFormRepositor
         o.visitor_name,
         o.visitor_email,
         o.visitor_phone,
+        o.rating,
         o.liked,
         o.disliked,
         o.subjective_price_usd,
         o.buy_intention,
+        o.source,
+        o.situation,
         o.observations,
         o.submitted_at,
         o.sent_at,
@@ -73,9 +82,12 @@ export class D1PropertyVisitFormRepository implements PropertyVisitFormRepositor
            f.id as f_id, f.org_id as f_org_id, f.property_id as f_property_id,
            f.agent_id as f_agent_id, f.slug as f_slug,
            f.visitor_name as f_visitor_name, f.visitor_email as f_visitor_email,
-           f.visitor_phone as f_visitor_phone, f.liked as f_liked, f.disliked as f_disliked,
+           f.visitor_phone as f_visitor_phone,
+           f.rating as f_rating, f.liked as f_liked, f.disliked as f_disliked,
            f.subjective_price_usd as f_subjective_price_usd,
-           f.buy_intention as f_buy_intention, f.observations as f_observations,
+           f.buy_intention as f_buy_intention,
+           f.source as f_source, f.situation as f_situation,
+           f.observations as f_observations,
            f.submitted_at as f_submitted_at, f.sent_at as f_sent_at, f.created_at as f_created_at,
            p.id as p_id, p.address as p_address, p.neighborhood as p_neighborhood,
            p.city as p_city, p.cover_photo as p_cover_photo,
@@ -100,10 +112,13 @@ export class D1PropertyVisitFormRepository implements PropertyVisitFormRepositor
       visitor_name: row.f_visitor_name,
       visitor_email: row.f_visitor_email,
       visitor_phone: row.f_visitor_phone,
+      rating: row.f_rating,
       liked: row.f_liked,
       disliked: row.f_disliked,
       subjective_price_usd: row.f_subjective_price_usd,
       buy_intention: row.f_buy_intention,
+      source: row.f_source,
+      situation: row.f_situation,
       observations: row.f_observations,
       submitted_at: row.f_submitted_at,
       sent_at: row.f_sent_at,
@@ -159,6 +174,8 @@ export class D1PropertyVisitFormRepository implements PropertyVisitFormRepositor
       visitor_name: row.visitor_name ?? null,
       visitor_email: row.visitor_email ?? null,
       visitor_phone: row.visitor_phone ?? null,
+      rating:
+        row.rating === null || row.rating === undefined ? null : Number(row.rating),
       liked: row.liked ?? null,
       disliked: row.disliked ?? null,
       subjective_price_usd:
@@ -166,6 +183,8 @@ export class D1PropertyVisitFormRepository implements PropertyVisitFormRepositor
           ? null
           : Number(row.subjective_price_usd),
       buy_intention: (row.buy_intention ?? null) as BuyIntention | null,
+      source: (row.source ?? null) as VisitSource | null,
+      situation: (row.situation ?? null) as VisitSituation | null,
       observations: row.observations ?? null,
       submitted_at: row.submitted_at ?? null,
       sent_at: row.sent_at,
