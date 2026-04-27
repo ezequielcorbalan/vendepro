@@ -19,6 +19,9 @@ export interface NewAppraisalComparable {
   covered_area: number | null
   price: number | null
   usd_per_m2: number | null
+  days_on_market: number | null
+  views_per_day: number | null
+  age: number | null
   sort_order: number
 }
 

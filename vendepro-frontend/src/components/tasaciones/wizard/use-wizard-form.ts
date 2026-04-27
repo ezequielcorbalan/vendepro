@@ -2,7 +2,7 @@
 import { useReducer } from 'react'
 import type { AppraisalComparable } from '../renderer/types'
 
-export type WizardStep = 1 | 2 | 3 | 4
+export type WizardStep = 1 | 2 | 3 | 4 | 5
 
 export interface WizardState {
   step: WizardStep
@@ -43,6 +43,7 @@ type Action =
   | { type: 'set_lead'; id: string | null }
   | { type: 'patch_details'; patch: Partial<WizardState['details']> }
   | { type: 'add_comparable'; comparable: WizardState['comparables'][number] }
+  | { type: 'patch_comparable'; index: number; patch: Partial<WizardState['comparables'][number]> }
   | { type: 'remove_comparable'; index: number }
   | { type: 'toggle_public_slug' }
 
@@ -62,7 +63,7 @@ export function wizardReducer(state: WizardState, action: Action): WizardState {
     case 'goto':
       return { ...state, step: action.step }
     case 'next':
-      return { ...state, step: Math.min(4, state.step + 1) as WizardStep }
+      return { ...state, step: Math.min(5, state.step + 1) as WizardStep }
     case 'back':
       return { ...state, step: Math.max(1, state.step - 1) as WizardStep }
     case 'set_template':
@@ -77,6 +78,11 @@ export function wizardReducer(state: WizardState, action: Action): WizardState {
       return { ...state, details: { ...state.details, ...action.patch } }
     case 'add_comparable':
       return { ...state, comparables: [...state.comparables, action.comparable] }
+    case 'patch_comparable':
+      return {
+        ...state,
+        comparables: state.comparables.map((c, i) => i === action.index ? { ...c, ...action.patch } : c),
+      }
     case 'remove_comparable':
       return { ...state, comparables: state.comparables.filter((_, i) => i !== action.index) }
     case 'toggle_public_slug':
