@@ -1,0 +1,7 @@
+export * from './list-sold-properties'
+export * from './get-sold-property'
+export * from './create-sold-property'
+export * from './update-sold-property'
+export * from './delete-sold-property'
+export * from './add-sold-property-photo'
+export * from './remove-sold-property-photo'

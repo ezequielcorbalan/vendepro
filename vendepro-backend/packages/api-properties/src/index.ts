@@ -8,6 +8,7 @@ import { registerFichaRoutes } from './routes/fichas'
 import { registerReportRoutes } from './routes/reports'
 import { registerVisitFormRoutes } from './routes/visit-forms'
 import { registerLandingTemplateRoutes } from './routes/landings'
+import { registerSoldPropertyRoutes } from './routes/sold-properties'
 
 type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket; R2_PUBLIC_URL: string; BROWSER: Fetcher; API_PUBLIC_URL: string }
 type AuthVars = { Variables: { userId: string; userRole: string; orgId: string } }
@@ -31,5 +32,6 @@ registerFichaRoutes(app)
 registerReportRoutes(app)
 registerVisitFormRoutes(app)
 registerLandingTemplateRoutes(app)
+registerSoldPropertyRoutes(app)
 
 export default app
