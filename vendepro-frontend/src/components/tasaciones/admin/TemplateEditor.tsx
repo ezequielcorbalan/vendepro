@@ -92,6 +92,30 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
     return () => { if (timerRef.current) clearTimeout(timerRef.current) }
   }, [dirty, saveNow])
 
+  // Flush pending changes when the user leaves the page (close tab, navigate
+  // away, switch tab/window). Avoids losing the last 2s of edits.
+  useEffect(() => {
+    const dirtyRef = { current: dirty }
+    dirtyRef.current = dirty
+    const flush = () => { if (dirtyRef.current) saveNow() }
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (dirtyRef.current) {
+        flush()
+        e.preventDefault()
+        e.returnValue = ''
+      }
+    }
+    const onVisibility = () => { if (document.visibilityState === 'hidden') flush() }
+    window.addEventListener('blur', flush)
+    window.addEventListener('beforeunload', onBeforeUnload)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      window.removeEventListener('blur', flush)
+      window.removeEventListener('beforeunload', onBeforeUnload)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [dirty, saveNow])
+
   const handleDragEnd = (e: any) => {
     if (isSystemRef.current) return
     const { active, over } = e
