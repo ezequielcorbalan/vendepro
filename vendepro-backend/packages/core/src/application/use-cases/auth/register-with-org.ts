@@ -2,7 +2,7 @@ import type { OrganizationRepository } from '../../ports/repositories/organizati
 import type { UserRepository } from '../../ports/repositories/user-repository'
 import type { AuthService } from '../../ports/services/auth-service'
 import type { IdGenerator } from '../../ports/id-generator'
-import { Organization } from '../../../domain/entities/organization'
+import { Organization, DEFAULT_SURFACE_WEIGHTS } from '../../../domain/entities/organization'
 import { User } from '../../../domain/entities/user'
 import { ConflictError } from '../../../domain/errors/conflict-error'
 import { ValidationError } from '../../../domain/errors/validation-error'
@@ -56,6 +56,7 @@ export class RegisterWithOrgUseCase {
       brand_accent_color: null,
       canva_template_id: null,
       canva_report_template_id: null,
+      surface_weights: DEFAULT_SURFACE_WEIGHTS,
       owner_id: userId,
     })
 

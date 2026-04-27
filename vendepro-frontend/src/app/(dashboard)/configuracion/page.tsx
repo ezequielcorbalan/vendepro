@@ -11,6 +11,7 @@ import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
 import { getCurrentUser, resetOnboarding } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
+import { DEFAULT_SURFACE_WEIGHTS, isValidWeights, type SurfaceWeights } from '@/lib/surface-weights'
 
 export default function ConfiguracionPage() {
   const { toast } = useToast()
@@ -27,6 +28,7 @@ export default function ConfiguracionPage() {
   const [brandColor, setBrandColor] = useState('#ff007c')
   const [brandAccentColor, setBrandAccentColor] = useState('#e17a2a')
   const [logoUrl, setLogoUrl] = useState('')
+  const [surfaceWeights, setSurfaceWeights] = useState<SurfaceWeights>(DEFAULT_SURFACE_WEIGHTS)
   const [savingOrg, setSavingOrg] = useState(false)
   const slugDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const initialSlugRef = useRef<string>('')
@@ -46,6 +48,7 @@ export default function ConfiguracionPage() {
         setBrandColor(d.brand_color || '#ff007c')
         setBrandAccentColor(d.brand_accent_color || '#e17a2a')
         setLogoUrl(d.logo_url || '')
+        if (isValidWeights(d.surface_weights)) setSurfaceWeights(d.surface_weights)
         initialSlugRef.current = d.slug || ''
         setLoadingOrg(false)
       }).catch(() => setLoadingOrg(false))
@@ -95,6 +98,7 @@ export default function ConfiguracionPage() {
           brand_color: brandColor,
           brand_accent_color: brandAccentColor,
           logo_url: logoUrl || null,
+          surface_weights: surfaceWeights,
         }),
       })
       const data = (await res.json()) as any
@@ -102,6 +106,10 @@ export default function ConfiguracionPage() {
       else toast('Datos guardados')
     } catch { toast('Error al guardar', 'error') }
     setSavingOrg(false)
+  }
+
+  const setWeight = (k: keyof SurfaceWeights, pct: number) => {
+    setSurfaceWeights(w => ({ ...w, [k]: Math.max(0, Math.min(150, pct)) / 100 }))
   }
 
   const initial = profile?.full_name?.charAt(0)?.toUpperCase() || 'U'
@@ -318,6 +326,64 @@ export default function ConfiguracionPage() {
                   </div>
                 )}
               </div>
+            </div>
+
+            <div className="border-t pt-4">
+              <h3 className="text-sm font-semibold text-gray-700 mb-1">Ponderación de superficies</h3>
+              <p className="text-xs text-gray-500 mb-3">
+                Pesos que se usan para calcular la <strong>superficie ponderada</strong> en cada tasación.
+                Fórmula: <span className="font-mono text-[11px]">cubierta × % + semicubierta × % + descubierta × %</span>.
+              </p>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Cubierta</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min={0}
+                      max={150}
+                      step={5}
+                      value={Math.round(surfaceWeights.covered * 100)}
+                      onChange={e => setWeight('covered', Number(e.target.value))}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Semicubierta</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min={0}
+                      max={150}
+                      step={5}
+                      value={Math.round(surfaceWeights.semi * 100)}
+                      onChange={e => setWeight('semi', Number(e.target.value))}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Descubierta</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min={0}
+                      max={150}
+                      step={5}
+                      value={Math.round(surfaceWeights.uncovered * 100)}
+                      onChange={e => setWeight('uncovered', Number(e.target.value))}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
+                  </div>
+                </div>
+              </div>
+              <p className="mt-2 text-xs text-gray-500">
+                Estándar argentino: 100 / 75 / 25. Cambialo si tu inmobiliaria usa otra ponderación.
+              </p>
             </div>
 
             <button

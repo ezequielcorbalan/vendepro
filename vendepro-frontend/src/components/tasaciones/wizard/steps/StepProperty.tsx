@@ -1,5 +1,13 @@
 'use client'
+import { useEffect, useState } from 'react'
 import { PropertySelector } from '@/components/ui/PropertySelector'
+import { apiFetch } from '@/lib/api'
+import {
+  calcWeightedArea,
+  DEFAULT_SURFACE_WEIGHTS,
+  isValidWeights,
+  type SurfaceWeights,
+} from '@/lib/surface-weights'
 import type { WizardState } from '../use-wizard-form'
 
 const PROPERTY_TYPES = ['departamento', 'casa', 'ph', 'local', 'terreno', 'oficina', 'otro']
@@ -25,6 +33,29 @@ export function StepProperty({
   onSetPropertyId,
   onSetLead,
 }: Props) {
+  const [weights, setWeights] = useState<SurfaceWeights>(DEFAULT_SURFACE_WEIGHTS)
+
+  useEffect(() => {
+    apiFetch('admin', '/org-settings').then(r => r.json() as Promise<any>).then(d => {
+      if (isValidWeights(d.surface_weights)) setWeights(d.surface_weights)
+    }).catch(() => { /* fallback al default */ })
+  }, [])
+
+  const computedWeighted = calcWeightedArea(
+    property.covered_area,
+    property.semi_area,
+    property.total_area,
+    weights,
+  )
+
+  // Mantener sincronizado el valor calculado con el campo persistido.
+  // Solo actualizamos si difiere — evita ciclos infinitos en re-renders.
+  useEffect(() => {
+    if (computedWeighted !== null && computedWeighted !== property.weighted_area) {
+      onPatchProperty({ weighted_area: computedWeighted })
+    }
+  }, [computedWeighted])
+
   const selectedValue = propertyId
     ? {
         id: propertyId,
@@ -175,18 +206,22 @@ export function StepProperty({
           />
         </div>
 
-        {/* Weighted area */}
+        {/* Weighted area — auto-calculado */}
         <div>
-          <label className={labelClass}>Sup. ponderada (m²)</label>
-          <input
-            type="number"
-            min={0}
-            value={property.weighted_area ?? ''}
-            onChange={(e) =>
-              onPatchProperty({ weighted_area: e.target.value ? Number(e.target.value) : null })
-            }
-            className={inputClass}
-          />
+          <label className={labelClass}>
+            Sup. ponderada (m²)
+            <span className="ml-2 text-xs font-normal text-slate-400">auto</span>
+          </label>
+          <div
+            className="flex h-[42px] items-center rounded-lg border border-rose-200 bg-rose-50 px-3 text-sm font-semibold text-[#ff007c]"
+            title={`${Math.round(weights.covered * 100)}% cubierta + ${Math.round(weights.semi * 100)}% semi + ${Math.round(weights.uncovered * 100)}% descubierta`}
+          >
+            {computedWeighted !== null ? `${computedWeighted} m²` : '—'}
+          </div>
+          <p className="mt-1 text-[11px] text-slate-400">
+            Pesos: cubierta {Math.round(weights.covered * 100)}% / semi {Math.round(weights.semi * 100)}% /
+            descubierta {Math.round(weights.uncovered * 100)}%. Editalos en Configuración.
+          </p>
         </div>
 
         {/* Lead ID — plain text input (no lead-specific selector available) */}

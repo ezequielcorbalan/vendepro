@@ -1,5 +1,5 @@
 'use client'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, ExternalLink, Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
 import { useEditorState } from './useEditorState'
@@ -8,6 +8,13 @@ import { BlockList } from './BlockList'
 import { SyncBanner } from './SyncBanner'
 import { TemplateRenderer } from '../renderer/TemplateRenderer'
 import { publishAppraisal, generatePdf } from '../shared/api'
+import { apiFetch } from '@/lib/api'
+import {
+  calcWeightedArea,
+  DEFAULT_SURFACE_WEIGHTS,
+  isValidWeights,
+  type SurfaceWeights,
+} from '@/lib/surface-weights'
 import type { TemplateBlock, AppraisalContext, RenderMode } from '../renderer/types'
 
 interface Props {
@@ -41,6 +48,27 @@ export function EditorShell({ initial, snapshot, context }: Props) {
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false)
   const [pdfStatus, setPdfStatus] = useState<'idle' | 'generating' | 'error'>('idle')
   const [monthlyUsed, setMonthlyUsed] = useState<number | null>(null)
+
+  const [weights, setWeights] = useState<SurfaceWeights>(DEFAULT_SURFACE_WEIGHTS)
+
+  useEffect(() => {
+    apiFetch('admin', '/org-settings').then(r => r.json() as Promise<any>).then(d => {
+      if (isValidWeights(d.surface_weights)) setWeights(d.surface_weights)
+    }).catch(() => { /* fallback al default */ })
+  }, [])
+
+  const computedWeighted = calcWeightedArea(
+    state.appraisal.covered_area,
+    state.appraisal.semi_area,
+    state.appraisal.total_area,
+    weights,
+  )
+
+  useEffect(() => {
+    if (computedWeighted !== null && computedWeighted !== state.appraisal.weighted_area) {
+      dispatch({ type: 'patch_appraisal', patch: { weighted_area: computedWeighted } })
+    }
+  }, [computedWeighted])
 
   const onConsume = useCallback((saved: { appraisal: Record<string, unknown>; overrides: Record<string, Record<string, unknown>> }) => dispatch({ type: 'consume', saved }), [dispatch])
   const { status, lastSavedAt, retry } = useAutosave({
@@ -139,7 +167,18 @@ export function EditorShell({ initial, snapshot, context }: Props) {
               <AppraisalField label="Cubierta m²" type="number" value={state.appraisal.covered_area} onChange={v => dispatch({ type: 'patch_appraisal', patch: { covered_area: v ? Number(v) : null } })} />
               <AppraisalField label="Total m²" type="number" value={state.appraisal.total_area} onChange={v => dispatch({ type: 'patch_appraisal', patch: { total_area: v ? Number(v) : null } })} />
               <AppraisalField label="Semi m²" type="number" value={state.appraisal.semi_area} onChange={v => dispatch({ type: 'patch_appraisal', patch: { semi_area: v ? Number(v) : null } })} />
-              <AppraisalField label="Ponderada m²" type="number" value={state.appraisal.weighted_area} onChange={v => dispatch({ type: 'patch_appraisal', patch: { weighted_area: v ? Number(v) : null } })} />
+              <label className="flex flex-col gap-1">
+                <span className="text-xs text-slate-500">
+                  Ponderada m²
+                  <span className="ml-2 font-normal text-slate-400">auto</span>
+                </span>
+                <div
+                  className="flex h-[34px] items-center rounded border border-rose-200 bg-rose-50 px-2 text-sm font-semibold text-[#ff007c]"
+                  title={`Pesos: cubierta ${Math.round(weights.covered * 100)}% / semi ${Math.round(weights.semi * 100)}% / descubierta ${Math.round(weights.uncovered * 100)}%`}
+                >
+                  {computedWeighted !== null ? `${computedWeighted} m²` : '—'}
+                </div>
+              </label>
             </div>
           </section>
 

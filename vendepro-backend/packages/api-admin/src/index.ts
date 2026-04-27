@@ -155,6 +155,7 @@ app.put('/org-settings', async (c) => {
       brand_accent_color: body.brand_accent_color,
       canva_template_id: body.canva_template_id,
       canva_report_template_id: body.canva_report_template_id,
+      surface_weights: body.surface_weights,
     },
   })
   return c.json({ success: true })
