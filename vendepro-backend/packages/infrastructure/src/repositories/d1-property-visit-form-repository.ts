@@ -19,8 +19,8 @@ export class D1PropertyVisitFormRepository implements PropertyVisitFormRepositor
            visitor_name, visitor_email, visitor_phone,
            rating, liked, disliked, subjective_price_usd,
            buy_intention, source, situation, observations,
-           submitted_at, sent_at, created_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+           submitted_at, archived_at, deleted_at, sent_at, created_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(id) DO UPDATE SET
            visitor_name = excluded.visitor_name,
            visitor_email = excluded.visitor_email,
@@ -33,7 +33,9 @@ export class D1PropertyVisitFormRepository implements PropertyVisitFormRepositor
            source = excluded.source,
            situation = excluded.situation,
            observations = excluded.observations,
-           submitted_at = excluded.submitted_at`,
+           submitted_at = excluded.submitted_at,
+           archived_at = excluded.archived_at,
+           deleted_at = excluded.deleted_at`,
       )
       .bind(
         o.id,
@@ -53,6 +55,8 @@ export class D1PropertyVisitFormRepository implements PropertyVisitFormRepositor
         o.situation,
         o.observations,
         o.submitted_at,
+        o.archived_at,
+        o.deleted_at,
         o.sent_at,
         o.created_at,
       )
@@ -88,7 +92,9 @@ export class D1PropertyVisitFormRepository implements PropertyVisitFormRepositor
            f.buy_intention as f_buy_intention,
            f.source as f_source, f.situation as f_situation,
            f.observations as f_observations,
-           f.submitted_at as f_submitted_at, f.sent_at as f_sent_at, f.created_at as f_created_at,
+           f.submitted_at as f_submitted_at,
+           f.archived_at as f_archived_at, f.deleted_at as f_deleted_at,
+           f.sent_at as f_sent_at, f.created_at as f_created_at,
            p.id as p_id, p.address as p_address, p.neighborhood as p_neighborhood,
            p.city as p_city, p.cover_photo as p_cover_photo,
            p.asking_price as p_asking_price, p.currency as p_currency,
@@ -121,6 +127,8 @@ export class D1PropertyVisitFormRepository implements PropertyVisitFormRepositor
       situation: row.f_situation,
       observations: row.f_observations,
       submitted_at: row.f_submitted_at,
+      archived_at: row.f_archived_at,
+      deleted_at: row.f_deleted_at,
       sent_at: row.f_sent_at,
       created_at: row.f_created_at,
     })
@@ -148,7 +156,9 @@ export class D1PropertyVisitFormRepository implements PropertyVisitFormRepositor
   async listByProperty(propertyId: string, orgId: string): Promise<PropertyVisitForm[]> {
     const result = await this.db
       .prepare(
-        'SELECT * FROM property_visit_forms WHERE property_id = ? AND org_id = ? ORDER BY COALESCE(submitted_at, sent_at) DESC',
+        `SELECT * FROM property_visit_forms
+         WHERE property_id = ? AND org_id = ? AND deleted_at IS NULL
+         ORDER BY COALESCE(submitted_at, sent_at) DESC`,
       )
       .bind(propertyId, orgId)
       .all()
@@ -187,6 +197,8 @@ export class D1PropertyVisitFormRepository implements PropertyVisitFormRepositor
       situation: (row.situation ?? null) as VisitSituation | null,
       observations: row.observations ?? null,
       submitted_at: row.submitted_at ?? null,
+      archived_at: row.archived_at ?? null,
+      deleted_at: row.deleted_at ?? null,
       sent_at: row.sent_at,
       created_at: row.created_at,
     })
