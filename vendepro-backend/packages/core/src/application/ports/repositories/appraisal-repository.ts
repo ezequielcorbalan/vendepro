@@ -43,6 +43,7 @@ export interface AppraisalRepository {
   countByAgent(orgId: string, agentId: string): Promise<number>
   findComparables(appraisalId: string): Promise<AppraisalComparableProps[]>
   addComparable(comparable: NewAppraisalComparable): Promise<void>
+  updateComparable(comparableId: string, patch: Partial<Omit<NewAppraisalComparable, 'id' | 'appraisal_id'>>): Promise<void>
   removeComparable(comparableId: string): Promise<void>
   update(id: string, orgId: string, patch: Record<string, unknown>): Promise<void>
 }

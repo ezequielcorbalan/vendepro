@@ -198,6 +198,18 @@ export async function addComparable(body: any): Promise<any> {
   return (await r.json()) as any
 }
 
+export async function updateComparable(id: string, patch: Record<string, unknown>): Promise<any> {
+  const r = await apiFetch('properties', `/appraisals/comparables`, {
+    method: 'PUT',
+    body: JSON.stringify({ id, ...patch }),
+  })
+  if (!r.ok) {
+    const err = (await r.json().catch(() => ({}))) as any
+    throw new Error(err?.error ?? `HTTP ${r.status}`)
+  }
+  return (await r.json()) as any
+}
+
 export async function deleteComparable(id: string): Promise<any> {
   const r = await apiFetch('properties', `/appraisals/comparables?id=${encodeURIComponent(id)}`, {
     method: 'DELETE',

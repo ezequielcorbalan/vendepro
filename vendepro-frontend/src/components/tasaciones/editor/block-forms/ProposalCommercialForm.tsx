@@ -1,15 +1,29 @@
 'use client'
+interface ProposalItem { icon?: string; title: string; body: string }
 interface Props { data: any; onPatch: (p: Record<string, unknown>) => void }
 
-export function ProposalCommercialForm({ data, onPatch }: Props) {
-  const items: string[] = data.items ?? []
+const MAX_ITEMS = 8
 
-  const setItem = (i: number, val: string) => {
-    const next = [...items]
-    next[i] = val
+function normalize(raw: unknown): ProposalItem {
+  if (typeof raw === 'string') return { title: raw, body: '' }
+  if (raw && typeof raw === 'object') {
+    const o = raw as any
+    return { icon: o.icon, title: String(o.title ?? ''), body: String(o.body ?? '') }
+  }
+  return { title: '', body: '' }
+}
+
+export function ProposalCommercialForm({ data, onPatch }: Props) {
+  const items: ProposalItem[] = (data.items ?? []).map(normalize)
+
+  const patchItem = (i: number, patch: Partial<ProposalItem>) => {
+    const next = items.map((it, idx) => (idx === i ? { ...it, ...patch } : it))
     onPatch({ items: next })
   }
-  const addItem = () => onPatch({ items: [...items, ''] })
+  const addItem = () => {
+    if (items.length >= MAX_ITEMS) return
+    onPatch({ items: [...items, { title: '', body: '' }] })
+  }
   const removeItem = (i: number) => onPatch({ items: items.filter((_, idx) => idx !== i) })
 
   return (
@@ -22,20 +36,33 @@ export function ProposalCommercialForm({ data, onPatch }: Props) {
         <span className="text-xs uppercase tracking-wide text-slate-600">Subtítulo</span>
         <input type="text" value={data.subtitle ?? ''} onChange={e => onPatch({ subtitle: e.target.value })} className="rounded border border-slate-300 px-2 py-1 text-sm" />
       </label>
-      <label className="flex flex-col gap-1">
-        <span className="text-xs uppercase tracking-wide text-slate-600">Cuerpo</span>
-        <textarea rows={4} value={data.body ?? ''} onChange={e => onPatch({ body: e.target.value })} className="rounded border border-slate-300 px-2 py-1 text-sm" />
-      </label>
       <div>
         <div className="mb-1 flex items-center justify-between">
           <span className="text-xs uppercase tracking-wide text-slate-600">Puntos destacados</span>
-          <button onClick={addItem} className="text-xs text-[#ff007c]">+ Agregar</button>
+          <button onClick={addItem} disabled={items.length >= MAX_ITEMS} className="text-xs text-[#ff007c] disabled:opacity-40">+ Agregar</button>
         </div>
-        <ul className="space-y-1">
+        <ul className="space-y-3">
           {items.map((item, i) => (
-            <li key={i} className="flex gap-1">
-              <input value={item} onChange={e => setItem(i, e.target.value)} className="flex-1 rounded border border-slate-300 px-2 py-1 text-sm" />
-              <button onClick={() => removeItem(i)} className="text-xs text-rose-500">✕</button>
+            <li key={i} className="rounded border border-slate-200 p-2">
+              <div className="mb-1 flex items-center justify-between">
+                <span className="text-[10px] uppercase tracking-wide text-slate-500">Punto {i + 1}</span>
+                <button onClick={() => removeItem(i)} className="text-xs text-rose-500">✕</button>
+              </div>
+              <input
+                value={item.title}
+                onChange={e => patchItem(i, { title: e.target.value })}
+                placeholder="Título del punto"
+                maxLength={120}
+                className="mb-1 w-full rounded border border-slate-300 px-2 py-1 text-sm font-medium"
+              />
+              <textarea
+                value={item.body}
+                onChange={e => patchItem(i, { body: e.target.value })}
+                placeholder="Descripción"
+                rows={2}
+                maxLength={600}
+                className="w-full rounded border border-slate-300 px-2 py-1 text-sm"
+              />
             </li>
           ))}
         </ul>

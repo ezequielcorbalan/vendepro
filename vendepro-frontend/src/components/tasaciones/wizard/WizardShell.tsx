@@ -5,17 +5,19 @@ import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react'
 import { useWizardForm, canAdvance } from './use-wizard-form'
 import { StepTemplate } from './steps/StepTemplate'
 import { StepProperty } from './steps/StepProperty'
+import { StepVariableBlocks } from './steps/StepVariableBlocks'
 import { StepDetails } from './steps/StepDetails'
 import { StepCompetencia } from './steps/StepCompetencia'
 import { StepReview } from './steps/StepReview'
-import { createAppraisal, publishAppraisal, addComparable } from '../shared/api'
+import { createAppraisal, publishAppraisal, addComparable, patchBlockOverride } from '../shared/api'
 import { useToast } from '@/components/ui/Toast'
 
 interface Props {
   initialTemplateId?: string | null
 }
 
-const STEP_LABELS = ['Template', 'Propiedad', 'FODA + Precios', 'Competencia', 'Revisar']
+const STEP_LABELS = ['Template', 'Propiedad', 'Bloques', 'FODA + Precios', 'Competencia', 'Revisar']
+const TOTAL_STEPS = STEP_LABELS.length
 
 export function WizardShell({ initialTemplateId }: Props) {
   const [state, dispatch] = useWizardForm({
@@ -49,6 +51,14 @@ export function WizardShell({ initialTemplateId }: Props) {
       for (let i = 0; i < state.comparables.length; i++) {
         await addComparable({ ...state.comparables[i], sort_order: i, appraisal_id: id })
       }
+      const overrideEntries = Object.entries(state.blockOverrides).filter(
+        ([, patch]) => patch && Object.keys(patch).length > 0,
+      )
+      if (overrideEntries.length > 0) {
+        await Promise.all(
+          overrideEntries.map(([blockId, patch]) => patchBlockOverride(id, blockId, patch)),
+        )
+      }
       if (state.publish.generate_public_slug) await publishAppraisal(id)
       router.push(`/tasaciones/${id}/editar?welcome=1`)
     } catch (e: any) {
@@ -79,7 +89,7 @@ export function WizardShell({ initialTemplateId }: Props) {
       {/* Stepper */}
       <div className="mb-8 flex gap-2">
         {STEP_LABELS.map((label, i) => {
-          const n = (i + 1) as 1 | 2 | 3 | 4 | 5
+          const n = (i + 1) as 1 | 2 | 3 | 4 | 5 | 6
           const done = n < state.step
           const active = n === state.step
           return (
@@ -119,12 +129,21 @@ export function WizardShell({ initialTemplateId }: Props) {
           />
         )}
         {state.step === 3 && (
+          <StepVariableBlocks
+            templateId={state.template_id}
+            overrides={state.blockOverrides}
+            onPatchOverride={(blockId, patch) =>
+              dispatch({ type: 'patch_block_override', blockId, patch })
+            }
+          />
+        )}
+        {state.step === 4 && (
           <StepDetails
             details={state.details}
             onPatchDetails={(p) => dispatch({ type: 'patch_details', patch: p })}
           />
         )}
-        {state.step === 4 && (
+        {state.step === 5 && (
           <StepCompetencia
             comparables={state.comparables}
             onAddComparable={(c) => dispatch({ type: 'add_comparable', comparable: c })}
@@ -132,7 +151,7 @@ export function WizardShell({ initialTemplateId }: Props) {
             onRemoveComparable={(i) => dispatch({ type: 'remove_comparable', index: i })}
           />
         )}
-        {state.step === 5 && (
+        {state.step === 6 && (
           <StepReview
             templateId={state.template_id}
             property={state.property}
@@ -154,7 +173,7 @@ export function WizardShell({ initialTemplateId }: Props) {
           <ArrowLeft className="h-4 w-4" /> Atrás
         </button>
 
-        {state.step < 5 ? (
+        {state.step < TOTAL_STEPS ? (
           <button
             onClick={() => dispatch({ type: 'next' })}
             disabled={!canAdvance(state)}

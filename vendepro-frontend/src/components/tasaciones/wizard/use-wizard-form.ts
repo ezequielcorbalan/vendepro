@@ -1,8 +1,8 @@
 'use client'
 import { useReducer } from 'react'
-import type { AppraisalComparable } from '../renderer/types'
+import type { AppraisalComparable, BlockOverrides } from '../renderer/types'
 
-export type WizardStep = 1 | 2 | 3 | 4 | 5
+export type WizardStep = 1 | 2 | 3 | 4 | 5 | 6
 
 export interface WizardState {
   step: WizardStep
@@ -30,6 +30,7 @@ export interface WizardState {
     usd_per_m2?: number | null
   }
   comparables: (Omit<AppraisalComparable, 'id' | 'appraisal_id' | 'sort_order'> & { sort_order?: number })[]
+  blockOverrides: BlockOverrides
   publish: { generate_public_slug: boolean }
 }
 
@@ -45,6 +46,7 @@ type Action =
   | { type: 'add_comparable'; comparable: WizardState['comparables'][number] }
   | { type: 'patch_comparable'; index: number; patch: Partial<WizardState['comparables'][number]> }
   | { type: 'remove_comparable'; index: number }
+  | { type: 'patch_block_override'; blockId: string; patch: Record<string, unknown> }
   | { type: 'toggle_public_slug' }
 
 export const initialState: WizardState = {
@@ -55,6 +57,7 @@ export const initialState: WizardState = {
   property: { address: '' },
   details: {},
   comparables: [],
+  blockOverrides: {},
   publish: { generate_public_slug: true },
 }
 
@@ -63,11 +66,12 @@ export function wizardReducer(state: WizardState, action: Action): WizardState {
     case 'goto':
       return { ...state, step: action.step }
     case 'next':
-      return { ...state, step: Math.min(5, state.step + 1) as WizardStep }
+      return { ...state, step: Math.min(6, state.step + 1) as WizardStep }
     case 'back':
       return { ...state, step: Math.max(1, state.step - 1) as WizardStep }
     case 'set_template':
-      return { ...state, template_id: action.id }
+      // Clear overrides — block ids change with template
+      return { ...state, template_id: action.id, blockOverrides: {} }
     case 'patch_property':
       return { ...state, property: { ...state.property, ...action.patch } }
     case 'set_property_id':
@@ -85,6 +89,16 @@ export function wizardReducer(state: WizardState, action: Action): WizardState {
       }
     case 'remove_comparable':
       return { ...state, comparables: state.comparables.filter((_, i) => i !== action.index) }
+    case 'patch_block_override': {
+      const prev = state.blockOverrides[action.blockId] ?? {}
+      return {
+        ...state,
+        blockOverrides: {
+          ...state.blockOverrides,
+          [action.blockId]: { ...prev, ...action.patch },
+        },
+      }
+    }
     case 'toggle_public_slug':
       return { ...state, publish: { generate_public_slug: !state.publish.generate_public_slug } }
     default:

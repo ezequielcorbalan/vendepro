@@ -45,6 +45,7 @@ export * from './use-cases/appraisals/create-appraisal'
 export * from './use-cases/appraisals/update-appraisal'
 export * from './use-cases/appraisals/delete-appraisal'
 export * from './use-cases/appraisals/add-appraisal-comparable'
+export * from './use-cases/appraisals/update-appraisal-comparable'
 export * from './use-cases/appraisals/remove-appraisal-comparable'
 export { GenerateAppraisalPdfUseCase } from './use-cases/appraisals/generate-appraisal-pdf'
 export type {
