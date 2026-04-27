@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { ChevronRight, ChevronDown, Lock } from 'lucide-react'
 import type { TemplateBlock } from '../renderer/types'
+import { getBlockMeta } from '../renderer/block-catalog'
 import { BlockForm } from './BlockForm'
 
 interface Props {
@@ -28,10 +29,10 @@ export function BlockList({ blocks, overrides, onPatchOverride, context }: Props
             <button onClick={() => toggle(b.id)} className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-slate-50">
               <span className="flex items-center gap-2">
                 {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                {isLocked && <Lock className="h-3 w-3 text-slate-400" />}
-                {b.type.replace(/_/g, ' ')}
+                {isLocked && <span title="Definido en el template"><Lock className="h-3 w-3 text-slate-400" /></span>}
+                <span className="font-medium">{getBlockMeta(b.type).label}</span>
               </span>
-              <span className="text-xs text-slate-400">{b.binding_mode}</span>
+              {isLocked && <span className="text-xs text-slate-400">Solo lectura</span>}
             </button>
             {open && (
               <BlockForm
