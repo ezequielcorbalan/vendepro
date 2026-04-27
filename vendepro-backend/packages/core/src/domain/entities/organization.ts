@@ -1,3 +1,11 @@
+export interface SurfaceWeights {
+  covered: number
+  semi: number
+  uncovered: number
+}
+
+export const DEFAULT_SURFACE_WEIGHTS: SurfaceWeights = { covered: 1, semi: 0.75, uncovered: 0.25 }
+
 export interface OrganizationProps {
   id: string
   name: string
@@ -7,6 +15,7 @@ export interface OrganizationProps {
   brand_accent_color: string | null
   canva_template_id: string | null
   canva_report_template_id: string | null
+  surface_weights: SurfaceWeights
   owner_id: string | null
   created_at: string
 }
@@ -26,6 +35,7 @@ export class Organization {
   get brand_accent_color() { return this.props.brand_accent_color }
   get canva_template_id() { return this.props.canva_template_id }
   get canva_report_template_id() { return this.props.canva_report_template_id }
+  get surface_weights() { return this.props.surface_weights }
   get owner_id() { return this.props.owner_id }
   get created_at() { return this.props.created_at }
 

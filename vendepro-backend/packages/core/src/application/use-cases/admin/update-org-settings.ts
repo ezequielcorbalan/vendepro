@@ -1,4 +1,5 @@
 import type { OrganizationRepository } from '../../ports/repositories/organization-repository'
+import type { SurfaceWeights } from '../../../domain/entities/organization'
 import { ConflictError } from '../../../domain/errors/conflict-error'
 
 export interface UpdateOrgSettingsInput {
@@ -11,6 +12,7 @@ export interface UpdateOrgSettingsInput {
     brand_accent_color?: string | null
     canva_template_id?: string | null
     canva_report_template_id?: string | null
+    surface_weights?: SurfaceWeights | null
   }
 }
 
