@@ -11,8 +11,15 @@ export class ArchiveAppraisalTemplateUseCase {
     if (cur.isSystem()) throw new ValidationError('No se pueden archivar templates del sistema')
     if (cur.org_id !== input.orgId) throw new ValidationError('Template pertenece a otra org')
 
+    // Use fromPersistence (no re-validation): archive only flips `active` —
+    // block data is unchanged, so the template should remain archivable even
+    // if it has legacy blocks that no longer pass current Zod validation.
     const o = cur.toObject()
-    const next = AppraisalTemplate.create({ ...o, active: false, updated_at: new Date().toISOString() })
+    const next = AppraisalTemplate.fromPersistence({
+      ...o,
+      active: false,
+      updated_at: new Date().toISOString(),
+    })
     await this.repo.save(next)
     return { archived: true }
   }
