@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { corsMiddleware, errorHandler } from '@vendepro/infrastructure'
+import { corsMiddleware, errorHandler, R2PdfStorage, PdfDownloadTokenSignerImpl } from '@vendepro/infrastructure'
 import {
   D1PropertyRepository,
   D1ReportRepository,
@@ -16,6 +16,7 @@ import {
   D1LandingRepository,
   D1LandingVersionRepository,
   D1LandingEventRepository,
+  D1OrgVariableRepository,
   fireMarketingEvent,
 } from '@vendepro/infrastructure'
 import {
@@ -32,7 +33,7 @@ import {
   SubmitLeadFromLandingUseCase,
 } from '@vendepro/core'
 
-type Env = { DB: D1Database; JWT_SECRET: string }
+type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket }
 
 const app = new Hono<{ Bindings: Env }>()
 
@@ -44,6 +45,8 @@ app.get('/public/report/:slug', async (c) => {
   const uc = new GetPublicReportUseCase(
     new D1PropertyRepository(c.env.DB),
     new D1ReportRepository(c.env.DB),
+    new D1OrganizationRepository(c.env.DB),
+    new D1PropertyVisitFormRepository(c.env.DB),
   )
   const result = await uc.execute(c.req.param('slug'))
   if (!result) return c.json({ error: 'Not found' }, 404)
@@ -55,6 +58,7 @@ app.get('/public/appraisal/:slug', async (c) => {
   const uc = new GetPublicAppraisalUseCase(
     new D1AppraisalRepository(c.env.DB),
     new D1TemplateBlockRepository(c.env.DB),
+    new D1OrgVariableRepository(c.env.DB),
   )
   const result = await uc.execute(c.req.param('slug'))
   if (!result) return c.json({ error: 'Not found' }, 404)
@@ -109,10 +113,13 @@ app.get('/public/property-visit-form/:slug', async (c) => {
           visitor_name: formObj.visitor_name,
           visitor_email: formObj.visitor_email,
           visitor_phone: formObj.visitor_phone,
+          rating: formObj.rating,
           liked: formObj.liked,
           disliked: formObj.disliked,
           subjective_price_usd: formObj.subjective_price_usd,
           buy_intention: formObj.buy_intention,
+          source: formObj.source,
+          situation: formObj.situation,
           observations: formObj.observations,
           submitted_at: formObj.submitted_at,
         }
@@ -130,15 +137,23 @@ app.post('/public/property-visit-form/:slug/submit', async (c) => {
     priceRaw === null || priceRaw === undefined || priceRaw === ''
       ? null
       : Number(priceRaw)
+  const ratingRaw = body.rating
+  const rating =
+    ratingRaw === null || ratingRaw === undefined || ratingRaw === ''
+      ? null
+      : Number(ratingRaw)
   const result = await uc.execute({
     slug: c.req.param('slug'),
     visitor_name: body.visitor_name ?? body.name ?? null,
     visitor_email: body.visitor_email ?? body.email ?? null,
     visitor_phone: body.visitor_phone ?? body.phone ?? null,
+    rating,
     liked: body.liked ?? null,
     disliked: body.disliked ?? null,
     subjective_price_usd: price,
     buy_intention: body.buy_intention ?? null,
+    source: body.source ?? null,
+    situation: body.situation ?? null,
     observations: body.observations ?? null,
   })
   // Hook marketing — necesitamos resolver org_id desde la ficha.
@@ -345,6 +360,33 @@ app.post('/l/:slug/event', async (c) => {
     }
   }
   return new Response(null, { status: 204 })
+})
+
+// ── PDF DOWNLOAD (JWT-gated) ──────────────────────────────────────
+app.get('/public/pdf/:orgId/:appraisalId/:filename', async (c) => {
+  const token = c.req.query('token')
+  if (!token) return c.text('Missing token', 401)
+
+  const signer = new PdfDownloadTokenSignerImpl({ secret: c.env.JWT_SECRET, apiPublicBaseUrl: '' })
+  const payload = await signer.verify(token)
+  if (!payload) return c.text('Invalid or expired token', 401)
+
+  if (payload.orgId !== c.req.param('orgId') || payload.appraisalId !== c.req.param('appraisalId')) {
+    return c.text('Token mismatch', 403)
+  }
+
+  const storage = new R2PdfStorage(c.env.R2)
+  const obj = await storage.get(payload.r2Key)
+  if (!obj) return c.text('PDF not found', 404)
+
+  return new Response(obj.body, {
+    headers: {
+      'Content-Type': obj.contentType,
+      'Content-Disposition': obj.contentDisposition,
+      'Content-Length': obj.size.toString(),
+      'Cache-Control': 'private, max-age=900',
+    },
+  })
 })
 
 export default app

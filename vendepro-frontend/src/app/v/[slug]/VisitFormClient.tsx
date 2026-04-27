@@ -1,9 +1,45 @@
 'use client'
 
 import { useState } from 'react'
-import { CheckCircle2, Loader2, Home, MapPin } from 'lucide-react'
+import { CheckCircle2, Loader2, Home, MapPin, Star } from 'lucide-react'
 import { getOrCreateVisitorId } from '@/lib/landings/tracker'
 import { pushMarketingEvent } from '@/components/marketing/dataLayer'
+
+type BuyIntention = 'compraria' | 'no'
+
+type VisitSource =
+  | ''
+  | 'argenprop'
+  | 'mercadolibre'
+  | 'zonaprop'
+  | 'instagram'
+  | 'recomendacion'
+  | 'otro'
+
+type VisitSituation =
+  | ''
+  | 'mudanza'
+  | 'primera_vivienda'
+  | 'inversion'
+  | 'downsizing'
+  | 'otro'
+
+const SOURCE_OPTIONS: { value: Exclude<VisitSource, ''>; label: string }[] = [
+  { value: 'argenprop', label: 'Argenprop' },
+  { value: 'mercadolibre', label: 'Mercado Libre' },
+  { value: 'zonaprop', label: 'Zonaprop' },
+  { value: 'instagram', label: 'Instagram' },
+  { value: 'recomendacion', label: 'Recomendación' },
+  { value: 'otro', label: 'Otros' },
+]
+
+const SITUATION_OPTIONS: { value: Exclude<VisitSituation, ''>; label: string }[] = [
+  { value: 'mudanza', label: 'Mudanza' },
+  { value: 'primera_vivienda', label: 'Primera vivienda' },
+  { value: 'inversion', label: 'Inversión' },
+  { value: 'downsizing', label: 'Downsizing' },
+  { value: 'otro', label: 'Otros' },
+]
 
 interface Props {
   slug: string
@@ -28,22 +64,9 @@ interface Props {
     }
     response: {
       visitor_name: string | null
-      visitor_email: string | null
-      visitor_phone: string | null
-      liked: string | null
-      disliked: string | null
-      subjective_price_usd: number | null
-      buy_intention: string | null
-      observations: string | null
       submitted_at: string
     } | null
   }
-}
-
-const intentionLabel: Record<string, string> = {
-  compraria: 'Sí, la compraría',
-  tal_vez: 'Tal vez',
-  no: 'No me interesa',
 }
 
 export default function VisitFormClient({ slug, apiPublic, data }: Props) {
@@ -53,12 +76,12 @@ export default function VisitFormClient({ slug, apiPublic, data }: Props) {
 
   const [form, setForm] = useState({
     visitor_name: '',
-    visitor_email: '',
-    visitor_phone: '',
+    rating: 0,
     liked: '',
     disliked: '',
-    subjective_price_usd: '',
-    buy_intention: '' as '' | 'compraria' | 'tal_vez' | 'no',
+    buy_intention: '' as '' | BuyIntention,
+    source: '' as VisitSource,
+    situation: '' as VisitSituation,
     observations: '',
   })
 
@@ -83,13 +106,12 @@ export default function VisitFormClient({ slug, apiPublic, data }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           visitor_name: form.visitor_name.trim(),
-          visitor_email: form.visitor_email.trim() || null,
-          visitor_phone: form.visitor_phone.trim() || null,
+          rating: form.rating > 0 ? form.rating : null,
           liked: form.liked.trim() || null,
           disliked: form.disliked.trim() || null,
-          subjective_price_usd:
-            form.subjective_price_usd.trim() === '' ? null : Number(form.subjective_price_usd),
           buy_intention: form.buy_intention || null,
+          source: form.source || null,
+          situation: form.situation || null,
           observations: form.observations.trim() || null,
           ga4_client_id: visitorId,
         }),
@@ -155,9 +177,9 @@ export default function VisitFormClient({ slug, apiPublic, data }: Props) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#fff0f6] to-white py-8 px-4">
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-2xl mx-auto space-y-5">
+        {/* Cabecera con foto de la propiedad */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          {/* Cabecera con foto de la propiedad */}
           {p.cover_photo ? (
             <div className="relative h-40 w-full bg-gray-100">
               <img src={p.cover_photo} alt={p.address} className="w-full h-full object-cover" />
@@ -173,163 +195,190 @@ export default function VisitFormClient({ slug, apiPublic, data }: Props) {
               </div>
             </div>
           ) : (
-            <div className="bg-[#ff007c] h-2" />
-          )}
-
-          <div className="p-6 sm:p-8">
-            {!p.cover_photo && (
-              <div className="mb-5">
-                <h1 className="text-xl font-semibold text-gray-900">{p.address}</h1>
-                {addressLine && <p className="text-sm text-gray-500 mt-1">{addressLine}</p>}
-              </div>
-            )}
-
-            <div className="mb-6">
-              <h2 className="text-lg font-semibold text-gray-900">Ficha de visita</h2>
-              <p className="text-sm text-gray-500 mt-1">
-                Gracias por visitar esta propiedad. Tu opinión nos ayuda a ajustar la comercialización —
-                te toma menos de 2 minutos.
-              </p>
+            <div className="p-6">
+              <div className="bg-[#ff007c] h-1 w-12 rounded-full mb-3" />
+              <h1 className="text-xl font-semibold text-gray-900">{p.address}</h1>
+              {addressLine && <p className="text-sm text-gray-500 mt-1">{addressLine}</p>}
             </div>
-
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label="Nombre *">
-                  <input
-                    type="text"
-                    required
-                    value={form.visitor_name}
-                    onChange={(e) => setField('visitor_name', e.target.value)}
-                    className="input"
-                  />
-                </Field>
-                <Field label="Email">
-                  <input
-                    type="email"
-                    value={form.visitor_email}
-                    onChange={(e) => setField('visitor_email', e.target.value)}
-                    className="input"
-                  />
-                </Field>
-              </div>
-
-              <Field label="Teléfono">
-                <input
-                  type="tel"
-                  value={form.visitor_phone}
-                  onChange={(e) => setField('visitor_phone', e.target.value)}
-                  className="input"
-                />
-              </Field>
-
-              <Field label="¿Qué te gustó de la propiedad?">
-                <textarea
-                  rows={3}
-                  value={form.liked}
-                  onChange={(e) => setField('liked', e.target.value)}
-                  className="input resize-none"
-                  placeholder="Ubicación, luz, ambientes, etc."
-                />
-              </Field>
-
-              <Field label="¿Qué no te gustó o te preocupa?">
-                <textarea
-                  rows={3}
-                  value={form.disliked}
-                  onChange={(e) => setField('disliked', e.target.value)}
-                  className="input resize-none"
-                  placeholder="Mantenimiento, distribución, ruido, etc."
-                />
-              </Field>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label="Precio subjetivo (USD)" hint="Cuánto pagarías por esta propiedad">
-                  <input
-                    type="number"
-                    min="0"
-                    step="1000"
-                    value={form.subjective_price_usd}
-                    onChange={(e) => setField('subjective_price_usd', e.target.value)}
-                    className="input"
-                    placeholder="Ej: 150000"
-                  />
-                </Field>
-                <Field label="Intención de compra">
-                  <select
-                    value={form.buy_intention}
-                    onChange={(e) =>
-                      setField('buy_intention', e.target.value as typeof form.buy_intention)
-                    }
-                    className="input"
-                  >
-                    <option value="">Seleccioná una opción</option>
-                    <option value="compraria">Sí, la compraría</option>
-                    <option value="tal_vez">Tal vez</option>
-                    <option value="no">No me interesa</option>
-                  </select>
-                </Field>
-              </div>
-
-              <Field label="Observaciones">
-                <textarea
-                  rows={3}
-                  value={form.observations}
-                  onChange={(e) => setField('observations', e.target.value)}
-                  className="input resize-none"
-                  placeholder="Cualquier comentario adicional"
-                />
-              </Field>
-
-              {error && (
-                <div className="bg-red-50 border border-red-100 text-red-700 text-sm rounded-lg px-3 py-2">
-                  {error}
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full bg-[#ff007c] hover:bg-[#e6006f] disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
-              >
-                {submitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Enviando...
-                  </>
-                ) : (
-                  'Enviar ficha'
-                )}
-              </button>
-
-              <p className="text-xs text-gray-400 text-center">
-                Al enviar este formulario, tus respuestas quedan registradas con {data.org.name}.
-              </p>
-            </form>
+          )}
+          <div className="p-5 sm:p-6 border-t border-gray-100">
+            <h2 className="text-base font-semibold text-gray-900">Ficha de visita</h2>
+            <p className="text-sm text-gray-500 mt-1">
+              Gracias por visitar esta propiedad. Tu opinión nos ayuda a ajustar la
+              comercialización — te toma menos de 2 minutos.
+            </p>
           </div>
         </div>
 
-        <div className="text-center mt-4 text-xs text-gray-400">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Card: Tus datos */}
+          <Card title="Tus datos">
+            <Field label="Nombre completo *">
+              <input
+                type="text"
+                required
+                value={form.visitor_name}
+                onChange={(e) => setField('visitor_name', e.target.value)}
+                placeholder="Ej: Juan Pérez"
+                className="vp-input"
+              />
+            </Field>
+          </Card>
+
+          {/* Card: Opinión + rating */}
+          <Card title="¿Qué te pareció la propiedad?">
+            <div>
+              <label className="block text-sm text-gray-600 mb-2">Puntuación general</label>
+              <StarRating value={form.rating} onChange={(v) => setField('rating', v)} />
+            </div>
+
+            <Field label="¿Qué te gustó?">
+              <textarea
+                rows={3}
+                value={form.liked}
+                onChange={(e) => setField('liked', e.target.value)}
+                placeholder="Luminosidad, distribución, ubicación…"
+                className="vp-input resize-none"
+              />
+            </Field>
+
+            <Field label="¿Qué no te gustó?">
+              <textarea
+                rows={3}
+                value={form.disliked}
+                onChange={(e) => setField('disliked', e.target.value)}
+                placeholder="Ruido, estado, tamaño…"
+                className="vp-input resize-none"
+              />
+            </Field>
+          </Card>
+
+          {/* Card: Interés */}
+          <Card title="Interés">
+            <div>
+              <label className="block text-sm text-gray-600 mb-2">¿Comprarías esta propiedad?</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <ChoiceButton
+                  active={form.buy_intention === 'compraria'}
+                  onClick={() => setField('buy_intention', 'compraria')}
+                >
+                  Sí, me interesa
+                </ChoiceButton>
+                <ChoiceButton
+                  active={form.buy_intention === 'no'}
+                  onClick={() => setField('buy_intention', 'no')}
+                >
+                  No, no es para mí
+                </ChoiceButton>
+              </div>
+            </div>
+          </Card>
+
+          {/* Card: Información adicional */}
+          <Card title="Información adicional">
+            <Field label="¿Cómo encontraste la propiedad?">
+              <select
+                value={form.source}
+                onChange={(e) => setField('source', e.target.value as VisitSource)}
+                className="vp-input"
+              >
+                <option value="">Seleccionar…</option>
+                {SOURCE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <Field label="¿Cuál es tu situación actual?">
+              <select
+                value={form.situation}
+                onChange={(e) => setField('situation', e.target.value as VisitSituation)}
+                className="vp-input"
+              >
+                <option value="">Seleccionar…</option>
+                {SITUATION_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <Field
+              label="Comentarios adicionales"
+              hint="¿Qué valor pensás que vale la propiedad?"
+            >
+              <textarea
+                rows={3}
+                value={form.observations}
+                onChange={(e) => setField('observations', e.target.value)}
+                placeholder="Ej: Me pareció que vale alrededor de USD 150.000…"
+                className="vp-input resize-none"
+              />
+            </Field>
+          </Card>
+
+          {error && (
+            <div className="bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl px-4 py-3">
+              {error}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full bg-[#ff007c] hover:bg-[#e6006f] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm"
+          >
+            {submitting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Enviando…
+              </>
+            ) : (
+              'Enviar ficha de visita'
+            )}
+          </button>
+
+          <p className="text-xs text-gray-400 text-center">
+            {data.org.name} · Ficha de visita confidencial
+          </p>
+        </form>
+
+        <div className="text-center text-xs text-gray-400">
           Potenciado por <span className="text-[#ff007c] font-semibold">VendéPro</span>
         </div>
       </div>
 
       <style>{`
-        .input {
+        .vp-input {
           width: 100%;
-          padding: 0.625rem 0.875rem;
+          padding: 0.75rem 1rem;
           border: 1px solid #e5e7eb;
-          border-radius: 0.625rem;
-          font-size: 0.9rem;
+          border-radius: 0.75rem;
+          font-size: 0.95rem;
           background: white;
+          color: #111827;
           transition: border-color 0.15s, box-shadow 0.15s;
           outline: none;
         }
-        .input:focus {
+        .vp-input::placeholder { color: #9ca3af; }
+        .vp-input:focus {
           border-color: #ff007c;
           box-shadow: 0 0 0 3px rgba(255, 0, 124, 0.12);
         }
       `}</style>
     </div>
+  )
+}
+
+function Card({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6 space-y-4">
+      <h2 className="text-base font-semibold text-gray-900">{title}</h2>
+      {children}
+    </section>
   )
 }
 
@@ -344,9 +393,62 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-      {hint && <p className="text-xs text-gray-400 mb-1.5">{hint}</p>}
-      {children}
+      <label className="block text-sm font-medium text-gray-700">
+        {label}
+        {hint && <span className="ml-1 text-gray-400 font-normal">({hint})</span>}
+      </label>
+      <div className="mt-1.5">{children}</div>
     </div>
+  )
+}
+
+function StarRating({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  return (
+    <div className="flex items-center gap-2">
+      {[1, 2, 3, 4, 5].map((n) => {
+        const active = n <= value
+        return (
+          <button
+            key={n}
+            type="button"
+            onClick={() => onChange(value === n ? 0 : n)}
+            className={`w-12 h-12 rounded-xl border flex items-center justify-center transition-colors ${
+              active
+                ? 'bg-yellow-50 border-yellow-300'
+                : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+            }`}
+            aria-label={`${n} estrellas`}
+          >
+            <Star
+              className={`w-5 h-5 ${active ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`}
+            />
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function ChoiceButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`py-3 px-4 rounded-xl border text-sm font-medium transition-colors ${
+        active
+          ? 'bg-[#ff007c] border-[#ff007c] text-white'
+          : 'bg-white border-gray-200 text-gray-700 hover:border-[#ff007c]/50 hover:bg-[#fff0f6]/40'
+      }`}
+    >
+      {children}
+    </button>
   )
 }

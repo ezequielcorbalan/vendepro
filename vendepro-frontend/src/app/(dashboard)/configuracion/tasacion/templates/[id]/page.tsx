@@ -1,0 +1,7 @@
+import { TemplateEditor } from '@/components/tasaciones/admin/TemplateEditor'
+import '@/components/tasaciones/renderer/print.css'
+
+export default async function TemplateEditorPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  return <TemplateEditor templateId={id} />
+}

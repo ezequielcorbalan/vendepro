@@ -1,4 +1,4 @@
-import type { AIService, LeadIntent } from '@vendepro/core'
+import type { AIService, LeadIntent, ComparablePropertyData } from '@vendepro/core'
 
 export class AnthropicAIService implements AIService {
   constructor(private readonly apiKey: string) {}
@@ -51,6 +51,76 @@ export class AnthropicAIService implements AIService {
     try {
       const jsonMatch = content.match(/\{[\s\S]*\}/)
       return jsonMatch ? JSON.parse(jsonMatch[0]) : {}
+    } catch {
+      return {}
+    }
+  }
+
+  async extractComparableFromScreenshot(imageBase64: string, mimeType: string = 'image/png'): Promise<ComparablePropertyData> {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': this.apiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1024,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'image',
+                source: { type: 'base64', media_type: mimeType, data: imageBase64 },
+              },
+              {
+                type: 'text',
+                text: `Esta es una captura de una publicación inmobiliaria (probablemente Zonaprop, Argenprop o similar). Extraé los datos de la propiedad en JSON con esta forma exacta:
+
+{
+  "address": "calle y número o intersección, o null",
+  "zonaprop_url": "URL si aparece visible, o null",
+  "total_area": número en m² (superficie total) o null,
+  "covered_area": número en m² (superficie cubierta) o null,
+  "price": número en USD (sin signo, sin separadores) o null,
+  "usd_per_m2": número (precio por m² en USD) o null,
+  "days_on_market": número de días publicado, o null,
+  "views_per_day": número de visualizaciones promedio diarias, o null,
+  "age": antigüedad en años (número), o null
+}
+
+Reglas:
+- Si el valor no aparece o es ambiguo, usá null.
+- price siempre en USD. Si está en pesos, convertilo aproximadamente solo si hay tipo de cambio visible; sino null.
+- Devolvé SOLO el JSON, sin explicaciones, sin markdown.`,
+              },
+            ],
+          },
+        ],
+      }),
+    })
+
+    if (!response.ok) throw new Error(`Anthropic API error: ${response.status}`)
+    const data = await response.json() as any
+    const content = data.content?.[0]?.text ?? '{}'
+
+    try {
+      const jsonMatch = content.match(/\{[\s\S]*\}/)
+      const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : {}
+      // Sanitizar: aceptar solo los campos esperados, convertir números.
+      return {
+        address: typeof parsed.address === 'string' ? parsed.address : null,
+        zonaprop_url: typeof parsed.zonaprop_url === 'string' ? parsed.zonaprop_url : null,
+        total_area: Number.isFinite(Number(parsed.total_area)) ? Number(parsed.total_area) : null,
+        covered_area: Number.isFinite(Number(parsed.covered_area)) ? Number(parsed.covered_area) : null,
+        price: Number.isFinite(Number(parsed.price)) ? Number(parsed.price) : null,
+        usd_per_m2: Number.isFinite(Number(parsed.usd_per_m2)) ? Number(parsed.usd_per_m2) : null,
+        days_on_market: Number.isFinite(Number(parsed.days_on_market)) ? Number(parsed.days_on_market) : null,
+        views_per_day: Number.isFinite(Number(parsed.views_per_day)) ? Number(parsed.views_per_day) : null,
+        age: Number.isFinite(Number(parsed.age)) ? Number(parsed.age) : null,
+      }
     } catch {
       return {}
     }

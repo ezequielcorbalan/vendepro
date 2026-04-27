@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Filter, ChevronLeft, ChevronRight, FileBarChart } from 'lucide-react'
+import { Filter, ChevronLeft, ChevronRight, FileBarChart, Eye } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import HealthBadge from '@/components/reports/HealthBadge'
 import { type HealthStatus } from '@/lib/semaforo'
@@ -17,6 +17,7 @@ interface ReportItem {
   period_end: string
   status: string
   published_at: string | null
+  public_slug: string | null
   impressions: number
   portal_visits: number
   in_person_visits: number
@@ -159,6 +160,7 @@ export default function ListadoPage() {
                   <th className="py-2 px-2 text-right">Vis/día</th>
                   <th className="py-2 px-2 text-right hidden md:table-cell">Visitas portal</th>
                   <th className="py-2 px-2 text-right">Ofertas</th>
+                  <th className="py-2 px-2"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -189,6 +191,20 @@ export default function ListadoPage() {
                     <td className="py-2 px-2 text-right text-gray-700 font-semibold">{r.views_per_day}</td>
                     <td className="py-2 px-2 text-right text-gray-700 hidden md:table-cell">{r.portal_visits}</td>
                     <td className="py-2 px-2 text-right font-semibold text-gray-800">{r.offers}</td>
+                    <td className="py-2 px-2 text-right">
+                      {r.public_slug && r.status === 'published' ? (
+                        <a
+                          href={`/r/${r.public_slug}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="Ver reporte público"
+                          className="inline-flex items-center gap-1 text-[#ff007c] hover:underline text-xs font-medium"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">Ver público</span>
+                        </a>
+                      ) : null}
+                    </td>
                   </tr>
                 ))}
               </tbody>

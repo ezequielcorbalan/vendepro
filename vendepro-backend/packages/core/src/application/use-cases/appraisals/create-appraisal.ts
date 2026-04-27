@@ -1,4 +1,5 @@
 import type { AppraisalRepository } from '../../ports/repositories/appraisal-repository'
+import type { AppraisalTemplateRepository } from '../../ports/repositories/appraisal-template-repository'
 import type { IdGenerator } from '../../ports/id-generator'
 import {
   Appraisal,
@@ -6,6 +7,7 @@ import {
   type AppraisalMarketSituationBlock,
   type AppraisalWorkConditionsBlock,
 } from '../../../domain/entities/appraisal'
+import { ValidationError } from '../../../domain/errors/validation-error'
 
 export interface CreateAppraisalInput {
   org_id: string
@@ -33,16 +35,29 @@ export interface CreateAppraisalInput {
   market_situation?: AppraisalMarketSituationBlock | null
   work_conditions?: AppraisalWorkConditionsBlock | null
   video_links?: string[] | null
+  template_id?: string | null
 }
 
 export class CreateAppraisalUseCase {
   constructor(
     private readonly repo: AppraisalRepository,
     private readonly idGen: IdGenerator,
+    private readonly templateRepo?: AppraisalTemplateRepository,
   ) {}
 
   async execute(input: CreateAppraisalInput): Promise<{ id: string; status: string }> {
     const id = this.idGen.generate()
+
+    let template_snapshot_json: unknown = null
+    let template_synced_at: string | null = null
+    if (input.template_id && this.templateRepo) {
+      const tpl = await this.templateRepo.findById(input.template_id)
+      if (!tpl) throw new ValidationError('Template no encontrado')
+      if (tpl.org_id !== null && tpl.org_id !== input.org_id) throw new ValidationError('Template pertenece a otra org')
+      template_snapshot_json = tpl.blocks
+      template_synced_at = new Date().toISOString()
+    }
+
     const appraisal = Appraisal.create({
       id,
       org_id: input.org_id,
@@ -63,8 +78,6 @@ export class CreateAppraisalUseCase {
       test_price: input.test_price ?? null,
       expected_close_price: input.expected_close_price ?? null,
       usd_per_m2: input.usd_per_m2 ?? null,
-      canva_design_id: null,
-      canva_edit_url: null,
       agent_id: input.agent_id,
       lead_id: input.lead_id ?? null,
       status: 'draft',
@@ -74,6 +87,10 @@ export class CreateAppraisalUseCase {
       work_conditions: input.work_conditions ?? null,
       video_links: input.video_links ?? null,
       comparables: [],
+      template_id: input.template_id ?? null,
+      template_snapshot_json,
+      template_synced_at,
+      block_overrides_json: null,
     })
     await this.repo.save(appraisal)
     return { id, status: 'draft' }

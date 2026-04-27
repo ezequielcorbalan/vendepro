@@ -1,5 +1,7 @@
 import type { ReportRepository, NewReportMetric, NewReportContent } from '../../ports/repositories/report-repository'
+import type { PropertyRepository } from '../../ports/repositories/property-repository'
 import type { IdGenerator } from '../../ports/id-generator'
+import { makeReportPublicSlug, sanitizePeriodLabel } from '../../../shared/report-public-slug'
 
 export interface UpdateReportInput {
   id: string
@@ -31,6 +33,7 @@ export interface UpdateReportInput {
 export class UpdateReportUseCase {
   constructor(
     private readonly repo: ReportRepository,
+    private readonly propertyRepo: PropertyRepository,
     private readonly idGen: IdGenerator,
   ) {}
 
@@ -52,18 +55,31 @@ export class UpdateReportUseCase {
     const status = input.publish ? 'published' : 'draft'
     const publishedAt = input.publish ? new Date().toISOString() : null
 
+    const periodLabel = input.periodLabel != null
+      ? sanitizePeriodLabel(input.periodLabel)
+      : (report.period_label as string)
+
+    let publicSlug = (report.public_slug as string | null) ?? null
+    if (!publicSlug) {
+      const propertyId = report.property_id as string
+      const property = await this.propertyRepo.findById(propertyId, input.orgId)
+      const address = property?.toObject().address ?? propertyId
+      publicSlug = makeReportPublicSlug(address, periodLabel, this.idGen)
+    }
+
     // Update core report via save (upsert)
     const { Report } = await import('../../../domain/entities/report')
     const updatedReport = Report.create({
       id: report.id as string,
       property_id: report.property_id as string,
-      period_label: input.periodLabel ?? (report.period_label as string),
+      period_label: periodLabel,
       period_start: input.periodStart ?? (report.period_start as string),
       period_end: input.periodEnd ?? (report.period_end as string),
       status: status as 'draft' | 'published',
       created_by: report.created_by as string,
       created_at: report.created_at as string,
       published_at: publishedAt ?? (report.published_at as string | null),
+      public_slug: publicSlug,
     })
     await this.repo.save(updatedReport)
 

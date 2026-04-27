@@ -19,6 +19,9 @@ export interface NewAppraisalComparable {
   covered_area: number | null
   price: number | null
   usd_per_m2: number | null
+  days_on_market: number | null
+  views_per_day: number | null
+  age: number | null
   sort_order: number
 }
 
@@ -40,6 +43,7 @@ export interface AppraisalRepository {
   countByAgent(orgId: string, agentId: string): Promise<number>
   findComparables(appraisalId: string): Promise<AppraisalComparableProps[]>
   addComparable(comparable: NewAppraisalComparable): Promise<void>
+  updateComparable(comparableId: string, patch: Partial<Omit<NewAppraisalComparable, 'id' | 'appraisal_id'>>): Promise<void>
   removeComparable(comparableId: string): Promise<void>
   update(id: string, orgId: string, patch: Record<string, unknown>): Promise<void>
 }

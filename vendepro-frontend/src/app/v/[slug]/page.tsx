@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import VisitFormClient from './VisitFormClient'
 import GtmScript from '@/components/marketing/GtmScript'
 
-const API_PUBLIC = process.env.NEXT_PUBLIC_API_PUBLIC_URL ?? 'http://localhost:8794'
+const API_PUBLIC = process.env.NEXT_PUBLIC_API_PUBLIC_URL ?? 'https://public.api.vendepro.com.ar'
 
 async function fetchForm(slug: string) {
   const res = await fetch(`${API_PUBLIC}/public/property-visit-form/${slug}`, { cache: 'no-store' })

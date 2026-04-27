@@ -1,0 +1,21 @@
+{
+  "name": "@vendepro/api-rentals",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --port 8710",
+    "deploy": "wrangler deploy",
+    "test": "echo 'No tests yet'",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@vendepro/infrastructure": "*",
+    "hono": "^4.7.11"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260317.1",
+    "typescript": "^5.8.3",
+    "wrangler": "^4.76.0"
+  }
+}

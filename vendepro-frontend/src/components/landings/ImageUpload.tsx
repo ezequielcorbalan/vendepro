@@ -23,10 +23,7 @@ export default function ImageUpload({ value, onChange, allowPropertyPicker }: Pr
     try {
       const form = new FormData()
       form.append('file', file)
-      form.append('prefix', 'landings')
-      // api-admin exposes POST /uploads for R2 uploads.
-      // If the endpoint doesn't exist yet, this will fail at runtime — acceptable for Fase B.
-      const res = await apiFetch('admin', '/uploads', { method: 'POST', body: form } as any)
+      const res = await apiFetch('properties', '/upload-photo', { method: 'POST', body: form } as any)
       if (!res.ok) throw new Error('Upload falló')
       const { url } = (await res.json()) as any
       onChange(url, 'upload')

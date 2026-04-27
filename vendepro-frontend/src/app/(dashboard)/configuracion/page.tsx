@@ -5,13 +5,17 @@ import Link from 'next/link'
 import {
   Settings, Save, Loader2, Building2, Calendar, User,
   ClipboardList, FileText, ClipboardCheck, CheckCircle, XCircle, Megaphone,
+  HelpCircle, PlayCircle,
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
-import { getCurrentUser } from '@/lib/auth'
+import { getCurrentUser, resetOnboarding } from '@/lib/auth'
+import { useRouter } from 'next/navigation'
+import { DEFAULT_SURFACE_WEIGHTS, isValidWeights, type SurfaceWeights } from '@/lib/surface-weights'
 
 export default function ConfiguracionPage() {
   const { toast } = useToast()
+  const router = useRouter()
   const isAdmin = getCurrentUser()?.role === 'admin'
   const [loadingProfile, setLoadingProfile] = useState(true)
   const [loadingOrg, setLoadingOrg] = useState(true)
@@ -21,6 +25,10 @@ export default function ConfiguracionPage() {
 
   const [orgName, setOrgName] = useState('')
   const [slug, setSlug] = useState('')
+  const [brandColor, setBrandColor] = useState('#ff007c')
+  const [brandAccentColor, setBrandAccentColor] = useState('#e17a2a')
+  const [logoUrl, setLogoUrl] = useState('')
+  const [surfaceWeights, setSurfaceWeights] = useState<SurfaceWeights>(DEFAULT_SURFACE_WEIGHTS)
   const [savingOrg, setSavingOrg] = useState(false)
   const slugDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const initialSlugRef = useRef<string>('')
@@ -37,6 +45,10 @@ export default function ConfiguracionPage() {
       apiFetch('admin', '/org-settings').then(r => r.json() as Promise<any>).then(d => {
         setOrgName(d.name || '')
         setSlug(d.slug || '')
+        setBrandColor(d.brand_color || '#ff007c')
+        setBrandAccentColor(d.brand_accent_color || '#e17a2a')
+        setLogoUrl(d.logo_url || '')
+        if (isValidWeights(d.surface_weights)) setSurfaceWeights(d.surface_weights)
         initialSlugRef.current = d.slug || ''
         setLoadingOrg(false)
       }).catch(() => setLoadingOrg(false))
@@ -80,13 +92,24 @@ export default function ConfiguracionPage() {
     try {
       const res = await apiFetch('admin', '/org-settings', {
         method: 'PUT',
-        body: JSON.stringify({ name: orgName, slug }),
+        body: JSON.stringify({
+          name: orgName,
+          slug,
+          brand_color: brandColor,
+          brand_accent_color: brandAccentColor,
+          logo_url: logoUrl || null,
+          surface_weights: surfaceWeights,
+        }),
       })
       const data = (await res.json()) as any
       if (data.error) toast(data.error, 'error')
       else toast('Datos guardados')
     } catch { toast('Error al guardar', 'error') }
     setSavingOrg(false)
+  }
+
+  const setWeight = (k: keyof SurfaceWeights, pct: number) => {
+    setSurfaceWeights(w => ({ ...w, [k]: Math.max(0, Math.min(150, pct)) / 100 }))
   }
 
   const initial = profile?.full_name?.charAt(0)?.toUpperCase() || 'U'
@@ -234,6 +257,135 @@ export default function ConfiguracionPage() {
               </div>
               {slugStatus === 'taken' && <p className="text-xs text-red-600 mt-1">Ya está en uso</p>}
             </div>
+
+            <div className="border-t pt-4">
+              <h3 className="text-sm font-semibold text-gray-700 mb-1">Marca</h3>
+              <p className="text-xs text-gray-500 mb-3">
+                Estos colores y el logo se usan en las tasaciones que ven tus clientes.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Color principal</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={brandColor}
+                      onChange={e => setBrandColor(e.target.value)}
+                      className="h-10 w-12 cursor-pointer rounded border border-gray-300"
+                    />
+                    <input
+                      type="text"
+                      value={brandColor}
+                      onChange={e => setBrandColor(e.target.value)}
+                      placeholder="#ff007c"
+                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Color secundario</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={brandAccentColor}
+                      onChange={e => setBrandAccentColor(e.target.value)}
+                      className="h-10 w-12 cursor-pointer rounded border border-gray-300"
+                    />
+                    <input
+                      type="text"
+                      value={brandAccentColor}
+                      onChange={e => setBrandAccentColor(e.target.value)}
+                      placeholder="#e17a2a"
+                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-3">
+                <p className="text-xs text-gray-500 mb-1">Vista previa del gradient:</p>
+                <div
+                  className="h-10 rounded-lg"
+                  style={{ background: `linear-gradient(180deg, ${brandColor} 0%, ${brandAccentColor} 100%)` }}
+                />
+              </div>
+
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Logo (URL)</label>
+                <input
+                  type="url"
+                  value={logoUrl}
+                  onChange={e => setLogoUrl(e.target.value)}
+                  placeholder="https://ejemplo.com/logo.png"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50 focus:border-[#ff007c]"
+                />
+                {logoUrl && (
+                  <div className="mt-2 inline-block rounded border border-gray-200 bg-gray-50 p-2">
+                    <img src={logoUrl} alt="Logo" className="h-10 max-w-[200px] object-contain" />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="border-t pt-4">
+              <h3 className="text-sm font-semibold text-gray-700 mb-1">Ponderación de superficies</h3>
+              <p className="text-xs text-gray-500 mb-3">
+                Pesos que se usan para calcular la <strong>superficie ponderada</strong> en cada tasación.
+                Fórmula: <span className="font-mono text-[11px]">cubierta × % + semicubierta × % + descubierta × %</span>.
+              </p>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Cubierta</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min={0}
+                      max={150}
+                      step={5}
+                      value={Math.round(surfaceWeights.covered * 100)}
+                      onChange={e => setWeight('covered', Number(e.target.value))}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Semicubierta</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min={0}
+                      max={150}
+                      step={5}
+                      value={Math.round(surfaceWeights.semi * 100)}
+                      onChange={e => setWeight('semi', Number(e.target.value))}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Descubierta</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min={0}
+                      max={150}
+                      step={5}
+                      value={Math.round(surfaceWeights.uncovered * 100)}
+                      onChange={e => setWeight('uncovered', Number(e.target.value))}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
+                  </div>
+                </div>
+              </div>
+              <p className="mt-2 text-xs text-gray-500">
+                Estándar argentino: 100 / 75 / 25. Cambialo si tu inmobiliaria usa otra ponderación.
+              </p>
+            </div>
+
             <button
               onClick={handleSaveOrg}
               disabled={savingOrg || slugStatus === 'taken'}
@@ -245,6 +397,26 @@ export default function ConfiguracionPage() {
           </div>
         )}
       </div>}
+
+      {/* Ayuda */}
+      <div className="bg-white rounded-xl border p-6">
+        <h2 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+          <HelpCircle className="w-4 h-4 text-[#ff007c]" /> Ayuda
+        </h2>
+        <p className="text-sm text-gray-600 mb-4">
+          Volvé a ver el tutorial de bienvenida para repasar cómo funciona el sistema.
+        </p>
+        <button
+          onClick={() => {
+            const user = getCurrentUser()
+            if (user) { resetOnboarding(user.id); router.push('/dashboard') }
+          }}
+          className="flex items-center gap-2 bg-gradient-to-r from-[#ff007c] to-[#ff8017] text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+        >
+          <PlayCircle className="w-4 h-4" />
+          Ver tutorial de nuevo
+        </button>
+      </div>
 
       {/* Google Calendar */}
       <div className="bg-white rounded-xl border p-6">

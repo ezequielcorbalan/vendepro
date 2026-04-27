@@ -81,10 +81,52 @@ describe('D1ReportRepository', () => {
     expect(labels).toEqual(['A', 'B'])
   })
 
-  it('findPublicBySlug returns null (reports has no public_slug column)', async () => {
+  it('findPublicBySlug returns null when slug is unknown', async () => {
     const repo = new D1ReportRepository(env.DB)
-    const result = await repo.findPublicBySlug('anything')
+    const result = await repo.findPublicBySlug('no-such-slug')
     expect(result).toBeNull()
+  })
+
+  it('findPublicBySlug returns null when matching report is not published', async () => {
+    const repo = new D1ReportRepository(env.DB)
+    const draft = Report.create({
+      id: nextId('rep'),
+      property_id: propertyId,
+      period_label: 'Marzo 2026',
+      period_start: '2026-03-01',
+      period_end: '2026-03-31',
+      status: 'draft',
+      created_by: agentId,
+      published_at: null,
+      public_slug: 'draft-slug-001',
+    })
+    await repo.save(draft)
+
+    const result = await repo.findPublicBySlug('draft-slug-001')
+    expect(result).toBeNull()
+  })
+
+  it('findPublicBySlug returns the published report with property/org ids', async () => {
+    const repo = new D1ReportRepository(env.DB)
+    const published = Report.create({
+      id: nextId('rep'),
+      property_id: propertyId,
+      period_label: 'Marzo 2026',
+      period_start: '2026-03-01',
+      period_end: '2026-03-31',
+      status: 'published',
+      created_by: agentId,
+      published_at: '2026-03-31T00:00:00.000Z',
+      public_slug: 'pub-slug-zzz-001',
+    })
+    await repo.save(published)
+
+    const result = await repo.findPublicBySlug('pub-slug-zzz-001')
+    expect(result).not.toBeNull()
+    expect(result!.report.id).toBe(published.id)
+    expect(result!.report.public_slug).toBe('pub-slug-zzz-001')
+    expect(result!.propertyId).toBe(propertyId)
+    expect(result!.orgId).toBe(orgId)
   })
 
   it('delete cascades to report_metrics, report_content, and report_photos', async () => {

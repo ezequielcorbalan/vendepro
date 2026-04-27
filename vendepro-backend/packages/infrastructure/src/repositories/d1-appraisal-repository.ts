@@ -89,11 +89,12 @@ export class D1AppraisalRepository implements AppraisalRepository {
           covered_area, total_area, semi_area, weighted_area,
           strengths, weaknesses, opportunities, threats, publication_analysis,
           suggested_price, test_price, expected_close_price, usd_per_m2,
-          canva_design_id, canva_edit_url, agent_id, lead_id, status,
+          template_id, template_snapshot_json, template_synced_at, block_overrides_json,
+          agent_id, lead_id, status,
           public_slug,
           proposal_json, market_situation_json, work_conditions_json, video_links_json,
           created_at, updated_at
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT(id) DO UPDATE SET
           property_address=excluded.property_address,
           neighborhood=excluded.neighborhood,
@@ -112,8 +113,10 @@ export class D1AppraisalRepository implements AppraisalRepository {
           test_price=excluded.test_price,
           expected_close_price=excluded.expected_close_price,
           usd_per_m2=excluded.usd_per_m2,
-          canva_design_id=excluded.canva_design_id,
-          canva_edit_url=excluded.canva_edit_url,
+          template_id=excluded.template_id,
+          template_snapshot_json=excluded.template_snapshot_json,
+          template_synced_at=excluded.template_synced_at,
+          block_overrides_json=excluded.block_overrides_json,
           agent_id=excluded.agent_id,
           lead_id=excluded.lead_id,
           status=excluded.status,
@@ -129,7 +132,11 @@ export class D1AppraisalRepository implements AppraisalRepository {
         o.covered_area, o.total_area, o.semi_area, o.weighted_area,
         o.strengths, o.weaknesses, o.opportunities, o.threats, o.publication_analysis,
         o.suggested_price, o.test_price, o.expected_close_price, o.usd_per_m2,
-        o.canva_design_id, o.canva_edit_url, o.agent_id, o.lead_id, o.status,
+        o.template_id,
+        o.template_snapshot_json ? JSON.stringify(o.template_snapshot_json) : null,
+        o.template_synced_at,
+        o.block_overrides_json ? JSON.stringify(o.block_overrides_json) : null,
+        o.agent_id, o.lead_id, o.status,
         o.public_slug,
         o.proposal ? JSON.stringify(o.proposal) : null,
         o.market_situation ? JSON.stringify(o.market_situation) : null,
@@ -184,16 +191,50 @@ export class D1AppraisalRepository implements AppraisalRepository {
   async addComparable(comparable: NewAppraisalComparable): Promise<void> {
     await this.db
       .prepare(
-        `INSERT INTO appraisal_comparables (id, appraisal_id, zonaprop_url, address, total_area, covered_area, price, usd_per_m2, sort_order)
-         VALUES (?,?,?,?,?,?,?,?,?)`,
+        `INSERT INTO appraisal_comparables (id, appraisal_id, zonaprop_url, address, total_area, covered_area, price, usd_per_m2, days_on_market, views_per_day, age, sort_order)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
       )
       .bind(
         comparable.id, comparable.appraisal_id,
         comparable.zonaprop_url ?? null, comparable.address ?? null,
         comparable.total_area ?? null, comparable.covered_area ?? null,
         comparable.price ?? null, comparable.usd_per_m2 ?? null,
+        comparable.days_on_market ?? null, comparable.views_per_day ?? null, comparable.age ?? null,
         comparable.sort_order ?? 0,
       )
+      .run()
+  }
+
+  async updateComparable(
+    comparableId: string,
+    patch: Partial<{
+      zonaprop_url: string | null
+      address: string | null
+      total_area: number | null
+      covered_area: number | null
+      price: number | null
+      usd_per_m2: number | null
+      days_on_market: number | null
+      views_per_day: number | null
+      age: number | null
+      sort_order: number
+    }>,
+  ): Promise<void> {
+    // Build dynamic UPDATE solo con los campos presentes en el patch.
+    const fields: string[] = []
+    const binds: unknown[] = []
+    const allowed = ['zonaprop_url','address','total_area','covered_area','price','usd_per_m2','days_on_market','views_per_day','age','sort_order'] as const
+    for (const k of allowed) {
+      if (k in patch) {
+        fields.push(`${k} = ?`)
+        binds.push((patch as any)[k] ?? null)
+      }
+    }
+    if (fields.length === 0) return
+    binds.push(comparableId)
+    await this.db
+      .prepare(`UPDATE appraisal_comparables SET ${fields.join(', ')} WHERE id = ?`)
+      .bind(...binds)
       .run()
   }
 
@@ -323,8 +364,10 @@ export class D1AppraisalRepository implements AppraisalRepository {
       test_price: row.test_price ?? null,
       expected_close_price: row.expected_close_price ?? null,
       usd_per_m2: row.usd_per_m2 ?? null,
-      canva_design_id: row.canva_design_id ?? null,
-      canva_edit_url: row.canva_edit_url ?? null,
+      template_id: row.template_id ?? null,
+      template_snapshot_json: row.template_snapshot_json ? JSON.parse(row.template_snapshot_json) : null,
+      template_synced_at: row.template_synced_at ?? null,
+      block_overrides_json: row.block_overrides_json ? JSON.parse(row.block_overrides_json) : null,
       agent_id: row.agent_id,
       lead_id: row.lead_id ?? null,
       status: row.status,

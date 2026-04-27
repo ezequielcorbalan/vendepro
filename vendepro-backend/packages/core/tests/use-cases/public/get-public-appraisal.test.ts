@@ -24,8 +24,6 @@ const makeAppraisal = () =>
     test_price: null,
     expected_close_price: null,
     usd_per_m2: 2000,
-    canva_design_id: null,
-    canva_edit_url: null,
     agent_id: 'agent-1',
     lead_id: null,
     status: 'draft',

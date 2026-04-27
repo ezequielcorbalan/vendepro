@@ -8,6 +8,8 @@ import {
 } from 'lucide-react'
 import { LEAD_STAGES, EVENT_TYPES } from '@/lib/crm-config'
 import { apiFetch } from '@/lib/api'
+import { getCurrentUser, isOnboardingDone, markOnboardingDone } from '@/lib/auth'
+import OnboardingModal from '@/components/onboarding/OnboardingModal'
 
 function FunnelChart({ data }: { data: { stage: string; count: number }[] }) {
   const max = Math.max(...data.map(d => d.count), 1)
@@ -100,6 +102,16 @@ export default function DashboardCRM() {
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState<'week' | 'month' | 'quarter' | 'year'>('month')
+  const [showOnboarding, setShowOnboarding] = useState(false)
+  const [onboardingUser, setOnboardingUser] = useState('')
+
+  useEffect(() => {
+    const user = getCurrentUser()
+    if (user && !isOnboardingDone(user.id)) {
+      setOnboardingUser(user.full_name || '')
+      setShowOnboarding(true)
+    }
+  }, [])
 
   useEffect(() => {
     setLoading(true)
@@ -146,6 +158,12 @@ export default function DashboardCRM() {
     day,
     count: weeklyActivity?.find((w: any) => w.day === day)?.count || 0
   }))
+
+  const handleCloseOnboarding = () => {
+    const user = getCurrentUser()
+    if (user) markOnboardingDone(user.id)
+    setShowOnboarding(false)
+  }
 
   return (
     <div className="space-y-5 sm:space-y-6">
@@ -400,6 +418,8 @@ export default function DashboardCRM() {
           })}
         </div>
       </div>
+
+      {showOnboarding && <OnboardingModal userName={onboardingUser} onClose={handleCloseOnboarding} />}
     </div>
   )
 }

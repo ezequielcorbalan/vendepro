@@ -59,8 +59,10 @@ export interface AppraisalProps {
   test_price: number | null
   expected_close_price: number | null
   usd_per_m2: number | null
-  canva_design_id: string | null
-  canva_edit_url: string | null
+  template_id: string | null
+  template_snapshot_json: unknown | null
+  template_synced_at: string | null
+  block_overrides_json: Record<string, unknown> | null
   agent_id: string
   lead_id: string | null
   status: AppraisalStatus
@@ -83,7 +85,7 @@ export class Appraisal {
   private constructor(private props: AppraisalProps) {}
 
   static create(
-    props: Omit<AppraisalProps, 'created_at' | 'updated_at' | 'proposal' | 'market_situation' | 'work_conditions' | 'video_links'>
+    props: Omit<AppraisalProps, 'created_at' | 'updated_at' | 'proposal' | 'market_situation' | 'work_conditions' | 'video_links' | 'template_id' | 'template_snapshot_json' | 'template_synced_at' | 'block_overrides_json'>
       & {
         created_at?: string
         updated_at?: string
@@ -91,6 +93,10 @@ export class Appraisal {
         market_situation?: AppraisalMarketSituationBlock | null
         work_conditions?: AppraisalWorkConditionsBlock | null
         video_links?: string[] | null
+        template_id?: string | null
+        template_snapshot_json?: unknown | null
+        template_synced_at?: string | null
+        block_overrides_json?: Record<string, unknown> | null
       },
   ): Appraisal {
     if (!props.property_address?.trim()) throw new ValidationError('Dirección es requerida')
@@ -103,6 +109,10 @@ export class Appraisal {
       market_situation: props.market_situation ?? null,
       work_conditions: props.work_conditions ?? null,
       video_links: props.video_links ?? null,
+      template_id: props.template_id ?? null,
+      template_snapshot_json: props.template_snapshot_json ?? null,
+      template_synced_at: props.template_synced_at ?? null,
+      block_overrides_json: props.block_overrides_json ?? null,
       created_at: props.created_at ?? now,
       updated_at: props.updated_at ?? now,
     })
@@ -127,8 +137,10 @@ export class Appraisal {
   get test_price() { return this.props.test_price }
   get expected_close_price() { return this.props.expected_close_price }
   get usd_per_m2() { return this.props.usd_per_m2 }
-  get canva_design_id() { return this.props.canva_design_id }
-  get canva_edit_url() { return this.props.canva_edit_url }
+  get template_id() { return this.props.template_id }
+  get template_snapshot_json() { return this.props.template_snapshot_json }
+  get template_synced_at() { return this.props.template_synced_at }
+  get block_overrides_json() { return this.props.block_overrides_json }
   get agent_id() { return this.props.agent_id }
   get lead_id() { return this.props.lead_id }
   get status() { return this.props.status }

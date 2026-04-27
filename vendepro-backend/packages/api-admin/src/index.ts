@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
-import { corsMiddleware, errorHandler, createAuthMiddleware, D1UserRepository, D1ObjectiveRepository, D1TemplateBlockRepository, JwtAuthService, CryptoIdGenerator, D1RoleRepository, D1NotificationRepository, D1OrganizationRepository } from '@vendepro/infrastructure'
-import { CreateAgentUseCase, GetAgentsUseCase, SetObjectivesUseCase, UpdateAgentRoleUseCase, GetRolesUseCase, GetOrgSettingsUseCase, UpdateOrgSettingsUseCase, GetUserProfileUseCase, UpdateUserProfileUseCase, GetUserNotificationsUseCase } from '@vendepro/core'
+import { corsMiddleware, errorHandler, createAuthMiddleware, D1UserRepository, D1ObjectiveRepository, D1TemplateBlockRepository, JwtAuthService, CryptoIdGenerator, D1RoleRepository, D1NotificationRepository, D1OrganizationRepository, D1AppraisalTemplateRepository, D1OrgVariableRepository } from '@vendepro/infrastructure'
+import { CreateAgentUseCase, GetAgentsUseCase, SetObjectivesUseCase, UpdateAgentRoleUseCase, GetRolesUseCase, GetOrgSettingsUseCase, UpdateOrgSettingsUseCase, GetUserProfileUseCase, UpdateUserProfileUseCase, GetUserNotificationsUseCase, ListAppraisalTemplatesUseCase, GetAppraisalTemplateUseCase, CreateAppraisalTemplateUseCase, UpdateAppraisalTemplateUseCase, DuplicateAppraisalTemplateUseCase, ArchiveAppraisalTemplateUseCase, ListOrgVariablesUseCase, CreateOrgVariableUseCase, UpdateOrgVariableUseCase, DeleteOrgVariableUseCase } from '@vendepro/core'
 
 type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket }
 type AuthVars = { Variables: { userId: string; userRole: string; orgId: string } }
@@ -152,8 +152,10 @@ app.put('/org-settings', async (c) => {
       slug: body.slug,
       logo_url: body.logo_url,
       brand_color: body.brand_color,
+      brand_accent_color: body.brand_accent_color,
       canva_template_id: body.canva_template_id,
       canva_report_template_id: body.canva_report_template_id,
+      surface_weights: body.surface_weights,
     },
   })
   return c.json({ success: true })
@@ -190,6 +192,109 @@ app.get('/notifications', async (c) => {
   } catch {
     return c.json([])
   }
+})
+
+// ── APPRAISAL TEMPLATES ────────────────────────────────────────
+app.get('/appraisal-templates', async (c) => {
+  const uc = new ListAppraisalTemplatesUseCase(new D1AppraisalTemplateRepository(c.env.DB))
+  const kind = c.req.query('kind') as any
+  const onlyActive = c.req.query('active') === '1'
+  const list = await uc.execute({ orgId: c.get('orgId'), kind, onlyActive })
+  return c.json(list)
+})
+
+app.get('/appraisal-templates/:id', async (c) => {
+  const uc = new GetAppraisalTemplateUseCase(new D1AppraisalTemplateRepository(c.env.DB))
+  const r = await uc.execute({ id: c.req.param('id'), orgId: c.get('orgId') })
+  if (!r) return c.json({ error: 'not found' }, 404)
+  return c.json(r)
+})
+
+app.post('/appraisal-templates', async (c) => {
+  const body = (await c.req.json()) as any
+  const uc = new CreateAppraisalTemplateUseCase(
+    new D1AppraisalTemplateRepository(c.env.DB),
+    new CryptoIdGenerator(),
+  )
+  const r = await uc.execute({
+    orgId: c.get('orgId'),
+    name: body.name,
+    kind: body.kind,
+    description: body.description ?? null,
+    preview_image_url: body.preview_image_url ?? null,
+    blocks: body.blocks ?? [],
+  })
+  return c.json(r, 201)
+})
+
+app.put('/appraisal-templates/:id', async (c) => {
+  const body = (await c.req.json()) as any
+  const uc = new UpdateAppraisalTemplateUseCase(new D1AppraisalTemplateRepository(c.env.DB))
+  const r = await uc.execute({ id: c.req.param('id'), orgId: c.get('orgId'), ...body })
+  return c.json(r)
+})
+
+app.post('/appraisal-templates/:id/duplicate', async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as any
+  const uc = new DuplicateAppraisalTemplateUseCase(
+    new D1AppraisalTemplateRepository(c.env.DB),
+    new CryptoIdGenerator(),
+  )
+  const r = await uc.execute({
+    sourceId: c.req.param('id'),
+    orgId: c.get('orgId'),
+    newName: body.new_name,
+  })
+  return c.json(r, 201)
+})
+
+app.delete('/appraisal-templates/:id', async (c) => {
+  const uc = new ArchiveAppraisalTemplateUseCase(new D1AppraisalTemplateRepository(c.env.DB))
+  const r = await uc.execute({ id: c.req.param('id'), orgId: c.get('orgId') })
+  return c.json(r)
+})
+
+// ── ORG VARIABLES ──────────────────────────────────────────────
+app.get('/org-variables', async (c) => {
+  const uc = new ListOrgVariablesUseCase(new D1OrgVariableRepository(c.env.DB))
+  const namespace = c.req.query('namespace') as any
+  const list = await uc.execute({ orgId: c.get('orgId'), namespace })
+  return c.json(list)
+})
+
+app.post('/org-variables', async (c) => {
+  const body = (await c.req.json()) as any
+  const uc = new CreateOrgVariableUseCase(
+    new D1OrgVariableRepository(c.env.DB),
+    new CryptoIdGenerator(),
+  )
+  const r = await uc.execute({
+    orgId: c.get('orgId'),
+    key: body.key,
+    value: body.value,
+    value_type: body.value_type,
+    label: body.label ?? null,
+    namespace: body.namespace ?? 'custom',
+  })
+  return c.json(r, 201)
+})
+
+app.put('/org-variables/:id', async (c) => {
+  const body = (await c.req.json()) as any
+  const uc = new UpdateOrgVariableUseCase(new D1OrgVariableRepository(c.env.DB))
+  const r = await uc.execute({
+    id: c.req.param('id'),
+    orgId: c.get('orgId'),
+    value: body.value,
+    label: body.label,
+  })
+  return c.json(r)
+})
+
+app.delete('/org-variables/:id', async (c) => {
+  const uc = new DeleteOrgVariableUseCase(new D1OrgVariableRepository(c.env.DB))
+  const r = await uc.execute({ id: c.req.param('id'), orgId: c.get('orgId') })
+  return c.json(r)
 })
 
 export default app

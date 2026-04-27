@@ -32,4 +32,13 @@ describe('CreateAppraisalUseCase', () => {
       property_address: '',
     })).rejects.toThrow()
   })
+
+  it('takes snapshot when template_id is provided', async () => {
+    const tplRepo = { findById: vi.fn().mockResolvedValue({ org_id: 'org-1', blocks: [{ id: 'b1', type: 'cover' }] }) }
+    const uc = new CreateAppraisalUseCase(mockRepo as any, mockIdGen, tplRepo as any)
+    const result = await uc.execute({ org_id: 'org-1', agent_id: 'a1', property_address: 'Addr X', template_id: 't1' })
+    expect(result.id).toBe('appraisal-id-1')
+    expect(tplRepo.findById).toHaveBeenCalledWith('t1')
+    expect(mockRepo.save).toHaveBeenCalled()
+  })
 })

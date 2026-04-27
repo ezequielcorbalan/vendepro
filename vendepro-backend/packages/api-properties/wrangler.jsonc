@@ -13,10 +13,16 @@
       "database_id": "45d18f94-807b-466f-8742-32bbc61fc7fb"
     }
   ],
-    "r2_buckets": [
-      {
-        "binding": "R2",
-        "bucket_name": "vendepro-assets"
-      }
-    ]
+  "r2_buckets": [
+    {
+      "binding": "R2",
+      "bucket_name": "vendepro-assets"
+    }
+  ],
+  "browser": {
+    "binding": "BROWSER"
+  },
+  "vars": {
+    "API_PUBLIC_URL": "https://public.api.vendepro.com.ar"
+  }
 }

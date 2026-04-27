@@ -9,6 +9,9 @@ export interface AddAppraisalComparableInput {
   covered_area?: number | null
   price?: number | null
   usd_per_m2?: number | null
+  days_on_market?: number | null
+  views_per_day?: number | null
+  age?: number | null
   sort_order?: number
 }
 
@@ -29,6 +32,9 @@ export class AddAppraisalComparableUseCase {
       covered_area: input.covered_area ?? null,
       price: input.price ?? null,
       usd_per_m2: input.usd_per_m2 ?? null,
+      days_on_market: input.days_on_market ?? null,
+      views_per_day: input.views_per_day ?? null,
+      age: input.age ?? null,
       sort_order: input.sort_order ?? 0,
     }
     await this.repo.addComparable(comparable)

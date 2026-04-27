@@ -66,6 +66,11 @@ export class GroqAIService implements AIService {
     throw new Error('Use AnthropicAIService for screenshot analysis')
   }
 
+  async extractComparableFromScreenshot(_imageBase64: string, _mimeType?: string): Promise<import('@vendepro/core').ComparablePropertyData> {
+    // Groq doesn't support vision — this falls through to AnthropicAIService
+    throw new Error('Use AnthropicAIService for comparable extraction')
+  }
+
   async editLandingBlock(input: import('@vendepro/core').EditBlockInput): Promise<import('@vendepro/core').EditBlockResult> {
     const { BLOCK_DATA_SCHEMAS } = await import('@vendepro/core')
     const schema = (BLOCK_DATA_SCHEMAS as any)[input.blockType]

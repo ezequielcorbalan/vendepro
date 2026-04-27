@@ -18,7 +18,7 @@ import {
   DeletePropertyUseCase,
 } from '@vendepro/core'
 
-type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket; R2_PUBLIC_URL: string }
+type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket; R2_PUBLIC_URL: string; BROWSER: Fetcher; API_PUBLIC_URL: string }
 type AuthVars = { Variables: { userId: string; userRole: string; orgId: string } }
 
 export function registerPropertyRoutes(app: Hono<{ Bindings: Env } & AuthVars>) {

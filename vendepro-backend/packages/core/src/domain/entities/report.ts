@@ -50,6 +50,7 @@ export interface ReportProps {
   created_by: string
   created_at: string
   published_at: string | null
+  public_slug: string | null
   // Joined
   metrics?: ReportMetricProps[]
   content?: ReportContentProps[]
@@ -61,11 +62,15 @@ export interface ReportProps {
 export class Report {
   private constructor(private props: ReportProps) {}
 
-  static create(props: Omit<ReportProps, 'created_at'> & { created_at?: string }): Report {
+  static create(props: Omit<ReportProps, 'created_at' | 'public_slug'> & { created_at?: string; public_slug?: string | null }): Report {
     if (!props.period_label?.trim()) throw new ValidationError('Etiqueta de período es requerida')
     if (!props.period_start) throw new ValidationError('Fecha inicio es requerida')
     if (!props.period_end) throw new ValidationError('Fecha fin es requerida')
-    return new Report({ ...props, created_at: props.created_at ?? new Date().toISOString() })
+    return new Report({
+      ...props,
+      created_at: props.created_at ?? new Date().toISOString(),
+      public_slug: props.public_slug ?? null,
+    })
   }
 
   get id() { return this.props.id }
@@ -77,6 +82,7 @@ export class Report {
   get created_by() { return this.props.created_by }
   get created_at() { return this.props.created_at }
   get published_at() { return this.props.published_at }
+  get public_slug() { return this.props.public_slug }
   get metrics() { return this.props.metrics }
   get content() { return this.props.content }
   get photos() { return this.props.photos }

@@ -1,5 +1,5 @@
 import type { Hono } from 'hono'
-import { D1ReportRepository, R2StorageService, CryptoIdGenerator } from '@vendepro/infrastructure'
+import { D1ReportRepository, D1PropertyRepository, R2StorageService, CryptoIdGenerator } from '@vendepro/infrastructure'
 import {
   GetReportsUseCase,
   GetReportDetailUseCase,
@@ -8,7 +8,7 @@ import {
   DeleteReportUseCase,
 } from '@vendepro/core'
 
-type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket; R2_PUBLIC_URL: string }
+type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket; R2_PUBLIC_URL: string; BROWSER: Fetcher; API_PUBLIC_URL: string }
 type AuthVars = { Variables: { userId: string; userRole: string; orgId: string } }
 
 export function registerReportRoutes(app: Hono<{ Bindings: Env } & AuthVars>) {
@@ -23,7 +23,8 @@ export function registerReportRoutes(app: Hono<{ Bindings: Env } & AuthVars>) {
   app.post('/reports', async (c) => {
     const body = (await c.req.json()) as any
     const repo = new D1ReportRepository(c.env.DB)
-    const useCase = new CreateReportUseCase(repo, new CryptoIdGenerator())
+    const propertyRepo = new D1PropertyRepository(c.env.DB)
+    const useCase = new CreateReportUseCase(repo, propertyRepo, new CryptoIdGenerator())
     const result = await useCase.execute({ ...body, orgId: c.get('orgId'), createdBy: c.get('userId') })
     return c.json(result)
   })
@@ -41,7 +42,8 @@ export function registerReportRoutes(app: Hono<{ Bindings: Env } & AuthVars>) {
     const id = c.req.param('id')
     const body = (await c.req.json()) as any
     const repo = new D1ReportRepository(c.env.DB)
-    const useCase = new UpdateReportUseCase(repo, new CryptoIdGenerator())
+    const propertyRepo = new D1PropertyRepository(c.env.DB)
+    const useCase = new UpdateReportUseCase(repo, propertyRepo, new CryptoIdGenerator())
     try {
       const result = await useCase.execute({
         id,
