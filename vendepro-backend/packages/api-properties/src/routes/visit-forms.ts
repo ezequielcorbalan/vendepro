@@ -7,6 +7,8 @@ import {
 import {
   GenerateVisitFormLinkUseCase,
   ListVisitFormsByPropertyUseCase,
+  ArchiveVisitFormUseCase,
+  DeleteVisitFormUseCase,
 } from '@vendepro/core'
 
 type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket; R2_PUBLIC_URL: string; BROWSER: Fetcher; API_PUBLIC_URL: string }
@@ -46,15 +48,57 @@ export function registerVisitFormRoutes(app: Hono<{ Bindings: Env } & AuthVars>)
   })
 
   // ── List visit forms for a property (auth) ───────────────────
-  // GET /visit-forms?property_id=X  → array
+  // GET /visit-forms?property_id=X[&include_archived=1]  → array
   app.get('/visit-forms', async (c) => {
     const propertyId = c.req.query('property_id')
     if (!propertyId) {
       return c.json({ error: 'property_id requerido' }, 400)
     }
+    const includeArchived = c.req.query('include_archived') === '1'
     const repo = new D1PropertyVisitFormRepository(c.env.DB)
     const uc = new ListVisitFormsByPropertyUseCase(repo)
     const items = await uc.execute(propertyId, c.get('orgId'))
-    return c.json(items.map((f) => f.toObject()))
+    const filtered = includeArchived
+      ? items
+      : items.filter((f) => f.archived_at === null)
+    return c.json(filtered.map((f) => f.toObject()))
+  })
+
+  // ── Archive / unarchive (auth) ───────────────────────────────
+  // PATCH /visit-forms/:id/archive  { archived: boolean }
+  app.patch('/visit-forms/:id/archive', async (c) => {
+    const body = (await c.req.json().catch(() => ({}))) as any
+    const archived = body?.archived !== false
+    const repo = new D1PropertyVisitFormRepository(c.env.DB)
+    const uc = new ArchiveVisitFormUseCase(repo)
+    try {
+      await uc.execute({
+        id: c.req.param('id'),
+        org_id: c.get('orgId'),
+        archived,
+      })
+      return c.json({ success: true, archived })
+    } catch (e: any) {
+      if (e?.httpStatus === 404 || e?.statusCode === 404) {
+        return c.json({ error: 'Ficha no encontrada' }, 404)
+      }
+      throw e
+    }
+  })
+
+  // ── Soft delete (auth) ───────────────────────────────────────
+  // DELETE /visit-forms/:id
+  app.delete('/visit-forms/:id', async (c) => {
+    const repo = new D1PropertyVisitFormRepository(c.env.DB)
+    const uc = new DeleteVisitFormUseCase(repo)
+    try {
+      await uc.execute({ id: c.req.param('id'), org_id: c.get('orgId') })
+      return c.json({ success: true })
+    } catch (e: any) {
+      if (e?.httpStatus === 404 || e?.statusCode === 404) {
+        return c.json({ error: 'Ficha no encontrada' }, 404)
+      }
+      throw e
+    }
   })
 }

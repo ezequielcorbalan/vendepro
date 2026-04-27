@@ -1,7 +1,20 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ChevronDown, ChevronUp, Loader2, MessageSquare, Clock, DollarSign, ThumbsUp, ThumbsDown } from 'lucide-react'
+import {
+  Loader2,
+  MessageSquare,
+  ClipboardList,
+  Star,
+  ThumbsUp,
+  ThumbsDown,
+  Archive,
+  ArchiveRestore,
+  Trash2,
+  Copy,
+  Check,
+  User,
+} from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 
 type BuyIntention = 'compraria' | 'tal_vez' | 'no' | null
@@ -12,20 +25,36 @@ interface VisitForm {
   visitor_name: string | null
   visitor_email: string | null
   visitor_phone: string | null
+  rating: number | null
   liked: string | null
   disliked: string | null
   subjective_price_usd: number | null
   buy_intention: BuyIntention
+  source: string | null
+  situation: string | null
   observations: string | null
   submitted_at: string | null
+  archived_at: string | null
+  deleted_at: string | null
   sent_at: string
   created_at: string
 }
 
-const intentionMeta: Record<string, { label: string; cls: string }> = {
-  compraria: { label: 'Compraría', cls: 'bg-green-100 text-green-700' },
-  tal_vez: { label: 'Tal vez', cls: 'bg-amber-100 text-amber-700' },
-  no: { label: 'No le interesa', cls: 'bg-gray-100 text-gray-600' },
+const SOURCE_LABEL: Record<string, string> = {
+  argenprop: 'Argenprop',
+  mercadolibre: 'Mercado Libre',
+  zonaprop: 'Zonaprop',
+  instagram: 'Instagram',
+  recomendacion: 'Recomendación',
+  otro: 'Otros',
+}
+
+const SITUATION_LABEL: Record<string, string> = {
+  mudanza: 'Mudanza',
+  primera_vivienda: 'Primera vivienda',
+  inversion: 'Inversión',
+  downsizing: 'Downsizing',
+  otro: 'Otros',
 }
 
 export function VisitFormsSection({
@@ -37,11 +66,15 @@ export function VisitFormsSection({
 }) {
   const [loading, setLoading] = useState(true)
   const [items, setItems] = useState<VisitForm[]>([])
-  const [expanded, setExpanded] = useState<string | null>(null)
+  const [showArchived, setShowArchived] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [busyId, setBusyId] = useState<string | null>(null)
+  const [internalRefresh, setInternalRefresh] = useState(0)
 
   useEffect(() => {
     setLoading(true)
-    apiFetch('properties', `/visit-forms?property_id=${propertyId}`)
+    const qs = `property_id=${propertyId}${showArchived ? '&include_archived=1' : ''}`
+    apiFetch('properties', `/visit-forms?${qs}`)
       .then(async (r) => {
         const body = (await r.json()) as any
         if (!r.ok) throw new Error(body?.error || 'Error')
@@ -49,68 +82,136 @@ export function VisitFormsSection({
       })
       .catch(() => setItems([]))
       .finally(() => setLoading(false))
-  }, [propertyId, refreshKey])
+  }, [propertyId, refreshKey, showArchived, internalRefresh])
 
   const submitted = items.filter((i) => i.submitted_at !== null)
-  const pending = items.filter((i) => i.submitted_at === null)
+  const pending = items.filter((i) => i.submitted_at === null && i.archived_at === null)
+  const lastPending = pending[0]
+  const publicLink = lastPending
+    ? `${typeof window !== 'undefined' ? window.location.origin : ''}/v/${lastPending.slug}`
+    : null
+
+  async function handleCopy() {
+    if (!publicLink) return
+    await navigator.clipboard.writeText(publicLink)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  function handleWhatsApp() {
+    if (!publicLink) return
+    const msg = encodeURIComponent(
+      `Hola, te dejo el link para que completes la ficha de visita: ${publicLink}`,
+    )
+    window.open(`https://wa.me/?text=${msg}`, '_blank')
+  }
+
+  async function archive(id: string, archived: boolean) {
+    setBusyId(id)
+    try {
+      const r = await apiFetch('properties', `/visit-forms/${id}/archive`, {
+        method: 'PATCH',
+        body: JSON.stringify({ archived }),
+      })
+      if (!r.ok) throw new Error('Error')
+      setInternalRefresh((n) => n + 1)
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  async function softDelete(id: string) {
+    if (!confirm('¿Borrar esta ficha de visita? Esta acción no se puede deshacer.')) return
+    setBusyId(id)
+    try {
+      const r = await apiFetch('properties', `/visit-forms/${id}`, { method: 'DELETE' })
+      if (!r.ok) throw new Error('Error')
+      setInternalRefresh((n) => n + 1)
+    } finally {
+      setBusyId(null)
+    }
+  }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">
-          Fichas de visita
-        </h2>
-        <div className="text-xs text-gray-400">
-          {submitted.length} {submitted.length === 1 ? 'respuesta' : 'respuestas'}
-          {pending.length > 0 && ` · ${pending.length} pendiente${pending.length > 1 ? 's' : ''}`}
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      {/* Header */}
+      <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#ff007c] to-[#ff5e3a] flex items-center justify-center text-white">
+            <ClipboardList className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-semibold text-gray-900">Fichas de visita</h2>
+              <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                {submitted.length}
+              </span>
+            </div>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Compartí el link con los visitantes para que completen su ficha después de la visita.
+            </p>
+          </div>
         </div>
+
+        {publicLink && (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleWhatsApp}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              <MessageSquare className="w-4 h-4" />
+              WhatsApp
+            </button>
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+              {copied ? 'Copiado' : 'Copiar link'}
+            </button>
+          </div>
+        )}
       </div>
 
+      {/* Toggle archived */}
+      <div className="flex justify-end mb-3">
+        <button
+          type="button"
+          onClick={() => setShowArchived((v) => !v)}
+          className="text-xs text-gray-500 hover:text-gray-700"
+        >
+          {showArchived ? 'Ocultar archivadas' : 'Ver archivadas'}
+        </button>
+      </div>
+
+      {/* List */}
       {loading ? (
-        <div className="py-8 flex items-center justify-center">
+        <div className="py-10 flex items-center justify-center">
           <Loader2 className="w-6 h-6 animate-spin text-[#ff007c]" />
         </div>
-      ) : items.length === 0 ? (
-        <div className="py-8 text-center">
+      ) : submitted.length === 0 ? (
+        <div className="py-10 text-center border-2 border-dashed border-gray-200 rounded-xl">
           <MessageSquare className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-          <p className="text-sm text-gray-500">Todavía no hay fichas de visita.</p>
-          <p className="text-xs text-gray-400 mt-1">
-            Generá un link y compartilo con el comprador después de la visita.
-          </p>
+          <p className="text-sm text-gray-500">Todavía no hay fichas completadas.</p>
+          {publicLink && (
+            <p className="text-xs text-gray-400 mt-1">
+              Mandá el link por WhatsApp después de cada visita.
+            </p>
+          )}
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="divide-y divide-gray-100">
           {submitted.map((item) => (
             <SubmittedCard
               key={item.id}
               item={item}
-              open={expanded === item.id}
-              onToggle={() => setExpanded(expanded === item.id ? null : item.id)}
+              busy={busyId === item.id}
+              onArchive={() => archive(item.id, !item.archived_at)}
+              onDelete={() => softDelete(item.id)}
             />
           ))}
-
-          {pending.length > 0 && (
-            <details className="pt-2">
-              <summary className="cursor-pointer text-xs text-gray-500 hover:text-gray-700 select-none">
-                Ver {pending.length} link{pending.length > 1 ? 's' : ''} pendiente
-                {pending.length > 1 ? 's' : ''}
-              </summary>
-              <div className="mt-2 space-y-2">
-                {pending.map((p) => (
-                  <div
-                    key={p.id}
-                    className="flex items-center justify-between border border-dashed border-gray-200 rounded-lg px-3 py-2 text-xs"
-                  >
-                    <div className="flex items-center gap-2 text-gray-500">
-                      <Clock className="w-3.5 h-3.5" />
-                      Enviado {formatDate(p.sent_at)}
-                    </div>
-                    <code className="text-gray-400">/v/{p.slug}</code>
-                  </div>
-                ))}
-              </div>
-            </details>
-          )}
         </div>
       )}
     </div>
@@ -119,93 +220,136 @@ export function VisitFormsSection({
 
 function SubmittedCard({
   item,
-  open,
-  onToggle,
+  busy,
+  onArchive,
+  onDelete,
 }: {
   item: VisitForm
-  open: boolean
-  onToggle: () => void
+  busy: boolean
+  onArchive: () => void
+  onDelete: () => void
 }) {
-  const intention = item.buy_intention ? intentionMeta[item.buy_intention] : null
-
+  const archived = item.archived_at !== null
   return (
-    <div className="border border-gray-200 rounded-xl overflow-hidden">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-gray-50 text-left"
-      >
+    <div className={`py-4 ${archived ? 'opacity-60' : ''}`}>
+      {/* Top row: name · date / rating · actions */}
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-medium text-gray-900 truncate">
+          <div className="flex items-center gap-2 mb-0.5">
+            <User className="w-4 h-4 text-gray-400 flex-shrink-0" />
+            <h3 className="font-semibold text-gray-900 truncate">
               {item.visitor_name || 'Visitante'}
-            </span>
-            {intention && (
-              <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${intention.cls}`}>
-                {intention.label}
+            </h3>
+            {archived && (
+              <span className="text-[10px] uppercase tracking-wide font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                Archivada
               </span>
             )}
           </div>
-          <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 flex-wrap">
-            <span className="inline-flex items-center gap-1">
-              <Clock className="w-3 h-3" />
-              {item.submitted_at ? formatDate(item.submitted_at) : '—'}
-            </span>
-            {item.subjective_price_usd !== null && (
-              <span className="inline-flex items-center gap-1 text-[#ff007c] font-medium">
-                <DollarSign className="w-3 h-3" />
-                USD {Number(item.subjective_price_usd).toLocaleString('es-AR')}
-              </span>
-            )}
+          <div className="text-xs text-gray-500 ml-6">
+            {item.submitted_at ? formatDate(item.submitted_at) : '—'}
           </div>
         </div>
-        {open ? (
-          <ChevronUp className="w-4 h-4 text-gray-400 flex-shrink-0" />
-        ) : (
-          <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+
+        <div className="flex items-center gap-3 flex-shrink-0">
+          {item.rating !== null && <Stars value={item.rating} />}
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onArchive}
+            title={archived ? 'Desarchivar' : 'Archivar'}
+            className="p-1.5 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+          >
+            {archived ? <ArchiveRestore className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onDelete}
+            title="Borrar"
+            className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-50"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Liked / Disliked */}
+      <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+        {item.liked && (
+          <div className="rounded-lg bg-green-50/60 border border-green-100 px-3 py-2">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-green-700 mb-1">
+              <ThumbsUp className="w-3.5 h-3.5" /> Le gustó
+            </div>
+            <p className="text-sm text-gray-700 whitespace-pre-wrap">{item.liked}</p>
+          </div>
         )}
-      </button>
-
-      {open && (
-        <div className="border-t border-gray-100 px-4 py-3 bg-gray-50/50 space-y-3 text-sm">
-          {(item.visitor_email || item.visitor_phone) && (
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
-              {item.visitor_email && <span>{item.visitor_email}</span>}
-              {item.visitor_phone && <span>{item.visitor_phone}</span>}
+        {item.disliked && (
+          <div className="rounded-lg bg-red-50/60 border border-red-100 px-3 py-2">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-red-700 mb-1">
+              <ThumbsDown className="w-3.5 h-3.5" /> No le gustó
             </div>
-          )}
+            <p className="text-sm text-gray-700 whitespace-pre-wrap">{item.disliked}</p>
+          </div>
+        )}
+      </div>
 
-          {item.liked && (
-            <div>
-              <div className="flex items-center gap-1.5 text-xs font-medium text-green-700 mb-1">
-                <ThumbsUp className="w-3.5 h-3.5" /> Le gustó
-              </div>
-              <p className="text-gray-700 whitespace-pre-wrap">{item.liked}</p>
-            </div>
-          )}
+      {/* Badges row */}
+      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+        {item.buy_intention === 'compraria' && (
+          <Badge color="green">Compraría</Badge>
+        )}
+        {item.buy_intention === 'no' && <Badge color="red">No compraría</Badge>}
+        {item.buy_intention === 'tal_vez' && <Badge color="amber">Tal vez</Badge>}
+        {item.situation && (
+          <Badge color="gray">{SITUATION_LABEL[item.situation] ?? item.situation}</Badge>
+        )}
+        {item.source && (
+          <Badge color="orange">Vía: {SOURCE_LABEL[item.source] ?? item.source}</Badge>
+        )}
+      </div>
 
-          {item.disliked && (
-            <div>
-              <div className="flex items-center gap-1.5 text-xs font-medium text-red-700 mb-1">
-                <ThumbsDown className="w-3.5 h-3.5" /> No le gustó
-              </div>
-              <p className="text-gray-700 whitespace-pre-wrap">{item.disliked}</p>
-            </div>
-          )}
-
-          {item.observations && (
-            <div>
-              <div className="text-xs font-medium text-gray-600 mb-1">Observaciones</div>
-              <p className="text-gray-700 whitespace-pre-wrap">{item.observations}</p>
-            </div>
-          )}
-
-          {!item.liked && !item.disliked && !item.observations && (
-            <p className="text-xs text-gray-400 italic">Sin comentarios adicionales.</p>
-          )}
-        </div>
+      {/* Observations */}
+      {item.observations && (
+        <p className="mt-2 text-sm text-gray-600 italic">"{item.observations}"</p>
       )}
     </div>
+  )
+}
+
+function Stars({ value }: { value: number }) {
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((n) => (
+        <Star
+          key={n}
+          className={`w-4 h-4 ${
+            n <= value ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200 fill-gray-100'
+          }`}
+        />
+      ))}
+    </div>
+  )
+}
+
+function Badge({
+  color,
+  children,
+}: {
+  color: 'green' | 'red' | 'amber' | 'gray' | 'orange'
+  children: React.ReactNode
+}) {
+  const cls = {
+    green: 'bg-green-100 text-green-700 border-green-200',
+    red: 'bg-red-100 text-red-700 border-red-200',
+    amber: 'bg-amber-100 text-amber-700 border-amber-200',
+    gray: 'bg-gray-100 text-gray-700 border-gray-200',
+    orange: 'bg-orange-100 text-orange-700 border-orange-200',
+  }[color]
+  return (
+    <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${cls}`}>
+      {children}
+    </span>
   )
 }
 
@@ -213,7 +357,7 @@ function formatDate(iso: string): string {
   try {
     return new Date(iso).toLocaleDateString('es-AR', {
       day: '2-digit',
-      month: 'short',
+      month: 'numeric',
       year: 'numeric',
     })
   } catch {
