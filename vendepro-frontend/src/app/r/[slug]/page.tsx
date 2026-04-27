@@ -361,15 +361,15 @@ function ConversionFunnel({
       <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">
         Embudo de conversión
       </h2>
-      <div className="space-y-2">
+      <div className="space-y-2 max-w-2xl mx-auto">
         {stages.map((s) => {
-          const pct = Math.max(((s.value || 0) / max) * 100, 8)
+          const pct = Math.max(((s.value || 0) / max) * 100, 12)
           return (
-            <div key={s.label} className="flex items-center gap-3">
-              <div className="w-32 sm:w-40 text-xs text-gray-600 flex-shrink-0">{s.label}</div>
-              <div className="flex-1 h-7 bg-gray-100 rounded-md overflow-hidden">
+            <div key={s.label} className="grid grid-cols-[10rem_1fr] items-center gap-4">
+              <div className="text-xs text-gray-600 text-right">{s.label}</div>
+              <div className="flex justify-center">
                 <div
-                  className="h-full flex items-center justify-end pr-2 text-xs font-semibold text-white"
+                  className="h-9 rounded-md flex items-center justify-center px-3 text-sm font-semibold text-white shadow-sm transition-all"
                   style={{ width: `${pct}%`, backgroundColor: brand }}
                 >
                   {formatNumber(s.value || 0)}
