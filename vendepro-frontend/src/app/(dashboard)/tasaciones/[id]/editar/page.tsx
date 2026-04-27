@@ -5,8 +5,10 @@ import { useRouter, useParams } from 'next/navigation'
 import {
   ArrowLeft, ArrowRight, Home, Shield, Search, DollarSign, Eye,
   Plus, Trash2, Loader2, MapPin, CheckCircle, Clipboard,
-  Megaphone, TrendingUp, FileCheck, Copy, Link2
+  Megaphone, TrendingUp, FileCheck, Copy, Link2, Database
 } from 'lucide-react'
+import SoldPropertyPicker from '@/components/sold-properties/SoldPropertyPicker'
+import type { SoldProperty } from '@/lib/sold-properties/api'
 import Link from 'next/link'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
@@ -219,8 +221,37 @@ export default function EditarTasacionPage() {
     }
   }
 
+  const [showSoldPicker, setShowSoldPicker] = useState(false)
+
   function addComparable() { if (comparables.length < 6) setComparables([...comparables, emptyComparable()]) }
   function removeComparable(i: number) { if (comparables.length > 1) setComparables(comparables.filter((_, idx) => idx !== i)) }
+
+  function comparablesFromSoldProperties(picked: SoldProperty[]): Comparable[] {
+    return picked.map(sp => ({
+      zonaprop_url: '',
+      address: sp.address_approx || sp.neighborhood || '',
+      total_area: sp.total_area != null ? String(sp.total_area) : '',
+      covered_area: sp.covered_area != null ? String(sp.covered_area) : '',
+      price: sp.closing_price_usd != null ? String(sp.closing_price_usd) : '',
+      usd_per_m2: sp.usd_per_m2 != null ? String(sp.usd_per_m2) : '',
+      days_on_market: '',
+      views_per_day: '',
+      age: '',
+    }))
+  }
+
+  function handlePickedSold(picked: SoldProperty[]) {
+    if (picked.length === 0) { setShowSoldPicker(false); return }
+    const adapted = comparablesFromSoldProperties(picked)
+    // Reemplaza filas vacías existentes; si todas tienen contenido, las agrega al final.
+    setComparables(prev => {
+      const filled = prev.filter(c => c.zonaprop_url || c.address)
+      const merged = [...filled, ...adapted].slice(0, 6)
+      return merged.length === 0 ? [emptyComparable()] : merged
+    })
+    setShowSoldPicker(false)
+    toast(`${picked.length} comparable(s) sumado(s) desde cierres reales`)
+  }
   function updateComparable(i: number, field: keyof Comparable, value: string) {
     const updated = [...comparables]
     updated[i] = { ...updated[i], [field]: value }
@@ -556,14 +587,26 @@ export default function EditarTasacionPage() {
         {/* STEP 3: Competencia */}
         {step === 3 && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-800">Competencia ZonaProp</h2>
-              {comparables.length < 6 && (
-                <button onClick={addComparable} className="flex items-center gap-1 text-xs text-[#ff007c] font-medium hover:underline">
-                  <Plus className="w-3 h-3" /> Agregar
+            <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
+              <h2 className="text-lg font-semibold text-gray-800">Comparables</h2>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowSoldPicker(true)}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium"
+                  title="Sumar desde tu base de cierres reales"
+                >
+                  <Database className="w-3 h-3" /> Sumar desde Cierres reales
                 </button>
-              )}
+                {comparables.length < 6 && (
+                  <button onClick={addComparable} className="flex items-center gap-1 text-xs text-[#ff007c] font-medium hover:underline">
+                    <Plus className="w-3 h-3" /> Agregar ZonaProp
+                  </button>
+                )}
+              </div>
             </div>
+            <p className="text-xs text-gray-500 -mt-2 mb-2">
+              Mezclá publicaciones activas (ZonaProp) con cierres reales tuyos o de colegas para una tasación más precisa.
+            </p>
             {comparables.map((comp, i) => (
               <div key={i} className="border border-gray-100 rounded-xl p-3 sm:p-4 space-y-3">
                 <div className="flex items-center justify-between">
@@ -840,6 +883,18 @@ export default function EditarTasacionPage() {
           </div>
         </div>
       </div>
+
+      {showSoldPicker && (
+        <SoldPropertyPicker
+          initialFilters={{
+            property_type: propertyType || undefined,
+            neighborhood: neighborhood || undefined,
+          }}
+          maxSelect={Math.max(1, 6 - comparables.filter(c => c.zonaprop_url || c.address).length)}
+          onClose={() => setShowSoldPicker(false)}
+          onPick={handlePickedSold}
+        />
+      )}
     </div>
   )
 }

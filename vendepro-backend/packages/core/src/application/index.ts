@@ -121,6 +121,9 @@ export * from './use-cases/visit-forms/index'
 // Marketing (Meta Conversion API)
 export * from './use-cases/marketing/index'
 
+// Sold Properties (cierres reales para tasaciones)
+export * from './use-cases/sold-properties/index'
+
 // Public
 export * from './use-cases/public/get-public-report'
 export * from './use-cases/public/get-public-appraisal'

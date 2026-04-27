@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Plus, ClipboardList, MapPin, ExternalLink, Pencil, Trash2 } from 'lucide-react'
+import { Plus, ClipboardList, MapPin, ExternalLink, Pencil, Trash2, Database } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
 import { formatDate } from '@/lib/utils'
@@ -46,6 +46,9 @@ export default function TasacionesPage() {
         <div className="flex items-center gap-2 flex-wrap">
           <Link href="/configuracion/tasacion" className="border border-gray-300 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50">
             Configurar
+          </Link>
+          <Link href="/tasaciones/vendidas" className="border border-gray-300 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 flex items-center gap-2">
+            <Database className="w-4 h-4" /> Cierres reales
           </Link>
           <Link href="/prefactibilidades/nueva" className="border border-orange-300 bg-orange-50 text-orange-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-orange-100 flex items-center gap-2">
             <Plus className="w-4 h-4" /> Prefactibilidad
