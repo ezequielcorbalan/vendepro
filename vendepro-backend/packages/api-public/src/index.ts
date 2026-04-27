@@ -45,6 +45,8 @@ app.get('/public/report/:slug', async (c) => {
   const uc = new GetPublicReportUseCase(
     new D1PropertyRepository(c.env.DB),
     new D1ReportRepository(c.env.DB),
+    new D1OrganizationRepository(c.env.DB),
+    new D1PropertyVisitFormRepository(c.env.DB),
   )
   const result = await uc.execute(c.req.param('slug'))
   if (!result) return c.json({ error: 'Not found' }, 404)

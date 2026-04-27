@@ -52,6 +52,8 @@ export interface PropertyVisitFormProps {
   situation: VisitSituation | null
   observations: string | null
   submitted_at: string | null
+  archived_at: string | null
+  deleted_at: string | null
   sent_at: string
   created_at: string
 }
@@ -66,10 +68,15 @@ export class PropertyVisitForm {
   private constructor(private props: PropertyVisitFormProps) {}
 
   static create(
-    props: Omit<PropertyVisitFormProps, 'created_at' | 'sent_at' | 'submitted_at'> & {
+    props: Omit<
+      PropertyVisitFormProps,
+      'created_at' | 'sent_at' | 'submitted_at' | 'archived_at' | 'deleted_at'
+    > & {
       created_at?: string
       sent_at?: string
       submitted_at?: string | null
+      archived_at?: string | null
+      deleted_at?: string | null
     },
   ): PropertyVisitForm {
     if (!props.slug || props.slug.trim().length === 0) {
@@ -90,9 +97,37 @@ export class PropertyVisitForm {
     return new PropertyVisitForm({
       ...props,
       submitted_at: props.submitted_at ?? null,
+      archived_at: props.archived_at ?? null,
+      deleted_at: props.deleted_at ?? null,
       sent_at: props.sent_at ?? now,
       created_at: props.created_at ?? now,
     })
+  }
+
+  archive(): void {
+    if (this.props.deleted_at) {
+      throw new ValidationError('No se puede archivar una ficha borrada')
+    }
+    if (this.props.archived_at) return
+    this.props = { ...this.props, archived_at: new Date().toISOString() }
+  }
+
+  unarchive(): void {
+    if (!this.props.archived_at) return
+    this.props = { ...this.props, archived_at: null }
+  }
+
+  softDelete(): void {
+    if (this.props.deleted_at) return
+    this.props = { ...this.props, deleted_at: new Date().toISOString() }
+  }
+
+  isArchived(): boolean {
+    return this.props.archived_at !== null
+  }
+
+  isDeleted(): boolean {
+    return this.props.deleted_at !== null
   }
 
   submit(input: {
@@ -162,6 +197,8 @@ export class PropertyVisitForm {
   get situation() { return this.props.situation }
   get observations() { return this.props.observations }
   get submitted_at() { return this.props.submitted_at }
+  get archived_at() { return this.props.archived_at }
+  get deleted_at() { return this.props.deleted_at }
   get sent_at() { return this.props.sent_at }
   get created_at() { return this.props.created_at }
 
