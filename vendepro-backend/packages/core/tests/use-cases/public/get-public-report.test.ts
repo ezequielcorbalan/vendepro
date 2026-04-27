@@ -82,6 +82,7 @@ const makeRepos = (overrides: {
     findMetrics: vi.fn().mockResolvedValue([]),
     findContent: vi.fn().mockResolvedValue([]),
     findPhotosByReport: vi.fn().mockResolvedValue([]),
+    findByOrg: vi.fn().mockResolvedValue([]),
   } as any,
   orgRepo: {
     findById: vi.fn().mockResolvedValue('org' in overrides ? overrides.org : makeOrg()),
@@ -105,7 +106,46 @@ describe('GetPublicReportUseCase', () => {
     expect(result!.content).toEqual([])
     expect(result!.photos).toEqual([])
     expect(result!.visit_forms).toEqual([])
+    expect(result!.available_reports).toEqual([])
     expect(reportRepo.findPublicBySlug).toHaveBeenCalledWith('av-libertador-100-enero-2024-a3f9b2')
+  })
+
+  it('exposes other published reports of the same property in available_reports', async () => {
+    const r1 = makeReport()
+    const r2 = Report.create({
+      id: 'report-2',
+      property_id: 'prop-1',
+      period_label: 'Febrero 2024',
+      period_start: '2024-02-01',
+      period_end: '2024-02-29',
+      status: 'published',
+      created_by: 'agent-1',
+      published_at: '2024-02-15T00:00:00.000Z',
+      public_slug: 'libertador-100-febrero-2024-b1c2d3',
+    })
+    const draft = Report.create({
+      id: 'report-3',
+      property_id: 'prop-1',
+      period_label: 'Marzo 2024',
+      period_start: '2024-03-01',
+      period_end: '2024-03-31',
+      status: 'draft',
+      created_by: 'agent-1',
+      published_at: null,
+      public_slug: 'libertador-100-marzo-draft',
+    })
+    const { propertyRepo, reportRepo, orgRepo, visitFormRepo } = makeRepos()
+    reportRepo.findByOrg = vi.fn().mockResolvedValue([r1, r2, draft])
+    const uc = new GetPublicReportUseCase(propertyRepo, reportRepo, orgRepo, visitFormRepo)
+    const result = await uc.execute('av-libertador-100-enero-2024-a3f9b2')
+
+    expect(result).not.toBeNull()
+    expect(result!.available_reports).toHaveLength(2) // draft excluido
+    // Más reciente primero (orden DESC por period_start)
+    expect(result!.available_reports[0].slug).toBe('libertador-100-febrero-2024-b1c2d3')
+    expect(result!.available_reports[0].is_current).toBe(false)
+    expect(result!.available_reports[1].slug).toBe('av-libertador-100-enero-2024-a3f9b2')
+    expect(result!.available_reports[1].is_current).toBe(true)
   })
 
   it('returns null when slug does not match any published report', async () => {

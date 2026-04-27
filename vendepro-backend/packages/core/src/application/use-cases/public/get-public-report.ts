@@ -50,6 +50,13 @@ export interface PublicReportPayload {
     observations: string | null
     submitted_at: string
   }>
+  available_reports: Array<{
+    slug: string
+    period_label: string
+    period_start: string
+    period_end: string
+    is_current: boolean
+  }>
 }
 
 export class GetPublicReportUseCase {
@@ -67,12 +74,13 @@ export class GetPublicReportUseCase {
     const property = await this.propertyRepo.findById(found.propertyId, found.orgId)
     if (!property) return null
 
-    const [org, metrics, content, photos, visitForms] = await Promise.all([
+    const [org, metrics, content, photos, visitForms, allReports] = await Promise.all([
       this.orgRepo.findById(found.orgId),
       this.reportRepo.findMetrics(found.report.id, found.orgId),
       this.reportRepo.findContent(found.report.id, found.orgId),
       this.reportRepo.findPhotosByReport(found.report.id, found.orgId),
       this.visitFormRepo.listByProperty(found.propertyId, found.orgId),
+      this.reportRepo.findByOrg(found.orgId, found.propertyId),
     ])
 
     if (!org) return null
@@ -97,6 +105,17 @@ export class GetPublicReportUseCase {
           submitted_at: o.submitted_at as string,
         }
       })
+
+    const availableReports = allReports
+      .filter((r) => r.status === 'published' && r.public_slug)
+      .sort((a, b) => (b.period_start ?? '').localeCompare(a.period_start ?? ''))
+      .map((r) => ({
+        slug: r.public_slug as string,
+        period_label: r.period_label,
+        period_start: r.period_start,
+        period_end: r.period_end,
+        is_current: r.public_slug === slug,
+      }))
 
     return {
       property: {
@@ -130,6 +149,7 @@ export class GetPublicReportUseCase {
       content,
       photos,
       visit_forms: submittedVisitForms,
+      available_reports: availableReports,
     }
   }
 }

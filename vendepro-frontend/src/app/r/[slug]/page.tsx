@@ -66,7 +66,16 @@ export default async function PublicReportPage({
   const data = (await res.json()) as any
   if (!data?.property) notFound()
 
-  const { property, org, report, metrics = [], content = [], photos = [], visit_forms = [] } = data
+  const {
+    property,
+    org,
+    report,
+    metrics = [],
+    content = [],
+    photos = [],
+    visit_forms = [],
+    available_reports = [],
+  } = data
   const brand = org?.brand_color || '#ff007c'
 
   // Aggregate metrics across sources for the dashboard
@@ -96,15 +105,45 @@ export default async function PublicReportPage({
               <div className="text-xs text-gray-500">Operaciones Inmobiliarias</div>
             </div>
           </div>
-          <div className="text-right">
-            <div className="text-xs uppercase tracking-wide text-gray-400">Reporte</div>
-            <div className="text-sm font-medium text-gray-700">{report?.period_label}</div>
-            <div className="text-xs text-gray-500">{periodFmt}</div>
-          </div>
+          <ReportSelector
+            current={report}
+            available={available_reports}
+            periodFmt={periodFmt}
+            brand={brand}
+          />
         </div>
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-8 space-y-6">
+        {/* Mobile selector (header version is desktop only) */}
+        {available_reports.length > 1 && (
+          <details className="sm:hidden bg-white rounded-xl border border-gray-100 p-3">
+            <summary className="text-sm font-medium text-gray-700 cursor-pointer">
+              Ver otros reportes ({available_reports.length - 1})
+            </summary>
+            <div className="mt-2 space-y-1">
+              {available_reports.map((r: any) => (
+                <a
+                  key={r.slug}
+                  href={`/r/${r.slug}`}
+                  className={`block px-2 py-1.5 rounded text-sm ${
+                    r.is_current
+                      ? 'bg-gray-100 text-gray-900 font-medium'
+                      : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  {r.period_label}
+                  {r.is_current && (
+                    <span className="ml-2 text-[10px] uppercase tracking-wide text-gray-400">
+                      actual
+                    </span>
+                  )}
+                </a>
+              ))}
+            </div>
+          </details>
+        )}
+
         {/* Property hero */}
         <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           {property.cover_photo && (
@@ -283,6 +322,83 @@ export default async function PublicReportPage({
         </p>
       </footer>
     </div>
+  )
+}
+
+function ReportSelector({
+  current,
+  available,
+  periodFmt,
+  brand,
+}: {
+  current: any
+  available: any[]
+  periodFmt: string
+  brand: string
+}) {
+  const others = available.filter((r) => !r.is_current)
+  // Si solo existe el reporte actual, render simple sin dropdown
+  if (others.length === 0) {
+    return (
+      <div className="text-right">
+        <div className="text-xs uppercase tracking-wide text-gray-400">Reporte</div>
+        <div className="text-sm font-medium text-gray-700">{current?.period_label}</div>
+        <div className="text-xs text-gray-500">{periodFmt}</div>
+      </div>
+    )
+  }
+
+  return (
+    <details className="hidden sm:block relative text-right group" data-selector="reports">
+      <summary
+        className="list-none cursor-pointer select-none"
+        style={{ outline: 'none' }}
+      >
+        <div className="text-xs uppercase tracking-wide text-gray-400 flex items-center justify-end gap-1">
+          Reporte
+          <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
+            <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+        <div className="text-sm font-medium text-gray-700 hover:text-gray-900">
+          {current?.period_label}
+        </div>
+        <div className="text-xs text-gray-500">{periodFmt}</div>
+      </summary>
+      <div className="absolute right-0 top-full mt-2 z-10 w-72 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden text-left">
+        <div className="px-3 py-2 text-[11px] uppercase tracking-wide text-gray-400 bg-gray-50 border-b border-gray-100">
+          Otros reportes
+        </div>
+        <div className="max-h-80 overflow-y-auto">
+          {available.map((r) => (
+            <a
+              key={r.slug}
+              href={`/r/${r.slug}`}
+              className={`block px-3 py-2.5 hover:bg-gray-50 ${
+                r.is_current ? 'bg-gray-50/60' : ''
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-medium text-gray-800 truncate">
+                  {r.period_label}
+                </span>
+                {r.is_current && (
+                  <span
+                    className="text-[10px] uppercase tracking-wide font-semibold px-1.5 py-0.5 rounded text-white"
+                    style={{ backgroundColor: brand }}
+                  >
+                    Actual
+                  </span>
+                )}
+              </div>
+              <div className="text-xs text-gray-500 mt-0.5">
+                {formatDate(r.period_start)} – {formatDate(r.period_end)}
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+    </details>
   )
 }
 
