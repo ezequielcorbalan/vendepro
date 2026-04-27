@@ -152,6 +152,7 @@ app.put('/org-settings', async (c) => {
       slug: body.slug,
       logo_url: body.logo_url,
       brand_color: body.brand_color,
+      brand_accent_color: body.brand_accent_color,
       canva_template_id: body.canva_template_id,
       canva_report_template_id: body.canva_report_template_id,
     },

@@ -26,8 +26,11 @@ export function TemplateRenderer({
     [snapshot, overrides, appraisal, resolvedVars, mode],
   )
 
-  const brandStyle = appraisal.org?.brand_color
-    ? ({ '--brand-color': appraisal.org.brand_color } as CSSProperties)
+  const brandStyle = (appraisal.org?.brand_color || appraisal.org?.brand_accent_color)
+    ? ({
+        '--brand-color': appraisal.org?.brand_color ?? '#ff007c',
+        '--brand-accent-color': appraisal.org?.brand_accent_color ?? '#e17a2a',
+      } as CSSProperties)
     : undefined
 
   return (
