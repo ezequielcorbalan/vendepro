@@ -13,8 +13,18 @@ export function TemplatesHome() {
   const [newName, setNewName] = useState('')
   const [newKind, setNewKind] = useState<typeof KINDS[number]>('casa')
 
-  const load = () => listTemplates().then(setTemplates)
-  useEffect(() => { load() }, [])
+  const load = () => listTemplates().then(setTemplates).catch(() => setTemplates([]))
+  useEffect(() => {
+    load()
+    const onFocus = () => load()
+    const onVisibility = () => { if (document.visibilityState === 'visible') load() }
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [])
 
   const handleCreate = async () => {
     if (!newName.trim()) return
