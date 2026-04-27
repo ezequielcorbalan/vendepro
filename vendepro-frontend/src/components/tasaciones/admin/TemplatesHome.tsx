@@ -13,7 +13,7 @@ export function TemplatesHome() {
   const [newName, setNewName] = useState('')
   const [newKind, setNewKind] = useState<typeof KINDS[number]>('casa')
 
-  const load = () => listTemplates().then(setTemplates).catch(() => setTemplates([]))
+  const load = () => listTemplates({ active: true }).then(setTemplates).catch(() => setTemplates([]))
   useEffect(() => {
     load()
     const onFocus = () => load()
