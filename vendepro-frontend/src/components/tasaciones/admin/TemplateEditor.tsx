@@ -41,6 +41,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
   const [blocks, setBlocks] = useState<TemplateBlock[]>([])
   const [dirty, setDirty] = useState(false)
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const blocksRef = useRef(blocks)
@@ -73,12 +74,14 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
       timerRef.current = null
     }
     setStatus('saving')
+    setErrorMsg(null)
     try {
       await updateTemplate(templateId, { blocks: blocksRef.current })
       setStatus('saved')
       setDirty(false)
-    } catch {
+    } catch (e: any) {
       setStatus('error')
+      setErrorMsg(e?.message ?? 'Error desconocido')
     }
   }, [templateId])
 
@@ -100,16 +103,16 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
   }
 
   const updateBlock = (id: string, patch: Partial<TemplateBlock>) => {
-    setBlocks(blocks.map(b => b.id === id ? { ...b, ...patch } : b)); setDirty(true)
+    setBlocks(prev => prev.map(b => b.id === id ? { ...b, ...patch } : b)); setDirty(true)
   }
   const updateBlockData = (id: string, patch: Record<string, unknown>) => {
-    setBlocks(blocks.map(b => b.id === id ? { ...b, data: { ...b.data, ...patch } } : b)); setDirty(true)
+    setBlocks(prev => prev.map(b => b.id === id ? { ...b, data: { ...b.data, ...patch } } : b)); setDirty(true)
   }
-  const removeBlock = (id: string) => { setBlocks(blocks.filter(b => b.id !== id)); setDirty(true) }
+  const removeBlock = (id: string) => { setBlocks(prev => prev.filter(b => b.id !== id)); setDirty(true) }
   const addBlock = (type: AppraisalBlockType) => {
     const id = `b-${Date.now()}`
     const include_in_pdf = !WEB_ONLY_TYPES.has(type)
-    setBlocks([...blocks, { id, type, binding_mode: 'tasacion', include_in_pdf, sort_order: blocks.length, data: {} }])
+    setBlocks(prev => [...prev, { id, type, binding_mode: 'tasacion', include_in_pdf, sort_order: prev.length, data: {} }])
     setDirty(true); setAdding(false)
   }
 
@@ -124,12 +127,19 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
         <div className="flex items-center gap-3 text-xs">
           {status === 'saving' && <span className="flex items-center gap-1 text-slate-500"><Loader2 className="h-3 w-3 animate-spin" /> Guardando...</span>}
           {status === 'saved' && !dirty && <span className="flex items-center gap-1 text-emerald-600"><CheckCircle2 className="h-3 w-3" /> Guardado</span>}
-          {status === 'error' && <span className="flex items-center gap-1 text-rose-600"><AlertCircle className="h-3 w-3" /> Error al guardar</span>}
-          {dirty && status !== 'saving' && <span className="text-slate-500">Cambios sin guardar</span>}
+          {status === 'error' && (
+            <span
+              title={errorMsg ?? undefined}
+              className="flex max-w-md items-center gap-1 truncate text-rose-600"
+            >
+              <AlertCircle className="h-3 w-3 shrink-0" /> {errorMsg ?? 'Error al guardar'}
+            </span>
+          )}
+          {dirty && status !== 'saving' && status !== 'error' && <span className="text-slate-500">Cambios sin guardar</span>}
           {!isSystem && (
             <button
               onClick={() => saveNow()}
-              disabled={status === 'saving' || (!dirty && status !== 'error')}
+              disabled={status === 'saving'}
               className="flex items-center gap-1 rounded bg-[#ff007c] px-3 py-1.5 text-xs font-medium text-white disabled:opacity-40"
             >
               <Save className="h-3 w-3" /> Guardar cambios
