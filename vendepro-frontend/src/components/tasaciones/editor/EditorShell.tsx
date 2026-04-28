@@ -118,7 +118,7 @@ export function EditorShell({ initial, snapshot, context }: Props) {
   }, [computedWeighted])
 
   const onConsume = useCallback((saved: { appraisal: Record<string, unknown>; overrides: Record<string, Record<string, unknown>> }) => dispatch({ type: 'consume', saved }), [dispatch])
-  const { status, lastSavedAt, retry } = useAutosave({
+  const { status, errorMsg, lastSavedAt, retry } = useAutosave({
     appraisalId: state.appraisal.id,
     pending: state.pendingPatches,
     dirty: state.dirty,
@@ -157,7 +157,7 @@ export function EditorShell({ initial, snapshot, context }: Props) {
           <h1 className="text-sm font-semibold">{state.appraisal.property_address}</h1>
         </div>
         <div className="flex items-center gap-3">
-          <SaveStatus status={status} lastSavedAt={lastSavedAt} onRetry={retry} />
+          <SaveStatus status={status} errorMsg={errorMsg} lastSavedAt={lastSavedAt} onRetry={retry} />
           {!state.appraisal.public_slug && (
             <button
               onClick={async () => {
@@ -326,13 +326,13 @@ function AppraisalField({ label, value, onChange, type = 'text' }: { label: stri
   )
 }
 
-function SaveStatus({ status, lastSavedAt, onRetry }: { status: string; lastSavedAt: number | null; onRetry: () => void }) {
+function SaveStatus({ status, errorMsg, lastSavedAt, onRetry }: { status: string; errorMsg: string | null; lastSavedAt: number | null; onRetry: () => void }) {
   if (status === 'saving') return <span className="flex items-center gap-1 text-xs text-slate-500"><Loader2 className="h-3 w-3 animate-spin" /> Guardando...</span>
   if (status === 'saved') return <span className="flex items-center gap-1 text-xs text-emerald-600"><CheckCircle2 className="h-3 w-3" /> Guardado</span>
   if (status === 'error') return (
-    <span className="flex items-center gap-1 text-xs text-rose-600">
-      <AlertCircle className="h-3 w-3" /> Error al guardar
-      <button onClick={onRetry} className="ml-1 underline">Reintentar</button>
+    <span title={errorMsg ?? undefined} className="flex max-w-md items-center gap-1 truncate text-xs text-rose-600">
+      <AlertCircle className="h-3 w-3 shrink-0" /> {errorMsg ?? 'Error al guardar'}
+      <button onClick={onRetry} className="ml-1 shrink-0 underline">Reintentar</button>
     </span>
   )
   if (status === 'debouncing') return <span className="text-xs text-slate-400">Cambios pendientes...</span>
