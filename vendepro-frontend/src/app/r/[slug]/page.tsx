@@ -464,32 +464,47 @@ function ConversionFunnel({
 }) {
   const stages = [
     { label: 'Impresiones', value: totals.impressions },
-    { label: 'Visitas al portal', value: totals.portal_visits },
+    { label: 'Visitas portal', value: totals.portal_visits },
     { label: 'Consultas', value: totals.inquiries },
-    { label: 'Visitas presenciales', value: totals.in_person_visits },
+    { label: 'Visitas presenc.', value: totals.in_person_visits },
     { label: 'Ofertas', value: totals.offers },
   ].filter((s) => s.value != null)
   const max = Math.max(...stages.map((s) => s.value || 0))
   if (max === 0 || stages.length < 2) return null
 
+  // Paleta fija por etapa, en el espíritu del diseño de referencia.
+  // Mantiene los colores de marca (rosa + naranja) en las etapas 2 y 3.
+  const PALETTE = ['#7c5cff', '#ff007c', '#ff8017', '#10b981', '#f59e0b']
+
+  // Distribuyo el ancho linealmente entre 100% (primera) y 40% (última)
+  // — el funnel comunica "embudo" por forma, los valores van como label.
+  const TOP = 100
+  const BOTTOM_LAST = 40
+  const step = (TOP - BOTTOM_LAST) / stages.length
+  const widthAt = (i: number) => TOP - step * i
+
   return (
     <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-      <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">
+      <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4 flex items-center gap-2">
+        <span className="inline-block w-1 h-4 rounded-sm" style={{ backgroundColor: brand }} />
         Embudo de conversión
       </h2>
-      <div className="space-y-2 max-w-2xl mx-auto">
-        {stages.map((s) => {
-          const pct = Math.max(((s.value || 0) / max) * 100, 12)
+      <div className="max-w-2xl mx-auto">
+        {stages.map((s, i) => {
+          const topPct = widthAt(i)
+          const botPct = widthAt(i + 1)
+          const insetTop = (100 - topPct) / 2
+          const insetBot = (100 - botPct) / 2
+          const clip = `polygon(${insetTop}% 0%, ${100 - insetTop}% 0%, ${100 - insetBot}% 100%, ${insetBot}% 100%)`
           return (
-            <div key={s.label} className="grid grid-cols-[10rem_1fr] items-center gap-4">
-              <div className="text-xs text-gray-600 text-right">{s.label}</div>
-              <div className="flex justify-center">
-                <div
-                  className="h-9 rounded-md flex items-center justify-center px-3 text-sm font-semibold text-white shadow-sm transition-all"
-                  style={{ width: `${pct}%`, backgroundColor: brand }}
-                >
-                  {formatNumber(s.value || 0)}
-                </div>
+            <div
+              key={s.label}
+              className="relative h-14 flex items-center justify-center text-white text-center"
+              style={{ backgroundColor: PALETTE[i % PALETTE.length], clipPath: clip }}
+            >
+              <div>
+                <div className="text-[11px] font-semibold leading-tight opacity-95">{s.label}</div>
+                <div className="text-base font-bold leading-tight">{formatNumber(s.value || 0)}</div>
               </div>
             </div>
           )

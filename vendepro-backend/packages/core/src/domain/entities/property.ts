@@ -39,6 +39,8 @@ export interface PropertyProps {
   // Computed / Joined
   agent_name?: string
   report_count?: number
+  last_external_report_at?: string | null
+  last_report_at?: string | null
 }
 
 const VALID_PROPERTY_TYPES: PropertyType[] = ['departamento', 'casa', 'ph', 'local', 'terreno', 'oficina']

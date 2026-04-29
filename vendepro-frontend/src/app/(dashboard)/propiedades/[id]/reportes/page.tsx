@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, FileBarChart, Plus, Loader2, Eye } from 'lucide-react'
+import { ArrowLeft, FileBarChart, Plus, Loader2, Eye, Pencil } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 
 interface Report {
@@ -113,7 +113,7 @@ export default function PropertyReportsPage() {
                   </p>
                 )}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <span className={`text-xs px-2 py-1 rounded-full font-medium ${
                   r.status === 'published' ? 'bg-green-100 text-green-700' :
                   r.status === 'draft' ? 'bg-gray-100 text-gray-600' :
@@ -121,6 +121,12 @@ export default function PropertyReportsPage() {
                 }`}>
                   {r.status === 'published' ? 'Publicado' : r.status === 'draft' ? 'Borrador' : (r.status || '—')}
                 </span>
+                <Link
+                  href={`/propiedades/${id}/reportes/nuevo?edit=${r.id}`}
+                  className="inline-flex items-center gap-1 text-sm text-gray-600 font-medium hover:text-[#ff007c]"
+                >
+                  <Pencil className="w-3.5 h-3.5" /> Editar
+                </Link>
                 {(r as any).public_slug && (
                   <a
                     href={`/r/${(r as any).public_slug}`}

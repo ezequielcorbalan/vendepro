@@ -6,7 +6,7 @@ export class D1PropertyRepository implements PropertyRepository {
 
   async findById(id: string, orgId: string): Promise<Property | null> {
     const row = await this.db
-      .prepare(`SELECT p.*, u.full_name as agent_name FROM properties p LEFT JOIN users u ON p.agent_id = u.id WHERE p.id = ? AND p.org_id = ?`)
+      .prepare(`SELECT p.*, u.full_name as agent_name, (SELECT MAX(published_at) FROM reports WHERE property_id = p.id AND status = 'published') as last_report_at FROM properties p LEFT JOIN users u ON p.agent_id = u.id WHERE p.id = ? AND p.org_id = ?`)
       .bind(id, orgId)
       .first() as any
     return row ? this.toEntity(row) : null
@@ -14,14 +14,14 @@ export class D1PropertyRepository implements PropertyRepository {
 
   async findBySlug(slug: string): Promise<Property | null> {
     const row = await this.db
-      .prepare(`SELECT p.*, u.full_name as agent_name FROM properties p LEFT JOIN users u ON p.agent_id = u.id WHERE p.public_slug = ?`)
+      .prepare(`SELECT p.*, u.full_name as agent_name, (SELECT MAX(published_at) FROM reports WHERE property_id = p.id AND status = 'published') as last_report_at FROM properties p LEFT JOIN users u ON p.agent_id = u.id WHERE p.public_slug = ?`)
       .bind(slug)
       .first() as any
     return row ? this.toEntity(row) : null
   }
 
   async findByOrg(orgId: string, filters?: PropertyFilters): Promise<Property[]> {
-    let query = `SELECT p.*, u.full_name as agent_name FROM properties p LEFT JOIN users u ON p.agent_id = u.id WHERE p.org_id = ?`
+    let query = `SELECT p.*, u.full_name as agent_name, (SELECT MAX(published_at) FROM reports WHERE property_id = p.id AND status = 'published') as last_report_at FROM properties p LEFT JOIN users u ON p.agent_id = u.id WHERE p.org_id = ?`
     const binds: unknown[] = [orgId]
 
     // Legacy text filters (kept for compatibility)
@@ -347,7 +347,7 @@ export class D1PropertyRepository implements PropertyRepository {
 
   async findByPublicSlug(slug: string): Promise<Property | null> {
     const row = await this.db
-      .prepare(`SELECT p.*, u.full_name as agent_name FROM properties p LEFT JOIN users u ON p.agent_id = u.id WHERE p.public_slug = ?`)
+      .prepare(`SELECT p.*, u.full_name as agent_name, (SELECT MAX(published_at) FROM reports WHERE property_id = p.id AND status = 'published') as last_report_at FROM properties p LEFT JOIN users u ON p.agent_id = u.id WHERE p.public_slug = ?`)
       .bind(slug)
       .first() as any
     return row ? this.toEntity(row) : null
@@ -383,6 +383,11 @@ export class D1PropertyRepository implements PropertyRepository {
       auth_duration_days: row.auth_duration_days ?? null,
       doc_status_json: row.doc_status_json ?? null,
       created_at: row.created_at, updated_at: row.updated_at,
+      // Computed / joined fields surfaced to API consumers (frontend
+      // PropertyFilters reads both to compute "sin reportar" alert).
+      agent_name: row.agent_name ?? undefined,
+      last_external_report_at: row.last_external_report_at ?? null,
+      last_report_at: row.last_report_at ?? null,
     })
   }
 }
