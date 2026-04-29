@@ -15,17 +15,29 @@ export default function PropiedadesPage() {
   const [error, setError] = useState(false)
 
   useEffect(() => {
-    Promise.all([
-      apiFetch('properties', '/properties').then(r => r.json() as Promise<any>),
-      fetchPropertyConfig(),
-    ])
-      .then(([d, cfg]) => {
-        if (d?.error) { setError(true); setLoading(false); return }
-        setProperties(Array.isArray(d) ? d : [])
-        setConfig(cfg)
-        setLoading(false)
-      })
-      .catch(() => { setError(true); setLoading(false) })
+    const load = (initial: boolean) => {
+      if (initial) setLoading(true)
+      Promise.all([
+        apiFetch('properties', '/properties').then(r => r.json() as Promise<any>),
+        fetchPropertyConfig(),
+      ])
+        .then(([d, cfg]) => {
+          if (d?.error) { setError(true); setLoading(false); return }
+          setProperties(Array.isArray(d) ? d : [])
+          setConfig(cfg)
+          setLoading(false)
+        })
+        .catch(() => { setError(true); setLoading(false) })
+    }
+    load(true)
+    const onFocus = () => load(false)
+    const onVisibility = () => { if (document.visibilityState === 'visible') load(false) }
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
   }, [])
 
   return (
