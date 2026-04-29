@@ -57,6 +57,13 @@ export interface PublicReportPayload {
     period_end: string
     is_current: boolean
   }>
+  competitors: Array<{
+    id: string
+    url: string
+    address: string | null
+    price: number | null
+    notes: string | null
+  }>
 }
 
 export class GetPublicReportUseCase {
@@ -74,13 +81,14 @@ export class GetPublicReportUseCase {
     const property = await this.propertyRepo.findById(found.propertyId, found.orgId)
     if (!property) return null
 
-    const [org, metrics, content, photos, visitForms, allReports] = await Promise.all([
+    const [org, metrics, content, photos, visitForms, allReports, competitorRows] = await Promise.all([
       this.orgRepo.findById(found.orgId),
       this.reportRepo.findMetrics(found.report.id, found.orgId),
       this.reportRepo.findContent(found.report.id, found.orgId),
       this.reportRepo.findPhotosByReport(found.report.id, found.orgId),
       this.visitFormRepo.listByProperty(found.propertyId, found.orgId),
       this.reportRepo.findByOrg(found.orgId, found.propertyId),
+      this.reportRepo.findCompetitorLinks(found.propertyId, found.orgId),
     ])
 
     if (!org) return null
@@ -150,6 +158,13 @@ export class GetPublicReportUseCase {
       photos,
       visit_forms: submittedVisitForms,
       available_reports: availableReports,
+      competitors: (competitorRows ?? []).map((c: any) => ({
+        id: String(c.id),
+        url: String(c.url),
+        address: c.address ?? null,
+        price: c.price != null ? Number(c.price) : null,
+        notes: c.notes ?? null,
+      })),
     }
   }
 }
