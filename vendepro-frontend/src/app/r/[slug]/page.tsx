@@ -15,6 +15,13 @@ import {
 
 const API_PUBLIC = process.env.NEXT_PUBLIC_API_PUBLIC_URL ?? 'https://public.api.vendepro.com.ar'
 
+const SECTION_TITLES: Record<string, string> = {
+  strategy: 'Estrategia comercial',
+  marketing: 'Marketing y difusión',
+  conclusion: 'Conclusión y recomendación',
+  price_reference: 'Referencia de precio',
+}
+
 const SOURCE_LABEL: Record<string, string> = {
   argenprop: 'Argenprop',
   mercadolibre: 'Mercado Libre',
@@ -75,6 +82,7 @@ export default async function PublicReportPage({
     photos = [],
     visit_forms = [],
     available_reports = [],
+    competitors = [],
   } = data
   const brand = org?.brand_color || '#ff007c'
 
@@ -269,12 +277,56 @@ export default async function PublicReportPage({
                   key={s.id}
                   className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6"
                 >
-                  <h2 className="font-semibold text-gray-900 mb-2">{s.title}</h2>
+                  <h2 className="font-semibold text-gray-900 mb-2">
+                    {s.title || SECTION_TITLES[s.section as string] || 'Sección'}
+                  </h2>
                   <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
                     {s.body}
                   </div>
                 </div>
               ))}
+          </section>
+        )}
+
+        {/* Competitors */}
+        {competitors.length > 0 && (
+          <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h2 className="font-semibold text-gray-900 mb-1">
+              Propiedades comparables ({competitors.length})
+            </h2>
+            <p className="text-xs text-gray-500 mb-4">
+              Avisos similares en venta usados como referencia de mercado.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {competitors.map((c: any) => (
+                <a
+                  key={c.id}
+                  href={c.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block rounded-xl border border-gray-100 p-3 hover:border-gray-200 hover:shadow-sm transition-all"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate">
+                        {c.address || 'Sin dirección'}
+                      </p>
+                      {c.notes && (
+                        <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{c.notes}</p>
+                      )}
+                    </div>
+                    {c.price != null && (
+                      <span
+                        className="text-sm font-semibold whitespace-nowrap"
+                        style={{ color: brand }}
+                      >
+                        USD {formatNumber(c.price)}
+                      </span>
+                    )}
+                  </div>
+                </a>
+              ))}
+            </div>
           </section>
         )}
 

@@ -83,6 +83,7 @@ const makeRepos = (overrides: {
     findContent: vi.fn().mockResolvedValue([]),
     findPhotosByReport: vi.fn().mockResolvedValue([]),
     findByOrg: vi.fn().mockResolvedValue([]),
+    findCompetitorLinks: vi.fn().mockResolvedValue(overrides.competitors ?? []),
   } as any,
   orgRepo: {
     findById: vi.fn().mockResolvedValue('org' in overrides ? overrides.org : makeOrg()),
