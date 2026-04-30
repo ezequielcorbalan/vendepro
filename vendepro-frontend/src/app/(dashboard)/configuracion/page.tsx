@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import {
   Settings, Save, Loader2, Building2, Calendar, User,
-  ClipboardList, FileText, ClipboardCheck, CheckCircle, XCircle, Megaphone,
+  ClipboardList, FileText, CheckCircle, XCircle, Megaphone,
   HelpCircle, PlayCircle,
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
@@ -135,13 +135,6 @@ export default function ConfiguracionPage() {
       iconColor: 'text-orange-500',
       title: 'Mis Objetivos',
       subtitle: 'Metas y seguimiento',
-    },
-    {
-      href: '/configuracion/ficha-tasacion',
-      icon: <ClipboardCheck className="w-5 h-5" />,
-      iconColor: 'text-green-600',
-      title: 'Ficha de tasación',
-      subtitle: 'Formulario de inspección digital',
     },
     ...(isAdmin ? [{
       href: '/configuracion/marketing',

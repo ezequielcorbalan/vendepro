@@ -8,6 +8,7 @@ import {
   encrypt,
   createMarketingSender, fireMarketingEvent,
 } from '@vendepro/infrastructure'
+import { Activity } from '@vendepro/core'
 import {
   GetLeadsUseCase, UpdateLeadUseCase, DeleteLeadUseCase, AdvanceLeadStageUseCase,
   GetContactsUseCase, CreateContactUseCase, DeleteContactUseCase,
@@ -306,6 +307,38 @@ app.get('/activities', async (c) => {
   const repo = new D1ActivityRepository(c.env.DB)
   const activities = await repo.findByOrg(c.get('orgId'), { agent_id, lead_id, contact_id, property_id })
   return c.json(activities.map(a => a.toObject?.() ?? a))
+})
+
+app.post('/activities', async (c) => {
+  const body = (await c.req.json()) as any
+  const repo = new D1ActivityRepository(c.env.DB)
+  const idGen = new CryptoIdGenerator()
+  try {
+    const activity = Activity.create({
+      id: idGen.generate(),
+      org_id: c.get('orgId'),
+      agent_id: c.get('userId'),
+      activity_type: body.activity_type,
+      description: body.description ?? null,
+      result: body.result ?? null,
+      duration_minutes: body.duration_minutes ?? null,
+      lead_id: body.lead_id || null,
+      contact_id: body.contact_id || null,
+      property_id: body.property_id || null,
+      appraisal_id: body.appraisal_id || null,
+    })
+    await repo.save(activity)
+    return c.json({ id: activity.id })
+  } catch (err: any) {
+    return c.json({ error: err.message || 'Error al crear actividad' }, 400)
+  }
+})
+
+app.delete('/activities', async (c) => {
+  const { id } = c.req.query()
+  const repo = new D1ActivityRepository(c.env.DB)
+  await repo.delete(id, c.get('orgId'))
+  return c.json({ success: true })
 })
 
 // ── TAGS ───────────────────────────────────────────────────────

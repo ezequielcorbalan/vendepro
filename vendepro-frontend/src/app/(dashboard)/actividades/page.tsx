@@ -31,6 +31,7 @@ export default function ActividadesPage() {
   const [activities, setActivities] = useState<any[]>([])
   const [objectives, setObjectives] = useState<any[]>([])
   const [agents, setAgents] = useState<any[]>([])
+  const [leads, setLeads] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState('month')
   const [filterAgent, setFilterAgent] = useState('')
@@ -58,6 +59,12 @@ export default function ActividadesPage() {
   }
 
   useEffect(() => { loadData() }, [period, filterAgent])
+
+  useEffect(() => {
+    apiFetch('crm', '/leads').then(r => r.json() as Promise<any>)
+      .then(d => { if (Array.isArray(d)) setLeads(d) })
+      .catch(() => {})
+  }, [])
 
   const metrics = useMemo(() => {
     const counts: Record<string, number> = {}
@@ -296,6 +303,12 @@ export default function ActividadesPage() {
                 onChange={e => setForm(f => ({ ...f, activity_type: e.target.value }))}
                 className="border rounded-lg px-3 py-2 text-sm w-full">
                 {ACTIVITY_TYPE_KEYS.map(k => <option key={k} value={k}>{ACTIVITY_TYPES[k].label}</option>)}
+              </select>
+              <select value={form.lead_id}
+                onChange={e => setForm(f => ({ ...f, lead_id: e.target.value }))}
+                className="border rounded-lg px-3 py-2 text-sm w-full">
+                <option value="">Sin vincular a un lead</option>
+                {leads.map(l => <option key={l.id} value={l.id}>{l.full_name}</option>)}
               </select>
               <textarea placeholder="Descripción..." rows={3}
                 value={form.description}
