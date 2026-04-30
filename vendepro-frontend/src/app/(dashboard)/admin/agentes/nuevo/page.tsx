@@ -107,6 +107,7 @@ export default function NuevoAgentePage() {
           <label className="block text-sm font-medium text-gray-700 mb-1">Rol</label>
           <select value={form.role} onChange={e => update('role', e.target.value)} className={inputClass}>
             <option value="agent">Agente</option>
+            <option value="supervisor">Supervisor</option>
             <option value="admin">Administrador</option>
           </select>
         </div>

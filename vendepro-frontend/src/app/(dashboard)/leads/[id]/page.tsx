@@ -149,6 +149,24 @@ export default function LeadDetailPage() {
     setShowTagPicker(prev => !prev)
   }
 
+  const handleQuickActivity = async (activity_type: 'llamada' | 'whatsapp') => {
+    try {
+      await apiFetch('crm', '/activities', {
+        method: 'POST',
+        body: JSON.stringify({ activity_type, lead_id: leadId }),
+      })
+      const stage = lead?.stage
+      if (stage === 'nuevo' || stage === 'asignado') {
+        await apiFetch('crm', '/leads/stage', {
+          method: 'POST',
+          body: JSON.stringify({ id: leadId, stage: 'contactado' }),
+        }).catch(() => {})
+      }
+      toast(activity_type === 'llamada' ? 'Llamada registrada' : 'WhatsApp registrado')
+      loadLead()
+    } catch { /* link still opens — silent fail on log */ }
+  }
+
   const handleConvertToAppraisal = async (createAppraisal: boolean) => {
     try {
       const stageRes = await apiFetch('crm', '/leads/stage', {
@@ -410,6 +428,7 @@ export default function LeadDetailPage() {
               {lead.phone ? (
                 <a
                   href={`tel:${lead.phone}`}
+                  onClick={() => handleQuickActivity('llamada')}
                   className="flex items-center gap-1.5 bg-gradient-to-br from-[#ff007c] to-[#ff8017] text-white px-4 py-2 rounded-xl text-sm font-medium hover:opacity-90 transition-opacity shadow-sm"
                 >
                   <Phone className="w-4 h-4" /> Llamar
@@ -423,6 +442,7 @@ export default function LeadDetailPage() {
                 <a
                   href={`https://wa.me/${formatWhatsApp(lead.phone)}`}
                   target="_blank" rel="noreferrer"
+                  onClick={() => handleQuickActivity('whatsapp')}
                   className="flex items-center gap-1.5 bg-green-500 text-white px-4 py-2 rounded-xl text-sm font-medium hover:opacity-90 transition-opacity"
                 >
                   <MessageCircle className="w-4 h-4" /> WhatsApp
