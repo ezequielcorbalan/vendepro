@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Plus, Search, Trash2, Loader2, BookUser, Phone, Mail, MapPin, X } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
+import { applyScopeToParams } from '@/lib/agent-scope'
 import { useToast } from '@/components/ui/Toast'
 
 const inputClass = 'border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50 w-full'
@@ -32,6 +33,7 @@ export default function ContactosPage() {
     const params = new URLSearchParams()
     if (search) params.set('q', search)
     if (filterType) params.set('type', filterType)
+    applyScopeToParams(params)
     apiFetch('crm', `/contacts?${params}`).then(r => r.json() as Promise<any>).then(data => {
       setContacts(Array.isArray(data) ? data : [])
       setLoading(false)

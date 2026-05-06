@@ -11,6 +11,7 @@ import {
   getObjectiveSemaforo, getPeriodProgressPct, type ActivityType, type ObjectiveMetric
 } from '@/lib/crm-config'
 import { apiFetch } from '@/lib/api'
+import { getScopedAgentId } from '@/lib/agent-scope'
 
 const ICON_MAP: Record<string, any> = {
   Phone, MessageCircle, Users, Home, Eye, Calculator, Clock,
@@ -33,7 +34,7 @@ export default function ActividadesPage() {
   const [agents, setAgents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState('month')
-  const [filterAgent, setFilterAgent] = useState('')
+  const [filterAgent, setFilterAgent] = useState(getScopedAgentId() || '')
   const [showCreate, setShowCreate] = useState(false)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({ activity_type: 'llamada', description: '', lead_id: '' })

@@ -33,7 +33,7 @@ type AuthVars = { Variables: { userId: string; userRole: string; orgId: string }
 
 export function registerAppraisalRoutes(app: Hono<{ Bindings: Env } & AuthVars>) {
   app.get('/appraisals', async (c) => {
-    const { id, lead_id, status } = c.req.query()
+    const { id, lead_id, status, agent_id } = c.req.query()
     const repo = new D1AppraisalRepository(c.env.DB)
     const orgId = c.get('orgId')
 
@@ -52,7 +52,7 @@ export function registerAppraisalRoutes(app: Hono<{ Bindings: Env } & AuthVars>)
     }
 
     const useCase = new GetAppraisalsUseCase(repo)
-    const items = await useCase.execute(orgId, { stage: status, agent_id: lead_id ? undefined : undefined })
+    const items = await useCase.execute(orgId, { stage: status, agent_id })
     // Apply filters manually since the use-case uses 'stage' for status
     let rows = items.map(a => a.toObject())
     if (status) rows = rows.filter(r => r.status === status)

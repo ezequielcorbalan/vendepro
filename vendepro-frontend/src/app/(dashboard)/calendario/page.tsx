@@ -9,6 +9,7 @@ import {
 import { useToast } from '@/components/ui/Toast'
 import { EVENT_TYPES } from '@/lib/crm-config'
 import { apiFetch } from '@/lib/api'
+import { getScopedAgentId } from '@/lib/agent-scope'
 
 const ICON_MAP: Record<string, any> = {
   Phone, Users, Home, Eye, ClipboardList, RefreshCw, FileText, FileSignature, Calendar,
@@ -64,7 +65,9 @@ export default function CalendarioPage() {
     const start = `${year}-${pad(month + 1)}-01`
     const endD = new Date(year, month + 1, 0)
     const end = fmtDate(endD)
-    apiFetch('crm', `/calendar?start=${start}&end=${end}`)
+    const agentId = getScopedAgentId()
+    const agentParam = agentId ? `&agent_id=${agentId}` : ''
+    apiFetch('crm', `/calendar?start=${start}&end=${end}${agentParam}`)
       .then(r => r.json() as Promise<any>)
       .then(d => { setEvents(Array.isArray(d) ? d : (d.events || [])); setLoading(false) })
       .catch(() => setLoading(false))
