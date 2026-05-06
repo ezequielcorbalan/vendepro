@@ -1,13 +1,16 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Copy, Archive, Edit } from 'lucide-react'
+import { Plus, Copy, Archive, Edit, User } from 'lucide-react'
 import { listTemplates, createTemplate, duplicateTemplate, archiveTemplate } from '../shared/api'
+import { getCurrentUser } from '@/lib/auth'
 
 const KINDS = ['casa', 'depto', 'terreno', 'corporativo', 'custom'] as const
 
 export function TemplatesHome() {
   const router = useRouter()
+  const user = getCurrentUser()
+  const isAdmin = user?.role === 'admin'
   const [templates, setTemplates] = useState<any[] | null>(null)
   const [creating, setCreating] = useState(false)
   const [newName, setNewName] = useState('')
@@ -64,18 +67,39 @@ export function TemplatesHome() {
         </button>
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {templates.map(t => (
-          <article key={t.id} className="rounded-lg border border-slate-200 bg-white p-4">
-            {t.preview_image_url && <img src={t.preview_image_url} alt="" className="mb-3 aspect-video w-full rounded object-cover" />}
-            <h3 className="font-semibold">{t.name}</h3>
-            <p className="mt-1 text-xs text-slate-500">{t.kind} · {(t.blocks ?? []).length} bloques {t.is_system ? '· sistema' : ''}</p>
-            <div className="mt-4 flex gap-2">
-              {!t.is_system && <button onClick={() => router.push(`/configuracion/tasacion/templates/${t.id}`)} className="flex items-center gap-1 rounded border border-slate-300 px-3 py-1 text-xs"><Edit className="h-3 w-3" /> Editar</button>}
-              <button onClick={() => handleDuplicate(t.id, t.name)} className="flex items-center gap-1 rounded border border-slate-300 px-3 py-1 text-xs"><Copy className="h-3 w-3" /> Duplicar</button>
-              {!t.is_system && <button onClick={() => handleArchive(t.id)} className="flex items-center gap-1 rounded border border-slate-300 px-3 py-1 text-xs"><Archive className="h-3 w-3" /> Archivar</button>}
-            </div>
-          </article>
-        ))}
+        {templates.map(t => {
+          const isOwn = t.agent_id && t.agent_id === user?.id
+          const canEdit = !t.is_system && (!t.agent_id || isOwn || isAdmin)
+          const canArchive = !t.is_system && (!t.agent_id || isOwn || isAdmin)
+          // Non-admins can't edit org-level templates, only their own
+          const canEditFull = canEdit && (isAdmin || isOwn || !t.agent_id === false)
+          const ownerBadge = t.is_system
+            ? 'Sistema'
+            : t.agent_id
+              ? (isOwn ? 'Mío' : 'Agente')
+              : 'Organización'
+          const badgeColor = t.is_system
+            ? 'bg-slate-100 text-slate-600'
+            : t.agent_id
+              ? (isOwn ? 'bg-pink-100 text-pink-700' : 'bg-purple-100 text-purple-700')
+              : 'bg-blue-100 text-blue-700'
+
+          return (
+            <article key={t.id} className={`rounded-lg border bg-white p-4 ${isOwn ? 'border-pink-200' : 'border-slate-200'}`}>
+              {t.preview_image_url && <img src={t.preview_image_url} alt="" className="mb-3 aspect-video w-full rounded object-cover" />}
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold truncate">{t.name}</h3>
+                <span className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full font-medium ${badgeColor}`}>{ownerBadge}</span>
+              </div>
+              <p className="mt-1 text-xs text-slate-500">{t.kind} · {(t.blocks ?? []).length} bloques</p>
+              <div className="mt-4 flex gap-2">
+                {canEdit && <button onClick={() => router.push(`/configuracion/tasacion/templates/${t.id}`)} className="flex items-center gap-1 rounded border border-slate-300 px-3 py-1 text-xs hover:bg-slate-50"><Edit className="h-3 w-3" /> Editar</button>}
+                <button onClick={() => handleDuplicate(t.id, t.name)} className="flex items-center gap-1 rounded border border-slate-300 px-3 py-1 text-xs hover:bg-slate-50"><Copy className="h-3 w-3" /> Duplicar</button>
+                {canArchive && <button onClick={() => handleArchive(t.id)} className="flex items-center gap-1 rounded border border-slate-300 px-3 py-1 text-xs hover:bg-slate-50"><Archive className="h-3 w-3" /> Archivar</button>}
+              </div>
+            </article>
+          )
+        })}
       </div>
       {creating && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">

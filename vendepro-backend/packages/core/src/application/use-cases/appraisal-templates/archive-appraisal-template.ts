@@ -5,11 +5,15 @@ import type { AppraisalTemplateRepository } from '../../ports/repositories/appra
 export class ArchiveAppraisalTemplateUseCase {
   constructor(private readonly repo: AppraisalTemplateRepository) {}
 
-  async execute(input: { id: string; orgId: string }): Promise<{ archived: boolean }> {
+  async execute(input: { id: string; orgId: string; agentId?: string; role?: string }): Promise<{ archived: boolean }> {
     const cur = await this.repo.findById(input.id)
     if (!cur) throw new ValidationError('Template no encontrado')
     if (cur.isSystem()) throw new ValidationError('No se pueden archivar templates del sistema')
     if (cur.org_id !== input.orgId) throw new ValidationError('Template pertenece a otra org')
+    // Agent can only archive their own agent templates
+    if (cur.agent_id && input.role !== 'admin' && cur.agent_id !== input.agentId) {
+      throw new ValidationError('Template pertenece a otro agente')
+    }
 
     // Use fromPersistence (no re-validation): archive only flips `active` —
     // block data is unchanged, so the template should remain archivable even

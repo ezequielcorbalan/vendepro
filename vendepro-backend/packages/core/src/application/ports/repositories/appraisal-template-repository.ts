@@ -2,7 +2,7 @@ import type { AppraisalTemplate, AppraisalTemplateKind } from '../../../domain/e
 
 export interface AppraisalTemplateRepository {
   findById(id: string): Promise<AppraisalTemplate | null>
-  listVisibleTo(orgId: string, filters?: { kind?: AppraisalTemplateKind; onlyActive?: boolean }): Promise<AppraisalTemplate[]>
+  listVisibleTo(orgId: string, filters?: { kind?: AppraisalTemplateKind; onlyActive?: boolean; agentId?: string }): Promise<AppraisalTemplate[]>
   save(template: AppraisalTemplate): Promise<void>
   countUsingTemplate(templateId: string): Promise<number>
 }

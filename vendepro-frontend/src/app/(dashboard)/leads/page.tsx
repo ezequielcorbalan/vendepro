@@ -16,6 +16,7 @@ import type { Lead, Contact } from '@/lib/types'
 import { useToast } from '@/components/ui/Toast'
 import AIChatPanel from '@/components/ai/AIChatPanel'
 import { apiFetch } from '@/lib/api'
+import { scopeQueryString } from '@/lib/agent-scope'
 import { pushFromApiResponse } from '@/components/marketing/dataLayer'
 import { DndContext, DragOverlay, useDraggable, useDroppable, type DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 
@@ -71,7 +72,8 @@ export default function LeadsPage() {
   })
 
   const loadLeads = () => {
-    apiFetch('crm', '/leads')
+    const scope = scopeQueryString()
+    apiFetch('crm', `/leads${scope}`)
       .then(r => r.json() as Promise<any>)
       .then(d => { setLeads(Array.isArray(d) ? d : []); setLoading(false) })
       .catch(() => setLoading(false))

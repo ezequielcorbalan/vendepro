@@ -5,6 +5,7 @@ export interface ListAppraisalTemplatesInput {
   orgId: string
   kind?: AppraisalTemplateKind
   onlyActive?: boolean
+  agentId?: string
 }
 
 export class ListAppraisalTemplatesUseCase {
@@ -14,6 +15,7 @@ export class ListAppraisalTemplatesUseCase {
     const list = await this.repo.listVisibleTo(input.orgId, {
       kind: input.kind,
       onlyActive: input.onlyActive,
+      agentId: input.agentId,
     })
     return list.map(t => t.toObject())
   }

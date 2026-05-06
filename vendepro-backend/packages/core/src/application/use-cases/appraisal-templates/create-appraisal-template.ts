@@ -6,6 +6,7 @@ import type { IdGenerator } from '../../ports/id-generator'
 
 export interface CreateAppraisalTemplateInput {
   orgId: string
+  agentId?: string | null
   name: string
   kind: AppraisalTemplateKind
   description?: string | null
@@ -24,6 +25,7 @@ export class CreateAppraisalTemplateUseCase {
     const tpl = AppraisalTemplate.create({
       id,
       org_id: input.orgId,
+      agent_id: input.agentId ?? null,
       kind: input.kind,
       name: input.name,
       description: input.description ?? null,

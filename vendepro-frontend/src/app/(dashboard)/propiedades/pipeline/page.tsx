@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { DollarSign, MapPin, ArrowRight, LayoutGrid, Table2, Archive } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
+import { scopeQueryString } from '@/lib/agent-scope'
 import { useToast } from '@/components/ui/Toast'
 import { PROPERTY_STAGES, type PropertyStage } from '@/lib/crm-config'
 import { formatCurrency } from '@/lib/utils'
@@ -34,7 +35,8 @@ export default function PipelinePage() {
   }, [])
 
   function loadProperties() {
-    apiFetch('properties', '/properties')
+    const scope = scopeQueryString()
+    apiFetch('properties', `/properties${scope}`)
       .then(r => r.json() as Promise<any>)
       .then(d => { setProperties(Array.isArray(d) ? d : (d.properties || [])); setLoading(false) })
       .catch(() => setLoading(false))

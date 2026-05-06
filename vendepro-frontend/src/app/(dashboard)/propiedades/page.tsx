@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Building2, Plus, Loader2 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
+import { scopeQueryString } from '@/lib/agent-scope'
 import { fetchPropertyConfig } from '@/lib/property-config'
 import type { PropertyConfig } from '@/lib/property-config'
 import PropertyFilters from '@/components/properties/PropertyFilters'
@@ -18,7 +19,7 @@ export default function PropiedadesPage() {
     const load = (initial: boolean) => {
       if (initial) setLoading(true)
       Promise.all([
-        apiFetch('properties', '/properties').then(r => r.json() as Promise<any>),
+        apiFetch('properties', `/properties${scopeQueryString()}`).then(r => r.json() as Promise<any>),
         fetchPropertyConfig(),
       ])
         .then(([d, cfg]) => {

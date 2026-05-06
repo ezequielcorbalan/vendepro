@@ -7,6 +7,7 @@ export type AppraisalTemplateKind = typeof APPRAISAL_TEMPLATE_KINDS[number]
 export interface AppraisalTemplateProps {
   id: string
   org_id: string | null
+  agent_id: string | null
   kind: AppraisalTemplateKind
   name: string
   description: string | null
@@ -23,7 +24,7 @@ export interface AppraisalTemplateProps {
 export class AppraisalTemplate {
   private constructor(private readonly props: AppraisalTemplateProps) {}
 
-  static create(input: Omit<AppraisalTemplateProps, 'created_at' | 'updated_at'> & { created_at?: string; updated_at?: string }): AppraisalTemplate {
+  static create(input: Omit<AppraisalTemplateProps, 'created_at' | 'updated_at' | 'agent_id'> & { created_at?: string; updated_at?: string; agent_id?: string | null }): AppraisalTemplate {
     if (!input.name || input.name.trim().length < 2) throw new ValidationError('name es requerido (mín 2 chars)')
     if (!(APPRAISAL_TEMPLATE_KINDS as readonly string[]).includes(input.kind)) {
       throw new ValidationError(`kind inválido: "${input.kind}"`)
@@ -33,7 +34,7 @@ export class AppraisalTemplate {
 
     const now = new Date().toISOString()
     return new AppraisalTemplate({
-      ...input, blocks: v.data,
+      ...input, agent_id: input.agent_id ?? null, blocks: v.data,
       created_at: input.created_at ?? now, updated_at: input.updated_at ?? now,
     })
   }
@@ -42,6 +43,7 @@ export class AppraisalTemplate {
 
   get id() { return this.props.id }
   get org_id() { return this.props.org_id }
+  get agent_id() { return this.props.agent_id }
   get kind() { return this.props.kind }
   get name() { return this.props.name }
   get description() { return this.props.description }
@@ -56,10 +58,11 @@ export class AppraisalTemplate {
 
   isGlobal(): boolean { return this.props.org_id === null }
   isSystem(): boolean { return this.props.is_system }
+  isAgentTemplate(): boolean { return this.props.agent_id !== null }
 
-  duplicateFor(orgId: string, newId: string, newName?: string): AppraisalTemplate {
+  duplicateFor(orgId: string, newId: string, newName?: string, agentId?: string | null): AppraisalTemplate {
     return AppraisalTemplate.create({
-      id: newId, org_id: orgId, kind: this.props.kind,
+      id: newId, org_id: orgId, agent_id: agentId ?? null, kind: this.props.kind,
       name: newName ?? `${this.props.name} (copia)`,
       description: this.props.description, preview_image_url: this.props.preview_image_url,
       blocks: this.props.blocks.map(b => ({ ...b, data: structuredClone(b.data) })),

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Plus, ClipboardList, MapPin, ExternalLink, Pencil, Trash2, Database, Download, Loader2 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
+import { scopeQueryString } from '@/lib/agent-scope'
 import { useToast } from '@/components/ui/Toast'
 import { formatDate } from '@/lib/utils'
 import { generatePdf } from '@/components/tasaciones/shared/api'
@@ -21,7 +22,8 @@ export default function TasacionesPage() {
   const [pdfLoading, setPdfLoading] = useState<Set<string>>(new Set())
 
   function loadAppraisals() {
-    apiFetch('properties', '/appraisals')
+    const scope = scopeQueryString()
+    apiFetch('properties', `/appraisals${scope}`)
       .then(r => r.json() as Promise<any>)
       .then(d => { setAppraisals(Array.isArray(d) ? d : (d.appraisals || [])); setLoading(false) })
       .catch(() => setLoading(false))
