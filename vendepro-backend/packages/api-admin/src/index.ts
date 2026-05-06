@@ -199,7 +199,9 @@ app.get('/appraisal-templates', async (c) => {
   const uc = new ListAppraisalTemplatesUseCase(new D1AppraisalTemplateRepository(c.env.DB))
   const kind = c.req.query('kind') as any
   const onlyActive = c.req.query('active') === '1'
-  const list = await uc.execute({ orgId: c.get('orgId'), kind, onlyActive })
+  // Agents only see system + org + own templates; admins see all
+  const agentId = c.get('userRole') !== 'admin' ? c.get('userId') : undefined
+  const list = await uc.execute({ orgId: c.get('orgId'), kind, onlyActive, agentId })
   return c.json(list)
 })
 
@@ -216,8 +218,11 @@ app.post('/appraisal-templates', async (c) => {
     new D1AppraisalTemplateRepository(c.env.DB),
     new CryptoIdGenerator(),
   )
+  // Non-admins create agent-level templates; admins create org-level
+  const agentId = c.get('userRole') !== 'admin' ? c.get('userId') : null
   const r = await uc.execute({
     orgId: c.get('orgId'),
+    agentId,
     name: body.name,
     kind: body.kind,
     description: body.description ?? null,
@@ -230,7 +235,7 @@ app.post('/appraisal-templates', async (c) => {
 app.put('/appraisal-templates/:id', async (c) => {
   const body = (await c.req.json()) as any
   const uc = new UpdateAppraisalTemplateUseCase(new D1AppraisalTemplateRepository(c.env.DB))
-  const r = await uc.execute({ id: c.req.param('id'), orgId: c.get('orgId'), ...body })
+  const r = await uc.execute({ id: c.req.param('id'), orgId: c.get('orgId'), agentId: c.get('userId'), role: c.get('userRole'), ...body })
   return c.json(r)
 })
 
@@ -240,17 +245,20 @@ app.post('/appraisal-templates/:id/duplicate', async (c) => {
     new D1AppraisalTemplateRepository(c.env.DB),
     new CryptoIdGenerator(),
   )
+  // Non-admins duplicate as agent templates; admins as org-level
+  const agentId = c.get('userRole') !== 'admin' ? c.get('userId') : null
   const r = await uc.execute({
     sourceId: c.req.param('id'),
     orgId: c.get('orgId'),
     newName: body.new_name,
+    agentId,
   })
   return c.json(r, 201)
 })
 
 app.delete('/appraisal-templates/:id', async (c) => {
   const uc = new ArchiveAppraisalTemplateUseCase(new D1AppraisalTemplateRepository(c.env.DB))
-  const r = await uc.execute({ id: c.req.param('id'), orgId: c.get('orgId') })
+  const r = await uc.execute({ id: c.req.param('id'), orgId: c.get('orgId'), agentId: c.get('userId'), role: c.get('userRole') })
   return c.json(r)
 })
 

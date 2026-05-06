@@ -6,6 +6,8 @@ import type { AppraisalTemplateBlock } from '../../../domain/value-objects/appra
 export interface UpdateAppraisalTemplateInput {
   id: string
   orgId: string
+  agentId?: string
+  role?: string
   name?: string
   description?: string | null
   preview_image_url?: string | null
@@ -22,11 +24,16 @@ export class UpdateAppraisalTemplateUseCase {
     if (!current) throw new ValidationError('Template no encontrado')
     if (current.isSystem()) throw new ValidationError('No se puede editar un template del sistema directamente — duplicarlo primero')
     if (current.org_id !== input.orgId) throw new ValidationError('Template pertenece a otra org')
+    // Agent can only edit their own agent templates
+    if (current.agent_id && input.role !== 'admin' && current.agent_id !== input.agentId) {
+      throw new ValidationError('Template pertenece a otro agente')
+    }
 
     const cur = current.toObject()
     const next = AppraisalTemplate.create({
       id: cur.id,
       org_id: cur.org_id,
+      agent_id: cur.agent_id,
       kind: cur.kind,
       name: input.name ?? cur.name,
       description: input.description !== undefined ? input.description : cur.description,
