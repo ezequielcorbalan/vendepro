@@ -1,15 +1,16 @@
 import { ValidationError } from '../errors/validation-error'
 
-export const PROPERTY_STAGES = ['captada', 'documentacion', 'publicada', 'reservada', 'vendida', 'vencida'] as const
+export const PROPERTY_STAGES = ['captacion', 'publicada', 'con_ofertas', 'reservada', 'vendida', 'suspendida', 'perdida'] as const
 export type PropertyStageValue = typeof PROPERTY_STAGES[number]
 
 const VALID_TRANSITIONS: Record<PropertyStageValue, PropertyStageValue[]> = {
-  captada:       ['documentacion', 'vencida'],
-  documentacion: ['publicada', 'vencida'],
-  publicada:     ['reservada', 'vencida'],
-  reservada:     ['vendida', 'publicada'],
-  vendida:       [],
-  vencida:       [],
+  captacion:   ['publicada', 'suspendida', 'perdida'],
+  publicada:   ['con_ofertas', 'reservada', 'suspendida', 'perdida'],
+  con_ofertas: ['reservada', 'publicada', 'suspendida', 'perdida'],
+  reservada:   ['vendida', 'publicada', 'suspendida', 'perdida'],
+  vendida:     [],
+  suspendida:  ['captacion', 'publicada'],
+  perdida:     [],
 }
 
 export class PropertyStage {

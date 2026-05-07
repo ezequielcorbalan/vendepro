@@ -13,20 +13,28 @@ import DocChecklistWidget from '@/components/properties/DocChecklistWidget'
 import ReportsListWidget from '@/components/properties/ReportsListWidget'
 
 const stageLabel: Record<string, string> = {
-  captada: 'Captada',
+  captacion: 'Captación',
   publicada: 'Publicada',
+  con_ofertas: 'Con ofertas',
   reservada: 'Reservada',
   vendida: 'Vendida',
   suspendida: 'Suspendida',
+  perdida: 'Perdida',
+  // Legacy
+  captada: 'Captada',
   archivada: 'Archivada',
   documentacion: 'En documentación',
 }
 const stageColor: Record<string, string> = {
-  captada: 'bg-green-100 text-green-700',
+  captacion: 'bg-green-100 text-green-700',
   publicada: 'bg-blue-100 text-blue-700',
+  con_ofertas: 'bg-violet-100 text-violet-700',
   reservada: 'bg-purple-100 text-purple-700',
   vendida: 'bg-emerald-100 text-emerald-700',
   suspendida: 'bg-orange-100 text-orange-700',
+  perdida: 'bg-red-100 text-red-700',
+  // Legacy
+  captada: 'bg-green-100 text-green-700',
   archivada: 'bg-gray-100 text-gray-500',
   documentacion: 'bg-amber-100 text-amber-700',
 }
@@ -91,7 +99,7 @@ export default function PropiedadDetailPage() {
     )
   }
 
-  const stage = property.commercial_stage || 'captada'
+  const stage = property.commercial_stage || 'captacion'
 
   return (
     <div>

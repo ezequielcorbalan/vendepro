@@ -40,13 +40,17 @@ export function getPipelineForTag(tagName: string | null): LeadStage[] {
 }
 
 export const PROPERTY_STAGES = {
-  captada:       { label: 'Captada',        color: 'bg-green-100 text-green-800',     order: 1 },
+  captacion:     { label: 'Captación',      color: 'bg-green-100 text-green-800',     order: 1 },
   publicada:     { label: 'Publicada',      color: 'bg-blue-100 text-blue-800',       order: 2 },
-  reservada:     { label: 'Reservada',      color: 'bg-purple-100 text-purple-800',   order: 3 },
-  suspendida:    { label: 'Suspendida',     color: 'bg-orange-100 text-orange-800',   order: 4 },
+  con_ofertas:   { label: 'Con ofertas',    color: 'bg-violet-100 text-violet-800',   order: 3 },
+  reservada:     { label: 'Reservada',      color: 'bg-purple-100 text-purple-800',   order: 4 },
   vendida:       { label: 'Vendida',        color: 'bg-emerald-100 text-emerald-800', order: 5 },
-  vencida:       { label: 'Vencida',        color: 'bg-red-100 text-red-800',         order: 6 },
+  suspendida:    { label: 'Suspendida',     color: 'bg-orange-100 text-orange-800',   order: 6 },
+  perdida:       { label: 'Perdida',        color: 'bg-red-100 text-red-800',         order: 7 },
+  // Legacy slugs — backward compat for old data
+  captada:       { label: 'Captada',        color: 'bg-green-100 text-green-800',     order: 1 },
   archivada:     { label: 'Archivada',      color: 'bg-gray-100 text-gray-500',       order: 7 },
+  vencida:       { label: 'Vencida',        color: 'bg-red-100 text-red-800',         order: 7 },
   documentacion: { label: 'Documentación',  color: 'bg-amber-100 text-amber-800',     order: 99 },
 } as const
 
