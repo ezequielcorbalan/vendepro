@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -95,6 +95,7 @@ export default function NuevaFichaPage() {
   const prefillNeighborhood = searchParams.get('neighborhood') || ''
 
   const [saving, setSaving] = useState(false)
+  const [leadLoading, setLeadLoading] = useState(!!leadId && !prefillAddress)
 
   const [f, setF] = useState({
     inspection_date: new Date().toISOString().split('T')[0],
@@ -143,6 +144,23 @@ export default function NuevaFichaPage() {
   })
 
   const u = (field: string, value: any) => setF(prev => ({ ...prev, [field]: value }))
+
+  useEffect(() => {
+    if (!leadId || prefillAddress) return
+    apiFetch('crm', `/leads?id=${leadId}`)
+      .then(r => r.json() as Promise<any>)
+      .then(data => {
+        const l = Array.isArray(data) ? data[0] : data
+        if (!l) return
+        setF(prev => ({
+          ...prev,
+          address: prev.address || l.property_address || '',
+          neighborhood: prev.neighborhood || l.neighborhood || '',
+        }))
+      })
+      .catch(() => {})
+      .finally(() => setLeadLoading(false))
+  }, [leadId])
 
   async function handleSave() {
     if (!f.address.trim()) {
@@ -240,11 +258,14 @@ export default function NuevaFichaPage() {
           </div>
           <div>
             <label className={labelClass}>Dirección *</label>
-            <input className={inputClass} value={f.address} onChange={e => u('address', e.target.value)} placeholder="Av. Triunvirato 4500, 8°B" />
+            <div className="relative">
+              <input className={inputClass} value={f.address} onChange={e => u('address', e.target.value)} placeholder={leadLoading ? 'Cargando datos del lead...' : 'Av. Triunvirato 4500, 8°B'} />
+              {leadLoading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 animate-spin" />}
+            </div>
           </div>
           <div>
             <label className={labelClass}>Barrio</label>
-            <input className={inputClass} value={f.neighborhood} onChange={e => u('neighborhood', e.target.value)} placeholder="Villa Urquiza" />
+            <input className={inputClass} value={f.neighborhood} onChange={e => u('neighborhood', e.target.value)} placeholder={leadLoading ? 'Cargando...' : 'Villa Urquiza'} />
           </div>
           <RadioGroup label="Tipología" value={f.property_type} onChange={v => u('property_type', v)}
             options={[

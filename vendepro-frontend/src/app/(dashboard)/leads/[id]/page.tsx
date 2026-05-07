@@ -202,10 +202,18 @@ export default function LeadDetailPage() {
 
   if (loading) {
     return (
-      <div className="space-y-4 animate-pulse">
-        <div className="h-8 w-48 bg-gray-200 rounded" />
-        <div className="h-32 bg-gray-200 rounded-xl" />
-        <div className="h-48 bg-gray-200 rounded-xl" />
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="h-8 w-48 bg-gray-200 rounded animate-pulse" />
+          <button
+            onClick={() => router.push(`/fichas/nueva?lead_id=${leadId}`)}
+            className="flex items-center gap-1.5 border border-[#ff8017] text-[#ff8017] px-3 py-1.5 rounded-lg text-sm hover:bg-orange-50 font-medium"
+          >
+            <FileText className="w-3.5 h-3.5" /> Ficha de tasación
+          </button>
+        </div>
+        <div className="h-32 bg-gray-200 rounded-xl animate-pulse" />
+        <div className="h-48 bg-gray-200 rounded-xl animate-pulse" />
       </div>
     )
   }
@@ -716,7 +724,7 @@ export default function LeadDetailPage() {
                   href={`/fichas/${ficha.id}`}
                   className="text-xs text-[#ff007c] hover:underline font-medium px-2 py-1 shrink-0"
                 >
-                  Ver
+                  Editar
                 </Link>
               </div>
             ))}
