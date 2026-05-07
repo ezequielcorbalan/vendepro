@@ -7,7 +7,7 @@ export type LeadStageValue = typeof LEAD_STAGES[number]
 const VALID_TRANSITIONS: Record<LeadStageValue, LeadStageValue[]> = {
   nuevo:       ['asignado', 'contactado', 'perdido'],
   asignado:    ['contactado', 'perdido'],
-  contactado:  ['calificado', 'seguimiento', 'perdido'],
+  contactado:  ['calificado', 'en_tasacion', 'seguimiento', 'perdido'],
   calificado:  ['en_tasacion', 'seguimiento', 'perdido'],
   en_tasacion: ['presentada', 'seguimiento', 'perdido'],
   presentada:  ['seguimiento', 'captado', 'perdido'],
