@@ -61,13 +61,13 @@ export class GetAgentStatsUseCase {
       leadCaptacion: total > 0 ? Math.round((captados / total) * 100) : 0,
     }
 
-    // Pragmatic: count property statuses in JS (avoids adding countByAgentAndStatus port method).
-    // Cast to string since legacy DB may store 'captada'/'publicada' etc (different from PropertyStatus type).
+    // Count properties by commercial_stage — support both legacy and current slugs.
+    const cs = (p: any) => (p.commercial_stage ?? p.status ?? '') as string
     const propertyStats = {
-      captadas: allProperties.filter(p => (p.status as string) === 'captada').length,
-      publicadas: allProperties.filter(p => (p.status as string) === 'publicada').length,
-      reservadas: allProperties.filter(p => (p.status as string) === 'reservada').length,
-      vendidas: allProperties.filter(p => (p.status as string) === 'vendida').length,
+      captadas: allProperties.filter(p => cs(p) === 'captacion' || cs(p) === 'captada').length,
+      publicadas: allProperties.filter(p => cs(p) === 'publicada').length,
+      reservadas: allProperties.filter(p => cs(p) === 'reservada').length,
+      vendidas: allProperties.filter(p => cs(p) === 'vendida').length,
     }
 
     return {

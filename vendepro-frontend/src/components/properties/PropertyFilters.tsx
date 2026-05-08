@@ -110,7 +110,7 @@ export default function PropertyFilters({ properties, config }: { properties: an
   }).length
 
   // Etapas de seguimiento con propiedades (captada, publicada, reservada de cualquier tipo)
-  const followUpSlugs = new Set(['captada', 'publicada', 'reservada'])
+  const followUpSlugs = new Set(['captacion', 'captada', 'publicada', 'con_ofertas', 'reservada'])
   const visibleStageIds = config.commercial_stages
     .filter(s => followUpSlugs.has(s.slug) && (stageCounts[s.id] || 0) > 0)
     .map(s => s.id)

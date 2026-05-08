@@ -4,7 +4,7 @@ import { ValidationError } from '../../src/domain/errors/validation-error'
 
 describe('PropertyStage value object', () => {
   it('exposes the canonical PROPERTY_STAGES list', () => {
-    expect(PROPERTY_STAGES).toEqual(['captada', 'documentacion', 'publicada', 'reservada', 'vendida', 'vencida'])
+    expect(PROPERTY_STAGES).toEqual(['captacion', 'publicada', 'con_ofertas', 'reservada', 'vendida', 'suspendida', 'perdida'])
   })
 
   it.each(PROPERTY_STAGES)('creates valid stage "%s"', (value) => {
@@ -16,24 +16,24 @@ describe('PropertyStage value object', () => {
     expect(() => PropertyStage.create('invalid')).toThrow(ValidationError)
   })
 
-  it('allows captada -> documentacion', () => {
-    expect(PropertyStage.create('captada').canTransitionTo('documentacion')).toBe(true)
+  it('allows captacion -> publicada', () => {
+    expect(PropertyStage.create('captacion').canTransitionTo('publicada')).toBe(true)
   })
 
-  it('allows captada -> vencida', () => {
-    expect(PropertyStage.create('captada').canTransitionTo('vencida')).toBe(true)
+  it('allows captacion -> suspendida', () => {
+    expect(PropertyStage.create('captacion').canTransitionTo('suspendida')).toBe(true)
   })
 
-  it('blocks captada -> publicada', () => {
-    expect(PropertyStage.create('captada').canTransitionTo('publicada')).toBe(false)
-  })
-
-  it('allows documentacion -> publicada', () => {
-    expect(PropertyStage.create('documentacion').canTransitionTo('publicada')).toBe(true)
+  it('allows publicada -> con_ofertas', () => {
+    expect(PropertyStage.create('publicada').canTransitionTo('con_ofertas')).toBe(true)
   })
 
   it('allows publicada -> reservada', () => {
     expect(PropertyStage.create('publicada').canTransitionTo('reservada')).toBe(true)
+  })
+
+  it('allows con_ofertas -> reservada', () => {
+    expect(PropertyStage.create('con_ofertas').canTransitionTo('reservada')).toBe(true)
   })
 
   it('allows reservada -> vendida', () => {
@@ -44,30 +44,34 @@ describe('PropertyStage value object', () => {
     expect(PropertyStage.create('reservada').canTransitionTo('publicada')).toBe(true)
   })
 
+  it('allows suspendida -> captacion (reactivate)', () => {
+    expect(PropertyStage.create('suspendida').canTransitionTo('captacion')).toBe(true)
+  })
+
   it('vendida is terminal', () => {
     const s = PropertyStage.create('vendida')
     expect(s.canTransitionTo('publicada')).toBe(false)
-    expect(s.canTransitionTo('vencida')).toBe(false)
+    expect(s.canTransitionTo('suspendida')).toBe(false)
   })
 
-  it('vencida is terminal', () => {
-    const s = PropertyStage.create('vencida')
+  it('perdida is terminal', () => {
+    const s = PropertyStage.create('perdida')
     expect(s.canTransitionTo('publicada')).toBe(false)
-    expect(s.canTransitionTo('captada')).toBe(false)
+    expect(s.canTransitionTo('captacion')).toBe(false)
   })
 
   it('transitionTo returns a new PropertyStage', () => {
-    const s = PropertyStage.create('captada')
-    const next = s.transitionTo('documentacion')
-    expect(next.value).toBe('documentacion')
+    const s = PropertyStage.create('captacion')
+    const next = s.transitionTo('publicada')
+    expect(next.value).toBe('publicada')
   })
 
   it('transitionTo throws on invalid transition', () => {
-    const s = PropertyStage.create('captada')
+    const s = PropertyStage.create('captacion')
     expect(() => s.transitionTo('vendida')).toThrow(ValidationError)
   })
 
   it('toString returns the value', () => {
-    expect(PropertyStage.create('captada').toString()).toBe('captada')
+    expect(PropertyStage.create('captacion').toString()).toBe('captacion')
   })
 })

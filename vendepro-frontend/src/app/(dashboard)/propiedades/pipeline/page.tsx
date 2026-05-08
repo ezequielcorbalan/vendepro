@@ -9,9 +9,9 @@ import { useToast } from '@/components/ui/Toast'
 import { PROPERTY_STAGES, type PropertyStage } from '@/lib/crm-config'
 import { formatCurrency } from '@/lib/utils'
 
-// Progresión lineal del pipeline — captada → publicada → reservada → vendida
-const MAIN_STAGES: PropertyStage[] = ['captada', 'publicada', 'reservada', 'vendida']
-// Suspendida aparece aparte — solo se puede archivar, no avanzar
+// Progresión lineal del pipeline — captacion → publicada → con_ofertas → reservada → vendida
+const MAIN_STAGES: PropertyStage[] = ['captacion', 'publicada', 'con_ofertas', 'reservada', 'vendida']
+// Suspendida aparece aparte — solo se puede suspender, no avanzar
 const ALL_PIPELINE_STAGES: PropertyStage[] = [...MAIN_STAGES, 'suspendida']
 // Días sin cambio para mostrar alerta de archivo
 const ARCHIVE_WARN_DAYS = 30
@@ -75,13 +75,13 @@ export default function PipelinePage() {
   }
 
   async function archiveProperty(property: any) {
-    if (!confirm(`¿Archivar "${property.address}"? Se moverá a propiedades archivadas.`)) return
+    if (!confirm(`¿Suspender "${property.address}"? Se moverá a propiedades suspendidas.`)) return
     await apiFetch('properties', `/properties/${property.id}/stage`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ commercial_stage: 'archivada' }),
+      body: JSON.stringify({ commercial_stage: 'suspendida' }),
     })
-    toast(`${property.address} archivada`)
+    toast(`${property.address} suspendida`)
     loadProperties()
   }
 
@@ -156,9 +156,9 @@ export default function PipelinePage() {
         </div>
       ) : view === 'kanban' ? (
         <>
-          {/* Pipeline principal: captada → publicada → reservada → vendida */}
+          {/* Pipeline principal: captacion → publicada → con_ofertas → reservada → vendida */}
           <div className="overflow-x-auto -mx-2 px-2">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 min-w-[700px]">
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 min-w-[800px]">
               {MAIN_STAGES.map(stage => {
                 const stageCfg = PROPERTY_STAGES[stage]
                 const stageProps = byStage[stage] || []
