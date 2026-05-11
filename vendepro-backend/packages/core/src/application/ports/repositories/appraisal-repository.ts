@@ -1,4 +1,4 @@
-import type { Appraisal, AppraisalComparableProps } from '../../../domain/entities/appraisal'
+import type { Appraisal, AppraisalComparableKind, AppraisalComparableProps } from '../../../domain/entities/appraisal'
 
 export interface AppraisalFilters {
   stage?: string
@@ -13,6 +13,7 @@ export interface AppraisalPublicResult {
 export interface NewAppraisalComparable {
   id: string
   appraisal_id: string
+  kind: AppraisalComparableKind
   zonaprop_url: string | null
   address: string | null
   total_area: number | null
@@ -22,6 +23,9 @@ export interface NewAppraisalComparable {
   days_on_market: number | null
   views_per_day: number | null
   age: number | null
+  closing_price_usd: number | null
+  closed_at: string | null
+  source_sold_property_id: string | null
   sort_order: number
 }
 

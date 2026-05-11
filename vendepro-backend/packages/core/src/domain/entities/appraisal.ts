@@ -2,9 +2,17 @@ import { ValidationError } from '../errors/validation-error'
 
 export type AppraisalStatus = 'draft' | 'generated' | 'sent'
 
+export type AppraisalComparableKind = 'publicacion' | 'venta'
+
 export interface AppraisalComparableProps {
   id: string
   appraisal_id: string
+  /**
+   * 'publicacion' = comparable de mercado (publicación activa, precio de listado).
+   * 'venta'       = comparable de cierre real (precio efectivo de venta).
+   * Default histórico: 'publicacion' (filas previas a la migración 026).
+   */
+  kind: AppraisalComparableKind
   zonaprop_url: string | null
   address: string | null
   total_area: number | null
@@ -14,6 +22,12 @@ export interface AppraisalComparableProps {
   days_on_market: number | null
   views_per_day: number | null
   age: number | null
+  /** Solo aplica a kind='venta' — precio efectivo de cierre en USD. */
+  closing_price_usd: number | null
+  /** Solo aplica a kind='venta' — fecha del cierre (ISO). */
+  closed_at: string | null
+  /** Solo aplica a kind='venta' — id de sold_properties si vino de autorrelleno. */
+  source_sold_property_id: string | null
   sort_order: number
 }
 

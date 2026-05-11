@@ -191,15 +191,24 @@ export class D1AppraisalRepository implements AppraisalRepository {
   async addComparable(comparable: NewAppraisalComparable): Promise<void> {
     await this.db
       .prepare(
-        `INSERT INTO appraisal_comparables (id, appraisal_id, zonaprop_url, address, total_area, covered_area, price, usd_per_m2, days_on_market, views_per_day, age, sort_order)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+        `INSERT INTO appraisal_comparables (
+           id, appraisal_id, kind,
+           zonaprop_url, address,
+           total_area, covered_area,
+           price, usd_per_m2,
+           days_on_market, views_per_day, age,
+           closing_price_usd, closed_at, source_sold_property_id,
+           sort_order
+         )
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       )
       .bind(
-        comparable.id, comparable.appraisal_id,
+        comparable.id, comparable.appraisal_id, comparable.kind ?? 'publicacion',
         comparable.zonaprop_url ?? null, comparable.address ?? null,
         comparable.total_area ?? null, comparable.covered_area ?? null,
         comparable.price ?? null, comparable.usd_per_m2 ?? null,
         comparable.days_on_market ?? null, comparable.views_per_day ?? null, comparable.age ?? null,
+        comparable.closing_price_usd ?? null, comparable.closed_at ?? null, comparable.source_sold_property_id ?? null,
         comparable.sort_order ?? 0,
       )
       .run()
@@ -208,6 +217,7 @@ export class D1AppraisalRepository implements AppraisalRepository {
   async updateComparable(
     comparableId: string,
     patch: Partial<{
+      kind: 'publicacion' | 'venta'
       zonaprop_url: string | null
       address: string | null
       total_area: number | null
@@ -217,13 +227,24 @@ export class D1AppraisalRepository implements AppraisalRepository {
       days_on_market: number | null
       views_per_day: number | null
       age: number | null
+      closing_price_usd: number | null
+      closed_at: string | null
+      source_sold_property_id: string | null
       sort_order: number
     }>,
   ): Promise<void> {
     // Build dynamic UPDATE solo con los campos presentes en el patch.
     const fields: string[] = []
     const binds: unknown[] = []
-    const allowed = ['zonaprop_url','address','total_area','covered_area','price','usd_per_m2','days_on_market','views_per_day','age','sort_order'] as const
+    const allowed = [
+      'kind',
+      'zonaprop_url','address',
+      'total_area','covered_area',
+      'price','usd_per_m2',
+      'days_on_market','views_per_day','age',
+      'closing_price_usd','closed_at','source_sold_property_id',
+      'sort_order',
+    ] as const
     for (const k of allowed) {
       if (k in patch) {
         fields.push(`${k} = ?`)
@@ -326,6 +347,7 @@ export class D1AppraisalRepository implements AppraisalRepository {
     return rows.map((r) => ({
       id: r.id,
       appraisal_id: r.appraisal_id,
+      kind: (r.kind === 'venta' ? 'venta' : 'publicacion') as 'publicacion' | 'venta',
       zonaprop_url: r.zonaprop_url ?? null,
       address: r.address ?? null,
       total_area: r.total_area ?? null,
@@ -335,6 +357,9 @@ export class D1AppraisalRepository implements AppraisalRepository {
       days_on_market: r.days_on_market ?? null,
       views_per_day: r.views_per_day ?? null,
       age: r.age ?? null,
+      closing_price_usd: r.closing_price_usd ?? null,
+      closed_at: r.closed_at ?? null,
+      source_sold_property_id: r.source_sold_property_id ?? null,
       sort_order: r.sort_order ?? 0,
     }))
   }
