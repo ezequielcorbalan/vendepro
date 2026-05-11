@@ -1,6 +1,8 @@
 'use client'
 import { Suspense } from 'react'
+import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
+import { ArrowLeft } from 'lucide-react'
 import { TemplatesHome } from '@/components/tasaciones/admin/TemplatesHome'
 import { VariablesHome } from '@/components/tasaciones/admin/VariablesHome'
 import { OrgConfigForm } from '@/components/tasaciones/admin/OrgConfigForm'
@@ -19,11 +21,18 @@ function ConfigTasacionInner() {
   const isAdmin = user?.role === 'admin'
 
   // Filter tabs by role — agents only see Templates
-  const visibleTabs = ALL_TABS.filter(t => t.roles.includes(user?.role || 'agent'))
+  const userRole = user?.role || 'agent'
+  const visibleTabs = ALL_TABS.filter(t => (t.roles as readonly string[]).includes(userRole))
   const active = (qp.get('tab') ?? 'templates') as typeof ALL_TABS[number]['key']
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 md:px-8 md:py-10">
+      <Link
+        href="/configuracion"
+        className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 mb-6"
+      >
+        <ArrowLeft className="w-4 h-4" /> Volver a Configuración
+      </Link>
       <h1 className="text-2xl font-bold">
         {isAdmin ? 'Configuración · Tasaciones' : 'Mis plantillas de tasación'}
       </h1>

@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { Target, Plus, Trash2, Save, Users, ChevronDown, ChevronUp, Loader2, Zap, DollarSign } from 'lucide-react'
+import Link from 'next/link'
+import { Target, Plus, Trash2, Save, Users, ChevronDown, ChevronUp, Loader2, Zap, DollarSign, ArrowLeft } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import { OBJECTIVE_METRICS, OBJECTIVE_TEMPLATES, scaleMetrics, type ObjectiveMetric, type ObjectiveTemplate } from '@/lib/crm-config'
 import { apiFetch } from '@/lib/api'
@@ -210,6 +211,12 @@ export default function ObjetivosConfigPage() {
 
   return (
     <div className="space-y-6">
+      <Link
+        href="/configuracion"
+        className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800"
+      >
+        <ArrowLeft className="w-4 h-4" /> Volver a Configuración
+      </Link>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 flex items-center gap-2">

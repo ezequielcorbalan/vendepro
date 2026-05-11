@@ -4,7 +4,13 @@ import { Loader2 } from 'lucide-react'
 import type { WizardState } from '../use-wizard-form'
 import { getTemplate, listVariables } from '../../shared/api'
 import { TemplateRenderer } from '../../renderer/TemplateRenderer'
-import type { AppraisalContext, ResolvedVars, TemplateBlock } from '../../renderer/types'
+import {
+  APPRAISAL_BLOCK_TYPES,
+  type AppraisalBlockType,
+  type AppraisalContext,
+  type ResolvedVars,
+  type TemplateBlock,
+} from '../../renderer/types'
 
 function extractVarKeys(snapshot: TemplateBlock[]): string[] {
   const keys = new Set<string>()
@@ -23,8 +29,7 @@ interface Props {
   property: WizardState['property']
   details: WizardState['details']
   comparables: WizardState['comparables']
-  generatePublicSlug: boolean
-  onTogglePublicSlug: () => void
+  customBlocks: WizardState['customBlocks']
 }
 
 /** Build an AppraisalContext preview from the wizard data. */
@@ -66,15 +71,31 @@ function buildCtx(
   }
 }
 
-export function StepReview({ templateId, property, details, comparables, generatePublicSlug, onTogglePublicSlug }: Props) {
+export function StepReview({ templateId, property, details, comparables, customBlocks }: Props) {
   const [snapshot, setSnapshot] = useState<TemplateBlock[] | null>(null)
   const [variables, setVariables] = useState<Array<{ key: string; value: string; value_type: string }> | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Snapshot sintético cuando es "desde cero" con bloques elegidos.
+  const customSnapshot: TemplateBlock[] = useMemo(() => {
+    if (templateId) return []
+    const orderOf = (t: AppraisalBlockType) => APPRAISAL_BLOCK_TYPES.indexOf(t)
+    return [...customBlocks]
+      .sort((a, b) => orderOf(a.type) - orderOf(b.type))
+      .map((b, i) => ({
+        id: `custom-${b.type}`,
+        type: b.type,
+        binding_mode: 'tasacion' as const,
+        include_in_pdf: true,
+        sort_order: i,
+        data: b.data,
+      }))
+  }, [templateId, customBlocks])
+
   useEffect(() => {
     if (!templateId) {
-      setSnapshot([])
+      setSnapshot(customSnapshot)
       return
     }
     setLoading(true)
@@ -94,7 +115,7 @@ export function StepReview({ templateId, property, details, comparables, generat
     ])
       .catch(() => setError('No se pudo cargar la plantilla para la previsualización'))
       .finally(() => setLoading(false))
-  }, [templateId])
+  }, [templateId, customSnapshot])
 
   const resolvedVars: ResolvedVars = useMemo(() => {
     if (!snapshot || !variables) return {}
@@ -110,29 +131,12 @@ export function StepReview({ templateId, property, details, comparables, generat
 
   return (
     <div className="space-y-6">
-      {/* Public slug toggle */}
-      <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-5 py-4">
-        <div>
-          <p className="text-sm font-medium text-slate-800">Generar link público</p>
-          <p className="text-xs text-slate-500">
-            La tasación será accesible por un link único sin login.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={onTogglePublicSlug}
-          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none ${
-            generatePublicSlug ? 'bg-[#ff007c]' : 'bg-slate-200'
-          }`}
-          role="switch"
-          aria-checked={generatePublicSlug}
-        >
-          <span
-            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform ${
-              generatePublicSlug ? 'translate-x-5' : 'translate-x-0'
-            }`}
-          />
-        </button>
+      {/* Hint sobre las dos acciones del footer */}
+      <div className="rounded-xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-600">
+        Revisá la previsualización y elegí abajo:{' '}
+        <span className="font-medium text-slate-800">Guardar borrador</span> deja la tasación
+        privada (sólo accesible desde el editor); <span className="font-medium text-slate-800">Publicar</span>{' '}
+        además genera un link público para compartir con el propietario.
       </div>
 
       {/* Preview */}
@@ -159,7 +163,7 @@ export function StepReview({ templateId, property, details, comparables, generat
                 <p className="text-sm text-slate-500">
                   {templateId
                     ? 'La plantilla no tiene bloques configurados.'
-                    : 'Podrás agregar bloques desde el editor.'}
+                    : 'No elegiste ningún bloque. Podés agregarlos desde el editor más adelante.'}
                 </p>
               </div>
             ) : (

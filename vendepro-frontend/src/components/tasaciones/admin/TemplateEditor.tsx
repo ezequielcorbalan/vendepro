@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Plus, GripVertical, Loader2, CheckCircle2, Save, AlertCircle } from 'lucide-react'
+import { Plus, GripVertical, Loader2, CheckCircle2, Save, AlertCircle, ArrowLeft } from 'lucide-react'
 import { getTemplate, updateTemplate, duplicateTemplate } from '../shared/api'
 import { apiFetch } from '@/lib/api'
 import { TemplateRenderer } from '../renderer/TemplateRenderer'
@@ -147,7 +147,17 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3">
-        <h1 className="text-sm font-semibold">{template.name}</h1>
+        <div className="flex items-center gap-3 min-w-0">
+          <button
+            onClick={() => router.push('/configuracion/tasacion')}
+            className="text-slate-500 hover:text-slate-800"
+            aria-label="Volver a Configuración · Tasaciones"
+            title="Volver a Configuración · Tasaciones"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <h1 className="text-sm font-semibold truncate">{template.name}</h1>
+        </div>
         <div className="flex items-center gap-3 text-xs">
           {status === 'saving' && <span className="flex items-center gap-1 text-slate-500"><Loader2 className="h-3 w-3 animate-spin" /> Guardando...</span>}
           {status === 'saved' && !dirty && <span className="flex items-center gap-1 text-emerald-600"><CheckCircle2 className="h-3 w-3" /> Guardado</span>}

@@ -36,6 +36,12 @@ export interface CreateAppraisalInput {
   work_conditions?: AppraisalWorkConditionsBlock | null
   video_links?: string[] | null
   template_id?: string | null
+  /**
+   * Snapshot custom para tasaciones creadas "desde cero" (sin template_id).
+   * Se ignora si se pasa también template_id (el template manda).
+   * Cada item debe respetar la forma { id, type, binding_mode, include_in_pdf, sort_order, data }.
+   */
+  template_snapshot_json?: unknown
 }
 
 export class CreateAppraisalUseCase {
@@ -56,6 +62,27 @@ export class CreateAppraisalUseCase {
       if (tpl.org_id !== null && tpl.org_id !== input.org_id) throw new ValidationError('Template pertenece a otra org')
       template_snapshot_json = tpl.blocks
       template_synced_at = new Date().toISOString()
+    } else if (input.template_snapshot_json !== undefined && input.template_snapshot_json !== null) {
+      // Sin template — admitimos un snapshot construido por el cliente
+      // (flujo "empezar de cero" en el wizard).
+      const raw = input.template_snapshot_json
+      if (!Array.isArray(raw)) {
+        throw new ValidationError('template_snapshot_json debe ser un array de bloques')
+      }
+      const cleaned = raw.map((b: any, i: number) => {
+        if (!b || typeof b !== 'object') throw new ValidationError('Bloque inválido en template_snapshot_json')
+        if (typeof b.type !== 'string') throw new ValidationError('Cada bloque requiere `type`')
+        return {
+          id: typeof b.id === 'string' && b.id.length > 0 ? b.id : `custom-${b.type}-${i}`,
+          type: b.type,
+          binding_mode: typeof b.binding_mode === 'string' ? b.binding_mode : 'tasacion',
+          include_in_pdf: typeof b.include_in_pdf === 'boolean' ? b.include_in_pdf : true,
+          sort_order: typeof b.sort_order === 'number' ? b.sort_order : i,
+          data: b.data && typeof b.data === 'object' ? b.data : {},
+        }
+      })
+      template_snapshot_json = cleaned
+      // No usamos template_synced_at — no hay template del que sincronizar.
     }
 
     const appraisal = Appraisal.create({

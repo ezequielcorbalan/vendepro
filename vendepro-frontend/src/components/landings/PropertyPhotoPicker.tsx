@@ -5,8 +5,8 @@ import { apiFetch } from '@/lib/api'
 
 interface PropertyLite {
   id: string
-  title: string
   address: string
+  neighborhood?: string | null
 }
 
 interface Photo {
@@ -23,11 +23,20 @@ export default function PropertyPhotoPicker({
   const [properties, setProperties] = useState<PropertyLite[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [photos, setPhotos] = useState<Photo[]>([])
+  const [loadingProps, setLoadingProps] = useState(true)
+  const [loadingPhotos, setLoadingPhotos] = useState(false)
 
   useEffect(() => {
     apiFetch('properties', '/properties')
       .then(r => r.json())
-      .then((data: any) => setProperties(data.properties ?? []))
+      .then((data: any) => {
+        // El endpoint devuelve un array directamente; aceptamos también
+        // { properties: [...] } por compatibilidad defensiva.
+        const list = Array.isArray(data) ? data : Array.isArray(data?.properties) ? data.properties : []
+        setProperties(list)
+      })
+      .catch(() => setProperties([]))
+      .finally(() => setLoadingProps(false))
   }, [])
 
   useEffect(() => {
@@ -35,9 +44,16 @@ export default function PropertyPhotoPicker({
       setPhotos([])
       return
     }
-    apiFetch('properties', `/properties/${selectedId}/photos`)
+    setLoadingPhotos(true)
+    // Las fotos vienen embebidas en el detalle de la propiedad
+    apiFetch('properties', `/properties/${selectedId}`)
       .then(r => r.json())
-      .then((data: any) => setPhotos(data.photos ?? []))
+      .then((data: any) => {
+        const list = Array.isArray(data?.photos) ? data.photos : []
+        setPhotos(list.filter((p: any) => p && p.url).map((p: any) => ({ url: p.url })))
+      })
+      .catch(() => setPhotos([]))
+      .finally(() => setLoadingPhotos(false))
   }, [selectedId])
 
   return (
@@ -53,8 +69,11 @@ export default function PropertyPhotoPicker({
           <div className="p-3 border-b border-gray-200">
             <h3 className="text-sm font-semibold">Propiedades</h3>
           </div>
-          {properties.length === 0 && (
+          {loadingProps && (
             <p className="text-xs text-gray-500 text-center mt-6 px-3">Cargando…</p>
+          )}
+          {!loadingProps && properties.length === 0 && (
+            <p className="text-xs text-gray-500 text-center mt-6 px-3">Sin propiedades</p>
           )}
           {properties.map(p => (
             <button
@@ -66,8 +85,10 @@ export default function PropertyPhotoPicker({
                   : 'hover:bg-gray-50 text-gray-800'
               }`}
             >
-              <p className="font-medium truncate">{p.title}</p>
-              <p className="text-xs text-gray-500 truncate">{p.address}</p>
+              <p className="font-medium truncate">{p.address || 'Sin dirección'}</p>
+              {p.neighborhood && (
+                <p className="text-xs text-gray-500 truncate">{p.neighborhood}</p>
+              )}
             </button>
           ))}
         </aside>
@@ -88,7 +109,12 @@ export default function PropertyPhotoPicker({
                 aria-label={`Foto ${i + 1}`}
               />
             ))}
-            {selectedId && photos.length === 0 && (
+            {selectedId && loadingPhotos && (
+              <p className="col-span-3 text-sm text-gray-500 text-center mt-8">
+                Cargando fotos…
+              </p>
+            )}
+            {selectedId && !loadingPhotos && photos.length === 0 && (
               <p className="col-span-3 text-sm text-gray-500 text-center mt-8">
                 Esta propiedad no tiene fotos.
               </p>

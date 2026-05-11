@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { PropertySelector } from '@/components/ui/PropertySelector'
+import { LeadSelector, type LeadOption } from '@/components/ui/LeadSelector'
 import { apiFetch } from '@/lib/api'
 import {
   calcWeightedArea,
@@ -34,12 +35,36 @@ export function StepProperty({
   onSetLead,
 }: Props) {
   const [weights, setWeights] = useState<SurfaceWeights>(DEFAULT_SURFACE_WEIGHTS)
+  const [selectedLead, setSelectedLead] = useState<LeadOption | null>(null)
 
   useEffect(() => {
     apiFetch('admin', '/org-settings').then(r => r.json() as Promise<any>).then(d => {
       if (isValidWeights(d.surface_weights)) setWeights(d.surface_weights)
     }).catch(() => { /* fallback al default */ })
   }, [])
+
+  // Si llegamos al step con un leadId pre-existente pero sin info cargada,
+  // hidratamos el display del selector con los datos del lead.
+  useEffect(() => {
+    if (!leadId) { setSelectedLead(null); return }
+    if (selectedLead?.id === leadId) return
+    apiFetch('crm', `/leads?id=${leadId}`)
+      .then(r => r.json() as Promise<any>)
+      .then(data => {
+        const l = Array.isArray(data) ? data[0] : data
+        if (l?.id) {
+          setSelectedLead({
+            id: l.id,
+            full_name: l.full_name ?? '',
+            phone: l.phone ?? null,
+            property_address: l.property_address ?? null,
+            neighborhood: l.neighborhood ?? null,
+            stage: l.stage ?? null,
+          })
+        }
+      })
+      .catch(() => { /* no-op */ })
+  }, [leadId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const computedWeighted = calcWeightedArea(
     property.covered_area,
@@ -224,18 +249,18 @@ export function StepProperty({
           </p>
         </div>
 
-        {/* Lead ID — plain text input (no lead-specific selector available) */}
+        {/* Lead — buscador */}
         <div className="md:col-span-2">
-          <label className={labelClass}>ID de lead (opcional)</label>
-          <input
-            type="text"
-            value={leadId ?? ''}
-            onChange={(e) => onSetLead(e.target.value.trim() || null)}
-            placeholder="Pegá el ID del lead vinculado"
-            className={inputClass}
+          <label className={labelClass}>Lead vinculado (opcional)</label>
+          <LeadSelector
+            value={selectedLead}
+            onChange={(l) => {
+              setSelectedLead(l)
+              onSetLead(l?.id ?? null)
+            }}
           />
           <p className="mt-1 text-xs text-slate-400">
-            Podés vincular el lead desde el editor una vez creada la tasación.
+            Buscá por nombre o teléfono. También podés vincular el lead desde el editor más adelante.
           </p>
         </div>
       </div>

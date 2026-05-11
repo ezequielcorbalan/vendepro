@@ -3,9 +3,11 @@ import { Miniflare } from 'miniflare'
 import { D1AppraisalTemplateRepository } from '../../src/repositories/d1-appraisal-template-repository'
 import { AppraisalTemplate } from '@vendepro/core'
 
+// ⚠️ Mantener sincronizado con migraciones v2 (017 + 025).
+// `agent_id` se agregó en migración 025 — sin él, el INSERT del repo falla.
 const MIGRATION_INIT = `
 CREATE TABLE appraisal_templates (
-  id TEXT PRIMARY KEY, org_id TEXT, kind TEXT, name TEXT, description TEXT,
+  id TEXT PRIMARY KEY, org_id TEXT, agent_id TEXT, kind TEXT, name TEXT, description TEXT,
   preview_image_url TEXT, blocks_json TEXT, is_system INTEGER DEFAULT 0,
   parent_template_id TEXT, active INTEGER DEFAULT 1, sort_order INTEGER DEFAULT 0,
   created_at TEXT, updated_at TEXT

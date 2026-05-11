@@ -1,6 +1,11 @@
 'use client'
 import { useReducer } from 'react'
-import type { AppraisalComparable, BlockOverrides } from '../renderer/types'
+import type { AppraisalBlockType, AppraisalComparable, BlockOverrides } from '../renderer/types'
+
+export interface CustomBlock {
+  type: AppraisalBlockType
+  data: Record<string, unknown>
+}
 
 export type WizardStep = 1 | 2 | 3 | 4 | 5 | 6
 
@@ -31,6 +36,11 @@ export interface WizardState {
   }
   comparables: (Omit<AppraisalComparable, 'id' | 'appraisal_id' | 'sort_order'> & { sort_order?: number })[]
   blockOverrides: BlockOverrides
+  /**
+   * Bloques elegidos por el usuario cuando arranca "desde cero" (sin template).
+   * Cuando hay `template_id` se ignoran.
+   */
+  customBlocks: CustomBlock[]
   publish: { generate_public_slug: boolean }
 }
 
@@ -47,6 +57,8 @@ type Action =
   | { type: 'patch_comparable'; index: number; patch: Partial<WizardState['comparables'][number]> }
   | { type: 'remove_comparable'; index: number }
   | { type: 'patch_block_override'; blockId: string; patch: Record<string, unknown> }
+  | { type: 'toggle_custom_block'; blockType: AppraisalBlockType }
+  | { type: 'patch_custom_block'; blockType: AppraisalBlockType; patch: Record<string, unknown> }
   | { type: 'toggle_public_slug' }
 
 export const initialState: WizardState = {
@@ -58,6 +70,7 @@ export const initialState: WizardState = {
   details: {},
   comparables: [],
   blockOverrides: {},
+  customBlocks: [],
   publish: { generate_public_slug: true },
 }
 
@@ -70,8 +83,10 @@ export function wizardReducer(state: WizardState, action: Action): WizardState {
     case 'back':
       return { ...state, step: Math.max(1, state.step - 1) as WizardStep }
     case 'set_template':
-      // Clear overrides — block ids change with template
-      return { ...state, template_id: action.id, blockOverrides: {} }
+      // Clear overrides — block ids change with template.
+      // Limpiamos también customBlocks: si se elige un template, los bloques
+      // del modo "desde cero" no tienen sentido.
+      return { ...state, template_id: action.id, blockOverrides: {}, customBlocks: action.id ? [] : state.customBlocks }
     case 'patch_property':
       return { ...state, property: { ...state.property, ...action.patch } }
     case 'set_property_id':
@@ -97,6 +112,27 @@ export function wizardReducer(state: WizardState, action: Action): WizardState {
           ...state.blockOverrides,
           [action.blockId]: { ...prev, ...action.patch },
         },
+      }
+    }
+    case 'toggle_custom_block': {
+      const exists = state.customBlocks.some(b => b.type === action.blockType)
+      if (exists) {
+        return {
+          ...state,
+          customBlocks: state.customBlocks.filter(b => b.type !== action.blockType),
+        }
+      }
+      return {
+        ...state,
+        customBlocks: [...state.customBlocks, { type: action.blockType, data: {} }],
+      }
+    }
+    case 'patch_custom_block': {
+      return {
+        ...state,
+        customBlocks: state.customBlocks.map(b =>
+          b.type === action.blockType ? { ...b, data: { ...b.data, ...action.patch } } : b,
+        ),
       }
     }
     case 'toggle_public_slug':

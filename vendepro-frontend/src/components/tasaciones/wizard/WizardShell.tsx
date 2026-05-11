@@ -10,6 +10,7 @@ import { StepDetails } from './steps/StepDetails'
 import { StepCompetencia } from './steps/StepCompetencia'
 import { StepReview } from './steps/StepReview'
 import { createAppraisal, publishAppraisal, addComparable, patchBlockOverride } from '../shared/api'
+import { APPRAISAL_BLOCK_TYPES, type AppraisalBlockType } from '../renderer/types'
 import { useToast } from '@/components/ui/Toast'
 
 interface Props {
@@ -28,7 +29,7 @@ export function WizardShell({ initialTemplateId }: Props) {
   const router = useRouter()
   const { toast } = useToast()
 
-  const handlePublish = async () => {
+  const handlePublish = async (publishPublic: boolean) => {
     setPublishing(true)
     if (!state.property.address.trim()) {
       toast('La dirección es obligatoria', 'error')
@@ -39,8 +40,24 @@ export function WizardShell({ initialTemplateId }: Props) {
     let appraisalId: string | null = null
     try {
       const { address, ...restProperty } = state.property
+      // Si arrancó "desde cero" y eligió bloques, los enviamos como snapshot
+      // sintético. Si no, el backend deja la tasación sin snapshot.
+      let template_snapshot_json: unknown = undefined
+      if (!state.template_id && state.customBlocks.length > 0) {
+        const orderOf = (t: AppraisalBlockType) => APPRAISAL_BLOCK_TYPES.indexOf(t)
+        const sorted = [...state.customBlocks].sort((a, b) => orderOf(a.type) - orderOf(b.type))
+        template_snapshot_json = sorted.map((b, i) => ({
+          id: `custom-${b.type}`,
+          type: b.type,
+          binding_mode: 'tasacion',
+          include_in_pdf: true,
+          sort_order: i,
+          data: b.data,
+        }))
+      }
       const { id } = await createAppraisal({
         template_id: state.template_id,
+        ...(template_snapshot_json ? { template_snapshot_json } : {}),
         property_id: state.property_id,
         property_address: address,
         ...restProperty,
@@ -59,7 +76,7 @@ export function WizardShell({ initialTemplateId }: Props) {
           overrideEntries.map(([blockId, patch]) => patchBlockOverride(id, blockId, patch)),
         )
       }
-      if (state.publish.generate_public_slug) await publishAppraisal(id)
+      if (publishPublic) await publishAppraisal(id)
       router.push(`/tasaciones/${id}/editar?welcome=1`)
     } catch (e: any) {
       const msg = e?.message ?? 'Error al publicar'
@@ -135,6 +152,13 @@ export function WizardShell({ initialTemplateId }: Props) {
             onPatchOverride={(blockId, patch) =>
               dispatch({ type: 'patch_block_override', blockId, patch })
             }
+            customBlocks={state.customBlocks}
+            onToggleCustomBlock={(blockType) =>
+              dispatch({ type: 'toggle_custom_block', blockType })
+            }
+            onPatchCustomBlock={(blockType, patch) =>
+              dispatch({ type: 'patch_custom_block', blockType, patch })
+            }
           />
         )}
         {state.step === 4 && (
@@ -157,8 +181,7 @@ export function WizardShell({ initialTemplateId }: Props) {
             property={state.property}
             details={state.details}
             comparables={state.comparables}
-            generatePublicSlug={state.publish.generate_public_slug}
-            onTogglePublicSlug={() => dispatch({ type: 'toggle_public_slug' })}
+            customBlocks={state.customBlocks}
           />
         )}
       </div>
@@ -182,14 +205,24 @@ export function WizardShell({ initialTemplateId }: Props) {
             Siguiente <ArrowRight className="h-4 w-4" />
           </button>
         ) : (
-          <button
-            onClick={handlePublish}
-            disabled={publishing}
-            className="flex items-center gap-2 rounded bg-[#ff007c] px-5 py-2 text-sm text-white disabled:opacity-40"
-          >
-            {publishing && <Loader2 className="h-4 w-4 animate-spin" />}
-            {state.publish.generate_public_slug ? 'Publicar' : 'Guardar borrador'}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handlePublish(false)}
+              disabled={publishing}
+              className="flex items-center gap-2 rounded border border-slate-300 bg-white px-5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+            >
+              {publishing && <Loader2 className="h-4 w-4 animate-spin" />}
+              Guardar borrador
+            </button>
+            <button
+              onClick={() => handlePublish(true)}
+              disabled={publishing}
+              className="flex items-center gap-2 rounded bg-[#ff007c] px-5 py-2 text-sm text-white disabled:opacity-40"
+            >
+              {publishing && <Loader2 className="h-4 w-4 animate-spin" />}
+              Publicar
+            </button>
+          </div>
         )}
       </footer>
     </div>
