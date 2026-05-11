@@ -20,9 +20,13 @@ dist/
 .env*
 !.env*.example
 
-# cloudflare worker secrets (never commit)
-.dev.vars
-**/.dev.vars
+# cloudflare worker secrets
+# Los .dev.vars de cada paquete contienen SOLO valores de desarrollo local
+# (JWT_SECRET dummy, placeholders para keys externas) y se commiten para que
+# el stack arranque out-of-the-box. Para overrides personales sin commitear,
+# usar .dev.vars.local — ese sí está ignorado.
+.dev.vars.local
+**/.dev.vars.local
 
 # typescript
 *.tsbuildinfo
