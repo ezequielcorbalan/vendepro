@@ -1,6 +1,13 @@
 'use client'
+import { useEffect, useState } from 'react'
+import { Download, Loader2 } from 'lucide-react'
 import type { TemplateBlock, BindingMode, AppraisalBlockType } from '../renderer/types'
 import { BlockForm } from '../editor/BlockForm'
+import {
+  STATIC_BLOCK_TYPES,
+  loadStaticBlockDefaults,
+  type StaticBlockDefaultsMap,
+} from '../shared/static-block-defaults'
 
 const BINDING_MODE_OPTIONS: { value: BindingMode; label: string; hint: string }[] = [
   {
@@ -35,6 +42,26 @@ const PDF_LOCKED: Set<AppraisalBlockType> = new Set([
   'video_gallery', 'extra_media', 'cta_whatsapp', 'agent_contact_card',
 ])
 
+// Modos que se benefician del default guardado por la inmobiliaria.
+const APPLIES_DEFAULTS: Set<BindingMode> = new Set(['org-static', 'default-override'])
+
+// Cache de defaults para evitar recargar en cada bloque del template.
+let defaultsCache: StaticBlockDefaultsMap | null = null
+let defaultsPromise: Promise<StaticBlockDefaultsMap> | null = null
+function getStaticDefaults(): Promise<StaticBlockDefaultsMap> {
+  if (defaultsCache) return Promise.resolve(defaultsCache)
+  if (defaultsPromise) return defaultsPromise
+  defaultsPromise = loadStaticBlockDefaults()
+    .then(d => { defaultsCache = d; return d })
+    .catch(e => { defaultsPromise = null; throw e })
+  return defaultsPromise
+}
+/** Para que las nuevas pantallas (StaticBlocksHome) puedan invalidar el cache. */
+export function _invalidateStaticDefaultsCache() {
+  defaultsCache = null
+  defaultsPromise = null
+}
+
 interface Props {
   block: TemplateBlock
   onPatchBlock: (patch: Partial<TemplateBlock>) => void
@@ -45,6 +72,41 @@ interface Props {
 export function BlockAdminForm({ block, onPatchBlock, onPatchData, onRemove }: Props) {
   const pdfLocked = PDF_LOCKED.has(block.type)
   const currentMode = BINDING_MODE_OPTIONS.find(m => m.value === block.binding_mode)
+
+  const canApplyDefaults =
+    APPLIES_DEFAULTS.has(block.binding_mode) &&
+    (STATIC_BLOCK_TYPES as AppraisalBlockType[]).includes(block.type)
+
+  const [hasDefaults, setHasDefaults] = useState<boolean | null>(null)
+  const [applying, setApplying] = useState(false)
+  const [applyError, setApplyError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!canApplyDefaults) { setHasDefaults(null); return }
+    let cancelled = false
+    getStaticDefaults()
+      .then(d => { if (!cancelled) setHasDefaults(!!d[block.type]) })
+      .catch(() => { if (!cancelled) setHasDefaults(false) })
+    return () => { cancelled = true }
+  }, [canApplyDefaults, block.type])
+
+  const applyDefaults = async () => {
+    setApplying(true); setApplyError(null)
+    try {
+      const map = await getStaticDefaults()
+      const entry = map[block.type]
+      if (!entry) {
+        setApplyError('No hay valores guardados para este bloque.')
+        setHasDefaults(false)
+      } else {
+        onPatchData(entry.data)
+      }
+    } catch (e: any) {
+      setApplyError(e?.message ?? 'Error al cargar defaults')
+    } finally {
+      setApplying(false)
+    }
+  }
   return (
     <div className="space-y-3 border-t border-slate-200 p-3">
       <div className="flex flex-wrap items-start gap-3">
@@ -86,6 +148,28 @@ export function BlockAdminForm({ block, onPatchBlock, onPatchData, onRemove }: P
           Eliminar
         </button>
       </div>
+      {canApplyDefaults && (
+        <div className="flex flex-wrap items-center gap-2 rounded border border-slate-200 bg-slate-50 px-3 py-2 text-xs">
+          <span className="text-slate-600">
+            Hay valores guardados en{' '}
+            <strong className="text-slate-800">Bloques estáticos</strong>:
+          </span>
+          <button
+            type="button"
+            onClick={applyDefaults}
+            disabled={applying || hasDefaults === false}
+            title={hasDefaults === false ? 'Todavía no configuraste defaults para este tipo de bloque.' : undefined}
+            className="flex items-center gap-1 rounded border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 hover:border-[#ff007c] hover:text-[#ff007c] disabled:opacity-40"
+          >
+            {applying ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
+            Aplicar valores guardados
+          </button>
+          {hasDefaults === false && (
+            <span className="text-slate-400">Configurarlos en Configuración → Tasaciones → Bloques estáticos.</span>
+          )}
+          {applyError && <span className="text-rose-600">{applyError}</span>}
+        </div>
+      )}
       <BlockForm block={block} override={{}} onPatch={onPatchData} context="template" />
     </div>
   )

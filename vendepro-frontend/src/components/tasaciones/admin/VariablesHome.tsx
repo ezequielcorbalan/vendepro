@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import { listVariables, updateVariable, deleteVariable } from '../shared/api'
+import { isStaticBlockDefaultKey } from '../shared/static-block-defaults'
 import { VariableModal } from './VariableModal'
 
 const NAMESPACES = ['market', 'notary', 'custom'] as const
@@ -11,7 +12,11 @@ export function VariablesHome() {
   const [editing, setEditing] = useState<Record<string, string>>({})
   const [modalOpen, setModalOpen] = useState(false)
 
-  const load = () => listVariables().then(setVars)
+  // Las variables que guardan defaults de bloques estáticos se gestionan
+  // desde la pestaña "Bloques estáticos" — las ocultamos acá para no
+  // mostrar JSONs crudos en esta UI.
+  const load = () =>
+    listVariables().then((all: any[]) => setVars(all.filter(v => !isStaticBlockDefaultKey(v?.key))))
   useEffect(() => { load() }, [])
 
   const saveRow = async (id: string, value: string) => {

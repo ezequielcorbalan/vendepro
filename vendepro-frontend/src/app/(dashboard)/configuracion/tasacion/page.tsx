@@ -6,10 +6,12 @@ import { ArrowLeft } from 'lucide-react'
 import { TemplatesHome } from '@/components/tasaciones/admin/TemplatesHome'
 import { VariablesHome } from '@/components/tasaciones/admin/VariablesHome'
 import { OrgConfigForm } from '@/components/tasaciones/admin/OrgConfigForm'
+import { StaticBlocksHome } from '@/components/tasaciones/admin/StaticBlocksHome'
 import { getCurrentUser } from '@/lib/auth'
 
 const ALL_TABS = [
   { key: 'templates', label: 'Templates', roles: ['admin', 'agent'] },
+  { key: 'bloques-estaticos', label: 'Bloques estáticos', roles: ['admin'] },
   { key: 'variables', label: 'Variables', roles: ['admin'] },
   { key: 'general', label: 'General', roles: ['admin'] },
 ] as const
@@ -55,6 +57,7 @@ function ConfigTasacionInner() {
       )}
       <div className="mt-6">
         {active === 'templates' && <TemplatesHome />}
+        {active === 'bloques-estaticos' && isAdmin && <StaticBlocksHome />}
         {active === 'variables' && isAdmin && <VariablesHome />}
         {active === 'general' && isAdmin && <OrgConfigForm />}
       </div>
