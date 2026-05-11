@@ -203,11 +203,10 @@ export class D1PropertyRepository implements PropertyRepository {
     const bindings: unknown[] = []
 
     for (const [field, col] of COLUMN_MAP) {
+      if (!(field in patch)) continue
       const val = patch[field]
-      if (val !== undefined && val !== null) {
-        setClauses.push(`${col} = ?`)
-        bindings.push(val)
-      }
+      setClauses.push(`${col} = ?`)
+      bindings.push(val ?? null)
     }
 
     if (setClauses.length === 0) return
@@ -222,7 +221,8 @@ export class D1PropertyRepository implements PropertyRepository {
   }
 
   async updateStage(id: string, orgId: string, stageSlug: string): Promise<void> {
-    const stageRow = await this.db
+    // Try matching by operation_type_id first, fall back to slug-only lookup
+    let stageRow = await this.db
       .prepare(`
         SELECT cs.id as stage_id, cs.slug as stage_slug
         FROM commercial_stages cs
@@ -231,7 +231,16 @@ export class D1PropertyRepository implements PropertyRepository {
       `)
       .bind(id, stageSlug)
       .first() as any
-    if (!stageRow) throw new Error('invalid stage')
+
+    if (!stageRow) {
+      // Fallback: property may lack operation_type_id — match slug across all operation types
+      stageRow = await this.db
+        .prepare(`SELECT id as stage_id, slug as stage_slug FROM commercial_stages WHERE slug = ? LIMIT 1`)
+        .bind(stageSlug)
+        .first() as any
+    }
+
+    if (!stageRow) throw new Error(`invalid stage: ${stageSlug}`)
 
     await this.db
       .prepare(`

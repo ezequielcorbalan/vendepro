@@ -107,8 +107,12 @@ export default function EditarPropiedadPage() {
         asking_price: form.asking_price ? Number(form.asking_price) : null,
         contact_id: ownerContact?.id ?? null,
         operation_type: opType?.slug ?? null,
-        commercial_stage: stage?.slug ?? null,
         status: status?.slug ?? null,
+      }
+      // Only include stage fields when a stage is selected — avoid sending null which would clear them
+      if (stage) {
+        payload.commercial_stage = stage.slug
+        payload.commercial_stage_id = stage.id
       }
       const res = await apiFetch('properties', `/properties/${id}`, {
         method: 'PUT',
