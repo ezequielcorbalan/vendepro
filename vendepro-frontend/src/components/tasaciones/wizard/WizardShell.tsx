@@ -17,7 +17,7 @@ interface Props {
   initialTemplateId?: string | null
 }
 
-const STEP_LABELS = ['Template', 'Propiedad', 'Bloques', 'FODA + Precios', 'Competencia', 'Revisar']
+const STEP_LABELS = ['Template', 'Propiedad', 'Bloques', 'FODA + Precios', 'Comparables', 'Revisar']
 const TOTAL_STEPS = STEP_LABELS.length
 
 export function WizardShell({ initialTemplateId }: Props) {

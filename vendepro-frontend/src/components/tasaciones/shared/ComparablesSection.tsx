@@ -1,8 +1,9 @@
 'use client'
 import { useState } from 'react'
-import { Plus, Database } from 'lucide-react'
+import { Plus, Database, Building2 } from 'lucide-react'
 import { ComparableCard, type ComparableData } from './ComparableCard'
 import { SoldPropertiesPickerModal } from './SoldPropertiesPickerModal'
+import { PropertiesPickerModal } from './PropertiesPickerModal'
 
 /**
  * Cualquier estructura que tenga al menos los campos de un ComparableData
@@ -31,7 +32,8 @@ export function ComparablesSection<Key extends string | number>({
   items, onAdd, onPatch, onRemove, onMove,
   hint, hideHint = false,
 }: Props<Key>) {
-  const [pickerOpen, setPickerOpen] = useState(false)
+  const [soldPickerOpen, setSoldPickerOpen] = useState(false)
+  const [propsPickerOpen, setPropsPickerOpen] = useState(false)
 
   const emptyPublicacion = (): ComparableData => ({
     kind: 'publicacion',
@@ -86,10 +88,17 @@ export function ComparablesSection<Key extends string | number>({
         </button>
         <button
           type="button"
-          onClick={() => setPickerOpen(true)}
+          onClick={() => setSoldPickerOpen(true)}
           className="flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-100"
         >
           <Database className="h-4 w-4" /> Desde Cierres Reales
+        </button>
+        <button
+          type="button"
+          onClick={() => setPropsPickerOpen(true)}
+          className="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100"
+        >
+          <Building2 className="h-4 w-4" /> Desde una propiedad
         </button>
         <button
           type="button"
@@ -127,8 +136,13 @@ export function ComparablesSection<Key extends string | number>({
       )}
 
       <SoldPropertiesPickerModal
-        open={pickerOpen}
-        onClose={() => setPickerOpen(false)}
+        open={soldPickerOpen}
+        onClose={() => setSoldPickerOpen(false)}
+        onPick={(data) => onAdd(data)}
+      />
+      <PropertiesPickerModal
+        open={propsPickerOpen}
+        onClose={() => setPropsPickerOpen(false)}
         onPick={(data) => onAdd(data)}
       />
     </div>

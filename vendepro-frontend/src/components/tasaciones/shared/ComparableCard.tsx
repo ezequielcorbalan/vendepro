@@ -82,6 +82,18 @@ export function ComparableCard({
         ;(patch as any)[key] = incoming
       }
     }
+    // En cierres reales, si la IA detectó un precio y closing_price_usd está
+    // vacío, lo asumimos como precio de cierre (que es lo más probable en un
+    // screenshot de venta). El usuario lo puede mover a "Precio publicado"
+    // si quería usarlo como referencia de listado.
+    if (kind === 'venta'
+        && typeof data.price === 'number'
+        && (comparable.closing_price_usd === null || comparable.closing_price_usd === undefined)) {
+      patch.closing_price_usd = data.price
+      // No duplicamos el dato en `price` — la IA lo puso ahí pero para venta
+      // preferimos verlo como precio de cierre.
+      if (patch.price === data.price) delete (patch as any).price
+    }
     if (Object.keys(patch).length > 0) onPatch(patch)
   }
 
@@ -191,70 +203,72 @@ export function ComparableCard({
           )}
 
           <div className="space-y-4">
-            {/* Drop zone — solo publicación */}
+            {/* Link de ZonaProp solo aplica a publicación */}
             {!isVenta && (
-              <>
-                <div>
-                  <label className={labelClass}>Link de ZonaProp (referencia)</label>
-                  <input
-                    type="url"
-                    value={comparable.zonaprop_url ?? ''}
-                    onChange={(e) => onPatch({ zonaprop_url: e.target.value || null })}
-                    placeholder="https://www.zonaprop.com.ar/..."
-                    className={inputClass}
-                  />
-                </div>
-
-                <div
-                  tabIndex={0}
-                  onPaste={handlePaste}
-                  onDragOver={(e) => { e.preventDefault(); setHighlight(true) }}
-                  onDragLeave={() => setHighlight(false)}
-                  onDrop={handleDrop}
-                  onClick={() => fileRef.current?.click()}
-                  className={`flex cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed px-4 py-6 text-center transition ${
-                    highlight ? 'border-[#ff007c] bg-rose-50' : 'border-slate-300 hover:border-[#ff007c]/60'
-                  }`}
-                >
-                  {extracting ? (
-                    <>
-                      <Loader2 className="h-6 w-6 animate-spin text-[#ff007c]" />
-                      <p className="text-sm font-medium text-slate-700">Analizando captura con IA...</p>
-                    </>
-                  ) : previewUrl ? (
-                    <>
-                      <img src={previewUrl} alt="" className="max-h-32 rounded shadow-sm" />
-                      <p className="mt-2 text-xs text-emerald-600">
-                        <Sparkles className="mr-1 inline h-3 w-3" />
-                        Datos extraídos. Pegá otra para reemplazar.
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-6 w-6 text-[#ff007c]" />
-                      <p className="text-sm font-medium text-slate-700">
-                        Click acá y pegá screenshot (Ctrl+V)
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        <ImageIcon className="mr-1 inline h-3 w-3" /> O subí una imagen
-                      </p>
-                    </>
-                  )}
-                  <input
-                    ref={fileRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0]
-                      if (f) handleFile(f)
-                      e.target.value = ''
-                    }}
-                  />
-                </div>
-                {error && <p className="text-xs text-rose-500">{error}</p>}
-              </>
+              <div>
+                <label className={labelClass}>Link de ZonaProp (referencia)</label>
+                <input
+                  type="url"
+                  value={comparable.zonaprop_url ?? ''}
+                  onChange={(e) => onPatch({ zonaprop_url: e.target.value || null })}
+                  placeholder="https://www.zonaprop.com.ar/..."
+                  className={inputClass}
+                />
+              </div>
             )}
+
+            {/* Drop zone — disponible en ambos kinds */}
+            <div
+              tabIndex={0}
+              onPaste={handlePaste}
+              onDragOver={(e) => { e.preventDefault(); setHighlight(true) }}
+              onDragLeave={() => setHighlight(false)}
+              onDrop={handleDrop}
+              onClick={() => fileRef.current?.click()}
+              className={`flex cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed px-4 py-6 text-center transition ${
+                highlight ? 'border-[#ff007c] bg-rose-50' : 'border-slate-300 hover:border-[#ff007c]/60'
+              }`}
+            >
+              {extracting ? (
+                <>
+                  <Loader2 className="h-6 w-6 animate-spin text-[#ff007c]" />
+                  <p className="text-sm font-medium text-slate-700">Analizando captura con IA...</p>
+                </>
+              ) : previewUrl ? (
+                <>
+                  <img src={previewUrl} alt="" className="max-h-32 rounded shadow-sm" />
+                  <p className="mt-2 text-xs text-emerald-600">
+                    <Sparkles className="mr-1 inline h-3 w-3" />
+                    Datos extraídos. Pegá otra para reemplazar.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-6 w-6 text-[#ff007c]" />
+                  <p className="text-sm font-medium text-slate-700">
+                    {isVenta
+                      ? 'Pegá un screenshot del cierre (Ctrl+V)'
+                      : 'Click acá y pegá screenshot (Ctrl+V)'}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    <ImageIcon className="mr-1 inline h-3 w-3" /> O subí una imagen
+                    {isVenta && ' — el precio detectado se asigna a "Precio de cierre"'}
+                  </p>
+                </>
+              )}
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0]
+                  if (f) handleFile(f)
+                  e.target.value = ''
+                }}
+              />
+            </div>
+            {error && <p className="text-xs text-rose-500">{error}</p>}
 
             {/* Campos */}
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
