@@ -56,6 +56,7 @@ type Action =
   | { type: 'add_comparable'; comparable: WizardState['comparables'][number] }
   | { type: 'patch_comparable'; index: number; patch: Partial<WizardState['comparables'][number]> }
   | { type: 'remove_comparable'; index: number }
+  | { type: 'move_comparable'; index: number; delta: -1 | 1 }
   | { type: 'patch_block_override'; blockId: string; patch: Record<string, unknown> }
   | { type: 'toggle_custom_block'; blockType: AppraisalBlockType }
   | { type: 'patch_custom_block'; blockType: AppraisalBlockType; patch: Record<string, unknown> }
@@ -104,6 +105,16 @@ export function wizardReducer(state: WizardState, action: Action): WizardState {
       }
     case 'remove_comparable':
       return { ...state, comparables: state.comparables.filter((_, i) => i !== action.index) }
+    case 'move_comparable': {
+      const target = action.index + action.delta
+      if (action.index < 0 || action.index >= state.comparables.length) return state
+      if (target < 0 || target >= state.comparables.length) return state
+      const next = [...state.comparables]
+      const tmp = next[action.index]
+      next[action.index] = next[target]
+      next[target] = tmp
+      return { ...state, comparables: next }
+    }
     case 'patch_block_override': {
       const prev = state.blockOverrides[action.blockId] ?? {}
       return {

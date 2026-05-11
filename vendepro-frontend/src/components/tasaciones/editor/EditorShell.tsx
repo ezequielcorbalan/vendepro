@@ -8,8 +8,8 @@ import { BlockList } from './BlockList'
 import { SyncBanner } from './SyncBanner'
 import { TemplateRenderer } from '../renderer/TemplateRenderer'
 import { publishAppraisal, generatePdf, addComparable, updateComparable, deleteComparable } from '../shared/api'
-import { ComparableCard, type ComparableData } from '../shared/ComparableCard'
-import { Plus } from 'lucide-react'
+import type { ComparableData } from '../shared/ComparableCard'
+import { ComparablesSection, type ComparableItem } from '../shared/ComparablesSection'
 import { apiFetch } from '@/lib/api'
 import {
   calcWeightedArea,
@@ -67,17 +67,26 @@ export function EditorShell({ initial, snapshot, context }: Props) {
     }).catch(() => { /* fallback al default */ })
   }, [])
 
-  const handleAddComparable = async () => {
+  const handleAddComparable = async (data: ComparableData) => {
     try {
       const result = await addComparable({
         appraisal_id: state.appraisal.id,
         sort_order: comparables.length,
-        zonaprop_url: null, address: null,
-        total_area: null, covered_area: null,
-        price: null, usd_per_m2: null,
-        days_on_market: null, views_per_day: null, age: null,
+        kind: data.kind ?? 'publicacion',
+        zonaprop_url: data.zonaprop_url ?? null,
+        address: data.address ?? null,
+        total_area: data.total_area ?? null,
+        covered_area: data.covered_area ?? null,
+        price: data.price ?? null,
+        usd_per_m2: data.usd_per_m2 ?? null,
+        days_on_market: data.days_on_market ?? null,
+        views_per_day: data.views_per_day ?? null,
+        age: data.age ?? null,
+        closing_price_usd: data.closing_price_usd ?? null,
+        closed_at: data.closed_at ?? null,
+        source_sold_property_id: data.source_sold_property_id ?? null,
       })
-      setComparables(prev => [...prev, { id: result.id, sort_order: prev.length }])
+      setComparables(prev => [...prev, { ...data, id: result.id, sort_order: prev.length }])
     } catch (e: any) {
       alert(e?.message ?? 'No se pudo agregar el comparable')
     }
@@ -102,6 +111,22 @@ export function EditorShell({ initial, snapshot, context }: Props) {
     } catch (e: any) {
       alert(e?.message ?? 'No se pudo eliminar el comparable')
     }
+  }
+
+  const handleMoveComparable = (index: number, delta: -1 | 1) => {
+    const target = index + delta
+    if (target < 0 || target >= comparables.length) return
+    setComparables(prev => {
+      const next = [...prev]
+      const tmp = next[index]
+      next[index] = next[target]
+      next[target] = tmp
+      // Persistir nuevos sort_order de los dos afectados (fire & forget).
+      const a = next[index], b = next[target]
+      if (a?.id) updateComparable(a.id, { sort_order: index }).catch(() => {})
+      if (b?.id) updateComparable(b.id, { sort_order: target }).catch(() => {})
+      return next
+    })
   }
 
   const computedWeighted = calcWeightedArea(
@@ -252,33 +277,17 @@ export function EditorShell({ initial, snapshot, context }: Props) {
           </section>
 
           <section className="mt-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Comparables</h2>
-              <button
-                type="button"
-                onClick={handleAddComparable}
-                className="flex items-center gap-1.5 rounded-lg bg-[#ff007c] px-3 py-1.5 text-xs text-white hover:opacity-90"
-              >
-                <Plus className="h-3.5 w-3.5" /> Agregar
-              </button>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Comparables</h2>
+            <div className="mt-3">
+              <ComparablesSection<string>
+                items={comparables.map(c => ({ ...c, key: c.id })) as ComparableItem<string>[]}
+                onAdd={handleAddComparable}
+                onPatch={(id, patch) => handlePatchComparable(id, patch)}
+                onRemove={(id) => handleRemoveComparable(id)}
+                onMove={(index, delta) => handleMoveComparable(index, delta)}
+                hideHint
+              />
             </div>
-            {comparables.length === 0 ? (
-              <p className="mt-3 rounded-lg border border-dashed border-slate-200 px-4 py-6 text-center text-xs text-slate-400">
-                Sin comparables. Sumá publicaciones similares para fundamentar la tasación.
-              </p>
-            ) : (
-              <div className="mt-3 space-y-4">
-                {comparables.map((c, i) => (
-                  <ComparableCard
-                    key={c.id}
-                    index={i}
-                    comparable={c}
-                    onPatch={(patch) => handlePatchComparable(c.id, patch)}
-                    onRemove={() => handleRemoveComparable(c.id)}
-                  />
-                ))}
-              </div>
-            )}
           </section>
 
           {snapshot.length > 0 && (

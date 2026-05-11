@@ -173,6 +173,7 @@ export function WizardShell({ initialTemplateId }: Props) {
             onAddComparable={(c) => dispatch({ type: 'add_comparable', comparable: c })}
             onPatchComparable={(i, patch) => dispatch({ type: 'patch_comparable', index: i, patch })}
             onRemoveComparable={(i) => dispatch({ type: 'remove_comparable', index: i })}
+            onMoveComparable={(i, delta) => dispatch({ type: 'move_comparable', index: i, delta })}
           />
         )}
         {state.step === 6 && (

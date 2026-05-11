@@ -30,9 +30,17 @@ export interface TemplateBlock {
   data: Record<string, unknown>
 }
 
+export type AppraisalComparableKind = 'publicacion' | 'venta'
+
 export interface AppraisalComparable {
   id: string
   appraisal_id: string
+  /**
+   * 'publicacion' = comparable de mercado (publicación activa).
+   * 'venta'       = cierre real (puede venir autorrellenado de sold_properties).
+   * Default histórico: 'publicacion'.
+   */
+  kind: AppraisalComparableKind
   zonaprop_url: string | null
   address: string | null
   total_area: number | null
@@ -42,6 +50,12 @@ export interface AppraisalComparable {
   days_on_market: number | null
   views_per_day: number | null
   age: number | null
+  /** Solo aplica a kind='venta' — precio efectivo de cierre en USD. */
+  closing_price_usd: number | null
+  /** Solo aplica a kind='venta' — fecha del cierre (ISO date). */
+  closed_at: string | null
+  /** Solo aplica a kind='venta' — id de sold_properties si vino de autorrelleno. */
+  source_sold_property_id: string | null
   sort_order: number
 }
 
