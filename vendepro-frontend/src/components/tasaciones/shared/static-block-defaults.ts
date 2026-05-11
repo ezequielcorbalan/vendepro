@@ -12,9 +12,7 @@
 //   - key:       'custom.block_defaults.<tipo>'
 //   - value:     JSON.stringify(data)
 //
-// Esto evita migración de backend. Las variables creadas se
-// filtran de la pestaña "Variables" para no contaminar esa
-// vista (ver VariablesHome.tsx).
+// Esto evita migración de backend.
 // ============================================================
 
 import type { AppraisalBlockType } from '../renderer/types'
@@ -42,8 +40,7 @@ function keyFor(type: AppraisalBlockType): string {
   return `${KEY_PREFIX}${type}`
 }
 
-/** True si la key corresponde a un default de bloque (para filtrar en VariablesHome). */
-export function isStaticBlockDefaultKey(key: string | null | undefined): boolean {
+function isStaticBlockDefaultKey(key: string | null | undefined): boolean {
   return typeof key === 'string' && key.startsWith(KEY_PREFIX)
 }
 
