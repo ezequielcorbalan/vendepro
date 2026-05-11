@@ -71,7 +71,7 @@ export function registerPropertyRoutes(app: Hono<{ Bindings: Env } & AuthVars>) 
       await useCase.execute(c.req.param('id'), c.get('orgId'), body)
     } catch (e: any) {
       if (e.statusCode === 404) return c.json({ error: 'Not found' }, 404)
-      throw e
+      return c.json({ error: e.message || 'Error al actualizar propiedad' }, 400)
     }
     return c.json({ success: true })
   })
@@ -79,23 +79,21 @@ export function registerPropertyRoutes(app: Hono<{ Bindings: Env } & AuthVars>) 
   app.put('/properties/:id/stage', async (c) => {
     const body = (await c.req.json()) as any
     const repo = new D1PropertyRepository(c.env.DB)
-    // The stage handler accepts commercial_stage_id (ID) or commercial_stage (slug legacy)
-    // UpdatePropertyStageUseCase expects a slug — resolve stageSlug here
-    if (body.commercial_stage_id) {
-      // updateStage internally resolves ID from slug via DB; but it takes a slug as input.
-      // We need to bypass and directly update using update() for ID-based approach.
-      const updateUC = new UpdatePropertyUseCase(repo)
-      try {
-        await updateUC.execute(c.req.param('id'), c.get('orgId'), {
+    const propertyId = c.req.param('id')
+    const orgId = c.get('orgId')
+    try {
+      // Both paths use updateStage which syncs slug + ID atomically
+      if (body.commercial_stage) {
+        await repo.updateStage(propertyId, orgId, body.commercial_stage)
+      } else if (body.commercial_stage_id) {
+        // Resolve slug from ID, then use updateStage for consistency
+        const updateUC = new UpdatePropertyUseCase(repo)
+        await updateUC.execute(propertyId, orgId, {
           commercial_stage_id: body.commercial_stage_id,
         })
-      } catch (e: any) {
-        if (e.statusCode === 404) return c.json({ error: 'Not found' }, 404)
-        throw e
       }
-    } else if (body.commercial_stage) {
-      const useCase = new UpdatePropertyStageUseCase(repo)
-      await useCase.execute(c.req.param('id'), c.get('orgId'), body.commercial_stage)
+    } catch (e: any) {
+      return c.json({ error: e.message || 'Error al cambiar etapa' }, 400)
     }
     return c.json({ success: true })
   })

@@ -13,6 +13,16 @@ import { formatCurrency } from '@/lib/utils'
 const MAIN_STAGES: PropertyStage[] = ['captacion', 'publicada', 'con_ofertas', 'reservada', 'vendida']
 // Suspendida aparece aparte — solo se puede suspender, no avanzar
 const ALL_PIPELINE_STAGES: PropertyStage[] = [...MAIN_STAGES, 'suspendida']
+
+// Normalize legacy slugs to current DB slugs
+const SLUG_ALIASES: Record<string, PropertyStage> = {
+  captada: 'captacion',
+  archivada: 'suspendida',
+  vencida: 'perdida',
+}
+function normalizeStage(slug: string): string {
+  return SLUG_ALIASES[slug] ?? slug
+}
 // Días sin cambio para mostrar alerta de archivo
 const ARCHIVE_WARN_DAYS = 30
 
@@ -48,7 +58,7 @@ export default function PipelinePage() {
     const map: Record<string, any[]> = {}
     ALL_PIPELINE_STAGES.forEach(s => { map[s] = [] })
     properties.forEach(p => {
-      const s = p.commercial_stage
+      const s = normalizeStage(p.commercial_stage ?? '')
       if (s && map[s]) map[s].push(p)
     })
     return map
@@ -56,38 +66,57 @@ export default function PipelinePage() {
 
   const sortedProperties = useMemo(() =>
     [...properties]
-      .filter(p => ALL_PIPELINE_STAGES.includes(p.commercial_stage))
-      .sort((a, b) => (PROPERTY_STAGES[a.commercial_stage as PropertyStage]?.order ?? 99) - (PROPERTY_STAGES[b.commercial_stage as PropertyStage]?.order ?? 99)),
+      .filter(p => ALL_PIPELINE_STAGES.includes(normalizeStage(p.commercial_stage ?? '') as PropertyStage))
+      .sort((a, b) => (PROPERTY_STAGES[normalizeStage(a.commercial_stage ?? '') as PropertyStage]?.order ?? 99) - (PROPERTY_STAGES[normalizeStage(b.commercial_stage ?? '') as PropertyStage]?.order ?? 99)),
     [properties]
   )
 
   async function advanceStage(property: any) {
-    const currentIdx = MAIN_STAGES.indexOf(property.commercial_stage)
+    const current = normalizeStage(property.commercial_stage ?? '')
+    const currentIdx = MAIN_STAGES.indexOf(current as PropertyStage)
     if (currentIdx < 0 || currentIdx >= MAIN_STAGES.length - 1) return
     const nextStage = MAIN_STAGES[currentIdx + 1]
-    await apiFetch('properties', `/properties/${property.id}/stage`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ commercial_stage: nextStage }),
-    })
-    toast(`${property.address} → ${PROPERTY_STAGES[nextStage]?.label}`)
-    loadProperties()
+    try {
+      const res = await apiFetch('properties', `/properties/${property.id}/stage`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ commercial_stage: nextStage }),
+      })
+      const data = (await res.json()) as any
+      if (!res.ok || data.error) {
+        toast(data.error || 'Error al cambiar etapa', 'error')
+        return
+      }
+      toast(`${property.address} → ${PROPERTY_STAGES[nextStage]?.label}`)
+      loadProperties()
+    } catch {
+      toast('Error de conexión', 'error')
+    }
   }
 
   async function archiveProperty(property: any) {
     if (!confirm(`¿Suspender "${property.address}"? Se moverá a propiedades suspendidas.`)) return
-    await apiFetch('properties', `/properties/${property.id}/stage`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ commercial_stage: 'suspendida' }),
-    })
-    toast(`${property.address} suspendida`)
-    loadProperties()
+    try {
+      const res = await apiFetch('properties', `/properties/${property.id}/stage`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ commercial_stage: 'suspendida' }),
+      })
+      const data = (await res.json()) as any
+      if (!res.ok || data.error) {
+        toast(data.error || 'Error al suspender', 'error')
+        return
+      }
+      toast(`${property.address} suspendida`)
+      loadProperties()
+    } catch {
+      toast('Error de conexión', 'error')
+    }
   }
 
   const switchView = (v: ViewMode) => { setView(v); localStorage.setItem('pipeline_view', v) }
 
-  const activeCount = properties.filter(p => ALL_PIPELINE_STAGES.includes(p.commercial_stage)).length
+  const activeCount = properties.filter(p => ALL_PIPELINE_STAGES.includes(normalizeStage(p.commercial_stage ?? '') as PropertyStage)).length
   const suspendidas = byStage['suspendida'] || []
 
   function PropertyCard({ p, stage }: { p: any; stage: PropertyStage }) {
