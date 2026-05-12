@@ -7,6 +7,10 @@ import {
   JwtAuthService, CryptoIdGenerator,
   encrypt,
   createMarketingSender, fireMarketingEvent,
+  fireNewLeadNotification,
+  D1WhatsappConfigRepository,
+  CallbellWhatsappService,
+  decrypt,
 } from '@vendepro/infrastructure'
 import { Activity } from '@vendepro/core'
 import {
@@ -33,7 +37,7 @@ import {
   D1LandingVersionRepository, D1LandingEventRepository,
 } from '@vendepro/infrastructure'
 
-type Env = { DB: D1Database; JWT_SECRET: string }
+type Env = { DB: D1Database; JWT_SECRET: string; EMBLUE_API_KEY?: string }
 type AuthVars = { Variables: { userId: string; userRole: string; orgId: string } }
 
 const app = new Hono<{ Bindings: Env } & AuthVars>()
@@ -81,6 +85,17 @@ app.post('/leads', async (c) => {
     },
     actionSource: 'system_generated',
   })
+  // Hook notificaciones: email al agente + WhatsApp al lead
+  fireNewLeadNotification(c.env, {
+    orgId: c.get('orgId'),
+    leadId: result.id,
+    leadName: body.full_name ?? body.contact_data?.full_name ?? '',
+    leadPhone: body.phone ?? body.contact_data?.phone ?? null,
+    leadEmail: body.email ?? body.contact_data?.email ?? null,
+    leadSource: body.source ?? 'manual',
+    assignedToUserId: body.assigned_to || c.get('userId'),
+  })
+
   return c.json({ ...result, marketing: mk ?? null }, 201)
 })
 
@@ -597,6 +612,71 @@ app.patch('/landing-templates/:id', async (c) => {
     actor: actor(c), orgId: orgId(c), templateId: c.req.param('id'), patch: body.patch,
   })
   return c.json({ ok: true })
+})
+
+// ── WHATSAPP CONFIG (admin) ──────────────────────────────────────
+app.get('/whatsapp-config', async (c) => {
+  const orgId = c.get('orgId')
+  const repo = new D1WhatsappConfigRepository(c.env.DB)
+  const config = await repo.findByOrgId(orgId)
+
+  const orgRepo = new D1OrganizationRepository(c.env.DB)
+  const org = await orgRepo.findById(orgId)
+  const orgSlug = org?.slug ?? null
+
+  if (!config) return c.json({ org_slug: orgSlug })
+  return c.json({
+    ...config,
+    api_token_encrypted: config.api_token_encrypted ? '••••••••' : null,
+    org_slug: orgSlug,
+  })
+})
+
+app.put('/whatsapp-config', async (c) => {
+  const body = (await c.req.json()) as any
+  const repo = new D1WhatsappConfigRepository(c.env.DB)
+  const orgId = c.get('orgId')
+
+  const existing = await repo.findByOrgId(orgId)
+  const now = new Date().toISOString()
+  const idGen = new CryptoIdGenerator()
+
+  let apiTokenEncrypted = existing?.api_token_encrypted ?? null
+  if (body.api_token && body.api_token !== '••••••••') {
+    apiTokenEncrypted = await encrypt(body.api_token, c.env.JWT_SECRET)
+  }
+
+  await repo.save({
+    id: existing?.id ?? idGen.generate(),
+    org_id: orgId,
+    provider: body.provider ?? existing?.provider ?? 'callbell',
+    api_token_encrypted: apiTokenEncrypted,
+    webhook_secret: body.webhook_secret ?? existing?.webhook_secret ?? idGen.generate(),
+    welcome_template: body.welcome_template ?? existing?.welcome_template ?? 'Hola {{name}}! Gracias por contactarnos.',
+    bot_enabled: body.bot_enabled ?? existing?.bot_enabled ?? true,
+    notify_agent_email: body.notify_agent_email ?? existing?.notify_agent_email ?? true,
+    notify_admin_email: body.notify_admin_email ?? existing?.notify_admin_email ?? true,
+    created_at: existing?.created_at ?? now,
+    updated_at: now,
+  })
+  return c.json({ success: true })
+})
+
+app.post('/whatsapp-config/test', async (c) => {
+  const body = (await c.req.json()) as any
+  const phone = body.phone
+  if (!phone) return c.json({ error: 'phone requerido' }, 400)
+
+  const repo = new D1WhatsappConfigRepository(c.env.DB)
+  const config = await repo.findByOrgId(c.get('orgId'))
+  if (!config?.api_token_encrypted) return c.json({ error: 'WhatsApp no configurado' }, 400)
+
+  const token = await decrypt(config.api_token_encrypted, c.env.JWT_SECRET)
+  if (!token) return c.json({ error: 'Token inválido' }, 400)
+
+  const svc = new CallbellWhatsappService(token)
+  const result = await svc.sendMessage({ to: phone, text: 'Mensaje de prueba desde VendéPro 🎉' })
+  return c.json(result)
 })
 
 export default app

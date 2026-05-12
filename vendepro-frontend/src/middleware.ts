@@ -15,7 +15,8 @@ const PUBLIC_PREFIXES = [
   '/t/',   // public appraisal pages
   '/v/',   // public visit forms
   '/p/',   // public prefactibilidades
-  '/l/',   // landings públicas
+  '/l/',       // landings públicas
+  '/widget/',  // embeddable chat widget
   '/_next',
   '/favicon',
   '/logo',

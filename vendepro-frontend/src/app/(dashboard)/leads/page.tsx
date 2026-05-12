@@ -481,11 +481,11 @@ export default function LeadsPage() {
               const hasOverdue = stageLeads.some(l => getLeadUrgency(l) === 'danger')
               return (
                 <DroppableColumn key={stage} id={stage}>
-                  <div className={`flex items-center justify-between mb-2 px-2 py-1.5 rounded-lg ${LEAD_STAGES[stage].color}`}>
-                    <span className="text-xs font-semibold">{LEAD_STAGES[stage].label}</span>
-                    <div className="flex items-center gap-1">
-                      {hasOverdue && <AlertTriangle className="w-3 h-3 text-red-500" />}
-                      <span className="text-xs font-bold">{stageLeads.length}</span>
+                  <div className={`flex items-center justify-between mb-3 px-3 py-2 rounded-lg shadow-sm ${LEAD_STAGES[stage].headerColor}`}>
+                    <span className="text-sm font-bold tracking-wide">{LEAD_STAGES[stage].label}</span>
+                    <div className="flex items-center gap-1.5">
+                      {hasOverdue && <AlertTriangle className="w-3.5 h-3.5 text-yellow-300" />}
+                      <span className="text-sm font-bold bg-white/20 px-1.5 py-0.5 rounded">{stageLeads.length}</span>
                     </div>
                   </div>
                   <div className="space-y-2 max-h-[60vh] overflow-y-auto">
@@ -935,35 +935,35 @@ function KanbanCard({ lead, onAdvance, onMoveTo }: { lead: any; onAdvance: () =>
   const [showMove, setShowMove] = useState(false)
 
   return (
-    <div className={`bg-white border rounded-xl p-3 hover:shadow-md transition-all relative ${urgency === 'danger' ? 'border-red-200 bg-red-50/30' : ''}`}>
+    <div className={`bg-white border rounded-xl p-3.5 hover:shadow-xl transition-all relative ${urgency === 'danger' ? 'border-red-400 bg-red-50 shadow-md shadow-red-100/50' : 'border-gray-200/60 shadow-md ring-1 ring-gray-900/[0.04]'}`}>
       <Link href={`/leads/${lead.id}`}>
-        <div className="flex items-center justify-between mb-1">
-          <h4 className="text-sm font-medium text-gray-800 truncate">{lead.full_name}{lead.property_address ? <span className="text-gray-400 font-normal text-[10px] ml-1">· {lead.property_address}</span> : ''}</h4>
-          {badge && <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${badge.class}`}>{badge.text}</span>}
+        <div className="flex items-center justify-between mb-1.5">
+          <h4 className="text-sm font-semibold text-gray-900 truncate">{lead.full_name}{lead.property_address ? <span className="text-gray-400 font-normal text-[11px] ml-1">· {lead.property_address}</span> : ''}</h4>
+          {badge && <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${urgency === 'danger' ? 'bg-red-600 text-white' : urgency === 'warning' ? 'bg-amber-500 text-white' : badge.class}`}>{badge.text}</span>}
         </div>
         {lead.tags?.length > 0 && (
-          <div className="flex gap-1 mb-1">
+          <div className="flex gap-1 mb-1.5">
             {lead.tags.map((tag: any) => (
-              <span key={tag.id} className="text-[9px] px-1.5 py-0.5 rounded-full text-white font-medium" style={{ background: tag.color }}>{tag.name}</span>
+              <span key={tag.id} className="text-[10px] px-1.5 py-0.5 rounded-full text-white font-semibold shadow-sm" style={{ background: tag.color }}>{tag.name}</span>
             ))}
           </div>
         )}
-        <div className="space-y-1 text-xs text-gray-500">
-          {lead.phone && <p className="flex items-center gap-1"><Phone className="w-3 h-3" />{lead.phone}</p>}
-          {lead.operation && <p className="capitalize">{lead.operation}{lead.neighborhood ? ` · ${lead.neighborhood}` : ''}</p>}
-          {lead.next_step && <p className="text-gray-400 truncate">→ {lead.next_step}</p>}
+        <div className="space-y-1 text-xs text-gray-600">
+          {lead.phone && <p className="flex items-center gap-1 font-medium"><Phone className="w-3 h-3 text-gray-400" />{lead.phone}</p>}
+          {lead.operation && <p className="capitalize font-medium text-gray-700">{lead.operation}{lead.neighborhood ? <span className="text-gray-400 font-normal"> · {lead.neighborhood}</span> : ''}</p>}
+          {lead.next_step && <p className="text-gray-500 truncate">→ {lead.next_step}</p>}
         </div>
       </Link>
-      <div className="flex items-center justify-between mt-2">
-        <div className="flex gap-0.5">{Object.entries(checklist).map(([k, v]) => <div key={k} className={`w-1.5 h-1.5 rounded-full ${v ? 'bg-green-500' : 'bg-gray-200'}`} />)}</div>
-        <div className="flex gap-1">
+      <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-gray-100">
+        <div className="flex gap-1">{Object.entries(checklist).map(([k, v]) => <div key={k} className={`w-2 h-2 rounded-full ${v ? 'bg-green-500' : 'bg-gray-300'}`} />)}</div>
+        <div className="flex gap-0.5">
           {lead.phone && (
-            <a href={`https://wa.me/${formatWhatsApp(lead.phone)}`} target="_blank" className="p-1 rounded hover:bg-green-50 text-green-500"><MessageCircle className="w-3.5 h-3.5" /></a>
+            <a href={`https://wa.me/${formatWhatsApp(lead.phone)}`} target="_blank" className="p-1.5 rounded-lg hover:bg-green-50 text-green-600 transition-colors"><MessageCircle className="w-4 h-4" /></a>
           )}
-          <button onClick={() => setShowMove(!showMove)} className="p-1 rounded hover:bg-gray-100 text-gray-400" title="Mover a...">
-            <ChevronDown className="w-3.5 h-3.5" />
+          <button onClick={() => setShowMove(!showMove)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" title="Mover a...">
+            <ChevronDown className="w-4 h-4" />
           </button>
-          <button onClick={onAdvance} className="p-1 rounded hover:bg-pink-50 text-pink-500" title="Avanzar"><ArrowRight className="w-3.5 h-3.5" /></button>
+          <button onClick={onAdvance} className="p-1.5 rounded-lg hover:bg-pink-50 text-pink-600 transition-colors" title="Avanzar"><ArrowRight className="w-4 h-4" /></button>
         </div>
       </div>
       {/* Move to dropdown */}

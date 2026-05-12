@@ -1,12 +1,14 @@
 import { ValidationError } from '../errors/validation-error'
 
-export type NotificationKind = 'lead_assigned' | 'task_overdue' | 'reservation_update' | 'system'
+export type NotificationKind = 'lead_assigned' | 'task_overdue' | 'reservation_update' | 'system' | 'new_lead' | 'lead_qualified'
 
 export const NOTIFICATION_KINDS: NotificationKind[] = [
   'lead_assigned',
   'task_overdue',
   'reservation_update',
   'system',
+  'new_lead',
+  'lead_qualified',
 ]
 
 export interface NotificationProps {
