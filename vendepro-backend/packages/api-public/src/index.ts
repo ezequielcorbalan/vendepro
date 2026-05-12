@@ -18,10 +18,6 @@ import {
   D1LandingEventRepository,
   D1OrgVariableRepository,
   fireMarketingEvent,
-  fireNewLeadNotification,
-  processBotMessage,
-  D1WhatsappConfigRepository,
-  D1BotConversationRepository,
 } from '@vendepro/infrastructure'
 import {
   GetPublicReportUseCase,
@@ -37,7 +33,7 @@ import {
   SubmitLeadFromLandingUseCase,
 } from '@vendepro/core'
 
-type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket; EMBLUE_API_KEY?: string; GROQ_API_KEY?: string }
+type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket }
 
 const app = new Hono<{ Bindings: Env }>()
 
@@ -249,17 +245,6 @@ app.post('/public/leads', async (c) => {
     ga4ClientId: body.visitorId ?? null,
   })
 
-  // Hook notificaciones: email al agente + WhatsApp al lead
-  fireNewLeadNotification(c.env, {
-    orgId: result.org_id,
-    leadId: result.id,
-    leadName: body.full_name ?? '',
-    leadPhone: body.phone ?? null,
-    leadEmail: body.email ?? null,
-    leadSource: 'public_api',
-    assignedToUserId: null,
-  })
-
   return c.json({ ...result, marketing: mk ?? null }, 201)
 })
 
@@ -322,18 +307,6 @@ app.post('/l/:slug/submit', async (c) => {
       eventSourceUrl: c.req.header('referer') ?? null,
       ga4ClientId: body.visitorId ?? null,
     })
-
-    // Hook notificaciones: email al agente + WhatsApp al lead
-    fireNewLeadNotification(c.env, {
-      orgId: landing.org_id,
-      leadId: (r as any).leadId,
-      leadName: body.name ?? '',
-      leadPhone: body.phone ?? null,
-      leadEmail: body.email ?? null,
-      leadSource: `landing:${c.req.param('slug')}`,
-      assignedToUserId: null,
-    })
-
     return c.json({ ...r, marketing: mk ?? null }, 201)
   }
   return c.json(r, 201)
@@ -414,160 +387,6 @@ app.get('/public/pdf/:orgId/:appraisalId/:filename', async (c) => {
       'Cache-Control': 'private, max-age=900',
     },
   })
-})
-
-// ── CALLBELL WEBHOOK (incoming WhatsApp messages) ───────────────
-app.post('/webhooks/callbell', async (c) => {
-  const body = (await c.req.json()) as any
-
-  // Callbell sends different event types — we only handle incoming messages
-  if (body?.event !== 'message_created' || body?.payload?.direction !== 'in') {
-    return c.json({ ok: true })
-  }
-
-  const phone = body?.payload?.sender?.phone ?? body?.payload?.contact?.phone
-  const text = body?.payload?.text ?? body?.payload?.content?.text ?? ''
-  if (!phone) return c.json({ error: 'no phone' }, 400)
-
-  // Resolve org from webhook secret header
-  const secret = c.req.header('X-Webhook-Secret')
-  if (!secret) return c.json({ error: 'missing secret' }, 401)
-
-  const configRepo = new D1WhatsappConfigRepository(c.env.DB)
-  // Find org by webhook_secret — iterate is fine since few orgs
-  const allOrgs = await c.env.DB
-    .prepare('SELECT org_id FROM whatsapp_config WHERE webhook_secret = ?')
-    .bind(secret)
-    .first() as any
-  if (!allOrgs) return c.json({ error: 'invalid secret' }, 401)
-
-  const result = await processBotMessage(c.env as any, {
-    orgId: allOrgs.org_id,
-    phone,
-    text,
-  })
-
-  return c.json(result)
-})
-
-// ── CHAT WIDGET (public, slug-based) ────────────────────────────
-
-// GET config for the widget (branding + welcome message)
-app.get('/widget/:slug/config', async (c) => {
-  const orgRepo = new D1OrganizationRepository(c.env.DB)
-  const org = await orgRepo.findBySlug(c.req.param('slug'))
-  if (!org) return c.json({ error: 'not found' }, 404)
-
-  const waConfigRepo = new D1WhatsappConfigRepository(c.env.DB)
-  const config = await waConfigRepo.findByOrgId(org.id)
-
-  c.header('Cache-Control', 'public, max-age=300')
-  return c.json({
-    org_name: org.name,
-    logo_url: org.logo_url,
-    brand_color: org.brand_color || '#ff007c',
-    brand_accent_color: org.brand_accent_color || '#ff8017',
-    welcome_message: config?.welcome_template?.replace(/\{\{name\}\}/g, '') ??
-      '¡Hola! ¿En qué te puedo ayudar?',
-    bot_enabled: config?.bot_enabled ?? false,
-  })
-})
-
-// POST message from widget → bot processes and returns reply
-app.post('/widget/:slug/chat', async (c) => {
-  const orgRepo = new D1OrganizationRepository(c.env.DB)
-  const org = await orgRepo.findBySlug(c.req.param('slug'))
-  if (!org) return c.json({ error: 'not found' }, 404)
-
-  const body = (await c.req.json()) as any
-  const sessionId = body.session_id
-  const text = body.text ?? ''
-  const visitorData = body.visitor ?? {}
-
-  if (!sessionId) return c.json({ error: 'session_id requerido' }, 400)
-
-  const botRepo = new D1BotConversationRepository(c.env.DB)
-  const idGen = new CryptoIdGenerator()
-  const now = new Date().toISOString()
-
-  // Find or create conversation for this session
-  let conversation = await botRepo.findActiveByPhone(sessionId, org.id)
-
-  if (!conversation) {
-    // First message — create lead + conversation
-    const leadRepo = new D1LeadRepository(c.env.DB)
-    const userRepo = new D1UserRepository(c.env.DB)
-    const admin = await userRepo.findFirstAdminByOrg(org.id)
-
-    const leadId = idGen.generate()
-    const contactRepo = new D1ContactRepository(c.env.DB)
-    const createLead = new (await import('@vendepro/core')).CreateLeadWithContactUseCase(
-      leadRepo, contactRepo, idGen,
-    )
-    const leadResult = await createLead.execute({
-      org_id: org.id,
-      assigned_to: admin?.id ?? '',
-      full_name: visitorData.name || 'Visitante web',
-      phone: visitorData.phone || null,
-      email: visitorData.email || null,
-      source: 'widget',
-      source_detail: `widget:${c.req.param('slug')}`,
-      operation: 'otro',
-      notes: null,
-    })
-
-    conversation = {
-      id: idGen.generate(),
-      org_id: org.id,
-      lead_id: leadResult.id,
-      phone: sessionId,
-      current_step: 'welcome',
-      answers: {},
-      status: 'active',
-      created_at: now,
-      updated_at: now,
-    }
-    await botRepo.save(conversation)
-
-    // Fire notification to agent
-    fireNewLeadNotification(c.env, {
-      orgId: org.id,
-      leadId: leadResult.id,
-      leadName: visitorData.name || 'Visitante web',
-      leadPhone: visitorData.phone || null,
-      leadEmail: visitorData.email || null,
-      leadSource: 'widget',
-      assignedToUserId: admin?.id ?? null,
-    })
-
-    // Return welcome question
-    const waConfigRepo2 = new D1WhatsappConfigRepository(c.env.DB)
-    const config = await waConfigRepo2.findByOrgId(org.id)
-    const welcome = config?.welcome_template?.replace(/\{\{name\}\}/g, visitorData.name || '') ??
-      '¡Hola! ¿Estás buscando comprar/alquilar o querés vender/tasar una propiedad?'
-
-    return c.json({ reply: welcome, step: 'welcome', lead_id: leadResult.id })
-  }
-
-  // Existing conversation — process the message through bot logic
-  const result = await processBotMessage(c.env as any, {
-    orgId: org.id,
-    phone: sessionId,
-    text,
-  })
-
-  // Build reply based on step
-  const BOT_REPLIES: Record<string, string> = {
-    zone: '¿En qué zona o barrio te interesa?',
-    budget: '¿Tenés un presupuesto estimado en USD?',
-    done: '¡Perfecto! Ya le paso tus datos a un agente que te va a contactar en breve. ¡Gracias!',
-  }
-
-  const updatedConv = await botRepo.findActiveByPhone(sessionId, org.id)
-  const currentStep = updatedConv?.current_step ?? result.step ?? 'done'
-  const reply = BOT_REPLIES[currentStep] ?? '¡Gracias por tu mensaje! Un agente te va a contactar pronto.'
-
-  return c.json({ reply, step: currentStep, done: currentStep === 'done' })
 })
 
 export default app

@@ -5,7 +5,7 @@ import Link from 'next/link'
 import {
   Settings, Save, Loader2, Building2, Calendar, User,
   ClipboardList, FileText, CheckCircle, XCircle, Megaphone,
-  HelpCircle, PlayCircle, MessageCircle,
+  HelpCircle, PlayCircle,
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
@@ -136,22 +136,13 @@ export default function ConfiguracionPage() {
       title: 'Mis Objetivos',
       subtitle: 'Metas y seguimiento',
     },
-    ...(isAdmin ? [
-      {
-        href: '/configuracion/marketing',
-        icon: <Megaphone className="w-5 h-5" />,
-        iconColor: 'text-pink-600',
-        title: 'Marketing',
-        subtitle: 'Meta Pixel + GTM + tracking de leads',
-      },
-      {
-        href: '/configuracion/whatsapp',
-        icon: <MessageCircle className="w-5 h-5" />,
-        iconColor: 'text-green-600',
-        title: 'WhatsApp Bot',
-        subtitle: 'Auto-respuesta y calificación de leads',
-      },
-    ] : []),
+    ...(isAdmin ? [{
+      href: '/configuracion/marketing',
+      icon: <Megaphone className="w-5 h-5" />,
+      iconColor: 'text-pink-600',
+      title: 'Marketing',
+      subtitle: 'Meta Pixel + GTM + tracking de leads',
+    }] : []),
   ]
 
   return (
