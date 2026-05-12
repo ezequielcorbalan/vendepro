@@ -4,7 +4,7 @@ import { ValidationError } from '../../src/domain/errors/validation-error'
 
 describe('PropertyStage value object', () => {
   it('exposes the canonical PROPERTY_STAGES list', () => {
-    expect(PROPERTY_STAGES).toEqual(['captacion', 'publicada', 'con_ofertas', 'reservada', 'vendida', 'suspendida', 'perdida'])
+    expect(PROPERTY_STAGES).toEqual(['captacion', 'publicada', 'reservada', 'vendida', 'suspendida', 'perdida'])
   })
 
   it.each(PROPERTY_STAGES)('creates valid stage "%s"', (value) => {
@@ -24,16 +24,8 @@ describe('PropertyStage value object', () => {
     expect(PropertyStage.create('captacion').canTransitionTo('suspendida')).toBe(true)
   })
 
-  it('allows publicada -> con_ofertas', () => {
-    expect(PropertyStage.create('publicada').canTransitionTo('con_ofertas')).toBe(true)
-  })
-
   it('allows publicada -> reservada', () => {
     expect(PropertyStage.create('publicada').canTransitionTo('reservada')).toBe(true)
-  })
-
-  it('allows con_ofertas -> reservada', () => {
-    expect(PropertyStage.create('con_ofertas').canTransitionTo('reservada')).toBe(true)
   })
 
   it('allows reservada -> vendida', () => {

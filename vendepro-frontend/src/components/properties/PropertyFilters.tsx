@@ -84,7 +84,12 @@ export default function PropertyFilters({ properties, config }: { properties: an
       if (terminalIds.has(csId)) return false
       if (statusId !== 1) return false
     } else if (filter.startsWith('stage:')) {
-      if (csId !== Number(filter.replace('stage:', ''))) return false
+      const stageId = Number(filter.replace('stage:', ''))
+      const stageSlug = config.commercial_stages.find(s => s.id === stageId)?.slug
+      const matchIds = stageSlug
+        ? new Set(config.commercial_stages.filter(s => s.slug === stageSlug).map(s => s.id))
+        : new Set([stageId])
+      if (!matchIds.has(csId)) return false
     } else if (filter !== 'all') {
       if (statusId !== Number(filter.replace('status:', ''))) return false
     }
@@ -150,6 +155,24 @@ export default function PropertyFilters({ properties, config }: { properties: an
             </button>
           )
         })}
+        {/* Terminal stages: vendida/alquilada, suspendida */}
+        {config.commercial_stages
+          .filter(s => s.is_terminal && s.slug !== 'perdida')
+          .filter((s, _i, arr) => arr.findIndex(x => x.slug === s.slug) === arr.indexOf(s))
+          .map(stage => {
+            const count = config.commercial_stages
+              .filter(s => s.slug === stage.slug)
+              .reduce((sum, s) => sum + (stageCounts[s.id] || 0), 0)
+            if (count === 0) return null
+            const ids = config.commercial_stages.filter(s => s.slug === stage.slug).map(s => s.id)
+            const isActive = ids.some(id => filter === `stage:${id}`)
+            return (
+              <button key={stage.slug} onClick={() => setFilter(`stage:${ids[0]}`)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${isActive ? 'bg-gray-800 text-white' : `${COLOR_CLASS[stage.color] || 'bg-gray-100 text-gray-600'} hover:opacity-80`}`}>
+                {stage.label} ({count})
+              </button>
+            )
+          })}
         <button onClick={() => setFilter('all')}
           className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${filter === 'all' ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
           Todas ({properties.length})
@@ -181,10 +204,10 @@ export default function PropertyFilters({ properties, config }: { properties: an
           const opStages = stagesForType(config, property.operation_type_id ?? 1)
 
           return (
-            <div key={property.id} className={`bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden ${isOverdue ? 'ring-2 ring-orange-300' : ''}`}>
+            <div key={property.id} className={`bg-white rounded-xl border border-gray-200/60 shadow-md ring-1 ring-gray-900/[0.04] hover:shadow-xl transition-all overflow-hidden ${isOverdue ? 'ring-2 ring-orange-300' : ''}`}>
               <Link href={`/propiedades/${property.id}`}>
-                <div className="h-36 bg-gradient-to-br from-[#ff007c]/10 to-[#ff8017]/10 flex items-center justify-center relative">
-                  <Building2 className="w-10 h-10 text-[#ff007c]/30" />
+                <div className="h-36 bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center relative border-b border-gray-100">
+                  <Building2 className="w-10 h-10 text-gray-300" />
                   {isOverdue && (
                     <div className="absolute top-2 left-2 bg-orange-500 text-white text-[10px] font-bold uppercase px-2 py-1 rounded-full flex items-center gap-1 shadow-md">
                       <AlertTriangle className="w-3 h-3" /> {info.days === null ? 'Sin reportes' : `Hace ${info.days}d`}
@@ -222,10 +245,10 @@ export default function PropertyFilters({ properties, config }: { properties: an
                 </div>
 
                 <Link href={`/propiedades/${property.id}`}>
-                  <h3 className="font-semibold text-gray-800 mb-0.5 hover:text-[#ff007c] transition-colors leading-snug">{property.address}</h3>
-                  <p className="text-xs text-gray-500">{property.neighborhood} · {property.property_type}</p>
+                  <h3 className="font-bold text-gray-900 mb-0.5 hover:text-[#ff007c] transition-colors leading-snug">{property.address}</h3>
+                  <p className="text-xs text-gray-500 font-medium">{property.neighborhood} · {property.property_type}</p>
                   {property.asking_price && (
-                    <p className="text-sm font-semibold text-[#ff007c] mt-1">{property.currency} {Number(property.asking_price).toLocaleString('es-AR')}</p>
+                    <p className="text-base font-bold text-[#ff007c] mt-1">{property.currency} {Number(property.asking_price).toLocaleString('es-AR')}</p>
                   )}
                   {property.agent_name && <p className="text-xs text-gray-400 mt-0.5">Agente: {property.agent_name}</p>}
                   {info.days !== null && (

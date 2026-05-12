@@ -9,8 +9,8 @@ import { useToast } from '@/components/ui/Toast'
 import { PROPERTY_STAGES, type PropertyStage } from '@/lib/crm-config'
 import { formatCurrency } from '@/lib/utils'
 
-// Progresión lineal del pipeline — captacion → publicada → con_ofertas → reservada → vendida
-const MAIN_STAGES: PropertyStage[] = ['captacion', 'publicada', 'con_ofertas', 'reservada', 'vendida']
+// Progresión lineal del pipeline — captacion → publicada → reservada → vendida
+const MAIN_STAGES: PropertyStage[] = ['captacion', 'publicada', 'reservada', 'vendida']
 // Suspendida aparece aparte — solo se puede suspender, no avanzar
 const ALL_PIPELINE_STAGES: PropertyStage[] = [...MAIN_STAGES, 'suspendida']
 
@@ -123,36 +123,36 @@ export default function PipelinePage() {
     const isTerminal = stage === 'vendida' || stage === 'suspendida'
     const canAdvance = MAIN_STAGES.includes(stage) && stage !== 'vendida'
     const age = daysSince(p.updated_at)
-    const warnArchive = isTerminal && age >= ARCHIVE_WARN_DAYS
+    const warnArchive = !isTerminal && age >= ARCHIVE_WARN_DAYS
 
     return (
-      <div className={`bg-white border rounded-lg p-3 ${warnArchive ? 'border-amber-300' : ''}`}>
+      <div className={`bg-white border rounded-xl p-3.5 shadow-md ring-1 ring-gray-900/[0.04] hover:shadow-xl transition-all ${warnArchive ? 'border-amber-400 bg-amber-50/40' : 'border-gray-200/60'}`}>
         <Link href={`/propiedades/${p.id}`}>
-          <p className="text-sm font-medium text-gray-800 truncate">{p.address}</p>
-          <div className="text-xs text-gray-400 mt-1 space-y-0.5">
-            {p.neighborhood && <p className="flex items-center gap-1"><MapPin className="w-3 h-3" />{p.neighborhood}</p>}
+          <p className="text-sm font-semibold text-gray-900 truncate">{p.address}</p>
+          <div className="text-xs mt-1.5 space-y-1">
+            {p.neighborhood && <p className="flex items-center gap-1 text-gray-500"><MapPin className="w-3 h-3 text-gray-400" />{p.neighborhood}</p>}
             {p.asking_price && (
-              <p className="flex items-center gap-1 text-[#ff007c] font-medium">
-                <DollarSign className="w-3 h-3" />{formatCurrency(p.asking_price, p.currency)}
+              <p className="flex items-center gap-1 text-[#ff007c] font-bold text-sm">
+                <DollarSign className="w-3.5 h-3.5" />{formatCurrency(p.asking_price, p.currency)}
               </p>
             )}
-            {p.owner_name && <p className="truncate">{p.owner_name}</p>}
+            {p.owner_name && <p className="text-gray-600 font-medium truncate">{p.owner_name}</p>}
           </div>
         </Link>
         {warnArchive && (
-          <p className="text-[10px] text-amber-600 mt-1.5 font-medium">{age} días sin cambios</p>
+          <p className="text-[10px] text-amber-600 mt-2 font-bold bg-amber-100 px-2 py-0.5 rounded-full inline-block">{age} días sin cambios</p>
         )}
-        <div className="mt-2 flex gap-1">
+        <div className="mt-2.5 pt-2 border-t border-gray-100 flex gap-1.5">
           {canAdvance && (
             <button onClick={() => advanceStage(p)}
-              className="flex-1 py-1 text-[10px] text-[#ff007c] border border-[#ff007c]/30 rounded-lg hover:bg-pink-50 flex items-center justify-center gap-1">
-              Avanzar <ArrowRight className="w-3 h-3" />
+              className="flex-1 py-1.5 text-xs font-medium text-white bg-gradient-to-r from-[#ff007c] to-[#ff8017] rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-1 shadow-sm">
+              Avanzar <ArrowRight className="w-3.5 h-3.5" />
             </button>
           )}
           {isTerminal && (
             <button onClick={() => archiveProperty(p)}
-              className="flex-1 py-1 text-[10px] text-gray-400 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-1">
-              <Archive className="w-3 h-3" /> Archivar
+              className="flex-1 py-1.5 text-xs font-medium text-gray-500 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-1">
+              <Archive className="w-3.5 h-3.5" /> Archivar
             </button>
           )}
         </div>
@@ -185,22 +185,26 @@ export default function PipelinePage() {
         </div>
       ) : view === 'kanban' ? (
         <>
-          {/* Pipeline principal: captacion → publicada → con_ofertas → reservada → vendida */}
+          {/* Pipeline principal: captacion → publicada → reservada → vendida */}
           <div className="overflow-x-auto -mx-2 px-2">
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 min-w-[800px]">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 min-w-[800px]">
               {MAIN_STAGES.map(stage => {
                 const stageCfg = PROPERTY_STAGES[stage]
                 const stageProps = byStage[stage] || []
+                const totalValue = stageProps.reduce((sum: number, p: any) => sum + (p.asking_price || 0), 0)
                 return (
-                  <div key={stage} className="bg-gray-50 rounded-xl border p-3">
-                    <div className={`flex items-center justify-between mb-3 px-2 py-1.5 rounded-lg ${stageCfg.color}`}>
-                      <span className="text-xs font-semibold">{stageCfg.label}</span>
-                      <span className="text-xs font-bold">{stageProps.length}</span>
+                  <div key={stage} className="rounded-xl">
+                    <div className={`flex items-center justify-between mb-3 px-3 py-2 rounded-lg shadow-sm ${stageCfg.headerColor}`}>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold tracking-wide">{stageCfg.label}</span>
+                        <span className="text-sm font-bold bg-white/20 px-1.5 py-0.5 rounded">{stageProps.length}</span>
+                      </div>
+                      {totalValue > 0 && <span className="text-[10px] font-medium opacity-80">{formatCurrency(totalValue, 'USD')}</span>}
                     </div>
-                    <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+                    <div className="space-y-2.5 max-h-[60vh] overflow-y-auto">
                       {stageProps.map(p => <PropertyCard key={p.id} p={p} stage={stage} />)}
                       {stageProps.length === 0 && (
-                        <p className="text-xs text-gray-400 text-center py-4">Sin propiedades</p>
+                        <div className="text-xs text-gray-400 text-center py-8 border-2 border-dashed border-gray-200 rounded-xl">Sin propiedades</div>
                       )}
                     </div>
                   </div>
@@ -225,7 +229,7 @@ export default function PipelinePage() {
           )}
         </>
       ) : (
-        <div className="overflow-x-auto rounded-xl border bg-white">
+        <div className="overflow-x-auto rounded-xl border border-gray-200/60 bg-white shadow-md ring-1 ring-gray-900/[0.04]">
           <table className="w-full text-sm min-w-[640px]">
             <thead>
               <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
