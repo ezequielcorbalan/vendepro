@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import {
   LEAD_STAGES, LEAD_STAGE_KEYS, LEAD_PIPELINE_STAGES, LEAD_SOURCES,
+  LEAD_TERMINAL_STAGES, LEAD_AGENT_FINAL_STAGES,
   OPERATION_TYPES, getLeadChecklist, getLeadChecklistScore,
   getLeadUrgency, getUrgencyBadge, formatWhatsApp, type LeadStage
 } from '@/lib/crm-config'
@@ -260,20 +261,27 @@ export default function LeadsPage() {
   }
 
   const moveToStage = useCallback(async (leadId: string, stage: string) => {
+    if (stage === 'finalizado') {
+      toast('Finalizado se asigna automáticamente cuando la propiedad se vende', 'warning')
+      return
+    }
     if (stage === 'en_tasacion') {
       const lead = leads.find(l => l.id === leadId)
       if (lead) { setShowConvertModal(lead); return }
     }
     try {
-      if (stage === 'perdido') {
-        const reason = prompt('¿Por qué se pierde este lead?')
+      if (stage === 'perdido' || stage === 'invalido') {
+        const promptMsg = stage === 'perdido'
+          ? '¿Por qué se pierde este lead?'
+          : '¿Por qué es inválido este lead?\n\nEj: propiedad no apta, datos duplicados, fake, etc.'
+        const reason = prompt(promptMsg)
         if (reason === null) return
         const r = await apiFetch('crm', '/leads/stage', {
           method: 'POST',
-          body: JSON.stringify({ id: leadId, stage: 'perdido', notes: reason || 'Sin motivo' })
+          body: JSON.stringify({ id: leadId, stage, notes: reason || 'Sin motivo' })
         })
-        pushFromApiResponse(await r.json().catch(() => ({})), { entity_type: 'lead', entity_id: leadId, event_name_fallback: 'perdido' })
-        toast('Lead marcado como perdido', 'warning')
+        pushFromApiResponse(await r.json().catch(() => ({})), { entity_type: 'lead', entity_id: leadId, event_name_fallback: stage })
+        toast(`Lead marcado como ${stage === 'perdido' ? 'perdido' : 'inválido'}`, 'warning')
       } else {
         const r = await apiFetch('crm', '/leads/stage', {
           method: 'POST',
@@ -495,11 +503,22 @@ export default function LeadsPage() {
               )
             })}
           </div>
-          {leads.filter(l => l.stage === 'perdido').length > 0 && (
-            <div className="mt-4 p-3 bg-gray-50 rounded-xl">
-              <p className="text-xs text-gray-500 font-medium">Perdidos: {leads.filter(l => l.stage === 'perdido').length}</p>
-            </div>
-          )}
+          {(() => {
+            const perdidos = leads.filter(l => l.stage === 'perdido').length
+            const invalidos = leads.filter(l => l.stage === 'invalido').length
+            const finalizados = leads.filter(l => l.stage === 'finalizado').length
+            const total = perdidos + invalidos + finalizados
+            if (total === 0) return null
+            const parts: string[] = []
+            if (perdidos) parts.push(`Perdidos: ${perdidos}`)
+            if (invalidos) parts.push(`Inválidos: ${invalidos}`)
+            if (finalizados) parts.push(`Finalizados: ${finalizados}`)
+            return (
+              <div className="mt-4 p-3 bg-gray-50 rounded-xl">
+                <p className="text-xs text-gray-500 font-medium">{parts.join(' · ')}</p>
+              </div>
+            )
+          })()}
         </div>
         <DragOverlay>
           {activeDragId ? (() => {
@@ -723,11 +742,12 @@ const STAGE_BORDER: Record<string, string> = {
   nuevo: 'border-l-blue-400', asignado: 'border-l-indigo-400', contactado: 'border-l-cyan-400',
   calificado: 'border-l-emerald-400', en_tasacion: 'border-l-purple-400', presentada: 'border-l-pink-500',
   seguimiento: 'border-l-yellow-400', captado: 'border-l-green-500', perdido: 'border-l-red-400',
+  invalido: 'border-l-gray-300', finalizado: 'border-l-emerald-500',
 }
 const AVATAR_COLORS = ['bg-pink-400','bg-purple-400','bg-blue-400','bg-emerald-400','bg-orange-400','bg-cyan-500','bg-indigo-400']
 function avatarColor(name: string) { return AVATAR_COLORS[(name || 'X').charCodeAt(0) % AVATAR_COLORS.length] }
 function urgencyText(lead: any): { text: string; cls: string } | null {
-  if (lead.stage === 'perdido') return null
+  if ((LEAD_AGENT_FINAL_STAGES as readonly string[]).includes(lead.stage)) return null
   const diffH = (Date.now() - new Date(lead.updated_at || lead.created_at).getTime()) / 3600000
   const days = Math.floor(diffH / 24)
   if (lead.stage === 'nuevo' && diffH > 24) return { text: 'Sin asignar +24h', cls: 'text-red-500' }
@@ -882,7 +902,7 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
               <Phone className="w-5 h-5" />
             </div>
           )}
-          {lead.stage !== 'captado' && lead.stage !== 'perdido' && (
+          {!(LEAD_AGENT_FINAL_STAGES as readonly string[]).includes(lead.stage) && (
             <button onClick={onAdvance} className="flex-1 w-12 flex items-center justify-center text-[#ff007c] hover:bg-pink-50 active:bg-pink-100 border-t border-gray-100 transition-colors">
               <ArrowRight className="w-5 h-5" />
             </button>
@@ -911,7 +931,7 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
         ) : (
           <span className="flex-1 flex items-center justify-center py-2.5 text-xs text-gray-300">Sin teléfono</span>
         )}
-        {lead.stage !== 'captado' && lead.stage !== 'perdido' && (
+        {!(LEAD_AGENT_FINAL_STAGES as readonly string[]).includes(lead.stage) && (
           <button onClick={onAdvance} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-[#ff007c] hover:bg-pink-50 transition-colors">
             <ArrowRight className="w-3.5 h-3.5" /> Avanzar
           </button>

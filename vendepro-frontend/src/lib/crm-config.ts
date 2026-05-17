@@ -19,7 +19,9 @@ export const LEAD_STAGES = {
 
 export type LeadStage = keyof typeof LEAD_STAGES
 export const LEAD_STAGE_KEYS = Object.keys(LEAD_STAGES) as LeadStage[]
-export const LEAD_PIPELINE_STAGES = LEAD_STAGE_KEYS.filter(s => s !== 'perdido' && s !== 'invalido' && s !== 'finalizado')
+export const LEAD_TERMINAL_STAGES: LeadStage[] = ['perdido', 'invalido', 'finalizado']
+export const LEAD_AGENT_FINAL_STAGES: LeadStage[] = ['captado', ...LEAD_TERMINAL_STAGES]
+export const LEAD_PIPELINE_STAGES = LEAD_STAGE_KEYS.filter(s => !LEAD_TERMINAL_STAGES.includes(s))
 
 export const DEFAULT_TAGS = {
   propietario: { label: 'Propietario', color: '#ec4899' },
@@ -239,7 +241,8 @@ export function getLeadChecklistScore(lead: any): number {
 }
 
 export function getLeadUrgency(lead: any): 'ok' | 'warning' | 'danger' | 'lost' {
-  if (lead.stage === 'perdido') return 'lost'
+  if (lead.stage === 'perdido' || lead.stage === 'invalido') return 'lost'
+  if (lead.stage === 'finalizado' || lead.stage === 'captado') return 'ok'
   const now = new Date()
   const updated = lead.updated_at ? new Date(lead.updated_at) : new Date(lead.created_at)
   const diffH = (now.getTime() - updated.getTime()) / (1000 * 60 * 60)
