@@ -109,10 +109,12 @@ export default function PropertyFilters({ properties, config }: { properties: an
     return info.days === null || info.days >= REPORT_DEADLINE_DAYS
   }).length
 
-  // Etapas de seguimiento con propiedades (captada, publicada, reservada de cualquier tipo)
-  // 'propuesta' incluida: etapa activa pre-captación que también requiere seguimiento
-  // 'perdida' e 'invalida' son terminales y se excluyen del filtro "Activas" vía terminalIds
-  const followUpSlugs = new Set(['propuesta', 'captacion', 'captada', 'publicada', 'con_ofertas', 'reservada'])
+  // Etapas con pill en el header. Terminales (perdida/invalida) se excluyen del filtro "Activas"
+  // vía terminalIds, pero siguen visibles como pill cuando hay items para poder filtrarlos.
+  const followUpSlugs = new Set([
+    'propuesta', 'captacion', 'captada', 'publicada', 'con_ofertas', 'reservada',
+    'perdida', 'invalida',
+  ])
   const visibleStageIds = config.commercial_stages
     .filter(s => followUpSlugs.has(s.slug) && (stageCounts[s.id] || 0) > 0)
     .map(s => s.id)

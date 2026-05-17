@@ -15,7 +15,7 @@ import { useToast } from '@/components/ui/Toast'
 import {
   LEAD_STAGES, LEAD_STAGE_KEYS, LEAD_SOURCES, OPERATION_TYPES,
   formatWhatsApp, type LeadStage,
-  LEAD_PIPELINE_STAGES
+  LEAD_PIPELINE_STAGES, LEAD_TERMINAL_STAGES, LEAD_AGENT_FINAL_STAGES,
 } from '@/lib/crm-config'
 import { formatDate } from '@/lib/utils'
 
@@ -23,6 +23,7 @@ const STAGE_DOT_COLORS: Record<string, string> = {
   nuevo: '#3b82f6', asignado: '#6366f1', contactado: '#06b6d4',
   calificado: '#10b981', en_tasacion: '#8b5cf6', presentada: '#ec4899',
   seguimiento: '#f59e0b', captado: '#22c55e', perdido: '#ef4444',
+  invalido: '#6b7280', finalizado: '#10b981',
 }
 
 export default function LeadDetailPage() {
@@ -93,17 +94,24 @@ export default function LeadDetailPage() {
 
   const handleStageChange = async (stage: string) => {
     if (editing) return
+    if (stage === 'finalizado') {
+      toast('Finalizado se asigna automáticamente cuando la propiedad se vende', 'warning')
+      return
+    }
     if (stage === 'en_tasacion') { setShowConvertModal(true); return }
     try {
-      if (stage === 'perdido') {
-        const reason = prompt('¿Por qué se pierde este lead?')
+      if (stage === 'perdido' || stage === 'invalido') {
+        const promptMsg = stage === 'perdido'
+          ? '¿Por qué se pierde este lead?'
+          : '¿Por qué es inválido este lead?\n\nEj: propiedad no apta, datos duplicados, fake, etc.'
+        const reason = prompt(promptMsg)
         if (reason === null) return
         const r = await apiFetch('crm', '/leads/stage', {
           method: 'POST',
-          body: JSON.stringify({ id: leadId, stage: 'perdido', notes: reason || 'Sin motivo' }),
+          body: JSON.stringify({ id: leadId, stage, notes: reason || 'Sin motivo' }),
         })
-        pushFromApiResponse(await r.json().catch(() => ({})), { entity_type: 'lead', entity_id: leadId, event_name_fallback: 'perdido' })
-        toast('Lead marcado como perdido', 'warning')
+        pushFromApiResponse(await r.json().catch(() => ({})), { entity_type: 'lead', entity_id: leadId, event_name_fallback: stage })
+        toast(`Lead marcado como ${stage === 'perdido' ? 'perdido' : 'inválido'}`, 'warning')
       } else {
         const res = await apiFetch('crm', '/leads/stage', {
           method: 'POST',
@@ -483,8 +491,10 @@ export default function LeadDetailPage() {
           <div className="flex items-center gap-0 flex-wrap">
             {LEAD_PIPELINE_STAGES.map((s, i) => {
               const stageData = LEAD_STAGES[s]
+              const isTerminalLost = lead.stage === 'perdido' || lead.stage === 'invalido'
+              const isFinalized = lead.stage === 'finalizado'
               const rawOrder = LEAD_STAGES[lead.stage as LeadStage]?.order ?? 0
-              const currentOrder = lead.stage === 'perdido' ? 0 : rawOrder
+              const currentOrder = isTerminalLost ? 0 : isFinalized ? 999 : rawOrder
               const isCompleted = stageData.order < currentOrder
               const isCurrent = s === lead.stage
               const isLast = i === LEAD_PIPELINE_STAGES.length - 1
@@ -516,6 +526,15 @@ export default function LeadDetailPage() {
                 </div>
               )
             })}
+            {(LEAD_TERMINAL_STAGES as readonly string[]).includes(lead.stage) && (
+              <>
+                <ChevronRight className="w-3.5 h-3.5 text-gray-300 mx-0.5 shrink-0" />
+                <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${LEAD_STAGES[lead.stage as LeadStage].color} border-transparent`}>
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  {LEAD_STAGES[lead.stage as LeadStage].label}
+                </span>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -535,7 +554,7 @@ export default function LeadDetailPage() {
           className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-[#ff007c]/20 disabled:cursor-not-allowed disabled:opacity-50 min-w-[180px]"
         >
           <option value="" disabled>Mover a...</option>
-          {LEAD_STAGE_KEYS.map(s => (
+          {LEAD_STAGE_KEYS.filter(s => s !== 'finalizado').map(s => (
             <option key={s} value={s} disabled={s === lead.stage}>
               {LEAD_STAGES[s].label}{s === lead.stage ? ' (actual)' : ''}
             </option>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
-import { DollarSign, MapPin, ArrowRight, LayoutGrid, Table2, Archive } from 'lucide-react'
+import { DollarSign, MapPin, ArrowRight, LayoutGrid, Table2, Archive, XCircle, Ban } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { scopeQueryString } from '@/lib/agent-scope'
 import { useToast } from '@/components/ui/Toast'
@@ -115,6 +115,32 @@ export default function PipelinePage() {
     }
   }
 
+  async function markTerminal(property: any, targetStage: 'perdida' | 'invalida') {
+    const label = targetStage === 'perdida' ? 'perdida' : 'inválida'
+    const reason = prompt(
+      targetStage === 'perdida'
+        ? `¿Por qué se pierde "${property.address}"?\n\nEj: no se logró vender, propietario retiró, etc.`
+        : `¿Por qué es inválida "${property.address}"?\n\nEj: propiedad no apta, datos incorrectos, etc.`
+    )
+    if (reason === null) return
+    try {
+      const res = await apiFetch('properties', `/properties/${property.id}/stage`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ commercial_stage: targetStage, notes: reason || 'Sin motivo' }),
+      })
+      const data = (await res.json()) as any
+      if (!res.ok || data.error) {
+        toast(data.error || `Error al marcar como ${label}`, 'error')
+        return
+      }
+      toast(`${property.address} marcada como ${label}`, 'warning')
+      loadProperties()
+    } catch {
+      toast('Error de conexión', 'error')
+    }
+  }
+
   const switchView = (v: ViewMode) => { setView(v); localStorage.setItem('pipeline_view', v) }
 
   const activeCount = properties.filter(p => ALL_PIPELINE_STAGES.includes(normalizeStage(p.commercial_stage ?? '') as PropertyStage)).length
@@ -123,6 +149,8 @@ export default function PipelinePage() {
   function PropertyCard({ p, stage }: { p: any; stage: PropertyStage }) {
     const isTerminal = stage === 'vendida' || stage === 'suspendida'
     const canAdvance = MAIN_STAGES.includes(stage) && stage !== 'vendida'
+    const canLose = stage === 'captada' || stage === 'publicada' || stage === 'reservada'
+    const canInvalidate = stage === 'propuesta' || stage === 'captada'
     const age = daysSince(p.updated_at)
     const warnArchive = isTerminal && age >= ARCHIVE_WARN_DAYS
 
@@ -157,6 +185,24 @@ export default function PipelinePage() {
             </button>
           )}
         </div>
+        {(canLose || canInvalidate) && (
+          <div className="mt-1 flex gap-1">
+            {canLose && (
+              <button onClick={() => markTerminal(p, 'perdida')}
+                title="Marcar como perdida"
+                className="flex-1 py-1 text-[10px] text-red-500 border border-red-200 rounded-lg hover:bg-red-50 flex items-center justify-center gap-1">
+                <XCircle className="w-3 h-3" /> Perdida
+              </button>
+            )}
+            {canInvalidate && (
+              <button onClick={() => markTerminal(p, 'invalida')}
+                title="Marcar como inválida"
+                className="flex-1 py-1 text-[10px] text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-1">
+                <Ban className="w-3 h-3" /> Inválida
+              </button>
+            )}
+          </div>
+        )}
       </div>
     )
   }

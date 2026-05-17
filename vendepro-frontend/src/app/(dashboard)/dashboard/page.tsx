@@ -188,7 +188,7 @@ export default function DashboardCRM() {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <KPICard icon={<Users className="w-5 h-5" />} label="Leads activos" value={((leads?.total || 0) - (leads?.perdidos || 0) - (leads?.captados || 0))} color="blue" href="/leads" />
+        <KPICard icon={<Users className="w-5 h-5" />} label="Leads activos" value={(leads?.nuevos || 0) + (leads?.asignados || 0) + (leads?.contactados || 0) + (leads?.calificados || 0) + (leads?.en_tasacion || 0) + (leads?.presentada || 0) + (leads?.seguimiento || 0)} color="blue" href="/leads" />
         <KPICard icon={<Phone className="w-5 h-5" />} label="Contactados" value={leads?.contactados || 0} color="cyan" href="/leads?stage=contactado" />
         <KPICard icon={<Calculator className="w-5 h-5" />} label="Tasaciones" value={tasaciones?.total || 0} color="purple" href="/tasaciones" />
         <KPICard icon={<Home className="w-5 h-5" />} label="Captaciones" value={tasaciones?.captadas || 0} color="green" href="/propiedades/pipeline" />
@@ -402,12 +402,13 @@ export default function DashboardCRM() {
         <h2 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
           <Target className="w-4 h-4 text-pink-500" /> Pipeline de leads
         </h2>
-        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-9 gap-2">
+        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-11 gap-2">
           {Object.entries(LEAD_STAGES).map(([key, cfg]) => {
             const countMap: any = {
               nuevo: leads?.nuevos, asignado: leads?.asignados, contactado: leads?.contactados,
               calificado: leads?.calificados, seguimiento: leads?.seguimiento, en_tasacion: leads?.en_tasacion,
-              presentada: leads?.presentada, captado: leads?.captados, perdido: leads?.perdidos
+              presentada: leads?.presentada, captado: leads?.captados, perdido: leads?.perdidos,
+              invalido: leads?.invalidos, finalizado: leads?.finalizados,
             }
             return (
               <Link key={key} href={`/leads?stage=${key}`} className="text-center p-2 rounded-lg hover:bg-gray-50 transition-colors">
