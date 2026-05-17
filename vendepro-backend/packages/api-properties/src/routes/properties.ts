@@ -1,6 +1,8 @@
 import type { Hono } from 'hono'
 import {
   D1PropertyRepository,
+  D1LeadRepository,
+  D1StageHistoryRepository,
   CryptoIdGenerator,
   R2StorageService,
 } from '@vendepro/infrastructure'
@@ -17,6 +19,7 @@ import {
   ClearExternalReportUseCase,
   DeletePropertyUseCase,
 } from '@vendepro/core'
+import type { PropertyStageValue } from '@vendepro/core'
 
 type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket; R2_PUBLIC_URL: string; BROWSER: Fetcher; API_PUBLIC_URL: string }
 type AuthVars = { Variables: { userId: string; userRole: string; orgId: string } }
@@ -79,12 +82,21 @@ export function registerPropertyRoutes(app: Hono<{ Bindings: Env } & AuthVars>) 
   app.put('/properties/:id/stage', async (c) => {
     const body = (await c.req.json()) as any
     const repo = new D1PropertyRepository(c.env.DB)
+    const historyRepo = new D1StageHistoryRepository(c.env.DB)
+    const leadRepo = new D1LeadRepository(c.env.DB)
     const propertyId = c.req.param('id')
     const orgId = c.get('orgId')
+    const changedBy = c.get('userId')
     try {
-      // Both paths use updateStage which syncs slug + ID atomically
       if (body.commercial_stage) {
-        await repo.updateStage(propertyId, orgId, body.commercial_stage)
+        const useCase = new UpdatePropertyStageUseCase(repo, historyRepo, leadRepo)
+        await useCase.execute({
+          propertyId,
+          orgId,
+          newStage: body.commercial_stage as PropertyStageValue,
+          changedBy,
+          notes: body.notes ?? null,
+        })
       } else if (body.commercial_stage_id) {
         // Resolve slug from ID, then use updateStage for consistency
         const updateUC = new UpdatePropertyUseCase(repo)

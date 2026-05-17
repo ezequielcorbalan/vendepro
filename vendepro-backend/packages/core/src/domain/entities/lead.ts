@@ -112,6 +112,13 @@ export class Lead {
     return { firstContactAt }
   }
 
+  syncStage(newStage: LeadStageValue): void {
+    const current = LeadStage.create(this.props.stage)
+    current.transitionTo(newStage, { source: 'sync' })
+    this.props.stage = newStage
+    this.props.updated_at = new Date().toISOString()
+  }
+
   update(data: Partial<Omit<LeadProps, 'id' | 'org_id' | 'created_at'>>): void {
     if (data.full_name !== undefined && data.full_name.trim().length < 2) {
       throw new ValidationError('Nombre es requerido (mín. 2 caracteres)')
