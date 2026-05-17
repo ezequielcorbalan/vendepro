@@ -4,6 +4,7 @@ import {
   D1LeadRepository, D1ContactRepository, D1CalendarRepository, D1ActivityRepository,
   D1TagRepository, D1StageHistoryRepository, D1OrganizationRepository,
   D1MetaIntegrationRepository, D1StageEventMappingRepository, D1MetaEventLogRepository,
+  D1PropertyRepository,
   JwtAuthService, CryptoIdGenerator,
   encrypt,
   createMarketingSender, fireMarketingEvent,
@@ -108,7 +109,8 @@ app.post('/leads/stage', async (c) => {
   const idGen = new CryptoIdGenerator()
   // metaSender interno desactivado: el hook multi-provider de abajo cubre
   // Meta + GA4 y además expone event_id al frontend (dedup Pixel+CAPI).
-  const useCase = new AdvanceLeadStageUseCase(repo, calRepo, historyRepo, idGen)
+  const propRepo = new D1PropertyRepository(c.env.DB)
+  const useCase = new AdvanceLeadStageUseCase(repo, calRepo, historyRepo, idGen, propRepo)
   const result = await useCase.execute({ leadId: body.id, orgId: c.get('orgId'), newStage: body.stage, changedBy: c.get('userId'), notes: body.notes })
 
   const mk = await fireMarketingEvent(c.env, {

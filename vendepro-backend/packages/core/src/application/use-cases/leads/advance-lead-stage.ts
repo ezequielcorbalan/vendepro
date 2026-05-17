@@ -1,10 +1,13 @@
 import type { LeadRepository } from '../../ports/repositories/lead-repository'
 import type { CalendarRepository } from '../../ports/repositories/calendar-repository'
 import type { StageHistoryRepository } from '../../ports/repositories/stage-history-repository'
+import type { PropertyRepository } from '../../ports/repositories/property-repository'
 import type { IdGenerator } from '../../ports/id-generator'
 import { NotFoundError } from '../../../domain/errors/not-found'
 import { CalendarEvent } from '../../../domain/entities/calendar-event'
 import type { LeadStageValue } from '../../../domain/value-objects/lead-stage'
+import type { PropertyStageValue } from '../../../domain/value-objects/property-stage'
+import { SyncEngine } from '../../../domain/rules/sync-engine'
 import type { SendMetaConversionEventUseCase } from '../marketing/send-meta-conversion-event'
 
 export interface AdvanceLeadStageInput {
@@ -17,19 +20,16 @@ export interface AdvanceLeadStageInput {
 
 export interface AdvanceLeadStageOutput {
   autoFollowup: object | null
+  syncedPropertyId: string | null
 }
 
-/**
- * `metaSender` es opcional para no romper consumidores existentes. Si se
- * inyecta, se gatilla el evento de Meta CAPI tras persistir el cambio de
- * etapa, dentro de un try/catch para nunca bloquear la respuesta.
- */
 export class AdvanceLeadStageUseCase {
   constructor(
     private readonly leadRepo: LeadRepository,
     private readonly calendarRepo: CalendarRepository,
     private readonly stageHistoryRepo: StageHistoryRepository,
     private readonly idGen: IdGenerator,
+    private readonly propertyRepo?: PropertyRepository,
     private readonly metaSender?: SendMetaConversionEventUseCase,
   ) {}
 
@@ -38,7 +38,7 @@ export class AdvanceLeadStageUseCase {
     if (!lead) throw new NotFoundError('Lead no encontrado')
 
     const fromStage = lead.stage
-    const { firstContactAt } = lead.advanceStage(input.newStage)
+    lead.advanceStage(input.newStage)
 
     await this.leadRepo.save(lead)
 
@@ -50,9 +50,31 @@ export class AdvanceLeadStageUseCase {
       to_stage: input.newStage,
       changed_by: input.changedBy,
       notes: input.notes ?? null,
+      triggered_by: 'user',
     })
 
-    // Auto-action: create followup event when advancing to "presentada"
+    let syncedPropertyId: string | null = null
+    const propertyId = lead.property_id
+    if (this.propertyRepo && propertyId) {
+      const property = await this.propertyRepo.findById(propertyId, input.orgId)
+      const currentPropStage = (property?.commercial_stage ?? null) as PropertyStageValue | null
+      const newPropStage = SyncEngine.applyLeadToProperty(input.newStage, currentPropStage)
+      if (property && newPropStage && newPropStage !== currentPropStage) {
+        await this.propertyRepo.updateStage(propertyId, input.orgId, newPropStage)
+        await this.stageHistoryRepo.log({
+          org_id: input.orgId,
+          entity_type: 'property',
+          entity_id: propertyId,
+          from_stage: currentPropStage,
+          to_stage: newPropStage,
+          changed_by: input.changedBy,
+          notes: `Sync desde lead ${lead.id} (${input.newStage})`,
+          triggered_by: 'sync',
+        })
+        syncedPropertyId = propertyId
+      }
+    }
+
     let autoFollowup: object | null = null
     if (input.newStage === 'presentada') {
       const followupDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
@@ -78,7 +100,6 @@ export class AdvanceLeadStageUseCase {
       autoFollowup = event.toObject()
     }
 
-    // Hook Meta Conversion API — fire-and-forget, no debe bloquear ni romper.
     if (this.metaSender) {
       try {
         await this.metaSender.execute({
@@ -87,12 +108,10 @@ export class AdvanceLeadStageUseCase {
           stageKey: input.newStage,
         })
       } catch (err) {
-        // No-op: errores de Meta CAPI ya quedan en meta_event_log; no propagar.
-        // eslint-disable-next-line no-console
         console.error('[meta-capi] sender failed (swallowed):', (err as Error)?.message ?? err)
       }
     }
 
-    return { autoFollowup }
+    return { autoFollowup, syncedPropertyId }
   }
 }
