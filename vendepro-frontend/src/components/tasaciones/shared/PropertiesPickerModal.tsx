@@ -62,10 +62,15 @@ function formatDate(d: string | null | undefined): string {
 }
 
 const STAGE_LABELS: Record<string, { label: string; cls: string }> = {
-  vendida: { label: 'Vendida', cls: 'bg-emerald-100 text-emerald-700' },
+  propuesta: { label: 'Propuesta', cls: 'bg-gray-100 text-gray-600' },
+  captada: { label: 'Captada', cls: 'bg-green-100 text-green-700' },
+  captacion: { label: 'Captación', cls: 'bg-green-100 text-green-700' },
   publicada: { label: 'Publicada', cls: 'bg-blue-100 text-blue-700' },
   reservada: { label: 'Reservada', cls: 'bg-amber-100 text-amber-700' },
+  vendida: { label: 'Vendida', cls: 'bg-emerald-100 text-emerald-700' },
   alquilada: { label: 'Alquilada', cls: 'bg-purple-100 text-purple-700' },
+  perdida: { label: 'Perdida', cls: 'bg-red-100 text-red-700' },
+  invalida: { label: 'Inválida', cls: 'bg-gray-100 text-gray-500' },
 }
 
 export function PropertiesPickerModal({ open, onClose, onPick }: Props) {
@@ -151,10 +156,12 @@ export function PropertiesPickerModal({ open, onClose, onPick }: Props) {
               className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs"
             >
               <option value="">Estado: cualquiera</option>
-              <option value="vendida">Solo vendidas (cierres reales)</option>
+              <option value="propuesta">Propuestas</option>
+              <option value="captada">Captadas</option>
               <option value="publicada">Publicadas</option>
               <option value="reservada">Reservadas</option>
-              <option value="alquilada">Alquiladas</option>
+              <option value="vendida">Solo vendidas (cierres reales)</option>
+              <option value="perdida">Perdidas</option>
             </select>
           </div>
           <p className="mt-2 text-[11px] text-slate-500">

@@ -9,14 +9,15 @@ import { useToast } from '@/components/ui/Toast'
 import { PROPERTY_STAGES, type PropertyStage } from '@/lib/crm-config'
 import { formatCurrency } from '@/lib/utils'
 
-// Progresión lineal del pipeline — captacion → publicada → con_ofertas → reservada → vendida
-const MAIN_STAGES: PropertyStage[] = ['captacion', 'publicada', 'con_ofertas', 'reservada', 'vendida']
+// Progresión lineal del pipeline — propuesta → captada → publicada → reservada → vendida
+const MAIN_STAGES: PropertyStage[] = ['propuesta', 'captada', 'publicada', 'reservada', 'vendida']
 // Suspendida aparece aparte — solo se puede suspender, no avanzar
 const ALL_PIPELINE_STAGES: PropertyStage[] = [...MAIN_STAGES, 'suspendida']
 
 // Normalize legacy slugs to current DB slugs
 const SLUG_ALIASES: Record<string, PropertyStage> = {
-  captada: 'captacion',
+  captacion: 'captada',
+  con_ofertas: 'reservada',
   archivada: 'suspendida',
   vencida: 'perdida',
 }
@@ -185,7 +186,7 @@ export default function PipelinePage() {
         </div>
       ) : view === 'kanban' ? (
         <>
-          {/* Pipeline principal: captacion → publicada → con_ofertas → reservada → vendida */}
+          {/* Pipeline principal: propuesta → captada → publicada → reservada → vendida */}
           <div className="overflow-x-auto -mx-2 px-2">
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 min-w-[800px]">
               {MAIN_STAGES.map(stage => {

@@ -13,11 +13,13 @@ export const LEAD_STAGES = {
   seguimiento: { label: 'Seguimiento',  color: 'bg-yellow-100 text-yellow-800',   order: 7 },
   captado:     { label: 'Captado',      color: 'bg-green-100 text-green-800',     order: 8 },
   perdido:     { label: 'Perdido',      color: 'bg-red-100 text-red-800',         order: 9 },
+  invalido:    { label: 'Inválido',     color: 'bg-gray-100 text-gray-700',       order: 90 },
+  finalizado:  { label: 'Finalizado',   color: 'bg-emerald-100 text-emerald-700', order: 95 },
 } as const
 
 export type LeadStage = keyof typeof LEAD_STAGES
 export const LEAD_STAGE_KEYS = Object.keys(LEAD_STAGES) as LeadStage[]
-export const LEAD_PIPELINE_STAGES = LEAD_STAGE_KEYS.filter(s => s !== 'perdido')
+export const LEAD_PIPELINE_STAGES = LEAD_STAGE_KEYS.filter(s => s !== 'perdido' && s !== 'invalido' && s !== 'finalizado')
 
 export const DEFAULT_TAGS = {
   propietario: { label: 'Propietario', color: '#ec4899' },
@@ -40,22 +42,27 @@ export function getPipelineForTag(tagName: string | null): LeadStage[] {
 }
 
 export const PROPERTY_STAGES = {
-  captacion:     { label: 'Captación',      color: 'bg-green-100 text-green-800',     order: 1 },
-  publicada:     { label: 'Publicada',      color: 'bg-blue-100 text-blue-800',       order: 2 },
-  con_ofertas:   { label: 'Con ofertas',    color: 'bg-violet-100 text-violet-800',   order: 3 },
-  reservada:     { label: 'Reservada',      color: 'bg-purple-100 text-purple-800',   order: 4 },
-  vendida:       { label: 'Vendida',        color: 'bg-emerald-100 text-emerald-800', order: 5 },
-  suspendida:    { label: 'Suspendida',     color: 'bg-orange-100 text-orange-800',   order: 6 },
-  perdida:       { label: 'Perdida',        color: 'bg-red-100 text-red-800',         order: 7 },
-  // Legacy slugs — backward compat for old data
-  captada:       { label: 'Captada',        color: 'bg-green-100 text-green-800',     order: 1 },
-  archivada:     { label: 'Archivada',      color: 'bg-gray-100 text-gray-500',       order: 7 },
-  vencida:       { label: 'Vencida',        color: 'bg-red-100 text-red-800',         order: 7 },
-  documentacion: { label: 'Documentación',  color: 'bg-amber-100 text-amber-800',     order: 99 },
+  propuesta:     { label: 'Propuesta',       color: 'bg-gray-100 text-gray-700',       order: 0 },
+  captada:       { label: 'Captada',         color: 'bg-green-100 text-green-800',     order: 1 },
+  publicada:     { label: 'Publicada',       color: 'bg-blue-100 text-blue-800',       order: 2 },
+  reservada:     { label: 'Reservada',       color: 'bg-purple-100 text-purple-800',   order: 3 },
+  suspendida:    { label: 'Suspendida',      color: 'bg-orange-100 text-orange-800',   order: 4 },
+  vendida:       { label: 'Vendida',         color: 'bg-emerald-100 text-emerald-800', order: 5 },
+  perdida:       { label: 'Perdida',         color: 'bg-red-100 text-red-700',         order: 6 },
+  invalida:      { label: 'Inválida',        color: 'bg-gray-100 text-gray-700',       order: 7 },
+  vencida:       { label: 'Vencida',         color: 'bg-red-100 text-red-800',         order: 8 },
+  archivada:     { label: 'Archivada',       color: 'bg-gray-100 text-gray-500',       order: 9 },
+  documentacion: { label: 'Documentación',   color: 'bg-amber-100 text-amber-800',     order: 99 },
 } as const
 
 export type PropertyStage = keyof typeof PROPERTY_STAGES
 export const PROPERTY_STAGE_KEYS = Object.keys(PROPERTY_STAGES) as PropertyStage[]
+
+// Agrupamientos UI (no son stages del backend)
+export const ACTIVE_PROPERTY_STAGES: PropertyStage[] = ['captada', 'documentacion', 'publicada', 'reservada']
+export const PROPOSED_PROPERTY_STAGES: PropertyStage[] = ['propuesta']
+export const FINAL_PROPERTY_STAGES: PropertyStage[] = ['vendida', 'perdida', 'invalida', 'archivada']
+export const PAUSED_PROPERTY_STAGES: PropertyStage[] = ['suspendida', 'vencida']
 
 export const ACTIVITY_TYPES = {
   llamada:           { label: 'Llamada',              icon: 'Phone',           color: 'text-blue-600 bg-blue-50' },

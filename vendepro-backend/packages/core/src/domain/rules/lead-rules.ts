@@ -14,8 +14,8 @@ export interface LeadForUrgency {
  * No updates for 3 days = warning.
  */
 export function getLeadUrgency(lead: LeadForUrgency): LeadUrgency {
-  if (lead.stage === 'perdido') return 'lost'
-  if (lead.stage === 'captado') return 'ok'
+  if (lead.stage === 'perdido' || lead.stage === 'invalido') return 'lost'
+  if (lead.stage === 'captado' || lead.stage === 'finalizado') return 'ok'
 
   const now = new Date()
   const updated = lead.updated_at ? new Date(lead.updated_at) : new Date(lead.created_at)

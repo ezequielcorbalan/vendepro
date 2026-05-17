@@ -13,6 +13,7 @@ import DocChecklistWidget from '@/components/properties/DocChecklistWidget'
 import ReportsListWidget from '@/components/properties/ReportsListWidget'
 
 const stageLabel: Record<string, string> = {
+  propuesta: 'Propuesta',
   captacion: 'Captación',
   publicada: 'Publicada',
   con_ofertas: 'Con ofertas',
@@ -20,12 +21,14 @@ const stageLabel: Record<string, string> = {
   vendida: 'Vendida',
   suspendida: 'Suspendida',
   perdida: 'Perdida',
+  invalida: 'Inválida',
   // Legacy
   captada: 'Captada',
   archivada: 'Archivada',
   documentacion: 'En documentación',
 }
 const stageColor: Record<string, string> = {
+  propuesta: 'bg-gray-100 text-gray-600',
   captacion: 'bg-green-100 text-green-700',
   publicada: 'bg-blue-100 text-blue-700',
   con_ofertas: 'bg-violet-100 text-violet-700',
@@ -33,6 +36,7 @@ const stageColor: Record<string, string> = {
   vendida: 'bg-emerald-100 text-emerald-700',
   suspendida: 'bg-orange-100 text-orange-700',
   perdida: 'bg-red-100 text-red-700',
+  invalida: 'bg-gray-100 text-gray-500',
   // Legacy
   captada: 'bg-green-100 text-green-700',
   archivada: 'bg-gray-100 text-gray-500',
