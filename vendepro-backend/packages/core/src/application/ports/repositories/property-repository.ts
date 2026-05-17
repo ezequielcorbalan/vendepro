@@ -70,6 +70,7 @@ export interface PropertyPriceHistoryEntry {
 
 export interface PropertyRepository {
   findById(id: string, orgId: string): Promise<Property | null>
+  findByLeadId(leadId: string, orgId: string): Promise<{ id: string; commercial_stage: string | null } | null>
   findBySlug(slug: string): Promise<Property | null>
   findByOrg(orgId: string, filters?: PropertyFilters): Promise<Property[]>
   save(property: Property): Promise<void>

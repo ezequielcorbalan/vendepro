@@ -12,6 +12,14 @@ export class D1PropertyRepository implements PropertyRepository {
     return row ? this.toEntity(row) : null
   }
 
+  async findByLeadId(leadId: string, orgId: string): Promise<{ id: string; commercial_stage: string | null } | null> {
+    const row = await this.db
+      .prepare('SELECT id, commercial_stage FROM properties WHERE lead_id = ? AND org_id = ? LIMIT 1')
+      .bind(leadId, orgId)
+      .first<{ id: string; commercial_stage: string | null }>()
+    return row ?? null
+  }
+
   async findBySlug(slug: string): Promise<Property | null> {
     const row = await this.db
       .prepare(`SELECT p.*, u.full_name as agent_name, (SELECT MAX(published_at) FROM reports WHERE property_id = p.id AND status = 'published') as last_report_at FROM properties p LEFT JOIN users u ON p.agent_id = u.id WHERE p.public_slug = ?`)

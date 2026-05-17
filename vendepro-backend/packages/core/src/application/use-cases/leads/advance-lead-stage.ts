@@ -54,24 +54,27 @@ export class AdvanceLeadStageUseCase {
     })
 
     let syncedPropertyId: string | null = null
-    const propertyId = lead.property_id
-    if (this.propertyRepo && propertyId) {
-      const property = await this.propertyRepo.findById(propertyId, input.orgId)
-      const currentPropStage = (property?.commercial_stage ?? null) as PropertyStageValue | null
-      const newPropStage = SyncEngine.applyLeadToProperty(input.newStage, currentPropStage)
-      if (property && newPropStage && newPropStage !== currentPropStage) {
-        await this.propertyRepo.updateStage(propertyId, input.orgId, newPropStage)
-        await this.stageHistoryRepo.log({
-          org_id: input.orgId,
-          entity_type: 'property',
-          entity_id: propertyId,
-          from_stage: currentPropStage,
-          to_stage: newPropStage,
-          changed_by: input.changedBy,
-          notes: `Sync desde lead ${lead.id} (${input.newStage})`,
-          triggered_by: 'sync',
-        })
-        syncedPropertyId = propertyId
+    let propertyId: string | null = null
+    if (this.propertyRepo) {
+      const property = await this.propertyRepo.findByLeadId(lead.id, input.orgId)
+      if (property) {
+        propertyId = property.id
+        const currentPropStage = (property.commercial_stage ?? null) as PropertyStageValue | null
+        const newPropStage = SyncEngine.applyLeadToProperty(input.newStage, currentPropStage)
+        if (newPropStage && newPropStage !== currentPropStage) {
+          await this.propertyRepo.updateStage(propertyId, input.orgId, newPropStage)
+          await this.stageHistoryRepo.log({
+            org_id: input.orgId,
+            entity_type: 'property',
+            entity_id: propertyId,
+            from_stage: currentPropStage,
+            to_stage: newPropStage,
+            changed_by: input.changedBy,
+            notes: `Sync desde lead ${lead.id} (${input.newStage})`,
+            triggered_by: 'sync',
+          })
+          syncedPropertyId = propertyId
+        }
       }
     }
 
