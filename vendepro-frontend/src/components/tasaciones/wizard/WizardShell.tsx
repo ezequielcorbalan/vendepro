@@ -183,6 +183,7 @@ export function WizardShell({ initialTemplateId }: Props) {
             details={state.details}
             comparables={state.comparables}
             customBlocks={state.customBlocks}
+            blockOverrides={state.blockOverrides}
           />
         )}
       </div>

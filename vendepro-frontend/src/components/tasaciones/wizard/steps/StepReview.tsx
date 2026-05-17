@@ -8,6 +8,7 @@ import {
   APPRAISAL_BLOCK_TYPES,
   type AppraisalBlockType,
   type AppraisalContext,
+  type BlockOverrides,
   type ResolvedVars,
   type TemplateBlock,
 } from '../../renderer/types'
@@ -30,6 +31,7 @@ interface Props {
   details: WizardState['details']
   comparables: WizardState['comparables']
   customBlocks: WizardState['customBlocks']
+  blockOverrides: BlockOverrides
 }
 
 /** Build an AppraisalContext preview from the wizard data. */
@@ -71,7 +73,7 @@ function buildCtx(
   }
 }
 
-export function StepReview({ templateId, property, details, comparables, customBlocks }: Props) {
+export function StepReview({ templateId, property, details, comparables, customBlocks, blockOverrides }: Props) {
   const [snapshot, setSnapshot] = useState<TemplateBlock[] | null>(null)
   const [variables, setVariables] = useState<Array<{ key: string; value: string; value_type: string }> | null>(null)
   const [loading, setLoading] = useState(false)
@@ -168,7 +170,13 @@ export function StepReview({ templateId, property, details, comparables, customB
               </div>
             ) : (
               <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-                <TemplateRenderer snapshot={snapshot} appraisal={ctx} resolvedVars={resolvedVars} mode="web" />
+                <TemplateRenderer
+                  snapshot={snapshot}
+                  overrides={blockOverrides}
+                  appraisal={ctx}
+                  resolvedVars={resolvedVars}
+                  mode="web"
+                />
               </div>
             )}
           </>
