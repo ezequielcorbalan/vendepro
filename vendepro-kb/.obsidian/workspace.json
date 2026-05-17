@@ -1,0 +1,219 @@
+{
+  "main": {
+    "id": "3d0779790bc2c74a",
+    "type": "split",
+    "children": [
+      {
+        "id": "2ad609000494a470",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "485e9a7f61f9acb2",
+            "type": "leaf",
+            "state": {
+              "type": "empty",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "Nueva pestaña"
+            }
+          }
+        ]
+      },
+      {
+        "id": "63c0b19250f749c1",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "75f3eda101ef1bec",
+            "type": "leaf",
+            "state": {
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "Vista gráfica"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "9fadbe6b8b04fca1",
+    "type": "split",
+    "children": [
+      {
+        "id": "9163fb3810f18fdc",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "5971b31af6de6812",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Explorador de archivos"
+            }
+          },
+          {
+            "id": "d53bb608f934a098",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Buscar"
+            }
+          },
+          {
+            "id": "6b432f311c37af50",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Marcadores"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "74f93fde1c000f96",
+    "type": "split",
+    "children": [
+      {
+        "id": "882035cc1a45bec6",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "ac733d9a4eb8dcfe",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Enlaces entrantes"
+            }
+          },
+          {
+            "id": "c2d5a5e80fc6a57e",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Enlaces salientes"
+            }
+          },
+          {
+            "id": "f694a8bcf8fab80c",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Etiquetas"
+            }
+          },
+          {
+            "id": "2b2f04e7024a82b6",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "Todas las propiedades"
+            }
+          },
+          {
+            "id": "a5633f501d410941",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Esquema"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Abrir selector rápido": false,
+      "graph:Abrir vista gráfica": false,
+      "canvas:Crear nuevo lienzo": false,
+      "daily-notes:Abrir la nota de hoy": false,
+      "templates:Insertar plantilla": false,
+      "command-palette:Abrir paleta de comandos": false,
+      "bases:Crear nueva base": false
+    }
+  },
+  "active": "485e9a7f61f9acb2",
+  "lastOpenFiles": [
+    "02-Backend/API-auth.md",
+    "02-Backend/API-auth.md.tmp.14692.6f53b4b833e6",
+    "02-Backend/Servicios-externos.md",
+    "02-Backend/Servicios-externos.md.tmp.14692.5c749e3f818b",
+    "02-Backend/Infraestructura.md",
+    "02-Backend/Infraestructura.md.tmp.14692.dee37cb8f7e2",
+    "02-Backend/Backend-overview.md",
+    "02-Backend/Backend-overview.md.tmp.14692.dbbda1aaba13",
+    "01-Arquitectura/Auth-flow.md",
+    "01-Arquitectura/Auth-flow.md.tmp.14692.03a708141400",
+    "01-Arquitectura/Deploy.md",
+    "01-Arquitectura/Deploy.md.tmp.14692.27e30da3fefb",
+    "01-Arquitectura/Reglas-criticas.md",
+    "01-Arquitectura/Reglas-criticas.md.tmp.14692.008bd44a9829",
+    "01-Arquitectura/Stack.md",
+    "01-Arquitectura/Stack.md.tmp.14692.ca2b5e09a6a2",
+    "01-Arquitectura/Arquitectura.md",
+    "01-Arquitectura/Arquitectura.md.tmp.14692.e8fa40740980",
+    "00-Indice/MOC.md",
+    "00-Indice/MOC.md.tmp.14692.c85ae74d1a2a",
+    "Bienvenido.md"
+  ]
+}
