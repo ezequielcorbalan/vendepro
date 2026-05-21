@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { ArrowLeft, Save, Loader2 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
+import { getCurrentUser } from '@/lib/auth'
 import { ContactSelector } from '@/components/ui/ContactSelector'
 import { PhotoGallery } from '@/components/ui/PhotoGallery'
 import { fetchPropertyConfig, stagesForType, statusesForType } from '@/lib/property-config'
@@ -25,11 +26,14 @@ export default function EditarPropiedadPage() {
   const router = useRouter()
   const id = params?.id as string
   const { toast } = useToast()
+  const currentUser = getCurrentUser()
+  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'supervisor'
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [photos, setPhotos] = useState<{ id: string; url: string; sort_order: number }[]>([])
   const [ownerContact, setOwnerContact] = useState<{ id: string; full_name: string; phone?: string | null; email?: string | null } | null>(null)
   const [config, setConfig] = useState<PropertyConfig | null>(null)
+  const [agents, setAgents] = useState<{ id: string; full_name: string }[]>([])
   const [form, setForm] = useState({
     address: '',
     neighborhood: '',
@@ -45,7 +49,17 @@ export default function EditarPropiedadPage() {
     operation_type_id: 1,
     commercial_stage_id: null as number | null,
     status_id: 1,
+    agent_id: '',
   })
+
+  useEffect(() => {
+    if (isAdmin) {
+      apiFetch('admin', '/agents')
+        .then(r => r.json() as any)
+        .then(d => setAgents(Array.isArray(d) ? d : (d.agents || [])))
+        .catch(() => {})
+    }
+  }, [isAdmin])
 
   useEffect(() => {
     if (!id) return
@@ -70,6 +84,7 @@ export default function EditarPropiedadPage() {
         operation_type_id: p.operation_type_id ?? 1,
         commercial_stage_id: p.commercial_stage_id ?? null,
         status_id: p.status_id ?? 1,
+        agent_id: p.agent_id || '',
       })
       if (p.contact_id) {
         setOwnerContact({ id: p.contact_id, full_name: p.owner_name || '', phone: p.owner_phone, email: p.owner_email })
@@ -108,6 +123,7 @@ export default function EditarPropiedadPage() {
         contact_id: ownerContact?.id ?? null,
         operation_type: opType?.slug ?? null,
         status: status?.slug ?? null,
+        ...(isAdmin && form.agent_id ? { agent_id: form.agent_id } : {}),
       }
       // Only include stage fields when a stage is selected — avoid sending null which would clear them
       if (stage) {
@@ -207,6 +223,17 @@ export default function EditarPropiedadPage() {
               ))}
             </select>
           </div>
+          {isAdmin && agents.length > 0 && (
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Agente responsable</label>
+              <select value={form.agent_id} onChange={e => update('agent_id', e.target.value)} className={inputClass}>
+                <option value="">Sin asignar</option>
+                {agents.map(a => (
+                  <option key={a.id} value={a.id}>{a.full_name}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Ambientes</label>
             <input type="number" value={form.rooms} onChange={e => update('rooms', e.target.value)} className={inputClass} />
