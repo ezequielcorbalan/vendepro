@@ -115,8 +115,9 @@ export default function EditarPropiedadPage() {
       const opType = config?.operation_types.find(t => t.id === form.operation_type_id)
       const stage = config?.commercial_stages.find(s => s.id === form.commercial_stage_id)
       const status = config?.property_statuses.find(s => s.id === form.status_id)
+      const { agent_id: _agentId, ...formRest } = form
       const payload: any = {
-        ...form,
+        ...formRest,
         rooms: form.rooms ? Number(form.rooms) : null,
         size_m2: form.size_m2 ? Number(form.size_m2) : null,
         asking_price: form.asking_price ? Number(form.asking_price) : null,
