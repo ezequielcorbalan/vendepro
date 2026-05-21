@@ -205,6 +205,7 @@ export class D1PropertyRepository implements PropertyRepository {
       ['auth_start_date', 'auth_start_date'],
       ['auth_duration_days', 'auth_duration_days'],
       ['doc_status_json', 'doc_status_json'],
+      ['agent_id', 'agent_id'],
     ]
 
     const setClauses: string[] = []
