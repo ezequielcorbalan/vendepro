@@ -235,19 +235,29 @@ Mappings configurables en `stage_event_mappings` (admin). Ver [[Dominio-Marketin
 
 ## 10. Tests de referencia
 
-- `vendepro-backend/packages/core/tests/domain/lead-stage.test.ts`
-- `vendepro-backend/packages/core/tests/domain/property-stage.test.ts`
-- `vendepro-backend/packages/core/tests/domain/rules/sync-engine.test.ts`
-- `vendepro-backend/packages/core/tests/domain/rules/sync-policies.test.ts`
-- `vendepro-backend/packages/core/tests/use-cases/leads/advance-lead-stage-sync.test.ts`
-- `vendepro-backend/packages/core/tests/use-cases/properties/update-property-stage.test.ts`
-- **Smoke**: `vendepro-backend/packages/core/tests/smoke/state-machine-flow.smoke.test.ts`
+### Unitarios (`@vendepro/core` + `@vendepro/infrastructure`, corren en `turbo test`)
+
+- `packages/core/tests/domain/lead-stage.test.ts`
+- `packages/core/tests/domain/property-stage.test.ts`
+- `packages/core/tests/domain/rules/sync-engine.test.ts`
+- `packages/core/tests/domain/rules/sync-policies.test.ts`
+- `packages/core/tests/use-cases/leads/advance-lead-stage-sync.test.ts`
+- `packages/core/tests/use-cases/properties/update-property-stage.test.ts` *(incluye regression con `Property.create()` real — ver §12)*
+- `packages/core/tests/use-cases/properties/create-property.test.ts` *(verifica default `propuesta`)*
+- `packages/infrastructure/tests/repositories/d1-stage-history-repository.test.ts` *(incluye regression del tiebreaker rowid — ver §12)*
+- Smoke in-memory (legacy, mantenido para validar flujos sin red): `packages/core/tests/smoke/state-machine-flow.smoke.test.ts`
+
+### Smoke contra producción (`@vendepro/smoke-prod`, NO corre en `turbo test`)
+
+`packages/smoke-prod/tests/state-machine.smoke.test.ts` — ver §13.
 
 ---
 
 ## 11. Plan de smoke test sobre APIs en vivo
 
-Escenarios mínimos a correr contra APIs deployadas (o `wrangler dev` local):
+> Los bloques de abajo son la especificación funcional. La **implementación viva** está en §13 (`packages/smoke-prod/`) y corre automáticamente en CI tras cada deploy (§14). Esta sección queda como referencia textual de qué cubre cada bloque.
+
+Escenarios contra APIs deployadas (o `wrangler dev` local):
 
 ### Bloque A — Lead manual
 1. `POST /leads` → crear lead en `nuevo`.
@@ -282,29 +292,158 @@ Escenarios mínimos a correr contra APIs deployadas (o `wrangler dev` local):
 ### Bloque F — stage_history
 1. Tras los bloques anteriores, `GET /stage-history?entity_type=lead&entity_id=<id>` debe devolver historial ordenado con `triggered_by` correcto en cada fila.
 
-### Hallazgos esperados a confirmar
-- Que el endpoint legacy `PUT /properties/:id/stage` con `commercial_stage_id` (vs `commercial_stage` slug) también loggee historial — **actualmente NO**, va por `UpdatePropertyUseCase` plano (ver `properties.ts:100-105`). Punto a evaluar.
-- Que el sync de lead `invalido` → property funcione en producción tras migración 027 (estado nuevo).
+### Hallazgos confirmados (2026-06) y resueltos en `0f4048e`
+
+Todos surgieron al implementar el smoke en producción. Ver §12 para el bug history detallado.
+
+- ✓ `PUT /properties/:id/stage` con `commercial_stage_id` no loggeaba historial ni sincronizaba — **fixed**: ahora resuelve a slug y pasa por `UpdatePropertyStageUseCase`.
+- ✓ Sync property→lead nunca disparaba en prod (`Property.lead_id` sin getter) — **fixed**.
+- ✓ Properties nuevas quedaban en `commercial_stage=NULL`, lo que apagaba el sync lead→property — **fixed**: default a `propuesta`.
+- ✓ `stage_history` lectura inconsistente bajo escritura concurrente (precisión de segundo + sin tiebreaker) — **fixed**: `ORDER BY changed_at DESC, rowid DESC`.
 
 ---
 
-## 12. Caveats y bugs conocidos
-
-### Properties nuevas arrancan con `commercial_stage = NULL`
-
-`CreatePropertyUseCase` setea `commercial_stage: null`. El `UpdatePropertyStageUseCase` lee `currentStage = property.commercial_stage ?? 'propuesta'` y permite transicionar a `captada/publicada/etc.` desde ahí. **Pero la fila en DB queda en NULL** hasta que se cambie de stage.
-
-Esto importa para sync: `SyncEngine.applyLeadToProperty` retorna `null` si la property tiene stage `null` — la regla `lead.captado → propuesta → captada` **no dispara** sobre properties recién creadas. Para que sincronice hay que persistir `propuesta` explícitamente vía `PUT /properties/:id` (raw update), porque `PUT /properties/:id/stage` rechaza `propuesta → propuesta`.
-
-### Bug fixed (2026-06): `Property.lead_id` no exponía getter
-
-Hasta junio 2026 el use case `UpdatePropertyStageUseCase` leía `(property as any).lead_id`. El entity `Property` guarda lead_id en `props` privado y no tenía getter público, así que **el sync property→lead nunca disparaba en producción**. Los tests unitarios usaban fake plain objects que sí tenían lead_id en root, ocultando el bug.
-
-Lo encontró el smoke E2E (`packages/smoke-prod` blocks D1/D2). Fix: getter `Property.lead_id` + regression test con entity real.
+## 12. Caveats y bug history
 
 ### Endpoint `GET /leads/:id` no existe
 
-Solo hay `GET /leads` (lista filtrable). Para obtener el stage actual de un lead específico, leer la fila más reciente de `stage_history` (es append-only y ordenada DESC por `changed_at`).
+Solo hay `GET /leads` (lista filtrable). Para obtener el stage actual de un lead específico, leer la fila más reciente de `stage_history` (append-only, ordenada `DESC by changed_at, rowid` — ver bug fix más abajo). El smoke usa `expectLeadStage()` (§13) que poll-ea esta query.
+
+### Bug fixed `0f4048e` (2026-06): `stage_history` sin tiebreaker
+
+`changed_at` se persiste con `datetime('now')` — precisión de **segundo**. Transiciones rápidas pueden caer en el mismo segundo, y `ORDER BY changed_at DESC` no desempata: SQLite devolvía las filas en orden indefinido. El smoke en GitHub Actions (red más rápida que local) lo expuso: `history[0]` retornaba la PRIMERA transición de la cadena en vez de la última.
+
+Fix: `ORDER BY changed_at DESC, rowid DESC` en `D1StageHistoryRepository.findByEntity`. `rowid` es el contador implícito de SQLite y rompe empates por orden de inserción exacto.
+
+Regression test: 5 transiciones consecutivas sin sleep en `d1-stage-history-repository.test.ts`.
+
+### Bug fixed `4bf5ee4` (2026-06): `Property.lead_id` no exponía getter
+
+`UpdatePropertyStageUseCase` leía `(property as any).lead_id`. El entity `Property` guardaba lead_id en `props` privado sin getter público, así que **el sync property→lead nunca disparaba en producción**. Los tests unitarios usaban fake plain objects que sí tenían lead_id en root, ocultando el bug — el smoke E2E (blocks D1/D2) lo encontró.
+
+Fix: getter `Property.lead_id` + regression test con `Property.create()` real.
+
+### Bug fixed `4bf5ee4` (2026-06): properties nuevas arrancaban en NULL
+
+`CreatePropertyUseCase` seteaba `commercial_stage: null`. `SyncEngine.applyLeadToProperty` retorna `null` cuando el property stage es null, así que la regla `lead.captado → property.propuesta → property.captada` **nunca disparaba sobre properties nuevas**.
+
+Fix: default a `'propuesta'` en `CreatePropertyUseCase`. Caveat residual: properties creadas ANTES del fix siguen con `null` hasta que se las mueva manualmente — la migración 027 hizo backfill parcial pero no exhaustivo.
+
+### Bug fixed `4bf5ee4` (2026-06): `PUT /properties/:id/stage` con `commercial_stage_id` salteaba todo
+
+El handler tenía dos paths: con `commercial_stage` (slug) pasaba por `UpdatePropertyStageUseCase` (state machine + history + sync); con `commercial_stage_id` (numérico) iba por `UpdatePropertyUseCase` plano y no validaba transición, no loggeaba, no sincronizaba.
+
+`PropertyFilters.tsx` en el frontend manda solo `commercial_stage_id` (override desde dropdown), así que cualquier override de admin era un agujero en el state machine.
+
+Fix: el handler resuelve el ID a slug vía `PropertyRepository.findStageSlugById()` y ambos paths usan el mismo use case. El frontend conserva su catch silencioso, así que un override inválido revierte el dropdown sin error visible (UX mejorable, no bloqueante).
+
+---
+
+## 13. Smoke E2E contra producción
+
+Paquete: `vendepro-backend/packages/smoke-prod/` (workspace npm separado, NO entra en `turbo test`).
+
+### Cómo correrlo
+
+```bash
+cd vendepro-backend
+SMOKE_EMAIL=smoke@vendepro.com.ar SMOKE_PASSWORD=... npm run smoke:prod
+```
+
+Variables opcionales: `SMOKE_BASE_AUTH`, `SMOKE_BASE_CRM`, `SMOKE_BASE_PROPS` para apuntar a otro entorno (defaults a `*.api.vendepro.com.ar`).
+
+### Estructura
+
+```
+packages/smoke-prod/
+├── tests/
+│   ├── api-client.ts            # fetch helper + tracker de entidades + cleanup
+│   └── state-machine.smoke.test.ts
+├── vitest.config.ts             # JUnit reporter, retry 1, fileParallelism:false
+├── tsconfig.json
+└── package.json
+```
+
+### 31 tests organizados en bloques
+
+| Bloque | Tests | Cubre |
+|---|---|---|
+| A — Lead manual | 4 | Transiciones válidas/inválidas + auto-followup en `presentada` |
+| B — Property manual | 3 | Transiciones válidas/inválidas (salteo de `reservada` rechazado) |
+| C — Sync Lead → Property | 2 | `captado` y `invalido` sincronizan property |
+| D — Sync Property → Lead | 2 | `vendida` y `perdida` sincronizan lead |
+| E — Terminales negativos | 6 | `presentada→perdido`, `seguimiento→perdido`, `captado` sync-only, terminales absorbentes |
+| Matriz lead generada | 8 | Casos auto-generados desde `LEAD_STAGES` × `MANUAL_TRANSITIONS` |
+| Matriz property generada | 6 | Casos auto-generados desde `PROPERTY_STAGES` × `VALID_TRANSITIONS` |
+
+Las matrices generadas se autoactualizan: si el dominio agrega un stage nuevo, los tests cubren las combinaciones automáticamente.
+
+### Cleanup garantizado
+
+Cada entidad creada (lead, property, contact, calendar event) se registra en `created.*` en `api-client.ts`. El hook `afterAll()` borra todo en orden FK-safe: events → properties → leads → contacts. Aplica pase o falle el test.
+
+### Helpers tolerantes a lag de D1 (importante)
+
+Cloudflare D1 tiene replicación eventually-consistent entre el primary (writes) y la réplica de lectura. En GitHub Actions, escribir y leer inmediatamente puede mostrar la versión vieja por hasta ~2s.
+
+**No leer directamente; usar siempre los helpers**:
+
+```typescript
+// MAL — race condition con D1:
+const stage = await getLeadStage(id)
+expect(stage).toBe('perdido')
+
+// BIEN — poll hasta ver el valor esperado o expirar (default 8s):
+expect(await expectLeadStage(id, 'perdido')).toBe('perdido')
+expect(await expectPropertyStage(id, 'captada')).toBe('captada')
+```
+
+Si el valor nunca aparece, el helper retorna el último valor leído y el assert falla con el diff real.
+
+### Login
+
+`api-client.ts` hace `POST {SMOKE_BASE_AUTH}/login` con `{email, password}` en `beforeAll()`. El JWT queda en una variable de módulo y se inyecta como `Authorization: Bearer` en todas las requests.
+
+Usuario actual: `smoke@vendepro.com.ar` (rol `admin`, org `org_830ca07d3511f8ed06c4bff226fee4c9`). Las credenciales viven en GitHub Secrets (`SMOKE_EMAIL`, `SMOKE_PASSWORD`); no commitear.
+
+---
+
+## 14. CI integration con rollback automático
+
+Ver `.github/workflows/_deploy-api.yml`. Cada deploy de API (api-crm, api-properties, etc.) corre la cadena:
+
+```
+test  ──►  deploy  ──►  smoke  ──►  rollback (solo si smoke ✗)
+```
+
+### Jobs
+
+1. **test**: `npx turbo run test --concurrency=1` *(serializado para evitar flake de miniflare con D1 paralelo)*
+2. **deploy**: `npx wrangler deploy` desde `packages/${api_name}/`
+3. **smoke**: `npm run smoke:prod` desde `vendepro-backend/`. Sube `smoke-results.xml` como artifact (JUnit), visible test-by-test en la UI del run.
+4. **rollback**: `npx wrangler rollback --message "Auto-rollback: state-machine smoke failed for <sha>"`. Se ejecuta SOLO si `needs.smoke.result == 'failure'`.
+
+### Secrets requeridos en GitHub
+
+| Secret | Uso |
+|---|---|
+| `CLOUDFLARE_API_TOKEN` | wrangler deploy + rollback |
+| `CLOUDFLARE_ACCOUNT_ID` | wrangler deploy + rollback |
+| `SMOKE_EMAIL` | login del smoke |
+| `SMOKE_PASSWORD` | login del smoke |
+| `GROQ_API_KEY` | solo api-ai |
+
+Los 9 callers (`deploy-api-*.yml`) propagan los secrets al reusable.
+
+### Comportamiento ante falla
+
+- **Smoke falla** → rollback automático del worker que estaba deployando. El sha del commit queda en el mensaje del rollback (visible en Cloudflare Dashboard).
+- **Test falla** → no se deploya, no se rollbackea. PR queda red.
+- **Deploy falla** (ej. Cloudflare API error) → smoke se saltea, rollback se saltea. Producción no se toca.
+
+### Limitación conocida
+
+Los 9 workflows corren en paralelo. Si una API es lenta en deployar y otras ya están en smoke, el smoke puede leer una API en estado mixto. En la práctica las APIs deployan en ventana de ~30s, así que rara vez ocurre. Si pasa, el rollback solo revierte el worker afectado — los demás siguen en green.
 
 ---
 
