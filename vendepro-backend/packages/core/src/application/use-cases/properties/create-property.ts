@@ -52,7 +52,10 @@ export class CreatePropertyUseCase {
       public_slug: slug,
       cover_photo: input.cover_photo ?? null,
       status: 'active',
-      commercial_stage: null,
+      // Default to 'propuesta' so the lead→property sync engine fires on
+      // newly-created properties (it ignores commercial_stage=null).
+      // See SyncEngine.applyLeadToProperty and Estados.md §12.
+      commercial_stage: 'propuesta',
     })
 
     await this.propertyRepo.save(property)

@@ -50,8 +50,8 @@ export class UpdatePropertyStageUseCase {
     }
 
     let syncedLeadId: string | null = null
-    if (this.leadRepo && (property as any).lead_id) {
-      const leadId = (property as any).lead_id as string
+    if (this.leadRepo && property.lead_id) {
+      const leadId = property.lead_id
       const lead = await this.leadRepo.findById(leadId, input.orgId)
       const currentLeadStage = (lead?.stage ?? null) as LeadStageValue | null
       const newLeadStage = SyncEngine.applyPropertyToLead(input.newStage, currentLeadStage)

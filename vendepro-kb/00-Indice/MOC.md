@@ -35,6 +35,7 @@ Cada dominio agrupa entidades + tablas + use cases + endpoints + páginas:
 - [[Dominio-Landings]] · [[Dominio-Marketing]]
 - [[Dominio-Objetivos]] · [[Dominio-Notificaciones]]
 - [[Dominio-Usuarios-Org]]
+- [[Estados]] — máquinas de estado de lead/property/reservation + sync
 
 ## 💾 Base de datos D1
 

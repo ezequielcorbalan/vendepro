@@ -95,6 +95,7 @@ export class Property {
   get auth_start_date() { return this.props.auth_start_date ?? null }
   get auth_duration_days() { return this.props.auth_duration_days ?? null }
   get doc_status_json() { return this.props.doc_status_json ?? null }
+  get lead_id() { return this.props.lead_id ?? null }
 
   // Domain methods
   updateStatus(newStatus: PropertyStatus): void {

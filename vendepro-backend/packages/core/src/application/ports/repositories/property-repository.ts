@@ -82,6 +82,13 @@ export interface PropertyRepository {
   reorderPhotos(propertyId: string, orgId: string, order: Array<{ id: string; sort_order: number }>): Promise<void>
   update(id: string, orgId: string, patch: Partial<PropertyProps>): Promise<void>
   updateStage(id: string, orgId: string, stageSlug: string): Promise<void>
+  /**
+   * Resuelve un commercial_stage_id (catálogo) al slug correspondiente.
+   * Permite que las rutas que reciben el ID numérico desde el frontend
+   * lo conviertan a slug y pasen por UpdatePropertyStageUseCase (que valida
+   * transiciones y loggea stage_history).
+   */
+  findStageSlugById(stageId: number): Promise<string | null>
   findCatalogs(): Promise<{
     operation_types: OperationType[]
     commercial_stages: CommercialStage[]

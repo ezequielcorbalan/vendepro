@@ -88,22 +88,24 @@ export function registerPropertyRoutes(app: Hono<{ Bindings: Env } & AuthVars>) 
     const orgId = c.get('orgId')
     const changedBy = c.get('userId')
     try {
-      if (body.commercial_stage) {
-        const useCase = new UpdatePropertyStageUseCase(repo, historyRepo, leadRepo)
-        await useCase.execute({
-          propertyId,
-          orgId,
-          newStage: body.commercial_stage as PropertyStageValue,
-          changedBy,
-          notes: body.notes ?? null,
-        })
-      } else if (body.commercial_stage_id) {
-        // Resolve slug from ID, then use updateStage for consistency
-        const updateUC = new UpdatePropertyUseCase(repo)
-        await updateUC.execute(propertyId, orgId, {
-          commercial_stage_id: body.commercial_stage_id,
-        })
+      // Resolve to a slug regardless of whether the caller sent commercial_stage
+      // or commercial_stage_id; both paths go through UpdatePropertyStageUseCase
+      // so state-machine validation, sync engine, and stage_history all fire.
+      let stageSlug: string | null = body.commercial_stage ?? null
+      if (!stageSlug && body.commercial_stage_id) {
+        stageSlug = await repo.findStageSlugById(Number(body.commercial_stage_id))
+        if (!stageSlug) return c.json({ error: `commercial_stage_id ${body.commercial_stage_id} no existe` }, 400)
       }
+      if (!stageSlug) return c.json({ error: 'commercial_stage o commercial_stage_id requerido' }, 400)
+
+      const useCase = new UpdatePropertyStageUseCase(repo, historyRepo, leadRepo)
+      await useCase.execute({
+        propertyId,
+        orgId,
+        newStage: stageSlug as PropertyStageValue,
+        changedBy,
+        notes: body.notes ?? null,
+      })
     } catch (e: any) {
       return c.json({ error: e.message || 'Error al cambiar etapa' }, 400)
     }

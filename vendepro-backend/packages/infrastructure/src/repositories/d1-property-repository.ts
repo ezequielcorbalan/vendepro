@@ -229,6 +229,14 @@ export class D1PropertyRepository implements PropertyRepository {
       .run()
   }
 
+  async findStageSlugById(stageId: number): Promise<string | null> {
+    const row = await this.db
+      .prepare('SELECT slug FROM commercial_stages WHERE id = ?')
+      .bind(stageId)
+      .first<{ slug: string }>()
+    return row?.slug ?? null
+  }
+
   async updateStage(id: string, orgId: string, stageSlug: string): Promise<void> {
     // Try matching by operation_type_id first, fall back to slug-only lookup
     let stageRow = await this.db

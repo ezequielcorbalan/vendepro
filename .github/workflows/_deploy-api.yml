@@ -15,6 +15,10 @@ on:
         required: true
       GROQ_API_KEY:
         required: false
+      SMOKE_EMAIL:
+        required: true
+      SMOKE_PASSWORD:
+        required: true
 
 jobs:
   test:
@@ -71,6 +75,67 @@ jobs:
 
       - name: Deploy
         run: npx wrangler deploy
+        working-directory: vendepro-backend/packages/${{ inputs.api_name }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+  smoke:
+    name: Production smoke (${{ inputs.api_name }})
+    runs-on: ubuntu-latest
+    needs: deploy
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: vendepro-backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: vendepro-backend
+
+      - name: Run state-machine smoke against production
+        run: npm run smoke:prod
+        working-directory: vendepro-backend
+        env:
+          SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}
+          SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
+          CI: "true"
+
+      - name: Upload smoke JUnit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-results-${{ inputs.api_name }}-${{ github.run_id }}
+          path: vendepro-backend/packages/smoke-prod/smoke-results.xml
+          if-no-files-found: warn
+
+  rollback:
+    name: Rollback ${{ inputs.api_name }}
+    runs-on: ubuntu-latest
+    needs: smoke
+    # Only roll back if the smoke step itself failed. Skipped/cancelled runs leave
+    # production alone — operator intervention can still trigger wrangler rollback
+    # manually from Cloudflare Dashboard.
+    if: failure() && needs.smoke.result == 'failure'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: vendepro-backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: vendepro-backend
+
+      - name: Roll back worker to previous deployment
+        run: npx wrangler rollback --message "Auto-rollback: state-machine smoke failed for ${{ github.sha }}"
         working-directory: vendepro-backend/packages/${{ inputs.api_name }}
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

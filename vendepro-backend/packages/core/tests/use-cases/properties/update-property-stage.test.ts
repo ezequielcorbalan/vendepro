@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { UpdatePropertyStageUseCase } from '../../../src/application/use-cases/properties/update-property-stage'
 import { Lead } from '../../../src/domain/entities/lead'
+import { Property } from '../../../src/domain/entities/property'
 
 function makeLeadEntity(stage: string) {
   return Lead.create({
@@ -124,5 +125,53 @@ describe('UpdatePropertyStageUseCase with lead sync', () => {
     const out = await uc.execute({ propertyId: 'P1', orgId: 'O1', newStage: 'vendida', changedBy: 'agent1' })
 
     expect(out.syncedLeadId).toBeNull()
+  })
+
+  // Regression: previously the use case read `(property as any).lead_id`, which
+  // works on plain seed objects but returns undefined for real Property entities
+  // (lead_id lives in private props with no getter). The production smoke caught
+  // this, see packages/smoke-prod/tests/state-machine.smoke.test.ts D1/D2.
+  it('reads lead_id from a real Property entity (regression)', async () => {
+    const leadRepo = makeFakeLeadRepo()
+    const histRepo = makeFakeHistory()
+
+    const realProperty = Property.create({
+      id: 'P1',
+      org_id: 'O1',
+      agent_id: 'A1',
+      address: 'X',
+      neighborhood: 'X',
+      city: 'X',
+      property_type: 'departamento' as any,
+      rooms: null,
+      size_m2: null,
+      asking_price: null,
+      currency: 'USD' as any,
+      owner_name: 'X',
+      owner_phone: '1',
+      owner_email: null,
+      contact_id: null,
+      lead_id: 'L1',
+      public_slug: 'x',
+      cover_photo: null,
+      status: 'active' as any,
+      commercial_stage: 'reservada',
+      operation_type: 'venta',
+      operation_type_id: 1,
+      commercial_stage_id: null,
+      status_id: 1,
+    })
+
+    const propRepo = {
+      findById: async (id: string, _o: string) => (id === 'P1' ? realProperty : null),
+      updateStage: async () => {},
+    } as any
+
+    leadRepo._seed(makeLeadEntity('captado'))
+
+    const uc = new UpdatePropertyStageUseCase(propRepo, histRepo, leadRepo)
+    const out = await uc.execute({ propertyId: 'P1', orgId: 'O1', newStage: 'vendida', changedBy: 'agent1' })
+
+    expect(out.syncedLeadId).toBe('L1')
   })
 })

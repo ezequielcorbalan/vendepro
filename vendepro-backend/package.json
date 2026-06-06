@@ -7,6 +7,7 @@
   "scripts": {
     "build": "turbo build",
     "test": "turbo test",
+    "smoke:prod": "npm run smoke --workspace=@vendepro/smoke-prod",
     "test:watch": "turbo test:watch",
     "dev": "turbo dev",
     "lint": "turbo lint",
