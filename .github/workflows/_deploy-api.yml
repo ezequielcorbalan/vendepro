@@ -135,7 +135,8 @@ jobs:
         working-directory: vendepro-backend
 
       - name: Roll back worker to previous deployment
-        run: npx wrangler rollback --message "Auto-rollback: state-machine smoke failed for ${{ github.sha }}"
+        run: |
+          npx wrangler rollback --message "Auto-rollback: state-machine smoke failed for ${{ github.sha }}"
         working-directory: vendepro-backend/packages/${{ inputs.api_name }}
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
