@@ -164,6 +164,39 @@ export async function getLeadStage(id: string): Promise<string> {
   return history[0].to_stage
 }
 
+// Polls getLeadStage until it matches `expected` or the timeout expires.
+// Absorbs Cloudflare D1's eventual consistency between primary write and read
+// replica — visible from GitHub Actions runners (~1s lag is normal).
+export async function expectLeadStage(
+  id: string,
+  expected: string,
+  timeoutMs = 8_000,
+  intervalMs = 400,
+): Promise<string> {
+  const deadline = Date.now() + timeoutMs
+  let last = await getLeadStage(id)
+  while (last !== expected && Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, intervalMs))
+    last = await getLeadStage(id)
+  }
+  return last
+}
+
+export async function expectPropertyStage(
+  id: string,
+  expected: string,
+  timeoutMs = 8_000,
+  intervalMs = 400,
+): Promise<string | null> {
+  const deadline = Date.now() + timeoutMs
+  let last = (await getProperty(id))?.commercial_stage ?? null
+  while (last !== expected && Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, intervalMs))
+    last = (await getProperty(id))?.commercial_stage ?? null
+  }
+  return last
+}
+
 export async function cleanup(): Promise<{ events: number; props: number; leads: number; contacts: number }> {
   // Order matters: events → properties → leads → contacts to respect FKs.
   const counts = { events: 0, props: 0, leads: 0, contacts: 0 }

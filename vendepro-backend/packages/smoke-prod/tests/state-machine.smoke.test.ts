@@ -17,7 +17,8 @@ import {
   createLead,
   createProperty,
   setPropertyStage,
-  getLeadStage,
+  expectLeadStage,
+  expectPropertyStage,
   getProperty,
   getStageHistory,
   cleanup,
@@ -109,8 +110,7 @@ describe('Block C — Sync Lead → Property', () => {
       const r = await advanceLeadStage(leadId, s)
       expect(r.status, `→${s}`).toBe(200)
     }
-    const prop = await getProperty(propId)
-    expect(prop.commercial_stage).toBe('captada')
+    expect(await expectPropertyStage(propId, 'captada')).toBe('captada')
 
     const history = await getStageHistory('property', propId)
     const syncRow = history.find((h) => h.triggered_by === 'sync' && h.to_stage === 'captada')
@@ -128,8 +128,7 @@ describe('Block C — Sync Lead → Property', () => {
     const r = await advanceLeadStage(leadId, 'invalido')
     expect(r.status).toBe(200)
 
-    const prop = await getProperty(propId)
-    expect(prop.commercial_stage).toBe('invalida')
+    expect(await expectPropertyStage(propId, 'invalida')).toBe('invalida')
   })
 })
 
@@ -144,7 +143,7 @@ describe('Block D — Sync Property → Lead', () => {
       const r = await req('PUT', 'props', `/properties/${propId}/stage`, { commercial_stage: s })
       expect(r.status, `→${s}`).toBe(200)
     }
-    expect(await getLeadStage(leadId)).toBe('finalizado')
+    expect(await expectLeadStage(leadId, 'finalizado')).toBe('finalizado')
 
     const history = await getStageHistory('lead', leadId)
     expect(history.some((h) => h.triggered_by === 'sync' && h.to_stage === 'finalizado')).toBe(true)
@@ -157,7 +156,7 @@ describe('Block D — Sync Property → Lead', () => {
     const r = await req('PUT', 'props', `/properties/${propId}/stage`, { commercial_stage: 'perdida' })
     expect(r.status).toBe(200)
 
-    expect(await getLeadStage(leadId)).toBe('perdido')
+    expect(await expectLeadStage(leadId, 'perdido')).toBe('perdido')
   })
 })
 
@@ -167,21 +166,21 @@ describe('Block E — Negative terminal states', () => {
     const id = await createLead('E1', { stage: 'presentada' })
     const r = await advanceLeadStage(id, 'perdido')
     expect(r.status).toBe(200)
-    expect(await getLeadStage(id)).toBe('perdido')
+    expect(await expectLeadStage(id, 'perdido')).toBe('perdido')
   })
 
   it('E2 lead nuevo → invalido (no property)', async () => {
     const id = await createLead('E2')
     const r = await advanceLeadStage(id, 'invalido')
     expect(r.status).toBe(200)
-    expect(await getLeadStage(id)).toBe('invalido')
+    expect(await expectLeadStage(id, 'invalido')).toBe('invalido')
   })
 
   it('E3 lead seguimiento → perdido (followup gave up)', async () => {
     const id = await createLead('E3', { stage: 'seguimiento' })
     const r = await advanceLeadStage(id, 'perdido')
     expect(r.status).toBe(200)
-    expect(await getLeadStage(id)).toBe('perdido')
+    expect(await expectLeadStage(id, 'perdido')).toBe('perdido')
   })
 
   it('E4 property perdida does NOT sync lead (lead not in captado)', async () => {
@@ -191,8 +190,11 @@ describe('Block E — Negative terminal states', () => {
     const r = await req('PUT', 'props', `/properties/${propId}/stage`, { commercial_stage: 'perdida' })
     expect(r.status).toBe(200)
 
-    // unchanged: sync only fires when lead is 'captado'
-    expect(await getLeadStage(leadId)).toBe('contactado')
+    // unchanged: sync only fires when lead is 'captado'.
+    // Use expectLeadStage with the EXPECTED unchanged value so the helper
+    // returns quickly without polling — if the API mistakenly synced, we
+    // still catch it on the first read.
+    expect(await expectLeadStage(leadId, 'contactado')).toBe('contactado')
   })
 
   it('E5 lead captado rejects manual transition (sync-only)', async () => {
