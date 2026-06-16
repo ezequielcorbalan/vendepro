@@ -18,6 +18,7 @@ import {
   MarkExternalReportUseCase,
   ClearExternalReportUseCase,
   DeletePropertyUseCase,
+  normalizePropertyStatus,
 } from '@vendepro/core'
 import type { PropertyStageValue } from '@vendepro/core'
 
@@ -68,6 +69,15 @@ export function registerPropertyRoutes(app: Hono<{ Bindings: Env } & AuthVars>) 
 
   app.put('/properties/:id', async (c) => {
     const body = (await c.req.json()) as any
+    // The legacy `status` column only accepts the English domain enum, but the
+    // frontend sends Spanish catalog slugs (e.g. 'suspendida'). Normalize it;
+    // status_id already carries the catalog selection. Drop unknown values so we
+    // never write something the CHECK constraint would reject.
+    if ('status' in body && body.status != null) {
+      const normalized = normalizePropertyStatus(body.status)
+      if (normalized) body.status = normalized
+      else delete body.status
+    }
     const repo = new D1PropertyRepository(c.env.DB)
     const useCase = new UpdatePropertyUseCase(repo)
     try {
