@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
+import { D1LeadRepository } from '@vendepro/infrastructure'
 
 vi.mock('@vendepro/infrastructure', async (importOriginal) => {
   const actual = await importOriginal() as any
@@ -67,6 +68,24 @@ describe('api-crm lead routes', () => {
     expect(res.status).toBe(200)
     const body = await res.json() as any
     expect(Array.isArray(body)).toBe(true)
+  })
+
+  it('GET /leads?id returns the single lead, not an array', async () => {
+    const findById = vi.fn().mockResolvedValue({ id: 'lead-42', full_name: 'Oscar' })
+    ;(D1LeadRepository as any).mockImplementationOnce(() => ({ findById }))
+    const { default: app } = await import('../src/index')
+    const res = await app.request('/leads?id=lead-42', { method: 'GET' }, { DB: {}, JWT_SECRET: 'secret' })
+    expect(res.status).toBe(200)
+    const body = await res.json() as any
+    expect(Array.isArray(body)).toBe(false)
+    expect(body.id).toBe('lead-42')
+    expect(findById).toHaveBeenCalledWith('lead-42', 'org_mg')
+  })
+
+  it('GET /leads?id returns 404 when lead not found', async () => {
+    const { default: app } = await import('../src/index')
+    const res = await app.request('/leads?id=missing', { method: 'GET' }, { DB: {}, JWT_SECRET: 'secret' })
+    expect(res.status).toBe(404)
   })
 
   it('POST /leads with valid data creates lead', async () => {

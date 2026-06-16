@@ -305,9 +305,31 @@ Todos surgieron al implementar el smoke en producción. Ver §12 para el bug his
 
 ## 12. Caveats y bug history
 
-### Endpoint `GET /leads/:id` no existe
+### Cómo traer un lead específico: `GET /leads?id=<id>`
 
-Solo hay `GET /leads` (lista filtrable). Para obtener el stage actual de un lead específico, leer la fila más reciente de `stage_history` (append-only, ordenada `DESC by changed_at, rowid` — ver bug fix más abajo). El smoke usa `expectLeadStage()` (§13) que poll-ea esta query.
+No hay ruta `GET /leads/:id`, pero `GET /leads` acepta `?id=<id>` y devuelve **un objeto único** (no array) vía `LeadRepository.findById`, o `404` si no existe. El frontend (lead detail, linked-lead en tasaciones) usa este query param.
+
+> El smoke sigue usando `expectLeadStage()` (§13), que poll-ea `stage_history` (no `GET /leads?id=`) para tolerar el lag de la réplica de D1 y desempatar transiciones del mismo segundo.
+
+### Bug fixed (2026-06): `GET /leads?id=` ignoraba el `id` → todos los leads abrían el mismo
+
+El handler `GET /leads` en `api-crm` leía solo `{ stage, agent_id, search }` de la query y **descartaba `id`**. Como el lead detail pide `GET /leads?id=<id>` y tomaba `leadData[0]`, el backend devolvía la lista completa ordenada `created_at DESC` y el front mostraba siempre el lead más reciente (síntoma: "abro cualquier lead y me lleva a Barbi").
+
+Efecto secundario que confundía el diagnóstico: el pipeline del detalle "no respondía" al tocar un círculo. En realidad el cambio de etapa sí se mandaba (con el `id` correcto de la URL), pero la pantalla mostraba siempre el mismo lead, así que parecía que no pasaba nada. La flechita "Avanzar" de la **lista** sí funcionaba porque la lista usa datos correctos.
+
+Fix: el handler detecta `?id=` y resuelve vía `findById` (objeto único o 404). También arregló el linked-lead del detalle de tasaciones, que esperaba `ld.id` de un objeto único.
+
+Regression test: `packages/api-crm/tests/lead-routes.test.ts` (objeto único + 404).
+
+### Bug fixed (2026-06): `PUT /properties/:id` violaba el CHECK de `status` (slug español)
+
+Dos modelos de estado en conflicto: la columna legacy `properties.status` tiene `CHECK (status IN ('active','sold','suspended','archived','inactive'))` (inglés, migración 000), pero el catálogo `property_statuses` (migración 005) usa slugs **en español** (`activa, vendida, reservada, suspendida, archivada, inactiva`). El form de edición manda `status: <slug-español>`, que el backend escribía tal cual → `D1_ERROR: CHECK constraint failed`.
+
+Fix: helper de dominio `normalizePropertyStatus()` (`property-rules.ts`) traduce slug español/inglés → enum del dominio (idempotente, case-insensitive; `reservada → active` porque la reserva vive en `commercial_stage`, no en el status). El handler `PUT /properties/:id` lo aplica antes de escribir y descarta valores desconocidos para nunca violar el CHECK. `status_id` (la selección real del catálogo) pasa intacto. No requiere migración / rebuild de tabla en D1.
+
+> El catálogo español (`property_statuses`) está marcado para deprecación en la migración 027 (§nota 6). Mientras tanto, `status_id` es la selección canónica del front y `status` (texto, inglés) es el espejo legacy que respeta el dominio.
+
+Regression test: `packages/core/tests/domain/property-rules.test.ts` (mapeo es→en, idempotencia, `reservada→active`, desconocidos → null).
 
 ### Bug fixed `0f4048e` (2026-06): `stage_history` sin tiebreaker
 

@@ -50,8 +50,16 @@ app.use('*', async (c, next) => {
 
 // ── LEADS ──────────────────────────────────────────────────────
 app.get('/leads', async (c) => {
-  const { stage, agent_id, search } = c.req.query()
+  const { id, stage, agent_id, search } = c.req.query()
   const repo = new D1LeadRepository(c.env.DB)
+
+  // Single lead by id — used by lead detail and linked-lead lookups
+  if (id) {
+    const lead = await repo.findById(id, c.get('orgId'))
+    if (!lead) return c.json({ error: 'Lead not found' }, 404)
+    return c.json(lead.toObject?.() ?? lead)
+  }
+
   const useCase = new GetLeadsUseCase(repo)
   const leads = await useCase.execute(c.get('orgId'), { stage, agent_id, search })
   return c.json(leads.map(l => l.toObject?.() ?? l))

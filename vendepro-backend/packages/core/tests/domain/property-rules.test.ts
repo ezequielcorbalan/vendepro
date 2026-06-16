@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { canTransitionPropertyStatus } from '../../src/domain/rules/property-rules'
+import { canTransitionPropertyStatus, normalizePropertyStatus } from '../../src/domain/rules/property-rules'
 
 describe('Property rules — canTransitionPropertyStatus', () => {
   it('active -> sold allowed', () => {
@@ -55,5 +55,34 @@ describe('Property rules — canTransitionPropertyStatus', () => {
 
   it('returns false for unknown source status', () => {
     expect(canTransitionPropertyStatus('bogus' as never, 'active')).toBe(false)
+  })
+})
+
+describe('Property rules — normalizePropertyStatus', () => {
+  it('maps Spanish catalog slugs to the domain enum', () => {
+    expect(normalizePropertyStatus('activa')).toBe('active')
+    expect(normalizePropertyStatus('vendida')).toBe('sold')
+    expect(normalizePropertyStatus('suspendida')).toBe('suspended')
+    expect(normalizePropertyStatus('archivada')).toBe('archived')
+    expect(normalizePropertyStatus('inactiva')).toBe('inactive')
+  })
+
+  it("maps 'reservada' to 'active' (reservation lives in commercial_stage)", () => {
+    expect(normalizePropertyStatus('reservada')).toBe('active')
+  })
+
+  it('is idempotent for already-English values', () => {
+    expect(normalizePropertyStatus('active')).toBe('active')
+    expect(normalizePropertyStatus('suspended')).toBe('suspended')
+  })
+
+  it('is case/whitespace insensitive', () => {
+    expect(normalizePropertyStatus(' Suspendida ')).toBe('suspended')
+  })
+
+  it('returns null for unknown or non-string input', () => {
+    expect(normalizePropertyStatus('bogus')).toBeNull()
+    expect(normalizePropertyStatus(null)).toBeNull()
+    expect(normalizePropertyStatus(42)).toBeNull()
   })
 })
