@@ -65,6 +65,7 @@ export function ComparableCard({
   const fileRef = useRef<HTMLInputElement>(null)
   const [extracting, setExtracting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [extracted, setExtracted] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [highlight, setHighlight] = useState(false)
   const [collapsed, setCollapsed] = useState(defaultCollapsed)
@@ -100,10 +101,12 @@ export function ComparableCard({
   const handleFile = async (file: File) => {
     setExtracting(true)
     setError(null)
+    setExtracted(false)
     setPreviewUrl(URL.createObjectURL(file))
     try {
       const data = await extractComparableFromImage(file)
       applyExtraction(data)
+      setExtracted(true)
     } catch (e: any) {
       setError(e?.message ?? 'No se pudo extraer la información')
     } finally {
@@ -237,10 +240,16 @@ export function ComparableCard({
               ) : previewUrl ? (
                 <>
                   <img src={previewUrl} alt="" className="max-h-32 rounded shadow-sm" />
-                  <p className="mt-2 text-xs text-emerald-600">
-                    <Sparkles className="mr-1 inline h-3 w-3" />
-                    Datos extraídos. Pegá otra para reemplazar.
-                  </p>
+                  {extracted ? (
+                    <p className="mt-2 text-xs text-emerald-600">
+                      <Sparkles className="mr-1 inline h-3 w-3" />
+                      Datos extraídos. Pegá otra para reemplazar.
+                    </p>
+                  ) : error ? (
+                    <p className="mt-2 text-xs text-rose-500">
+                      No se pudo extraer. Pegá otra captura para reintentar.
+                    </p>
+                  ) : null}
                 </>
               ) : (
                 <>

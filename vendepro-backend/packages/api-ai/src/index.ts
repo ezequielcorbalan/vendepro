@@ -51,7 +51,7 @@ app.post('/extract-comparable', async (c) => {
     })
     return c.json({ fields })
   } catch (e: any) {
-    if (e.statusCode === 400 || e.statusCode === 413) return c.json({ error: e.message }, e.statusCode)
+    if (typeof e?.statusCode === 'number') return c.json({ error: e.message }, e.statusCode)
     throw e
   }
 })
