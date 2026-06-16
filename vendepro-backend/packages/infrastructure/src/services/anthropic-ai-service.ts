@@ -1,5 +1,27 @@
 import type { AIService, LeadIntent, ComparablePropertyData } from '@vendepro/core'
 
+// Tipos de imagen que acepta la API de visión de Anthropic.
+const ANTHROPIC_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp'])
+
+function normalizeImageMediaType(mimeType?: string): string {
+  const t = (mimeType ?? 'image/png').toLowerCase().trim()
+  if (t === 'image/jpg') return 'image/jpeg'
+  return t
+}
+
+function anthropicError(status: number, body: string): Error & { statusCode: number } {
+  // 4xx de Anthropic suele ser culpa del input (imagen inválida/grande): lo
+  // propagamos tal cual para que el front muestre algo accionable. 5xx/errores
+  // de red los marcamos como 502 (upstream caído), no como 500 nuestro.
+  const statusCode = status >= 400 && status < 500 ? status : 502
+  const msg = statusCode === 502
+    ? 'El servicio de IA no está disponible en este momento. Probá de nuevo en unos minutos.'
+    : 'No se pudo procesar la imagen. Probá con otra captura (formato JPG/PNG/WEBP).'
+  const err = new Error(`${msg} [anthropic ${status}: ${body.slice(0, 300)}]`) as Error & { statusCode: number }
+  err.statusCode = statusCode
+  return err
+}
+
 export class AnthropicAIService implements AIService {
   constructor(private readonly apiKey: string) {}
 
@@ -57,6 +79,13 @@ export class AnthropicAIService implements AIService {
   }
 
   async extractComparableFromScreenshot(imageBase64: string, mimeType: string = 'image/png'): Promise<ComparablePropertyData> {
+    const mediaType = normalizeImageMediaType(mimeType)
+    if (!ANTHROPIC_IMAGE_TYPES.has(mediaType)) {
+      const err = new Error(`Formato de imagen no soportado (${mediaType}). Usá JPG, PNG, GIF o WEBP.`) as Error & { statusCode: number }
+      err.statusCode = 400
+      throw err
+    }
+
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -73,7 +102,7 @@ export class AnthropicAIService implements AIService {
             content: [
               {
                 type: 'image',
-                source: { type: 'base64', media_type: mimeType, data: imageBase64 },
+                source: { type: 'base64', media_type: mediaType, data: imageBase64 },
               },
               {
                 type: 'text',
@@ -102,7 +131,11 @@ Reglas:
       }),
     })
 
-    if (!response.ok) throw new Error(`Anthropic API error: ${response.status}`)
+    if (!response.ok) {
+      const body = await response.text().catch(() => '')
+      console.error(`[AnthropicAIService] extractComparable failed: ${response.status} ${body.slice(0, 500)}`)
+      throw anthropicError(response.status, body)
+    }
     const data = await response.json() as any
     const content = data.content?.[0]?.text ?? '{}'
 
