@@ -135,10 +135,10 @@ describe('Block C — Sync Lead → Property', () => {
 // ── Block D: Sync Property → Lead ───────────────────────────────
 describe('Block D — Sync Property → Lead', () => {
   it('D1 property vendida syncs linked lead captado → finalizado', async () => {
-    const leadId = await createLead('D1', { stage: 'captado' })
-    // Property was auto-created at propuesta by createLead? No — createLead doesn't create one.
-    // So we explicitly create a linked property already in 'captada' (would normally come from C1's sync).
+    // captado requiere una propiedad vinculada: la creamos y luego avanzamos.
+    const leadId = await createLead('D1', { stage: 'presentada' })
     const propId = await createProperty({ leadId, stage: 'captada' })
+    expect((await advanceLeadStage(leadId, 'captado')).status, '→captado').toBe(200)
     for (const s of ['publicada', 'reservada', 'vendida'] as const) {
       const r = await req('PUT', 'props', `/properties/${propId}/stage`, { commercial_stage: s })
       expect(r.status, `→${s}`).toBe(200)
@@ -150,8 +150,9 @@ describe('Block D — Sync Property → Lead', () => {
   })
 
   it('D2 property perdida syncs linked lead captado → perdido', async () => {
-    const leadId = await createLead('D2', { stage: 'captado' })
+    const leadId = await createLead('D2', { stage: 'presentada' })
     const propId = await createProperty({ leadId, stage: 'captada' })
+    expect((await advanceLeadStage(leadId, 'captado')).status, '→captado').toBe(200)
     await setPropertyStage(propId, 'publicada')
     const r = await req('PUT', 'props', `/properties/${propId}/stage`, { commercial_stage: 'perdida' })
     expect(r.status).toBe(200)

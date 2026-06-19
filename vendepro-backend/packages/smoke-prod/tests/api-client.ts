@@ -82,6 +82,12 @@ export async function createLead(label: string, opts: { stage?: string } = {}): 
     // walk through manual chain to reach the desired starting stage
     const chain = chainFromNuevo(opts.stage)
     for (const s of chain) {
+      // Regla de negocio: no se puede pasar a 'captado' sin una propiedad
+      // vinculada. La creamos ya en 'captada' (la sync captado→property solo
+      // toca propiedades en 'propuesta', así que no interfiere).
+      if (s === 'captado') {
+        await createProperty({ leadId: r.data.id, stage: 'captada' })
+      }
       const rs = await req<any>('POST', 'crm', '/leads/stage', { id: r.data.id, stage: s })
       if (rs.status !== 200) {
         throw new Error(`createLead reaching ${opts.stage} failed at ${s}: ${JSON.stringify(rs.data)}`)
