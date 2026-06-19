@@ -128,7 +128,9 @@ export default function LeadDetailPage() {
   }
 
   // Ejecuta el cambio de etapa (avisa si hay property vinculada, pide motivo en
-  // perdido/invalido). Siempre con override (bypass para correcciones manuales).
+  // perdido/invalido). El override (bypass) se usa SOLO para mover hacia atrás
+  // (corrección de errores); hacia adelante manda la máquina de estados, así que
+  // solo se puede avanzar a la transición válida siguiente (no saltear etapas).
   const applyStageChange = async (stage: string) => {
     if (linkedProperty) {
       const curLabel = PROPERTY_STAGES[linkedProperty.commercial_stage as PropertyStage]?.label || linkedProperty.commercial_stage || 'sin etapa'
@@ -161,12 +163,17 @@ export default function LeadDetailPage() {
         pushFromApiResponse(await r.json().catch(() => ({})), { entity_type: 'lead', entity_id: leadId, event_name_fallback: stage })
         toast(`Lead marcado como ${stage === 'perdido' ? 'perdido' : 'inválido'}`, 'warning')
       } else {
+        // Hacia atrás (orden menor) = corrección → bypass. Hacia adelante = la
+        // máquina de estados valida (solo deja avanzar a la transición válida).
+        const curOrder = LEAD_STAGES[lead.stage as LeadStage]?.order ?? 0
+        const targetOrder = LEAD_STAGES[stage as LeadStage]?.order ?? 0
+        const override = targetOrder < curOrder
         const res = await apiFetch('crm', '/leads/stage', {
           method: 'POST',
-          body: JSON.stringify({ id: leadId, stage, override: true }),
+          body: JSON.stringify({ id: leadId, stage, override }),
         })
         const result = (await res.json()) as any
-        if (!res.ok) { toast(result?.error || 'No se pudo cambiar la etapa', 'error'); return }
+        if (!res.ok) { toast(result?.error || 'No se pudo avanzar a esa etapa', 'error'); return }
         pushFromApiResponse(result, { entity_type: 'lead', entity_id: leadId, event_name_fallback: stage })
         toast(`Etapa: ${LEAD_STAGES[stage as LeadStage]?.label || stage}`)
         if (result.autoFollowup) toast(`Seguimiento automático creado para ${formatDate(result.autoFollowup.start_at)}`)
