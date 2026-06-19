@@ -42,14 +42,30 @@ describe('LeadStagePipeline', () => {
     expect(onSelect).not.toHaveBeenCalled()
   })
 
-  it('para una etapa terminal (perdido) muestra la etapa actual fuera del pipeline lineal', () => {
+  it('expone los estados terminales (perdido/invalido) como botones clickeables', () => {
+    const onSelect = vi.fn()
+    render(<LeadStagePipeline currentStage="contactado" onSelect={onSelect} />)
+    const perdido = screen.getByRole('button', { name: new RegExp(LEAD_STAGES.perdido.label, 'i') })
+    const invalido = screen.getByRole('button', { name: new RegExp(LEAD_STAGES.invalido.label, 'i') })
+    expect(perdido).toBeInTheDocument()
+    expect(invalido).toBeInTheDocument()
+    fireEvent.click(perdido)
+    expect(onSelect).toHaveBeenCalledWith('perdido')
+  })
+
+  it('para una etapa terminal (perdido) marca su botón como actual', () => {
     render(<LeadStagePipeline currentStage="perdido" onSelect={() => {}} />)
-    // El badge terminal es el único marcado como actual.
-    const current = screen.getByText(LEAD_STAGES.perdido.label, { selector: '[data-current="true"]' })
-    expect(current).toHaveAttribute('data-stage', 'perdido')
-    // Ninguna etapa del pipeline lineal queda marcada como actual.
-    const pipeline = document.querySelectorAll('button[aria-current="step"]')
-    expect(pipeline).toHaveLength(0)
+    const current = document.querySelectorAll('[data-current="true"]')
+    expect(current).toHaveLength(1)
+    expect(current[0]).toHaveAttribute('data-stage', 'perdido')
+    expect(current[0]?.tagName).toBe('BUTTON')
+  })
+
+  it('permite bypass hacia atrás: desde captado se puede clickear una etapa anterior', () => {
+    const onSelect = vi.fn()
+    render(<LeadStagePipeline currentStage="captado" onSelect={onSelect} />)
+    fireEvent.click(screen.getByRole('button', { name: new RegExp(LEAD_STAGES.seguimiento.label, 'i') }))
+    expect(onSelect).toHaveBeenCalledWith('seguimiento')
   })
 
   it('marca como completadas las etapas previas a la actual', () => {

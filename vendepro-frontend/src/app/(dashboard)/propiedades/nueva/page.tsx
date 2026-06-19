@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ArrowLeft, Loader2, Search, X, UserPlus } from 'lucide-react'
+import { ArrowLeft, Loader2, Search, X, UserPlus, Link2 } from 'lucide-react'
 import Link from 'next/link'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
@@ -60,6 +60,7 @@ export default function NuevaPropiedadPage() {
   const [newContact, setNewContact] = useState({ full_name: '', phone: '', email: '', contact_type: 'vendedor' })
   const [creatingContact, setCreatingContact] = useState(false)
   const [linkedLeadId, setLinkedLeadId] = useState<string | null>(null)
+  const [linkedLeadName, setLinkedLeadName] = useState<string | null>(null)
   const searchRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Pre-load from URL params
@@ -87,9 +88,10 @@ export default function NuevaPropiedadPage() {
         }
         if (leadId) {
           setLinkedLeadId(leadId)
-          const res = await apiFetch('crm', `/leads`)
-          const leads = (await res.json()) as any[]
-          const lead = leads.find((l: any) => l.id === leadId)
+          const res = await apiFetch('crm', `/leads?id=${leadId}`)
+          const data = (await res.json()) as any
+          const lead = Array.isArray(data) ? data[0] : data
+          if (lead?.full_name) setLinkedLeadName(lead.full_name)
           if (lead?.contact_id) {
             const cRes = await apiFetch('crm', `/contacts/${lead.contact_id}`)
             const contact = (await cRes.json()) as any
@@ -240,7 +242,15 @@ export default function NuevaPropiedadPage() {
         <ArrowLeft className="w-4 h-4" /> Volver a propiedades
       </Link>
 
-      <h1 className="text-2xl font-semibold text-gray-800 mb-6">Nueva propiedad</h1>
+      <h1 className="text-2xl font-semibold text-gray-800 mb-4">Nueva propiedad</h1>
+
+      {linkedLeadName && (
+        <div className="mb-6 flex items-center gap-2 bg-pink-50 border border-pink-100 rounded-xl px-3 py-2.5 text-sm max-w-md">
+          <Link2 className="w-4 h-4 text-[#ff007c] shrink-0" />
+          <span className="text-gray-500">Propiedad vinculada al lead:</span>
+          <span className="font-semibold text-gray-800 truncate">{linkedLeadName}</span>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm p-4 sm:p-6 space-y-5 sm:space-y-6">
 

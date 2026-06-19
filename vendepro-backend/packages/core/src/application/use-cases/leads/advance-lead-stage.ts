@@ -4,6 +4,7 @@ import type { StageHistoryRepository } from '../../ports/repositories/stage-hist
 import type { PropertyRepository } from '../../ports/repositories/property-repository'
 import type { IdGenerator } from '../../ports/id-generator'
 import { NotFoundError } from '../../../domain/errors/not-found'
+import { ValidationError } from '../../../domain/errors/validation-error'
 import { CalendarEvent } from '../../../domain/entities/calendar-event'
 import type { LeadStageValue } from '../../../domain/value-objects/lead-stage'
 import type { PropertyStageValue } from '../../../domain/value-objects/property-stage'
@@ -16,6 +17,8 @@ export interface AdvanceLeadStageInput {
   newStage: LeadStageValue
   changedBy: string
   notes?: string | null
+  /** Corrección manual: saltea la máquina de transiciones (bypass total). */
+  override?: boolean
 }
 
 export interface AdvanceLeadStageOutput {
@@ -38,8 +41,18 @@ export class AdvanceLeadStageUseCase {
     const lead = await this.leadRepo.findById(input.leadId, input.orgId)
     if (!lead) throw new NotFoundError('Lead no encontrado')
 
+    // Invariante de negocio (incluso con override): un lead no puede pasar a
+    // "captado" sin una propiedad vinculada. Captado = la propiedad fue captada.
+    if (input.newStage === 'captado' && this.propertyRepo) {
+      const linked = await this.propertyRepo.findByLeadId(input.leadId, input.orgId)
+      if (!linked) {
+        throw new ValidationError('No se puede pasar a "captado" sin una propiedad vinculada')
+      }
+    }
+
     const fromStage = lead.stage
-    lead.advanceStage(input.newStage)
+    if (input.override) lead.overrideStage(input.newStage)
+    else lead.advanceStage(input.newStage)
 
     await this.leadRepo.save(lead)
 
@@ -50,7 +63,7 @@ export class AdvanceLeadStageUseCase {
       from_stage: fromStage,
       to_stage: input.newStage,
       changed_by: input.changedBy,
-      notes: input.notes ?? null,
+      notes: input.notes ?? (input.override ? 'Corrección manual de etapa' : null),
       triggered_by: 'user',
     })
 

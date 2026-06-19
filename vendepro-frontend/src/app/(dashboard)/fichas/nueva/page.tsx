@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   ArrowLeft, Save, Loader2, ChevronDown, ChevronUp,
   Home, Ruler, DoorOpen, Thermometer, DollarSign,
-  CheckCircle, ClipboardList,
+  CheckCircle, ClipboardList, Link2,
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
@@ -96,6 +96,7 @@ export default function NuevaFichaPage() {
 
   const [saving, setSaving] = useState(false)
   const [leadLoading, setLeadLoading] = useState(!!leadId && !prefillAddress)
+  const [linkedLead, setLinkedLead] = useState<any>(null)
 
   const [f, setF] = useState({
     inspection_date: new Date().toISOString().split('T')[0],
@@ -146,12 +147,13 @@ export default function NuevaFichaPage() {
   const u = (field: string, value: any) => setF(prev => ({ ...prev, [field]: value }))
 
   useEffect(() => {
-    if (!leadId || prefillAddress) return
+    if (!leadId) return
     apiFetch('crm', `/leads?id=${leadId}`)
       .then(r => r.json() as Promise<any>)
       .then(data => {
         const l = Array.isArray(data) ? data[0] : data
-        if (!l) return
+        if (!l || !l.id) return
+        setLinkedLead(l)
         setF(prev => ({
           ...prev,
           address: prev.address || l.property_address || '',
@@ -248,6 +250,14 @@ export default function NuevaFichaPage() {
           <p className="text-xs text-gray-400">Completá los datos durante la visita</p>
         </div>
       </div>
+
+      {linkedLead && (
+        <div className="mb-5 flex items-center gap-2 bg-pink-50 border border-pink-100 rounded-xl px-3 py-2.5 text-sm">
+          <Link2 className="w-4 h-4 text-[#ff007c] shrink-0" />
+          <span className="text-gray-500">Tasación vinculada al lead:</span>
+          <span className="font-semibold text-gray-800 truncate">{linkedLead.full_name}</span>
+        </div>
+      )}
 
       <div className="space-y-3">
         {/* 1. Datos generales */}

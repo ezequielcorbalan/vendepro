@@ -107,4 +107,33 @@ describe('AdvanceLeadStageUseCase', () => {
     await expect(useCase.execute({ leadId: 'lead-1', orgId: 'org_mg', newStage: 'captado', changedBy: 'agent-1' }))
       .rejects.toThrow(ValidationError)
   })
+
+  it('override permite una transición que la máquina normalmente bloquea (corrección manual)', async () => {
+    mockLeadRepo.findById.mockResolvedValue(makeNuevoLead())
+
+    const useCase = new AdvanceLeadStageUseCase(mockLeadRepo, mockCalendarRepo, mockStageHistoryRepo, mockIdGen)
+    // nuevo -> presentada no está permitido manualmente, pero con override sí.
+    const result = await useCase.execute({ leadId: 'lead-1', orgId: 'org_mg', newStage: 'presentada', changedBy: 'agent-1', override: true })
+
+    expect(mockLeadRepo.save).toHaveBeenCalled()
+    expect(mockStageHistoryRepo.log).toHaveBeenCalledWith(
+      expect.objectContaining({ from_stage: 'nuevo', to_stage: 'presentada' })
+    )
+    expect(result.syncedPropertyId).toBeNull()
+  })
+
+  it('override permite mover hacia atrás desde un estado sin transiciones manuales (captado)', async () => {
+    const captadoLead = makeNuevoLead()
+    captadoLead.overrideStage('captado')
+    mockLeadRepo.findById.mockResolvedValue(captadoLead)
+
+    const useCase = new AdvanceLeadStageUseCase(mockLeadRepo, mockCalendarRepo, mockStageHistoryRepo, mockIdGen)
+    // captado -> seguimiento: sin override tiraría ValidationError ("Permitidas: ninguna").
+    await expect(
+      useCase.execute({ leadId: 'lead-1', orgId: 'org_mg', newStage: 'seguimiento', changedBy: 'agent-1', override: true })
+    ).resolves.toBeDefined()
+    expect(mockStageHistoryRepo.log).toHaveBeenCalledWith(
+      expect.objectContaining({ from_stage: 'captado', to_stage: 'seguimiento' })
+    )
+  })
 })

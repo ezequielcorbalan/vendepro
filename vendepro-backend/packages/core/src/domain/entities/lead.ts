@@ -112,6 +112,26 @@ export class Lead {
     return { firstContactAt }
   }
 
+  /**
+   * Corrección manual: setea la etapa salteando la máquina de transiciones
+   * (bypass total, para corregir errores del usuario). Solo valida que la etapa
+   * exista. Conserva el efecto de primer contacto.
+   */
+  overrideStage(newStage: LeadStageValue): { firstContactAt: string | null } {
+    if (!LEAD_STAGES.includes(newStage)) {
+      throw new ValidationError(`Stage inválido: "${newStage}"`)
+    }
+    const oldStage = this.props.stage
+    let firstContactAt: string | null = null
+    if (oldStage === 'nuevo' && newStage === 'contactado') {
+      firstContactAt = new Date().toISOString()
+      this.props.first_contact_at = firstContactAt
+    }
+    this.props.stage = newStage
+    this.props.updated_at = new Date().toISOString()
+    return { firstContactAt }
+  }
+
   syncStage(newStage: LeadStageValue): void {
     const current = LeadStage.create(this.props.stage)
     current.transitionTo(newStage, { source: 'sync' })

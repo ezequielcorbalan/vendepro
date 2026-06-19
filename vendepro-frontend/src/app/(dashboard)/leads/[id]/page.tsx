@@ -14,7 +14,7 @@ import { pushFromApiResponse } from '@/components/marketing/dataLayer'
 import { useToast } from '@/components/ui/Toast'
 import { useConfirm } from '@/components/ui/useConfirm'
 import {
-  LEAD_STAGES, LEAD_STAGE_KEYS, LEAD_SOURCES, OPERATION_TYPES,
+  LEAD_STAGES, LEAD_SOURCES, OPERATION_TYPES,
   formatWhatsApp, type LeadStage,
   PROPERTY_STAGES, type PropertyStage,
 } from '@/lib/crm-config'
@@ -27,6 +27,10 @@ const STAGE_DOT_COLORS: Record<string, string> = {
   seguimiento: '#f59e0b', captado: '#22c55e', perdido: '#ef4444',
   invalido: '#6b7280', finalizado: '#10b981',
 }
+
+// Etapas en las que conviene tener una propiedad/tasación vinculada: si el lead
+// no tiene, ofrecemos crear/vincular antes de avanzar.
+const NEEDS_PROPERTY_STAGES = ['en_tasacion', 'presentada', 'seguimiento']
 
 export default function LeadDetailPage() {
   const params = useParams()
@@ -42,12 +46,11 @@ export default function LeadDetailPage() {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [editForm, setEditForm] = useState<any>({})
-  const [showConvertModal, setShowConvertModal] = useState(false)
+  const [propModal, setPropModal] = useState<{ targetStage: string; requireProperty: boolean } | null>(null)
   const [orgTags, setOrgTags] = useState<any[]>([])
   const [showTagPicker, setShowTagPicker] = useState(false)
   const [tagsLoading, setTagsLoading] = useState(false)
   const [stageHistory, setStageHistory] = useState<any[]>([])
-  const [moveToStage, setMoveToStage] = useState('')
   const [linkedProperty, setLinkedProperty] = useState<{ id: string; commercial_stage: string | null } | null>(null)
 
   function loadLead() {
@@ -106,12 +109,27 @@ export default function LeadDetailPage() {
   }
 
   const handleStageChange = async (stage: string) => {
-    if (editing) return
+    if (editing || stage === lead.stage) return
     if (stage === 'finalizado') {
       toast('Finalizado se asigna automáticamente cuando la propiedad se vende', 'warning')
       return
     }
-    if (stage === 'en_tasacion') { setShowConvertModal(true); return }
+    // Captado requiere una propiedad vinculada (bloqueante).
+    if (stage === 'captado' && !linkedProperty) {
+      setPropModal({ targetStage: 'captado', requireProperty: true })
+      return
+    }
+    // En estas etapas conviene tener propiedad/tasación: si no hay, ofrecer crear/vincular.
+    if (NEEDS_PROPERTY_STAGES.includes(stage) && !linkedProperty) {
+      setPropModal({ targetStage: stage, requireProperty: false })
+      return
+    }
+    await applyStageChange(stage)
+  }
+
+  // Ejecuta el cambio de etapa (avisa si hay property vinculada, pide motivo en
+  // perdido/invalido). Siempre con override (bypass para correcciones manuales).
+  const applyStageChange = async (stage: string) => {
     if (linkedProperty) {
       const curLabel = PROPERTY_STAGES[linkedProperty.commercial_stage as PropertyStage]?.label || linkedProperty.commercial_stage || 'sin etapa'
       const { confirmed } = await askConfirm({
@@ -138,16 +156,17 @@ export default function LeadDetailPage() {
         if (!confirmed) return
         const r = await apiFetch('crm', '/leads/stage', {
           method: 'POST',
-          body: JSON.stringify({ id: leadId, stage, notes: reason || 'Sin motivo' }),
+          body: JSON.stringify({ id: leadId, stage, notes: reason || 'Sin motivo', override: true }),
         })
         pushFromApiResponse(await r.json().catch(() => ({})), { entity_type: 'lead', entity_id: leadId, event_name_fallback: stage })
         toast(`Lead marcado como ${stage === 'perdido' ? 'perdido' : 'inválido'}`, 'warning')
       } else {
         const res = await apiFetch('crm', '/leads/stage', {
           method: 'POST',
-          body: JSON.stringify({ id: leadId, stage }),
+          body: JSON.stringify({ id: leadId, stage, override: true }),
         })
         const result = (await res.json()) as any
+        if (!res.ok) { toast(result?.error || 'No se pudo cambiar la etapa', 'error'); return }
         pushFromApiResponse(result, { entity_type: 'lead', entity_id: leadId, event_name_fallback: stage })
         toast(`Etapa: ${LEAD_STAGES[stage as LeadStage]?.label || stage}`)
         if (result.autoFollowup) toast(`Seguimiento automático creado para ${formatDate(result.autoFollowup.start_at)}`)
@@ -209,37 +228,22 @@ export default function LeadDetailPage() {
     } catch { /* link still opens — silent fail on log */ }
   }
 
-  const handleConvertToAppraisal = async (createAppraisal: boolean) => {
-    try {
-      const stageRes = await apiFetch('crm', '/leads/stage', {
-        method: 'POST',
-        body: JSON.stringify({ id: leadId, stage: 'en_tasacion' }),
-      })
-      pushFromApiResponse(await stageRes.json().catch(() => ({})), { entity_type: 'lead', entity_id: leadId, event_name_fallback: 'en_tasacion' })
-      if (createAppraisal && lead) {
-        try {
-          await apiFetch('properties', '/appraisals', {
-            method: 'POST',
-            body: JSON.stringify({
-              lead_id: lead.id,
-              contact_name: lead.full_name,
-              contact_phone: lead.phone,
-              contact_email: lead.email,
-              agent_id: lead.assigned_to,
-              neighborhood: lead.neighborhood,
-              property_address: lead.property_address,
-            }),
-          })
-          toast(`Tasación creada para ${lead.full_name}`)
-        } catch {
-          toast(`${lead.full_name} → En tasación (error al crear tasación)`, 'error')
-        }
-      } else {
-        toast(`${lead?.full_name} → En tasación`)
-      }
-      setShowConvertModal(false)
-      loadLead()
-    } catch { toast('Error al cambiar etapa', 'error') }
+  // Navega a crear la TASACIÓN vinculada (el lead aparece vinculado en la pantalla).
+  const goCreateAppraisal = () => {
+    const qs = new URLSearchParams({ lead_id: leadId })
+    if (lead?.property_address) qs.set('address', lead.property_address)
+    if (lead?.neighborhood) qs.set('neighborhood', lead.neighborhood)
+    setPropModal(null)
+    router.push(`/fichas/nueva?${qs.toString()}`)
+  }
+
+  // Navega a crear la PROPIEDAD vinculada (prefill con lead y ficha si existe).
+  const goCreateProperty = () => {
+    const qs = new URLSearchParams({ lead_id: leadId })
+    if (fichas.length > 0) qs.set('ficha_id', fichas[0].id)
+    if (lead?.property_address) qs.set('address', lead.property_address)
+    setPropModal(null)
+    router.push(`/propiedades/nueva?${qs.toString()}`)
   }
 
   if (loading) {
@@ -517,29 +521,6 @@ export default function LeadDetailPage() {
       {/* Pipeline */}
       <LeadStagePipeline currentStage={lead.stage} onSelect={handleStageChange} disabled={editing} />
 
-      {/* Mover etapa */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#ff007c] to-[#ff8017] flex items-center justify-center shadow-sm">
-            <Activity className="w-3.5 h-3.5 text-white" />
-          </div>
-          <p className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Mover etapa</p>
-        </div>
-        <select
-          value={moveToStage}
-          disabled={editing}
-          onChange={e => { const val = e.target.value; if (val) { handleStageChange(val); setMoveToStage('') } }}
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-[#ff007c]/20 disabled:cursor-not-allowed disabled:opacity-50 min-w-[180px]"
-        >
-          <option value="" disabled>Mover a...</option>
-          {LEAD_STAGE_KEYS.filter(s => s !== 'finalizado').map(s => (
-            <option key={s} value={s} disabled={s === lead.stage}>
-              {LEAD_STAGES[s].label}{s === lead.stage ? ' (actual)' : ''}
-            </option>
-          ))}
-        </select>
-      </div>
-
       {/* Two-column: Datos + Actividades */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
         {/* Datos del lead */}
@@ -763,22 +744,35 @@ export default function LeadDetailPage() {
         </div>
       )}
 
-      {/* Convert to Appraisal Modal */}
-      {showConvertModal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowConvertModal(false)}>
+      {/* Vincular propiedad / tasación al cambiar de etapa */}
+      {propModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setPropModal(null)}>
           <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-5" onClick={e => e.stopPropagation()}>
-            <h3 className="font-semibold text-gray-800 mb-2">Avanzar a tasación</h3>
+            <h3 className="font-semibold text-gray-800 mb-2">
+              {propModal.requireProperty
+                ? 'Necesitás una propiedad vinculada'
+                : `Vincular propiedad o tasación`}
+            </h3>
             <p className="text-sm text-gray-500 mb-4">
-              <strong>{lead.full_name}</strong> pasará a &ldquo;En tasación&rdquo;. ¿Querés crear una tasación vinculada?
+              {propModal.requireProperty ? (
+                <>Para marcar a <strong>{lead.full_name}</strong> como &ldquo;Captado&rdquo; primero tenés que crear y vincular una propiedad.</>
+              ) : (
+                <><strong>{lead.full_name}</strong> no tiene una propiedad ni tasación vinculada. Para &ldquo;{LEAD_STAGES[propModal.targetStage as LeadStage]?.label || propModal.targetStage}&rdquo; conviene tener una. ¿Qué querés hacer?</>
+              )}
             </p>
             <div className="space-y-2">
-              <button onClick={() => handleConvertToAppraisal(true)} className="w-full px-4 py-3 bg-[#ff007c] text-white rounded-xl text-sm font-medium hover:opacity-90">
-                Sí, crear tasación vinculada
+              <button onClick={goCreateProperty} className="w-full px-4 py-3 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 flex items-center justify-center gap-2">
+                <Home className="w-4 h-4" /> Crear propiedad vinculada
               </button>
-              <button onClick={() => handleConvertToAppraisal(false)} className="w-full px-4 py-3 border rounded-xl text-sm text-gray-600 hover:bg-gray-50">
-                Solo avanzar etapa
+              <button onClick={goCreateAppraisal} className="w-full px-4 py-3 bg-[#ff007c] text-white rounded-xl text-sm font-medium hover:opacity-90 flex items-center justify-center gap-2">
+                <FileText className="w-4 h-4" /> Crear tasación vinculada
               </button>
-              <button onClick={() => setShowConvertModal(false)} className="w-full px-4 py-2 text-sm text-gray-400">Cancelar</button>
+              {!propModal.requireProperty && (
+                <button onClick={() => { const t = propModal.targetStage; setPropModal(null); applyStageChange(t) }} className="w-full px-4 py-3 border rounded-xl text-sm text-gray-600 hover:bg-gray-50">
+                  Avanzar sin vincular
+                </button>
+              )}
+              <button onClick={() => setPropModal(null)} className="w-full px-4 py-2 text-sm text-gray-400">Cancelar</button>
             </div>
           </div>
         </div>

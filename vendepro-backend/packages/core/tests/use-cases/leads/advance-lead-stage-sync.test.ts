@@ -129,6 +129,37 @@ describe('AdvanceLeadStageUseCase with property sync', () => {
     expect(prop.commercial_stage).toBe('invalida')
   })
 
+  it('rejects captado without a linked property (even with override)', async () => {
+    const leadRepo = makeFakeLeadRepo()
+    const propRepo = makeFakePropertyRepo()
+    const histRepo = makeFakeHistoryRepo()
+
+    leadRepo._seed(makeLeadEntity('L1', 'O1', 'presentada')) // sin property vinculada
+
+    const uc = new AdvanceLeadStageUseCase(leadRepo, makeFakeCalendar(), histRepo, makeIdGen(), propRepo)
+    await expect(
+      uc.execute({ leadId: 'L1', orgId: 'O1', newStage: 'captado', changedBy: 'agent1' })
+    ).rejects.toThrow(/propiedad vinculada/)
+    // El override saltea la máquina de transiciones, pero NO este invariante.
+    await expect(
+      uc.execute({ leadId: 'L1', orgId: 'O1', newStage: 'captado', changedBy: 'agent1', override: true })
+    ).rejects.toThrow(/propiedad vinculada/)
+  })
+
+  it('allows captado when a property is linked', async () => {
+    const leadRepo = makeFakeLeadRepo()
+    const propRepo = makeFakePropertyRepo()
+    const histRepo = makeFakeHistoryRepo()
+
+    leadRepo._seed(makeLeadEntity('L1', 'O1', 'presentada'))
+    propRepo._seed({ id: 'P1', org_id: 'O1', commercial_stage: 'propuesta', lead_id: 'L1' })
+
+    const uc = new AdvanceLeadStageUseCase(leadRepo, makeFakeCalendar(), histRepo, makeIdGen(), propRepo)
+    await expect(
+      uc.execute({ leadId: 'L1', orgId: 'O1', newStage: 'captado', changedBy: 'agent1' })
+    ).resolves.toBeDefined()
+  })
+
   it('works without propertyRepo (backwards compat)', async () => {
     const leadRepo = makeFakeLeadRepo()
     const histRepo = makeFakeHistoryRepo()

@@ -117,7 +117,7 @@ app.post('/leads/stage', async (c) => {
   // Meta + GA4 y además expone event_id al frontend (dedup Pixel+CAPI).
   const propRepo = new D1PropertyRepository(c.env.DB)
   const useCase = new AdvanceLeadStageUseCase(repo, calRepo, historyRepo, idGen, propRepo)
-  const result = await useCase.execute({ leadId: body.id, orgId: c.get('orgId'), newStage: body.stage, changedBy: c.get('userId'), notes: body.notes })
+  const result = await useCase.execute({ leadId: body.id, orgId: c.get('orgId'), newStage: body.stage, changedBy: c.get('userId'), notes: body.notes, override: body.override === true })
 
   const mk = await fireMarketingEvent(c.env, {
     orgId: c.get('orgId'),
