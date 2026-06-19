@@ -50,6 +50,13 @@ export function registerPropertyRoutes(app: Hono<{ Bindings: Env } & AuthVars>) 
     return c.json(items.map(p => p.toObject()))
   })
 
+  // Propiedad vinculada a un lead (para avisar antes del sync lead->property).
+  app.get('/properties/by-lead/:leadId', async (c) => {
+    const repo = new D1PropertyRepository(c.env.DB)
+    const prop = await repo.findByLeadId(c.req.param('leadId'), c.get('orgId'))
+    return c.json(prop)
+  })
+
   app.post('/properties', async (c) => {
     const body = (await c.req.json()) as any
     const repo = new D1PropertyRepository(c.env.DB)

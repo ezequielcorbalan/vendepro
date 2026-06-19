@@ -55,7 +55,18 @@ export class D1LeadRepository implements LeadRepository {
   }
 
   async delete(id: string, orgId: string): Promise<void> {
-    await this.db.prepare('DELETE FROM leads WHERE id = ? AND org_id = ?').bind(id, orgId).run()
+    // Las FKs hacia leads(id) no tienen ON DELETE, así que un DELETE plano falla
+    // con "FOREIGN KEY constraint failed" si el lead tiene dependencias.
+    // Dependencias propias del lead -> se borran; entidades de negocio -> se desvinculan.
+    // batch() corre como transacción atómica en D1.
+    await this.db.batch([
+      this.db.prepare('DELETE FROM calendar_events WHERE lead_id = ? AND org_id = ?').bind(id, orgId),
+      this.db.prepare('DELETE FROM activities WHERE lead_id = ? AND org_id = ?').bind(id, orgId),
+      this.db.prepare('DELETE FROM lead_tags WHERE lead_id = ?').bind(id),
+      this.db.prepare('UPDATE properties SET lead_id = NULL WHERE lead_id = ? AND org_id = ?').bind(id, orgId),
+      this.db.prepare('UPDATE appraisals SET lead_id = NULL WHERE lead_id = ? AND org_id = ?').bind(id, orgId),
+      this.db.prepare('DELETE FROM leads WHERE id = ? AND org_id = ?').bind(id, orgId),
+    ])
   }
 
   async searchByName(orgId: string, query: string, limit: number): Promise<Array<{ id: string; full_name: string }>> {

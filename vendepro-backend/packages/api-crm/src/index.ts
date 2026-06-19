@@ -50,8 +50,14 @@ app.use('*', async (c, next) => {
 
 // ── LEADS ──────────────────────────────────────────────────────
 app.get('/leads', async (c) => {
-  const { stage, agent_id, search } = c.req.query()
+  const { id, stage, agent_id, search } = c.req.query()
   const repo = new D1LeadRepository(c.env.DB)
+  // Detalle de un lead puntual: ?id=X devuelve el lead solo, no toda la lista.
+  if (id) {
+    const lead = await repo.findById(id, c.get('orgId'))
+    if (!lead) return c.json({ error: 'Lead no encontrado' }, 404)
+    return c.json(lead.toObject?.() ?? lead)
+  }
   const useCase = new GetLeadsUseCase(repo)
   const leads = await useCase.execute(c.get('orgId'), { stage, agent_id, search })
   return c.json(leads.map(l => l.toObject?.() ?? l))

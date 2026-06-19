@@ -21,6 +21,7 @@ export interface AdvanceLeadStageInput {
 export interface AdvanceLeadStageOutput {
   autoFollowup: object | null
   syncedPropertyId: string | null
+  syncedPropertyStage: PropertyStageValue | null
 }
 
 export class AdvanceLeadStageUseCase {
@@ -54,6 +55,7 @@ export class AdvanceLeadStageUseCase {
     })
 
     let syncedPropertyId: string | null = null
+    let syncedPropertyStage: PropertyStageValue | null = null
     let propertyId: string | null = null
     if (this.propertyRepo) {
       const property = await this.propertyRepo.findByLeadId(lead.id, input.orgId)
@@ -74,6 +76,7 @@ export class AdvanceLeadStageUseCase {
             triggered_by: 'sync',
           })
           syncedPropertyId = propertyId
+          syncedPropertyStage = newPropStage
         }
       }
     }
@@ -115,6 +118,6 @@ export class AdvanceLeadStageUseCase {
       }
     }
 
-    return { autoFollowup, syncedPropertyId }
+    return { autoFollowup, syncedPropertyId, syncedPropertyStage }
   }
 }

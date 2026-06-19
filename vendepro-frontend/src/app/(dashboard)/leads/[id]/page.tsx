@@ -12,12 +12,14 @@ import {
 import { apiFetch } from '@/lib/api'
 import { pushFromApiResponse } from '@/components/marketing/dataLayer'
 import { useToast } from '@/components/ui/Toast'
+import { useConfirm } from '@/components/ui/useConfirm'
 import {
   LEAD_STAGES, LEAD_STAGE_KEYS, LEAD_SOURCES, OPERATION_TYPES,
   formatWhatsApp, type LeadStage,
-  LEAD_PIPELINE_STAGES, LEAD_TERMINAL_STAGES, LEAD_AGENT_FINAL_STAGES,
+  PROPERTY_STAGES, type PropertyStage,
 } from '@/lib/crm-config'
 import { formatDate } from '@/lib/utils'
+import { LeadStagePipeline } from '@/components/leads/LeadStagePipeline'
 
 const STAGE_DOT_COLORS: Record<string, string> = {
   nuevo: '#3b82f6', asignado: '#6366f1', contactado: '#06b6d4',
@@ -30,6 +32,7 @@ export default function LeadDetailPage() {
   const params = useParams()
   const router = useRouter()
   const { toast } = useToast()
+  const { confirmDialog, askConfirm } = useConfirm()
   const leadId = params.id as string
 
   const [lead, setLead] = useState<any>(null)
@@ -45,6 +48,7 @@ export default function LeadDetailPage() {
   const [tagsLoading, setTagsLoading] = useState(false)
   const [stageHistory, setStageHistory] = useState<any[]>([])
   const [moveToStage, setMoveToStage] = useState('')
+  const [linkedProperty, setLinkedProperty] = useState<{ id: string; commercial_stage: string | null } | null>(null)
 
   function loadLead() {
     Promise.all([
@@ -52,13 +56,16 @@ export default function LeadDetailPage() {
       apiFetch('crm', `/activities?lead_id=${leadId}`).then(r => r.json() as Promise<any>).catch(() => []),
       apiFetch('crm', `/stage-history?entity_type=lead&entity_id=${leadId}`).then(r => r.json() as Promise<any>).catch(() => []),
       apiFetch('properties', `/fichas?lead_id=${leadId}`).then(r => r.json() as Promise<any>).catch(() => []),
-    ]).then(([leadData, actsData, historyData, fichasData]) => {
-      const l = Array.isArray(leadData) ? leadData[0] : leadData
+      apiFetch('properties', `/properties/by-lead/${leadId}`).then(r => r.json() as Promise<any>).catch(() => null),
+    ]).then(([leadData, actsData, historyData, fichasData, propData]) => {
+      const raw = Array.isArray(leadData) ? leadData[0] : leadData
+      const l = raw && raw.id ? raw : null
       setLead(l)
       setEditForm(l || {})
       setActivities(Array.isArray(actsData) ? actsData : [])
       setStageHistory(Array.isArray(historyData) ? historyData : [])
       setFichas(Array.isArray(fichasData) ? fichasData : [])
+      setLinkedProperty(propData && propData.id ? propData : null)
       setLoading(false)
     }).catch(() => setLoading(false))
   }
@@ -84,7 +91,13 @@ export default function LeadDetailPage() {
   }
 
   const handleDelete = async () => {
-    if (!confirm(`¿Eliminar "${lead?.full_name}" permanentemente?`)) return
+    const { confirmed } = await askConfirm({
+      title: 'Eliminar lead',
+      message: `¿Eliminar "${lead?.full_name}" permanentemente?\n\nSe borrarán sus eventos, actividades y tags. Las propiedades y tasaciones vinculadas se conservan (quedan sin lead).`,
+      confirmLabel: 'Eliminar',
+      variant: 'danger',
+    })
+    if (!confirmed) return
     try {
       await apiFetch('crm', `/leads?id=${leadId}`, { method: 'DELETE' })
       toast('Lead eliminado', 'warning')
@@ -99,13 +112,30 @@ export default function LeadDetailPage() {
       return
     }
     if (stage === 'en_tasacion') { setShowConvertModal(true); return }
+    if (linkedProperty) {
+      const curLabel = PROPERTY_STAGES[linkedProperty.commercial_stage as PropertyStage]?.label || linkedProperty.commercial_stage || 'sin etapa'
+      const { confirmed } = await askConfirm({
+        title: 'Propiedad vinculada',
+        message:
+          `Este lead tiene una propiedad vinculada (etapa actual: «${curLabel}»).\n\n` +
+          `Cambiar la etapa del lead puede modificar también la etapa de esa propiedad en su pipeline.\n\n¿Continuar?`,
+        confirmLabel: 'Continuar',
+      })
+      if (!confirmed) return
+    }
     try {
       if (stage === 'perdido' || stage === 'invalido') {
-        const promptMsg = stage === 'perdido'
-          ? '¿Por qué se pierde este lead?'
-          : '¿Por qué es inválido este lead?\n\nEj: propiedad no apta, datos duplicados, fake, etc.'
-        const reason = prompt(promptMsg)
-        if (reason === null) return
+        const { confirmed, reason } = await askConfirm({
+          title: stage === 'perdido' ? 'Marcar lead como perdido' : 'Marcar lead como inválido',
+          message: stage === 'perdido'
+            ? '¿Por qué se pierde este lead?'
+            : 'Ej: propiedad no apta, datos duplicados, fake, etc.',
+          confirmLabel: stage === 'perdido' ? 'Marcar perdido' : 'Marcar inválido',
+          variant: 'danger',
+          requireReason: true,
+          reasonPlaceholder: 'Motivo (opcional)',
+        })
+        if (!confirmed) return
         const r = await apiFetch('crm', '/leads/stage', {
           method: 'POST',
           body: JSON.stringify({ id: leadId, stage, notes: reason || 'Sin motivo' }),
@@ -121,6 +151,10 @@ export default function LeadDetailPage() {
         pushFromApiResponse(result, { entity_type: 'lead', entity_id: leadId, event_name_fallback: stage })
         toast(`Etapa: ${LEAD_STAGES[stage as LeadStage]?.label || stage}`)
         if (result.autoFollowup) toast(`Seguimiento automático creado para ${formatDate(result.autoFollowup.start_at)}`)
+        if (result.syncedPropertyId) {
+          const propLabel = PROPERTY_STAGES[result.syncedPropertyStage as PropertyStage]?.label || result.syncedPropertyStage
+          toast(`La propiedad vinculada también avanzó a "${propLabel}" en su pipeline`, 'info')
+        }
       }
       loadLead()
     } catch { toast('Error al cambiar etapa', 'error') }
@@ -239,6 +273,7 @@ export default function LeadDetailPage() {
 
   return (
     <div className="space-y-4">
+      {confirmDialog}
       {/* Top bar */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <Link href="/leads" className="flex items-center gap-1.5 text-gray-500 hover:text-gray-700 text-sm font-medium">
@@ -480,64 +515,7 @@ export default function LeadDetailPage() {
       </div>
 
       {/* Pipeline */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#ff007c] to-[#ff8017] flex items-center justify-center shadow-sm">
-            <Target className="w-3.5 h-3.5 text-white" />
-          </div>
-          <p className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Pipeline</p>
-        </div>
-        <div className="overflow-hidden">
-          <div className="flex items-center gap-0 flex-wrap">
-            {LEAD_PIPELINE_STAGES.map((s, i) => {
-              const stageData = LEAD_STAGES[s]
-              const isTerminalLost = lead.stage === 'perdido' || lead.stage === 'invalido'
-              const isFinalized = lead.stage === 'finalizado'
-              const rawOrder = LEAD_STAGES[lead.stage as LeadStage]?.order ?? 0
-              const currentOrder = isTerminalLost ? 0 : isFinalized ? 999 : rawOrder
-              const isCompleted = stageData.order < currentOrder
-              const isCurrent = s === lead.stage
-              const isLast = i === LEAD_PIPELINE_STAGES.length - 1
-              return (
-                <div key={s} className="flex items-center">
-                  <button
-                    onClick={() => handleStageChange(s)}
-                    disabled={editing}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
-                      isCurrent
-                        ? 'bg-[#ff007c] text-white border-[#ff007c] shadow-sm'
-                        : isCompleted
-                        ? 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'
-                        : 'bg-white text-gray-400 border-gray-200 hover:border-gray-300 hover:text-gray-600'
-                    } disabled:cursor-not-allowed`}
-                  >
-                    {isCompleted ? (
-                      <CheckCircle2 className="w-3.5 h-3.5 text-gray-400" />
-                    ) : isCurrent ? (
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                    ) : (
-                      <Circle className="w-3.5 h-3.5" />
-                    )}
-                    {stageData.label}
-                  </button>
-                  {!isLast && (
-                    <ChevronRight className="w-3.5 h-3.5 text-gray-300 mx-0.5 shrink-0" />
-                  )}
-                </div>
-              )
-            })}
-            {(LEAD_TERMINAL_STAGES as readonly string[]).includes(lead.stage) && (
-              <>
-                <ChevronRight className="w-3.5 h-3.5 text-gray-300 mx-0.5 shrink-0" />
-                <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${LEAD_STAGES[lead.stage as LeadStage].color} border-transparent`}>
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  {LEAD_STAGES[lead.stage as LeadStage].label}
-                </span>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
+      <LeadStagePipeline currentStage={lead.stage} onSelect={handleStageChange} disabled={editing} />
 
       {/* Mover etapa */}
       <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
