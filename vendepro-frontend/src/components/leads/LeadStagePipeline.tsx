@@ -3,7 +3,7 @@
 import { ChevronRight, Target, CheckCircle2, Circle, XCircle } from 'lucide-react'
 import {
   LEAD_STAGES, type LeadStage,
-  LEAD_PIPELINE_STAGES,
+  LEAD_PIPELINE_STAGES, canMoveLeadStageManually,
 } from '@/lib/crm-config'
 
 /** Estados terminales que se pueden setear manualmente desde el pipeline. */
@@ -51,21 +51,24 @@ export function LeadStagePipeline({ currentStage, onSelect, disabled = false }: 
             const isCompleted = stageData.order < currentOrder
             const isCurrent = s === currentStage
             const isLast = i === LEAD_PIPELINE_STAGES.length - 1
+            const movable = canMoveLeadStageManually(currentStage as LeadStage, s)
+            const isDisabled = disabled || (!isCurrent && !movable)
             return (
               <div key={s} className="flex items-center">
                 <button
                   onClick={() => onSelect(s)}
-                  disabled={disabled}
+                  disabled={isDisabled}
                   aria-current={isCurrent ? 'step' : undefined}
                   data-stage={s}
                   data-current={isCurrent ? 'true' : undefined}
+                  title={!isCurrent && !movable ? 'No podés saltear a esta etapa' : undefined}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
                     isCurrent
                       ? 'bg-[#ff007c] text-white border-[#ff007c] shadow-sm'
                       : isCompleted
                       ? 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'
                       : 'bg-white text-gray-400 border-gray-200 hover:border-gray-300 hover:text-gray-600'
-                  } disabled:cursor-not-allowed`}
+                  } disabled:cursor-not-allowed disabled:opacity-40`}
                 >
                   {isCompleted ? (
                     <CheckCircle2 className="w-3.5 h-3.5 text-gray-400" />

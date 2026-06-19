@@ -23,6 +23,35 @@ export const LEAD_TERMINAL_STAGES: LeadStage[] = ['perdido', 'invalido', 'finali
 export const LEAD_AGENT_FINAL_STAGES: LeadStage[] = ['captado', ...LEAD_TERMINAL_STAGES]
 export const LEAD_PIPELINE_STAGES = LEAD_STAGE_KEYS.filter(s => !LEAD_TERMINAL_STAGES.includes(s))
 
+// Espejo de MANUAL_TRANSITIONS del backend (lead-stage.ts). Define a qué etapas
+// se puede AVANZAR manualmente desde cada una. El movimiento hacia atrás (orden
+// menor) siempre se permite como corrección (bypass) y no depende de esta tabla.
+// IMPORTANTE: mantener sincronizado con el backend si cambian las transiciones.
+export const LEAD_FORWARD_TRANSITIONS: Record<LeadStage, LeadStage[]> = {
+  nuevo:       ['asignado', 'contactado', 'invalido', 'perdido'],
+  asignado:    ['contactado', 'invalido', 'perdido'],
+  contactado:  ['calificado', 'seguimiento', 'invalido', 'perdido'],
+  calificado:  ['en_tasacion', 'seguimiento', 'invalido', 'perdido'],
+  en_tasacion: ['presentada', 'seguimiento', 'invalido', 'perdido'],
+  presentada:  ['captado', 'seguimiento', 'invalido', 'perdido'],
+  seguimiento: ['calificado', 'en_tasacion', 'presentada', 'captado', 'invalido', 'perdido'],
+  captado:     [],
+  invalido:    [],
+  finalizado:  [],
+  perdido:     [],
+}
+
+// ¿Se puede mover manualmente de `from` a `to` desde el pipeline?
+// - Hacia atrás (orden menor): siempre (corrección / bypass).
+// - Hacia adelante: solo si es una transición válida de la máquina de estados.
+export function canMoveLeadStageManually(from: LeadStage, to: LeadStage): boolean {
+  if (from === to) return false
+  const fromOrder = LEAD_STAGES[from]?.order ?? 0
+  const toOrder = LEAD_STAGES[to]?.order ?? 0
+  if (toOrder < fromOrder) return true
+  return LEAD_FORWARD_TRANSITIONS[from]?.includes(to) ?? false
+}
+
 export const DEFAULT_TAGS = {
   propietario: { label: 'Propietario', color: '#ec4899' },
   comprador:   { label: 'Comprador',   color: '#3b82f6' },

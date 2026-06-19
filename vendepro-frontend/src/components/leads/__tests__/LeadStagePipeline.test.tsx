@@ -68,6 +68,23 @@ describe('LeadStagePipeline', () => {
     expect(onSelect).toHaveBeenCalledWith('seguimiento')
   })
 
+  it('deshabilita las etapas a las que no se puede avanzar (salteadas)', () => {
+    render(<LeadStagePipeline currentStage="nuevo" onSelect={() => {}} />)
+    // nuevo → contactado es válido (siguiente) → habilitado
+    expect(screen.getByRole('button', { name: new RegExp(LEAD_STAGES.contactado.label, 'i') })).toBeEnabled()
+    // nuevo → en_tasacion saltea etapas → deshabilitado
+    expect(screen.getByRole('button', { name: new RegExp(LEAD_STAGES.en_tasacion.label, 'i') })).toBeDisabled()
+    expect(screen.getByRole('button', { name: new RegExp(LEAD_STAGES.captado.label, 'i') })).toBeDisabled()
+  })
+
+  it('habilita todas las etapas anteriores (corrección hacia atrás)', () => {
+    render(<LeadStagePipeline currentStage="presentada" onSelect={() => {}} />)
+    // todas las anteriores habilitadas (bypass)
+    for (const s of ['nuevo', 'asignado', 'contactado', 'calificado', 'en_tasacion'] as const) {
+      expect(screen.getByRole('button', { name: new RegExp(LEAD_STAGES[s].label, 'i') })).toBeEnabled()
+    }
+  })
+
   it('marca como completadas las etapas previas a la actual', () => {
     render(<LeadStagePipeline currentStage="calificado" onSelect={() => {}} />)
     // "nuevo" (order 1) < "calificado" (order 4) => completada, debe mostrar el check.
