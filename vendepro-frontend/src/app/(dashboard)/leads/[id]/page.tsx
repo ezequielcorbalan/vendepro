@@ -228,13 +228,11 @@ export default function LeadDetailPage() {
     } catch { /* link still opens — silent fail on log */ }
   }
 
-  // Navega a crear la TASACIÓN vinculada (el lead aparece vinculado en la pantalla).
+  // Navega a crear la TASACIÓN vinculada (wizard /tasaciones/nueva con el lead
+  // pre-vinculado en el step de propiedad).
   const goCreateAppraisal = () => {
-    const qs = new URLSearchParams({ lead_id: leadId })
-    if (lead?.property_address) qs.set('address', lead.property_address)
-    if (lead?.neighborhood) qs.set('neighborhood', lead.neighborhood)
     setPropModal(null)
-    router.push(`/fichas/nueva?${qs.toString()}`)
+    router.push(`/tasaciones/nueva?lead_id=${leadId}`)
   }
 
   // Navega a crear la PROPIEDAD vinculada (prefill con lead y ficha si existe).

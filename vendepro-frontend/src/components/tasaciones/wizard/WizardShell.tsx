@@ -15,14 +15,16 @@ import { useToast } from '@/components/ui/Toast'
 
 interface Props {
   initialTemplateId?: string | null
+  initialLeadId?: string | null
 }
 
 const STEP_LABELS = ['Template', 'Propiedad', 'Bloques', 'FODA + Precios', 'Comparables', 'Revisar']
 const TOTAL_STEPS = STEP_LABELS.length
 
-export function WizardShell({ initialTemplateId }: Props) {
+export function WizardShell({ initialTemplateId, initialLeadId }: Props) {
   const [state, dispatch] = useWizardForm({
     template_id: initialTemplateId ?? null,
+    lead_id: initialLeadId ?? null,
     step: initialTemplateId ? 2 : 1,
   })
   const [publishing, setPublishing] = useState(false)
