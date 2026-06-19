@@ -303,16 +303,17 @@ describe('D1PropertyRepository — extended methods', () => {
     await expect(repo.updateStage(propId, orgId, 'no-such-stage')).rejects.toThrow('invalid stage')
   })
 
-  it('findCatalogs returns seed data (2 operation_types, 16 commercial_stages, 11 property_statuses)', async () => {
+  it('findCatalogs returns seed data (2 operation_types, 24 commercial_stages, 11 property_statuses)', async () => {
     const repo = new D1PropertyRepository(env.DB)
     const cat = await repo.findCatalogs()
 
     expect(cat.operation_types.length).toBe(2)
     expect(cat.operation_types.map(t => t.slug).sort()).toEqual(['alquiler', 'venta'])
 
-    // 12 originales (migration 005) + propuesta/invalida para venta (perdida ya existia)
-    // + propuesta/perdida/invalida para alquiler, menos con_interesados eliminado = 16
-    expect(cat.commercial_stages.length).toBe(16)
+    // 16 tras 027; migration 029 completa el catálogo del dominio:
+    // venta +captada/documentacion/vencida/archivada (=13),
+    // alquiler +documentacion/reservada/vencida/archivada (=11) → 24.
+    expect(cat.commercial_stages.length).toBe(24)
     expect(typeof cat.commercial_stages[0]!.is_terminal).toBe('boolean')
 
     expect(cat.property_statuses.length).toBe(11)
