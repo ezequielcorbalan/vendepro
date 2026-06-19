@@ -150,15 +150,15 @@ export default function PipelinePage() {
         </div>
       ) : view === 'kanban' ? (
         <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-          <div className="overflow-x-auto -mx-2 px-2 pb-2">
-            <div className="flex gap-3 min-w-min">
+          <div className="overflow-x-auto pb-3">
+            <div className="flex gap-4 w-max">
               {KANBAN_STAGES.map(stage => (
                 <KanbanColumn key={stage} stage={stage} items={byStage[stage] || []} activeId={activeId} />
               ))}
             </div>
           </div>
-          <DragOverlay>
-            {activeProperty ? <CardBody p={activeProperty} dragging /> : null}
+          <DragOverlay dropAnimation={null}>
+            {activeProperty ? <div className="w-64"><CardBody p={activeProperty} dragging /></div> : null}
           </DragOverlay>
         </DndContext>
       ) : (
@@ -217,20 +217,20 @@ function KanbanColumn({ stage, items, activeId }: { stage: PropertyStage; items:
   const { setNodeRef, isOver } = useDroppable({ id: stage })
   const cfg = PROPERTY_STAGES[stage]
   return (
-    <div className="w-[240px] shrink-0">
-      <div className={`flex items-center justify-between mb-2 px-2 py-1.5 rounded-lg ${cfg.color}`}>
-        <span className="text-xs font-semibold">{cfg.label}</span>
-        <span className="text-xs font-bold">{items.length}</span>
+    <div className="w-64 shrink-0 flex flex-col">
+      <div className={`flex items-center justify-between mb-2 px-3 py-2 rounded-lg ${cfg.color}`}>
+        <span className="text-xs font-semibold uppercase tracking-wide truncate">{cfg.label}</span>
+        <span className="text-xs font-bold tabular-nums ml-2 shrink-0">{items.length}</span>
       </div>
       <div
         ref={setNodeRef}
-        className={`space-y-2 min-h-[120px] max-h-[64vh] overflow-y-auto rounded-xl border p-2 transition-colors ${
-          isOver ? 'bg-pink-50 border-[#ff007c]' : 'bg-gray-50 border-gray-200'
+        className={`flex-1 space-y-2 min-h-[180px] max-h-[calc(100dvh-15rem)] overflow-y-auto rounded-xl border p-2 transition-colors ${
+          isOver ? 'bg-pink-50 border-[#ff007c] ring-2 ring-[#ff007c]/20' : 'bg-gray-50 border-gray-200'
         }`}
       >
         {items.map(p => <DraggableCard key={p.id} p={p} hidden={activeId === p.id} />)}
         {items.length === 0 && (
-          <p className="text-xs text-gray-400 text-center py-6">Soltá una propiedad acá</p>
+          <p className="text-xs text-gray-300 text-center py-10">Soltá una propiedad acá</p>
         )}
       </div>
     </div>
