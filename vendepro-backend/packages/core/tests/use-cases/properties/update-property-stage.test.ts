@@ -114,6 +114,30 @@ describe('UpdatePropertyStageUseCase with lead sync', () => {
     expect(lead.stage).toBe('seguimiento')
   })
 
+  it('rejects an invalid transition without override', async () => {
+    const propRepo = makeFakePropRepo()
+    const histRepo = makeFakeHistory()
+    // vendida → propuesta no es una transición válida
+    propRepo._seed({ id: 'P1', org_id: 'O1', commercial_stage: 'vendida' })
+
+    const uc = new UpdatePropertyStageUseCase(propRepo, histRepo)
+    await expect(
+      uc.execute({ propertyId: 'P1', orgId: 'O1', newStage: 'propuesta', changedBy: 'agent1' })
+    ).rejects.toThrow(/Transición inválida/)
+  })
+
+  it('override permite cualquier transición (pipeline comercial libre)', async () => {
+    const propRepo = makeFakePropRepo()
+    const histRepo = makeFakeHistory()
+    propRepo._seed({ id: 'P1', org_id: 'O1', commercial_stage: 'vendida' })
+
+    const uc = new UpdatePropertyStageUseCase(propRepo, histRepo)
+    await uc.execute({ propertyId: 'P1', orgId: 'O1', newStage: 'propuesta', changedBy: 'agent1', override: true })
+
+    const p = await propRepo.findById('P1', 'O1')
+    expect(p.commercial_stage).toBe('propuesta')
+  })
+
   it('works without leadRepo (backwards compat)', async () => {
     const propRepo = makeFakePropRepo()
     const histRepo = makeFakeHistory()

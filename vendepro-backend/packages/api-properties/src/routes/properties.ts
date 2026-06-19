@@ -112,6 +112,7 @@ export function registerPropertyRoutes(app: Hono<{ Bindings: Env } & AuthVars>) 
         newStage: stageSlug as PropertyStageValue,
         changedBy,
         notes: body.notes ?? null,
+        override: body.override === true,
       })
     } catch (e: any) {
       return c.json({ error: e.message || 'Error al cambiar etapa' }, 400)

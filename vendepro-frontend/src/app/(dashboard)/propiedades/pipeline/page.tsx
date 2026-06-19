@@ -2,17 +2,22 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
-import { DollarSign, MapPin, ArrowRight, LayoutGrid, Table2, Archive, XCircle, Ban } from 'lucide-react'
+import {
+  DndContext, DragOverlay, PointerSensor, useSensor, useSensors,
+  useDraggable, useDroppable, type DragStartEvent, type DragEndEvent,
+} from '@dnd-kit/core'
+import { CSS } from '@dnd-kit/utilities'
+import { DollarSign, MapPin, LayoutGrid, Table2, GripVertical } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { scopeQueryString } from '@/lib/agent-scope'
 import { useToast } from '@/components/ui/Toast'
 import { PROPERTY_STAGES, type PropertyStage } from '@/lib/crm-config'
 import { formatCurrency } from '@/lib/utils'
 
-// Progresión lineal del pipeline — propuesta → captada → publicada → reservada → vendida
-const MAIN_STAGES: PropertyStage[] = ['propuesta', 'captada', 'publicada', 'reservada', 'vendida']
-// Suspendida aparece aparte — solo se puede suspender, no avanzar
-const ALL_PIPELINE_STAGES: PropertyStage[] = [...MAIN_STAGES, 'suspendida']
+// Columnas del kanban comercial. Drag & drop libre entre cualquiera de ellas.
+const KANBAN_STAGES: PropertyStage[] = [
+  'propuesta', 'captada', 'documentacion', 'publicada', 'reservada', 'vendida', 'suspendida', 'perdida',
+]
 
 // Normalize legacy slugs to current DB slugs
 const SLUG_ALIASES: Record<string, PropertyStage> = {
@@ -24,9 +29,8 @@ const SLUG_ALIASES: Record<string, PropertyStage> = {
 function normalizeStage(slug: string): string {
   return SLUG_ALIASES[slug] ?? slug
 }
-// Días sin cambio para mostrar alerta de archivo
-const ARCHIVE_WARN_DAYS = 30
 
+const ARCHIVE_WARN_DAYS = 30
 type ViewMode = 'kanban' | 'tabla'
 
 function daysSince(dateStr?: string) {
@@ -39,6 +43,12 @@ export default function PipelinePage() {
   const [properties, setProperties] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<ViewMode>('kanban')
+  const [activeId, setActiveId] = useState<string | null>(null)
+
+  const sensors = useSensors(
+    // distance:8 → un click corto navega (Link); recién a los 8px arranca el drag.
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+  )
 
   useEffect(() => {
     const saved = localStorage.getItem('pipeline_view') as ViewMode | null
@@ -57,7 +67,7 @@ export default function PipelinePage() {
 
   const byStage = useMemo(() => {
     const map: Record<string, any[]> = {}
-    ALL_PIPELINE_STAGES.forEach(s => { map[s] = [] })
+    KANBAN_STAGES.forEach(s => { map[s] = [] })
     properties.forEach(p => {
       const s = normalizeStage(p.commercial_stage ?? '')
       if (s && map[s]) map[s].push(p)
@@ -67,152 +77,60 @@ export default function PipelinePage() {
 
   const sortedProperties = useMemo(() =>
     [...properties]
-      .filter(p => ALL_PIPELINE_STAGES.includes(normalizeStage(p.commercial_stage ?? '') as PropertyStage))
+      .filter(p => KANBAN_STAGES.includes(normalizeStage(p.commercial_stage ?? '') as PropertyStage))
       .sort((a, b) => (PROPERTY_STAGES[normalizeStage(a.commercial_stage ?? '') as PropertyStage]?.order ?? 99) - (PROPERTY_STAGES[normalizeStage(b.commercial_stage ?? '') as PropertyStage]?.order ?? 99)),
     [properties]
   )
 
-  async function advanceStage(property: any) {
+  // Mueve una propiedad a otra etapa (override: pipeline comercial libre).
+  async function moveToStage(property: any, targetStage: PropertyStage) {
     const current = normalizeStage(property.commercial_stage ?? '')
-    const currentIdx = MAIN_STAGES.indexOf(current as PropertyStage)
-    if (currentIdx < 0 || currentIdx >= MAIN_STAGES.length - 1) return
-    const nextStage = MAIN_STAGES[currentIdx + 1]
+    if (current === targetStage) return
+    // Optimista: reflejamos el cambio antes de la respuesta.
+    setProperties(prev => prev.map(p => p.id === property.id ? { ...p, commercial_stage: targetStage } : p))
     try {
       const res = await apiFetch('properties', `/properties/${property.id}/stage`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ commercial_stage: nextStage }),
+        body: JSON.stringify({ commercial_stage: targetStage, override: true }),
       })
-      const data = (await res.json()) as any
+      const data = (await res.json().catch(() => ({}))) as any
       if (!res.ok || data.error) {
         toast(data.error || 'Error al cambiar etapa', 'error')
+        loadProperties() // revertir al estado real
         return
       }
-      toast(`${property.address} → ${PROPERTY_STAGES[nextStage]?.label}`)
+      toast(`${property.address} → ${PROPERTY_STAGES[targetStage]?.label}`)
       loadProperties()
     } catch {
       toast('Error de conexión', 'error')
+      loadProperties()
     }
   }
 
-  async function archiveProperty(property: any) {
-    if (!confirm(`¿Suspender "${property.address}"? Se moverá a propiedades suspendidas.`)) return
-    try {
-      const res = await apiFetch('properties', `/properties/${property.id}/stage`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ commercial_stage: 'suspendida' }),
-      })
-      const data = (await res.json()) as any
-      if (!res.ok || data.error) {
-        toast(data.error || 'Error al suspender', 'error')
-        return
-      }
-      toast(`${property.address} suspendida`)
-      loadProperties()
-    } catch {
-      toast('Error de conexión', 'error')
-    }
+  function handleDragStart(e: DragStartEvent) {
+    setActiveId(String(e.active.id))
   }
-
-  async function markTerminal(property: any, targetStage: 'perdida' | 'invalida') {
-    const label = targetStage === 'perdida' ? 'perdida' : 'inválida'
-    const reason = prompt(
-      targetStage === 'perdida'
-        ? `¿Por qué se pierde "${property.address}"?\n\nEj: no se logró vender, propietario retiró, etc.`
-        : `¿Por qué es inválida "${property.address}"?\n\nEj: propiedad no apta, datos incorrectos, etc.`
-    )
-    if (reason === null) return
-    try {
-      const res = await apiFetch('properties', `/properties/${property.id}/stage`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ commercial_stage: targetStage, notes: reason || 'Sin motivo' }),
-      })
-      const data = (await res.json()) as any
-      if (!res.ok || data.error) {
-        toast(data.error || `Error al marcar como ${label}`, 'error')
-        return
-      }
-      toast(`${property.address} marcada como ${label}`, 'warning')
-      loadProperties()
-    } catch {
-      toast('Error de conexión', 'error')
-    }
+  function handleDragEnd(e: DragEndEvent) {
+    setActiveId(null)
+    const { active, over } = e
+    if (!over) return
+    const targetStage = String(over.id) as PropertyStage
+    if (!KANBAN_STAGES.includes(targetStage)) return
+    const property = properties.find(p => p.id === active.id)
+    if (property) moveToStage(property, targetStage)
   }
 
   const switchView = (v: ViewMode) => { setView(v); localStorage.setItem('pipeline_view', v) }
-
-  const activeCount = properties.filter(p => ALL_PIPELINE_STAGES.includes(normalizeStage(p.commercial_stage ?? '') as PropertyStage)).length
-  const suspendidas = byStage['suspendida'] || []
-
-  function PropertyCard({ p, stage }: { p: any; stage: PropertyStage }) {
-    const isTerminal = stage === 'vendida' || stage === 'suspendida'
-    const canAdvance = MAIN_STAGES.includes(stage) && stage !== 'vendida'
-    const canLose = stage === 'captada' || stage === 'publicada' || stage === 'reservada'
-    const canInvalidate = stage === 'propuesta' || stage === 'captada'
-    const age = daysSince(p.updated_at)
-    const warnArchive = isTerminal && age >= ARCHIVE_WARN_DAYS
-
-    return (
-      <div className={`bg-white border rounded-lg p-3 ${warnArchive ? 'border-amber-300' : ''}`}>
-        <Link href={`/propiedades/${p.id}`}>
-          <p className="text-sm font-medium text-gray-800 truncate">{p.address}</p>
-          <div className="text-xs text-gray-400 mt-1 space-y-0.5">
-            {p.neighborhood && <p className="flex items-center gap-1"><MapPin className="w-3 h-3" />{p.neighborhood}</p>}
-            {p.asking_price && (
-              <p className="flex items-center gap-1 text-[#ff007c] font-medium">
-                <DollarSign className="w-3 h-3" />{formatCurrency(p.asking_price, p.currency)}
-              </p>
-            )}
-            {p.owner_name && <p className="truncate">{p.owner_name}</p>}
-          </div>
-        </Link>
-        {warnArchive && (
-          <p className="text-[10px] text-amber-600 mt-1.5 font-medium">{age} días sin cambios</p>
-        )}
-        <div className="mt-2 flex gap-1">
-          {canAdvance && (
-            <button onClick={() => advanceStage(p)}
-              className="flex-1 py-1 text-[10px] text-[#ff007c] border border-[#ff007c]/30 rounded-lg hover:bg-pink-50 flex items-center justify-center gap-1">
-              Avanzar <ArrowRight className="w-3 h-3" />
-            </button>
-          )}
-          {isTerminal && (
-            <button onClick={() => archiveProperty(p)}
-              className="flex-1 py-1 text-[10px] text-gray-400 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-1">
-              <Archive className="w-3 h-3" /> Archivar
-            </button>
-          )}
-        </div>
-        {(canLose || canInvalidate) && (
-          <div className="mt-1 flex gap-1">
-            {canLose && (
-              <button onClick={() => markTerminal(p, 'perdida')}
-                title="Marcar como perdida"
-                className="flex-1 py-1 text-[10px] text-red-500 border border-red-200 rounded-lg hover:bg-red-50 flex items-center justify-center gap-1">
-                <XCircle className="w-3 h-3" /> Perdida
-              </button>
-            )}
-            {canInvalidate && (
-              <button onClick={() => markTerminal(p, 'invalida')}
-                title="Marcar como inválida"
-                className="flex-1 py-1 text-[10px] text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-1">
-                <Ban className="w-3 h-3" /> Inválida
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-    )
-  }
+  const activeCount = properties.filter(p => KANBAN_STAGES.includes(normalizeStage(p.commercial_stage ?? '') as PropertyStage)).length
+  const activeProperty = activeId ? properties.find(p => p.id === activeId) : null
 
   return (
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Pipeline comercial</h1>
-          <p className="text-gray-500 text-sm mt-1">{activeCount} propiedades activas</p>
+          <p className="text-gray-500 text-sm mt-1">{activeCount} propiedades · arrastrá las tarjetas entre columnas</p>
         </div>
         <div className="flex gap-1 border rounded-lg p-1 shrink-0">
           <button onClick={() => switchView('kanban')} title="Vista Kanban"
@@ -228,49 +146,21 @@ export default function PipelinePage() {
 
       {loading ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {MAIN_STAGES.map(s => <div key={s} className="h-64 bg-gray-200 rounded-xl animate-pulse" />)}
+          {KANBAN_STAGES.slice(0, 4).map(s => <div key={s} className="h-64 bg-gray-200 rounded-xl animate-pulse" />)}
         </div>
       ) : view === 'kanban' ? (
-        <>
-          {/* Pipeline principal: propuesta → captada → publicada → reservada → vendida */}
-          <div className="overflow-x-auto -mx-2 px-2">
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 min-w-[800px]">
-              {MAIN_STAGES.map(stage => {
-                const stageCfg = PROPERTY_STAGES[stage]
-                const stageProps = byStage[stage] || []
-                return (
-                  <div key={stage} className="bg-gray-50 rounded-xl border p-3">
-                    <div className={`flex items-center justify-between mb-3 px-2 py-1.5 rounded-lg ${stageCfg.color}`}>
-                      <span className="text-xs font-semibold">{stageCfg.label}</span>
-                      <span className="text-xs font-bold">{stageProps.length}</span>
-                    </div>
-                    <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-                      {stageProps.map(p => <PropertyCard key={p.id} p={p} stage={stage} />)}
-                      {stageProps.length === 0 && (
-                        <p className="text-xs text-gray-400 text-center py-4">Sin propiedades</p>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
+        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+          <div className="overflow-x-auto -mx-2 px-2 pb-2">
+            <div className="flex gap-3 min-w-min">
+              {KANBAN_STAGES.map(stage => (
+                <KanbanColumn key={stage} stage={stage} items={byStage[stage] || []} activeId={activeId} />
+              ))}
             </div>
           </div>
-
-          {/* Suspendidas — sección separada */}
-          {suspendidas.length > 0 && (
-            <div className="border border-orange-200 rounded-xl bg-orange-50 p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${PROPERTY_STAGES.suspendida.color}`}>
-                  Suspendidas
-                </span>
-                <span className="text-xs text-gray-400">{suspendidas.length} — archivar cuando estén resueltas</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-                {suspendidas.map(p => <PropertyCard key={p.id} p={p} stage="suspendida" />)}
-              </div>
-            </div>
-          )}
-        </>
+          <DragOverlay>
+            {activeProperty ? <CardBody p={activeProperty} dragging /> : null}
+          </DragOverlay>
+        </DndContext>
       ) : (
         <div className="overflow-x-auto rounded-xl border bg-white">
           <table className="w-full text-sm min-w-[640px]">
@@ -281,66 +171,108 @@ export default function PipelinePage() {
                 <th className="text-left px-4 py-2.5 font-medium hidden sm:table-cell">Barrio</th>
                 <th className="text-left px-4 py-2.5 font-medium">Precio</th>
                 <th className="text-left px-4 py-2.5 font-medium hidden md:table-cell">Propietario</th>
-                <th className="px-4 py-2.5" />
               </tr>
             </thead>
             <tbody>
               {sortedProperties.length === 0 ? (
-                <tr><td colSpan={6} className="text-center text-gray-400 py-8">Sin propiedades</td></tr>
-              ) : sortedProperties.map((p, i) => {
-                const stage = p.commercial_stage as PropertyStage
+                <tr><td colSpan={5} className="text-center text-gray-400 py-8">Sin propiedades</td></tr>
+              ) : sortedProperties.map((p) => {
+                const stage = normalizeStage(p.commercial_stage ?? '') as PropertyStage
                 const stageCfg = PROPERTY_STAGES[stage]
-                const isTerminal = stage === 'vendida' || stage === 'suspendida'
-                const canAdvance = MAIN_STAGES.includes(stage) && stage !== 'vendida'
-                const prevStage = i > 0 ? sortedProperties[i - 1].commercial_stage : null
-                const isNewGroup = stage !== prevStage
                 const age = daysSince(p.updated_at)
+                const isTerminal = stage === 'vendida' || stage === 'suspendida' || stage === 'perdida'
                 return (
-                  <>
-                    {isNewGroup && i > 0 && <tr key={`sep-${stage}-${i}`} className="border-t-2 border-gray-100" />}
-                    <tr key={p.id} className="border-b last:border-0 hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-2.5">
-                        <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full ${stageCfg?.color}`}>
-                          {stageCfg?.label}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2.5 max-w-[200px]">
-                        <Link href={`/propiedades/${p.id}`} className="font-medium text-gray-800 hover:text-[#ff007c] truncate block">
-                          {p.address}
-                        </Link>
-                        {isTerminal && age >= ARCHIVE_WARN_DAYS && (
-                          <span className="text-[10px] text-amber-500">{age} días sin cambios</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-2.5 text-gray-500 hidden sm:table-cell">{p.neighborhood || '—'}</td>
-                      <td className="px-4 py-2.5 text-[#ff007c] font-medium whitespace-nowrap">
-                        {p.asking_price ? formatCurrency(p.asking_price, p.currency) : '—'}
-                      </td>
-                      <td className="px-4 py-2.5 text-gray-500 hidden md:table-cell max-w-[160px] truncate">{p.owner_name || '—'}</td>
-                      <td className="px-4 py-2.5 text-right">
-                        <div className="flex gap-1 justify-end">
-                          {canAdvance && (
-                            <button onClick={() => advanceStage(p)}
-                              className="text-[10px] text-[#ff007c] border border-[#ff007c]/30 rounded-lg px-2 py-1 hover:bg-pink-50 flex items-center gap-1">
-                              Avanzar <ArrowRight className="w-3 h-3" />
-                            </button>
-                          )}
-                          {isTerminal && (
-                            <button onClick={() => archiveProperty(p)}
-                              className="text-[10px] text-gray-400 border border-gray-200 rounded-lg px-2 py-1 hover:bg-gray-50 flex items-center gap-1">
-                              <Archive className="w-3 h-3" /> Archivar
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  </>
+                  <tr key={p.id} className="border-b last:border-0 hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-2.5">
+                      <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full ${stageCfg?.color}`}>
+                        {stageCfg?.label}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2.5 max-w-[200px]">
+                      <Link href={`/propiedades/${p.id}`} className="font-medium text-gray-800 hover:text-[#ff007c] truncate block">
+                        {p.address}
+                      </Link>
+                      {isTerminal && age >= ARCHIVE_WARN_DAYS && (
+                        <span className="text-[10px] text-amber-500">{age} días sin cambios</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5 text-gray-500 hidden sm:table-cell">{p.neighborhood || '—'}</td>
+                    <td className="px-4 py-2.5 text-[#ff007c] font-medium whitespace-nowrap">
+                      {p.asking_price ? formatCurrency(p.asking_price, p.currency) : '—'}
+                    </td>
+                    <td className="px-4 py-2.5 text-gray-500 hidden md:table-cell max-w-[160px] truncate">{p.owner_name || '—'}</td>
+                  </tr>
                 )
               })}
             </tbody>
           </table>
         </div>
       )}
+    </div>
+  )
+}
+
+// ── Columna droppable ───────────────────────────────────────────
+function KanbanColumn({ stage, items, activeId }: { stage: PropertyStage; items: any[]; activeId: string | null }) {
+  const { setNodeRef, isOver } = useDroppable({ id: stage })
+  const cfg = PROPERTY_STAGES[stage]
+  return (
+    <div className="w-[240px] shrink-0">
+      <div className={`flex items-center justify-between mb-2 px-2 py-1.5 rounded-lg ${cfg.color}`}>
+        <span className="text-xs font-semibold">{cfg.label}</span>
+        <span className="text-xs font-bold">{items.length}</span>
+      </div>
+      <div
+        ref={setNodeRef}
+        className={`space-y-2 min-h-[120px] max-h-[64vh] overflow-y-auto rounded-xl border p-2 transition-colors ${
+          isOver ? 'bg-pink-50 border-[#ff007c]' : 'bg-gray-50 border-gray-200'
+        }`}
+      >
+        {items.map(p => <DraggableCard key={p.id} p={p} hidden={activeId === p.id} />)}
+        {items.length === 0 && (
+          <p className="text-xs text-gray-400 text-center py-6">Soltá una propiedad acá</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Card draggable ──────────────────────────────────────────────
+function DraggableCard({ p, hidden }: { p: any; hidden: boolean }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: p.id })
+  const style = { transform: CSS.Translate.toString(transform), opacity: hidden || isDragging ? 0.4 : 1 }
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <CardBody p={p} />
+    </div>
+  )
+}
+
+// ── Contenido de la card (compartido con el DragOverlay) ────────
+function CardBody({ p, dragging }: { p: any; dragging?: boolean }) {
+  return (
+    <div className={`bg-white border rounded-lg p-3 select-none cursor-grab active:cursor-grabbing ${dragging ? 'shadow-lg ring-2 ring-[#ff007c]/40' : 'border-gray-200'}`}>
+      <div className="flex items-start gap-1.5">
+        <GripVertical className="w-3.5 h-3.5 text-gray-300 shrink-0 mt-0.5" />
+        <div className="min-w-0 flex-1">
+          <Link
+            href={`/propiedades/${p.id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="text-sm font-medium text-gray-800 hover:text-[#ff007c] truncate block"
+          >
+            {p.address}
+          </Link>
+          <div className="text-xs text-gray-400 mt-1 space-y-0.5">
+            {p.neighborhood && <p className="flex items-center gap-1"><MapPin className="w-3 h-3" />{p.neighborhood}</p>}
+            {p.asking_price && (
+              <p className="flex items-center gap-1 text-[#ff007c] font-medium">
+                <DollarSign className="w-3 h-3" />{formatCurrency(p.asking_price, p.currency)}
+              </p>
+            )}
+            {p.owner_name && <p className="truncate">{p.owner_name}</p>}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

@@ -13,6 +13,8 @@ export interface UpdatePropertyStageInput {
   newStage: PropertyStageValue
   changedBy: string
   notes?: string | null
+  /** Cambio manual libre: saltea la máquina de transiciones (pipeline comercial). */
+  override?: boolean
 }
 
 export interface UpdatePropertyStageOutput {
@@ -31,8 +33,9 @@ export class UpdatePropertyStageUseCase {
     if (!property) throw new NotFoundError('Propiedad no encontrada')
 
     const currentStage = (property.commercial_stage ?? 'propuesta') as PropertyStageValue
-    const current = PropertyStage.create(currentStage)
-    current.transitionTo(input.newStage)
+    // override = pipeline comercial libre: solo validamos que la etapa exista.
+    if (input.override) PropertyStage.create(input.newStage)
+    else PropertyStage.create(currentStage).transitionTo(input.newStage)
 
     await this.propRepo.updateStage(input.propertyId, input.orgId, input.newStage)
 
