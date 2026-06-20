@@ -29,3 +29,27 @@ body {
 .animate-slide-up {
   animation: slide-up 0.2s ease-out;
 }
+
+/* ── Accesibilidad ──────────────────────────────────────────── */
+/* Foco visible solo por teclado (no en click de mouse): anillo de marca. */
+:focus-visible {
+  outline: 2px solid var(--brand-pink);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+/* Evita el outline por defecto cuando el foco no es por teclado. */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Respeta la preferencia de movimiento reducido del sistema. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

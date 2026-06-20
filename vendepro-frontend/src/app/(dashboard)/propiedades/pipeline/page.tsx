@@ -262,7 +262,7 @@ function CardBody({ p, dragging }: { p: any; dragging?: boolean }) {
           >
             {p.address}
           </Link>
-          <div className="text-xs text-gray-400 mt-1 space-y-0.5">
+          <div className="text-xs text-gray-500 mt-1 space-y-0.5">
             {p.neighborhood && <p className="flex items-center gap-1"><MapPin className="w-3 h-3" />{p.neighborhood}</p>}
             {p.asking_price && (
               <p className="flex items-center gap-1 text-[#ff007c] font-medium">
