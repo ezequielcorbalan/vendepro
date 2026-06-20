@@ -7,7 +7,7 @@ import {
   useDraggable, useDroppable, type DragStartEvent, type DragEndEvent,
 } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
-import { DollarSign, MapPin, LayoutGrid, Table2, GripVertical } from 'lucide-react'
+import { DollarSign, MapPin, LayoutGrid, Table2, GripVertical, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { scopeQueryString } from '@/lib/agent-scope'
 import { useToast } from '@/components/ui/Toast'
@@ -32,6 +32,34 @@ function normalizeStage(slug: string): string {
 
 const ARCHIVE_WARN_DAYS = 30
 type ViewMode = 'kanban' | 'tabla'
+type SortKey = 'stage' | 'address' | 'neighborhood' | 'price' | 'owner'
+
+// Header de tabla con orden clickeable (asc/desc) + indicador accesible.
+function SortHeader({ label, sortKey, sort, onSort, className }: {
+  label: string
+  sortKey: SortKey
+  sort: { key: SortKey; dir: 'asc' | 'desc' }
+  onSort: (k: SortKey) => void
+  className?: string
+}) {
+  const active = sort.key === sortKey
+  return (
+    <th
+      className={`text-left px-4 py-2.5 font-medium ${className ?? ''}`}
+      aria-sort={active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}
+    >
+      <button
+        onClick={() => onSort(sortKey)}
+        className={`inline-flex items-center gap-1 uppercase tracking-wide transition-colors ${active ? 'text-gray-700' : 'hover:text-gray-700'}`}
+      >
+        {label}
+        {active
+          ? (sort.dir === 'asc' ? <ChevronUp className="w-3 h-3 text-[#ff007c]" /> : <ChevronDown className="w-3 h-3 text-[#ff007c]" />)
+          : <ChevronsUpDown className="w-3 h-3 text-gray-300" />}
+      </button>
+    </th>
+  )
+}
 
 function daysSince(dateStr?: string) {
   if (!dateStr) return 0
@@ -75,12 +103,30 @@ export default function PipelinePage() {
     return map
   }, [properties])
 
-  const sortedProperties = useMemo(() =>
-    [...properties]
-      .filter(p => KANBAN_STAGES.includes(normalizeStage(p.commercial_stage ?? '') as PropertyStage))
-      .sort((a, b) => (PROPERTY_STAGES[normalizeStage(a.commercial_stage ?? '') as PropertyStage]?.order ?? 99) - (PROPERTY_STAGES[normalizeStage(b.commercial_stage ?? '') as PropertyStage]?.order ?? 99)),
-    [properties]
-  )
+  // Orden de la vista Tabla (headers clickeables).
+  const [sort, setSort] = useState<{ key: SortKey; dir: 'asc' | 'desc' }>({ key: 'stage', dir: 'asc' })
+  const toggleSort = (key: SortKey) =>
+    setSort(prev => prev.key === key ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' })
+
+  const sortedProperties = useMemo(() => {
+    const list = properties.filter(p => KANBAN_STAGES.includes(normalizeStage(p.commercial_stage ?? '') as PropertyStage))
+    const val = (p: any): string | number => {
+      switch (sort.key) {
+        case 'price': return Number(p.asking_price) || 0
+        case 'address': return (p.address ?? '').toLowerCase()
+        case 'neighborhood': return (p.neighborhood ?? '').toLowerCase()
+        case 'owner': return (p.owner_name ?? '').toLowerCase()
+        default: return PROPERTY_STAGES[normalizeStage(p.commercial_stage ?? '') as PropertyStage]?.order ?? 99
+      }
+    }
+    const dir = sort.dir === 'asc' ? 1 : -1
+    return [...list].sort((a, b) => {
+      const va = val(a), vb = val(b)
+      if (va < vb) return -dir
+      if (va > vb) return dir
+      return 0
+    })
+  }, [properties, sort])
 
   // Mueve una propiedad a otra etapa (override: pipeline comercial libre).
   async function moveToStage(property: any, targetStage: PropertyStage) {
@@ -166,11 +212,11 @@ export default function PipelinePage() {
           <table className="w-full text-sm min-w-[640px]">
             <thead>
               <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
-                <th className="text-left px-4 py-2.5 font-medium">Etapa</th>
-                <th className="text-left px-4 py-2.5 font-medium">Dirección</th>
-                <th className="text-left px-4 py-2.5 font-medium hidden sm:table-cell">Barrio</th>
-                <th className="text-left px-4 py-2.5 font-medium">Precio</th>
-                <th className="text-left px-4 py-2.5 font-medium hidden md:table-cell">Propietario</th>
+                <SortHeader label="Etapa" sortKey="stage" sort={sort} onSort={toggleSort} />
+                <SortHeader label="Dirección" sortKey="address" sort={sort} onSort={toggleSort} />
+                <SortHeader label="Barrio" sortKey="neighborhood" sort={sort} onSort={toggleSort} className="hidden sm:table-cell" />
+                <SortHeader label="Precio" sortKey="price" sort={sort} onSort={toggleSort} />
+                <SortHeader label="Propietario" sortKey="owner" sort={sort} onSort={toggleSort} className="hidden md:table-cell" />
               </tr>
             </thead>
             <tbody>
