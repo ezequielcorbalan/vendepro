@@ -15,6 +15,7 @@ import {
 } from '@/lib/crm-config'
 import type { Lead, Contact } from '@/lib/types'
 import { useToast } from '@/components/ui/Toast'
+import { useConfirm } from '@/components/ui/useConfirm'
 import AIChatPanel from '@/components/ai/AIChatPanel'
 import { apiFetch } from '@/lib/api'
 import { scopeQueryString } from '@/lib/agent-scope'
@@ -34,6 +35,7 @@ function timeAgo(dateStr: string): string {
 export default function LeadsPage() {
   const searchParams = useSearchParams()
   const { toast } = useToast()
+  const { confirmDialog, askConfirm } = useConfirm()
   const [leads, setLeads] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<'list' | 'kanban'>('list')
@@ -271,11 +273,17 @@ export default function LeadsPage() {
     }
     try {
       if (stage === 'perdido' || stage === 'invalido') {
-        const promptMsg = stage === 'perdido'
-          ? '¿Por qué se pierde este lead?'
-          : '¿Por qué es inválido este lead?\n\nEj: propiedad no apta, datos duplicados, fake, etc.'
-        const reason = prompt(promptMsg)
-        if (reason === null) return
+        const { confirmed, reason } = await askConfirm({
+          title: stage === 'perdido' ? 'Marcar lead como perdido' : 'Marcar lead como inválido',
+          message: stage === 'perdido'
+            ? '¿Por qué se pierde este lead?'
+            : 'Ej: propiedad no apta, datos duplicados, fake, etc.',
+          confirmLabel: stage === 'perdido' ? 'Marcar perdido' : 'Marcar inválido',
+          variant: 'danger',
+          requireReason: true,
+          reasonPlaceholder: 'Motivo (opcional)',
+        })
+        if (!confirmed) return
         const r = await apiFetch('crm', '/leads/stage', {
           method: 'POST',
           body: JSON.stringify({ id: leadId, stage, notes: reason || 'Sin motivo' })
@@ -307,8 +315,15 @@ export default function LeadsPage() {
   }, [leads, moveToStage])
 
   const markLost = async (leadId: string) => {
-    const reason = prompt('¿Por qué se pierde este lead?\n\nEj: No responde, presupuesto fuera de rango, eligió otra inmobiliaria, etc.')
-    if (reason === null) return // cancelled
+    const { confirmed, reason } = await askConfirm({
+      title: 'Marcar lead como perdido',
+      message: 'Ej: no responde, presupuesto fuera de rango, eligió otra inmobiliaria, etc.',
+      confirmLabel: 'Marcar perdido',
+      variant: 'danger',
+      requireReason: true,
+      reasonPlaceholder: 'Motivo (opcional)',
+    })
+    if (!confirmed) return
     try {
       const r = await apiFetch('crm', '/leads/stage', {
         method: 'POST',
@@ -321,7 +336,13 @@ export default function LeadsPage() {
   }
 
   const deleteLead = async (leadId: string, leadName: string) => {
-    if (!confirm(`¿Eliminar "${leadName}" permanentemente?\n\nEsta acción no se puede deshacer.`)) return
+    const { confirmed } = await askConfirm({
+      title: 'Eliminar lead',
+      message: `¿Eliminar "${leadName}" permanentemente?\n\nSe borran sus eventos, actividades y tags. Las propiedades y tasaciones vinculadas se conservan. Esta acción no se puede deshacer.`,
+      confirmLabel: 'Eliminar',
+      variant: 'danger',
+    })
+    if (!confirmed) return
     try {
       await apiFetch('crm', `/leads?id=${leadId}`, { method: 'DELETE' })
       toast('Lead eliminado', 'warning')
@@ -336,6 +357,7 @@ export default function LeadsPage() {
 
   return (
     <div className="space-y-4 min-w-0 overflow-hidden">
+      {confirmDialog}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>

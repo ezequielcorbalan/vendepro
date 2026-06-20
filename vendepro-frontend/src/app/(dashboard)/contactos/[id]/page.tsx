@@ -4,11 +4,14 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import {
   ArrowLeft, Phone, Mail, MapPin, User, Home, Loader2,
-  ExternalLink, MessageCircle, Building2, UserPlus
+  ExternalLink, MessageCircle, Building2, UserPlus, Edit3, X
 } from 'lucide-react'
 import Link from 'next/link'
 import { apiFetch } from '@/lib/api'
+import { useToast } from '@/components/ui/Toast'
 import type { Contact } from '@/lib/types'
+
+const CONTACT_TYPES = ['propietario', 'comprador', 'inversor', 'inquilino', 'vendedor', 'otro']
 
 const STAGE_LABELS: Record<string, string> = {
   nuevo: 'Nuevo',
@@ -30,11 +33,15 @@ const STATUS_LABELS: Record<string, string> = {
 
 export default function ContactDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const { toast } = useToast()
   const [contact, setContact] = useState<Contact | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  const [showEdit, setShowEdit] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [editForm, setEditForm] = useState<any>({})
 
-  useEffect(() => {
+  function loadContact() {
     apiFetch('crm', `/contacts/${id}`)
       .then(res => res.json())
       .then((data: any) => {
@@ -43,7 +50,47 @@ export default function ContactDetailPage() {
       })
       .catch(() => setError(true))
       .finally(() => setLoading(false))
-  }, [id])
+  }
+
+  useEffect(() => { loadContact() }, [id])
+
+  const openEdit = () => {
+    if (!contact) return
+    setEditForm({
+      full_name: contact.full_name ?? '',
+      phone: contact.phone ?? '',
+      email: contact.email ?? '',
+      contact_type: contact.contact_type ?? 'propietario',
+      neighborhood: contact.neighborhood ?? '',
+      notes: contact.notes ?? '',
+    })
+    setShowEdit(true)
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editForm.full_name?.trim() || editForm.full_name.trim().length < 2) {
+      toast('El nombre es requerido (mín. 2 caracteres)', 'error')
+      return
+    }
+    setSaving(true)
+    try {
+      const res = await apiFetch('crm', `/contacts?id=${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(editForm),
+      })
+      const data = (await res.json().catch(() => ({}))) as any
+      if (!res.ok || data.error) {
+        toast(data.error || 'Error al guardar', 'error')
+      } else {
+        toast('Contacto actualizado')
+        setShowEdit(false)
+        loadContact()
+      }
+    } catch {
+      toast('Error de conexión', 'error')
+    }
+    setSaving(false)
+  }
 
   if (loading) return (
     <div className="flex items-center justify-center py-20">
@@ -88,6 +135,9 @@ export default function ContactDetailPage() {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
+            <button onClick={openEdit} className="flex items-center gap-1.5 text-sm border border-gray-300 hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-lg transition-colors">
+              <Edit3 className="w-3.5 h-3.5" /> Editar
+            </button>
             {contact.phone && (
               <a href={`tel:${contact.phone}`} className="flex items-center gap-1.5 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg transition-colors">
                 <Phone className="w-3.5 h-3.5" /> Llamar
@@ -189,6 +239,61 @@ export default function ContactDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Modal editar contacto */}
+      {showEdit && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowEdit(false)}>
+          <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white border-b px-4 py-3 flex items-center justify-between rounded-t-2xl">
+              <h3 className="font-semibold text-gray-800">Editar contacto</h3>
+              <button onClick={() => setShowEdit(false)} aria-label="Cerrar" className="p-1 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="p-4 space-y-3">
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Nombre completo *</label>
+                <input value={editForm.full_name} onChange={e => setEditForm((f: any) => ({ ...f, full_name: e.target.value }))}
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#ff007c]/20 focus:border-[#ff007c]" autoFocus />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Tipo</label>
+                <select value={editForm.contact_type} onChange={e => setEditForm((f: any) => ({ ...f, contact_type: e.target.value }))}
+                  className="w-full border rounded-lg px-3 py-2 text-sm capitalize">
+                  {CONTACT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Teléfono</label>
+                  <input value={editForm.phone} onChange={e => setEditForm((f: any) => ({ ...f, phone: e.target.value }))}
+                    className="w-full border rounded-lg px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Email</label>
+                  <input type="email" value={editForm.email} onChange={e => setEditForm((f: any) => ({ ...f, email: e.target.value }))}
+                    className="w-full border rounded-lg px-3 py-2 text-sm" />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Barrio/Zona</label>
+                <input value={editForm.neighborhood} onChange={e => setEditForm((f: any) => ({ ...f, neighborhood: e.target.value }))}
+                  className="w-full border rounded-lg px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Notas</label>
+                <textarea rows={3} value={editForm.notes} onChange={e => setEditForm((f: any) => ({ ...f, notes: e.target.value }))}
+                  className="w-full border rounded-lg px-3 py-2 text-sm" />
+              </div>
+            </div>
+            <div className="sticky bottom-0 bg-white border-t px-4 py-3 flex gap-2">
+              <button onClick={() => setShowEdit(false)} className="flex-1 px-4 py-2 border rounded-lg text-sm">Cancelar</button>
+              <button onClick={handleSaveEdit} disabled={saving}
+                className="flex-1 px-4 py-2 bg-[#ff007c] text-white rounded-lg text-sm font-medium disabled:opacity-50">
+                {saving ? 'Guardando...' : 'Guardar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

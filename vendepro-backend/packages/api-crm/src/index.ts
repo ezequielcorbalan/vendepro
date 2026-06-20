@@ -12,7 +12,7 @@ import {
 import { Activity } from '@vendepro/core'
 import {
   GetLeadsUseCase, UpdateLeadUseCase, DeleteLeadUseCase, AdvanceLeadStageUseCase,
-  GetContactsUseCase, CreateContactUseCase, DeleteContactUseCase,
+  GetContactsUseCase, CreateContactUseCase, UpdateContactUseCase, DeleteContactUseCase,
   GetCalendarEventsUseCase, CreateCalendarEventUseCase, ToggleEventCompleteUseCase, RescheduleEventUseCase,
   CreateLeadWithContactUseCase, GetContactDetailUseCase, CreateTagUseCase,
   GenerateOrgApiKeyUseCase, GetOrgApiKeyUseCase,
@@ -259,6 +259,23 @@ app.post('/contacts', async (c) => {
   const useCase = new CreateContactUseCase(repo, new CryptoIdGenerator())
   const result = await useCase.execute({ ...body, org_id: c.get('orgId'), agent_id: body.agent_id || c.get('userId') })
   return c.json(result, 201)
+})
+
+app.put('/contacts', async (c) => {
+  const body = (await c.req.json()) as any
+  const { id } = c.req.query()
+  if (!id) return c.json({ error: 'id es requerido' }, 400)
+  const repo = new D1ContactRepository(c.env.DB)
+  const useCase = new UpdateContactUseCase(repo)
+  await useCase.execute(id, c.get('orgId'), {
+    full_name: body.full_name,
+    phone: body.phone ?? null,
+    email: body.email ?? null,
+    contact_type: body.contact_type,
+    neighborhood: body.neighborhood ?? null,
+    notes: body.notes ?? null,
+  })
+  return c.json({ success: true })
 })
 
 app.delete('/contacts', async (c) => {

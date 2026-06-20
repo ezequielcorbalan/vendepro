@@ -19,6 +19,7 @@ export * from './use-cases/leads/delete-lead'
 // Contacts
 export * from './use-cases/contacts/get-contacts'
 export * from './use-cases/contacts/create-contact'
+export * from './use-cases/contacts/update-contact'
 export * from './use-cases/contacts/delete-contact'
 export * from './use-cases/contacts/get-contact-detail'
 export * from './use-cases/contacts/create-tag'
