@@ -55,8 +55,8 @@ export default function VendidasPage() {
       )}
 
       {loading ? (
-        <div className="space-y-3 animate-pulse">
-          {[...Array(5)].map((_, i) => <div key={i} className="h-20 bg-gray-200 rounded-xl" />)}
+        <div className="space-y-4 animate-pulse">
+          {[...Array(5)].map((_, i) => <div key={i} className="h-24 bg-gray-200 rounded-xl" />)}
         </div>
       ) : properties.length === 0 ? (
         <div className="bg-white rounded-xl border p-8 sm:p-12 text-center">
@@ -65,10 +65,10 @@ export default function VendidasPage() {
           <p className="text-gray-500">Aparecerán aquí las propiedades con etapa "Vendida"</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {properties.map(p => (
-            <Link key={p.id} href={`/propiedades/${p.id}`}>
-              <div className="bg-white border rounded-xl p-4 hover:shadow-sm transition-shadow">
+            <Link key={p.id} href={`/propiedades/${p.id}`} className="block">
+              <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-5 hover:shadow-md hover:border-gray-300 transition-all">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-gray-800 truncate mb-1">{p.address}</h3>
@@ -77,7 +77,7 @@ export default function VendidasPage() {
                       {p.property_type && <span className="flex items-center gap-1"><Building2 className="w-3 h-3" />{p.property_type}</span>}
                       {p.owner_name && <span className="flex items-center gap-1"><User className="w-3 h-3" />{p.owner_name}</span>}
                       {p.asking_price && <span className="font-semibold text-[#ff007c]">{formatCurrency(Number(p.asking_price), p.currency || 'USD')}</span>}
-                      {p.agent_name && <span className="text-gray-400">{p.agent_name}</span>}
+                      {p.agent_name && <span className="text-gray-500">{p.agent_name}</span>}
                       {p.updated_at && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{formatDate(p.updated_at)}</span>}
                     </div>
                   </div>
