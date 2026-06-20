@@ -125,7 +125,7 @@ export default function ContactDetailPage() {
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-full bg-pink-100 flex items-center justify-center flex-shrink-0">
-              <User className="w-6 h-6 text-[#ff007c]" />
+              <User className="w-6 h-6 text-brand-pink" />
             </div>
             <div>
               <h1 className="text-xl font-semibold text-gray-800">{contact.full_name}</h1>
@@ -151,7 +151,7 @@ export default function ContactDetailPage() {
             <Link href={`/leads?new=1&contact_id=${contact.id}`} className="flex items-center gap-1.5 text-sm bg-gray-800 hover:bg-gray-700 text-white px-3 py-2 rounded-lg transition-colors">
               <UserPlus className="w-3.5 h-3.5" /> Nuevo lead
             </Link>
-            <Link href={`/propiedades/nueva?contact_id=${contact.id}`} className="flex items-center gap-1.5 text-sm bg-[#ff007c] hover:opacity-90 text-white px-3 py-2 rounded-lg transition-opacity">
+            <Link href={`/propiedades/nueva?contact_id=${contact.id}`} className="flex items-center gap-1.5 text-sm bg-brand-pink hover:opacity-90 text-white px-3 py-2 rounded-lg transition-opacity">
               <Home className="w-3.5 h-3.5" /> Crear propiedad
             </Link>
           </div>
@@ -252,7 +252,7 @@ export default function ContactDetailPage() {
               <div>
                 <label className="text-xs text-gray-500 mb-1 block">Nombre completo *</label>
                 <input value={editForm.full_name} onChange={e => setEditForm((f: any) => ({ ...f, full_name: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#ff007c]/20 focus:border-[#ff007c]" autoFocus />
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-pink/20 focus:border-brand-pink" autoFocus />
               </div>
               <div>
                 <label className="text-xs text-gray-500 mb-1 block">Tipo</label>
@@ -287,7 +287,7 @@ export default function ContactDetailPage() {
             <div className="sticky bottom-0 bg-white border-t px-4 py-3 flex gap-2">
               <button onClick={() => setShowEdit(false)} className="flex-1 px-4 py-2 border rounded-lg text-sm">Cancelar</button>
               <button onClick={handleSaveEdit} disabled={saving}
-                className="flex-1 px-4 py-2 bg-[#ff007c] text-white rounded-lg text-sm font-medium disabled:opacity-50">
+                className="flex-1 px-4 py-2 bg-brand-pink text-white rounded-lg text-sm font-medium disabled:opacity-50">
                 {saving ? 'Guardando...' : 'Guardar'}
               </button>
             </div>

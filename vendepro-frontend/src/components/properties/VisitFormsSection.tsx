@@ -137,7 +137,7 @@ export function VisitFormsSection({
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#ff007c] to-[#ff5e3a] flex items-center justify-center text-white">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-pink to-[#ff5e3a] flex items-center justify-center text-white">
             <ClipboardList className="w-5 h-5" />
           </div>
           <div>
@@ -189,7 +189,7 @@ export function VisitFormsSection({
       {/* List */}
       {loading ? (
         <div className="py-10 flex items-center justify-center">
-          <Loader2 className="w-6 h-6 animate-spin text-[#ff007c]" />
+          <Loader2 className="w-6 h-6 animate-spin text-brand-pink" />
         </div>
       ) : submitted.length === 0 ? (
         <div className="py-10 text-center border-2 border-dashed border-gray-200 rounded-xl">

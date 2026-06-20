@@ -23,7 +23,7 @@ export default function DashboardError({
       <p className="text-sm text-gray-500 mb-4 max-w-sm">{error.message || 'Ocurrió un error inesperado.'}</p>
       <button
         onClick={reset}
-        className="bg-[#ff007c] text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
+        className="bg-brand-pink text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
       >
         Reintentar
       </button>

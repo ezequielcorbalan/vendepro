@@ -81,7 +81,7 @@ export default function TasacionDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-[#ff007c]" />
+        <Loader2 className="w-8 h-8 animate-spin text-brand-pink" />
       </div>
     )
   }
@@ -115,7 +115,7 @@ export default function TasacionDetailPage() {
               href={`/t/${a.public_slug}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-[#ff007c] text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
+              className="inline-flex items-center gap-2 bg-brand-pink text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
             >
               <ExternalLink className="w-4 h-4" /> Ver landing
             </a>
@@ -146,10 +146,10 @@ export default function TasacionDetailPage() {
         <div className="flex flex-wrap items-center gap-3 mb-4">
           <Link
             href={`/propiedades/${a.linked_property.id}`}
-            className="flex items-center gap-2 px-3 py-2 bg-[#ff007c]/5 border border-[#ff007c]/20 rounded-xl hover:bg-[#ff007c]/10 transition-colors"
+            className="flex items-center gap-2 px-3 py-2 bg-brand-pink/5 border border-brand-pink/20 rounded-xl hover:bg-brand-pink/10 transition-colors"
           >
-            <Building2 className="w-4 h-4 text-[#ff007c]" />
-            <span className="text-xs font-medium text-[#ff007c]">Propiedad:</span>
+            <Building2 className="w-4 h-4 text-brand-pink" />
+            <span className="text-xs font-medium text-brand-pink">Propiedad:</span>
             <span className="text-sm text-gray-800 font-semibold">{a.linked_property.address}</span>
             {a.linked_property.neighborhood && (
               <span className="text-xs text-gray-500">{a.linked_property.neighborhood}</span>
@@ -187,7 +187,7 @@ export default function TasacionDetailPage() {
       {header}
 
       <div className="space-y-4">
-        <div className="bg-gradient-to-br from-[#ff007c] via-[#ff3d94] to-[#ff8017] rounded-2xl p-6 sm:p-10 text-white shadow-lg aspect-[794/1123] flex flex-col justify-between relative overflow-hidden">
+        <div className="bg-gradient-to-br from-brand-pink via-[#ff3d94] to-brand-orange rounded-2xl p-6 sm:p-10 text-white shadow-lg aspect-[794/1123] flex flex-col justify-between relative overflow-hidden">
           <div>
             <img src="/brand/logo-horizontal.png" alt="Logo" className="h-8 sm:h-12 brightness-0 invert mb-4" />
             <p className="text-white/70 text-xs sm:text-sm font-medium tracking-wider uppercase">Propuesta de tasación</p>
@@ -209,7 +209,7 @@ export default function TasacionDetailPage() {
 
         <div className="bg-white rounded-2xl shadow-sm p-5 sm:p-8">
           <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <Ruler className="w-5 h-5 text-[#ff007c]" />
+            <Ruler className="w-5 h-5 text-brand-pink" />
             Datos de la propiedad
           </h2>
 
@@ -226,9 +226,9 @@ export default function TasacionDetailPage() {
               <p className="text-[10px] sm:text-xs text-gray-500">Sup. total</p>
               <p className="font-bold text-sm text-gray-800">{a.total_area || '-'} m²</p>
             </div>
-            <div className="bg-[#ff007c]/5 border border-[#ff007c]/20 rounded-xl p-3 text-center">
+            <div className="bg-brand-pink/5 border border-brand-pink/20 rounded-xl p-3 text-center">
               <p className="text-[10px] sm:text-xs text-gray-500">Ponderada</p>
-              <p className="font-bold text-sm text-[#ff007c]">{weighted.toFixed(1)} m²</p>
+              <p className="font-bold text-sm text-brand-pink">{weighted.toFixed(1)} m²</p>
             </div>
           </div>
 
@@ -308,7 +308,7 @@ export default function TasacionDetailPage() {
                         </div>
                       </td>
                       <td className="text-center p-2">{c.total_area || '-'}</td>
-                      <td className="text-center p-2 font-semibold text-[#ff007c]">
+                      <td className="text-center p-2 font-semibold text-brand-pink">
                         {c.price ? `$${Number(c.price).toLocaleString('es-AR')}` : '-'}
                       </td>
                       <td className="text-center p-2">{c.usd_per_m2 ? Number(c.usd_per_m2).toLocaleString('es-AR') : '-'}</td>
@@ -324,7 +324,7 @@ export default function TasacionDetailPage() {
 
         <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-5 sm:p-8 text-white shadow-lg">
           <h2 className="text-lg sm:text-xl font-bold mb-6 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-[#ff007c]" />
+            <TrendingUp className="w-5 h-5 text-brand-pink" />
             Tasación proyectada
           </h2>
 
@@ -353,12 +353,12 @@ export default function TasacionDetailPage() {
             )}
 
             {a.suggested_price && (
-              <div className="bg-[#ff007c]/20 border border-[#ff007c]/30 rounded-xl p-4 flex items-center justify-between">
+              <div className="bg-brand-pink/20 border border-brand-pink/30 rounded-xl p-4 flex items-center justify-between">
                 <div>
                   <p className="text-xs text-white/80 font-semibold">Valor sugerido</p>
                   <p className="text-xs text-white/40">Valor de mercado</p>
                 </div>
-                <p className="text-2xl sm:text-3xl font-bold text-[#ff007c]">
+                <p className="text-2xl sm:text-3xl font-bold text-brand-pink">
                   USD {Number(a.suggested_price).toLocaleString('es-AR')}
                 </p>
               </div>

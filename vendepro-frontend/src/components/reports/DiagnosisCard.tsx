@@ -55,8 +55,8 @@ export default function DiagnosisCard({
                     key={s.label}
                     className="flex items-start gap-2 p-2 rounded-lg bg-white/70 border border-red-100/60 shadow-sm"
                   >
-                    <div className="w-7 h-7 rounded-md bg-gradient-to-br from-[#ff8017]/20 to-[#ff007c]/20 flex items-center justify-center shrink-0" aria-hidden="true">
-                      <Icon className="w-3.5 h-3.5 text-[#ff007c]" />
+                    <div className="w-7 h-7 rounded-md bg-gradient-to-br from-brand-orange/20 to-brand-pink/20 flex items-center justify-center shrink-0" aria-hidden="true">
+                      <Icon className="w-3.5 h-3.5 text-brand-pink" />
                     </div>
                     <div className="min-w-0">
                       <p className="font-medium text-gray-800 text-xs">{s.label}</p>

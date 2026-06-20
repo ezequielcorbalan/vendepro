@@ -81,7 +81,7 @@ export default function PropertyPhotoPicker({
               onClick={() => setSelectedId(p.id)}
               className={`w-full text-left px-3 py-2 text-sm ${
                 selectedId === p.id
-                  ? 'bg-[#ff007c]/10 text-[#ff007c]'
+                  ? 'bg-brand-pink/10 text-brand-pink'
                   : 'hover:bg-gray-50 text-gray-800'
               }`}
             >
@@ -104,7 +104,7 @@ export default function PropertyPhotoPicker({
               <button
                 key={i}
                 onClick={() => onPick(ph.url, selectedId!)}
-                className="aspect-square bg-cover bg-center rounded-lg ring-1 ring-gray-200 hover:ring-[#ff007c] transition-shadow"
+                className="aspect-square bg-cover bg-center rounded-lg ring-1 ring-gray-200 hover:ring-brand-pink transition-shadow"
                 style={{ backgroundImage: `url(${ph.url})` }}
                 aria-label={`Foto ${i + 1}`}
               />

@@ -174,7 +174,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
             <button
               onClick={() => saveNow()}
               disabled={status === 'saving'}
-              className="flex items-center gap-1 rounded bg-[#ff007c] px-3 py-1.5 text-xs font-medium text-white disabled:opacity-40"
+              className="flex items-center gap-1 rounded bg-brand-pink px-3 py-1.5 text-xs font-medium text-white disabled:opacity-40"
             >
               <Save className="h-3 w-3" /> Guardar cambios
             </button>
@@ -254,7 +254,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
                   <button
                     key={t}
                     onClick={() => addBlock(t)}
-                    className="rounded border border-slate-300 px-3 py-2 text-left hover:border-[#ff007c] hover:bg-rose-50/30"
+                    className="rounded border border-slate-300 px-3 py-2 text-left hover:border-brand-pink hover:bg-rose-50/30"
                   >
                     <div className="text-sm font-medium text-slate-900">{meta.label}</div>
                     <div className="mt-0.5 text-xs leading-snug text-slate-500">{meta.description}</div>

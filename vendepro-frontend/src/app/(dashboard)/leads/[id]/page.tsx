@@ -258,7 +258,7 @@ export default function LeadDetailPage() {
           <div className="h-8 w-48 bg-gray-200 rounded animate-pulse" />
           <button
             onClick={() => router.push(`/fichas/nueva?lead_id=${leadId}`)}
-            className="flex items-center gap-1.5 border border-[#ff8017] text-[#ff8017] px-3 py-1.5 rounded-lg text-sm hover:bg-orange-50 font-medium"
+            className="flex items-center gap-1.5 border border-brand-orange text-brand-orange px-3 py-1.5 rounded-lg text-sm hover:bg-orange-50 font-medium"
           >
             <FileText className="w-3.5 h-3.5" /> Ficha de tasación
           </button>
@@ -273,7 +273,7 @@ export default function LeadDetailPage() {
     return (
       <div className="text-center py-12">
         <p className="text-gray-500">Lead no encontrado</p>
-        <Link href="/leads" className="text-[#ff007c] hover:underline text-sm mt-2 block">Volver a Leads</Link>
+        <Link href="/leads" className="text-brand-pink hover:underline text-sm mt-2 block">Volver a Leads</Link>
       </div>
     )
   }
@@ -298,7 +298,7 @@ export default function LeadDetailPage() {
               <button onClick={() => { setEditing(false); setEditForm(lead) }} className="border px-3 py-1.5 rounded-lg text-sm text-gray-600">
                 <X className="w-4 h-4" />
               </button>
-              <button onClick={handleSave} disabled={saving} className="bg-[#ff007c] text-white px-3 py-1.5 rounded-lg text-sm flex items-center gap-1.5 disabled:opacity-50">
+              <button onClick={handleSave} disabled={saving} className="bg-brand-pink text-white px-3 py-1.5 rounded-lg text-sm flex items-center gap-1.5 disabled:opacity-50">
                 <Save className="w-3.5 h-3.5" /> Guardar
               </button>
             </>
@@ -311,7 +311,7 @@ export default function LeadDetailPage() {
               router.push(`/fichas/nueva?${qs.toString()}`)
             }}
             disabled={editing}
-            className="flex items-center gap-1.5 border border-[#ff8017] text-[#ff8017] px-3 py-1.5 rounded-lg text-sm hover:bg-orange-50 font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex items-center gap-1.5 border border-brand-orange text-brand-orange px-3 py-1.5 rounded-lg text-sm hover:bg-orange-50 font-medium disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <FileText className="w-3.5 h-3.5" /> Ficha de tasación
           </button>
@@ -333,7 +333,7 @@ export default function LeadDetailPage() {
 
       {/* Header card */}
       <div className="bg-white border border-gray-200 rounded-2xl p-5 relative overflow-hidden shadow-sm">
-        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#ff007c] to-[#ff8017]" />
+        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-pink to-brand-orange" />
         <img
           src="/brand/GV-27.png"
           alt=""
@@ -489,12 +489,12 @@ export default function LeadDetailPage() {
                 <a
                   href={`tel:${lead.phone}`}
                   onClick={() => handleQuickActivity('llamada')}
-                  className="flex items-center gap-1.5 bg-gradient-to-br from-[#ff007c] to-[#ff8017] text-white px-4 py-2 rounded-xl text-sm font-medium hover:opacity-90 transition-opacity shadow-sm"
+                  className="flex items-center gap-1.5 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2 rounded-xl text-sm font-medium hover:opacity-90 transition-opacity shadow-sm"
                 >
                   <Phone className="w-4 h-4" /> Llamar
                 </a>
               ) : (
-                <button disabled className="flex items-center gap-1.5 bg-[#ff007c]/40 text-white px-4 py-2 rounded-xl text-sm font-medium cursor-not-allowed">
+                <button disabled className="flex items-center gap-1.5 bg-brand-pink/40 text-white px-4 py-2 rounded-xl text-sm font-medium cursor-not-allowed">
                   <Phone className="w-4 h-4" /> Llamar
                 </button>
               )}
@@ -531,7 +531,7 @@ export default function LeadDetailPage() {
         {/* Datos del lead */}
         <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#ff007c] to-[#ff8017] flex items-center justify-center shadow-sm">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-sm">
               <User className="w-4 h-4 text-white" />
             </div>
             <h2 className="font-bold text-gray-900">Datos del lead</h2>
@@ -549,7 +549,7 @@ export default function LeadDetailPage() {
                 <Phone className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
                 <div>
                   <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Teléfono</p>
-                  <a href={`tel:${lead.phone}`} className="text-sm text-[#ff007c] hover:underline">{lead.phone}</a>
+                  <a href={`tel:${lead.phone}`} className="text-sm text-brand-pink hover:underline">{lead.phone}</a>
                 </div>
               </div>
             )}
@@ -558,7 +558,7 @@ export default function LeadDetailPage() {
                 <Mail className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
                 <div>
                   <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Email</p>
-                  <a href={`mailto:${lead.email}`} className="text-sm text-[#ff007c] hover:underline">{lead.email}</a>
+                  <a href={`mailto:${lead.email}`} className="text-sm text-brand-pink hover:underline">{lead.email}</a>
                 </div>
               </div>
             )}
@@ -614,7 +614,7 @@ export default function LeadDetailPage() {
                 {lead.next_step ? (
                   <p className="text-sm text-gray-800">{lead.next_step}{lead.next_step_date && <span className="text-gray-400 text-xs ml-1">· {formatDate(lead.next_step_date)}</span>}</p>
                 ) : (
-                  <button onClick={() => setEditing(true)} className="text-sm text-gray-400 hover:text-[#ff007c] transition-colors">+ Definir próximo paso</button>
+                  <button onClick={() => setEditing(true)} className="text-sm text-gray-400 hover:text-brand-pink transition-colors">+ Definir próximo paso</button>
                 )}
               </div>
             </div>
@@ -625,14 +625,14 @@ export default function LeadDetailPage() {
         <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#ff007c] to-[#ff8017] flex items-center justify-center shadow-sm">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-sm">
                 <Activity className="w-4 h-4 text-white" />
               </div>
               <h2 className="font-bold text-gray-900">Actividades</h2>
             </div>
             <Link
               href={`/actividades?lead_id=${leadId}`}
-              className="flex items-center gap-1 text-xs text-[#ff007c] hover:underline font-medium"
+              className="flex items-center gap-1 text-xs text-brand-pink hover:underline font-medium"
             >
               <Plus className="w-3.5 h-3.5" /> Nueva
             </Link>
@@ -641,7 +641,7 @@ export default function LeadDetailPage() {
             <div className="flex flex-col items-center py-10 text-center">
               <Activity className="w-10 h-10 text-gray-200 mb-3" />
               <p className="text-sm text-gray-400 mb-1">Sin actividades registradas</p>
-              <Link href={`/actividades?lead_id=${leadId}`} className="text-sm text-[#ff007c] hover:underline">
+              <Link href={`/actividades?lead_id=${leadId}`} className="text-sm text-brand-pink hover:underline">
                 Registrar primera actividad
               </Link>
             </div>
@@ -652,7 +652,7 @@ export default function LeadDetailPage() {
                 const timeAgo = mins < 60 ? `${mins}m` : mins < 1440 ? `${Math.floor(mins / 60)}h` : `${Math.floor(mins / 1440)}d`
                 return (
                   <div key={a.id} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50">
-                    <div className="w-2 h-2 bg-[#ff007c] rounded-full shrink-0" />
+                    <div className="w-2 h-2 bg-brand-pink rounded-full shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-gray-700 truncate">{a.description || a.activity_type}</p>
                       <p className="text-[10px] text-gray-400">{a.agent_name}</p>
@@ -670,7 +670,7 @@ export default function LeadDetailPage() {
       <div className="bg-white border rounded-xl p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-bold text-gray-900 flex items-center gap-2">
-            <FileText className="w-4 h-4 text-[#ff007c]" /> Fichas de tasación
+            <FileText className="w-4 h-4 text-brand-pink" /> Fichas de tasación
           </h2>
           <button
             onClick={() => {
@@ -679,7 +679,7 @@ export default function LeadDetailPage() {
               if (lead?.neighborhood) qs.set('neighborhood', lead.neighborhood)
               router.push(`/fichas/nueva?${qs.toString()}`)
             }}
-            className="flex items-center gap-1 text-xs text-[#ff007c] hover:underline font-medium"
+            className="flex items-center gap-1 text-xs text-brand-pink hover:underline font-medium"
           >
             <Plus className="w-3.5 h-3.5" /> Nueva
           </button>
@@ -693,7 +693,7 @@ export default function LeadDetailPage() {
           <div className="space-y-2">
             {fichas.map((ficha: any) => (
               <div key={ficha.id} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#ff007c] to-[#ff8017] flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shrink-0">
                   <FileText className="w-4 h-4 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -705,7 +705,7 @@ export default function LeadDetailPage() {
                 </div>
                 <Link
                   href={`/fichas/${ficha.id}`}
-                  className="text-xs text-[#ff007c] hover:underline font-medium px-2 py-1 shrink-0"
+                  className="text-xs text-brand-pink hover:underline font-medium px-2 py-1 shrink-0"
                 >
                   Editar
                 </Link>
@@ -719,7 +719,7 @@ export default function LeadDetailPage() {
       {stageHistory.length > 0 && (
         <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#ff007c] to-[#ff8017] flex items-center justify-center shadow-sm">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-sm">
               <Calendar className="w-4 h-4 text-white" />
             </div>
             <h2 className="font-bold text-gray-900">Historial de etapas</h2>
@@ -769,7 +769,7 @@ export default function LeadDetailPage() {
               <button onClick={goCreateProperty} className="w-full px-4 py-3 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 flex items-center justify-center gap-2">
                 <Home className="w-4 h-4" /> Crear propiedad vinculada
               </button>
-              <button onClick={goCreateAppraisal} className="w-full px-4 py-3 bg-[#ff007c] text-white rounded-xl text-sm font-medium hover:opacity-90 flex items-center justify-center gap-2">
+              <button onClick={goCreateAppraisal} className="w-full px-4 py-3 bg-brand-pink text-white rounded-xl text-sm font-medium hover:opacity-90 flex items-center justify-center gap-2">
                 <FileText className="w-4 h-4" /> Crear tasación vinculada
               </button>
               {!propModal.requireProperty && (

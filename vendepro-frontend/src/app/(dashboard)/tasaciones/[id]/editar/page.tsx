@@ -57,7 +57,7 @@ export default function EditarTasacionPage() {
   if (loading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#ff007c]" />
+        <Loader2 className="h-8 w-8 animate-spin text-brand-pink" />
       </div>
     )
   }
@@ -68,7 +68,7 @@ export default function EditarTasacionPage() {
         <p className="text-sm text-rose-600">{error ?? 'Tasación no encontrada'}</p>
         <button
           onClick={() => router.push('/tasaciones')}
-          className="mt-4 rounded bg-[#ff007c] px-4 py-2 text-sm text-white"
+          className="mt-4 rounded bg-brand-pink px-4 py-2 text-sm text-white"
         >
           Volver al listado
         </button>

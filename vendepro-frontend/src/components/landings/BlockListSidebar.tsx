@@ -57,7 +57,7 @@ export default function BlockListSidebar({ blocks, selectedId, onSelect, onReord
         </DndContext>
 
         <button onClick={() => setShowAdd(v => !v)}
-          className="w-full text-sm text-gray-500 hover:text-[#ff007c] border border-dashed border-gray-300 rounded-lg py-2 mt-2 flex items-center justify-center gap-1.5">
+          className="w-full text-sm text-gray-500 hover:text-brand-pink border border-dashed border-gray-300 rounded-lg py-2 mt-2 flex items-center justify-center gap-1.5">
           <Plus className="w-4 h-4" /> Agregar bloque
         </button>
 
@@ -85,7 +85,7 @@ function SortableBlockRow({ block, selected, onSelect, onRemove, onToggleVisibil
 
   return (
     <div ref={setNodeRef} style={style}
-      className={`group flex items-center gap-1 px-2 py-1.5 rounded-lg text-sm cursor-pointer ${selected ? 'bg-[#ff007c]/10 ring-1 ring-[#ff007c]/40' : 'hover:bg-gray-100'}`}
+      className={`group flex items-center gap-1 px-2 py-1.5 rounded-lg text-sm cursor-pointer ${selected ? 'bg-brand-pink/10 ring-1 ring-brand-pink/40' : 'hover:bg-gray-100'}`}
       onClick={onSelect}>
       <button {...attributes} {...listeners} className="text-gray-400 cursor-grab active:cursor-grabbing" aria-label="Reordenar" onClick={e => e.stopPropagation()}>
         <GripVertical className="w-3.5 h-3.5" />
@@ -93,10 +93,10 @@ function SortableBlockRow({ block, selected, onSelect, onRemove, onToggleVisibil
       <span className={`flex-1 truncate ${block.visible ? 'text-gray-800' : 'text-gray-400'}`}>
         {BLOCK_LABELS[block.type]}
         {block.is_variable && (
-          <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded bg-gradient-to-br from-[#ff007c] to-[#ff8017] text-white" title="Variable por tasación">VAR</span>
+          <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded bg-gradient-to-br from-brand-pink to-brand-orange text-white" title="Variable por tasación">VAR</span>
         )}
       </span>
-      {isRequired && <span className="text-[10px] text-[#ff007c]" title="Requerido">◆</span>}
+      {isRequired && <span className="text-[10px] text-brand-pink" title="Requerido">◆</span>}
       <button onClick={(e) => { e.stopPropagation(); onToggleVisibility() }} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-700" title={block.visible ? 'Ocultar' : 'Mostrar'}>
         {block.visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
       </button>

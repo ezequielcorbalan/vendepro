@@ -148,7 +148,7 @@ export default function VisitFormClient({ slug, apiPublic, data }: Props) {
       <div className="min-h-screen bg-gradient-to-br from-[#fff0f6] to-white py-10 px-4">
         <div className="max-w-xl mx-auto">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="bg-[#ff007c] h-2" />
+            <div className="bg-brand-pink h-2" />
             <div className="p-8 text-center">
               <div className="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4">
                 <CheckCircle2 className="w-9 h-9 text-green-500" />
@@ -196,7 +196,7 @@ export default function VisitFormClient({ slug, apiPublic, data }: Props) {
             </div>
           ) : (
             <div className="p-6">
-              <div className="bg-[#ff007c] h-1 w-12 rounded-full mb-3" />
+              <div className="bg-brand-pink h-1 w-12 rounded-full mb-3" />
               <h1 className="text-xl font-semibold text-gray-900">{p.address}</h1>
               {addressLine && <p className="text-sm text-gray-500 mt-1">{addressLine}</p>}
             </div>
@@ -329,7 +329,7 @@ export default function VisitFormClient({ slug, apiPublic, data }: Props) {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full bg-[#ff007c] hover:bg-[#e6006f] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm"
+            className="w-full bg-brand-pink hover:bg-[#e6006f] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm"
           >
             {submitting ? (
               <>
@@ -347,7 +347,7 @@ export default function VisitFormClient({ slug, apiPublic, data }: Props) {
         </form>
 
         <div className="text-center text-xs text-gray-400">
-          Potenciado por <span className="text-[#ff007c] font-semibold">VendéPro</span>
+          Potenciado por <span className="text-brand-pink font-semibold">VendéPro</span>
         </div>
       </div>
 
@@ -444,8 +444,8 @@ function ChoiceButton({
       onClick={onClick}
       className={`py-3 px-4 rounded-xl border text-sm font-medium transition-colors ${
         active
-          ? 'bg-[#ff007c] border-[#ff007c] text-white'
-          : 'bg-white border-gray-200 text-gray-700 hover:border-[#ff007c]/50 hover:bg-[#fff0f6]/40'
+          ? 'bg-brand-pink border-brand-pink text-white'
+          : 'bg-white border-gray-200 text-gray-700 hover:border-brand-pink/50 hover:bg-[#fff0f6]/40'
       }`}
     >
       {children}

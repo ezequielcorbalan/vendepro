@@ -148,7 +148,7 @@ export default function PerformancePage() {
           <select
             value={propertyType}
             onChange={e => setPropertyType(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#ff007c]/30 focus:border-[#ff007c]"
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-pink/30 focus:border-brand-pink"
           >
             {PROPERTY_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
@@ -158,19 +158,19 @@ export default function PerformancePage() {
             value={priceMin}
             onChange={e => setPriceMin(e.target.value)}
             placeholder="Desde"
-            className="w-24 border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#ff007c]/30 focus:border-[#ff007c]"
+            className="w-24 border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-pink/30 focus:border-brand-pink"
           />
           <input
             type="number"
             value={priceMax}
             onChange={e => setPriceMax(e.target.value)}
             placeholder="Hasta"
-            className="w-24 border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#ff007c]/30 focus:border-[#ff007c]"
+            className="w-24 border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-pink/30 focus:border-brand-pink"
           />
           {hasFilters && (
             <button
               onClick={clearFilters}
-              className="text-xs text-gray-500 hover:text-[#ff007c] underline"
+              className="text-xs text-gray-500 hover:text-brand-pink underline"
             >
               Limpiar filtros
             </button>

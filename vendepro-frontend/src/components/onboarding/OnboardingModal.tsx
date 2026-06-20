@@ -86,7 +86,7 @@ export default function OnboardingModal({ userName, onClose }: Props) {
             </button>
             <button
               onClick={goNext}
-              className="flex items-center gap-1.5 bg-gradient-to-r from-[#ff007c] to-[#ff8017] text-white px-5 py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity shadow-sm"
+              className="flex items-center gap-1.5 bg-gradient-to-r from-brand-pink to-brand-orange text-white px-5 py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity shadow-sm"
             >
               Siguiente <ChevronRight className="w-4 h-4" />
             </button>

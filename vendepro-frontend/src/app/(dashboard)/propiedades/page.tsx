@@ -51,14 +51,14 @@ export default function PropiedadesPage() {
           </p>
         </div>
         <Link href="/propiedades/nueva"
-          className="inline-flex items-center gap-2 bg-[#ff007c] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90">
+          className="inline-flex items-center gap-2 bg-brand-pink text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90">
           <Plus className="w-4 h-4" /> Nueva propiedad
         </Link>
       </div>
 
       {loading && (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 animate-spin text-[#ff007c]" />
+          <Loader2 className="w-8 h-8 animate-spin text-brand-pink" />
         </div>
       )}
 
@@ -72,7 +72,7 @@ export default function PropiedadesPage() {
           <h2 className="text-lg font-medium text-gray-800 mb-2">Sin propiedades</h2>
           <p className="text-sm text-gray-500 mb-4">Creá tu primera propiedad captada</p>
           <Link href="/propiedades/nueva"
-            className="inline-flex items-center gap-2 bg-[#ff007c] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90">
+            className="inline-flex items-center gap-2 bg-brand-pink text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90">
             <Plus className="w-4 h-4" /> Nueva propiedad
           </Link>
         </div>

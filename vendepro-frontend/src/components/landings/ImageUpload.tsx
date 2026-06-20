@@ -78,7 +78,7 @@ export default function ImageUpload({ value, onChange, allowPropertyPicker }: Pr
             disabled={uploading}
             className="hidden"
           />
-          <span className="block text-center text-xs py-2 border border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-[#ff007c]">
+          <span className="block text-center text-xs py-2 border border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-brand-pink">
             {uploading ? 'Subiendo…' : 'Seleccionar archivo'}
           </span>
         </label>
@@ -107,7 +107,7 @@ export default function ImageUpload({ value, onChange, allowPropertyPicker }: Pr
           <button
             type="button"
             onClick={() => setShowPicker(true)}
-            className="w-full text-xs py-2 border border-dashed border-gray-300 rounded-lg hover:border-[#ff007c]"
+            className="w-full text-xs py-2 border border-dashed border-gray-300 rounded-lg hover:border-brand-pink"
           >
             Elegir desde una propiedad del CRM
           </button>

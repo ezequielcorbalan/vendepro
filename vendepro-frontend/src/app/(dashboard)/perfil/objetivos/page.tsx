@@ -133,7 +133,7 @@ export default function MisObjetivosPage() {
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
-      <Loader2 className="w-8 h-8 animate-spin text-[#ff007c]" />
+      <Loader2 className="w-8 h-8 animate-spin text-brand-pink" />
     </div>
   )
 
@@ -155,7 +155,7 @@ export default function MisObjetivosPage() {
         {mode === null && (
           <button
             onClick={() => setMode('method')}
-            className="inline-flex items-center gap-1.5 bg-[#ff007c] text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
+            className="inline-flex items-center gap-1.5 bg-brand-pink text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
           >
             <Plus className="w-4 h-4" /> Nuevo
           </button>
@@ -171,14 +171,14 @@ export default function MisObjetivosPage() {
           <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
             <button
               onClick={() => setMode('method')}
-              className="flex-1 flex items-center gap-3 px-4 py-3 bg-pink-50 border border-pink-200 rounded-xl text-left hover:border-[#ff007c] transition-colors group"
+              className="flex-1 flex items-center gap-3 px-4 py-3 bg-pink-50 border border-pink-200 rounded-xl text-left hover:border-brand-pink transition-colors group"
             >
-              <Zap className="w-5 h-5 text-[#ff007c] shrink-0" />
+              <Zap className="w-5 h-5 text-brand-pink shrink-0" />
               <div>
                 <div className="text-sm font-semibold text-gray-800">Método probado</div>
                 <div className="text-xs text-gray-400">Keller, Magnin, Agenda</div>
               </div>
-              <ChevronRight className="w-4 h-4 text-gray-300 ml-auto group-hover:text-[#ff007c]" />
+              <ChevronRight className="w-4 h-4 text-gray-300 ml-auto group-hover:text-brand-pink" />
             </button>
             <button
               onClick={() => setMode('custom')}
@@ -199,7 +199,7 @@ export default function MisObjetivosPage() {
       {mode === 'method' && (
         <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6 space-y-5">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2"><Zap className="w-4 h-4 text-[#ff007c]" /> Elegí tu método</h2>
+            <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2"><Zap className="w-4 h-4 text-brand-pink" /> Elegí tu método</h2>
             <button onClick={cancel} className="text-xs text-gray-400 hover:text-gray-600">Cancelar</button>
           </div>
 
@@ -210,7 +210,7 @@ export default function MisObjetivosPage() {
                 onClick={() => setSelectedTemplate(key)}
                 className={`text-left px-3 py-3 rounded-xl border text-xs transition-all ${
                   selectedTemplate === key
-                    ? 'border-[#ff007c] bg-pink-50 text-[#ff007c]'
+                    ? 'border-brand-pink bg-pink-50 text-brand-pink'
                     : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
                 }`}
               >
@@ -258,7 +258,7 @@ export default function MisObjetivosPage() {
                       value={ticketPromedio || ''}
                       onChange={e => setTicketPromedio(parseInt(e.target.value) || 0)}
                       placeholder="ej. 150.000"
-                      className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-[#ff8017] focus:border-[#ff8017]"
+                      className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-brand-orange focus:border-brand-orange"
                     />
                   </div>
                   <div>
@@ -268,7 +268,7 @@ export default function MisObjetivosPage() {
                       value={comisionPct || ''}
                       onChange={e => setComisionPct(parseFloat(e.target.value) || 0)}
                       placeholder="ej. 3"
-                      className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-[#ff8017] focus:border-[#ff8017]"
+                      className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-brand-orange focus:border-brand-orange"
                     />
                   </div>
                 </div>
@@ -276,11 +276,11 @@ export default function MisObjetivosPage() {
                   <div className="grid grid-cols-2 gap-3 pt-1">
                     <div className="bg-white rounded-lg p-3 text-center border border-orange-100">
                       <div className="text-[10px] text-gray-400 mb-0.5">Facturación mensual</div>
-                      <div className="text-lg font-bold text-[#ff8017]">USD {facturacionMensual.toLocaleString()}</div>
+                      <div className="text-lg font-bold text-brand-orange">USD {facturacionMensual.toLocaleString()}</div>
                     </div>
                     <div className="bg-white rounded-lg p-3 text-center border border-orange-100">
                       <div className="text-[10px] text-gray-400 mb-0.5">Facturación anual</div>
-                      <div className="text-lg font-bold text-[#ff007c]">USD {facturacionAnual.toLocaleString()}</div>
+                      <div className="text-lg font-bold text-brand-pink">USD {facturacionAnual.toLocaleString()}</div>
                       <div className={`text-[10px] mt-0.5 ${facturacionAnual >= 40000 ? 'text-green-600' : 'text-amber-600'}`}>
                         {facturacionAnual >= 40000 ? 'Supera el mínimo recomendado' : 'Por debajo del mínimo (USD 40.000/año)'}
                       </div>
@@ -294,7 +294,7 @@ export default function MisObjetivosPage() {
           <button
             onClick={saveMethod}
             disabled={saving || !selectedTemplate}
-            className="w-full bg-[#ff007c] text-white py-2.5 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-2"
+            className="w-full bg-brand-pink text-white py-2.5 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-2"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {saving ? 'Guardando...' : 'Adoptar este método'}
@@ -350,7 +350,7 @@ export default function MisObjetivosPage() {
             <button
               onClick={saveCustom}
               disabled={saving}
-              className="flex-1 bg-[#ff007c] text-white py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
+              className="flex-1 bg-brand-pink text-white py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Crear
             </button>
@@ -358,7 +358,7 @@ export default function MisObjetivosPage() {
           </div>
           <button
             onClick={() => setMode('method')}
-            className="text-xs text-[#ff007c] hover:underline flex items-center gap-1"
+            className="text-xs text-brand-pink hover:underline flex items-center gap-1"
           >
             <Zap className="w-3 h-3" /> Prefiero adoptar un método
           </button>
@@ -395,7 +395,7 @@ export default function MisObjetivosPage() {
         <div className="mt-4 flex gap-2">
           <button
             onClick={() => setMode('method')}
-            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-[#ff007c] border border-gray-200 px-3 py-1.5 rounded-lg hover:border-[#ff007c] transition-colors"
+            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-brand-pink border border-gray-200 px-3 py-1.5 rounded-lg hover:border-brand-pink transition-colors"
           >
             <Zap className="w-3.5 h-3.5" /> Adoptar un método
           </button>

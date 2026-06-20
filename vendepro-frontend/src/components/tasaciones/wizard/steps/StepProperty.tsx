@@ -23,7 +23,7 @@ interface Props {
 }
 
 const inputClass =
-  'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-[#ff007c] focus:outline-none focus:ring-2 focus:ring-[#ff007c]/30'
+  'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand-pink focus:outline-none focus:ring-2 focus:ring-brand-pink/30'
 const labelClass = 'mb-1 block text-sm font-medium text-slate-700'
 
 export function StepProperty({
@@ -136,7 +136,7 @@ export function StepProperty({
         {/* Address — required, full width */}
         <div className="md:col-span-2">
           <label className={labelClass}>
-            Dirección <span className="text-[#ff007c]">*</span>
+            Dirección <span className="text-brand-pink">*</span>
           </label>
           <input
             type="text"
@@ -238,7 +238,7 @@ export function StepProperty({
             <span className="ml-2 text-xs font-normal text-slate-400">auto</span>
           </label>
           <div
-            className="flex h-[42px] items-center rounded-lg border border-rose-200 bg-rose-50 px-3 text-sm font-semibold text-[#ff007c]"
+            className="flex h-[42px] items-center rounded-lg border border-rose-200 bg-rose-50 px-3 text-sm font-semibold text-brand-pink"
             title={`${Math.round(weights.covered * 100)}% cubierta + ${Math.round(weights.semi * 100)}% semi + ${Math.round(weights.uncovered * 100)}% descubierta`}
           >
             {computedWeighted !== null ? `${computedWeighted} m²` : '—'}

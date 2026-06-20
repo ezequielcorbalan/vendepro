@@ -193,13 +193,13 @@ export function EditorShell({ initial, snapshot, context }: Props) {
                   alert(e?.message ?? 'Error al publicar')
                 }
               }}
-              className="rounded bg-[#ff007c] px-3 py-1 text-xs font-semibold text-white"
+              className="rounded bg-brand-pink px-3 py-1 text-xs font-semibold text-white"
             >
               Publicar
             </button>
           )}
           {state.appraisal.public_slug && (
-            <a href={`/t/${state.appraisal.public_slug}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-slate-600 hover:text-[#ff007c]">
+            <a href={`/t/${state.appraisal.public_slug}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-slate-600 hover:text-brand-pink">
               Ver pública <ExternalLink className="h-3 w-3" />
             </a>
           )}
@@ -245,7 +245,7 @@ export function EditorShell({ initial, snapshot, context }: Props) {
                   <span className="ml-2 font-normal text-slate-400">auto</span>
                 </span>
                 <div
-                  className="flex h-[34px] items-center rounded border border-rose-200 bg-rose-50 px-2 text-sm font-semibold text-[#ff007c]"
+                  className="flex h-[34px] items-center rounded border border-rose-200 bg-rose-50 px-2 text-sm font-semibold text-brand-pink"
                   title={`Pesos: cubierta ${Math.round(weights.covered * 100)}% / semi ${Math.round(weights.semi * 100)}% / descubierta ${Math.round(weights.uncovered * 100)}%`}
                 >
                   {computedWeighted !== null ? `${computedWeighted} m²` : '—'}
@@ -311,7 +311,7 @@ export function EditorShell({ initial, snapshot, context }: Props) {
         </div>
       </div>
 
-      <button onClick={() => setMobilePreviewOpen(true)} className="fixed bottom-6 right-6 z-30 rounded-full bg-[#ff007c] px-5 py-3 text-sm font-semibold text-white shadow-lg lg:hidden">
+      <button onClick={() => setMobilePreviewOpen(true)} className="fixed bottom-6 right-6 z-30 rounded-full bg-brand-pink px-5 py-3 text-sm font-semibold text-white shadow-lg lg:hidden">
         Preview
       </button>
       {mobilePreviewOpen && (

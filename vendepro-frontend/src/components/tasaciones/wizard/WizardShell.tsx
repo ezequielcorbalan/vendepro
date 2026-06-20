@@ -116,7 +116,7 @@ export function WizardShell({ initialTemplateId, initialLeadId }: Props) {
               key={i}
               className={`flex-1 rounded px-3 py-2 text-center text-xs font-medium ${
                 active
-                  ? 'bg-[#ff007c] text-white'
+                  ? 'bg-brand-pink text-white'
                   : done
                   ? 'bg-slate-200 text-slate-700'
                   : 'bg-slate-100 text-slate-400'
@@ -204,7 +204,7 @@ export function WizardShell({ initialTemplateId, initialLeadId }: Props) {
           <button
             onClick={() => dispatch({ type: 'next' })}
             disabled={!canAdvance(state)}
-            className="flex items-center gap-2 rounded bg-[#ff007c] px-5 py-2 text-sm text-white disabled:opacity-40"
+            className="flex items-center gap-2 rounded bg-brand-pink px-5 py-2 text-sm text-white disabled:opacity-40"
           >
             Siguiente <ArrowRight className="h-4 w-4" />
           </button>
@@ -221,7 +221,7 @@ export function WizardShell({ initialTemplateId, initialLeadId }: Props) {
             <button
               onClick={() => handlePublish(true)}
               disabled={publishing}
-              className="flex items-center gap-2 rounded bg-[#ff007c] px-5 py-2 text-sm text-white disabled:opacity-40"
+              className="flex items-center gap-2 rounded bg-brand-pink px-5 py-2 text-sm text-white disabled:opacity-40"
             >
               {publishing && <Loader2 className="h-4 w-4 animate-spin" />}
               Publicar

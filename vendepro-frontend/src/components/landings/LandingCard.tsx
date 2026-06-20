@@ -13,7 +13,7 @@ export default function LandingCard({ landing }: { landing: Landing }) {
   return (
     <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
       <Link href={`/landings/${landing.id}`} className="block">
-        <div className="h-36 bg-gradient-to-br from-[#ff007c]/10 to-[#ff8017]/10 flex items-center justify-center text-gray-400">
+        <div className="h-36 bg-gradient-to-br from-brand-pink/10 to-brand-orange/10 flex items-center justify-center text-gray-400">
           {landing.og_image_url
             ? <img src={landing.og_image_url} alt="" className="w-full h-full object-cover" />
             : <span className="text-xs uppercase tracking-wider">Sin preview</span>}
@@ -27,7 +27,7 @@ export default function LandingCard({ landing }: { landing: Landing }) {
           <div className="flex items-center gap-2 text-xs text-gray-500 flex-wrap">
             <span className="px-2 py-0.5 rounded-md bg-gray-100">{kindLabel}</span>
             {isTasacionTemplate && (
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-gradient-to-br from-[#ff007c] to-[#ff8017] text-white">PLANTILLA TASACIÓN</span>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-gradient-to-br from-brand-pink to-brand-orange text-white">PLANTILLA TASACIÓN</span>
             )}
             <span>{new Date(landing.updated_at).toLocaleDateString('es-AR')}</span>
           </div>
@@ -35,7 +35,7 @@ export default function LandingCard({ landing }: { landing: Landing }) {
       </Link>
       <div className="px-4 pb-4 flex items-center gap-2">
         {landing.status === 'published' && (
-          <a href={publicUrl} target="_blank" rel="noopener" className="text-xs text-[#ff007c] hover:underline inline-flex items-center gap-1">
+          <a href={publicUrl} target="_blank" rel="noopener" className="text-xs text-brand-pink hover:underline inline-flex items-center gap-1">
             <ExternalLink className="w-3.5 h-3.5" /> Ver pública
           </a>
         )}

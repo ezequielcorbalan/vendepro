@@ -73,7 +73,7 @@ export default function TasacionesPage() {
           <Link href="/prefactibilidades/nueva" className="border border-orange-300 bg-orange-50 text-orange-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-orange-100 flex items-center gap-2">
             <Plus className="w-4 h-4" /> Prefactibilidad
           </Link>
-          <Link href="/tasaciones/nueva" className="bg-[#ff007c] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 flex items-center gap-2">
+          <Link href="/tasaciones/nueva" className="bg-brand-pink text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 flex items-center gap-2">
             <Plus className="w-4 h-4" /> Nueva tasación
           </Link>
         </div>
@@ -88,7 +88,7 @@ export default function TasacionesPage() {
           <ClipboardList className="w-12 h-12 text-gray-300 mx-auto mb-4" />
           <h2 className="text-lg font-medium text-gray-600 mb-2">Sin tasaciones</h2>
           <p className="text-gray-400 text-sm mb-6">Creá tu primera tasación</p>
-          <Link href="/tasaciones/nueva" className="inline-flex items-center gap-2 bg-[#ff007c] text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:opacity-90">
+          <Link href="/tasaciones/nueva" className="inline-flex items-center gap-2 bg-brand-pink text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:opacity-90">
             <Plus className="w-4 h-4" /> Crear tasación
           </Link>
         </div>
@@ -105,7 +105,7 @@ export default function TasacionesPage() {
                   </div>
                   <div className="flex items-center gap-3 mt-1 text-xs sm:text-sm text-gray-500">
                     <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {a.neighborhood}</span>
-                    {a.suggested_price && <span className="font-medium text-[#ff007c]">USD {Number(a.suggested_price).toLocaleString('es-AR')}</span>}
+                    {a.suggested_price && <span className="font-medium text-brand-pink">USD {Number(a.suggested_price).toLocaleString('es-AR')}</span>}
                     <span>{formatDate(a.created_at)}</span>
                   </div>
                   {a.agent_name && <p className="text-xs text-gray-400 mt-1">Agente: {a.agent_name}</p>}

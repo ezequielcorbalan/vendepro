@@ -41,7 +41,7 @@ export default function ReportsListWidget({ propertyId }: Props) {
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#ff007c] to-[#ff8017] flex items-center justify-center shadow-sm">
+          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-sm">
             <FileBarChart className="w-4.5 h-4.5 text-white" />
           </div>
           <div>
@@ -51,7 +51,7 @@ export default function ReportsListWidget({ propertyId }: Props) {
         </div>
         <Link
           href={`/propiedades/${propertyId}/reportes/nuevo`}
-          className="flex items-center gap-1 text-xs text-[#ff007c] font-medium hover:underline"
+          className="flex items-center gap-1 text-xs text-brand-pink font-medium hover:underline"
         >
           <Plus className="w-3 h-3" /> Nuevo
         </Link>
@@ -64,7 +64,7 @@ export default function ReportsListWidget({ propertyId }: Props) {
           <p className="text-sm text-gray-500 mb-3">No hay reportes para esta propiedad</p>
           <Link
             href={`/propiedades/${propertyId}/reportes/nuevo`}
-            className="inline-flex items-center gap-1.5 text-sm font-medium bg-gradient-to-br from-[#ff007c] to-[#ff8017] text-white px-4 py-2 rounded-lg hover:opacity-90"
+            className="inline-flex items-center gap-1.5 text-sm font-medium bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2 rounded-lg hover:opacity-90"
           >
             Crear el primer reporte
           </Link>
@@ -90,7 +90,7 @@ export default function ReportsListWidget({ propertyId }: Props) {
           ))}
           <Link
             href={`/propiedades/${propertyId}/reportes`}
-            className="block text-center text-xs text-[#ff007c] font-medium hover:underline pt-2"
+            className="block text-center text-xs text-brand-pink font-medium hover:underline pt-2"
           >
             Ver todos los reportes →
           </Link>

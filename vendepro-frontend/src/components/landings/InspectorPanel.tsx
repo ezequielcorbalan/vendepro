@@ -19,11 +19,11 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...props} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#ff007c]" />
+  return <input {...props} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-pink" />
 }
 
 function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea {...props} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#ff007c] min-h-[60px] resize-y" />
+  return <textarea {...props} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-pink min-h-[60px] resize-y" />
 }
 
 export default function InspectorPanel({ block, onChange, onBlockChange }: Props) {
@@ -31,15 +31,15 @@ export default function InspectorPanel({ block, onChange, onBlockChange }: Props
   return (
     <div className="p-4 space-y-4">
       <div>
-        <p className="text-xs uppercase tracking-wider font-semibold text-[#ff007c]">Block · {block.type}</p>
+        <p className="text-xs uppercase tracking-wider font-semibold text-brand-pink">Block · {block.type}</p>
         <p className="text-sm text-gray-900 font-medium">{BLOCK_LABELS[block.type]}</p>
       </div>
 
       {onBlockChange && (
-        <label className="flex items-start gap-2.5 p-3 rounded-lg border border-gray-200 bg-gray-50 cursor-pointer hover:border-[#ff007c]/40 transition-colors">
+        <label className="flex items-start gap-2.5 p-3 rounded-lg border border-gray-200 bg-gray-50 cursor-pointer hover:border-brand-pink/40 transition-colors">
           <input
             type="checkbox"
-            className="mt-0.5 w-4 h-4 accent-[#ff007c] cursor-pointer"
+            className="mt-0.5 w-4 h-4 accent-brand-pink cursor-pointer"
             checked={isVariable}
             onChange={(e) => onBlockChange({ is_variable: e.target.checked })}
           />

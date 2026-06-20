@@ -82,7 +82,7 @@ export default function VersionsDrawer({
                   <button
                     onClick={() => rollback(v.id)}
                     disabled={busy === v.id}
-                    className="text-xs text-[#ff007c] hover:underline flex items-center gap-1 disabled:opacity-50"
+                    className="text-xs text-brand-pink hover:underline flex items-center gap-1 disabled:opacity-50"
                   >
                     <RotateCcw className="w-3 h-3" /> Restaurar
                   </button>

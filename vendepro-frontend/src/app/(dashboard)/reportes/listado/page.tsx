@@ -97,12 +97,12 @@ export default function ListadoPage() {
             value={neighborhood}
             onChange={e => setNeighborhood(e.target.value)}
             placeholder="Barrio"
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff007c]/30 focus:border-[#ff007c]"
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/30 focus:border-brand-pink"
           />
           <select
             value={status}
             onChange={e => setStatus(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff007c]/30 focus:border-[#ff007c]"
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/30 focus:border-brand-pink"
           >
             <option value="">Todos</option>
             <option value="published">Publicados</option>
@@ -112,13 +112,13 @@ export default function ListadoPage() {
             type="date"
             value={from}
             onChange={e => setFrom(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff007c]/30 focus:border-[#ff007c]"
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/30 focus:border-brand-pink"
           />
           <input
             type="date"
             value={to}
             onChange={e => setTo(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff007c]/30 focus:border-[#ff007c]"
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/30 focus:border-brand-pink"
           />
         </div>
       </div>
@@ -176,7 +176,7 @@ export default function ListadoPage() {
                     <td className="py-2 px-3">
                       <Link
                         href={`/propiedades/${r.property_id}/reportes`}
-                        className="text-[#ff007c] hover:underline font-medium"
+                        className="text-brand-pink hover:underline font-medium"
                       >
                         {r.property_address}
                       </Link>
@@ -198,7 +198,7 @@ export default function ListadoPage() {
                           target="_blank"
                           rel="noopener noreferrer"
                           title="Ver reporte público"
-                          className="inline-flex items-center gap-1 text-[#ff007c] hover:underline text-xs font-medium"
+                          className="inline-flex items-center gap-1 text-brand-pink hover:underline text-xs font-medium"
                         >
                           <Eye className="w-3.5 h-3.5" />
                           <span className="hidden sm:inline">Ver público</span>

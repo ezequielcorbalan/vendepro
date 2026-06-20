@@ -77,7 +77,7 @@ export default function PerfilPage() {
       {/* Profile section */}
       <div className="bg-white rounded-xl border p-6">
         <h2 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-          <User className="w-4 h-4 text-[#ff007c]" /> Información personal
+          <User className="w-4 h-4 text-brand-pink" /> Información personal
         </h2>
         <div className="space-y-4">
           {profile?.photo_url && (
@@ -88,12 +88,12 @@ export default function PerfilPage() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Nombre completo</label>
             <input type="text" value={fullName} onChange={e => setFullName(e.target.value)}
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#ff007c]/50 focus:border-[#ff007c]" />
+              className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-pink/50 focus:border-brand-pink" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
             <input type="tel" value={phone} onChange={e => setPhone(e.target.value)}
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#ff007c]/50 focus:border-[#ff007c]" />
+              className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-pink/50 focus:border-brand-pink" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
@@ -101,7 +101,7 @@ export default function PerfilPage() {
               className="w-full border rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-400" />
           </div>
           <button onClick={handleSaveProfile} disabled={savingProfile}
-            className="flex items-center gap-2 bg-[#ff007c] text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50">
+            className="flex items-center gap-2 bg-brand-pink text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50">
             {savingProfile ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Guardar cambios
           </button>
@@ -111,18 +111,18 @@ export default function PerfilPage() {
       {/* Password section */}
       <div className="bg-white rounded-xl border p-6">
         <h2 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-          <Lock className="w-4 h-4 text-[#ff007c]" /> Cambiar contraseña
+          <Lock className="w-4 h-4 text-brand-pink" /> Cambiar contraseña
         </h2>
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña actual</label>
             <input type={showPw ? 'text' : 'password'} value={currentPw} onChange={e => setCurrentPw(e.target.value)}
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#ff007c]/50 focus:border-[#ff007c]" />
+              className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-pink/50 focus:border-brand-pink" />
           </div>
           <div className="relative">
             <label className="block text-sm font-medium text-gray-700 mb-1">Nueva contraseña</label>
             <input type={showPw ? 'text' : 'password'} value={newPw} onChange={e => setNewPw(e.target.value)}
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#ff007c]/50 focus:border-[#ff007c]" />
+              className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-pink/50 focus:border-brand-pink" />
             <button onClick={() => setShowPw(!showPw)} className="absolute right-3 bottom-2 text-gray-400">
               {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
@@ -130,7 +130,7 @@ export default function PerfilPage() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar contraseña</label>
             <input type={showPw ? 'text' : 'password'} value={confirmPw} onChange={e => setConfirmPw(e.target.value)}
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#ff007c]/50 focus:border-[#ff007c]" />
+              className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-pink/50 focus:border-brand-pink" />
           </div>
           {newPw && confirmPw && (
             <div className={`text-xs flex items-center gap-1 ${newPw === confirmPw ? 'text-green-600' : 'text-red-500'}`}>

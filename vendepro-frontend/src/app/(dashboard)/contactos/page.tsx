@@ -7,7 +7,7 @@ import { apiFetch } from '@/lib/api'
 import { applyScopeToParams } from '@/lib/agent-scope'
 import { useToast } from '@/components/ui/Toast'
 
-const inputClass = 'border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50 w-full'
+const inputClass = 'border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/50 w-full'
 
 const typeLabels: Record<string, { label: string; color: string }> = {
   vendedor: { label: 'Vendedor', color: 'bg-blue-100 text-blue-700' },
@@ -75,7 +75,7 @@ export default function ContactosPage() {
           <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Contactos</h1>
           <p className="text-sm text-gray-500 mt-1">Base de datos de clientes</p>
         </div>
-        <button onClick={() => setShowForm(true)} className="inline-flex items-center gap-2 bg-[#ff007c] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 self-start sm:self-auto">
+        <button onClick={() => setShowForm(true)} className="inline-flex items-center gap-2 bg-brand-pink text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 self-start sm:self-auto">
           <Plus className="w-4 h-4" /> Nuevo contacto
         </button>
       </div>
@@ -84,7 +84,7 @@ export default function ContactosPage() {
         <div className="relative flex-1">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
-            className="w-full border border-gray-300 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50"
+            className="w-full border border-gray-300 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
             placeholder="Buscar por nombre, teléfono o email..."
             value={search}
             onChange={e => setSearch(e.target.value)}
@@ -125,7 +125,7 @@ export default function ContactosPage() {
               <textarea className={`${inputClass} h-20`} placeholder="Notas..." value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
             </div>
             <div className="flex gap-2 mt-4">
-              <button onClick={handleSave} disabled={saving || !form.full_name} className="flex-1 bg-[#ff007c] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50">
+              <button onClick={handleSave} disabled={saving || !form.full_name} className="flex-1 bg-brand-pink text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50">
                 {saving ? 'Guardando...' : 'Guardar'}
               </button>
               <button onClick={() => setShowForm(false)} className="border border-gray-300 text-gray-700 px-4 py-2.5 rounded-lg text-sm hover:bg-gray-50">Cancelar</button>
@@ -142,7 +142,7 @@ export default function ContactosPage() {
         <div className="bg-white rounded-xl border p-8 sm:p-12 text-center">
           <BookUser className="w-12 h-12 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500 mb-4">{search ? 'Sin resultados' : 'No hay contactos todavía'}</p>
-          <button onClick={() => setShowForm(true)} className="text-[#ff007c] text-sm hover:underline">Agregar el primer contacto</button>
+          <button onClick={() => setShowForm(true)} className="text-brand-pink text-sm hover:underline">Agregar el primer contacto</button>
         </div>
       ) : (
         <div className="space-y-2">
@@ -153,19 +153,19 @@ export default function ContactosPage() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <Link href={`/contactos/${c.id}`} className="font-semibold text-gray-800 hover:text-[#ff007c] truncate">
+                      <Link href={`/contactos/${c.id}`} className="font-semibold text-gray-800 hover:text-brand-pink truncate">
                         {c.full_name}
                       </Link>
                       <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${t.color}`}>{t.label}</span>
                     </div>
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
                       {c.phone && (
-                        <a href={`tel:${c.phone}`} className="text-xs text-gray-500 flex items-center gap-1 hover:text-[#ff007c]">
+                        <a href={`tel:${c.phone}`} className="text-xs text-gray-500 flex items-center gap-1 hover:text-brand-pink">
                           <Phone className="w-3 h-3" />{c.phone}
                         </a>
                       )}
                       {c.email && (
-                        <a href={`mailto:${c.email}`} className="text-xs text-gray-500 flex items-center gap-1 hover:text-[#ff007c]">
+                        <a href={`mailto:${c.email}`} className="text-xs text-gray-500 flex items-center gap-1 hover:text-brand-pink">
                           <Mail className="w-3 h-3" />{c.email}
                         </a>
                       )}
@@ -174,7 +174,7 @@ export default function ContactosPage() {
                     {c.notes && <p className="text-xs text-gray-400 mt-1 line-clamp-2">{c.notes}</p>}
                   </div>
                   <div className="flex gap-1 flex-shrink-0">
-                    <Link href={`/contactos/${c.id}`} className="text-gray-400 hover:text-[#ff007c] p-1">
+                    <Link href={`/contactos/${c.id}`} className="text-gray-400 hover:text-brand-pink p-1">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>

@@ -145,13 +145,13 @@ export default function EditarPropiedadPage() {
     setSaving(false)
   }
 
-  const inputClass = 'w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50 focus:border-[#ff007c]'
+  const inputClass = 'w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/50 focus:border-brand-pink'
   const emptyConfig = { operation_types: [], commercial_stages: [], property_statuses: [] }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-[#ff007c]" />
+        <Loader2 className="w-8 h-8 animate-spin text-brand-pink" />
       </div>
     )
   }
@@ -167,7 +167,7 @@ export default function EditarPropiedadPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Editar propiedad</h1>
         <button onClick={handleSave} disabled={saving}
-          className="flex items-center gap-2 bg-[#ff007c] text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50">
+          className="flex items-center gap-2 bg-brand-pink text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Guardar
         </button>
@@ -286,7 +286,7 @@ export default function EditarPropiedadPage() {
 
       <div className="flex justify-end pb-8">
         <button onClick={handleSave} disabled={saving}
-          className="flex items-center gap-2 bg-[#ff007c] text-white px-6 py-3 rounded-xl text-sm font-medium hover:opacity-90 disabled:opacity-50">
+          className="flex items-center gap-2 bg-brand-pink text-white px-6 py-3 rounded-xl text-sm font-medium hover:opacity-90 disabled:opacity-50">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Guardar cambios
         </button>

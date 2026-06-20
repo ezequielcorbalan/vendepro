@@ -154,7 +154,7 @@ export default function RegisterPage() {
     router.refresh()
   }
 
-  const inputClass = 'w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50 focus:border-[#ff007c]'
+  const inputClass = 'w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/50 focus:border-brand-pink'
 
   const STEPS = ['Tu inmobiliaria', 'Tu cuenta', 'Personalización']
 
@@ -177,18 +177,18 @@ export default function RegisterPage() {
               <div key={n} className="flex items-center flex-1">
                 <div className="flex flex-col items-center flex-1">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold border-2 transition-colors ${
-                    isDone ? 'bg-[#ff007c] border-[#ff007c] text-white' :
-                    isActive ? 'border-[#ff007c] text-[#ff007c]' :
+                    isDone ? 'bg-brand-pink border-brand-pink text-white' :
+                    isActive ? 'border-brand-pink text-brand-pink' :
                     'border-gray-300 text-gray-400'
                   }`}>
                     {isDone ? '✓' : n}
                   </div>
-                  <span className={`text-xs mt-1 hidden sm:block ${isActive ? 'text-[#ff007c] font-medium' : 'text-gray-400'}`}>
+                  <span className={`text-xs mt-1 hidden sm:block ${isActive ? 'text-brand-pink font-medium' : 'text-gray-400'}`}>
                     {label}
                   </span>
                 </div>
                 {i < STEPS.length - 1 && (
-                  <div className={`h-0.5 flex-1 mx-1 transition-colors ${step > n ? 'bg-[#ff007c]' : 'bg-gray-200'}`} />
+                  <div className={`h-0.5 flex-1 mx-1 transition-colors ${step > n ? 'bg-brand-pink' : 'bg-gray-200'}`} />
                 )}
               </div>
             )
@@ -237,7 +237,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={slugStatus === 'taken' || slugStatus === 'checking' || !form.org_name}
-              className="w-full bg-[#ff007c] text-white font-medium py-2.5 rounded-lg hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full bg-brand-pink text-white font-medium py-2.5 rounded-lg hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               Continuar <ChevronRight className="w-4 h-4" />
             </button>
@@ -292,7 +292,7 @@ export default function RegisterPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 bg-[#ff007c] text-white font-medium py-2.5 rounded-lg hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 bg-brand-pink text-white font-medium py-2.5 rounded-lg hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                 {loading ? 'Creando...' : 'Crear cuenta'}
@@ -332,7 +332,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#ff007c] text-white font-medium py-2.5 rounded-lg hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full bg-brand-pink text-white font-medium py-2.5 rounded-lg hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               Guardar y entrar
@@ -350,7 +350,7 @@ export default function RegisterPage() {
         {step < 3 && (
           <p className="text-center text-sm text-gray-500 mt-6">
             ¿Ya tenés cuenta?{' '}
-            <Link href="/login" className="text-[#ff007c] hover:underline font-medium">
+            <Link href="/login" className="text-brand-pink hover:underline font-medium">
               Ingresá acá
             </Link>
           </p>

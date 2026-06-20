@@ -64,8 +64,8 @@ export function PropertySelector({ value, onChange }: PropertySelectorProps) {
   return (
     <div className="relative">
       {value ? (
-        <div className="flex items-center gap-3 bg-[#ff007c]/5 border border-[#ff007c]/30 rounded-lg px-3 py-2">
-          <Building2 className="w-4 h-4 text-[#ff007c] flex-shrink-0" />
+        <div className="flex items-center gap-3 bg-brand-pink/5 border border-brand-pink/30 rounded-lg px-3 py-2">
+          <Building2 className="w-4 h-4 text-brand-pink flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-800 truncate">{value.address}</p>
             <p className="text-xs text-gray-500">{value.neighborhood} · {value.property_type}</p>
@@ -82,7 +82,7 @@ export function PropertySelector({ value, onChange }: PropertySelectorProps) {
             onFocus={() => { if (query) setOpen(true) }}
             onBlur={() => setTimeout(() => setOpen(false), 150)}
             placeholder="Buscar propiedad por dirección o barrio..."
-            className="w-full border rounded-lg pl-9 pr-3 py-2 text-sm focus:ring-2 focus:ring-[#ff007c]/50 focus:border-[#ff007c]"
+            className="w-full border rounded-lg pl-9 pr-3 py-2 text-sm focus:ring-2 focus:ring-brand-pink/50 focus:border-brand-pink"
           />
         </div>
       )}
@@ -94,7 +94,7 @@ export function PropertySelector({ value, onChange }: PropertySelectorProps) {
           ) : results.length === 0 ? (
             <div className="p-3 text-center">
               <p className="text-sm text-gray-400 mb-2">Sin resultados</p>
-              <Link href="/propiedades/nueva" className="inline-flex items-center gap-1 text-sm text-[#ff007c] hover:underline">
+              <Link href="/propiedades/nueva" className="inline-flex items-center gap-1 text-sm text-brand-pink hover:underline">
                 <Plus className="w-3 h-3" /> Crear nueva propiedad
               </Link>
             </div>
@@ -110,7 +110,7 @@ export function PropertySelector({ value, onChange }: PropertySelectorProps) {
                 </button>
               ))}
               <Link href="/propiedades/nueva"
-                className="flex items-center gap-1 text-xs text-[#ff007c] hover:underline px-3 py-2 border-t">
+                className="flex items-center gap-1 text-xs text-brand-pink hover:underline px-3 py-2 border-t">
                 <Plus className="w-3 h-3" /> Crear nueva propiedad
               </Link>
             </>

@@ -9,7 +9,7 @@ export default function BenefitsListBlock({ data }: { data: BenefitsListData; mo
         <div className="space-y-5">
           {data.items.map((item, i) => (
             <div key={i} className="flex gap-4">
-              <div className="w-10 h-10 rounded-xl bg-[#ff007c]/10 flex items-center justify-center text-[#ff007c] flex-shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-brand-pink/10 flex items-center justify-center text-brand-pink flex-shrink-0">
                 <Check className="w-5 h-5" strokeWidth={3} />
               </div>
               <div>

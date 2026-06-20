@@ -61,12 +61,12 @@ export function StepTemplate({ selectedId, onSelect }: Props) {
           onClick={() => onSelect(null)}
           className={`flex flex-col items-center justify-center gap-3 rounded-xl border-2 p-6 text-center transition ${
             selectedId === null
-              ? 'border-[#ff007c] bg-[#ff007c]/5'
+              ? 'border-brand-pink bg-brand-pink/5'
               : 'border-dashed border-slate-200 hover:border-slate-300 hover:bg-slate-50'
           }`}
         >
-          <Plus className={`h-8 w-8 ${selectedId === null ? 'text-[#ff007c]' : 'text-slate-300'}`} />
-          <span className={`text-sm font-medium ${selectedId === null ? 'text-[#ff007c]' : 'text-slate-500'}`}>
+          <Plus className={`h-8 w-8 ${selectedId === null ? 'text-brand-pink' : 'text-slate-300'}`} />
+          <span className={`text-sm font-medium ${selectedId === null ? 'text-brand-pink' : 'text-slate-500'}`}>
             Empezar de cero
           </span>
           <span className="text-xs text-slate-400">Sin bloques pre-cargados</span>
@@ -79,11 +79,11 @@ export function StepTemplate({ selectedId, onSelect }: Props) {
             onClick={() => onSelect(t.id)}
             className={`flex flex-col gap-2 rounded-xl border-2 p-6 text-left transition ${
               selectedId === t.id
-                ? 'border-[#ff007c] bg-[#ff007c]/5'
+                ? 'border-brand-pink bg-brand-pink/5'
                 : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
             }`}
           >
-            <span className={`text-sm font-semibold ${selectedId === t.id ? 'text-[#ff007c]' : 'text-slate-800'}`}>
+            <span className={`text-sm font-semibold ${selectedId === t.id ? 'text-brand-pink' : 'text-slate-800'}`}>
               {t.name}
             </span>
             {t.description && (

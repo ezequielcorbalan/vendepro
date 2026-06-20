@@ -55,7 +55,7 @@ export default function MiPerformancePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-[#ff007c]" />
+        <Loader2 className="w-8 h-8 animate-spin text-brand-pink" />
       </div>
     )
   }
@@ -111,7 +111,7 @@ export default function MiPerformancePage() {
       {/* Conversion Funnel */}
       <div className="bg-white rounded-xl border border-gray-100 p-5">
         <h2 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
-          <TrendingUp className="w-4 h-4 text-[#ff007c]" /> Tasas de conversión
+          <TrendingUp className="w-4 h-4 text-brand-pink" /> Tasas de conversión
         </h2>
         <div className="flex flex-col sm:flex-row gap-3">
           <ConvCard label="Lead → Tasación" pct={data.conversions?.leadTasacion || 0} />
@@ -144,7 +144,7 @@ export default function MiPerformancePage() {
                     </div>
                     <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-gradient-to-r from-[#ff007c] to-[#ff8017] rounded-full transition-all"
+                        className="h-full bg-gradient-to-r from-brand-pink to-brand-orange rounded-full transition-all"
                         style={{ width: `${pct}%` }}
                       />
                     </div>
@@ -308,7 +308,7 @@ export default function MiPerformancePage() {
                 <div key={i} className="flex-1 flex flex-col items-center gap-1">
                   <span className="text-[10px] font-bold text-gray-600">{w.count}</span>
                   <div
-                    className="w-full bg-gradient-to-t from-[#ff007c] to-[#ff8017] rounded-t-md"
+                    className="w-full bg-gradient-to-t from-brand-pink to-brand-orange rounded-t-md"
                     style={{ height: `${Math.max(h, 4)}%` }}
                   />
                   <span className="text-[8px] text-gray-400">S{w.week?.split('W')[1]}</span>

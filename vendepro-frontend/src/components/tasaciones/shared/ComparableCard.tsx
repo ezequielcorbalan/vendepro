@@ -44,7 +44,7 @@ interface Props {
 }
 
 const inputClass =
-  'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-[#ff007c] focus:outline-none focus:ring-2 focus:ring-[#ff007c]/30'
+  'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand-pink focus:outline-none focus:ring-2 focus:ring-brand-pink/30'
 const labelClass = 'mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500'
 
 const EXTRACTABLE_KEYS = [
@@ -131,7 +131,7 @@ export function ComparableCard({
 
   const kindPill = isVenta
     ? <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">Cierre real</span>
-    : <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold text-[#ff007c]">Publicación</span>
+    : <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold text-brand-pink">Publicación</span>
 
   const summaryPrice = isVenta
     ? formatPriceUsd(comparable.closing_price_usd)
@@ -229,12 +229,12 @@ export function ComparableCard({
               onDrop={handleDrop}
               onClick={() => fileRef.current?.click()}
               className={`flex cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed px-4 py-6 text-center transition ${
-                highlight ? 'border-[#ff007c] bg-rose-50' : 'border-slate-300 hover:border-[#ff007c]/60'
+                highlight ? 'border-brand-pink bg-rose-50' : 'border-slate-300 hover:border-brand-pink/60'
               }`}
             >
               {extracting ? (
                 <>
-                  <Loader2 className="h-6 w-6 animate-spin text-[#ff007c]" />
+                  <Loader2 className="h-6 w-6 animate-spin text-brand-pink" />
                   <p className="text-sm font-medium text-slate-700">Analizando captura con IA...</p>
                 </>
               ) : previewUrl ? (
@@ -253,7 +253,7 @@ export function ComparableCard({
                 </>
               ) : (
                 <>
-                  <Sparkles className="h-6 w-6 text-[#ff007c]" />
+                  <Sparkles className="h-6 w-6 text-brand-pink" />
                   <p className="text-sm font-medium text-slate-700">
                     {isVenta
                       ? 'Pegá un screenshot del cierre (Ctrl+V)'

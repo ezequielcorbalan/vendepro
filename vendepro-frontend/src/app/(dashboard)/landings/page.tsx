@@ -62,13 +62,13 @@ export default function LandingsPage() {
         <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => { setCreateAsTasacionTemplate(true); setShowCreate(true) }}
-            className="inline-flex items-center gap-2 bg-white border border-[#ff007c] text-[#ff007c] hover:bg-[#ff007c]/5 font-semibold px-4 py-2.5 rounded-full text-sm"
+            className="inline-flex items-center gap-2 bg-white border border-brand-pink text-brand-pink hover:bg-brand-pink/5 font-semibold px-4 py-2.5 rounded-full text-sm"
           >
             <Plus className="w-4 h-4" /> Nueva plantilla de tasación
           </button>
           <button
             onClick={() => { setCreateAsTasacionTemplate(false); setShowCreate(true) }}
-            className="inline-flex items-center gap-2 bg-[#ff007c] hover:bg-[#e60070] text-white font-semibold px-5 py-2.5 rounded-full"
+            className="inline-flex items-center gap-2 bg-brand-pink hover:bg-[#e60070] text-white font-semibold px-5 py-2.5 rounded-full"
           >
             <Plus className="w-4 h-4" /> Nueva landing
           </button>
@@ -76,15 +76,15 @@ export default function LandingsPage() {
       </div>
 
       <div className="flex items-center gap-4 border-b border-gray-200 mb-4">
-        <button onClick={() => setTab('mine')} className={`pb-3 px-1 text-sm font-medium ${tab === 'mine' ? 'border-b-2 border-[#ff007c] text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
+        <button onClick={() => setTab('mine')} className={`pb-3 px-1 text-sm font-medium ${tab === 'mine' ? 'border-b-2 border-brand-pink text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
           Mías
         </button>
         {isAdmin && (
           <>
-            <button onClick={() => setTab('org')} className={`pb-3 px-1 text-sm font-medium ${tab === 'org' ? 'border-b-2 border-[#ff007c] text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
+            <button onClick={() => setTab('org')} className={`pb-3 px-1 text-sm font-medium ${tab === 'org' ? 'border-b-2 border-brand-pink text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
               Todas del org
             </button>
-            <button onClick={() => setTab('pending_review')} className={`pb-3 px-1 text-sm font-medium ${tab === 'pending_review' ? 'border-b-2 border-[#ff007c] text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
+            <button onClick={() => setTab('pending_review')} className={`pb-3 px-1 text-sm font-medium ${tab === 'pending_review' ? 'border-b-2 border-brand-pink text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
               Pendientes de aprobación
             </button>
           </>
@@ -102,7 +102,7 @@ export default function LandingsPage() {
             onClick={() => setTypeTab(t.id)}
             className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${
               typeTab === t.id
-                ? 'bg-[#ff007c] text-white border-[#ff007c]'
+                ? 'bg-brand-pink text-white border-brand-pink'
                 : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
             }`}
           >
@@ -117,7 +117,7 @@ export default function LandingsPage() {
           placeholder="Buscar por slug o título…"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="w-full bg-white border border-gray-200 rounded-full pl-9 pr-4 py-2 text-sm focus:outline-none focus:border-[#ff007c]"
+          className="w-full bg-white border border-gray-200 rounded-full pl-9 pr-4 py-2 text-sm focus:outline-none focus:border-brand-pink"
         />
       </div>
 
@@ -128,7 +128,7 @@ export default function LandingsPage() {
       ) : filtered.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-gray-200">
           <p className="text-gray-500">Todavía no hay landings acá.</p>
-          <button onClick={() => setShowCreate(true)} className="mt-4 text-[#ff007c] font-medium">Crear la primera</button>
+          <button onClick={() => setShowCreate(true)} className="mt-4 text-brand-pink font-medium">Crear la primera</button>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

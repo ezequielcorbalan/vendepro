@@ -56,7 +56,7 @@ export default function NewLandingModal({ onClose, asTasacionTemplate = false }:
               {asTasacionTemplate ? 'Nueva plantilla de tasación' : 'Nueva landing'}
             </h2>
             {asTasacionTemplate && (
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-gradient-to-br from-[#ff007c] to-[#ff8017] text-white">
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-gradient-to-br from-brand-pink to-brand-orange text-white">
                 PLANTILLA TASACIÓN
               </span>
             )}
@@ -65,16 +65,16 @@ export default function NewLandingModal({ onClose, asTasacionTemplate = false }:
         </div>
 
         <div className="flex items-center gap-3 px-6 py-3 border-b border-gray-100 text-sm">
-          <span className={`font-medium ${step === 'template' ? 'text-[#ff007c]' : 'text-gray-400'}`}>1. Elegí un template</span>
+          <span className={`font-medium ${step === 'template' ? 'text-brand-pink' : 'text-gray-400'}`}>1. Elegí un template</span>
           <ChevronRight className="w-4 h-4 text-gray-300" />
-          <span className={`font-medium ${step === 'name' ? 'text-[#ff007c]' : 'text-gray-400'}`}>2. Nombrala</span>
+          <span className={`font-medium ${step === 'name' ? 'text-brand-pink' : 'text-gray-400'}`}>2. Nombrala</span>
         </div>
 
         {step === 'template' && (
           <div className="flex-1 overflow-auto p-6">
             <div className="flex gap-2 mb-4">
               {(['all', 'lead_capture', 'property'] as const).map(k => (
-                <button key={k} onClick={() => setKindFilter(k)} className={`px-3 py-1.5 rounded-full text-sm ${kindFilter === k ? 'bg-[#ff007c] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+                <button key={k} onClick={() => setKindFilter(k)} className={`px-3 py-1.5 rounded-full text-sm ${kindFilter === k ? 'bg-brand-pink text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
                   {k === 'all' ? 'Todos' : k === 'lead_capture' ? 'Captación' : 'Propiedad'}
                 </button>
               ))}
@@ -85,7 +85,7 @@ export default function NewLandingModal({ onClose, asTasacionTemplate = false }:
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {filtered.map(t => (
                   <button key={t.id} onClick={() => { setSelectedTemplate(t); setStep('name') }}
-                    className="text-left bg-white border border-gray-200 hover:border-[#ff007c] rounded-2xl overflow-hidden transition-colors">
+                    className="text-left bg-white border border-gray-200 hover:border-brand-pink rounded-2xl overflow-hidden transition-colors">
                     <div className="aspect-[16/10] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-gray-400">
                       {t.preview_image_url ? <img src={t.preview_image_url} alt="" className="w-full h-full object-cover" /> : <span className="text-xs">Sin preview</span>}
                     </div>
@@ -113,7 +113,7 @@ export default function NewLandingModal({ onClose, asTasacionTemplate = false }:
               value={slugBase}
               onChange={e => setSlugBase(e.target.value)}
               placeholder="ej: palermo-soho"
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-[#ff007c]"
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-brand-pink"
             />
             {slugBase && (
               <p className="mt-2 text-xs text-gray-500">
@@ -125,7 +125,7 @@ export default function NewLandingModal({ onClose, asTasacionTemplate = false }:
             <div className="flex items-center justify-between mt-8">
               <button onClick={() => setStep('template')} className="text-sm text-gray-600 hover:text-gray-900">← Volver</button>
               <button onClick={submit} disabled={creating || !slugBase.trim()}
-                className="inline-flex items-center gap-2 bg-[#ff007c] hover:bg-[#e60070] text-white font-semibold px-6 py-2.5 rounded-full disabled:opacity-60">
+                className="inline-flex items-center gap-2 bg-brand-pink hover:bg-[#e60070] text-white font-semibold px-6 py-2.5 rounded-full disabled:opacity-60">
                 {creating ? <><Loader2 className="w-4 h-4 animate-spin" />Creando…</> : 'Crear landing'}
               </button>
             </div>

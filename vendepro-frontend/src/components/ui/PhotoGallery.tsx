@@ -115,7 +115,7 @@ export function PhotoGallery({ photos: initialPhotos, propertyId, editable = fal
           </SortableContext>
         </DndContext>
       )}
-      <label className={`flex items-center gap-2 border-2 border-dashed rounded-xl p-4 cursor-pointer transition-colors ${uploading ? 'border-gray-200 opacity-60' : 'border-gray-300 hover:border-[#ff007c]/50'}`}>
+      <label className={`flex items-center gap-2 border-2 border-dashed rounded-xl p-4 cursor-pointer transition-colors ${uploading ? 'border-gray-200 opacity-60' : 'border-gray-300 hover:border-brand-pink/50'}`}>
         {uploading
           ? <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
           : <Upload className="w-4 h-4 text-gray-400" />}

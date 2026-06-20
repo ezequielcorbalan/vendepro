@@ -44,7 +44,7 @@ export function ExtraMediaForm({ data, onPatch }: Props) {
       <div>
         <div className="mb-1 flex items-center justify-between">
           <span className="text-xs uppercase tracking-wide text-slate-600">Archivos multimedia</span>
-          <button onClick={add} disabled={media.length >= MAX_ITEMS} className="text-xs text-[#ff007c] disabled:opacity-40">+ Agregar</button>
+          <button onClick={add} disabled={media.length >= MAX_ITEMS} className="text-xs text-brand-pink disabled:opacity-40">+ Agregar</button>
         </div>
         <div className="space-y-2">
           {media.map((item, i) => (

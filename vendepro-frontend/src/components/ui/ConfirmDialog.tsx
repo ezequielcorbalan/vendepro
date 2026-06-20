@@ -48,7 +48,7 @@ export function ConfirmDialog({
         <div className="flex items-start justify-between px-6 pt-5 pb-3 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-              isDanger ? 'bg-red-100' : 'bg-gradient-to-br from-[#ff007c] to-[#ff8017]'
+              isDanger ? 'bg-red-100' : 'bg-gradient-to-br from-brand-pink to-brand-orange'
             }`}>
               <AlertTriangle className={`w-4.5 h-4.5 ${isDanger ? 'text-red-600' : 'text-white'}`} />
             </div>
@@ -68,7 +68,7 @@ export function ConfirmDialog({
               value={reason}
               onChange={e => setReason(e.target.value)}
               placeholder={reasonPlaceholder}
-              className="mt-3 w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#ff007c]"
+              className="mt-3 w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-brand-pink"
             />
           )}
         </div>
@@ -83,7 +83,7 @@ export function ConfirmDialog({
           <button
             onClick={() => onConfirm(reason)}
             className={`px-5 py-2 rounded-full text-sm font-semibold text-white transition-colors ${
-              isDanger ? 'bg-red-600 hover:bg-red-700' : 'bg-[#ff007c] hover:bg-[#e60070]'
+              isDanger ? 'bg-red-600 hover:bg-red-700' : 'bg-brand-pink hover:bg-[#e60070]'
             }`}
           >
             {confirmLabel}

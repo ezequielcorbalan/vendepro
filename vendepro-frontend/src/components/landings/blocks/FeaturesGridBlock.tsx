@@ -18,7 +18,7 @@ export default function FeaturesGridBlock({ data }: { data: FeaturesGridData; mo
             const Icon = iconFor(item.icon)
             return (
               <div key={i} className="bg-gray-50 rounded-2xl p-6">
-                <div className="w-11 h-11 rounded-xl bg-[#ff007c]/10 flex items-center justify-center text-[#ff007c] mb-4">
+                <div className="w-11 h-11 rounded-xl bg-brand-pink/10 flex items-center justify-center text-brand-pink mb-4">
                   <Icon className="w-5 h-5" />
                 </div>
                 <h3 className="font-semibold text-gray-900 mb-1">{item.title}</h3>

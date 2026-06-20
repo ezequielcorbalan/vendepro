@@ -159,7 +159,7 @@ export function BlockAdminForm({ block, onPatchBlock, onPatchData, onRemove }: P
             onClick={applyDefaults}
             disabled={applying || hasDefaults === false}
             title={hasDefaults === false ? 'Todavía no configuraste defaults para este tipo de bloque.' : undefined}
-            className="flex items-center gap-1 rounded border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 hover:border-[#ff007c] hover:text-[#ff007c] disabled:opacity-40"
+            className="flex items-center gap-1 rounded border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 hover:border-brand-pink hover:text-brand-pink disabled:opacity-40"
           >
             {applying ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
             Aplicar valores guardados

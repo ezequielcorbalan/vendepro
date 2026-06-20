@@ -118,7 +118,7 @@ export default function ConfiguracionPage() {
     {
       href: '/configuracion/tasacion',
       icon: <ClipboardList className="w-5 h-5" />,
-      iconColor: 'text-[#ff007c]',
+      iconColor: 'text-brand-pink',
       title: 'Tasaciones',
       subtitle: 'Bloques, marca y datos de mercado',
     },
@@ -149,7 +149,7 @@ export default function ConfiguracionPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 flex items-center gap-2">
-          <Settings className="w-6 h-6 text-[#ff007c]" /> Configuración
+          <Settings className="w-6 h-6 text-brand-pink" /> Configuración
         </h1>
         <p className="text-gray-500 text-sm mt-1">Ajustes de la inmobiliaria</p>
       </div>
@@ -157,7 +157,7 @@ export default function ConfiguracionPage() {
       {/* Mi perfil */}
       <div className="bg-white rounded-xl border p-6">
         <h2 className="font-semibold text-gray-800 mb-5 flex items-center gap-2">
-          <User className="w-4 h-4 text-[#ff007c]" /> Mi perfil
+          <User className="w-4 h-4 text-brand-pink" /> Mi perfil
         </h2>
         {loadingProfile ? (
           <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>
@@ -167,7 +167,7 @@ export default function ConfiguracionPage() {
               {profile?.photo_url ? (
                 <img src={profile.photo_url} alt={profile.full_name} className="w-14 h-14 rounded-full object-cover" />
               ) : (
-                <div className="w-14 h-14 rounded-full bg-pink-100 flex items-center justify-center text-xl font-semibold text-[#ff007c]">
+                <div className="w-14 h-14 rounded-full bg-pink-100 flex items-center justify-center text-xl font-semibold text-brand-pink">
                   {initial}
                 </div>
               )}
@@ -183,14 +183,14 @@ export default function ConfiguracionPage() {
                 value={photoUrl}
                 onChange={e => setPhotoUrl(e.target.value)}
                 placeholder="https://ejemplo.com/mi-foto.jpg"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50 focus:border-[#ff007c]"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/50 focus:border-brand-pink"
               />
               <p className="text-xs text-gray-400 mt-1">Podés subir tu foto a un servicio como imgur.com y pegar el link</p>
             </div>
             <button
               onClick={handleSavePhoto}
               disabled={savingPhoto}
-              className="flex items-center gap-2 bg-[#ff007c] text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50"
+              className="flex items-center gap-2 bg-brand-pink text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50"
             >
               {savingPhoto ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               Guardar foto
@@ -240,7 +240,7 @@ export default function ConfiguracionPage() {
                   value={slug}
                   onChange={e => setSlug(e.target.value)}
                   placeholder="mi-inmobiliaria"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50 focus:border-[#ff007c] pr-8"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/50 focus:border-brand-pink pr-8"
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
                   {slugStatus === 'checking' && <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />}
@@ -272,7 +272,7 @@ export default function ConfiguracionPage() {
                       value={brandColor}
                       onChange={e => setBrandColor(e.target.value)}
                       placeholder="#ff007c"
-                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50"
+                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
                     />
                   </div>
                 </div>
@@ -290,7 +290,7 @@ export default function ConfiguracionPage() {
                       value={brandAccentColor}
                       onChange={e => setBrandAccentColor(e.target.value)}
                       placeholder="#e17a2a"
-                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50"
+                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
                     />
                   </div>
                 </div>
@@ -311,7 +311,7 @@ export default function ConfiguracionPage() {
                   value={logoUrl}
                   onChange={e => setLogoUrl(e.target.value)}
                   placeholder="https://ejemplo.com/logo.png"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50 focus:border-[#ff007c]"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/50 focus:border-brand-pink"
                 />
                 {logoUrl && (
                   <div className="mt-2 inline-block rounded border border-gray-200 bg-gray-50 p-2">
@@ -338,7 +338,7 @@ export default function ConfiguracionPage() {
                       step={5}
                       value={Math.round(surfaceWeights.covered * 100)}
                       onChange={e => setWeight('covered', Number(e.target.value))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
                   </div>
@@ -353,7 +353,7 @@ export default function ConfiguracionPage() {
                       step={5}
                       value={Math.round(surfaceWeights.semi * 100)}
                       onChange={e => setWeight('semi', Number(e.target.value))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
                   </div>
@@ -368,7 +368,7 @@ export default function ConfiguracionPage() {
                       step={5}
                       value={Math.round(surfaceWeights.uncovered * 100)}
                       onChange={e => setWeight('uncovered', Number(e.target.value))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
                   </div>
@@ -382,7 +382,7 @@ export default function ConfiguracionPage() {
             <button
               onClick={handleSaveOrg}
               disabled={savingOrg || slugStatus === 'taken'}
-              className="flex items-center gap-2 bg-[#ff007c] text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50"
+              className="flex items-center gap-2 bg-brand-pink text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50"
             >
               {savingOrg ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               Guardar
@@ -394,7 +394,7 @@ export default function ConfiguracionPage() {
       {/* Ayuda */}
       <div className="bg-white rounded-xl border p-6">
         <h2 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-          <HelpCircle className="w-4 h-4 text-[#ff007c]" /> Ayuda
+          <HelpCircle className="w-4 h-4 text-brand-pink" /> Ayuda
         </h2>
         <p className="text-sm text-gray-600 mb-4">
           Volvé a ver el tutorial de bienvenida para repasar cómo funciona el sistema.
@@ -404,7 +404,7 @@ export default function ConfiguracionPage() {
             const user = getCurrentUser()
             if (user) { resetOnboarding(user.id); router.push('/dashboard') }
           }}
-          className="flex items-center gap-2 bg-gradient-to-r from-[#ff007c] to-[#ff8017] text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+          className="flex items-center gap-2 bg-gradient-to-r from-brand-pink to-brand-orange text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
         >
           <PlayCircle className="w-4 h-4" />
           Ver tutorial de nuevo

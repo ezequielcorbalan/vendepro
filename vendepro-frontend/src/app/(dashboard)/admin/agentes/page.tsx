@@ -123,7 +123,7 @@ export default function AgentesPage() {
           <Link href="/admin/objetivos" className="border border-gray-300 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50">
             Objetivos
           </Link>
-          <button onClick={() => setShowCreate(true)} className="bg-[#ff007c] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 flex items-center gap-2">
+          <button onClick={() => setShowCreate(true)} className="bg-brand-pink text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 flex items-center gap-2">
             <Plus className="w-4 h-4" /> Nuevo agente
           </button>
         </div>
@@ -140,7 +140,7 @@ export default function AgentesPage() {
         <div className="space-y-3">
           {agents.map(agent => (
             <div key={agent.id} className="bg-white border rounded-xl p-4 flex items-center gap-4">
-              <div className="w-10 h-10 rounded-full bg-[#ff007c]/20 flex items-center justify-center text-[#ff007c] font-semibold shrink-0">
+              <div className="w-10 h-10 rounded-full bg-brand-pink/20 flex items-center justify-center text-brand-pink font-semibold shrink-0">
                 {agent.full_name?.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
@@ -171,7 +171,7 @@ export default function AgentesPage() {
                               key={r.id}
                               onClick={() => handleRoleChange(agent.id, r.id, r.name)}
                               className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 ${
-                                agent.role === r.name ? 'font-medium text-[#ff007c]' : 'text-gray-700'
+                                agent.role === r.name ? 'font-medium text-brand-pink' : 'text-gray-700'
                               }`}
                             >
                               {agent.role === r.name
@@ -223,7 +223,7 @@ export default function AgentesPage() {
             <div className="flex gap-2 mt-4">
               <button onClick={() => setShowCreate(false)} className="flex-1 border rounded-lg py-2 text-sm">Cancelar</button>
               <button onClick={handleCreate} disabled={!form.full_name || !form.email || !form.password || saving}
-                className="flex-1 bg-[#ff007c] text-white rounded-lg py-2 text-sm font-medium disabled:opacity-50">
+                className="flex-1 bg-brand-pink text-white rounded-lg py-2 text-sm font-medium disabled:opacity-50">
                 {saving ? 'Creando...' : 'Crear agente'}
               </button>
             </div>

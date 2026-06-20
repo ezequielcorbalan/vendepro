@@ -97,12 +97,12 @@ export function SoldPropertiesPickerModal({ open, onClose, onPick }: Props) {
         className="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
         onClick={e => e.stopPropagation()}
       >
-        <div className="bg-gradient-to-r from-[#ff007c] to-[#ff8017] h-1" />
+        <div className="bg-gradient-to-r from-brand-pink to-brand-orange h-1" />
 
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
           <div className="flex items-center gap-2">
-            <Database className="h-5 w-5 text-[#ff007c]" />
+            <Database className="h-5 w-5 text-brand-pink" />
             <h2 className="text-lg font-semibold text-slate-900">Elegir desde Cierres Reales</h2>
           </div>
           <button onClick={onClose} className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
@@ -143,7 +143,7 @@ export function SoldPropertiesPickerModal({ open, onClose, onPick }: Props) {
         <div className="flex-1 overflow-y-auto p-4">
           {loading ? (
             <div className="flex items-center justify-center py-16">
-              <Loader2 className="h-7 w-7 animate-spin text-[#ff007c]" />
+              <Loader2 className="h-7 w-7 animate-spin text-brand-pink" />
             </div>
           ) : filtered.length === 0 ? (
             <div className="rounded-xl border border-dashed border-slate-200 px-6 py-12 text-center">
@@ -166,7 +166,7 @@ export function SoldPropertiesPickerModal({ open, onClose, onPick }: Props) {
                   <button
                     type="button"
                     onClick={() => { onPick(mapSoldPropertyToComparable(sp)); onClose() }}
-                    className="group flex w-full items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 text-left transition hover:border-[#ff007c]/60 hover:bg-rose-50/30"
+                    className="group flex w-full items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 text-left transition hover:border-brand-pink/60 hover:bg-rose-50/30"
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">

@@ -148,7 +148,7 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#ff007c] to-[#ff8017] flex items-center justify-center shadow-sm">
+          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-sm">
             <FileCheck2 className="w-4.5 h-4.5 text-white" />
           </div>
           <div>
@@ -157,7 +157,7 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
           </div>
         </div>
         <div className="text-right">
-          <p className="text-2xl font-bold bg-gradient-to-br from-[#ff007c] to-[#ff8017] bg-clip-text text-transparent">
+          <p className="text-2xl font-bold bg-gradient-to-br from-brand-pink to-brand-orange bg-clip-text text-transparent">
             {progressPct}%
           </p>
         </div>
@@ -165,7 +165,7 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
 
       <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-3">
         <div
-          className="h-full bg-gradient-to-r from-[#ff007c] to-[#ff8017] transition-all"
+          className="h-full bg-gradient-to-r from-brand-pink to-brand-orange transition-all"
           style={{ width: `${progressPct}%` }}
         />
       </div>
@@ -179,12 +179,12 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
       {/* Cloud folder link */}
       <div className="mb-3">
         {data.cloud_url && !showCloudInput ? (
-          <div className="flex items-center justify-between bg-gradient-to-br from-[#ff007c]/5 to-[#ff8017]/5 border border-[#ff007c]/20 rounded-lg px-3 py-2">
+          <div className="flex items-center justify-between bg-gradient-to-br from-brand-pink/5 to-brand-orange/5 border border-brand-pink/20 rounded-lg px-3 py-2">
             <a
               href={data.cloud_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 text-sm text-[#ff007c] font-medium hover:underline truncate"
+              className="flex items-center gap-2 text-sm text-brand-pink font-medium hover:underline truncate"
             >
               <FolderOpen className="w-4 h-4 flex-shrink-0" />
               <span className="truncate">Abrir carpeta de documentos</span>
@@ -204,11 +204,11 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
               value={cloudInput}
               onChange={e => setCloudInput(e.target.value)}
               placeholder="https://drive.google.com/..."
-              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#ff007c]/20 focus:border-[#ff007c] outline-none"
+              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-pink/20 focus:border-brand-pink outline-none"
             />
             <button
               onClick={saveCloudUrl}
-              className="bg-gradient-to-br from-[#ff007c] to-[#ff8017] text-white px-3 py-2 rounded-lg text-xs font-medium hover:opacity-90"
+              className="bg-gradient-to-br from-brand-pink to-brand-orange text-white px-3 py-2 rounded-lg text-xs font-medium hover:opacity-90"
             >
               Guardar
             </button>
@@ -222,7 +222,7 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
         ) : (
           <button
             onClick={() => { setCloudInput(''); setShowCloudInput(true) }}
-            className="flex items-center gap-2 text-xs text-gray-500 hover:text-[#ff007c] border border-dashed border-gray-300 hover:border-[#ff007c] rounded-lg px-3 py-2 w-full transition-colors"
+            className="flex items-center gap-2 text-xs text-gray-500 hover:text-brand-pink border border-dashed border-gray-300 hover:border-brand-pink rounded-lg px-3 py-2 w-full transition-colors"
           >
             <FolderOpen className="w-3.5 h-3.5" /> Agregar link a carpeta en la nube (Drive, OneDrive...)
           </button>
@@ -289,7 +289,7 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
         <div className="mt-2">
           <button
             onClick={restoreAllHidden}
-            className="text-xs text-gray-400 hover:text-[#ff007c] hover:underline"
+            className="text-xs text-gray-400 hover:text-brand-pink hover:underline"
           >
             Restaurar {hidden.length} {hidden.length === 1 ? 'item eliminado' : 'items eliminados'}
           </button>
@@ -307,12 +307,12 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
               onKeyDown={e => { if (e.key === 'Enter') addCustomDoc() }}
               autoFocus
               placeholder="Ej: Aprobación banco hipotecario"
-              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#ff007c]/20 focus:border-[#ff007c] outline-none"
+              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-pink/20 focus:border-brand-pink outline-none"
             />
             <button
               onClick={addCustomDoc}
               disabled={!customInput.trim()}
-              className="bg-gradient-to-br from-[#ff007c] to-[#ff8017] text-white px-3 py-2 rounded-lg text-xs font-medium hover:opacity-90 disabled:opacity-50"
+              className="bg-gradient-to-br from-brand-pink to-brand-orange text-white px-3 py-2 rounded-lg text-xs font-medium hover:opacity-90 disabled:opacity-50"
             >
               Agregar
             </button>
@@ -326,7 +326,7 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
         ) : (
           <button
             onClick={() => setShowCustomInput(true)}
-            className="flex items-center gap-1 text-xs text-[#ff007c] font-medium hover:underline"
+            className="flex items-center gap-1 text-xs text-brand-pink font-medium hover:underline"
           >
             <Plus className="w-3 h-3" /> Agregar documento custom
           </button>

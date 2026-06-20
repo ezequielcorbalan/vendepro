@@ -44,8 +44,8 @@ export default function VendidasPage() {
           </div>
           {totalUSD > 0 && (
             <div className="bg-white border rounded-xl p-4">
-              <div className="w-8 h-8 bg-[#ff007c]/10 rounded-lg flex items-center justify-center mb-2">
-                <DollarSign className="w-4 h-4 text-[#ff007c]" />
+              <div className="w-8 h-8 bg-brand-pink/10 rounded-lg flex items-center justify-center mb-2">
+                <DollarSign className="w-4 h-4 text-brand-pink" />
               </div>
               <p className="text-xl font-bold text-gray-800">USD {totalUSD.toLocaleString('es-AR')}</p>
               <p className="text-xs text-gray-500 mt-0.5">Valuación total</p>
@@ -76,7 +76,7 @@ export default function VendidasPage() {
                       {p.neighborhood && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{p.neighborhood}</span>}
                       {p.property_type && <span className="flex items-center gap-1"><Building2 className="w-3 h-3" />{p.property_type}</span>}
                       {p.owner_name && <span className="flex items-center gap-1"><User className="w-3 h-3" />{p.owner_name}</span>}
-                      {p.asking_price && <span className="font-semibold text-[#ff007c]">{formatCurrency(Number(p.asking_price), p.currency || 'USD')}</span>}
+                      {p.asking_price && <span className="font-semibold text-brand-pink">{formatCurrency(Number(p.asking_price), p.currency || 'USD')}</span>}
                       {p.agent_name && <span className="text-gray-500">{p.agent_name}</span>}
                       {p.updated_at && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{formatDate(p.updated_at)}</span>}
                     </div>

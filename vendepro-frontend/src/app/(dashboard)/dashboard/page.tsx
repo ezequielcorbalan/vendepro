@@ -68,7 +68,7 @@ function KPICard({ icon, label, value, color, href }: { icon: React.ReactNode; l
     cyan: 'bg-cyan-50 text-cyan-600',
     purple: 'bg-purple-50 text-purple-600',
     green: 'bg-green-50 text-green-600',
-    pink: 'bg-gradient-to-br from-[#ff007c] to-[#ff8017] text-white',
+    pink: 'bg-gradient-to-br from-brand-pink to-brand-orange text-white',
     amber: 'bg-amber-50 text-amber-600',
   }
   const inner = (
@@ -81,10 +81,10 @@ function KPICard({ icon, label, value, color, href }: { icon: React.ReactNode; l
     </>
   )
   const baseClass = 'bg-white rounded-2xl border border-gray-200 p-3 sm:p-4 shadow-sm relative overflow-hidden'
-  const accent = <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-[#ff007c] to-[#ff8017] opacity-60" />
+  const accent = <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-brand-pink to-brand-orange opacity-60" />
   if (href) {
     return (
-      <a href={href} className={`${baseClass} hover:shadow-md hover:border-[#ff007c]/30 transition-all block`}>
+      <a href={href} className={`${baseClass} hover:shadow-md hover:border-brand-pink/30 transition-all block`}>
         {accent}
         {inner}
       </a>
@@ -181,7 +181,7 @@ export default function DashboardCRM() {
               </button>
             ))}
           </div>
-          <Link href="/leads" className="bg-[#ff007c] text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:opacity-90 flex items-center gap-1">
+          <Link href="/leads" className="bg-brand-pink text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:opacity-90 flex items-center gap-1">
             <Users className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Nuevo contacto</span>
           </Link>
         </div>
@@ -281,7 +281,7 @@ export default function DashboardCRM() {
                 )
               })}
               {todayEvents.length > 5 && (
-                <Link href="/calendario" className="text-xs text-[#ff007c] hover:underline">
+                <Link href="/calendario" className="text-xs text-brand-pink hover:underline">
                   +{todayEvents.length - 5} más
                 </Link>
               )}
@@ -376,7 +376,7 @@ export default function DashboardCRM() {
             <h2 className="font-semibold text-gray-800 flex items-center gap-2">
               <Activity className="w-4 h-4 text-pink-500" /> Actividad reciente
             </h2>
-            <Link href="/actividades" className="text-xs text-[#ff007c] hover:underline">Ver todo →</Link>
+            <Link href="/actividades" className="text-xs text-brand-pink hover:underline">Ver todo →</Link>
           </div>
           <div className="space-y-1.5">
             {recentActivities.slice(0, 6).map((a: any) => {

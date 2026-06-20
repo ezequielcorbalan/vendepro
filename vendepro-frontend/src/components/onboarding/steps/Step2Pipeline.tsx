@@ -10,7 +10,7 @@ const stages = [
 export default function Step2Pipeline() {
   return (
     <div className="flex flex-col items-center text-center px-4 py-6 gap-5">
-      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#ff007c] to-[#ff8017] flex items-center justify-center shadow-md shadow-pink-200">
+      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-md shadow-pink-200">
         <span className="text-3xl">🔄</span>
       </div>
       <div className="space-y-1">

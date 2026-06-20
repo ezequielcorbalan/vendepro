@@ -33,7 +33,7 @@ export default function LandingMobileInfo({ landing }: { landing: Landing }) {
           {landing.og_image_url ? (
             <img src={landing.og_image_url} alt="" className="w-full h-40 object-cover" />
           ) : (
-            <div className="h-40 bg-gradient-to-br from-[#ff007c]/10 to-[#ff8017]/10 flex items-center justify-center text-gray-400">
+            <div className="h-40 bg-gradient-to-br from-brand-pink/10 to-brand-orange/10 flex items-center justify-center text-gray-400">
               <span className="text-xs uppercase tracking-wider">Sin preview</span>
             </div>
           )}
@@ -72,7 +72,7 @@ export default function LandingMobileInfo({ landing }: { landing: Landing }) {
                 href={url}
                 target="_blank"
                 rel="noopener"
-                className="inline-flex items-center justify-center gap-1.5 bg-[#ff007c] hover:bg-[#e60070] text-white text-sm font-semibold py-2.5 rounded-xl"
+                className="inline-flex items-center justify-center gap-1.5 bg-brand-pink hover:bg-[#e60070] text-white text-sm font-semibold py-2.5 rounded-xl"
               >
                 <ExternalLink className="w-4 h-4" /> Abrir
               </a>
@@ -98,7 +98,7 @@ export default function LandingMobileInfo({ landing }: { landing: Landing }) {
         )}
 
         <div className="bg-white rounded-2xl border border-dashed border-gray-300 p-6 text-center">
-          <div className="w-12 h-12 rounded-2xl bg-[#ff007c]/10 text-[#ff007c] flex items-center justify-center mx-auto mb-3">
+          <div className="w-12 h-12 rounded-2xl bg-brand-pink/10 text-brand-pink flex items-center justify-center mx-auto mb-3">
             <Monitor className="w-6 h-6" />
           </div>
           <p className="font-semibold text-gray-900 mb-1">El editor solo está disponible en desktop</p>

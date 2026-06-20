@@ -23,7 +23,7 @@ export default function AIFloatingButton() {
       <button
         onClick={() => setOpen(true)}
         title="Asistente IA (Ctrl+K)"
-        className="fixed bottom-6 right-6 z-40 bg-[#ff007c] text-white rounded-full p-3.5 shadow-lg hover:bg-[#e0006e] hover:scale-105 transition-all"
+        className="fixed bottom-6 right-6 z-40 bg-brand-pink text-white rounded-full p-3.5 shadow-lg hover:bg-[#e0006e] hover:scale-105 transition-all"
       >
         <Sparkles size={20} />
       </button>

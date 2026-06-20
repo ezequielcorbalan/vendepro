@@ -19,7 +19,7 @@ function FunnelRow({ label, count, pct }: { label: string; count: number; pct: n
     <div className="grid grid-cols-[110px_1fr_70px] items-center py-2 border-b border-gray-100 last:border-b-0 text-sm">
       <span className="text-gray-700">{label}</span>
       <div className="mx-3 h-2.5 bg-gray-100 rounded-full overflow-hidden">
-        <div className="h-full bg-gradient-to-r from-[#ff007c] to-[#ff8017] rounded-full" style={{ width: `${Math.max(2, pct)}%` }} />
+        <div className="h-full bg-gradient-to-r from-brand-pink to-brand-orange rounded-full" style={{ width: `${Math.max(2, pct)}%` }} />
       </div>
       <span className="text-right text-gray-900 font-medium">{count.toLocaleString('es-AR')}</span>
     </div>
@@ -44,7 +44,7 @@ export default function AnalyticsDashboard({ landingId }: { landingId: string })
       <div className="flex gap-2">
         {([7, 14, 30] as const).map(r => (
           <button key={r} onClick={() => setRange(r)}
-            className={`text-xs px-3 py-1.5 rounded-full ${range === r ? 'bg-[#ff007c] text-white' : 'bg-gray-100 text-gray-700'}`}>
+            className={`text-xs px-3 py-1.5 rounded-full ${range === r ? 'bg-brand-pink text-white' : 'bg-gray-100 text-gray-700'}`}>
             Últimos {r} días
           </button>
         ))}

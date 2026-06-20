@@ -204,7 +204,7 @@ export default function ObjetivosConfigPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-[#ff007c]" />
+        <Loader2 className="w-8 h-8 animate-spin text-brand-pink" />
       </div>
     )
   }
@@ -220,13 +220,13 @@ export default function ObjetivosConfigPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 flex items-center gap-2">
-            <Target className="w-6 h-6 text-[#ff007c]" /> Objetivos por agente
+            <Target className="w-6 h-6 text-brand-pink" /> Objetivos por agente
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">{objectives.length} objetivos activos</p>
         </div>
         <button
           onClick={() => setShowBatch(!showBatch)}
-          className="bg-[#ff007c] text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 flex items-center gap-1.5"
+          className="bg-brand-pink text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 flex items-center gap-1.5"
         >
           <Plus className="w-4 h-4" /> Crear en batch
         </button>
@@ -246,7 +246,7 @@ export default function ObjetivosConfigPage() {
                   onClick={() => applyTemplate(key)}
                   className={`text-left px-3 py-2.5 rounded-lg border text-xs transition-all ${
                     selectedTemplate === key
-                      ? 'border-[#ff007c] bg-pink-50 text-[#ff007c]'
+                      ? 'border-brand-pink bg-pink-50 text-brand-pink'
                       : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
                   }`}
                 >
@@ -289,7 +289,7 @@ export default function ObjetivosConfigPage() {
                   key={a.id}
                   onClick={() => setBatchAgents(prev => prev.includes(a.id) ? prev.filter(x => x !== a.id) : [...prev, a.id])}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                    batchAgents.includes(a.id) ? 'bg-[#ff007c] text-white border-[#ff007c]' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
+                    batchAgents.includes(a.id) ? 'bg-brand-pink text-white border-brand-pink' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
                   }`}
                 >
                   {a.full_name}
@@ -312,7 +312,7 @@ export default function ObjetivosConfigPage() {
                       value={batchTargets[metric] || ''}
                       onChange={e => setBatchTargets(prev => ({ ...prev, [metric]: parseInt(e.target.value) || 0 }))}
                       placeholder="0"
-                      className="w-16 text-right border rounded px-2 py-1 text-sm focus:ring-1 focus:ring-[#ff007c] focus:border-[#ff007c]"
+                      className="w-16 text-right border rounded px-2 py-1 text-sm focus:ring-1 focus:ring-brand-pink focus:border-brand-pink"
                     />
                   </div>
                 ))}
@@ -331,7 +331,7 @@ export default function ObjetivosConfigPage() {
                   value={ticketPromedio || ''}
                   onChange={e => setTicketPromedio(parseInt(e.target.value) || 0)}
                   placeholder="ej. 150000"
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-[#ff8017] focus:border-[#ff8017]"
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-brand-orange focus:border-brand-orange"
                 />
               </div>
               <div>
@@ -341,7 +341,7 @@ export default function ObjetivosConfigPage() {
                   value={comisionPct || ''}
                   onChange={e => setComisionPct(parseFloat(e.target.value) || 0)}
                   placeholder="ej. 3"
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-[#ff8017] focus:border-[#ff8017]"
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-brand-orange focus:border-brand-orange"
                 />
               </div>
             </div>
@@ -349,11 +349,11 @@ export default function ObjetivosConfigPage() {
               <div className="grid grid-cols-2 gap-3 pt-1">
                 <div className="bg-white rounded-lg p-3 text-center border border-orange-100">
                   <div className="text-[10px] text-gray-400 mb-0.5">Facturación mensual</div>
-                  <div className="text-lg font-bold text-[#ff8017]">USD {facturacionMensual.toLocaleString()}</div>
+                  <div className="text-lg font-bold text-brand-orange">USD {facturacionMensual.toLocaleString()}</div>
                 </div>
                 <div className="bg-white rounded-lg p-3 text-center border border-orange-100">
                   <div className="text-[10px] text-gray-400 mb-0.5">Facturación anual</div>
-                  <div className="text-lg font-bold text-[#ff007c]">USD {facturacionAnual.toLocaleString()}</div>
+                  <div className="text-lg font-bold text-brand-pink">USD {facturacionAnual.toLocaleString()}</div>
                   {facturacionAnual < 40000 && (
                     <div className="text-[10px] text-amber-600 mt-0.5">Por debajo del mínimo recomendado (USD 40.000/año)</div>
                   )}
@@ -379,7 +379,7 @@ export default function ObjetivosConfigPage() {
             <button
               onClick={saveBatch}
               disabled={saving}
-              className="bg-[#ff007c] text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 flex items-center gap-1.5"
+              className="bg-brand-pink text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 flex items-center gap-1.5"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               {saving ? 'Guardando...' : 'Guardar objetivos'}

@@ -39,7 +39,7 @@ export function ProposalCommercialForm({ data, onPatch }: Props) {
       <div>
         <div className="mb-1 flex items-center justify-between">
           <span className="text-xs uppercase tracking-wide text-slate-600">Puntos destacados</span>
-          <button onClick={addItem} disabled={items.length >= MAX_ITEMS} className="text-xs text-[#ff007c] disabled:opacity-40">+ Agregar</button>
+          <button onClick={addItem} disabled={items.length >= MAX_ITEMS} className="text-xs text-brand-pink disabled:opacity-40">+ Agregar</button>
         </div>
         <ul className="space-y-3">
           {items.map((item, i) => (

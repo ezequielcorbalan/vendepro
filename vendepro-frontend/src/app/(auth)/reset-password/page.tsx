@@ -56,7 +56,7 @@ function ResetPasswordForm() {
         </div>
         <Link
           href="/login"
-          className="block w-full text-center bg-[#ff007c] text-white font-medium py-2.5 rounded-lg hover:opacity-90 transition-opacity"
+          className="block w-full text-center bg-brand-pink text-white font-medium py-2.5 rounded-lg hover:opacity-90 transition-opacity"
         >
           Ir al inicio de sesión
         </Link>
@@ -91,7 +91,7 @@ function ResetPasswordForm() {
           required
           minLength={8}
           disabled={!token}
-          className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50 focus:border-[#ff007c] disabled:bg-gray-100"
+          className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-pink/50 focus:border-brand-pink disabled:bg-gray-100"
           placeholder="Mínimo 8 caracteres"
         />
       </div>
@@ -105,7 +105,7 @@ function ResetPasswordForm() {
           required
           minLength={8}
           disabled={!token}
-          className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50 focus:border-[#ff007c] disabled:bg-gray-100"
+          className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-pink/50 focus:border-brand-pink disabled:bg-gray-100"
           placeholder="Repetí la contraseña"
         />
       </div>
@@ -113,13 +113,13 @@ function ResetPasswordForm() {
       <button
         type="submit"
         disabled={loading || !token}
-        className="w-full bg-[#ff007c] text-white font-medium py-2.5 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+        className="w-full bg-brand-pink text-white font-medium py-2.5 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
       >
         {loading ? 'Guardando...' : 'Guardar contraseña'}
       </button>
 
       <p className="text-center text-sm text-gray-500">
-        <Link href="/login" className="text-[#ff007c] hover:underline font-medium">
+        <Link href="/login" className="text-brand-pink hover:underline font-medium">
           Volver al inicio de sesión
         </Link>
       </p>

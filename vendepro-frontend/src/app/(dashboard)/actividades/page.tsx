@@ -148,11 +148,11 @@ export default function ActividadesPage() {
             className="border rounded-lg px-3 py-2 text-sm bg-white">
             {PERIOD_OPTIONS.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
           </select>
-          <button className="flex items-center gap-1.5 border border-[#ff007c] text-[#ff007c] px-3 py-2 rounded-lg text-sm font-medium hover:bg-pink-50">
+          <button className="flex items-center gap-1.5 border border-brand-pink text-brand-pink px-3 py-2 rounded-lg text-sm font-medium hover:bg-pink-50">
             <Sparkles className="w-4 h-4" /> con IA
           </button>
           <button onClick={() => setShowCreate(true)}
-            className="bg-[#ff007c] text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:opacity-90">
+            className="bg-brand-pink text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:opacity-90">
             <Plus className="w-4 h-4" /> Registrar
           </button>
         </div>
@@ -185,7 +185,7 @@ export default function ActividadesPage() {
             <Target className="w-10 h-10 text-gray-200 mb-2" />
             <p className="text-sm text-gray-500 mb-3">No hay objetivos configurados para este período</p>
             <a href="/configuracion/objetivos"
-              className="text-sm text-[#ff007c] font-medium hover:underline">
+              className="text-sm text-brand-pink font-medium hover:underline">
               Configurar objetivos →
             </a>
           </div>
@@ -274,7 +274,7 @@ export default function ActividadesPage() {
                       <p className="text-xs text-gray-400">
                         {a.agent_name && <span>{a.agent_name}</span>}
                         {a.lead_name && (
-                          <span className="text-[#ff007c] font-medium"> {a.lead_name}</span>
+                          <span className="text-brand-pink font-medium"> {a.lead_name}</span>
                         )}
                       </p>
                     </div>
@@ -320,7 +320,7 @@ export default function ActividadesPage() {
               <button onClick={() => setShowCreate(false)}
                 className="flex-1 border rounded-lg py-2 text-sm">Cancelar</button>
               <button onClick={handleCreate} disabled={saving}
-                className="flex-1 bg-[#ff007c] text-white rounded-lg py-2 text-sm font-medium disabled:opacity-50">
+                className="flex-1 bg-brand-pink text-white rounded-lg py-2 text-sm font-medium disabled:opacity-50">
                 {saving ? 'Guardando...' : 'Registrar'}
               </button>
             </div>

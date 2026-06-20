@@ -42,7 +42,7 @@ function ConfigTasacionInner() {
               onClick={() => router.push(`/configuracion/tasacion?tab=${t.key}`)}
               className={`border-b-2 px-4 py-2 text-sm ${
                 active === t.key
-                  ? 'border-[#ff007c] text-[#ff007c]'
+                  ? 'border-brand-pink text-brand-pink'
                   : 'border-transparent text-slate-500 hover:text-slate-700'
               }`}
             >

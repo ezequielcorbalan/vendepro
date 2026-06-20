@@ -395,7 +395,7 @@ export default function LeadsPage() {
           >
             <Download className="w-3.5 h-3.5" /> CSV
           </button>
-          <button onClick={() => setShowAI(true)} className="border border-[#ff007c]/30 text-[#ff007c] px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:bg-[#ff007c]/5">
+          <button onClick={() => setShowAI(true)} className="border border-brand-pink/30 text-brand-pink px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:bg-brand-pink/5">
             <Sparkles className="w-4 h-4" /> <span className="hidden sm:inline">con IA</span>
           </button>
           <button onClick={() => setShowCreate(true)} className="bg-pink-600 text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:bg-pink-700">
@@ -496,7 +496,7 @@ export default function LeadsPage() {
               <User className="w-12 h-12 mx-auto mb-3 text-gray-300" />
               <p className="font-medium">Sin leads</p>
               <p className="text-sm mt-1">Creá tu primer lead para comenzar</p>
-              <button onClick={() => setShowCreate(true)} className="mt-3 px-4 py-2 bg-[#ff007c] text-white rounded-lg text-sm font-medium hover:opacity-90">
+              <button onClick={() => setShowCreate(true)} className="mt-3 px-4 py-2 bg-brand-pink text-white rounded-lg text-sm font-medium hover:opacity-90">
                 Crear primer lead
               </button>
             </div>
@@ -545,7 +545,7 @@ export default function LeadsPage() {
         <DragOverlay>
           {activeDragId ? (() => {
             const lead = leads.find(l => l.id === activeDragId)
-            return lead ? <div className="bg-white rounded-lg shadow-xl border-2 border-[#ff007c] p-3 w-60 opacity-90">
+            return lead ? <div className="bg-white rounded-lg shadow-xl border-2 border-brand-pink p-3 w-60 opacity-90">
               <p className="text-sm font-medium text-gray-800 truncate">{lead.full_name}</p>
               <p className="text-[10px] text-gray-400">{lead.operation} · {lead.neighborhood}</p>
             </div> : null
@@ -599,7 +599,7 @@ export default function LeadsPage() {
                         placeholder="Buscar por nombre, teléfono o email..."
                         value={contactSearch}
                         onChange={e => { setContactSearch(e.target.value); setShowNewContactForm(false) }}
-                        className="w-full border rounded-lg pl-9 pr-3 py-2 text-sm focus:ring-2 focus:ring-[#ff007c]/30 focus:border-[#ff007c]"
+                        className="w-full border rounded-lg pl-9 pr-3 py-2 text-sm focus:ring-2 focus:ring-brand-pink/30 focus:border-brand-pink"
                         autoFocus
                       />
                     </div>
@@ -662,7 +662,7 @@ export default function LeadsPage() {
                     ) : (
                       <button
                         onClick={() => { setShowNewContactForm(true); setContactSearch(''); setContactResults([]) }}
-                        className="w-full text-sm text-[#ff007c] hover:underline text-left px-1"
+                        className="w-full text-sm text-brand-pink hover:underline text-left px-1"
                       >
                         + Crear contacto nuevo
                       </button>
@@ -706,7 +706,7 @@ export default function LeadsPage() {
                   <button
                     onClick={() => setCreateStep(2)}
                     disabled={!canProceedStep1}
-                    className="flex-1 px-4 py-2 bg-[#ff007c] text-white rounded-lg text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-1"
+                    className="flex-1 px-4 py-2 bg-brand-pink text-white rounded-lg text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-1"
                   >
                     Siguiente <ChevronRight className="w-4 h-4" />
                   </button>
@@ -717,7 +717,7 @@ export default function LeadsPage() {
                   <button
                     onClick={handleCreate}
                     disabled={saving}
-                    className="flex-1 px-4 py-2 bg-[#ff007c] text-white rounded-lg text-sm font-medium disabled:opacity-50"
+                    className="flex-1 px-4 py-2 bg-brand-pink text-white rounded-lg text-sm font-medium disabled:opacity-50"
                   >
                     {saving ? 'Guardando...' : 'Crear lead'}
                   </button>
@@ -891,7 +891,7 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
 
           {/* Next step band */}
           {lead.next_step && (
-            <div className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded-lg mt-0.5 ${urgency === 'danger' ? 'bg-red-50 text-red-600' : urgency === 'warning' ? 'bg-amber-50 text-amber-600' : 'bg-pink-50 text-[#ff007c]'}`}>
+            <div className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded-lg mt-0.5 ${urgency === 'danger' ? 'bg-red-50 text-red-600' : urgency === 'warning' ? 'bg-amber-50 text-amber-600' : 'bg-pink-50 text-brand-pink'}`}>
               <ArrowRight className="w-3 h-3 shrink-0" />
               <span className="truncate">{lead.next_step}</span>
               {lead.next_step_date && <span className="shrink-0 text-[10px] opacity-70">· {lead.next_step_date}</span>}
@@ -925,7 +925,7 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
             </div>
           )}
           {!(LEAD_AGENT_FINAL_STAGES as readonly string[]).includes(lead.stage) && (
-            <button onClick={onAdvance} className="flex-1 w-12 flex items-center justify-center text-[#ff007c] hover:bg-pink-50 active:bg-pink-100 border-t border-gray-100 transition-colors">
+            <button onClick={onAdvance} className="flex-1 w-12 flex items-center justify-center text-brand-pink hover:bg-pink-50 active:bg-pink-100 border-t border-gray-100 transition-colors">
               <ArrowRight className="w-5 h-5" />
             </button>
           )}
@@ -954,7 +954,7 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
           <span className="flex-1 flex items-center justify-center py-2.5 text-xs text-gray-300">Sin teléfono</span>
         )}
         {!(LEAD_AGENT_FINAL_STAGES as readonly string[]).includes(lead.stage) && (
-          <button onClick={onAdvance} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-[#ff007c] hover:bg-pink-50 transition-colors">
+          <button onClick={onAdvance} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-brand-pink hover:bg-pink-50 transition-colors">
             <ArrowRight className="w-3.5 h-3.5" /> Avanzar
           </button>
         )}
@@ -1031,7 +1031,7 @@ function KanbanCard({ lead, onAdvance, onMoveTo }: { lead: any; onAdvance: () =>
 function DroppableColumn({ id, children }: { id: string; children: React.ReactNode }) {
   const { setNodeRef, isOver: dropping } = useDroppable({ id })
   return (
-    <div ref={setNodeRef} className={`w-64 shrink-0 transition-colors rounded-xl ${dropping ? 'bg-[#ff007c]/5 ring-2 ring-[#ff007c]/30' : ''}`}>
+    <div ref={setNodeRef} className={`w-64 shrink-0 transition-colors rounded-xl ${dropping ? 'bg-brand-pink/5 ring-2 ring-brand-pink/30' : ''}`}>
       {children}
     </div>
   )

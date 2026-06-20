@@ -50,7 +50,7 @@ export default function ReservasPage() {
                         {p.property_type && <span className="flex items-center gap-1"><Building2 className="w-3 h-3" />{p.property_type}</span>}
                         {p.owner_name && <span className="flex items-center gap-1"><User className="w-3 h-3" />{p.owner_name}</span>}
                         {p.asking_price && (
-                          <span className="flex items-center gap-1 font-semibold text-[#ff007c]">
+                          <span className="flex items-center gap-1 font-semibold text-brand-pink">
                             <DollarSign className="w-3 h-3" />{formatCurrency(Number(p.asking_price), p.currency || 'USD')}
                           </span>
                         )}

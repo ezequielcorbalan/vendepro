@@ -14,7 +14,7 @@ export default function GalleryBlock({ data }: { data: GalleryData; mode?: 'publ
             style={{ backgroundImage: `url(${data.images[active].url})` }} aria-label={data.images[active].alt ?? ''} />
           <div className="flex gap-2 overflow-x-auto mt-3">
             {data.images.map((img, i) => (
-              <button key={i} onClick={() => setActive(i)} className={`flex-shrink-0 w-20 h-14 rounded-lg bg-cover bg-center border-2 transition-colors ${i === active ? 'border-[#ff007c]' : 'border-transparent'}`}
+              <button key={i} onClick={() => setActive(i)} className={`flex-shrink-0 w-20 h-14 rounded-lg bg-cover bg-center border-2 transition-colors ${i === active ? 'border-brand-pink' : 'border-transparent'}`}
                 style={{ backgroundImage: `url(${img.url})` }} aria-label={`Foto ${i + 1}`} />
             ))}
           </div>

@@ -166,7 +166,7 @@ export default function MarketingConfigPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-[#ff007c]" />
+        <Loader2 className="w-8 h-8 animate-spin text-brand-pink" />
       </div>
     )
   }
@@ -254,7 +254,7 @@ export default function MarketingConfigPage() {
     setTestRunning(false)
   }
 
-  const inputCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#ff007c]/20 focus:border-[#ff007c] outline-none'
+  const inputCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-pink/20 focus:border-brand-pink outline-none'
   const labelCls = 'block text-sm font-medium text-gray-700 mb-1'
 
   return (
@@ -265,10 +265,10 @@ export default function MarketingConfigPage() {
 
       {/* Header */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-6 relative overflow-hidden">
-        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#ff007c] to-[#ff8017]" />
+        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-pink to-brand-orange" />
         <img src="/brand/GV-27.png" alt="" aria-hidden="true" className="absolute -top-8 -right-8 w-32 h-32 opacity-10 pointer-events-none" />
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#ff007c] to-[#ff8017] flex items-center justify-center shadow-sm">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-sm">
             <Megaphone className="w-6 h-6 text-white" />
           </div>
           <div>
@@ -292,7 +292,7 @@ export default function MarketingConfigPage() {
               onClick={() => setTab(t.id)}
               className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${
                 tab === t.id
-                  ? 'bg-white text-[#ff007c] shadow-sm'
+                  ? 'bg-white text-brand-pink shadow-sm'
                   : 'text-gray-600 hover:text-gray-800'
               }`}
             >
@@ -310,7 +310,7 @@ export default function MarketingConfigPage() {
               type="checkbox"
               checked={!!integration.enabled}
               onChange={e => setIntegration({ ...integration, enabled: e.target.checked })}
-              className="w-4 h-4 accent-[#ff007c]"
+              className="w-4 h-4 accent-brand-pink"
             />
             <span className="text-sm font-medium text-gray-800">
               Activar Meta Conversion API
@@ -372,7 +372,7 @@ export default function MarketingConfigPage() {
                   <button
                     type="button"
                     onClick={() => { setShowTokenInput(true); setAccessTokenInput('') }}
-                    className="text-xs text-[#ff007c] hover:underline font-medium"
+                    className="text-xs text-brand-pink hover:underline font-medium"
                   >
                     Cambiar
                   </button>
@@ -397,7 +397,7 @@ export default function MarketingConfigPage() {
                 type="checkbox"
                 checked={!!integration.ga4_enabled}
                 onChange={e => setIntegration({ ...integration, ga4_enabled: e.target.checked })}
-                className="w-4 h-4 accent-[#ff007c]"
+                className="w-4 h-4 accent-brand-pink"
               />
               <span className="text-sm font-medium text-gray-800">
                 Activar Google Analytics 4 (Measurement Protocol)
@@ -424,7 +424,7 @@ export default function MarketingConfigPage() {
                     <button
                       type="button"
                       onClick={() => { setShowGa4SecretInput(true); setGa4SecretInput('') }}
-                      className="text-xs text-[#ff007c] hover:underline font-medium"
+                      className="text-xs text-brand-pink hover:underline font-medium"
                     >
                       Cambiar
                     </button>
@@ -452,7 +452,7 @@ export default function MarketingConfigPage() {
           <button
             onClick={saveConfig}
             disabled={savingConfig}
-            className="bg-gradient-to-br from-[#ff007c] to-[#ff8017] text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 inline-flex items-center gap-2"
+            className="bg-gradient-to-br from-brand-pink to-brand-orange text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 inline-flex items-center gap-2"
           >
             {savingConfig ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Guardar configuración
@@ -513,7 +513,7 @@ export default function MarketingConfigPage() {
                       type="checkbox"
                       checked={m.enabled}
                       onChange={e => { const n = [...mappings]; n[i] = { ...m, enabled: e.target.checked }; setMappings(n) }}
-                      className="w-4 h-4 accent-[#ff007c]"
+                      className="w-4 h-4 accent-brand-pink"
                     />
                     Activo
                   </label>
@@ -535,7 +535,7 @@ export default function MarketingConfigPage() {
           <div className="flex items-center gap-2 mt-3">
             <button
               onClick={() => setMappings([...mappings, { stage_key: 'lead_created', meta_event_name: 'Lead', ga4_event_name: 'generate_lead', enabled: true }])}
-              className="flex items-center gap-1 text-xs text-[#ff007c] font-medium hover:underline"
+              className="flex items-center gap-1 text-xs text-brand-pink font-medium hover:underline"
             >
               <Plus className="w-3 h-3" /> Agregar mapeo
             </button>
@@ -544,7 +544,7 @@ export default function MarketingConfigPage() {
           <button
             onClick={saveMappings}
             disabled={savingMappings}
-            className="mt-4 bg-gradient-to-br from-[#ff007c] to-[#ff8017] text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 inline-flex items-center gap-2"
+            className="mt-4 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 inline-flex items-center gap-2"
           >
             {savingMappings ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Guardar mapeos
@@ -558,7 +558,7 @@ export default function MarketingConfigPage() {
             <h2 className="text-sm font-semibold text-gray-700">Últimos 50 eventos</h2>
             <button
               onClick={() => setShowTestModal(true)}
-              className="flex items-center gap-1.5 bg-gradient-to-br from-[#ff007c] to-[#ff8017] text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:opacity-90"
+              className="flex items-center gap-1.5 bg-gradient-to-br from-brand-pink to-brand-orange text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:opacity-90"
             >
               <Send className="w-3 h-3" /> Probar evento
             </button>
@@ -591,7 +591,7 @@ export default function MarketingConfigPage() {
                         <span className="text-gray-500 whitespace-nowrap">
                           {e.entity_type}:
                           {(e.entity_type === 'lead') ? (
-                            <Link href={`/leads/${e.entity_id}`} className="text-[#ff007c] hover:underline ml-1">
+                            <Link href={`/leads/${e.entity_id}`} className="text-brand-pink hover:underline ml-1">
                               {e.entity_id.slice(0, 8)}…
                             </Link>
                           ) : (
@@ -600,7 +600,7 @@ export default function MarketingConfigPage() {
                         </span>
                       )}
                       {!e.entity_id && e.lead_id && (
-                        <Link href={`/leads/${e.lead_id}`} className="text-[#ff007c] hover:underline truncate">
+                        <Link href={`/leads/${e.lead_id}`} className="text-brand-pink hover:underline truncate">
                           {e.lead_id.slice(0, 8)}…
                         </Link>
                       )}
@@ -623,7 +623,7 @@ export default function MarketingConfigPage() {
       {showTestModal && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowTestModal(false)}>
           <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="bg-gradient-to-r from-[#ff007c] to-[#ff8017] h-1.5" />
+            <div className="bg-gradient-to-r from-brand-pink to-brand-orange h-1.5" />
             <div className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Probar evento</h3>
               <label className={labelCls}>Evento a simular</label>
@@ -637,7 +637,7 @@ export default function MarketingConfigPage() {
               <button
                 onClick={runTestEvent}
                 disabled={testRunning}
-                className="w-full bg-gradient-to-br from-[#ff007c] to-[#ff8017] text-white py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 inline-flex items-center justify-center gap-2"
+                className="w-full bg-gradient-to-br from-brand-pink to-brand-orange text-white py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 inline-flex items-center justify-center gap-2"
               >
                 {testRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 Disparar evento de prueba

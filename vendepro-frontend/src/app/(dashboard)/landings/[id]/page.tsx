@@ -142,8 +142,8 @@ export default function LandingEditorPage() {
 
         <aside className="bg-white border-l border-gray-200 flex flex-col overflow-hidden">
           <div className="flex border-b border-gray-200">
-            <button onClick={() => setRightTab('inspector')} className={`flex-1 py-3 text-sm font-medium ${rightTab === 'inspector' ? 'border-b-2 border-[#ff007c] text-gray-900' : 'text-gray-500'}`}>Inspector</button>
-            <button onClick={() => setRightTab('ai')} className={`flex-1 py-3 text-sm font-medium ${rightTab === 'ai' ? 'border-b-2 border-[#ff007c] text-gray-900' : 'text-gray-500'}`}>✨ Chat IA</button>
+            <button onClick={() => setRightTab('inspector')} className={`flex-1 py-3 text-sm font-medium ${rightTab === 'inspector' ? 'border-b-2 border-brand-pink text-gray-900' : 'text-gray-500'}`}>Inspector</button>
+            <button onClick={() => setRightTab('ai')} className={`flex-1 py-3 text-sm font-medium ${rightTab === 'ai' ? 'border-b-2 border-brand-pink text-gray-900' : 'text-gray-500'}`}>✨ Chat IA</button>
           </div>
           <div className="flex-1 overflow-auto">
             {rightTab === 'inspector' && selectedBlock && (

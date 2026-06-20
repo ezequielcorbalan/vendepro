@@ -58,7 +58,7 @@ export function VideoGalleryForm({ data, onPatch }: Props) {
       <div>
         <div className="mb-1 flex items-center justify-between">
           <span className="text-xs uppercase tracking-wide text-slate-600">Videos</span>
-          <button onClick={add} disabled={videos.length >= MAX_ITEMS} className="text-xs text-[#ff007c] disabled:opacity-40">+ Agregar</button>
+          <button onClick={add} disabled={videos.length >= MAX_ITEMS} className="text-xs text-brand-pink disabled:opacity-40">+ Agregar</button>
         </div>
         <div className="space-y-2">
           {videos.map((vid, i) => (

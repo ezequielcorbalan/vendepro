@@ -31,7 +31,7 @@ export default function PrefactibilidadesPage() {
         </div>
         <Link
           href="/prefactibilidades/nueva"
-          className="flex items-center gap-2 px-4 py-2 bg-[#ff007c] text-white rounded-lg text-sm font-medium hover:bg-[#e0006e] transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-brand-pink text-white rounded-lg text-sm font-medium hover:bg-[#e0006e] transition-colors"
         >
           <Plus className="w-4 h-4" />
           Nueva
@@ -40,7 +40,7 @@ export default function PrefactibilidadesPage() {
 
       {loading && (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 animate-spin text-[#ff007c]" />
+          <Loader2 className="w-8 h-8 animate-spin text-brand-pink" />
         </div>
       )}
 
@@ -57,7 +57,7 @@ export default function PrefactibilidadesPage() {
           <p className="text-sm text-gray-400 mb-4">Creá tu primer análisis de factibilidad</p>
           <Link
             href="/prefactibilidades/nueva"
-            className="flex items-center gap-2 px-4 py-2 bg-[#ff007c] text-white rounded-lg text-sm font-medium hover:bg-[#e0006e] transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-brand-pink text-white rounded-lg text-sm font-medium hover:bg-[#e0006e] transition-colors"
           >
             <Plus className="w-4 h-4" />
             Nueva prefactibilidad
@@ -71,10 +71,10 @@ export default function PrefactibilidadesPage() {
             <Link
               key={item.id}
               href={`/prefactibilidades/${item.id}`}
-              className="flex items-center gap-4 bg-white rounded-xl border border-gray-100 p-4 hover:border-[#ff007c]/30 transition-colors"
+              className="flex items-center gap-4 bg-white rounded-xl border border-gray-100 p-4 hover:border-brand-pink/30 transition-colors"
             >
-              <div className="w-10 h-10 rounded-lg bg-[#ff007c]/10 flex items-center justify-center flex-shrink-0">
-                <Calculator className="w-5 h-5 text-[#ff007c]" />
+              <div className="w-10 h-10 rounded-lg bg-brand-pink/10 flex items-center justify-center flex-shrink-0">
+                <Calculator className="w-5 h-5 text-brand-pink" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-gray-800 truncate">{item.project_name || 'Sin nombre'}</p>

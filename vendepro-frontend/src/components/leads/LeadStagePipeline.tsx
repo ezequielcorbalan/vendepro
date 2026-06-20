@@ -36,7 +36,7 @@ export function LeadStagePipeline({ currentStage, onSelect, disabled = false }: 
     <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
       <div className="flex items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#ff007c] to-[#ff8017] flex items-center justify-center shadow-sm">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-sm">
             <Target className="w-3.5 h-3.5 text-white" />
           </div>
           <p className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Pipeline</p>
@@ -64,7 +64,7 @@ export function LeadStagePipeline({ currentStage, onSelect, disabled = false }: 
                   title={!isCurrent && !movable ? 'No podés saltear a esta etapa' : undefined}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
                     isCurrent
-                      ? 'bg-[#ff007c] text-white border-[#ff007c] shadow-sm'
+                      ? 'bg-brand-pink text-white border-brand-pink shadow-sm'
                       : isCompleted
                       ? 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'
                       : 'bg-white text-gray-400 border-gray-200 hover:border-gray-300 hover:text-gray-600'

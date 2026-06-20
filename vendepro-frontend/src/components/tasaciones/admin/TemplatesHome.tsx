@@ -62,7 +62,7 @@ export function TemplatesHome() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <p className="text-sm text-slate-500">{templates.length} templates</p>
-        <button onClick={() => setCreating(true)} className="flex items-center gap-1 rounded bg-[#ff007c] px-3 py-2 text-sm text-white">
+        <button onClick={() => setCreating(true)} className="flex items-center gap-1 rounded bg-brand-pink px-3 py-2 text-sm text-white">
           <Plus className="h-4 w-4" /> Crear template
         </button>
       </div>
@@ -113,7 +113,7 @@ export function TemplatesHome() {
             </div>
             <div className="mt-4 flex justify-end gap-2">
               <button onClick={() => setCreating(false)} className="rounded px-4 py-2 text-sm">Cancelar</button>
-              <button onClick={handleCreate} className="rounded bg-[#ff007c] px-4 py-2 text-sm text-white">Crear</button>
+              <button onClick={handleCreate} className="rounded bg-brand-pink px-4 py-2 text-sm text-white">Crear</button>
             </div>
           </div>
         </div>

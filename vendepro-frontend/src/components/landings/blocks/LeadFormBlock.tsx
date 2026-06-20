@@ -28,7 +28,7 @@ export default function LeadFormBlock({ data, mode, onSubmit }: Props) {
   }
 
   return (
-    <section id="form" className="bg-gradient-to-br from-[#ff007c] to-[#ff8017] py-14 px-6 text-white">
+    <section id="form" className="bg-gradient-to-br from-brand-pink to-brand-orange py-14 px-6 text-white">
       <div className="max-w-md mx-auto">
         <h2 className="text-2xl md:text-3xl font-bold mb-2">{data.title}</h2>
         {data.subtitle && <p className="opacity-90 mb-6">{data.subtitle}</p>}
@@ -56,7 +56,7 @@ export default function LeadFormBlock({ data, mode, onSubmit }: Props) {
             ))}
             {data.fields.some(f => f.key === 'message') ? null : null}
             {error && <p className="text-sm bg-white/15 rounded-lg px-3 py-2">{error}</p>}
-            <button type="submit" disabled={loading || mode === 'editor'} className="w-full bg-white text-[#ff007c] font-semibold rounded-full py-3 hover:bg-white/95 disabled:opacity-70">
+            <button type="submit" disabled={loading || mode === 'editor'} className="w-full bg-white text-brand-pink font-semibold rounded-full py-3 hover:bg-white/95 disabled:opacity-70">
               {loading ? 'Enviando…' : data.submit_label}
             </button>
             {data.privacy_note && <p className="text-xs opacity-80 text-center mt-2">{data.privacy_note}</p>}

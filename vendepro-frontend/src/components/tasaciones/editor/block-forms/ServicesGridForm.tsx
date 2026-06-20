@@ -22,7 +22,7 @@ export function ServicesGridForm({ data, onPatch }: Props) {
       <div>
         <div className="mb-1 flex items-center justify-between">
           <span className="text-xs uppercase tracking-wide text-slate-600">Servicios</span>
-          <button onClick={add} className="text-xs text-[#ff007c]">+ Agregar</button>
+          <button onClick={add} className="text-xs text-brand-pink">+ Agregar</button>
         </div>
         <div className="space-y-2">
           {services.map((svc, i) => (

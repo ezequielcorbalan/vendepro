@@ -55,7 +55,7 @@ export default function MiConfigTasacionPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-[#ff007c]" />
+        <Loader2 className="w-8 h-8 animate-spin text-brand-pink" />
       </div>
     )
   }
@@ -68,7 +68,7 @@ export default function MiConfigTasacionPage() {
 
       <div className="mb-6">
         <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 flex items-center gap-2">
-          <FileText className="w-6 h-6 text-[#ff007c]" /> Mi configuración de tasaciones
+          <FileText className="w-6 h-6 text-brand-pink" /> Mi configuración de tasaciones
         </h1>
         <p className="text-sm text-gray-400 mt-1">Videos, textos, datos de mercado y CTAs que se usan en tus landings de tasación</p>
       </div>
@@ -93,7 +93,7 @@ export default function MiConfigTasacionPage() {
                         onChange={e => setSettings(prev => ({ ...prev, [field.key]: e.target.value }))}
                         rows={3}
                         placeholder={field.placeholder}
-                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-[#ff007c]/20 focus:border-[#ff007c]"
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-brand-pink/20 focus:border-brand-pink"
                       />
                     ) : (
                       <input
@@ -101,7 +101,7 @@ export default function MiConfigTasacionPage() {
                         value={settings[field.key] || ''}
                         onChange={e => setSettings(prev => ({ ...prev, [field.key]: e.target.value }))}
                         placeholder={field.placeholder}
-                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#ff007c]/20 focus:border-[#ff007c]"
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-pink/20 focus:border-brand-pink"
                       />
                     )}
                   </div>
@@ -114,7 +114,7 @@ export default function MiConfigTasacionPage() {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="w-full bg-[#ff007c] text-white py-3 rounded-xl text-sm font-bold hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
+          className="w-full bg-brand-pink text-white py-3 rounded-xl text-sm font-bold hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Guardar configuración

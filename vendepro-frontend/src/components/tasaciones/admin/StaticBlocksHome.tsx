@@ -215,7 +215,7 @@ function StaticBlockRow({ type, row, isOpen, onToggle, onPatch, onSave }: RowPro
               type="button"
               onClick={onSave}
               disabled={!row.dirty || row.saving}
-              className="flex items-center gap-2 rounded bg-[#ff007c] px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
+              className="flex items-center gap-2 rounded bg-brand-pink px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
             >
               {row.saving
                 ? <Loader2 className="h-3.5 w-3.5 animate-spin" />

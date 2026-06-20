@@ -18,7 +18,7 @@ function Section({ title, icon: Icon, children, defaultOpen = false }: { title: 
     <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
       <button type="button" onClick={() => setOpen(!open)} className="w-full flex items-center justify-between px-4 py-3.5 text-left">
         <div className="flex items-center gap-2.5">
-          <Icon className="w-4 h-4 text-[#ff007c]" />
+          <Icon className="w-4 h-4 text-brand-pink" />
           <span className="text-sm font-semibold text-gray-800">{title}</span>
         </div>
         {open ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
@@ -29,7 +29,7 @@ function Section({ title, icon: Icon, children, defaultOpen = false }: { title: 
 }
 
 // ── Reusable inputs ─────────────────────────────────────────
-const inputClass = 'w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-[#ff007c]/30 focus:border-[#ff007c] outline-none bg-white'
+const inputClass = 'w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-pink/30 focus:border-brand-pink outline-none bg-white'
 const labelClass = 'block text-xs font-medium text-gray-500 mb-1'
 
 function RadioGroup({ label, options, value, onChange }: { label: string; options: { value: string; label: string }[]; value: string; onChange: (v: string) => void }) {
@@ -39,7 +39,7 @@ function RadioGroup({ label, options, value, onChange }: { label: string; option
       <div className="flex flex-wrap gap-2">
         {options.map(o => (
           <button key={o.value} type="button" onClick={() => onChange(o.value)}
-            className={`text-xs px-3 py-2 rounded-lg border transition-colors ${value === o.value ? 'bg-[#ff007c] text-white border-[#ff007c]' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}>
+            className={`text-xs px-3 py-2 rounded-lg border transition-colors ${value === o.value ? 'bg-brand-pink text-white border-brand-pink' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}>
             {o.label}
           </button>
         ))}
@@ -56,7 +56,7 @@ function CheckGroup({ label, options, value, onChange }: { label: string; option
       <div className="flex flex-wrap gap-2">
         {options.map(o => (
           <button key={o.value} type="button" onClick={() => toggle(o.value)}
-            className={`text-xs px-3 py-2 rounded-lg border transition-colors ${value.includes(o.value) ? 'bg-[#ff007c] text-white border-[#ff007c]' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}>
+            className={`text-xs px-3 py-2 rounded-lg border transition-colors ${value.includes(o.value) ? 'bg-brand-pink text-white border-brand-pink' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}>
             {o.label}
           </button>
         ))}
@@ -242,7 +242,7 @@ export default function NuevaFichaPage() {
       </Link>
 
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#ff007c] to-[#ff8017] flex items-center justify-center">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center">
           <ClipboardList className="w-5 h-5 text-white" />
         </div>
         <div>
@@ -253,7 +253,7 @@ export default function NuevaFichaPage() {
 
       {linkedLead && (
         <div className="mb-5 flex items-center gap-2 bg-pink-50 border border-pink-100 rounded-xl px-3 py-2.5 text-sm">
-          <Link2 className="w-4 h-4 text-[#ff007c] shrink-0" />
+          <Link2 className="w-4 h-4 text-brand-pink shrink-0" />
           <span className="text-gray-500">Tasación vinculada al lead:</span>
           <span className="font-semibold text-gray-800 truncate">{linkedLead.full_name}</span>
         </div>
@@ -410,7 +410,7 @@ export default function NuevaFichaPage() {
           <button
             onClick={handleSave}
             disabled={saving || !f.address.trim()}
-            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#ff007c] to-[#ff8017] text-white py-3.5 rounded-xl font-semibold text-sm hover:opacity-90 disabled:opacity-50 shadow-lg shadow-pink-200"
+            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-brand-pink to-brand-orange text-white py-3.5 rounded-xl font-semibold text-sm hover:opacity-90 disabled:opacity-50 shadow-lg shadow-pink-200"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {saving ? 'Guardando...' : 'Guardar ficha'}

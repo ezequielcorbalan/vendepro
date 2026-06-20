@@ -131,7 +131,7 @@ export default function PropertyFilters({ properties, config }: { properties: an
         <input
           value={searchText} onChange={e => setSearchText(e.target.value)}
           placeholder="Buscar dirección, barrio, propietario, agente..."
-          className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#ff007c]/20 focus:border-[#ff007c] bg-white"
+          className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-pink/20 focus:border-brand-pink bg-white"
         />
       </div>
 
@@ -187,8 +187,8 @@ export default function PropertyFilters({ properties, config }: { properties: an
           return (
             <div key={property.id} className={`bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden ${isOverdue ? 'ring-2 ring-orange-300' : ''}`}>
               <Link href={`/propiedades/${property.id}`}>
-                <div className="h-36 bg-gradient-to-br from-[#ff007c]/10 to-[#ff8017]/10 flex items-center justify-center relative">
-                  <Building2 className="w-10 h-10 text-[#ff007c]/30" />
+                <div className="h-36 bg-gradient-to-br from-brand-pink/10 to-brand-orange/10 flex items-center justify-center relative">
+                  <Building2 className="w-10 h-10 text-brand-pink/30" />
                   {isOverdue && (
                     <div className="absolute top-2 left-2 bg-orange-500 text-white text-[10px] font-bold uppercase px-2 py-1 rounded-full flex items-center gap-1 shadow-md">
                       <AlertTriangle className="w-3 h-3" /> {info.days === null ? 'Sin reportes' : `Hace ${info.days}d`}
@@ -226,10 +226,10 @@ export default function PropertyFilters({ properties, config }: { properties: an
                 </div>
 
                 <Link href={`/propiedades/${property.id}`}>
-                  <h3 className="font-semibold text-gray-800 mb-0.5 hover:text-[#ff007c] transition-colors leading-snug">{property.address}</h3>
+                  <h3 className="font-semibold text-gray-800 mb-0.5 hover:text-brand-pink transition-colors leading-snug">{property.address}</h3>
                   <p className="text-xs text-gray-500">{property.neighborhood} · {property.property_type}</p>
                   {property.asking_price && (
-                    <p className="text-sm font-semibold text-[#ff007c] mt-1">{property.currency} {Number(property.asking_price).toLocaleString('es-AR')}</p>
+                    <p className="text-sm font-semibold text-brand-pink mt-1">{property.currency} {Number(property.asking_price).toLocaleString('es-AR')}</p>
                   )}
                   {property.agent_name && <p className="text-xs text-gray-400 mt-0.5">Agente: {property.agent_name}</p>}
                   {info.days !== null && (
@@ -242,7 +242,7 @@ export default function PropertyFilters({ properties, config }: { properties: an
                 <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <Link href={`/propiedades/${property.id}/reportes/nuevo`}
-                      className="text-xs text-[#ff007c] font-medium hover:underline shrink-0">
+                      className="text-xs text-brand-pink font-medium hover:underline shrink-0">
                       + Reporte
                     </Link>
                     <button
@@ -271,7 +271,7 @@ export default function PropertyFilters({ properties, config }: { properties: an
                         {opStages.map(s => (
                           <button key={s.id}
                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); changeStage(property.id, s.id) }}
-                            className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 flex items-center gap-2 ${property.commercial_stage_id === s.id ? 'font-semibold text-[#ff007c]' : 'text-gray-700'}`}
+                            className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 flex items-center gap-2 ${property.commercial_stage_id === s.id ? 'font-semibold text-brand-pink' : 'text-gray-700'}`}
                           >
                             <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${DOT_CLASS[s.color] || 'bg-gray-300'}`} />
                             {s.label}

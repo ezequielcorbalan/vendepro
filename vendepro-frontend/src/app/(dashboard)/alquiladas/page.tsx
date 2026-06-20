@@ -43,8 +43,8 @@ export default function AlquiladasPage() {
           </div>
           {totalUSD > 0 && (
             <div className="bg-white border rounded-xl p-4">
-              <div className="w-8 h-8 bg-[#ff007c]/10 rounded-lg flex items-center justify-center mb-2">
-                <DollarSign className="w-4 h-4 text-[#ff007c]" />
+              <div className="w-8 h-8 bg-brand-pink/10 rounded-lg flex items-center justify-center mb-2">
+                <DollarSign className="w-4 h-4 text-brand-pink" />
               </div>
               <p className="text-xl font-bold text-gray-800">USD {totalUSD.toLocaleString('es-AR')}</p>
               <p className="text-xs text-gray-500 mt-0.5">Alquileres USD</p>
@@ -52,8 +52,8 @@ export default function AlquiladasPage() {
           )}
           {totalARS > 0 && (
             <div className="bg-white border rounded-xl p-4">
-              <div className="w-8 h-8 bg-[#ff8017]/10 rounded-lg flex items-center justify-center mb-2">
-                <DollarSign className="w-4 h-4 text-[#ff8017]" />
+              <div className="w-8 h-8 bg-brand-orange/10 rounded-lg flex items-center justify-center mb-2">
+                <DollarSign className="w-4 h-4 text-brand-orange" />
               </div>
               <p className="text-xl font-bold text-gray-800">$ {totalARS.toLocaleString('es-AR')}</p>
               <p className="text-xs text-gray-500 mt-0.5">Alquileres ARS</p>
@@ -85,7 +85,7 @@ export default function AlquiladasPage() {
                       {p.property_type && <span className="flex items-center gap-1"><Building2 className="w-3 h-3" />{p.property_type}</span>}
                       {p.owner_name && <span className="flex items-center gap-1"><User className="w-3 h-3" />{p.owner_name}</span>}
                       {p.asking_price && (
-                        <span className="flex items-center gap-1 font-semibold text-[#ff007c]">
+                        <span className="flex items-center gap-1 font-semibold text-brand-pink">
                           <DollarSign className="w-3 h-3" />{formatCurrency(Number(p.asking_price), p.currency || 'ARS')}
                         </span>
                       )}

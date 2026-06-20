@@ -57,7 +57,7 @@ function Field({
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff007c]/20 focus:border-[#ff007c]/40 placeholder:text-gray-400"
+        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/20 focus:border-brand-pink/40 placeholder:text-gray-400"
       />
     </div>
   )
@@ -197,9 +197,9 @@ export default function AIChatPanel(_props: {
 
       <div className="relative w-full max-w-md bg-white shadow-2xl flex flex-col h-full overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-[#ff007c]/5 to-[#ff8017]/5 shrink-0">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-brand-pink/5 to-brand-orange/5 shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="bg-[#ff007c] rounded-lg p-1.5">
+            <div className="bg-brand-pink rounded-lg p-1.5">
               <Sparkles size={16} className="text-white" />
             </div>
             <div>
@@ -219,7 +219,7 @@ export default function AIChatPanel(_props: {
               onClick={() => setMode('text')}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors ${
                 mode === 'text'
-                  ? 'text-[#ff007c] border-b-2 border-[#ff007c]'
+                  ? 'text-brand-pink border-b-2 border-brand-pink'
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
@@ -229,7 +229,7 @@ export default function AIChatPanel(_props: {
               onClick={() => setMode('image')}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors ${
                 mode === 'image'
-                  ? 'text-[#ff007c] border-b-2 border-[#ff007c]'
+                  ? 'text-brand-pink border-b-2 border-brand-pink'
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
@@ -255,7 +255,7 @@ export default function AIChatPanel(_props: {
                   onChange={e => setText(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) extract() }}
                   placeholder={'Ej: "Hola, quiero vender mi depto en Palermo. Soy Marcos García, te dejo mi número: 11-5534-2210"'}
-                  className="w-full h-48 border border-gray-200 rounded-xl p-3.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#ff007c]/20 focus:border-[#ff007c]/40 placeholder:text-gray-400"
+                  className="w-full h-48 border border-gray-200 rounded-xl p-3.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand-pink/20 focus:border-brand-pink/40 placeholder:text-gray-400"
                 />
               </div>
               <div className="bg-gray-50 rounded-xl p-3.5 space-y-1.5">
@@ -340,7 +340,7 @@ export default function AIChatPanel(_props: {
                   <select
                     value={normalizeOperation(fields.operation)}
                     onChange={e => setFields(f => ({ ...f, operation: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff007c]/20 bg-white"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/20 bg-white"
                   >
                     <option value="venta">Venta</option>
                     <option value="alquiler">Alquiler</option>
@@ -357,7 +357,7 @@ export default function AIChatPanel(_props: {
                     value={fields.notes ?? ''}
                     onChange={e => setFields(f => ({ ...f, notes: e.target.value }))}
                     rows={3}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#ff007c]/20"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand-pink/20"
                     placeholder="Información adicional..."
                   />
                 </div>
@@ -379,7 +379,7 @@ export default function AIChatPanel(_props: {
               </div>
               <button
                 onClick={reset}
-                className="text-[#ff007c] text-sm font-medium hover:underline flex items-center gap-1.5 mt-2"
+                className="text-brand-pink text-sm font-medium hover:underline flex items-center gap-1.5 mt-2"
               >
                 <Plus size={14} /> Crear otro lead
               </button>
@@ -393,7 +393,7 @@ export default function AIChatPanel(_props: {
             <button
               onClick={extract}
               disabled={!text.trim() || loading}
-              className="w-full bg-[#ff007c] text-white py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-40 hover:bg-[#e0006e] transition-colors"
+              className="w-full bg-brand-pink text-white py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-40 hover:bg-[#e0006e] transition-colors"
             >
               {loading
                 ? <><Loader2 size={16} className="animate-spin" /> Extrayendo datos...</>
@@ -405,7 +405,7 @@ export default function AIChatPanel(_props: {
             <button
               onClick={extractImage}
               disabled={!imageData || loading}
-              className="w-full bg-[#ff007c] text-white py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-40 hover:bg-[#e0006e] transition-colors"
+              className="w-full bg-brand-pink text-white py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-40 hover:bg-[#e0006e] transition-colors"
             >
               {loading
                 ? <><Loader2 size={16} className="animate-spin" /> Analizando imagen...</>
@@ -418,7 +418,7 @@ export default function AIChatPanel(_props: {
               <button
                 onClick={createLead}
                 disabled={creating || !fields.full_name?.trim()}
-                className="w-full bg-[#ff007c] text-white py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-40 hover:bg-[#e0006e] transition-colors"
+                className="w-full bg-brand-pink text-white py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-40 hover:bg-[#e0006e] transition-colors"
               >
                 {creating
                   ? <><Loader2 size={16} className="animate-spin" /> Creando lead...</>

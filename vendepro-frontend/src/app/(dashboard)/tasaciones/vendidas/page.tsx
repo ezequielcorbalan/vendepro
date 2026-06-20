@@ -89,10 +89,10 @@ export default function SoldPropertiesPage() {
 
       {/* Header */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-5 relative overflow-hidden">
-        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#ff007c] to-[#ff8017]" />
+        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-pink to-brand-orange" />
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#ff007c] to-[#ff8017] flex items-center justify-center shadow-sm">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-sm">
               <Database className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -104,7 +104,7 @@ export default function SoldPropertiesPage() {
           </div>
           <button
             onClick={() => setCreating(true)}
-            className="bg-[#ff007c] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 inline-flex items-center gap-2"
+            className="bg-brand-pink text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 inline-flex items-center gap-2"
           >
             <Plus className="w-4 h-4" /> Cargar cierre
           </button>
@@ -144,7 +144,7 @@ export default function SoldPropertiesPage() {
                 key={o}
                 onClick={() => setFilters(f => ({ ...f, origin: o }))}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
-                  active ? 'bg-[#ff007c]/10 text-[#ff007c]' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  active ? 'bg-brand-pink/10 text-brand-pink' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
                 {labels[o]}
@@ -198,7 +198,7 @@ export default function SoldPropertiesPage() {
       {/* Listado */}
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 animate-spin text-[#ff007c]" />
+          <Loader2 className="w-8 h-8 animate-spin text-brand-pink" />
         </div>
       ) : items.length === 0 ? (
         <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
@@ -209,7 +209,7 @@ export default function SoldPropertiesPage() {
           </p>
           <button
             onClick={() => setCreating(true)}
-            className="inline-flex items-center gap-2 bg-[#ff007c] text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
+            className="inline-flex items-center gap-2 bg-brand-pink text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
           >
             <Plus className="w-4 h-4" /> Cargar el primero
           </button>
@@ -285,7 +285,7 @@ export default function SoldPropertiesPage() {
                   <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">
                     <button
                       onClick={() => setEditing(sp)}
-                      className="flex-1 text-xs text-gray-600 hover:text-[#ff007c] flex items-center justify-center gap-1 py-1"
+                      className="flex-1 text-xs text-gray-600 hover:text-brand-pink flex items-center justify-center gap-1 py-1"
                     >
                       <Pencil className="w-3 h-3" /> Editar
                     </button>
@@ -307,7 +307,7 @@ export default function SoldPropertiesPage() {
       {(creating || editing) && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={() => { setCreating(false); setEditing(null) }}>
           <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full overflow-hidden my-8" onClick={e => e.stopPropagation()}>
-            <div className="bg-gradient-to-r from-[#ff007c] to-[#ff8017] h-1.5" />
+            <div className="bg-gradient-to-r from-brand-pink to-brand-orange h-1.5" />
             <div className="p-6 max-h-[80vh] overflow-y-auto">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">
                 {editing ? 'Editar cierre real' : 'Cargar cierre real'}

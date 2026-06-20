@@ -25,7 +25,7 @@ export function MarketStatsForm({ data, onPatch }: Props) {
       <div>
         <div className="mb-1 flex items-center justify-between">
           <span className="text-xs uppercase tracking-wide text-slate-600">Variables (keys)</span>
-          <button onClick={add} className="text-xs text-[#ff007c]">+ Agregar</button>
+          <button onClick={add} className="text-xs text-brand-pink">+ Agregar</button>
         </div>
         <ul className="space-y-1">
           {vars.map((v, i) => (

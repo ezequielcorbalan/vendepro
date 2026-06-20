@@ -70,7 +70,7 @@ export default function ActiveListingsTable({ data }: Props) {
     <div className="rounded-2xl border border-gray-200 overflow-hidden shadow-sm bg-gradient-to-br from-white via-white to-pink-50/30">
       <div className="px-4 sm:px-5 py-4 bg-gradient-to-r from-white to-pink-50/40 border-b border-gray-100">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#ff007c] to-[#ff8017] flex items-center justify-center shadow-sm" aria-hidden="true">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-sm" aria-hidden="true">
             <Home className="w-4 h-4 text-white" />
           </div>
           <h2 className="font-semibold text-gray-800">Mis avisos activos</h2>
@@ -124,7 +124,7 @@ export default function ActiveListingsTable({ data }: Props) {
                     <td className="py-2.5 px-2">
                       <Link
                         href={`/propiedades/${row.property_id}/reportes`}
-                        className="inline-flex items-center gap-1 text-[#ff007c] hover:underline font-medium"
+                        className="inline-flex items-center gap-1 text-brand-pink hover:underline font-medium"
                         onClick={e => e.stopPropagation()}
                       >
                         {row.address}
@@ -180,7 +180,7 @@ export default function ActiveListingsTable({ data }: Props) {
                       <Link
                         href={`/propiedades/${row.property_id}/reportes/nuevo`}
                         onClick={e => e.stopPropagation()}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gradient-to-r from-[#ff007c] to-[#ff8017] text-white text-xs font-medium shadow-sm hover:opacity-90 transition-opacity"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gradient-to-r from-brand-pink to-brand-orange text-white text-xs font-medium shadow-sm hover:opacity-90 transition-opacity"
                         title="Crear nuevo reporte"
                       >
                         <Plus className="w-3 h-3" aria-hidden="true" />

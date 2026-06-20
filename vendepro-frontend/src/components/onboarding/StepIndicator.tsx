@@ -15,9 +15,9 @@ export default function StepIndicator({ total, current }: Props) {
             key={step}
             className={`rounded-full transition-all duration-300 ${
               isActive
-                ? 'w-6 h-2 bg-gradient-to-r from-[#ff007c] to-[#ff8017]'
+                ? 'w-6 h-2 bg-gradient-to-r from-brand-pink to-brand-orange'
                 : isDone
-                ? 'w-2 h-2 bg-[#ff007c]'
+                ? 'w-2 h-2 bg-brand-pink'
                 : 'w-2 h-2 bg-gray-200'
             }`}
           />

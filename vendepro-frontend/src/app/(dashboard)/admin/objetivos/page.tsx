@@ -81,7 +81,7 @@ export default function ObjetivosPage() {
           <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Objetivos</h1>
           <p className="text-gray-500 text-sm">{objectives.length} objetivo{objectives.length !== 1 ? 's' : ''}</p>
         </div>
-        <button onClick={() => setShowCreate(true)} className="bg-[#ff007c] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 flex items-center gap-2">
+        <button onClick={() => setShowCreate(true)} className="bg-brand-pink text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 flex items-center gap-2">
           <Plus className="w-4 h-4" /> Nuevo objetivo
         </button>
       </div>
@@ -165,7 +165,7 @@ export default function ObjetivosPage() {
             <div className="flex gap-2 mt-4">
               <button onClick={() => setShowCreate(false)} className="flex-1 border rounded-lg py-2 text-sm">Cancelar</button>
               <button onClick={handleCreate} disabled={!form.agent_id || !form.target || saving}
-                className="flex-1 bg-[#ff007c] text-white rounded-lg py-2 text-sm font-medium disabled:opacity-50">
+                className="flex-1 bg-brand-pink text-white rounded-lg py-2 text-sm font-medium disabled:opacity-50">
                 {saving ? 'Creando...' : 'Crear objetivo'}
               </button>
             </div>

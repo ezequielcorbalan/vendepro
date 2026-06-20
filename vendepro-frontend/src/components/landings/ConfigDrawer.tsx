@@ -155,7 +155,7 @@ export default function ConfigDrawer({
           <button
             onClick={save}
             disabled={saving}
-            className="w-full inline-flex items-center justify-center gap-2 bg-[#ff007c] hover:bg-[#e60070] text-white font-semibold py-2.5 rounded-full disabled:opacity-60"
+            className="w-full inline-flex items-center justify-center gap-2 bg-brand-pink hover:bg-[#e60070] text-white font-semibold py-2.5 rounded-full disabled:opacity-60"
           >
             <Save className="w-4 h-4" /> {saving ? 'Guardando…' : 'Guardar'}
           </button>

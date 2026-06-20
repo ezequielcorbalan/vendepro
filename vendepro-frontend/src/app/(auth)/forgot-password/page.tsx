@@ -48,7 +48,7 @@ export default function ForgotPasswordPage() {
             </div>
             <Link
               href="/login"
-              className="block w-full text-center text-[#ff007c] hover:underline font-medium text-sm mt-2"
+              className="block w-full text-center text-brand-pink hover:underline font-medium text-sm mt-2"
             >
               Volver al inicio de sesión
             </Link>
@@ -64,7 +64,7 @@ export default function ForgotPasswordPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#ff007c]/50 focus:border-[#ff007c]"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-pink/50 focus:border-brand-pink"
                 placeholder="tu@email.com"
               />
             </div>
@@ -72,13 +72,13 @@ export default function ForgotPasswordPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#ff007c] text-white font-medium py-2.5 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+              className="w-full bg-brand-pink text-white font-medium py-2.5 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
             >
               {loading ? 'Enviando...' : 'Enviar instrucciones'}
             </button>
 
             <p className="text-center text-sm text-gray-500">
-              <Link href="/login" className="text-[#ff007c] hover:underline font-medium">
+              <Link href="/login" className="text-brand-pink hover:underline font-medium">
                 Volver al inicio de sesión
               </Link>
             </p>

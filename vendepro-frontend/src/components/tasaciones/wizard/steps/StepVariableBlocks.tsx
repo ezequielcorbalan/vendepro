@@ -189,7 +189,7 @@ function FromTemplateBlocks({
             aria-checked={hideFixed}
             onClick={() => setHideFixed(v => !v)}
             className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none ${
-              hideFixed ? 'bg-[#ff007c]' : 'bg-slate-200'
+              hideFixed ? 'bg-brand-pink' : 'bg-slate-200'
             }`}
           >
             <span
@@ -320,7 +320,7 @@ function FromScratchBlocks({
             <div
               key={type}
               className={`rounded-lg border ${
-                included ? 'border-[#ff007c]/40 bg-[#ff007c]/[0.03]' : 'border-slate-200'
+                included ? 'border-brand-pink/40 bg-brand-pink/[0.03]' : 'border-slate-200'
               }`}
             >
               <div className="flex items-start gap-3 px-3 py-2.5">
@@ -328,7 +328,7 @@ function FromScratchBlocks({
                   type="checkbox"
                   checked={included}
                   onChange={() => onToggle(type)}
-                  className="mt-1 h-4 w-4 cursor-pointer accent-[#ff007c]"
+                  className="mt-1 h-4 w-4 cursor-pointer accent-brand-pink"
                   aria-label={`Incluir bloque ${meta.label}`}
                 />
                 <button

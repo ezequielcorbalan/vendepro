@@ -22,7 +22,7 @@ export default function HeroBlock({ data }: Props) {
         {data.cta && (
           <a
             href={data.cta.href}
-            className="inline-block bg-[#ff007c] hover:bg-[#e60070] text-white font-semibold px-7 py-3 rounded-full transition-colors"
+            className="inline-block bg-brand-pink hover:bg-[#e60070] text-white font-semibold px-7 py-3 rounded-full transition-colors"
           >
             {data.cta.label}
           </a>

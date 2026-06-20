@@ -70,16 +70,16 @@ export default function AIChatPanel({ landingId, selectedBlockId, onProposalAcce
   return (
     <div className="flex flex-col h-full">
       <div className="p-3 border-b border-gray-100">
-        <p className="text-xs uppercase tracking-wider font-semibold text-[#ff007c] flex items-center gap-1.5 mb-2">
+        <p className="text-xs uppercase tracking-wider font-semibold text-brand-pink flex items-center gap-1.5 mb-2">
           <Sparkles className="w-3.5 h-3.5" /> Chat IA — Groq
         </p>
         <div className="flex gap-1.5">
           <button onClick={() => setScope('block')}
-            className={`text-xs px-2.5 py-1 rounded-md ${scope === 'block' ? 'bg-[#ff007c]/10 text-[#ff007c] border border-[#ff007c]/40' : 'bg-gray-100 text-gray-600 border border-transparent'}`}>
+            className={`text-xs px-2.5 py-1 rounded-md ${scope === 'block' ? 'bg-brand-pink/10 text-brand-pink border border-brand-pink/40' : 'bg-gray-100 text-gray-600 border border-transparent'}`}>
             Solo bloque
           </button>
           <button onClick={() => setScope('global')}
-            className={`text-xs px-2.5 py-1 rounded-md ${scope === 'global' ? 'bg-[#ff007c]/10 text-[#ff007c] border border-[#ff007c]/40' : 'bg-gray-100 text-gray-600 border border-transparent'}`}>
+            className={`text-xs px-2.5 py-1 rounded-md ${scope === 'global' ? 'bg-brand-pink/10 text-brand-pink border border-brand-pink/40' : 'bg-gray-100 text-gray-600 border border-transparent'}`}>
             Toda la landing
           </button>
         </div>
@@ -90,12 +90,12 @@ export default function AIChatPanel({ landingId, selectedBlockId, onProposalAcce
           <p className="text-xs text-gray-400 text-center mt-8">Escribí un pedido y la IA propone cambios (con Aceptar/Rechazar).</p>
         )}
         {messages.map((msg, i) => (
-          <div key={i} className={`rounded-xl p-3 text-sm ${msg.role === 'user' ? 'bg-[#ff007c]/10 ml-8 text-gray-900' : 'bg-gray-50 mr-8 text-gray-700'}`}>
+          <div key={i} className={`rounded-xl p-3 text-sm ${msg.role === 'user' ? 'bg-brand-pink/10 ml-8 text-gray-900' : 'bg-gray-50 mr-8 text-gray-700'}`}>
             <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">{msg.role === 'user' ? 'Vos' : 'Groq · llama-3.3-70b'}</p>
             <p>{msg.text}</p>
             {msg.proposal && (
               <div className="flex gap-2 mt-3">
-                <button onClick={() => accept(msg, i)} className="inline-flex items-center gap-1 bg-[#ff007c] hover:bg-[#e60070] text-white text-xs font-semibold px-3 py-1 rounded-full">
+                <button onClick={() => accept(msg, i)} className="inline-flex items-center gap-1 bg-brand-pink hover:bg-[#e60070] text-white text-xs font-semibold px-3 py-1 rounded-full">
                   <Check className="w-3 h-3" /> Aceptar
                 </button>
                 <button onClick={() => reject(i)} className="inline-flex items-center gap-1 border border-gray-200 text-gray-700 text-xs px-3 py-1 rounded-full hover:bg-gray-50">
@@ -111,8 +111,8 @@ export default function AIChatPanel({ landingId, selectedBlockId, onProposalAcce
       <div className="p-3 border-t border-gray-100 flex gap-2">
         <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()}
           placeholder="Pedile un cambio…" maxLength={500}
-          className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#ff007c]" />
-        <button onClick={send} disabled={loading || !input.trim()} className="bg-[#ff007c] hover:bg-[#e60070] disabled:opacity-50 text-white rounded-lg px-3">
+          className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-pink" />
+        <button onClick={send} disabled={loading || !input.trim()} className="bg-brand-pink hover:bg-[#e60070] disabled:opacity-50 text-white rounded-lg px-3">
           <Send className="w-4 h-4" />
         </button>
       </div>

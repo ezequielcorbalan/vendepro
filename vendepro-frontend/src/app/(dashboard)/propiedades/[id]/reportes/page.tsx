@@ -44,7 +44,7 @@ export default function PropertyReportsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-[#ff007c]" />
+        <Loader2 className="w-8 h-8 animate-spin text-brand-pink" />
       </div>
     )
   }
@@ -59,10 +59,10 @@ export default function PropertyReportsPage() {
       </Link>
 
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-6 relative overflow-hidden">
-        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#ff007c] to-[#ff8017]" />
+        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-pink to-brand-orange" />
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#ff007c] to-[#ff8017] flex items-center justify-center flex-shrink-0 shadow-sm">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center flex-shrink-0 shadow-sm">
               <FileBarChart className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -72,7 +72,7 @@ export default function PropertyReportsPage() {
           </div>
           <Link
             href={`/propiedades/${id}/reportes/nuevo`}
-            className="inline-flex items-center gap-1.5 bg-gradient-to-br from-[#ff007c] to-[#ff8017] text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 shadow-sm"
+            className="inline-flex items-center gap-1.5 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 shadow-sm"
           >
             <Plus className="w-4 h-4" /> Nuevo reporte
           </Link>
@@ -85,7 +85,7 @@ export default function PropertyReportsPage() {
           <p className="text-gray-500 mb-4">No hay reportes para esta propiedad</p>
           <Link
             href={`/propiedades/${id}/reportes/nuevo`}
-            className="inline-flex items-center gap-1.5 bg-gradient-to-br from-[#ff007c] to-[#ff8017] text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
+            className="inline-flex items-center gap-1.5 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
           >
             <Plus className="w-4 h-4" /> Crear el primer reporte
           </Link>
@@ -95,7 +95,7 @@ export default function PropertyReportsPage() {
           {reports.map(r => (
             <div
               key={r.id}
-              className="bg-white border border-gray-200 rounded-xl p-4 hover:border-[#ff007c]/30 hover:shadow-sm transition-all flex items-center justify-between"
+              className="bg-white border border-gray-200 rounded-xl p-4 hover:border-brand-pink/30 hover:shadow-sm transition-all flex items-center justify-between"
             >
               <div>
                 <p className="font-medium text-gray-800">
@@ -123,7 +123,7 @@ export default function PropertyReportsPage() {
                 </span>
                 <Link
                   href={`/propiedades/${id}/reportes/nuevo?edit=${r.id}`}
-                  className="inline-flex items-center gap-1 text-sm text-gray-600 font-medium hover:text-[#ff007c]"
+                  className="inline-flex items-center gap-1 text-sm text-gray-600 font-medium hover:text-brand-pink"
                 >
                   <Pencil className="w-3.5 h-3.5" /> Editar
                 </Link>
@@ -132,7 +132,7 @@ export default function PropertyReportsPage() {
                     href={`/r/${(r as any).public_slug}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-sm text-[#ff007c] font-medium hover:underline"
+                    className="inline-flex items-center gap-1 text-sm text-brand-pink font-medium hover:underline"
                   >
                     <Eye className="w-3.5 h-3.5" /> Ver público
                   </a>

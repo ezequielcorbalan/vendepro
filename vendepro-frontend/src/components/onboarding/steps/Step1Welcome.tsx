@@ -1,7 +1,7 @@
 export default function Step1Welcome({ name }: { name: string }) {
   return (
     <div className="flex flex-col items-center text-center px-4 py-6 gap-5">
-      <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#ff007c] to-[#ff8017] flex items-center justify-center shadow-lg shadow-pink-200">
+      <div className="w-24 h-24 rounded-full bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-lg shadow-pink-200">
         <span className="text-4xl">🏡</span>
       </div>
       <div className="space-y-2">

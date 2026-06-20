@@ -7,7 +7,7 @@ interface Props {
 }
 
 const inputClass =
-  'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-[#ff007c] focus:outline-none focus:ring-2 focus:ring-[#ff007c]/30'
+  'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand-pink focus:outline-none focus:ring-2 focus:ring-brand-pink/30'
 const labelClass = 'mb-1 block text-sm font-medium text-slate-700'
 
 export function StepDetails({ details, onPatchDetails }: Props) {

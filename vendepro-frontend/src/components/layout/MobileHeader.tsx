@@ -43,7 +43,7 @@ export default function MobileHeader({ profile }: { profile: Profile }) {
           <img src="/brand/logo-horizontal.png" alt="VendéPro" className="h-7" />
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-[#ff007c]/20 flex items-center justify-center text-[#ff007c] font-semibold text-sm" aria-hidden="true">
+          <div className="w-8 h-8 rounded-full bg-brand-pink/20 flex items-center justify-center text-brand-pink font-semibold text-sm" aria-hidden="true">
             {(profile.full_name || profile.email || '?').charAt(0).toUpperCase()}
           </div>
         </div>
@@ -90,7 +90,7 @@ export default function MobileHeader({ profile }: { profile: Profile }) {
                     className={cn(
                       'flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors',
                       isActive
-                        ? 'bg-[#ff007c]/10 text-[#ff007c]'
+                        ? 'bg-brand-pink/10 text-brand-pink'
                         : 'text-gray-600 hover:bg-gray-100'
                     )}
                   >
@@ -103,7 +103,7 @@ export default function MobileHeader({ profile }: { profile: Profile }) {
 
             <div className="p-4 border-t border-gray-100">
               <div className="flex items-center gap-3 px-3 py-2 mb-2">
-                <div className="w-8 h-8 rounded-full bg-[#ff007c]/20 flex items-center justify-center text-[#ff007c] font-semibold text-sm" aria-hidden="true">
+                <div className="w-8 h-8 rounded-full bg-brand-pink/20 flex items-center justify-center text-brand-pink font-semibold text-sm" aria-hidden="true">
                   {(profile.full_name || profile.email || '?').charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">

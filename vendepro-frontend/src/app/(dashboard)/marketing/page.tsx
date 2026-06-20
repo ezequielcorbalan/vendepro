@@ -130,7 +130,7 @@ export default function MarketingPage() {
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#ff007c] to-[#ff8017] flex items-center justify-center shadow-sm">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-sm">
             <Megaphone className="w-5 h-5 text-white" />
           </div>
           <div>
@@ -163,7 +163,7 @@ export default function MarketingPage() {
             detail={integration.ga4.enabled ? `Measurement ID: ${integration.ga4.measurementId}` : 'No configurado — activá GA4'} />
           {(!integration.meta.enabled || !integration.ga4.enabled) && (
             <Link href="/configuracion/marketing"
-              className="flex items-center gap-1 px-3 py-2 rounded-lg border border-dashed text-xs font-medium text-[#ff007c] border-[#ff007c]/30 hover:bg-pink-50 transition-colors whitespace-nowrap">
+              className="flex items-center gap-1 px-3 py-2 rounded-lg border border-dashed text-xs font-medium text-brand-pink border-brand-pink/30 hover:bg-pink-50 transition-colors whitespace-nowrap">
               <ChevronRight className="w-3.5 h-3.5" /> Completar config
             </Link>
           )}
@@ -197,7 +197,7 @@ export default function MarketingPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-white rounded-xl border p-5">
           <div className="mb-4">
-            <p className="text-sm font-semibold text-gray-800 flex items-center gap-2"><Target className="w-4 h-4 text-[#ff007c]" /> Embudo del período</p>
+            <p className="text-sm font-semibold text-gray-800 flex items-center gap-2"><Target className="w-4 h-4 text-brand-pink" /> Embudo del período</p>
             <p className="text-xs text-gray-400 mt-0.5">De lead capturado a captación</p>
           </div>
           {loading ? <div className="space-y-3">{[...Array(5)].map((_, i) => <div key={i} className="h-8 bg-gray-100 rounded animate-pulse" />)}</div>
@@ -224,7 +224,7 @@ export default function MarketingPage() {
 
         <div className="bg-white rounded-xl border p-5">
           <div className="mb-4">
-            <p className="text-sm font-semibold text-gray-800 flex items-center gap-2"><BarChart2 className="w-4 h-4 text-[#ff007c]" /> Leads por fuente</p>
+            <p className="text-sm font-semibold text-gray-800 flex items-center gap-2"><BarChart2 className="w-4 h-4 text-brand-pink" /> Leads por fuente</p>
             <p className="text-xs text-gray-400 mt-0.5">Atribución del período</p>
           </div>
           {loading ? <div className="space-y-3">{[...Array(5)].map((_, i) => <div key={i} className="h-8 bg-gray-100 rounded animate-pulse" />)}</div>
@@ -276,7 +276,7 @@ export default function MarketingPage() {
             <p className="text-sm font-medium text-gray-600 mb-1">Conectá Meta Conversion API para ver campañas</p>
             <p className="text-xs text-gray-400 mb-3">Gasto, leads, calificados, CPL y ROI por campaña</p>
             <Link href="/configuracion/marketing"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#ff007c] text-white text-xs font-medium hover:bg-[#e0006e] transition-colors">
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand-pink text-white text-xs font-medium hover:bg-[#e0006e] transition-colors">
               <Settings className="w-3.5 h-3.5" /> Configurar ahora
             </Link>
           </div>
@@ -293,7 +293,7 @@ export default function MarketingPage() {
           {!integration.meta.enabled ? (
             <div className="text-center py-6">
               <p className="text-sm text-gray-400 mb-2">API no configurada</p>
-              <Link href="/configuracion/marketing" className="text-xs text-[#ff007c] font-medium hover:underline">Configurar Meta →</Link>
+              <Link href="/configuracion/marketing" className="text-xs text-brand-pink font-medium hover:underline">Configurar Meta →</Link>
             </div>
           ) : metaEventList.length === 0 ? (
             <p className="text-sm text-gray-400 text-center py-6">Sin eventos registrados aún</p>
@@ -317,7 +317,7 @@ export default function MarketingPage() {
 
         <div className="bg-white rounded-xl border p-5">
           <div className="mb-4">
-            <p className="text-sm font-semibold text-gray-800 flex items-center gap-2"><Users className="w-4 h-4 text-[#ff007c]" /> Audiencias sugeridas</p>
+            <p className="text-sm font-semibold text-gray-800 flex items-center gap-2"><Users className="w-4 h-4 text-brand-pink" /> Audiencias sugeridas</p>
             <p className="text-xs text-gray-400 mt-0.5">Listas para exportar a Meta Ads Manager</p>
           </div>
           <div className="space-y-2">
@@ -334,7 +334,7 @@ export default function MarketingPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   {a.count !== null && <span className="text-sm font-bold text-gray-600">{a.count}</span>}
-                  <button className="text-[10px] text-[#ff007c] font-semibold border border-[#ff007c]/30 rounded-lg px-2 py-1 hover:bg-pink-50 transition-colors">
+                  <button className="text-[10px] text-brand-pink font-semibold border border-brand-pink/30 rounded-lg px-2 py-1 hover:bg-pink-50 transition-colors">
                     Exportar →
                   </button>
                 </div>
@@ -346,9 +346,9 @@ export default function MarketingPage() {
 
       {/* Insights */}
       {insights.length > 0 && (
-        <div className="bg-gradient-to-r from-[#ff007c]/5 to-[#ff8017]/5 rounded-xl border border-[#ff007c]/20 p-5">
+        <div className="bg-gradient-to-r from-brand-pink/5 to-brand-orange/5 rounded-xl border border-brand-pink/20 p-5">
           <p className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-[#ff007c]" /> Insights del período
+            <Sparkles className="w-4 h-4 text-brand-pink" /> Insights del período
           </p>
           <div className="space-y-2">
             {insights.map((ins, i) => (

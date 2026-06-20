@@ -85,7 +85,7 @@ export default function PropiedadDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-[#ff007c]" />
+        <Loader2 className="w-8 h-8 animate-spin text-brand-pink" />
       </div>
     )
   }
@@ -121,7 +121,7 @@ export default function PropiedadDetailPage() {
         />
         <div className="relative flex items-start justify-between gap-4 flex-wrap">
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#ff007c] to-[#ff8017] flex items-center justify-center flex-shrink-0 shadow-sm">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center flex-shrink-0 shadow-sm">
               <Building2 className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -136,12 +136,12 @@ export default function PropiedadDetailPage() {
               {stageLabel[stage] || stage}
             </span>
             <Link href={`/tasaciones/nueva?property_id=${id}`}
-              className="inline-flex items-center gap-1.5 bg-[#ff007c] text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:opacity-90">
+              className="inline-flex items-center gap-1.5 bg-brand-pink text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:opacity-90">
               <Plus className="w-4 h-4" /> Nueva tasación
             </Link>
             <button
               onClick={() => setShowGenerate(true)}
-              className="inline-flex items-center gap-1.5 bg-[#ff8017] text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:opacity-90"
+              className="inline-flex items-center gap-1.5 bg-brand-orange text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:opacity-90"
             >
               <Send className="w-4 h-4" /> Enviar ficha de visita
             </button>
@@ -210,7 +210,7 @@ export default function PropiedadDetailPage() {
             {property.asking_price && (
               <div className="flex justify-between text-sm">
                 <dt className="text-gray-500">Precio</dt>
-                <dd className="font-medium text-[#ff007c]">
+                <dd className="font-medium text-brand-pink">
                   {property.currency} {Number(property.asking_price).toLocaleString('es-AR')}
                 </dd>
               </div>
@@ -226,7 +226,7 @@ export default function PropiedadDetailPage() {
               <div className="flex items-center gap-2 text-sm">
                 <User className="w-4 h-4 text-gray-400 flex-shrink-0" />
                 {property.contact_id ? (
-                  <Link href={`/contactos/${property.contact_id}`} className="text-[#ff007c] hover:underline font-medium">
+                  <Link href={`/contactos/${property.contact_id}`} className="text-brand-pink hover:underline font-medium">
                     {property.owner_name}
                   </Link>
                 ) : (
@@ -236,13 +236,13 @@ export default function PropiedadDetailPage() {
               {property.owner_phone && (
                 <div className="flex items-center gap-2 text-sm">
                   <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                  <a href={`tel:${property.owner_phone}`} className="text-[#ff007c] hover:underline">{property.owner_phone}</a>
+                  <a href={`tel:${property.owner_phone}`} className="text-brand-pink hover:underline">{property.owner_phone}</a>
                 </div>
               )}
               {property.owner_email && (
                 <div className="flex items-center gap-2 text-sm">
                   <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                  <a href={`mailto:${property.owner_email}`} className="text-[#ff007c] hover:underline">{property.owner_email}</a>
+                  <a href={`mailto:${property.owner_email}`} className="text-brand-pink hover:underline">{property.owner_email}</a>
                 </div>
               )}
             </div>
@@ -426,7 +426,7 @@ function GenerateVisitFormModal({
         className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="bg-[#ff8017] h-1.5" />
+        <div className="bg-brand-orange h-1.5" />
         <div className="p-6">
           <h3 className="text-lg font-semibold text-gray-900">Ficha de visita</h3>
           <p className="text-sm text-gray-500 mt-1">
@@ -436,7 +436,7 @@ function GenerateVisitFormModal({
 
           {loading && (
             <div className="py-10 flex items-center justify-center">
-              <Loader2 className="w-6 h-6 animate-spin text-[#ff007c]" />
+              <Loader2 className="w-6 h-6 animate-spin text-brand-pink" />
             </div>
           )}
 

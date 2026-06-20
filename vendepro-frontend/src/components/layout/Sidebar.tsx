@@ -62,7 +62,7 @@ export default function Sidebar({ profile }: { profile: Profile }) {
 
       {/* Header */}
       <div className="p-4 border-b border-gray-100 relative">
-        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#ff007c] to-[#ff8017]" />
+        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-pink to-brand-orange" />
         {collapsed ? (
           <div className="flex flex-col items-center gap-2 pt-1">
             <button
@@ -70,7 +70,7 @@ export default function Sidebar({ profile }: { profile: Profile }) {
               aria-label="Expandir menú"
               aria-expanded={false}
               title="Expandir menú"
-              className="w-10 h-10 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-[#ff007c] transition-colors"
+              className="w-10 h-10 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-brand-pink transition-colors"
             >
               <PanelLeftOpen className="w-5 h-5" aria-hidden="true" />
             </button>
@@ -87,7 +87,7 @@ export default function Sidebar({ profile }: { profile: Profile }) {
                   aria-label="Contraer menú"
                   aria-expanded={true}
                   title="Contraer menú"
-                  className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-[#ff007c] transition-colors"
+                  className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-brand-pink transition-colors"
                 >
                   <PanelLeftClose className="w-5 h-5" aria-hidden="true" />
                 </button>
@@ -107,7 +107,7 @@ export default function Sidebar({ profile }: { profile: Profile }) {
             onClick={toggle}
             aria-label="Buscar"
             title="Buscar"
-            className="w-full h-10 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-[#ff007c] transition-colors"
+            className="w-full h-10 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-brand-pink transition-colors"
           >
             <Search className="w-5 h-5" aria-hidden="true" />
           </button>
@@ -133,13 +133,13 @@ export default function Sidebar({ profile }: { profile: Profile }) {
                   'flex items-center rounded-lg text-sm font-medium transition-all relative group',
                   collapsed ? 'justify-center h-11 w-11 mx-auto' : 'gap-3 px-3 py-2.5',
                   isActive
-                    ? 'bg-gradient-to-r from-[#ff007c]/10 to-[#ff8017]/10 text-[#ff007c] shadow-sm'
+                    ? 'bg-gradient-to-r from-brand-pink/10 to-brand-orange/10 text-brand-pink shadow-sm'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 )
                 const inner = (
                   <>
                     {isActive && (
-                      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-gradient-to-b from-[#ff007c] to-[#ff8017] rounded-r-full" />
+                      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-gradient-to-b from-brand-pink to-brand-orange rounded-r-full" />
                     )}
                     <Icon className={cn('w-5 h-5 shrink-0 transition-transform', isActive && 'scale-110')} aria-hidden="true" />
                     {!collapsed && link.label}
@@ -181,7 +181,7 @@ export default function Sidebar({ profile }: { profile: Profile }) {
           title={collapsed ? (profile.full_name || profile.email) : undefined}
           className={cn('flex items-center rounded-lg hover:bg-gray-50 transition-colors', collapsed ? 'justify-center py-2' : 'gap-3 px-3 py-2')}
         >
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#ff007c] to-[#ff8017] flex items-center justify-center text-white font-semibold text-sm shadow-sm shrink-0" aria-hidden="true">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center text-white font-semibold text-sm shadow-sm shrink-0" aria-hidden="true">
             {(profile.full_name || profile.email || '?').charAt(0).toUpperCase()}
           </div>
           {!collapsed && (
@@ -198,7 +198,7 @@ export default function Sidebar({ profile }: { profile: Profile }) {
           className={cn(
             'flex items-center rounded-lg text-sm font-medium transition-colors',
             collapsed ? 'justify-center h-11 w-11 mx-auto' : 'gap-3 px-3 py-2',
-            settingsActive ? 'bg-[#ff007c]/10 text-[#ff007c]' : 'text-gray-600 hover:bg-gray-100'
+            settingsActive ? 'bg-brand-pink/10 text-brand-pink' : 'text-gray-600 hover:bg-gray-100'
           )}
         >
           <Settings className="w-4 h-4 shrink-0" aria-hidden="true" />

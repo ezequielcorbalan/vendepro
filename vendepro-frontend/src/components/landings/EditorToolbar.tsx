@@ -48,7 +48,7 @@ export default function EditorToolbar({ landing, isAdmin, dirty, saving, onOpenV
       <button onClick={onOpenPreview} className="p-2 hover:bg-gray-100 rounded-lg" title="Vista previa"><Eye className="w-4 h-4 text-gray-600" /></button>
 
       {landing.status === 'draft' && !isAdmin && (
-        <button onClick={() => handle(onRequestPublish)} disabled={busy} className="inline-flex items-center gap-2 bg-[#ff007c] hover:bg-[#e60070] text-white text-sm font-semibold px-4 py-2 rounded-full disabled:opacity-60">
+        <button onClick={() => handle(onRequestPublish)} disabled={busy} className="inline-flex items-center gap-2 bg-brand-pink hover:bg-[#e60070] text-white text-sm font-semibold px-4 py-2 rounded-full disabled:opacity-60">
           <Send className="w-4 h-4" /> Solicitar publicación
         </button>
       )}
@@ -73,7 +73,7 @@ export default function EditorToolbar({ landing, isAdmin, dirty, saving, onOpenV
           <div className="bg-white rounded-2xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
             <h3 className="font-semibold text-gray-900 mb-3">Rechazar solicitud</h3>
             <textarea value={note} onChange={e => setNote(e.target.value)} placeholder="Nota para el agente (opcional)…"
-              className="w-full border border-gray-200 rounded-xl p-3 text-sm resize-none h-28 focus:outline-none focus:border-[#ff007c]" />
+              className="w-full border border-gray-200 rounded-xl p-3 text-sm resize-none h-28 focus:outline-none focus:border-brand-pink" />
             <div className="flex justify-end gap-2 mt-4">
               <button onClick={() => setShowReject(false)} className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-full">Cancelar</button>
               <button onClick={() => { handle(() => onRejectPublish(note)); setShowReject(false) }} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-full">Rechazar</button>

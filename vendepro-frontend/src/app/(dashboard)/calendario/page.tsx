@@ -157,7 +157,7 @@ export default function CalendarioPage() {
               </button>
             ))}
           </div>
-          <button onClick={() => setShowCreate(true)} className="bg-[#ff007c] text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:opacity-90">
+          <button onClick={() => setShowCreate(true)} className="bg-brand-pink text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:opacity-90">
             <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Nuevo evento</span>
           </button>
         </div>
@@ -194,7 +194,7 @@ export default function CalendarioPage() {
                 >
                   {day && (
                     <>
-                      <div className={`w-7 h-7 flex items-center justify-center rounded-full text-sm font-medium mb-1 ${isToday ? 'bg-[#ff007c] text-white' : 'text-gray-700'}`}>
+                      <div className={`w-7 h-7 flex items-center justify-center rounded-full text-sm font-medium mb-1 ${isToday ? 'bg-brand-pink text-white' : 'text-gray-700'}`}>
                         {day}
                       </div>
                       <div className="space-y-0.5">
@@ -342,7 +342,7 @@ export default function CalendarioPage() {
             <div className="flex gap-2 mt-4">
               <button onClick={() => setShowCreate(false)} className="flex-1 border rounded-lg py-2 text-sm">Cancelar</button>
               <button onClick={handleCreate} disabled={!form.title || !form.start_at || saving}
-                className="flex-1 bg-[#ff007c] text-white rounded-lg py-2 text-sm font-medium disabled:opacity-50">
+                className="flex-1 bg-brand-pink text-white rounded-lg py-2 text-sm font-medium disabled:opacity-50">
                 {saving ? 'Guardando...' : 'Crear'}
               </button>
             </div>

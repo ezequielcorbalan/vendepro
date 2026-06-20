@@ -18,7 +18,7 @@ function Section({ title, icon: Icon, children, defaultOpen = false }: { title: 
     <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
       <button type="button" onClick={() => setOpen(!open)} className="w-full flex items-center justify-between px-4 py-3.5 text-left">
         <div className="flex items-center gap-2.5">
-          <Icon className="w-4 h-4 text-[#ff007c]" />
+          <Icon className="w-4 h-4 text-brand-pink" />
           <span className="text-sm font-semibold text-gray-800">{title}</span>
         </div>
         {open ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
@@ -28,7 +28,7 @@ function Section({ title, icon: Icon, children, defaultOpen = false }: { title: 
   )
 }
 
-const inputClass = 'w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-[#ff007c]/30 focus:border-[#ff007c] outline-none bg-white'
+const inputClass = 'w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-pink/30 focus:border-brand-pink outline-none bg-white'
 const labelClass = 'block text-xs font-medium text-gray-500 mb-1'
 
 function RadioGroup({ label, options, value, onChange }: { label: string; options: { value: string; label: string }[]; value: string; onChange: (v: string) => void }) {
@@ -38,7 +38,7 @@ function RadioGroup({ label, options, value, onChange }: { label: string; option
       <div className="flex flex-wrap gap-2">
         {options.map(o => (
           <button key={o.value} type="button" onClick={() => onChange(o.value)}
-            className={`text-xs px-3 py-2 rounded-lg border transition-colors ${value === o.value ? 'bg-[#ff007c] text-white border-[#ff007c]' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}>
+            className={`text-xs px-3 py-2 rounded-lg border transition-colors ${value === o.value ? 'bg-brand-pink text-white border-brand-pink' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}>
             {o.label}
           </button>
         ))}
@@ -314,7 +314,7 @@ export default function FichaDetailPage() {
     return (
       <div className="max-w-lg mx-auto text-center py-12">
         <p className="text-gray-500">Ficha no encontrada</p>
-        <Link href="/tasaciones" className="text-[#ff007c] hover:underline text-sm mt-2 inline-block">Volver a Tasaciones</Link>
+        <Link href="/tasaciones" className="text-brand-pink hover:underline text-sm mt-2 inline-block">Volver a Tasaciones</Link>
       </div>
     )
   }
@@ -334,7 +334,7 @@ export default function FichaDetailPage() {
       </div>
 
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#ff007c] to-[#ff8017] flex items-center justify-center">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center">
           <ClipboardList className="w-5 h-5 text-white" />
         </div>
         <div>
@@ -439,7 +439,7 @@ export default function FichaDetailPage() {
                 { value: 'parrilla', label: 'Parrilla' }, { value: 'bicicletero', label: 'Bicicletero' },
               ].map(o => (
                 <button key={o.value} type="button" onClick={() => toggleAmenity(o.value)}
-                  className={`text-xs px-3 py-2 rounded-lg border transition-colors ${f.amenities_list.includes(o.value) ? 'bg-[#ff007c] text-white border-[#ff007c]' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}>
+                  className={`text-xs px-3 py-2 rounded-lg border transition-colors ${f.amenities_list.includes(o.value) ? 'bg-brand-pink text-white border-brand-pink' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}>
                   {o.label}
                 </button>
               ))}
@@ -475,7 +475,7 @@ export default function FichaDetailPage() {
           <button
             onClick={handleSave}
             disabled={saving || !f.address.trim()}
-            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#ff007c] to-[#ff8017] text-white py-3.5 rounded-xl font-semibold text-sm hover:opacity-90 disabled:opacity-50 shadow-lg shadow-pink-200"
+            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-brand-pink to-brand-orange text-white py-3.5 rounded-xl font-semibold text-sm hover:opacity-90 disabled:opacity-50 shadow-lg shadow-pink-200"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {saving ? 'Guardando...' : 'Guardar cambios'}

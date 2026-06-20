@@ -73,7 +73,7 @@ export function ComparablesListBlock({ data, ...attrs }: Props) {
                       className={`absolute right-3 top-3 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold backdrop-blur-sm ${
                         isVenta
                           ? 'bg-emerald-500/90 text-white'
-                          : 'bg-white/90 text-[#ff007c]'
+                          : 'bg-white/90 text-brand-pink'
                       }`}
                     >
                       {isVenta ? (<><Database className="h-3 w-3" /> Cierre real</>) : 'Publicación'}

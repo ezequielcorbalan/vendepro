@@ -56,7 +56,7 @@ export default function AuthorizationWidget({
   return (
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 relative overflow-hidden">
       <div className="flex items-center gap-2 mb-4">
-        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#ff007c] to-[#ff8017] flex items-center justify-center shadow-sm">
+        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-sm">
           <Calendar className="w-4.5 h-4.5 text-white" />
         </div>
         <h2 className="text-sm font-semibold text-gray-800">Autorización de venta</h2>
@@ -69,7 +69,7 @@ export default function AuthorizationWidget({
             type="date"
             value={startDate}
             onChange={e => setStartDate(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#ff007c]/20 focus:border-[#ff007c] outline-none"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-pink/20 focus:border-brand-pink outline-none"
           />
         </div>
         <div>
@@ -79,7 +79,7 @@ export default function AuthorizationWidget({
             value={durationDays}
             onChange={e => setDurationDays(e.target.value)}
             placeholder="180"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#ff007c]/20 focus:border-[#ff007c] outline-none"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-pink/20 focus:border-brand-pink outline-none"
           />
         </div>
       </div>
@@ -90,7 +90,7 @@ export default function AuthorizationWidget({
             ? 'bg-red-50 text-red-700 border border-red-200'
             : remainingDays < 15
             ? 'bg-orange-50 text-orange-700 border border-orange-200'
-            : 'bg-[#ff007c]/5 text-[#ff007c] border border-[#ff007c]/20'
+            : 'bg-brand-pink/5 text-brand-pink border border-brand-pink/20'
         }`}>
           {remainingDays < 0 ? (
             <>
@@ -109,7 +109,7 @@ export default function AuthorizationWidget({
       <button
         onClick={save}
         disabled={saving}
-        className="mt-3 w-full bg-gradient-to-br from-[#ff007c] to-[#ff8017] text-white text-sm font-medium py-2 rounded-lg hover:opacity-90 disabled:opacity-50"
+        className="mt-3 w-full bg-gradient-to-br from-brand-pink to-brand-orange text-white text-sm font-medium py-2 rounded-lg hover:opacity-90 disabled:opacity-50"
       >
         {saved ? '✓ Guardado' : saving ? 'Guardando...' : 'Guardar'}
       </button>
