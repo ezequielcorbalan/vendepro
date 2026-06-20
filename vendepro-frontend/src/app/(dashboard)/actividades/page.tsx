@@ -159,12 +159,12 @@ export default function ActividadesPage() {
       </div>
 
       {/* Activity type summary cards */}
-      <div className="flex gap-3 overflow-x-auto pb-1">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {SUMMARY_TYPES.map(k => {
           const cfg = ACTIVITY_TYPES[k]
           const Ico = ICON_MAP[cfg.icon] || Phone
           return (
-            <div key={k} className="min-w-[120px] border rounded-xl p-4 flex flex-col items-center bg-white shrink-0">
+            <div key={k} className="border border-gray-200 rounded-xl p-4 flex flex-col items-center bg-white">
               <div className={`w-10 h-10 rounded-full flex items-center justify-center ${cfg.color} mb-2`}>
                 <Ico className="w-5 h-5" />
               </div>
