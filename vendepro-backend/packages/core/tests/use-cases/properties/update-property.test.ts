@@ -24,4 +24,18 @@ describe('UpdatePropertyUseCase', () => {
     const useCase = new UpdatePropertyUseCase(noRepo as any)
     await expect(useCase.execute('unknown', 'org-1', {})).rejects.toMatchObject({ statusCode: 404 })
   })
+
+  it('normaliza el status (slug español) al valor permitido del CHECK', async () => {
+    const cases: Array<[string, string]> = [
+      ['activa', 'active'], ['vendida', 'sold'], ['alquilada', 'sold'],
+      ['reservada', 'active'], ['suspendida', 'suspended'],
+      ['archivada', 'archived'], ['inactiva', 'inactive'], ['sold', 'sold'],
+    ]
+    for (const [slug, expected] of cases) {
+      const upd = vi.fn().mockResolvedValue(undefined)
+      const repo = { ...mockRepo, findById: vi.fn().mockResolvedValue(mockProperty), update: upd }
+      await new UpdatePropertyUseCase(repo as any).execute('prop-1', 'org-1', { status: slug })
+      expect(upd.mock.calls[0][2].status, slug).toBe(expected)
+    }
+  })
 })
