@@ -26,8 +26,8 @@ export default function ReservasPage() {
       </div>
 
       {loading ? (
-        <div className="space-y-3 animate-pulse">
-          {[...Array(5)].map((_, i) => <div key={i} className="h-20 bg-gray-200 rounded-xl" />)}
+        <div className="space-y-4 animate-pulse">
+          {[...Array(5)].map((_, i) => <div key={i} className="h-24 bg-gray-200 rounded-xl" />)}
         </div>
       ) : properties.length === 0 ? (
         <div className="bg-white rounded-xl border p-8 sm:p-12 text-center">
@@ -36,12 +36,12 @@ export default function ReservasPage() {
           <p className="text-gray-500">Aparecerán aquí las propiedades con etapa "Reservada"</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {properties.map(p => {
             const isAlquiler = p.operation_type_id === 2
             return (
-              <Link key={p.id} href={`/propiedades/${p.id}`}>
-                <div className="bg-white border rounded-xl p-4 hover:shadow-sm transition-shadow">
+              <Link key={p.id} href={`/propiedades/${p.id}`} className="block">
+                <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-5 hover:shadow-md hover:border-gray-300 transition-all">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-gray-800 truncate mb-1">{p.address}</h3>
@@ -54,7 +54,7 @@ export default function ReservasPage() {
                             <DollarSign className="w-3 h-3" />{formatCurrency(Number(p.asking_price), p.currency || 'USD')}
                           </span>
                         )}
-                        {p.agent_name && <span className="text-gray-400">{p.agent_name}</span>}
+                        {p.agent_name && <span className="text-gray-500">{p.agent_name}</span>}
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-1 shrink-0">
