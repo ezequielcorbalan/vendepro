@@ -861,7 +861,7 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
           </div>
 
           {/* Row 2: agent + activity + urgency */}
-          <div className="flex items-center gap-2 text-[11px] text-gray-400 flex-wrap pl-10">
+          <div className="flex items-center gap-2 text-[11px] text-gray-500 flex-wrap pl-10">
             {lead.assigned_name && <span>{lead.assigned_name}</span>}
             {lastActivity && <><span className="text-gray-200">·</span><span>Últ: {lastActivity}</span></>}
             {urg && <><span className="text-gray-200">·</span><span className={`font-medium ${urg.cls}`}>{urg.text}</span></>}
@@ -958,7 +958,7 @@ function KanbanCard({ lead, onAdvance, onMoveTo }: { lead: any; onAdvance: () =>
     <div className={`bg-white border rounded-xl p-3 hover:shadow-md transition-all relative ${urgency === 'danger' ? 'border-red-200 bg-red-50/30' : ''}`}>
       <Link href={`/leads/${lead.id}`}>
         <div className="flex items-center justify-between mb-1">
-          <h4 className="text-sm font-medium text-gray-800 truncate">{lead.full_name}{lead.property_address ? <span className="text-gray-400 font-normal text-[10px] ml-1">· {lead.property_address}</span> : ''}</h4>
+          <h4 className="text-sm font-medium text-gray-800 truncate">{lead.full_name}{lead.property_address ? <span className="text-gray-500 font-normal text-[10px] ml-1">· {lead.property_address}</span> : ''}</h4>
           {badge && <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${badge.class}`}>{badge.text}</span>}
         </div>
         {lead.tags?.length > 0 && (
@@ -971,7 +971,7 @@ function KanbanCard({ lead, onAdvance, onMoveTo }: { lead: any; onAdvance: () =>
         <div className="space-y-1 text-xs text-gray-500">
           {lead.phone && <p className="flex items-center gap-1"><Phone className="w-3 h-3" />{lead.phone}</p>}
           {lead.operation && <p className="capitalize">{lead.operation}{lead.neighborhood ? ` · ${lead.neighborhood}` : ''}</p>}
-          {lead.next_step && <p className="text-gray-400 truncate">→ {lead.next_step}</p>}
+          {lead.next_step && <p className="text-gray-500 truncate">→ {lead.next_step}</p>}
         </div>
       </Link>
       <div className="flex items-center justify-between mt-2">
