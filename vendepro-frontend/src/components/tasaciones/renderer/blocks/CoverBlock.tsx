@@ -20,10 +20,16 @@ interface Props {
 
 export function CoverBlock({ data, appraisal, ...attrs }: Props) {
   const agent = data.agent_display ?? appraisal.agent ?? undefined
+  const hasCoverImage = !!data.cover_image_url
+  // Sin imagen de portada el degradado queda enorme y vacío: achicamos la
+  // altura para que el header sea compacto. Con imagen mantenemos el tamaño full.
+  const sizeClasses = hasCoverImage
+    ? 'min-h-[80vh] py-16 md:min-h-screen'
+    : 'min-h-[40vh] py-12 md:min-h-[50vh]'
   return (
     <section
       {...attrs}
-      className="relative min-h-[80vh] flex items-end text-white px-6 py-16 md:min-h-screen md:px-12"
+      className={`relative flex items-end text-white px-6 md:px-12 ${sizeClasses}`}
       style={{ backgroundImage: 'linear-gradient(180deg, var(--brand-color, #ff007c) 0%, var(--brand-accent-color, #e17a2a) 100%)' }}
     >
       {data.cover_image_url && (
