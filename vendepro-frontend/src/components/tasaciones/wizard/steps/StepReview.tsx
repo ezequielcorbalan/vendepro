@@ -176,6 +176,7 @@ export function StepReview({ templateId, property, details, comparables, customB
                   appraisal={ctx}
                   resolvedVars={resolvedVars}
                   mode="web"
+                  editing
                 />
               </div>
             )}

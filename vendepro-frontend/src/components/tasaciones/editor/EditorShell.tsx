@@ -306,7 +306,7 @@ export function EditorShell({ initial, snapshot, context }: Props) {
               <button onClick={() => setMode('web')} className={`rounded px-3 py-1 text-xs ${mode === 'web' ? 'bg-slate-900 text-white' : 'text-slate-500'}`}>Web</button>
               <button onClick={() => setMode('print')} className={`rounded px-3 py-1 text-xs ${mode === 'print' ? 'bg-slate-900 text-white' : 'text-slate-500'}`}>Print</button>
             </div>
-            <TemplateRenderer snapshot={snapshot} overrides={state.overrides} appraisal={ctx} mode={mode} />
+            <TemplateRenderer snapshot={snapshot} overrides={state.overrides} appraisal={ctx} mode={mode} editing />
           </div>
         </div>
       </div>
@@ -318,7 +318,7 @@ export function EditorShell({ initial, snapshot, context }: Props) {
         <div className="fixed inset-0 z-40 bg-white lg:hidden">
           <button onClick={() => setMobilePreviewOpen(false)} className="absolute right-4 top-4 z-10 rounded-full bg-slate-900 px-3 py-1 text-xs text-white">Cerrar</button>
           <div className="h-full overflow-y-auto">
-            <TemplateRenderer snapshot={snapshot} overrides={state.overrides} appraisal={ctx} mode={mode} />
+            <TemplateRenderer snapshot={snapshot} overrides={state.overrides} appraisal={ctx} mode={mode} editing />
           </div>
         </div>
       )}

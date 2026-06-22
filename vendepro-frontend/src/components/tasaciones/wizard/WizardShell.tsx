@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react'
-import { useWizardForm, canAdvance } from './use-wizard-form'
+import { useWizardForm, canAdvance, type WizardStep } from './use-wizard-form'
 import { StepTemplate } from './steps/StepTemplate'
 import { StepProperty } from './steps/StepProperty'
 import { StepVariableBlocks } from './steps/StepVariableBlocks'
@@ -30,6 +30,19 @@ export function WizardShell({ initialTemplateId, initialLeadId }: Props) {
   const [publishing, setPublishing] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
+
+  // Permite saltar a cualquier etapa desde el stepper. Hacia atrás siempre se
+  // puede; hacia adelante exige la dirección (único campo obligatorio, igual
+  // que canAdvance en el paso 2).
+  const goToStep = (n: WizardStep) => {
+    if (n === state.step) return
+    if (n > state.step && !state.property.address.trim()) {
+      toast('Completá la dirección antes de avanzar', 'error')
+      dispatch({ type: 'goto', step: 2 })
+      return
+    }
+    dispatch({ type: 'goto', step: n })
+  }
 
   const handlePublish = async (publishPublic: boolean) => {
     setPublishing(true)
@@ -108,23 +121,27 @@ export function WizardShell({ initialTemplateId, initialLeadId }: Props) {
       {/* Stepper */}
       <div className="mb-8 flex gap-2">
         {STEP_LABELS.map((label, i) => {
-          const n = (i + 1) as 1 | 2 | 3 | 4 | 5 | 6
+          const n = (i + 1) as WizardStep
           const done = n < state.step
           const active = n === state.step
           return (
-            <div
+            <button
               key={i}
-              className={`flex-1 rounded px-3 py-2 text-center text-xs font-medium ${
+              type="button"
+              onClick={() => goToStep(n)}
+              aria-current={active ? 'step' : undefined}
+              title={`Ir a: ${label}`}
+              className={`flex-1 rounded px-3 py-2 text-center text-xs font-medium transition hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-brand-pink/40 ${
                 active
                   ? 'bg-brand-pink text-white'
                   : done
-                  ? 'bg-slate-200 text-slate-700'
-                  : 'bg-slate-100 text-slate-400'
+                  ? 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                  : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
               }`}
             >
               {done && '✓ '}
               {n}. {label}
-            </div>
+            </button>
           )
         })}
       </div>

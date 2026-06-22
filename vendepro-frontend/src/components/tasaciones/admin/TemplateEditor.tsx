@@ -237,6 +237,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
               snapshot={blocks}
               appraisal={orgBrand ? { ...MOCK_APPRAISAL, org: { ...MOCK_APPRAISAL.org, ...orgBrand } as any } : MOCK_APPRAISAL}
               mode="web"
+              editing
             />
           </div>
         </div>
