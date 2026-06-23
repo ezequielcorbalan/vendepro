@@ -1,7 +1,7 @@
 'use client'
 import { useState, useCallback, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, ExternalLink, Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
+import { ArrowLeft, ExternalLink, Loader2, CheckCircle2, AlertCircle, PanelLeftClose, PanelLeftOpen, LayoutTemplate } from 'lucide-react'
 import { useEditorState } from './useEditorState'
 import { useAutosave } from './useAutosave'
 import { BlockList } from './BlockList'
@@ -25,7 +25,9 @@ interface Props {
   context: 'appraisal' | 'template'
 }
 
-function buildCtx(a: any): AppraisalContext {
+interface OrgCtx { name: string; logo_url: string | null; brand_color: string | null; brand_accent_color: string | null }
+
+function buildCtx(a: any, org: OrgCtx | null): AppraisalContext {
   return {
     id: a.id,
     property_address: a.property_address,
@@ -39,8 +41,8 @@ function buildCtx(a: any): AppraisalContext {
     swot: { strengths: a.strengths ?? null, weaknesses: a.weaknesses ?? null, opportunities: a.opportunities ?? null, threats: a.threats ?? null },
     prices: { suggested: a.suggested_price ?? null, test: a.test_price ?? null, expected_close: a.expected_close_price ?? null, usd_per_m2: a.usd_per_m2 ?? null },
     comparables: a.comparables ?? [],
-    agent: a.agent ?? null,
-    org: a.org ?? null,
+    agent: a.agent ?? (a.agent_name ? { name: a.agent_name, phone: a.agent_phone ?? null, email: a.agent_email ?? null, avatar_url: a.agent_avatar_url ?? null } : null),
+    org: a.org ?? org,
   }
 }
 
@@ -52,6 +54,8 @@ export function EditorShell({ initial, snapshot, context }: Props) {
   const [monthlyUsed, setMonthlyUsed] = useState<number | null>(null)
 
   const [weights, setWeights] = useState<SurfaceWeights>(DEFAULT_SURFACE_WEIGHTS)
+  const [orgCtx, setOrgCtx] = useState<OrgCtx | null>(null)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   // Comparables se manejan aparte del autosave del appraisal: cada uno tiene
   // su propia tabla y endpoints. Mantenemos una lista local que sincronizamos
@@ -64,7 +68,8 @@ export function EditorShell({ initial, snapshot, context }: Props) {
   useEffect(() => {
     apiFetch('admin', '/org-settings').then(r => r.json() as Promise<any>).then(d => {
       if (isValidWeights(d.surface_weights)) setWeights(d.surface_weights)
-    }).catch(() => { /* fallback al default */ })
+      if (d.name) setOrgCtx({ name: d.name, logo_url: d.logo_url ?? null, brand_color: d.brand_color ?? null, brand_accent_color: d.brand_accent_color ?? null })
+    }).catch(() => {})
   }, [])
 
   const handleAddComparable = async (data: ComparableData) => {
@@ -172,7 +177,7 @@ export function EditorShell({ initial, snapshot, context }: Props) {
     }
   }
 
-  const ctx = buildCtx({ ...state.appraisal, comparables })
+  const ctx = buildCtx({ ...state.appraisal, comparables }, orgCtx)
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -182,6 +187,13 @@ export function EditorShell({ initial, snapshot, context }: Props) {
           <h1 className="text-sm font-semibold">{state.appraisal.property_address}</h1>
         </div>
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => setSidebarCollapsed(c => !c)}
+            className="hidden lg:flex items-center justify-center rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+            title={sidebarCollapsed ? 'Mostrar panel de edición' : 'Ocultar panel de edición'}
+          >
+            {sidebarCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+          </button>
           <SaveStatus status={status} errorMsg={errorMsg} lastSavedAt={lastSavedAt} onRetry={retry} />
           {!state.appraisal.public_slug && (
             <button
@@ -227,8 +239,8 @@ export function EditorShell({ initial, snapshot, context }: Props) {
         />
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2">
-        <div className="border-r border-slate-200 bg-white p-6">
+      <div className={`grid grid-cols-1 ${!sidebarCollapsed ? 'lg:grid-cols-2' : ''}`}>
+        <div className={`border-r border-slate-200 bg-white p-6 ${sidebarCollapsed ? 'hidden' : ''}`}>
           <section>
             <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Datos de la propiedad</h2>
             <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -300,13 +312,21 @@ export function EditorShell({ initial, snapshot, context }: Props) {
           )}
         </div>
 
-        <div className="hidden lg:block">
+        <div className={sidebarCollapsed ? 'block' : 'hidden lg:block'}>
           <div className="sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto">
             <div className="flex items-center gap-2 border-b border-slate-200 bg-white px-4 py-2">
               <button onClick={() => setMode('web')} className={`rounded px-3 py-1 text-xs ${mode === 'web' ? 'bg-slate-900 text-white' : 'text-slate-500'}`}>Web</button>
               <button onClick={() => setMode('print')} className={`rounded px-3 py-1 text-xs ${mode === 'print' ? 'bg-slate-900 text-white' : 'text-slate-500'}`}>Print</button>
             </div>
-            <TemplateRenderer snapshot={snapshot} overrides={state.overrides} appraisal={ctx} mode={mode} editing />
+            {snapshot.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-24 px-8 text-center">
+                <LayoutTemplate className="h-10 w-10 mb-3 text-slate-300" />
+                <p className="text-sm font-medium text-slate-500">Sin template asignado</p>
+                <p className="text-xs mt-1 text-slate-400">Esta tasación no tiene un template seleccionado.<br />El preview aparece aquí una vez asignado.</p>
+              </div>
+            ) : (
+              <TemplateRenderer snapshot={snapshot} overrides={state.overrides} appraisal={ctx} mode={mode} editing />
+            )}
           </div>
         </div>
       </div>
