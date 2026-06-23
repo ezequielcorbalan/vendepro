@@ -9,24 +9,34 @@ import { StepVariableBlocks } from './steps/StepVariableBlocks'
 import { StepDetails } from './steps/StepDetails'
 import { StepCompetencia } from './steps/StepCompetencia'
 import { StepReview } from './steps/StepReview'
-import { createAppraisal, publishAppraisal, addComparable, patchBlockOverride } from '../shared/api'
+import { createAppraisal, updateAppraisal, publishAppraisal, syncTemplate, addComparable, deleteComparable, patchBlockOverride } from '../shared/api'
 import { APPRAISAL_BLOCK_TYPES, type AppraisalBlockType } from '../renderer/types'
 import { useToast } from '@/components/ui/Toast'
+import type { WizardState } from './use-wizard-form'
 
 interface Props {
   initialTemplateId?: string | null
   initialLeadId?: string | null
+  /** Modo edición: ID de la tasación existente. */
+  existingAppraisalId?: string
+  /** IDs de los comparables existentes — se borran y recrean al guardar. */
+  existingComparableIds?: string[]
+  /** Estado inicial pre-cargado desde la tasación existente. */
+  initialData?: Partial<WizardState>
 }
 
 const STEP_LABELS = ['Template', 'Propiedad', 'Bloques', 'FODA + Precios', 'Comparables', 'Revisar']
 const TOTAL_STEPS = STEP_LABELS.length
 
-export function WizardShell({ initialTemplateId, initialLeadId }: Props) {
-  const [state, dispatch] = useWizardForm({
-    template_id: initialTemplateId ?? null,
-    lead_id: initialLeadId ?? null,
-    step: initialTemplateId ? 2 : 1,
-  })
+export function WizardShell({ initialTemplateId, initialLeadId, existingAppraisalId, existingComparableIds = [], initialData }: Props) {
+  const isEditMode = !!existingAppraisalId
+  const [state, dispatch] = useWizardForm(
+    initialData ?? {
+      template_id: initialTemplateId ?? null,
+      lead_id: initialLeadId ?? null,
+      step: initialTemplateId ? 2 : 1,
+    }
+  )
   const [publishing, setPublishing] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
@@ -44,6 +54,69 @@ export function WizardShell({ initialTemplateId, initialLeadId }: Props) {
     dispatch({ type: 'goto', step: n })
   }
 
+  const buildCustomSnapshot = () => {
+    if (!state.template_id && state.customBlocks.length > 0) {
+      const orderOf = (t: AppraisalBlockType) => APPRAISAL_BLOCK_TYPES.indexOf(t)
+      const sorted = [...state.customBlocks].sort((a, b) => orderOf(a.type) - orderOf(b.type))
+      return sorted.map((b, i) => ({
+        id: `custom-${b.type}`,
+        type: b.type,
+        binding_mode: 'tasacion',
+        include_in_pdf: true,
+        sort_order: i,
+        data: b.data,
+      }))
+    }
+    return null
+  }
+
+  const saveOverrides = async (appraisalId: string) => {
+    const overrideEntries = Object.entries(state.blockOverrides).filter(
+      ([, patch]) => patch && Object.keys(patch).length > 0,
+    )
+    if (overrideEntries.length > 0) {
+      await Promise.all(
+        overrideEntries.map(([blockId, patch]) => patchBlockOverride(appraisalId, blockId, patch)),
+      )
+    }
+  }
+
+  const handleSaveEdit = async () => {
+    setPublishing(true)
+    if (!state.property.address.trim()) {
+      toast('La dirección es obligatoria', 'error')
+      dispatch({ type: 'goto', step: 2 })
+      setPublishing(false)
+      return
+    }
+    try {
+      const { address, ...restProperty } = state.property
+      const customSnapshot = buildCustomSnapshot()
+      await updateAppraisal(existingAppraisalId!, {
+        template_id: state.template_id,
+        ...(customSnapshot ? { template_snapshot_json: customSnapshot } : {}),
+        property_address: address,
+        ...restProperty,
+        lead_id: state.lead_id,
+        ...state.details,
+      })
+      if (state.template_id) {
+        await syncTemplate(existingAppraisalId!)
+      }
+      if (existingComparableIds.length > 0) {
+        await Promise.all(existingComparableIds.map(cid => deleteComparable(cid)))
+      }
+      for (let i = 0; i < state.comparables.length; i++) {
+        await addComparable({ ...state.comparables[i], sort_order: i, appraisal_id: existingAppraisalId! })
+      }
+      await saveOverrides(existingAppraisalId!)
+      router.push(`/tasaciones/${existingAppraisalId}/editar`)
+    } catch (e: any) {
+      toast(e?.message ?? 'Error al guardar', 'error')
+      setPublishing(false)
+    }
+  }
+
   const handlePublish = async (publishPublic: boolean) => {
     setPublishing(true)
     if (!state.property.address.trim()) {
@@ -55,24 +128,10 @@ export function WizardShell({ initialTemplateId, initialLeadId }: Props) {
     let appraisalId: string | null = null
     try {
       const { address, ...restProperty } = state.property
-      // Si arrancó "desde cero" y eligió bloques, los enviamos como snapshot
-      // sintético. Si no, el backend deja la tasación sin snapshot.
-      let template_snapshot_json: unknown = undefined
-      if (!state.template_id && state.customBlocks.length > 0) {
-        const orderOf = (t: AppraisalBlockType) => APPRAISAL_BLOCK_TYPES.indexOf(t)
-        const sorted = [...state.customBlocks].sort((a, b) => orderOf(a.type) - orderOf(b.type))
-        template_snapshot_json = sorted.map((b, i) => ({
-          id: `custom-${b.type}`,
-          type: b.type,
-          binding_mode: 'tasacion',
-          include_in_pdf: true,
-          sort_order: i,
-          data: b.data,
-        }))
-      }
+      const customSnapshot = buildCustomSnapshot()
       const { id } = await createAppraisal({
         template_id: state.template_id,
-        ...(template_snapshot_json ? { template_snapshot_json } : {}),
+        ...(customSnapshot ? { template_snapshot_json: customSnapshot } : {}),
         property_id: state.property_id,
         property_address: address,
         ...restProperty,
@@ -83,14 +142,7 @@ export function WizardShell({ initialTemplateId, initialLeadId }: Props) {
       for (let i = 0; i < state.comparables.length; i++) {
         await addComparable({ ...state.comparables[i], sort_order: i, appraisal_id: id })
       }
-      const overrideEntries = Object.entries(state.blockOverrides).filter(
-        ([, patch]) => patch && Object.keys(patch).length > 0,
-      )
-      if (overrideEntries.length > 0) {
-        await Promise.all(
-          overrideEntries.map(([blockId, patch]) => patchBlockOverride(id, blockId, patch)),
-        )
-      }
+      await saveOverrides(id)
       if (publishPublic) await publishAppraisal(id)
       router.push(`/tasaciones/${id}/editar?welcome=1`)
     } catch (e: any) {
@@ -109,12 +161,12 @@ export function WizardShell({ initialTemplateId, initialLeadId }: Props) {
     <div className="mx-auto max-w-5xl px-4 py-6 md:px-8 md:py-10">
       {/* Header */}
       <header className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">Nueva tasación</h1>
+        <h1 className="text-2xl font-bold text-slate-900">{isEditMode ? 'Editar tasación' : 'Nueva tasación'}</h1>
         <button
-          onClick={() => router.back()}
+          onClick={() => isEditMode ? router.push(`/tasaciones/${existingAppraisalId}/editar`) : router.back()}
           className="text-sm text-slate-500 hover:text-slate-700"
         >
-          Cancelar
+          {isEditMode ? 'Volver al editor' : 'Cancelar'}
         </button>
       </header>
 
@@ -224,6 +276,15 @@ export function WizardShell({ initialTemplateId, initialLeadId }: Props) {
             className="flex items-center gap-2 rounded bg-brand-pink px-5 py-2 text-sm text-white disabled:opacity-40"
           >
             Siguiente <ArrowRight className="h-4 w-4" />
+          </button>
+        ) : isEditMode ? (
+          <button
+            onClick={handleSaveEdit}
+            disabled={publishing}
+            className="flex items-center gap-2 rounded bg-brand-pink px-5 py-2 text-sm text-white disabled:opacity-40"
+          >
+            {publishing && <Loader2 className="h-4 w-4 animate-spin" />}
+            Guardar cambios
           </button>
         ) : (
           <div className="flex items-center gap-2">

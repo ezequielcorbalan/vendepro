@@ -1,7 +1,7 @@
 'use client'
 import { useState, useCallback, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, ExternalLink, Loader2, CheckCircle2, AlertCircle, PanelLeftClose, PanelLeftOpen, LayoutTemplate } from 'lucide-react'
+import { ArrowLeft, ExternalLink, Loader2, CheckCircle2, AlertCircle, PanelLeftClose, PanelLeftOpen, LayoutTemplate, Wand2 } from 'lucide-react'
 import { useEditorState } from './useEditorState'
 import { useAutosave } from './useAutosave'
 import { BlockList } from './BlockList'
@@ -187,6 +187,13 @@ export function EditorShell({ initial, snapshot, context }: Props) {
           <h1 className="text-sm font-semibold">{state.appraisal.property_address}</h1>
         </div>
         <div className="flex items-center gap-3">
+          <Link
+            href={`/tasaciones/${state.appraisal.id}/wizard`}
+            className="flex items-center gap-1.5 rounded border border-slate-200 px-3 py-1 text-xs text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+            title="Abrir el wizard completo de edición"
+          >
+            <Wand2 className="h-3.5 w-3.5" /> Edición completa
+          </Link>
           <button
             onClick={() => setSidebarCollapsed(c => !c)}
             className="hidden lg:flex items-center justify-center rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"

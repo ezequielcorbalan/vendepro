@@ -278,6 +278,14 @@ export class D1AppraisalRepository implements AppraisalRepository {
     const marketJson = toJson(patch.market_situation)
     const workJson = toJson(patch.work_conditions)
     const videoLinksJson = toJson(patch.video_links)
+    // JSON fields that arrive pre-serialized (already a string) or as object.
+    const asJsonStr = (v: unknown) => {
+      if (v === undefined || v === null) return null
+      if (typeof v === 'string') return v
+      return JSON.stringify(v)
+    }
+    const templateSnapshotJson = asJsonStr(patch.template_snapshot_json)
+    const blockOverridesJson = asJsonStr(patch.block_overrides_json)
 
     await this.db
       .prepare(`
@@ -310,6 +318,10 @@ export class D1AppraisalRepository implements AppraisalRepository {
           market_situation_json=COALESCE(?,market_situation_json),
           work_conditions_json=COALESCE(?,work_conditions_json),
           video_links_json=COALESCE(?,video_links_json),
+          template_id=COALESCE(?,template_id),
+          template_snapshot_json=COALESCE(?,template_snapshot_json),
+          template_synced_at=COALESCE(?,template_synced_at),
+          block_overrides_json=COALESCE(?,block_overrides_json),
           updated_at=?
         WHERE id = ? AND org_id = ?
       `)
@@ -331,6 +343,10 @@ export class D1AppraisalRepository implements AppraisalRepository {
         marketJson ?? null,
         workJson ?? null,
         videoLinksJson ?? null,
+        patch.template_id ?? null,
+        templateSnapshotJson,
+        patch.template_synced_at ?? null,
+        blockOverridesJson,
         now,
         id, orgId,
       )
