@@ -6,6 +6,7 @@ import { Building2, Search, AlertTriangle, Check, CheckCircle2, ChevronDown } fr
 import { apiFetch } from '@/lib/api'
 import type { PropertyConfig } from '@/lib/property-config'
 import { COLOR_CLASS, DOT_CLASS, getStage, getStatus, getOpType, stagesForType } from '@/lib/property-config'
+import { useToast } from '@/components/ui/Toast'
 
 const REPORT_DEADLINE_DAYS = 20
 
@@ -21,6 +22,7 @@ function lastReportInfo(p: any) {
 }
 
 export default function PropertyFilters({ properties, config }: { properties: any[]; config: PropertyConfig }) {
+  const { toast } = useToast()
   const [filter, setFilter] = useState<string>('active')
   const [searchText, setSearchText] = useState('')
   const [externalMarks, setExternalMarks] = useState<Record<string, string | null>>({})
@@ -38,15 +40,35 @@ export default function PropertyFilters({ properties, config }: { properties: an
   }
 
   async function changeStage(propertyId: string, stageId: number) {
+    const prevStageId = stageOverrides[propertyId]
     setStageOverrides(prev => ({ ...prev, [propertyId]: stageId }))
     setOpenStageMenu(null)
     try {
-      await apiFetch('properties', `/properties/${propertyId}/stage`, {
+      const res = await apiFetch('properties', `/properties/${propertyId}/stage`, {
         method: 'PUT',
-        body: JSON.stringify({ commercial_stage_id: stageId }),
+        body: JSON.stringify({ commercial_stage_id: stageId, override: true }),
       })
+      const data = (await res.json().catch(() => ({}))) as any
+      if (!res.ok || data.error) {
+        setStageOverrides(prev => {
+          const n = { ...prev }
+          if (prevStageId !== undefined) n[propertyId] = prevStageId
+          else delete n[propertyId]
+          return n
+        })
+        toast(data.error || 'Error al cambiar etapa', 'error')
+        return
+      }
+      const newStage = config.commercial_stages.find(s => s.id === stageId)
+      if (newStage) toast(`Etapa actualizada: ${newStage.label}`)
     } catch {
-      setStageOverrides(prev => { const n = { ...prev }; delete n[propertyId]; return n })
+      setStageOverrides(prev => {
+        const n = { ...prev }
+        if (prevStageId !== undefined) n[propertyId] = prevStageId
+        else delete n[propertyId]
+        return n
+      })
+      toast('Error de conexión', 'error')
     }
   }
 
@@ -203,71 +225,22 @@ export default function PropertyFilters({ properties, config }: { properties: an
               </Link>
 
               <div className="p-4">
-                {/* Badges */}
-                <div className="flex items-center gap-1.5 flex-wrap mb-2">
-                  {status && (
-                    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${COLOR_CLASS[status.color] || 'bg-gray-100 text-gray-500'}`}>
-                      {status.label}
-                    </span>
-                  )}
-                  {stage && (
-                    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${COLOR_CLASS[stage.color] || 'bg-gray-100 text-gray-500'}`}>
-                      {stage.label}
-                    </span>
-                  )}
-                  {opType && (
-                    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${opType.id === 2 ? 'bg-cyan-50 text-cyan-700' : 'bg-indigo-50 text-indigo-600'}`}>
-                      {opType.label}
-                    </span>
-                  )}
-                  {externalMarked && (
-                    <span className="text-[10px] text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded-full font-medium">+ext</span>
-                  )}
-                </div>
-
-                <Link href={`/propiedades/${property.id}`}>
-                  <h3 className="font-semibold text-gray-800 mb-0.5 hover:text-brand-pink transition-colors leading-snug">{property.address}</h3>
-                  <p className="text-xs text-gray-500">{property.neighborhood} · {property.property_type}</p>
-                  {property.asking_price && (
-                    <p className="text-sm font-semibold text-brand-pink mt-1">{property.currency} {Number(property.asking_price).toLocaleString('es-AR')}</p>
-                  )}
-                  {property.agent_name && <p className="text-xs text-gray-400 mt-0.5">Agente: {property.agent_name}</p>}
-                  {info.days !== null && (
-                    <p className={`text-xs mt-0.5 ${isOverdue ? 'text-orange-600 font-medium' : isWarning ? 'text-yellow-700' : 'text-gray-400'}`}>
-                      Último reporte: hace {info.days}d{info.isExternal ? ' (ext)' : ''}
-                    </p>
-                  )}
-                </Link>
-
-                <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <Link href={`/propiedades/${property.id}/reportes/nuevo`}
-                      className="text-xs text-brand-pink font-medium hover:underline shrink-0">
-                      + Reporte
-                    </Link>
-                    <button
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleExternal(property.id, externalMarked) }}
-                      className={`text-xs flex items-center gap-1 px-2 py-0.5 rounded-full transition-colors ${
-                        externalMarked
-                          ? 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100'
-                          : 'bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100'
-                      }`}
-                    >
-                      {externalMarked ? <CheckCircle2 className="w-3 h-3" /> : <Check className="w-3 h-3" />}
-                      {externalMarked ? 'Ext.' : 'Hecho fuera'}
-                    </button>
-                  </div>
-
-                  {/* Stage changer */}
+                {/* Top row: stage badge (interactive) + non-active status warning */}
+                <div className="flex items-center justify-between mb-2.5">
                   <div className="relative">
                     <button
+                      aria-label={`Etapa actual: ${stage?.label ?? 'Sin etapa'}. Cambiar etapa`}
+                      aria-haspopup="listbox"
+                      aria-expanded={openStageMenu === property.id}
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpenStageMenu(openStageMenu === property.id ? null : property.id) }}
-                      className="text-xs flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100"
+                      className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full transition-colors hover:opacity-80 cursor-pointer ${stage ? (COLOR_CLASS[stage.color] || 'bg-gray-100 text-gray-600') : 'bg-gray-100 text-gray-500'}`}
                     >
-                      Etapa <ChevronDown className="w-3 h-3" />
+                      {stage && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${DOT_CLASS[stage.color] || 'bg-gray-300'}`} />}
+                      <span>{stage?.label ?? 'Sin etapa'}</span>
+                      <ChevronDown className="w-3 h-3 opacity-60" />
                     </button>
                     {openStageMenu === property.id && (
-                      <div className="absolute right-0 bottom-8 z-10 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[160px]">
+                      <div className="absolute left-0 top-8 z-10 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[160px]">
                         {opStages.map(s => (
                           <button key={s.id}
                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); changeStage(property.id, s.id) }}
@@ -281,6 +254,46 @@ export default function PropertyFilters({ properties, config }: { properties: an
                       </div>
                     )}
                   </div>
+                  {/* Status badge — only when non-active (suspended, archived, etc.) */}
+                  {status && status.slug !== 'active' && (
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${COLOR_CLASS[status.color] || 'bg-gray-100 text-gray-500'}`}>
+                      {status.label}
+                    </span>
+                  )}
+                </div>
+
+                <Link href={`/propiedades/${property.id}`}>
+                  <h3 className="font-semibold text-gray-800 mb-0.5 hover:text-brand-pink transition-colors leading-snug">{property.address}</h3>
+                  <p className="text-xs text-gray-500">
+                    {[property.neighborhood, property.property_type, opType?.label].filter(Boolean).join(' · ')}
+                  </p>
+                  {property.asking_price && (
+                    <p className="text-sm font-semibold text-brand-pink mt-1">{property.currency} {Number(property.asking_price).toLocaleString('es-AR')}</p>
+                  )}
+                  {property.agent_name && <p className="text-xs text-gray-400 mt-0.5">Agente: {property.agent_name}</p>}
+                  {info.days !== null && (
+                    <p className={`text-xs mt-0.5 ${isOverdue ? 'text-orange-600 font-medium' : isWarning ? 'text-yellow-700' : 'text-gray-400'}`}>
+                      Último reporte: hace {info.days}d{info.isExternal ? ' (ext)' : ''}
+                    </p>
+                  )}
+                </Link>
+
+                <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-2">
+                  <Link href={`/propiedades/${property.id}/reportes/nuevo`}
+                    className="text-xs text-brand-pink font-medium hover:underline shrink-0">
+                    + Reporte
+                  </Link>
+                  <button
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleExternal(property.id, externalMarked) }}
+                    className={`text-xs flex items-center gap-1 px-2 py-0.5 rounded-full transition-colors ml-auto ${
+                      externalMarked
+                        ? 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100'
+                        : 'bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100'
+                    }`}
+                  >
+                    {externalMarked ? <CheckCircle2 className="w-3 h-3" /> : <Check className="w-3 h-3" />}
+                    {externalMarked ? 'Ext.' : 'Hecho fuera'}
+                  </button>
                 </div>
               </div>
             </div>
@@ -289,8 +302,14 @@ export default function PropertyFilters({ properties, config }: { properties: an
       </div>
 
       {filtered.length === 0 && (
-        <div className="bg-white rounded-xl p-8 text-center shadow-sm">
-          <p className="text-gray-500">No hay propiedades con este filtro</p>
+        <div className="bg-white rounded-xl p-10 text-center shadow-sm">
+          <Building2 className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+          <p className="text-sm font-medium text-gray-600 mb-1">
+            {searchText ? 'Sin resultados para esa búsqueda' : 'No hay propiedades en esta etapa'}
+          </p>
+          <p className="text-xs text-gray-400">
+            {searchText ? 'Probá con otra dirección, barrio o propietario' : 'Cambiá el filtro o agregá una nueva propiedad'}
+          </p>
         </div>
       )}
     </div>
