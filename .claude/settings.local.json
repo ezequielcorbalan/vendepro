@@ -50,7 +50,19 @@
       "PowerShell(npx vitest run --reporter=default 2>&1 | Select-Object -Last 15)",
       "PowerShell(git rm *)",
       "PowerShell(npx vitest run --reporter=default 2>&1 | Select-Object -Last 10)",
-      "PowerShell(git *)"
+      "PowerShell(git *)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\wiisy\\\\proyectos\\\\vendepro\\\\.claude\\\\skills\" -Recurse)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(Sort-Object)",
+      "Bash(ls vitest.config.*)",
+      "Bash(ls ../../vitest.config.*)",
+      "Bash(ls ../../vitest.workspace.*)",
+      "Bash(npx -y tsx .claude/skills/tasacion-template-creator/scripts/validate-blocks.ts vendepro-backend/migrations_v2/030_appraisal_template_simple_light.sql)",
+      "Bash(npx -y tsx .claude/skills/tasacion-template-creator/scripts/validate-blocks.ts vendepro-backend/migrations_v2/018_appraisal_templates_seed.sql)",
+      "Bash(npx -y tsx .claude/skills/tasacion-template-creator/scripts/validate-blocks.ts \"C:/Users/wiisy/AppData/Local/Temp/claude/C--Users-wiisy-proyectos-vendepro/6b4054db-2394-4616-91e2-73018589fc32/scratchpad/bad-blocks.json\")",
+      "Bash(echo \"EXIT_CODE=$?\")",
+      "Bash(git check-ignore *)"
     ]
   }
 }
