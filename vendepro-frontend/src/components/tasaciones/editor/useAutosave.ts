@@ -12,7 +12,6 @@ interface PendingPatches {
 interface Params {
   appraisalId: string
   pending: PendingPatches
-  dirty: boolean
   onConsume: (saved: PendingPatches) => void
 }
 
@@ -24,18 +23,21 @@ function hasPending(p: PendingPatches): boolean {
   return false
 }
 
-export function useAutosave({ appraisalId, pending, dirty, onConsume }: Params) {
+export function useAutosave({ appraisalId, pending, onConsume }: Params) {
   const [status, setStatus] = useState<SaveStatus>('idle')
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pendingRef = useRef<PendingPatches>(pending)
   const savingRef = useRef(false)
+  const mountedRef = useRef(true)
   const [retryToken, setRetryToken] = useState(0)
 
   useEffect(() => { pendingRef.current = pending }, [pending])
 
-  const flush = useCallback(async () => {
+  // `keepalive` lets the request survive page unload (tab close / navigation).
+  // A normal fetch is cancelled on unload, so the last edit would be lost.
+  const flush = useCallback(async (opts?: { keepalive?: boolean }) => {
     if (timerRef.current) {
       clearTimeout(timerRef.current)
       timerRef.current = null
@@ -50,22 +52,29 @@ export function useAutosave({ appraisalId, pending, dirty, onConsume }: Params) 
     const hasAppraisal = Object.keys(snapshot.appraisal).length > 0
     const overrideEntries = Object.entries(snapshot.overrides).filter(([, v]) => Object.keys(v).length > 0)
     if (!hasAppraisal && overrideEntries.length === 0) return
+    const keepalive = opts?.keepalive
     savingRef.current = true
-    setStatus('saving')
-    setErrorMsg(null)
+    if (mountedRef.current) {
+      setStatus('saving')
+      setErrorMsg(null)
+    }
     try {
       const tasks: Promise<unknown>[] = []
-      if (hasAppraisal) tasks.push(updateAppraisal(appraisalId, snapshot.appraisal))
+      if (hasAppraisal) tasks.push(updateAppraisal(appraisalId, snapshot.appraisal, { keepalive }))
       for (const [blockId, patch] of overrideEntries) {
-        tasks.push(patchBlockOverride(appraisalId, blockId, patch))
+        tasks.push(patchBlockOverride(appraisalId, blockId, patch, { keepalive }))
       }
       await Promise.all(tasks)
-      setStatus('saved')
-      setLastSavedAt(Date.now())
-      onConsume(snapshot)
+      if (mountedRef.current) {
+        setStatus('saved')
+        setLastSavedAt(Date.now())
+        onConsume(snapshot)
+      }
     } catch (e: any) {
-      setStatus('error')
-      setErrorMsg(e?.message ?? 'Error desconocido')
+      if (mountedRef.current) {
+        setStatus('error')
+        setErrorMsg(e?.message ?? 'Error desconocido')
+      }
     } finally {
       savingRef.current = false
     }
@@ -84,25 +93,43 @@ export function useAutosave({ appraisalId, pending, dirty, onConsume }: Params) 
 
   // Flush on focus loss / page hide / beforeunload to avoid losing the last
   // 2 seconds of edits when the user navigates, switches tabs, or closes.
+  // Lifecycle events that precede an unload use keepalive so the request is
+  // not cancelled mid-flight; a plain blur (page stays alive) does not.
   useEffect(() => {
-    const onFlush = () => { if (hasPending(pendingRef.current)) flush() }
+    const onBlur = () => { if (hasPending(pendingRef.current)) flush() }
+    const onUnloadFlush = () => { if (hasPending(pendingRef.current)) flush({ keepalive: true }) }
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasPending(pendingRef.current)) {
-        flush()
+        flush({ keepalive: true })
         e.preventDefault()
         e.returnValue = ''
       }
     }
-    const onVisibility = () => { if (document.visibilityState === 'hidden') onFlush() }
-    window.addEventListener('blur', onFlush)
+    const onVisibility = () => { if (document.visibilityState === 'hidden') onUnloadFlush() }
+    window.addEventListener('blur', onBlur)
     window.addEventListener('beforeunload', onBeforeUnload)
+    window.addEventListener('pagehide', onUnloadFlush)
     document.addEventListener('visibilitychange', onVisibility)
     return () => {
-      window.removeEventListener('blur', onFlush)
+      window.removeEventListener('blur', onBlur)
       window.removeEventListener('beforeunload', onBeforeUnload)
+      window.removeEventListener('pagehide', onUnloadFlush)
       document.removeEventListener('visibilitychange', onVisibility)
     }
   }, [flush])
+
+  // On unmount, mark unmounted (so in-flight saves don't setState) and fire a
+  // final keepalive flush for any pending edits (e.g. client-side navigation).
+  // Runs only on real unmount: it reads the latest flush via a ref so it does
+  // not re-fire when flush's identity changes.
+  const flushRef = useRef(flush)
+  useEffect(() => { flushRef.current = flush }, [flush])
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false
+      if (hasPending(pendingRef.current)) flushRef.current({ keepalive: true })
+    }
+  }, [])
 
   const retry = () => setRetryToken(n => n + 1)
 

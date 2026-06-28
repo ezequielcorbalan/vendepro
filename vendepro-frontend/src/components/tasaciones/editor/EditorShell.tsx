@@ -64,6 +64,9 @@ export function EditorShell({ initial, snapshot, context }: Props) {
     () => (initial.comparables ?? []).map((c: any) => ({ ...c }))
   )
   const compSaveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
+  // Comparables guardan fire & forget; si falla la persistencia avisamos al
+  // usuario en vez de tragarnos el error en consola (puede creer que guardó).
+  const [compError, setCompError] = useState<string | null>(null)
 
   useEffect(() => {
     apiFetch('admin', '/org-settings').then(r => r.json() as Promise<any>).then(d => {
@@ -101,10 +104,13 @@ export function EditorShell({ initial, snapshot, context }: Props) {
     setComparables(prev => prev.map(c => c.id === id ? { ...c, ...patch } : c))
     if (compSaveTimers.current[id]) clearTimeout(compSaveTimers.current[id])
     compSaveTimers.current[id] = setTimeout(() => {
-      updateComparable(id, patch).catch((e: any) => {
-        // No revertimos el estado local — el usuario puede reintentar editando.
-        console.error('No se pudo guardar el comparable', e)
-      })
+      updateComparable(id, patch)
+        .then(() => setCompError(null))
+        .catch((e: any) => {
+          // No revertimos el estado local — el usuario puede reintentar editando.
+          console.error('No se pudo guardar el comparable', e)
+          setCompError(e?.message ?? 'No se pudo guardar un comparable. Reintentá editándolo.')
+        })
     }, 800)
   }
 
@@ -128,8 +134,9 @@ export function EditorShell({ initial, snapshot, context }: Props) {
       next[target] = tmp
       // Persistir nuevos sort_order de los dos afectados (fire & forget).
       const a = next[index], b = next[target]
-      if (a?.id) updateComparable(a.id, { sort_order: index }).catch(() => {})
-      if (b?.id) updateComparable(b.id, { sort_order: target }).catch(() => {})
+      const onMoveErr = () => setCompError('No se pudo reordenar los comparables. Reintentá.')
+      if (a?.id) updateComparable(a.id, { sort_order: index }).catch(onMoveErr)
+      if (b?.id) updateComparable(b.id, { sort_order: target }).catch(onMoveErr)
       return next
     })
   }
@@ -151,7 +158,6 @@ export function EditorShell({ initial, snapshot, context }: Props) {
   const { status, errorMsg, lastSavedAt, retry } = useAutosave({
     appraisalId: state.appraisal.id,
     pending: state.pendingPatches,
-    dirty: state.dirty,
     onConsume,
   })
 
@@ -297,6 +303,12 @@ export function EditorShell({ initial, snapshot, context }: Props) {
 
           <section className="mt-6">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Comparables</h2>
+            {compError && (
+              <div className="mt-2 flex items-start gap-1 rounded border border-rose-200 bg-rose-50 px-2 py-1 text-xs text-rose-600">
+                <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />
+                <span>{compError}</span>
+              </div>
+            )}
             <div className="mt-3">
               <ComparablesSection<string>
                 items={comparables.map(c => ({ ...c, key: c.id })) as ComparableItem<string>[]}

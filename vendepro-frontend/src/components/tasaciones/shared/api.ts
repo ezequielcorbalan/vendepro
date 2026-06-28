@@ -146,10 +146,11 @@ export async function createAppraisal(body: any): Promise<{ id: string; status: 
   return (await r.json()) as any
 }
 
-export async function updateAppraisal(id: string, body: any): Promise<any> {
+export async function updateAppraisal(id: string, body: any, opts?: { keepalive?: boolean }): Promise<any> {
   const r = await apiFetch('properties', `/appraisals?id=${encodeURIComponent(id)}`, {
     method: 'PUT',
     body: JSON.stringify(body),
+    keepalive: opts?.keepalive,
   })
   if (!r.ok) {
     const err = (await r.json().catch(() => ({}))) as any
@@ -182,10 +183,12 @@ export async function patchBlockOverride(
   appraisalId: string,
   blockId: string,
   patch: Record<string, unknown>,
+  opts?: { keepalive?: boolean },
 ): Promise<any> {
   const r = await apiFetch('properties', `/appraisals/${appraisalId}/blocks/${blockId}`, {
     method: 'PATCH',
     body: JSON.stringify(patch),
+    keepalive: opts?.keepalive,
   })
   if (!r.ok) {
     const err = (await r.json().catch(() => ({}))) as any

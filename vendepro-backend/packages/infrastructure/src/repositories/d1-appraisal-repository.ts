@@ -268,88 +268,66 @@ export class D1AppraisalRepository implements AppraisalRepository {
 
   async update(id: string, orgId: string, patch: Record<string, unknown>): Promise<void> {
     const now = new Date().toISOString()
-    // Serialize JSON block fields if present. `undefined` => keep; `null` => clear.
-    const toJson = (v: unknown) => {
-      if (v === undefined) return undefined
-      if (v === null) return null
-      return JSON.stringify(v)
+
+    // Partial update: only touch the columns that are actually present in the
+    // patch. The frontend autosave sends one field at a time, so anything not
+    // included must be left untouched (a blanket assignment would NULL out the
+    // previously saved values for omitted fields).
+    const directColumns = [
+      'property_address', 'neighborhood', 'city', 'property_type',
+      'covered_area', 'total_area', 'semi_area', 'weighted_area',
+      'strengths', 'weaknesses', 'opportunities', 'threats',
+      'publication_analysis',
+      'suggested_price', 'test_price', 'expected_close_price', 'usd_per_m2',
+      'contact_name', 'contact_phone', 'contact_email',
+      'property_id', 'lead_id', 'status', 'public_slug',
+      'template_id', 'template_synced_at',
+    ]
+    // Object fields serialized into their *_json column when present.
+    const jsonColumns: Record<string, string> = {
+      proposal: 'proposal_json',
+      market_situation: 'market_situation_json',
+      work_conditions: 'work_conditions_json',
+      video_links: 'video_links_json',
     }
-    const proposalJson = toJson(patch.proposal)
-    const marketJson = toJson(patch.market_situation)
-    const workJson = toJson(patch.work_conditions)
-    const videoLinksJson = toJson(patch.video_links)
-    // JSON fields that arrive pre-serialized (already a string) or as object.
-    const asJsonStr = (v: unknown) => {
-      if (v === undefined || v === null) return null
-      if (typeof v === 'string') return v
-      return JSON.stringify(v)
+    // JSON columns whose value may arrive already serialized (a string) or as
+    // an object — e.g. block_overrides_json comes pre-stringified from the use
+    // case, template_snapshot_json may be either.
+    const preSerializedJsonColumns = ['template_snapshot_json', 'block_overrides_json']
+    const sets: string[] = []
+    const binds: unknown[] = []
+
+    for (const col of directColumns) {
+      if (col in patch) {
+        sets.push(`${col}=?`)
+        binds.push(patch[col] ?? null)
+      }
     }
-    const templateSnapshotJson = asJsonStr(patch.template_snapshot_json)
-    const blockOverridesJson = asJsonStr(patch.block_overrides_json)
+    for (const [key, col] of Object.entries(jsonColumns)) {
+      if (key in patch) {
+        const v = patch[key]
+        sets.push(`${col}=?`)
+        binds.push(v === null || v === undefined ? null : JSON.stringify(v))
+      }
+    }
+    for (const col of preSerializedJsonColumns) {
+      if (col in patch) {
+        const v = patch[col]
+        sets.push(`${col}=?`)
+        binds.push(v === null || v === undefined ? null : typeof v === 'string' ? v : JSON.stringify(v))
+      }
+    }
+
+    // Nothing to update — avoid touching updated_at for no-op patches.
+    if (sets.length === 0) return
+
+    sets.push('updated_at=?')
+    binds.push(now)
+    binds.push(id, orgId)
 
     await this.db
-      .prepare(`
-        UPDATE appraisals SET
-          property_address=COALESCE(?,property_address),
-          neighborhood=COALESCE(?,neighborhood),
-          city=COALESCE(?,city),
-          property_type=COALESCE(?,property_type),
-          covered_area=?,
-          total_area=?,
-          semi_area=?,
-          weighted_area=?,
-          strengths=?,
-          weaknesses=?,
-          opportunities=?,
-          threats=?,
-          publication_analysis=?,
-          suggested_price=?,
-          test_price=?,
-          expected_close_price=?,
-          usd_per_m2=?,
-          contact_name=?,
-          contact_phone=?,
-          contact_email=?,
-          property_id=COALESCE(?,property_id),
-          lead_id=COALESCE(?,lead_id),
-          status=COALESCE(?,status),
-          public_slug=COALESCE(?,public_slug),
-          proposal_json=COALESCE(?,proposal_json),
-          market_situation_json=COALESCE(?,market_situation_json),
-          work_conditions_json=COALESCE(?,work_conditions_json),
-          video_links_json=COALESCE(?,video_links_json),
-          template_id=COALESCE(?,template_id),
-          template_snapshot_json=COALESCE(?,template_snapshot_json),
-          template_synced_at=COALESCE(?,template_synced_at),
-          block_overrides_json=COALESCE(?,block_overrides_json),
-          updated_at=?
-        WHERE id = ? AND org_id = ?
-      `)
-      .bind(
-        patch.property_address ?? null, patch.neighborhood ?? null,
-        patch.city ?? null, patch.property_type ?? null,
-        patch.covered_area ?? null, patch.total_area ?? null,
-        patch.semi_area ?? null, patch.weighted_area ?? null,
-        patch.strengths ?? null, patch.weaknesses ?? null,
-        patch.opportunities ?? null, patch.threats ?? null,
-        patch.publication_analysis ?? null,
-        patch.suggested_price ?? null, patch.test_price ?? null,
-        patch.expected_close_price ?? null, patch.usd_per_m2 ?? null,
-        patch.contact_name ?? null, patch.contact_phone ?? null, patch.contact_email ?? null,
-        patch.property_id ?? null, patch.lead_id ?? null,
-        patch.status ?? null,
-        (patch.public_slug as any) ?? null,
-        proposalJson ?? null,
-        marketJson ?? null,
-        workJson ?? null,
-        videoLinksJson ?? null,
-        patch.template_id ?? null,
-        templateSnapshotJson,
-        patch.template_synced_at ?? null,
-        blockOverridesJson,
-        now,
-        id, orgId,
-      )
+      .prepare(`UPDATE appraisals SET ${sets.join(', ')} WHERE id = ? AND org_id = ?`)
+      .bind(...binds)
       .run()
   }
 

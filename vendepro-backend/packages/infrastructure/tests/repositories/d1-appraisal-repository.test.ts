@@ -75,6 +75,44 @@ describe('D1AppraisalRepository', () => {
     expect(o.public_slug).toBe('slug-xyz')
   })
 
+  it('update applies a partial patch without nulling omitted fields', async () => {
+    const repo = new D1AppraisalRepository(env.DB)
+    const app = buildAppraisal()
+    await repo.save(app)
+
+    // Simulate the frontend autosave sending a single changed field.
+    await repo.update(app.id, orgId, { weaknesses: 'asd' })
+
+    const found = await repo.findById(app.id, orgId)
+    expect(found).not.toBeNull()
+    const o = found!.toObject()
+    // The patched field changed...
+    expect(o.weaknesses).toBe('asd')
+    // ...and everything else is preserved (not overwritten with NULL).
+    expect(o.strengths).toBe('luz')
+    expect(o.opportunities).toBe('subte')
+    expect(o.threats).toBe('otros')
+    expect(o.covered_area).toBe(80)
+    expect(o.total_area).toBe(90)
+    expect(o.suggested_price).toBe(200000)
+    expect(o.expected_close_price).toBe(190000)
+    expect(o.usd_per_m2).toBe(2500)
+    expect(o.property_address).toBe('Av. Siempre Viva 123')
+  })
+
+  it('update can explicitly clear a field with null', async () => {
+    const repo = new D1AppraisalRepository(env.DB)
+    const app = buildAppraisal()
+    await repo.save(app)
+
+    await repo.update(app.id, orgId, { weaknesses: null })
+
+    const found = await repo.findById(app.id, orgId)
+    expect(found!.toObject().weaknesses).toBeNull()
+    // Unrelated field still intact.
+    expect(found!.toObject().strengths).toBe('luz')
+  })
+
   it('findBySlug returns the appraisal without org scope (public)', async () => {
     const repo = new D1AppraisalRepository(env.DB)
     const app = buildAppraisal({ public_slug: 'public-123' })
