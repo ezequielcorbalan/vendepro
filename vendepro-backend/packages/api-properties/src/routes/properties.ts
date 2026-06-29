@@ -81,7 +81,12 @@ export function registerPropertyRoutes(app: Hono<{ Bindings: Env } & AuthVars>) 
       await useCase.execute(c.req.param('id'), c.get('orgId'), body)
     } catch (e: any) {
       if (e.statusCode === 404) return c.json({ error: 'Not found' }, 404)
-      return c.json({ error: e.message || 'Error al actualizar propiedad' }, 400)
+      // Salvaguarda: jamás filtrar errores crudos de D1/SQLite al cliente.
+      const msg = String(e?.message ?? '')
+      const safe = /D1_ERROR|SQLITE|FOREIGN KEY|constraint/i.test(msg)
+        ? 'No se pudo guardar la propiedad. Revisá los datos e intentá de nuevo.'
+        : (msg || 'Error al actualizar propiedad')
+      return c.json({ error: safe }, 400)
     }
     return c.json({ success: true })
   })

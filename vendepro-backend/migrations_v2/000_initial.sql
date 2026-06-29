@@ -224,7 +224,8 @@ CREATE TABLE IF NOT EXISTS properties (
   owner_email TEXT,
   public_slug TEXT UNIQUE NOT NULL,
   cover_photo TEXT,
-  agent_id TEXT NOT NULL REFERENCES users(id),
+  -- agent_id nullable: una propiedad puede no tener agente asignado.
+  agent_id TEXT REFERENCES users(id),
   status TEXT NOT NULL DEFAULT 'active'
     CHECK (status IN ('active', 'sold', 'suspended', 'archived', 'inactive')),
   sold_price REAL,

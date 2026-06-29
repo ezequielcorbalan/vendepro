@@ -21,7 +21,7 @@ export interface PropertyProps {
   contact_id: string | null
   public_slug: string
   cover_photo: string | null
-  agent_id: string
+  agent_id: string | null
   org_id: string
   status: PropertyStatus
   commercial_stage: string | null

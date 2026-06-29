@@ -208,12 +208,32 @@ export class D1PropertyRepository implements PropertyRepository {
       ['agent_id', 'agent_id'],
     ]
 
+    // Sanea las columnas con FK antes de escribir. Un valor huérfano
+    // (p.ej. agent_id de un agente que luego fue borrado) haría fallar el
+    // UPDATE con "FOREIGN KEY constraint failed" y bloquearía una edición
+    // por lo demás válida. Una propiedad puede no tener agente: si el agente
+    // recibido es vacío o ya no existe, lo dejamos en NULL (sin asignar).
+    const safePatch: Partial<PropertyProps> = { ...patch }
+    if ('agent_id' in safePatch) {
+      const aid = safePatch.agent_id
+      if (aid == null || aid === '') {
+        safePatch.agent_id = null
+      } else {
+        const ok = await this.db.prepare('SELECT 1 FROM users WHERE id = ? LIMIT 1').bind(aid).first()
+        if (!ok) safePatch.agent_id = null
+      }
+    }
+    if ('contact_id' in safePatch && safePatch.contact_id != null) {
+      const ok = await this.db.prepare('SELECT 1 FROM contacts WHERE id = ? LIMIT 1').bind(safePatch.contact_id).first()
+      if (!ok) safePatch.contact_id = null
+    }
+
     const setClauses: string[] = []
     const bindings: unknown[] = []
 
     for (const [field, col] of COLUMN_MAP) {
-      if (!(field in patch)) continue
-      const val = patch[field]
+      if (!(field in safePatch)) continue
+      const val = safePatch[field]
       setClauses.push(`${col} = ?`)
       bindings.push(val ?? null)
     }
@@ -223,10 +243,20 @@ export class D1PropertyRepository implements PropertyRepository {
     setClauses.push(`updated_at = datetime('now')`)
     bindings.push(id, orgId)
 
-    await this.db
-      .prepare(`UPDATE properties SET ${setClauses.join(', ')} WHERE id = ? AND org_id = ?`)
-      .bind(...(bindings as any[]))
-      .run()
+    try {
+      await this.db
+        .prepare(`UPDATE properties SET ${setClauses.join(', ')} WHERE id = ? AND org_id = ?`)
+        .bind(...(bindings as any[]))
+        .run()
+    } catch (e: any) {
+      // Nunca propagamos el mensaje crudo de D1 hacia arriba (lo terminaría
+      // viendo el usuario). Lo traducimos a un error de dominio limpio.
+      const msg = String(e?.message ?? '')
+      if (/FOREIGN KEY|constraint|SQLITE/i.test(msg)) {
+        throw new Error('No se pudo guardar la propiedad: hay un dato vinculado (agente o contacto) que ya no existe.')
+      }
+      throw new Error('No se pudo guardar la propiedad.')
+    }
   }
 
   async findStageSlugById(stageId: number): Promise<string | null> {

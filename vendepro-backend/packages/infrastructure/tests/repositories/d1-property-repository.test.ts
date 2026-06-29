@@ -276,6 +276,54 @@ describe('D1PropertyRepository — extended methods', () => {
     expect(row.address).toBe('Av. Test 1')
   })
 
+  it('update sets an orphaned agent_id to NULL instead of failing the FK, applying the rest', async () => {
+    const repo = new D1PropertyRepository(env.DB)
+    const propId = await insertProperty(env.DB, orgId, agentId, { asking_price: 100000 })
+
+    // Simula el caso real: el payload reenvía un agent_id que ya no existe en
+    // `users` (agente borrado). Una propiedad puede no tener agente → NULL.
+    await repo.update(propId, orgId, {
+      asking_price: 175000,
+      commercial_stage: 'vencida',
+      agent_id: 'agent-que-no-existe',
+    })
+
+    const row = await env.DB
+      .prepare('SELECT asking_price, commercial_stage, agent_id FROM properties WHERE id = ?')
+      .bind(propId)
+      .first() as any
+    expect(row.asking_price).toBe(175000)
+    expect(row.commercial_stage).toBe('vencida')
+    expect(row.agent_id).toBeNull()
+  })
+
+  it('update with empty agent_id unassigns the agent (NULL)', async () => {
+    const repo = new D1PropertyRepository(env.DB)
+    const propId = await insertProperty(env.DB, orgId, agentId)
+
+    await repo.update(propId, orgId, { agent_id: '' as any })
+
+    const row = await env.DB
+      .prepare('SELECT agent_id FROM properties WHERE id = ?')
+      .bind(propId)
+      .first() as any
+    expect(row.agent_id).toBeNull()
+  })
+
+  it('update applies a valid agent_id reassignment', async () => {
+    const repo = new D1PropertyRepository(env.DB)
+    const propId = await insertProperty(env.DB, orgId, agentId)
+    const other = await seedUser(env.DB, orgId)
+
+    await repo.update(propId, orgId, { agent_id: other.id })
+
+    const row = await env.DB
+      .prepare('SELECT agent_id FROM properties WHERE id = ?')
+      .bind(propId)
+      .first() as any
+    expect(row.agent_id).toBe(other.id)
+  })
+
   it('updateStage with valid slug updates commercial_stage + commercial_stage_id', async () => {
     const repo = new D1PropertyRepository(env.DB)
     const propId = await insertProperty(env.DB, orgId, agentId, { operation_type_id: 1 })
