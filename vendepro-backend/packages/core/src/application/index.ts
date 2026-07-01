@@ -159,6 +159,12 @@ export type { CreateOrgVariableInput } from './use-cases/org-variables/create-or
 export { UpdateOrgVariableUseCase } from './use-cases/org-variables/update-org-variable'
 export { DeleteOrgVariableUseCase } from './use-cases/org-variables/delete-org-variable'
 
+// API Tokens (integración externa)
+export * from './use-cases/api-tokens/create-api-token'
+export * from './use-cases/api-tokens/list-api-tokens'
+export * from './use-cases/api-tokens/revoke-api-token'
+export * from './use-cases/api-tokens/import-leads'
+
 // Appraisal Rendering
 export { HydrateTemplateBlocksUseCase } from './use-cases/appraisal-rendering/hydrate-template-blocks'
 export type { HydratedBlock, HydrateInput } from './use-cases/appraisal-rendering/hydrate-template-blocks'

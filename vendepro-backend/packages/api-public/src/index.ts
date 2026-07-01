@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { corsMiddleware, errorHandler, R2PdfStorage, PdfDownloadTokenSignerImpl } from '@vendepro/infrastructure'
+import { corsMiddleware, errorHandler, R2PdfStorage, PdfDownloadTokenSignerImpl, createIntegrationAuthMiddleware, JwtAuthService, D1ApiTokenRepository } from '@vendepro/infrastructure'
 import {
   D1PropertyRepository,
   D1ReportRepository,
@@ -31,14 +31,25 @@ import {
   GetPublicLandingUseCase,
   RecordLandingEventUseCase,
   SubmitLeadFromLandingUseCase,
+  ImportLeadsUseCase,
 } from '@vendepro/core'
 
 type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket }
+type IntegrationVars = { Variables: { orgId: string; tokenId: string; tokenScopes: string[] } }
 
-const app = new Hono<{ Bindings: Env }>()
+const app = new Hono<{ Bindings: Env } & IntegrationVars>()
 
 app.use('*', corsMiddleware)
 app.onError(errorHandler)
+
+// ── API DE INTEGRACIÓN (/v1/*) — Bearer JWT de integración ─────
+// Namespace autenticado dentro del worker público. El resto de /public y /l/*
+// siguen sin auth. La validación es firma JWT + registro activo en api_tokens.
+app.use('/v1/*', async (c, next) => {
+  const authService = new JwtAuthService(c.env.JWT_SECRET)
+  const apiTokenRepo = new D1ApiTokenRepository(c.env.DB)
+  return createIntegrationAuthMiddleware(authService, apiTokenRepo)(c, next)
+})
 
 // ── PUBLIC REPORT (/r/:slug) ───────────────────────────────────
 app.get('/public/report/:slug', async (c) => {
@@ -194,7 +205,69 @@ app.get('/public/prefact/:slug', async (c) => {
   return c.json(result)
 })
 
-// ── PUBLIC LEADS (API-key gated) ─────────────────────────────────
+// ── INTEGRATION API: IMPORT LEADS (/v1/leads) — Bearer JWT ───────
+// Acepta un lead único, un array, o { leads: [...] } (tope 100). Los leads
+// entran sin asignar (stage `nuevo`). Requiere scope `leads:write`.
+app.post('/v1/leads', async (c) => {
+  const scopes = c.get('tokenScopes') ?? []
+  if (!scopes.includes('leads:write')) {
+    return c.json({ error: 'El token no tiene el scope leads:write' }, 403)
+  }
+
+  const body = (await c.req.json().catch(() => null)) as any
+  if (!body || typeof body !== 'object') {
+    return c.json({ error: 'Body JSON inválido' }, 400)
+  }
+
+  const rawLeads: any[] = Array.isArray(body)
+    ? body
+    : Array.isArray(body.leads)
+      ? body.leads
+      : [body]
+
+  const orgId = c.get('orgId')
+  const uc = new ImportLeadsUseCase(
+    new D1LeadRepository(c.env.DB),
+    new D1ContactRepository(c.env.DB),
+    new D1UserRepository(c.env.DB),
+    new CryptoIdGenerator(),
+  )
+  const result = await uc.execute({ orgId, leads: rawLeads })
+
+  // Hook marketing por cada lead creado (mismo `lead_created` que /public/leads).
+  await Promise.allSettled(
+    result.results
+      .filter((r) => r.ok && r.id)
+      .map((r) => {
+        const lead = rawLeads[r.index] ?? {}
+        return fireMarketingEvent(c.env, {
+          orgId,
+          eventKey: 'lead_created',
+          entityType: 'lead',
+          entityId: r.id!,
+          leadId: r.id!,
+          userData: {
+            full_name: lead.full_name ?? null,
+            email: lead.email ?? null,
+            phone: lead.phone ?? null,
+            client_ip_address: c.req.header('CF-Connecting-IP') ?? c.req.header('x-forwarded-for') ?? null,
+            client_user_agent: c.req.header('user-agent') ?? null,
+          },
+          customData: {
+            source: 'integration_api',
+            source_detail: lead.source_detail ?? null,
+          },
+          actionSource: 'system_generated',
+        })
+      }),
+  )
+
+  return c.json(result, result.created > 0 ? 201 : 400)
+})
+
+// ── PUBLIC LEADS (LEGACY, deprecado — usar POST /v1/leads con Bearer JWT) ──
+// Securizado por header X-API-Key contra organizations.api_key. Se mantiene
+// operativo para integraciones existentes.
 app.post('/public/leads', async (c) => {
   const apiKey = c.req.header('X-API-Key')
   if (!apiKey) return c.json({ error: 'API key requerida' }, 401)

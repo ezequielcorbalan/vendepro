@@ -5,7 +5,7 @@ import Link from 'next/link'
 import {
   Settings, Save, Loader2, Building2, Calendar, User,
   ClipboardList, FileText, CheckCircle, XCircle, Megaphone,
-  HelpCircle, PlayCircle,
+  HelpCircle, PlayCircle, KeyRound,
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
@@ -142,6 +142,12 @@ export default function ConfiguracionPage() {
       iconColor: 'text-pink-600',
       title: 'Marketing',
       subtitle: 'Meta Pixel + GTM + tracking de leads',
+    }, {
+      href: '/configuracion/api',
+      icon: <KeyRound className="w-5 h-5" />,
+      iconColor: 'text-purple-500',
+      title: 'Configuración de API',
+      subtitle: 'Tokens para importar leads',
     }] : []),
   ]
 

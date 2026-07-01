@@ -1,5 +1,5 @@
 import { SignJWT, jwtVerify } from 'jose'
-import type { AuthService } from '@vendepro/core'
+import type { AuthService, CreateTokenOptions } from '@vendepro/core'
 
 export class JwtAuthService implements AuthService {
   private readonly secret: Uint8Array
@@ -23,12 +23,22 @@ export class JwtAuthService implements AuthService {
     return computed === hash
   }
 
-  async createToken(payload: Record<string, unknown>): Promise<string> {
-    return new SignJWT(payload)
+  async createToken(payload: Record<string, unknown>, options?: CreateTokenOptions): Promise<string> {
+    const signer = new SignJWT(payload)
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
-      .setExpirationTime(`${this.tokenTTL}s`)
-      .sign(this.secret)
+
+    // expiresIn === null -> token perpetuo (integración, revocable vía DB).
+    // undefined -> TTL por defecto (sesiones de usuario). valor -> explícito.
+    if (options?.expiresIn === null) {
+      // no seteamos exp
+    } else if (options?.expiresIn !== undefined) {
+      signer.setExpirationTime(options.expiresIn)
+    } else {
+      signer.setExpirationTime(`${this.tokenTTL}s`)
+    }
+
+    return signer.sign(this.secret)
   }
 
   async verifyToken(token: string): Promise<Record<string, unknown> | null> {

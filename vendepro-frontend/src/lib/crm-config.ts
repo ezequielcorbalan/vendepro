@@ -330,3 +330,10 @@ export function getRoleLabel(role: string): string {
 export function getRoleColor(role: string): string {
   return (USER_ROLES as any)[role]?.color || 'bg-gray-100 text-gray-600'
 }
+
+// Scopes de los tokens de API de integración. Extensible a futuros endpoints /v1/*.
+export const API_SCOPES = {
+  'leads:write': { label: 'Importar leads' },
+} as const
+
+export type ApiScope = keyof typeof API_SCOPES

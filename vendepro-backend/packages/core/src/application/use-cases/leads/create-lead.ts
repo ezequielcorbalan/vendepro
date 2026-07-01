@@ -13,7 +13,7 @@ export interface CreateLeadInput {
   neighborhood?: string | null
   property_type?: string
   operation?: string
-  assigned_to: string
+  assigned_to: string | null
   notes?: string | null
   estimated_value?: string | null
   next_step?: string | null
@@ -42,7 +42,7 @@ export class CreateLeadUseCase {
       property_type: input.property_type ?? 'departamento',
       operation: input.operation ?? 'venta',
       stage: 'nuevo',
-      assigned_to: input.assigned_to,
+      assigned_to: input.assigned_to ?? null,
       notes: input.notes ?? null,
       estimated_value: input.estimated_value ? parseFloat(String(input.estimated_value)) : null,
       budget: input.budget ?? null,

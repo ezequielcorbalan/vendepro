@@ -4,7 +4,7 @@ import {
   D1LeadRepository, D1ContactRepository, D1CalendarRepository, D1ActivityRepository,
   D1TagRepository, D1StageHistoryRepository, D1OrganizationRepository,
   D1MetaIntegrationRepository, D1StageEventMappingRepository, D1MetaEventLogRepository,
-  D1PropertyRepository,
+  D1PropertyRepository, D1ApiTokenRepository,
   JwtAuthService, CryptoIdGenerator,
   encrypt,
   createMarketingSender, fireMarketingEvent,
@@ -19,6 +19,7 @@ import {
   GetMetaIntegrationUseCase, SaveMetaIntegrationUseCase,
   ListStageMappingsUseCase, SaveStageMappingUseCase, DeleteStageMappingUseCase,
   ListMetaEventLogUseCase,
+  CreateApiTokenUseCase, ListApiTokensUseCase, RevokeApiTokenUseCase,
 } from '@vendepro/core'
 import {
   CreateLandingFromTemplateUseCase, UpdateLandingBlocksUseCase, AddBlockUseCase,
@@ -410,7 +411,9 @@ app.delete('/tags', async (c) => {
   return c.json({ success: true })
 })
 
-// ── API KEY ────────────────────────────────────────────────────
+// ── API KEY (LEGACY, deprecado) ────────────────────────────────
+// Reemplazado por los API Tokens JWT de abajo (/api-tokens) + POST /v1/leads en
+// api-public. Se mantiene operativo para integraciones existentes; sin UI nueva.
 app.post('/api-key', async (c) => {
   const repo = new D1OrganizationRepository(c.env.DB)
   const useCase = new GenerateOrgApiKeyUseCase(repo)
@@ -423,6 +426,43 @@ app.get('/api-key', async (c) => {
   const useCase = new GetOrgApiKeyUseCase(repo)
   const result = await useCase.execute(c.get('orgId'))
   return c.json(result)
+})
+
+// ── API TOKENS (integración externa, JWT) — sólo admin ─────────
+// Gestión de tokens JWT que autentican la API pública /v1/* (ej. importación
+// de leads). El JWT en claro se devuelve una única vez al crearlo.
+app.get('/api-tokens', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const repo = new D1ApiTokenRepository(c.env.DB)
+  const useCase = new ListApiTokensUseCase(repo)
+  const tokens = await useCase.execute(c.get('orgId'))
+  return c.json(tokens)
+})
+
+app.post('/api-tokens', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const body = (await c.req.json().catch(() => ({}))) as any
+  if (!body.name || String(body.name).trim().length < 2) {
+    return c.json({ error: 'El nombre del token es requerido (mín. 2 caracteres)' }, 400)
+  }
+  const repo = new D1ApiTokenRepository(c.env.DB)
+  const authService = new JwtAuthService(c.env.JWT_SECRET)
+  const useCase = new CreateApiTokenUseCase(repo, new CryptoIdGenerator(), authService)
+  const result = await useCase.execute({
+    orgId: c.get('orgId'),
+    name: String(body.name),
+    scopes: Array.isArray(body.scopes) && body.scopes.length > 0 ? body.scopes : undefined,
+    createdBy: c.get('userId'),
+  })
+  return c.json(result, 201)
+})
+
+app.delete('/api-tokens/:id', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const repo = new D1ApiTokenRepository(c.env.DB)
+  const useCase = new RevokeApiTokenUseCase(repo)
+  await useCase.execute({ id: c.req.param('id'), orgId: c.get('orgId') })
+  return c.json({ success: true })
 })
 
 // ── STAGE HISTORY ──────────────────────────────────────────────

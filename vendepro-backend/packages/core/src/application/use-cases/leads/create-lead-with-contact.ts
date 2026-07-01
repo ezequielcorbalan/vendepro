@@ -7,7 +7,7 @@ import { ValidationError } from '../../../domain/errors/validation-error'
 
 export interface CreateLeadWithContactInput {
   org_id: string
-  assigned_to: string
+  assigned_to: string | null
   full_name?: string
   phone?: string | null
   email?: string | null

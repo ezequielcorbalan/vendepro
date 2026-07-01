@@ -257,3 +257,18 @@ export interface Lead {
   appraisal_count?: number
   contact_id?: string | null
 }
+
+// Tokens de API de integración (Configuración → Configuración de API)
+export interface ApiToken {
+  id: string
+  org_id: string
+  name: string
+  scopes: string[]
+  prefix: string | null
+  created_by: string | null
+  is_active: boolean
+  last_used_at: string | null
+  revoked_at: string | null
+  created_at: string
+  updated_at: string
+}
