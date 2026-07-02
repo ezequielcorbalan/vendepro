@@ -3,6 +3,7 @@ import type { Tag } from '../../../domain/entities/tag'
 export interface TagRepository {
   findByOrg(orgId: string): Promise<Tag[]>
   findByLead(leadId: string, orgId: string): Promise<Tag[]>
+  findByName(orgId: string, name: string): Promise<Tag | null>
   save(tag: Tag): Promise<void>
   addToLead(leadId: string, tagId: string, orgId: string): Promise<void>
   removeFromLead(leadId: string, tagId: string, orgId: string): Promise<void>

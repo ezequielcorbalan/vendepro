@@ -8,6 +8,7 @@ export interface ContactFilters {
 export interface ContactRepository {
   findById(id: string, orgId: string): Promise<Contact | null>
   findByOrg(orgId: string, filters?: ContactFilters): Promise<Contact[]>
+  findByEmailOrPhone(orgId: string, email: string | null, phone: string | null): Promise<Contact | null>
   save(contact: Contact): Promise<void>
   delete(id: string, orgId: string): Promise<void>
   searchByName(orgId: string, query: string, limit: number): Promise<Array<{ id: string; full_name: string }>>

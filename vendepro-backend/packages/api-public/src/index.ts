@@ -12,6 +12,7 @@ import {
   D1UserRepository,
   D1ContactRepository,
   D1LeadRepository,
+  D1TagRepository,
   CryptoIdGenerator,
   D1LandingRepository,
   D1LandingVersionRepository,
@@ -231,6 +232,7 @@ app.post('/v1/leads', async (c) => {
     new D1ContactRepository(c.env.DB),
     new D1UserRepository(c.env.DB),
     new CryptoIdGenerator(),
+    new D1TagRepository(c.env.DB),
   )
   const result = await uc.execute({ orgId, leads: rawLeads })
 
