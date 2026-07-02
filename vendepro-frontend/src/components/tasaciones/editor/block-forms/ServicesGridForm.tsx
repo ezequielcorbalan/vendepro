@@ -10,7 +10,8 @@ export function ServicesGridForm({ data, onPatch }: Props) {
     const next = services.map((s, idx) => idx === i ? { ...s, [field]: val } : s)
     onPatch({ services: next })
   }
-  const add = () => onPatch({ services: [...services, { label: '', description: '' }] })
+  // Schema Zod exige label.min(1). Arrancamos con un placeholder editable.
+  const add = () => onPatch({ services: [...services, { label: 'Nuevo servicio', description: '' }] })
   const remove = (i: number) => onPatch({ services: services.filter((_, idx) => idx !== i) })
 
   return (

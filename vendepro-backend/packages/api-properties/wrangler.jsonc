@@ -23,6 +23,11 @@
     "binding": "BROWSER"
   },
   "vars": {
-    "API_PUBLIC_URL": "https://public.api.vendepro.com.ar"
+    "API_PUBLIC_URL": "https://public.api.vendepro.com.ar",
+    // URL pública desde donde el navegador va a levantar los assets de R2.
+    // Debe apuntar a un endpoint que sirva el contenido (`/<key>`). En prod
+    // se usa el proxy `/photo/*` del propio worker (público, sin auth).
+    // En dev local `start-local.sh` la sobreescribe con `http://localhost:8789/photo`.
+    "R2_PUBLIC_URL": "https://properties.api.vendepro.com.ar/photo"
   }
 }

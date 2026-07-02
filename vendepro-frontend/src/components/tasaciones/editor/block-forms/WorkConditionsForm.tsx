@@ -6,11 +6,11 @@ export function WorkConditionsForm({ data, onPatch }: Props) {
     <div className="space-y-3 p-3">
       <label className="flex flex-col gap-1">
         <span className="text-xs uppercase tracking-wide text-slate-600">Honorarios %</span>
-        <input type="number" step="0.1" value={data.honorarios_pct ?? ''} onChange={e => onPatch({ honorarios_pct: e.target.value ? Number(e.target.value) : null })} className="rounded border border-slate-300 px-2 py-1 text-sm" />
+        <input type="number" step="0.1" value={data.honorarios_pct ?? ''} onChange={e => onPatch({ honorarios_pct: e.target.value ? Number(e.target.value) : undefined })} className="rounded border border-slate-300 px-2 py-1 text-sm" />
       </label>
       <label className="flex flex-col gap-1">
         <span className="text-xs uppercase tracking-wide text-slate-600">Exclusividad (días)</span>
-        <input type="number" value={data.exclusividad_dias ?? ''} onChange={e => onPatch({ exclusividad_dias: e.target.value ? Number(e.target.value) : null })} className="rounded border border-slate-300 px-2 py-1 text-sm" />
+        <input type="number" value={data.exclusividad_dias ?? ''} onChange={e => onPatch({ exclusividad_dias: e.target.value ? Number(e.target.value) : undefined })} className="rounded border border-slate-300 px-2 py-1 text-sm" />
       </label>
       <label className="flex flex-col gap-1">
         <span className="text-xs uppercase tracking-wide text-slate-600">Texto legal</span>

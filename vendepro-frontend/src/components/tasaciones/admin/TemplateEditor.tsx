@@ -16,6 +16,95 @@ import { getBlockMeta } from '../renderer/block-catalog'
 
 const DEBOUNCE_MS = 2000
 
+/**
+ * Sanea el snapshot antes de mandarlo al backend: filtra items con url o label
+ * vacíos (que violarían Zod .url() / .min(1) durante la edición). Se aplica solo
+ * en el submit — el estado local del editor conserva los items en construcción
+ * para no perder el foco del usuario.
+ */
+function sanitizeBlocksForSave(blocks: TemplateBlock[]): TemplateBlock[] {
+  return blocks.map(b => {
+    const data: any = { ...(b.data as any) }
+    if (b.type === 'video_gallery' && Array.isArray(data.videos)) {
+      data.videos = data.videos.filter((v: any) => typeof v?.url === 'string' && v.url.trim().length > 0)
+    }
+    if (b.type === 'extra_media' && Array.isArray(data.media)) {
+      data.media = data.media.filter((m: any) => typeof m?.url === 'string' && m.url.trim().length > 0)
+    }
+    if (b.type === 'services_grid' && Array.isArray(data.services)) {
+      data.services = data.services.filter((s: any) => typeof s?.label === 'string' && s.label.trim().length > 0)
+    }
+    if (b.type === 'proposal_commercial' && Array.isArray(data.items)) {
+      data.items = data.items.filter((it: any) => (typeof it?.title === 'string' && it.title.trim()) || (typeof it?.body === 'string' && it.body.trim()))
+    }
+    if (b.type === 'funnel_chart' && Array.isArray(data.funnel)) {
+      data.funnel = data.funnel.filter((s: any) => typeof s?.label === 'string' && s.label.trim().length > 0)
+    }
+    // Zod .url() rechaza "". Si el user borró la URL, quitamos el campo entero.
+    if (b.type === 'zone_map' && data.map_image_url === '') delete data.map_image_url
+    if (b.type === 'cover' && data.cover_image_url === '') delete data.cover_image_url
+    if (b.type === 'methodology' && data.image_url === '') delete data.image_url
+    return { ...b, data }
+  })
+}
+
+/**
+ * Defaults por tipo de bloque para que el bloque pase la validación Zod del
+ * backend desde el momento en que se agrega. Sin esto, agregar un bloque
+ * inicializado con `data: {}` provoca que el próximo autosave falle (por ej.
+ * `proposal_commercial.items` es requerido, `agent_contact_card.name.min(1)`,
+ * `methodology.body`, `funnel_chart.funnel[].value: number`, etc.) y el usuario
+ * ve "Guardado" (tilde) pero el backend rechazó y no persistió nada.
+ */
+function defaultDataForBlockType(type: AppraisalBlockType): Record<string, unknown> {
+  switch (type) {
+    case 'cover':
+      return { title: 'Portada', subtitle: '' }
+    case 'proposal_commercial':
+      return { title: 'Propuesta comercial', subtitle: '', items: [], show_agent_signature: true }
+    case 'services_grid':
+      return { services: [], portals_logos: [] }
+    case 'market_stats':
+      return { title: 'Situación de mercado', vars: [] }
+    case 'funnel_chart':
+      return {
+        title: 'Embudo de venta',
+        funnel: [
+          { label: 'Clics mensuales', value: 660 },
+          { label: 'Consultas', value: 30 },
+          { label: 'Visitas', value: 15 },
+          { label: 'Ofertas', value: 1 },
+        ],
+      }
+    case 'methodology':
+      return { title: 'Metodología de trabajo', body: 'Presentamos un reporte quincenal con los resultados, para tomar decisiones junto al propietario y vender lo más rápido y al mejor precio posible.' }
+    case 'notary_charts':
+      return { title: 'Datos del Colegio de Escribanos' }
+    case 'property_data':
+      return { source: 'appraisal.property_data' }
+    case 'swot':
+      return { source: 'appraisal.swot' }
+    case 'zone_map':
+      return { title: '¿Qué está pasando en tu zona?', subtitle: '' }
+    case 'comparables_list':
+      return { variant: 'published', source: 'appraisal.comparables' }
+    case 'price_projection':
+      return { source: 'appraisal.prices' }
+    case 'work_conditions':
+      return {}
+    case 'video_gallery':
+      return { title: 'Videos', videos: [] }
+    case 'extra_media':
+      return { media: [] }
+    case 'cta_whatsapp':
+      return { text: 'Consultá por esta propiedad', phone: '' }
+    case 'agent_contact_card':
+      return { name: 'Nombre del asesor' }
+    default:
+      return {}
+  }
+}
+
 function SortableBlock({ block, isReadOnly, children }: { block: TemplateBlock; isReadOnly?: boolean; children: React.ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: block.id, disabled: isReadOnly })
   const style = { transform: CSS.Transform.toString(transform), transition }
@@ -41,6 +130,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
   const [blocks, setBlocks] = useState<TemplateBlock[]>([])
   const [dirty, setDirty] = useState(false)
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const blocksRef = useRef(blocks)
@@ -73,12 +163,15 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
       timerRef.current = null
     }
     setStatus('saving')
+    setSaveError(null)
     try {
-      await updateTemplate(templateId, { blocks: blocksRef.current })
+      await updateTemplate(templateId, { blocks: sanitizeBlocksForSave(blocksRef.current) })
       setStatus('saved')
       setDirty(false)
-    } catch {
+    } catch (e: any) {
       setStatus('error')
+      const detail = typeof e?.details === 'string' ? e.details : null
+      setSaveError(detail ? `${e.message} — ${detail}` : (e?.message ?? 'Error al guardar'))
     }
   }, [templateId])
 
@@ -109,7 +202,13 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
   const addBlock = (type: AppraisalBlockType) => {
     const id = `b-${Date.now()}`
     const include_in_pdf = !WEB_ONLY_TYPES.has(type)
-    setBlocks([...blocks, { id, type, binding_mode: 'tasacion', include_in_pdf, sort_order: blocks.length, data: {} }])
+    setBlocks([...blocks, {
+      id, type,
+      binding_mode: 'tasacion',
+      include_in_pdf,
+      sort_order: blocks.length,
+      data: defaultDataForBlockType(type),
+    }])
     setDirty(true); setAdding(false)
   }
 
@@ -124,7 +223,15 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
         <div className="flex items-center gap-3 text-xs">
           {status === 'saving' && <span className="flex items-center gap-1 text-slate-500"><Loader2 className="h-3 w-3 animate-spin" /> Guardando...</span>}
           {status === 'saved' && !dirty && <span className="flex items-center gap-1 text-emerald-600"><CheckCircle2 className="h-3 w-3" /> Guardado</span>}
-          {status === 'error' && <span className="flex items-center gap-1 text-rose-600"><AlertCircle className="h-3 w-3" /> Error al guardar</span>}
+          {status === 'error' && (
+            <span
+              className="flex max-w-xs items-center gap-1 truncate text-rose-600"
+              title={saveError ?? undefined}
+            >
+              <AlertCircle className="h-3 w-3 shrink-0" />
+              {saveError ?? 'Error al guardar'}
+            </span>
+          )}
           {dirty && status !== 'saving' && <span className="text-slate-500">Cambios sin guardar</span>}
           {!isSystem && (
             <button

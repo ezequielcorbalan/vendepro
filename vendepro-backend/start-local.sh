@@ -81,11 +81,20 @@ start_worker() {
   local config=$3
   # JWT_SECRET se pasa via --var para evitar problemas con cómo wrangler
   # carga .dev.vars en Windows/Git Bash (jose tiraba "HMAC key length 0").
+  local extra_vars=()
+  # api-properties es el único que sirve R2 assets. Le sobreescribimos
+  # R2_PUBLIC_URL para que apunte al proxy `/photo` local del propio worker
+  # (público, sin auth). Sin esto, las URLs generadas serían el placeholder
+  # de prod (properties.api.vendepro.com.ar) y no cargan en localhost.
+  if [ "$name" = "api-properties" ]; then
+    extra_vars+=("--var" "R2_PUBLIC_URL:http://localhost:$port/photo")
+  fi
   npx wrangler dev --port "$port" \
     --config "$config" \
     --persist-to "$PERSIST_DIR" \
     --inspector-port $((port + 1000)) \
     --var "JWT_SECRET:$DEV_JWT_SECRET" \
+    "${extra_vars[@]}" \
     > "$BACKEND_DIR/logs/${name}.log" 2>&1 &
   echo $! >> "$PIDS_FILE"
   echo "  ↑ $name  →  http://localhost:$port  (PID $!)"

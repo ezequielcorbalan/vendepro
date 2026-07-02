@@ -15,11 +15,19 @@ export async function listTemplates(params?: { active?: boolean; kind?: string }
   if (params?.kind) qs.set('kind', params.kind)
   const query = qs.size ? `?${qs}` : ''
   const r = await apiFetch('admin', `/appraisal-templates${query}`)
+  if (!r.ok) {
+    const err = (await r.json().catch(() => ({}))) as any
+    throw new Error(err?.error ?? `HTTP ${r.status}`)
+  }
   return (await r.json()) as any
 }
 
 export async function getTemplate(id: string): Promise<any> {
   const r = await apiFetch('admin', `/appraisal-templates/${id}`)
+  if (!r.ok) {
+    const err = (await r.json().catch(() => ({}))) as any
+    throw new Error(err?.error ?? `HTTP ${r.status}`)
+  }
   return (await r.json()) as any
 }
 
@@ -28,6 +36,12 @@ export async function createTemplate(body: any): Promise<any> {
     method: 'POST',
     body: JSON.stringify(body),
   })
+  if (!r.ok) {
+    const err = (await r.json().catch(() => ({}))) as any
+    const e = new Error(err?.error ?? `HTTP ${r.status}`) as any
+    e.details = err?.details
+    throw e
+  }
   return (await r.json()) as any
 }
 
@@ -36,6 +50,12 @@ export async function updateTemplate(id: string, body: any): Promise<any> {
     method: 'PUT',
     body: JSON.stringify(body),
   })
+  if (!r.ok) {
+    const err = (await r.json().catch(() => ({}))) as any
+    const e = new Error(err?.error ?? `HTTP ${r.status}`) as any
+    e.details = err?.details
+    throw e
+  }
   return (await r.json()) as any
 }
 

@@ -7,10 +7,12 @@ export function FunnelChartForm({ data, onPatch }: Props) {
   const funnel: FunnelStep[] = data.funnel ?? []
 
   const setStep = (i: number, field: keyof FunnelStep, val: string) => {
-    const next = funnel.map((s, idx) => idx === i ? { ...s, [field]: field === 'value' ? (val ? Number(val) : null) : val } : s)
+    // El schema Zod exige `value: number` (no acepta null). Si el input queda
+    // vacío guardamos 0 para no romper la validación durante la edición.
+    const next = funnel.map((s, idx) => idx === i ? { ...s, [field]: field === 'value' ? (val ? Number(val) : 0) : val } : s)
     onPatch({ funnel: next })
   }
-  const add = () => onPatch({ funnel: [...funnel, { label: '', value: null }] })
+  const add = () => onPatch({ funnel: [...funnel, { label: 'Etapa', value: 0 }] })
   const remove = (i: number) => onPatch({ funnel: funnel.filter((_, idx) => idx !== i) })
 
   return (
