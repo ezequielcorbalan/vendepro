@@ -217,3 +217,60 @@ describe('D1ContactRepository — findByEmailOrPhone (dedup de import)', () => {
     expect(found).toBeNull()
   })
 })
+
+describe('D1ContactRepository — findByOrg con tag_id', () => {
+  let env: TestEnv
+
+  beforeAll(async () => {
+    env = await createTestDB()
+  })
+
+  afterAll(async () => {
+    await closeTestDB(env)
+  })
+
+  async function insertLeadWithContact(orgId: string, contactId: string) {
+    const leadId = nextId('lead')
+    await env.DB.prepare(
+      `INSERT INTO leads (id, org_id, full_name, source, stage, contact_id, created_at, updated_at)
+       VALUES (?, ?, 'Lead Tag', 'api', 'nuevo', ?, datetime('now'), datetime('now'))`,
+    ).bind(leadId, orgId, contactId).run()
+    return leadId
+  }
+
+  async function insertTag(orgId: string, name: string) {
+    const tagId = nextId('tag')
+    await env.DB.prepare(
+      `INSERT INTO tags (id, org_id, name, color, is_default, created_at)
+       VALUES (?, ?, ?, '#6366f1', 0, datetime('now'))`,
+    ).bind(tagId, orgId, name).run()
+    return tagId
+  }
+
+  it('devuelve solo contactos cuyos leads tienen el tag', async () => {
+    const repo = new D1ContactRepository(env.DB)
+    const org = await seedOrg(env.DB)
+    const user = await seedUser(env.DB, org.id)
+
+    const conTag = await insertContact(env.DB, org.id, user.id)
+    const sinTag = await insertContact(env.DB, org.id, user.id)
+    const leadId = await insertLeadWithContact(org.id, conTag)
+    const tagId = await insertTag(org.id, 'inversor-caliente')
+    await env.DB.prepare('INSERT INTO lead_tags (lead_id, tag_id) VALUES (?, ?)').bind(leadId, tagId).run()
+
+    const result = await repo.findByOrg(org.id, { tag_id: tagId })
+    const ids = result.map(c => c.id)
+    expect(ids).toContain(conTag)
+    expect(ids).not.toContain(sinTag)
+  })
+
+  it('tag inexistente devuelve lista vacía', async () => {
+    const repo = new D1ContactRepository(env.DB)
+    const org = await seedOrg(env.DB)
+    const user = await seedUser(env.DB, org.id)
+    await insertContact(env.DB, org.id, user.id)
+
+    const result = await repo.findByOrg(org.id, { tag_id: 'tag_inexistente' })
+    expect(result.length).toBe(0)
+  })
+})

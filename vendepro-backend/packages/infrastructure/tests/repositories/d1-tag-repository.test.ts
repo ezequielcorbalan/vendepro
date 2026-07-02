@@ -87,3 +87,77 @@ describe('D1TagRepository', () => {
     expect(tags.length).toBe(0)
   })
 })
+
+describe('D1TagRepository — findByContactIds', () => {
+  let env: TestEnv
+
+  beforeAll(async () => {
+    env = await createTestDB()
+  })
+
+  afterAll(async () => {
+    await closeTestDB(env)
+  })
+
+  async function insertContact(orgId: string, agentId: string) {
+    const id = nextId('contact')
+    await env.DB.prepare(
+      `INSERT INTO contacts (id, org_id, full_name, phone, email, contact_type, agent_id, created_at)
+       VALUES (?, ?, 'Contacto Tags', '+54111', ?, 'propietario', ?, datetime('now'))`,
+    ).bind(id, orgId, `${id}@t.com`, agentId).run()
+    return id
+  }
+
+  async function insertLeadWithContact(orgId: string, contactId: string) {
+    const leadId = nextId('lead')
+    await env.DB.prepare(
+      `INSERT INTO leads (id, org_id, full_name, source, stage, contact_id, created_at, updated_at)
+       VALUES (?, ?, 'Lead Tag', 'api', 'nuevo', ?, datetime('now'), datetime('now'))`,
+    ).bind(leadId, orgId, contactId).run()
+    return leadId
+  }
+
+  it('agrupa los tags de los leads por contact_id, sin duplicados', async () => {
+    const repo = new D1TagRepository(env.DB)
+    const org = await seedOrg(env.DB)
+    const user = await seedUser(env.DB, org.id)
+
+    const contactId = await insertContact(org.id, user.id)
+    const otroContacto = await insertContact(org.id, user.id)
+    // dos leads del mismo contacto comparten un tag → no debe duplicarse
+    const lead1 = await insertLeadWithContact(org.id, contactId)
+    const lead2 = await insertLeadWithContact(org.id, contactId)
+    const tag = makeTag(org.id, `compartido-${contactId}`)
+    await repo.save(tag)
+    await repo.addToLead(lead1, tag.id, org.id)
+    await repo.addToLead(lead2, tag.id, org.id)
+
+    const result = await repo.findByContactIds([contactId, otroContacto], org.id)
+    expect(result[contactId]!.length).toBe(1)
+    expect(result[contactId]![0]!.name).toBe(`compartido-${contactId}`)
+    expect(result[otroContacto]).toBeUndefined()
+  })
+
+  it('lista vacía de contactos devuelve objeto vacío', async () => {
+    const repo = new D1TagRepository(env.DB)
+    const org = await seedOrg(env.DB)
+    const result = await repo.findByContactIds([], org.id)
+    expect(result).toEqual({})
+  })
+
+  it('no devuelve tags de otra org (scoping)', async () => {
+    const repo = new D1TagRepository(env.DB)
+    const orgA = await seedOrg(env.DB)
+    const orgB = await seedOrg(env.DB)
+    const user = await seedUser(env.DB, orgA.id)
+
+    const contactId = await insertContact(orgA.id, user.id)
+    const leadId = await insertLeadWithContact(orgA.id, contactId)
+    const tag = makeTag(orgA.id, `scoped-${contactId}`)
+    await repo.save(tag)
+    await repo.addToLead(leadId, tag.id, orgA.id)
+
+    const result = await repo.findByContactIds([contactId], orgB.id)
+    expect(result[contactId]).toBeUndefined()
+  })
+})

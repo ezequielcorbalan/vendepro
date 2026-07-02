@@ -21,6 +21,14 @@ export class D1ContactRepository implements ContactRepository {
       query += ' AND (full_name LIKE ? OR phone LIKE ? OR email LIKE ?)'
       binds.push(`%${filters.search}%`, `%${filters.search}%`, `%${filters.search}%`)
     }
+    if (filters?.tag_id) {
+      query += ` AND id IN (
+        SELECT l.contact_id FROM leads l
+        INNER JOIN lead_tags lt ON lt.lead_id = l.id
+        WHERE lt.tag_id = ? AND l.contact_id IS NOT NULL
+      )`
+      binds.push(filters.tag_id)
+    }
     query += ' ORDER BY full_name LIMIT 200'
 
     const rows = (await this.db.prepare(query).bind(...binds).all()).results as any[]

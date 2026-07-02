@@ -57,6 +57,30 @@ function Avatar({ name }: { name: string }) {
   )
 }
 
+function TagChips({ tags, max = 3 }: { tags?: Array<{ id: string; name: string; color: string | null }>; max?: number }) {
+  if (!tags || tags.length === 0) return null
+  const shown = tags.slice(0, max)
+  const extra = tags.length - shown.length
+  return (
+    <div className="flex flex-wrap items-center gap-1">
+      {shown.map(t => (
+        <span
+          key={t.id}
+          className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border"
+          style={{
+            color: t.color || '#6b7280',
+            borderColor: `${t.color || '#9ca3af'}55`,
+            backgroundColor: `${t.color || '#9ca3af'}14`,
+          }}
+        >
+          {t.name}
+        </span>
+      ))}
+      {extra > 0 && <span className="text-[10px] text-gray-400">+{extra}</span>}
+    </div>
+  )
+}
+
 function SourceBadge({ source }: { source?: string | null }) {
   if (!source) return <span className="text-xs text-gray-300">—</span>
   const label = sourceLabels[source.toLowerCase()] || source.charAt(0).toUpperCase() + source.slice(1)
@@ -77,6 +101,8 @@ export default function ContactosPage() {
   const [filterAgent, setFilterAgent] = useState('')
   const [filterSource, setFilterSource] = useState('')
   const [filterNeighborhood, setFilterNeighborhood] = useState('')
+  const [filterTag, setFilterTag] = useState('')
+  const [tags, setTags] = useState<any[]>([])
   const [sortBy, setSortBy] = useState('recent')
   const [showFilters, setShowFilters] = useState(false)
   const [showForm, setShowForm] = useState(false)
@@ -88,8 +114,9 @@ export default function ContactosPage() {
 
   function loadContacts() {
     const params = new URLSearchParams()
-    if (search) params.set('q', search)
+    if (search) params.set('search', search)
     if (filterAgent) params.set('agent_id', filterAgent)
+    if (filterTag) params.set('tag_id', filterTag)
     applyScopeToParams(params)
     apiFetch('crm', `/contacts?${params}`).then(r => r.json() as Promise<any>).then(data => {
       setContacts(Array.isArray(data) ? data : [])
@@ -97,7 +124,13 @@ export default function ContactosPage() {
     }).catch(() => setLoading(false))
   }
 
-  useEffect(() => { loadContacts() }, [search, filterAgent])
+  useEffect(() => { loadContacts() }, [search, filterAgent, filterTag])
+
+  useEffect(() => {
+    apiFetch('crm', '/tags').then(r => r.json() as Promise<any>).then(d => {
+      if (Array.isArray(d)) setTags(d)
+    }).catch(() => {})
+  }, [])
 
   useEffect(() => {
     if (!isAdmin) return
@@ -155,12 +188,13 @@ export default function ContactosPage() {
     return list
   }, [filtered, filterType, sortBy])
 
-  const activeFilterCount = [filterAgent, filterSource, filterNeighborhood].filter(Boolean).length
+  const activeFilterCount = [filterAgent, filterSource, filterNeighborhood, filterTag].filter(Boolean).length
 
   function clearFilters() {
     setFilterAgent('')
     setFilterSource('')
     setFilterNeighborhood('')
+    setFilterTag('')
   }
 
   async function handleSave() {
@@ -256,6 +290,16 @@ export default function ContactosPage() {
             <option value="">Barrio</option>
             {neighborhoodOptions.map(n => <option key={n} value={n}>{n}</option>)}
           </select>
+          {tags.length > 0 && (
+            <select
+              className="border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-600 sm:flex-1"
+              value={filterTag}
+              onChange={e => setFilterTag(e.target.value)}
+            >
+              <option value="">Tag</option>
+              {tags.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          )}
           <select
             className="border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-600 sm:flex-1"
             value={sortBy}
@@ -350,6 +394,7 @@ export default function ContactosPage() {
                 <th className="font-medium px-4 py-3">Tipo</th>
                 <th className="font-medium px-4 py-3">Barrio</th>
                 <th className="font-medium px-4 py-3">Origen</th>
+                <th className="font-medium px-4 py-3">Tags</th>
                 <th className="font-medium px-4 py-3">Asignado</th>
                 <th className="px-4 py-3"></th>
               </tr>
@@ -383,6 +428,9 @@ export default function ContactosPage() {
                     </td>
                     <td className="px-4 py-3">
                       <SourceBadge source={c.source} />
+                    </td>
+                    <td className="px-4 py-3">
+                      {c.tags && c.tags.length > 0 ? <TagChips tags={c.tags} /> : <span className="text-gray-300">—</span>}
                     </td>
                     <td className="px-4 py-3">
                       {agentNames[c.agent_id]
@@ -430,9 +478,10 @@ export default function ContactosPage() {
                       )}
                       {c.neighborhood && <span className="text-xs text-gray-500 flex items-center gap-1"><MapPin className="w-3 h-3" />{c.neighborhood}</span>}
                     </div>
-                    <div className="flex items-center gap-2 mt-2">
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
                       <SourceBadge source={c.source} />
                       {agentNames[c.agent_id] && <span className="text-xs text-brand-pink font-medium">{agentNames[c.agent_id]}</span>}
+                      <TagChips tags={c.tags} max={2} />
                     </div>
                   </div>
                   <button onClick={() => handleDelete(c.id)} className="text-gray-300 hover:text-red-500 p-1 flex-shrink-0">

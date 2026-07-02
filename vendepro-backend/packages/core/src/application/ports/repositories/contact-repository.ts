@@ -3,6 +3,8 @@ import type { Contact } from '../../../domain/entities/contact'
 export interface ContactFilters {
   search?: string
   agent_id?: string
+  /** Filtra contactos cuyos leads tengan este tag */
+  tag_id?: string
 }
 
 export interface ContactRepository {
