@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
-import { Plus, Search, Trash2, Loader2, BookUser, Phone, Mail, MapPin, X, ChevronRight } from 'lucide-react'
+import { Plus, Search, Trash2, Loader2, BookUser, Phone, Mail, MapPin, X, ChevronRight, SlidersHorizontal } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { applyScopeToParams, isAdminOrSupervisor } from '@/lib/agent-scope'
 import { useToast } from '@/components/ui/Toast'
@@ -75,7 +75,10 @@ export default function ContactosPage() {
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('')
   const [filterAgent, setFilterAgent] = useState('')
+  const [filterSource, setFilterSource] = useState('')
+  const [filterNeighborhood, setFilterNeighborhood] = useState('')
   const [sortBy, setSortBy] = useState('recent')
+  const [showFilters, setShowFilters] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
   const isAdmin = isAdminOrSupervisor()
@@ -109,26 +112,56 @@ export default function ContactosPage() {
     return map
   }, [agents])
 
+  // Opciones dinámicas según los datos cargados
+  const sourceOptions = useMemo(() => {
+    const set = new Set<string>()
+    contacts.forEach(c => { if (c.source) set.add(c.source.toLowerCase()) })
+    return [...set].sort()
+  }, [contacts])
+
+  const neighborhoodOptions = useMemo(() => {
+    const set = new Set<string>()
+    contacts.forEach(c => { if (c.neighborhood) set.add(c.neighborhood) })
+    return [...set].sort((a, b) => a.localeCompare(b))
+  }, [contacts])
+
+  // Contactos tras aplicar filtros de origen y barrio (las tabs cuentan sobre esto)
+  const filtered = useMemo(() => {
+    return contacts.filter(c => {
+      if (filterSource && (c.source || '').toLowerCase() !== filterSource) return false
+      if (filterNeighborhood && c.neighborhood !== filterNeighborhood) return false
+      return true
+    })
+  }, [contacts, filterSource, filterNeighborhood])
+
   const counts = useMemo(() => {
-    const c: Record<string, number> = { '': contacts.length }
-    contacts.forEach(ct => {
+    const c: Record<string, number> = { '': filtered.length }
+    filtered.forEach(ct => {
       const t = typeLabels[ct.contact_type] ? ct.contact_type : 'otro'
       c[t] = (c[t] || 0) + 1
     })
     return c
-  }, [contacts])
+  }, [filtered])
 
   const visible = useMemo(() => {
-    let list = filterType
-      ? contacts.filter(c => (typeLabels[c.contact_type] ? c.contact_type : 'otro') === filterType)
-      : [...contacts]
+    const list = filterType
+      ? filtered.filter(c => (typeLabels[c.contact_type] ? c.contact_type : 'otro') === filterType)
+      : [...filtered]
     if (sortBy === 'recent') {
       list.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
     } else {
       list.sort((a, b) => (a.full_name || '').localeCompare(b.full_name || ''))
     }
     return list
-  }, [contacts, filterType, sortBy])
+  }, [filtered, filterType, sortBy])
+
+  const activeFilterCount = [filterAgent, filterSource, filterNeighborhood].filter(Boolean).length
+
+  function clearFilters() {
+    setFilterAgent('')
+    setFilterSource('')
+    setFilterNeighborhood('')
+  }
 
   async function handleSave() {
     if (!form.full_name) return
@@ -170,7 +203,7 @@ export default function ContactosPage() {
 
       {/* Barra de filtros */}
       <div className="bg-white rounded-xl border shadow-sm p-3 sm:p-4 mb-4">
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+        <div className="flex gap-2">
           <div className="relative flex-1">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
@@ -180,9 +213,24 @@ export default function ContactosPage() {
               onChange={e => setSearch(e.target.value)}
             />
           </div>
+          {/* Toggle de filtros en mobile */}
+          <button
+            onClick={() => setShowFilters(s => !s)}
+            className={`sm:hidden inline-flex items-center gap-1.5 border rounded-lg px-3 py-2 text-sm flex-shrink-0 ${
+              activeFilterCount > 0 ? 'border-brand-pink text-brand-pink bg-brand-pink/5' : 'border-gray-200 text-gray-600 bg-gray-50'
+            }`}
+          >
+            <SlidersHorizontal className="w-4 h-4" />
+            Filtros
+            {activeFilterCount > 0 && (
+              <span className="bg-brand-pink text-white text-[10px] font-semibold rounded-full w-4 h-4 flex items-center justify-center">{activeFilterCount}</span>
+            )}
+          </button>
+        </div>
+        <div className={`${showFilters ? 'flex' : 'hidden'} sm:flex flex-col sm:flex-row gap-2 sm:gap-3 mt-2 sm:mt-3`}>
           {isAdmin && agents.length > 0 && (
             <select
-              className="border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-600 sm:w-52"
+              className="border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-600 sm:flex-1"
               value={filterAgent}
               onChange={e => setFilterAgent(e.target.value)}
             >
@@ -191,13 +239,36 @@ export default function ContactosPage() {
             </select>
           )}
           <select
-            className="border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-600 sm:w-56"
+            className="border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-600 sm:flex-1"
+            value={filterSource}
+            onChange={e => setFilterSource(e.target.value)}
+          >
+            <option value="">Origen</option>
+            {sourceOptions.map(s => (
+              <option key={s} value={s}>{sourceLabels[s] || s.charAt(0).toUpperCase() + s.slice(1)}</option>
+            ))}
+          </select>
+          <select
+            className="border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-600 sm:flex-1"
+            value={filterNeighborhood}
+            onChange={e => setFilterNeighborhood(e.target.value)}
+          >
+            <option value="">Barrio</option>
+            {neighborhoodOptions.map(n => <option key={n} value={n}>{n}</option>)}
+          </select>
+          <select
+            className="border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-600 sm:flex-1"
             value={sortBy}
             onChange={e => setSortBy(e.target.value)}
           >
             <option value="recent">Alta: más reciente</option>
             <option value="name">Nombre: A → Z</option>
           </select>
+          {activeFilterCount > 0 && (
+            <button onClick={clearFilters} className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-brand-pink px-2 py-2 flex-shrink-0 self-start sm:self-auto">
+              <X className="w-3.5 h-3.5" /> Limpiar
+            </button>
+          )}
         </div>
       </div>
 
@@ -266,7 +337,7 @@ export default function ContactosPage() {
       ) : visible.length === 0 ? (
         <div className="bg-white rounded-b-xl rounded-tr-xl border p-8 sm:p-12 text-center">
           <BookUser className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500 mb-4">{search || filterType ? 'Sin resultados' : 'No hay contactos todavía'}</p>
+          <p className="text-gray-500 mb-4">{search || filterType || activeFilterCount > 0 ? 'Sin resultados' : 'No hay contactos todavía'}</p>
           <button onClick={() => setShowForm(true)} className="text-brand-pink text-sm hover:underline">Agregar el primer contacto</button>
         </div>
       ) : (
