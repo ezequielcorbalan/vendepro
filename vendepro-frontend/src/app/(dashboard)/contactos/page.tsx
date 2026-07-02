@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
-import { Plus, Search, Trash2, Loader2, BookUser, Phone, Mail, MapPin, X } from 'lucide-react'
+import { Plus, Search, Trash2, Loader2, BookUser, Phone, Mail, MapPin, X, ChevronRight } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
-import { applyScopeToParams } from '@/lib/agent-scope'
+import { applyScopeToParams, isAdminOrSupervisor } from '@/lib/agent-scope'
 import { useToast } from '@/components/ui/Toast'
 
 const inputClass = 'border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/50 w-full'
@@ -17,14 +17,68 @@ const typeLabels: Record<string, { label: string; color: string }> = {
   otro: { label: 'Otro', color: 'bg-gray-100 text-gray-700' },
 }
 
+const TABS = [
+  { key: '', label: 'Todos' },
+  { key: 'vendedor', label: 'Vendedores' },
+  { key: 'comprador', label: 'Compradores' },
+  { key: 'inversor', label: 'Inversores' },
+  { key: 'inquilino', label: 'Inquilinos' },
+  { key: 'otro', label: 'Otros' },
+]
+
+const sourceLabels: Record<string, string> = {
+  manual: 'Manual',
+  zonaprop: 'Zonaprop',
+  argenprop: 'Argenprop',
+  mercadolibre: 'Mercadolibre',
+  web: 'Web',
+  whatsapp: 'WhatsApp',
+  referido: 'Referido',
+  api: 'API',
+}
+
+const AVATAR_COLORS = [
+  'bg-indigo-500', 'bg-pink-500', 'bg-amber-500', 'bg-emerald-500',
+  'bg-sky-500', 'bg-violet-500', 'bg-rose-500', 'bg-teal-500',
+]
+
+function Avatar({ name }: { name: string }) {
+  const initials = (name || '?')
+    .split(/\s+/)
+    .slice(0, 2)
+    .map(w => w[0])
+    .join('')
+    .toUpperCase()
+  const color = AVATAR_COLORS[(name || '').split('').reduce((a, ch) => a + ch.charCodeAt(0), 0) % AVATAR_COLORS.length]
+  return (
+    <div className={`w-10 h-10 rounded-lg ${color} text-white flex items-center justify-center text-sm font-semibold flex-shrink-0`}>
+      {initials}
+    </div>
+  )
+}
+
+function SourceBadge({ source }: { source?: string | null }) {
+  if (!source) return <span className="text-xs text-gray-300">—</span>
+  const label = sourceLabels[source.toLowerCase()] || source.charAt(0).toUpperCase() + source.slice(1)
+  return (
+    <span className="inline-block text-xs text-gray-600 bg-gray-100 border border-gray-200 px-2.5 py-1 rounded-md">
+      {label}
+    </span>
+  )
+}
+
 export default function ContactosPage() {
   const { toast } = useToast()
   const [contacts, setContacts] = useState<any[]>([])
+  const [agents, setAgents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('')
+  const [filterAgent, setFilterAgent] = useState('')
+  const [sortBy, setSortBy] = useState('recent')
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
+  const isAdmin = isAdminOrSupervisor()
   const [form, setForm] = useState({
     full_name: '', phone: '', email: '', contact_type: 'vendedor', neighborhood: '', notes: '', source: 'manual',
   })
@@ -32,7 +86,7 @@ export default function ContactosPage() {
   function loadContacts() {
     const params = new URLSearchParams()
     if (search) params.set('q', search)
-    if (filterType) params.set('type', filterType)
+    if (filterAgent) params.set('agent_id', filterAgent)
     applyScopeToParams(params)
     apiFetch('crm', `/contacts?${params}`).then(r => r.json() as Promise<any>).then(data => {
       setContacts(Array.isArray(data) ? data : [])
@@ -40,7 +94,41 @@ export default function ContactosPage() {
     }).catch(() => setLoading(false))
   }
 
-  useEffect(() => { loadContacts() }, [search, filterType])
+  useEffect(() => { loadContacts() }, [search, filterAgent])
+
+  useEffect(() => {
+    if (!isAdmin) return
+    apiFetch('admin', '/agents').then(r => r.json() as Promise<any>).then(d => {
+      if (Array.isArray(d)) setAgents(d)
+    }).catch(() => {})
+  }, [isAdmin])
+
+  const agentNames = useMemo(() => {
+    const map: Record<string, string> = {}
+    agents.forEach(a => { map[a.id] = a.full_name })
+    return map
+  }, [agents])
+
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { '': contacts.length }
+    contacts.forEach(ct => {
+      const t = typeLabels[ct.contact_type] ? ct.contact_type : 'otro'
+      c[t] = (c[t] || 0) + 1
+    })
+    return c
+  }, [contacts])
+
+  const visible = useMemo(() => {
+    let list = filterType
+      ? contacts.filter(c => (typeLabels[c.contact_type] ? c.contact_type : 'otro') === filterType)
+      : [...contacts]
+    if (sortBy === 'recent') {
+      list.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+    } else {
+      list.sort((a, b) => (a.full_name || '').localeCompare(b.full_name || ''))
+    }
+    return list
+  }, [contacts, filterType, sortBy])
 
   async function handleSave() {
     if (!form.full_name) return
@@ -70,7 +158,7 @@ export default function ContactosPage() {
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
         <div>
           <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Contactos</h1>
           <p className="text-sm text-gray-500 mt-1">Base de datos de clientes</p>
@@ -80,23 +168,60 @@ export default function ContactosPage() {
         </button>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-2 mb-4">
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            className="w-full border border-gray-300 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
-            placeholder="Buscar por nombre, teléfono o email..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
+      {/* Barra de filtros */}
+      <div className="bg-white rounded-xl border shadow-sm p-3 sm:p-4 mb-4">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              className="w-full border border-gray-200 bg-gray-50 focus:bg-white rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/40"
+              placeholder="Buscar por nombre, teléfono o email..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
+          {isAdmin && agents.length > 0 && (
+            <select
+              className="border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-600 sm:w-52"
+              value={filterAgent}
+              onChange={e => setFilterAgent(e.target.value)}
+            >
+              <option value="">Usuario asignado</option>
+              {agents.map(a => <option key={a.id} value={a.id}>{a.full_name}</option>)}
+            </select>
+          )}
+          <select
+            className="border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-600 sm:w-56"
+            value={sortBy}
+            onChange={e => setSortBy(e.target.value)}
+          >
+            <option value="recent">Alta: más reciente</option>
+            <option value="name">Nombre: A → Z</option>
+          </select>
         </div>
-        <select className="border border-gray-300 rounded-lg px-3 py-2 text-sm" value={filterType} onChange={e => setFilterType(e.target.value)}>
-          <option value="">Todos los tipos</option>
-          <option value="vendedor">Vendedores</option>
-          <option value="comprador">Compradores</option>
-          <option value="inversor">Inversores</option>
-          <option value="inquilino">Inquilinos</option>
-        </select>
+      </div>
+
+      {/* Tabs por tipo */}
+      <div className="flex overflow-x-auto no-scrollbar border-b border-gray-200 -mb-px">
+        {TABS.map(tab => {
+          const active = filterType === tab.key
+          return (
+            <button
+              key={tab.key}
+              onClick={() => setFilterType(tab.key)}
+              className={`flex items-center gap-2 whitespace-nowrap px-4 py-2.5 text-sm rounded-t-lg border-b-2 transition-colors ${
+                active
+                  ? 'bg-white border-brand-pink text-gray-800 font-semibold border-x border-t border-x-gray-200 border-t-gray-200'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {tab.label}
+              <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded ${active ? 'bg-brand-pink text-white' : 'bg-gray-200 text-gray-600'}`}>
+                {counts[tab.key] || 0}
+              </span>
+            </button>
+          )
+        })}
       </div>
 
       {showForm && (
@@ -135,22 +260,85 @@ export default function ContactosPage() {
       )}
 
       {loading ? (
-        <div className="flex items-center gap-2 text-gray-500 py-12 justify-center">
+        <div className="flex items-center gap-2 text-gray-500 py-12 justify-center bg-white rounded-b-xl border border-t-0">
           <Loader2 className="w-5 h-5 animate-spin" /> Cargando...
         </div>
-      ) : contacts.length === 0 ? (
-        <div className="bg-white rounded-xl border p-8 sm:p-12 text-center">
+      ) : visible.length === 0 ? (
+        <div className="bg-white rounded-b-xl rounded-tr-xl border p-8 sm:p-12 text-center">
           <BookUser className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500 mb-4">{search ? 'Sin resultados' : 'No hay contactos todavía'}</p>
+          <p className="text-gray-500 mb-4">{search || filterType ? 'Sin resultados' : 'No hay contactos todavía'}</p>
           <button onClick={() => setShowForm(true)} className="text-brand-pink text-sm hover:underline">Agregar el primer contacto</button>
         </div>
       ) : (
-        <div className="space-y-2">
-          {contacts.map(c => {
-            const t = typeLabels[c.contact_type] || typeLabels.otro
-            return (
-              <div key={c.id} className="bg-white rounded-xl border p-4">
-                <div className="flex items-start justify-between gap-2">
+        <div className="bg-white rounded-b-xl rounded-tr-xl border shadow-sm overflow-hidden">
+          {/* Tabla desktop */}
+          <table className="hidden md:table w-full text-sm">
+            <thead>
+              <tr className="text-left text-xs text-gray-500 border-b bg-gray-50/50">
+                <th className="font-medium px-4 py-3">Nombre</th>
+                <th className="font-medium px-4 py-3">Tipo</th>
+                <th className="font-medium px-4 py-3">Barrio</th>
+                <th className="font-medium px-4 py-3">Origen</th>
+                <th className="font-medium px-4 py-3">Asignado</th>
+                <th className="px-4 py-3"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {visible.map(c => {
+                const t = typeLabels[c.contact_type] || typeLabels.otro
+                return (
+                  <tr key={c.id} className="border-b last:border-b-0 hover:bg-gray-50/70 group">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Avatar name={c.full_name} />
+                        <div className="min-w-0">
+                          <Link href={`/contactos/${c.id}`} className="font-semibold text-gray-800 hover:text-brand-pink block truncate">
+                            {c.full_name}
+                          </Link>
+                          <div className="flex items-center gap-1.5 text-xs text-gray-500 truncate">
+                            {c.email && <a href={`mailto:${c.email}`} className="hover:text-brand-pink truncate">{c.email}</a>}
+                            {c.email && c.phone && <span className="text-gray-300">·</span>}
+                            {c.phone && <a href={`tel:${c.phone}`} className="hover:text-brand-pink whitespace-nowrap">{c.phone}</a>}
+                            {!c.email && !c.phone && <span className="text-gray-300">Sin datos de contacto</span>}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${t.color}`}>{t.label}</span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">
+                      {c.neighborhood || <span className="text-gray-300">—</span>}
+                    </td>
+                    <td className="px-4 py-3">
+                      <SourceBadge source={c.source} />
+                    </td>
+                    <td className="px-4 py-3">
+                      {agentNames[c.agent_id]
+                        ? <span className="text-brand-pink font-medium">{agentNames[c.agent_id]}</span>
+                        : <span className="text-gray-300">—</span>}
+                    </td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      <button onClick={() => handleDelete(c.id)} className="text-gray-300 hover:text-red-500 p-1.5 opacity-0 group-hover:opacity-100 transition-opacity" title="Eliminar">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                      <Link href={`/contactos/${c.id}`} className="inline-block text-gray-400 hover:text-brand-pink p-1.5 align-middle" title="Ver detalle">
+                        <ChevronRight className="w-4 h-4" />
+                      </Link>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+
+          {/* Cards mobile */}
+          <div className="md:hidden divide-y">
+            {visible.map(c => {
+              const t = typeLabels[c.contact_type] || typeLabels.otro
+              return (
+                <div key={c.id} className="p-4 flex items-start gap-3">
+                  <Avatar name={c.full_name} />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <Link href={`/contactos/${c.id}`} className="font-semibold text-gray-800 hover:text-brand-pink truncate">
@@ -171,22 +359,18 @@ export default function ContactosPage() {
                       )}
                       {c.neighborhood && <span className="text-xs text-gray-500 flex items-center gap-1"><MapPin className="w-3 h-3" />{c.neighborhood}</span>}
                     </div>
-                    {c.notes && <p className="text-xs text-gray-400 mt-1 line-clamp-2">{c.notes}</p>}
+                    <div className="flex items-center gap-2 mt-2">
+                      <SourceBadge source={c.source} />
+                      {agentNames[c.agent_id] && <span className="text-xs text-brand-pink font-medium">{agentNames[c.agent_id]}</span>}
+                    </div>
                   </div>
-                  <div className="flex gap-1 flex-shrink-0">
-                    <Link href={`/contactos/${c.id}`} className="text-gray-400 hover:text-brand-pink p-1">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </Link>
-                    <button onClick={() => handleDelete(c.id)} className="text-gray-300 hover:text-red-500 p-1">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                  <button onClick={() => handleDelete(c.id)} className="text-gray-300 hover:text-red-500 p-1 flex-shrink-0">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
-              </div>
-            )
-          })}
+              )
+            })}
+          </div>
         </div>
       )}
     </div>
