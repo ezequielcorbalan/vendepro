@@ -47,6 +47,18 @@ const EVENT_KEY_GROUPS: { label: string; keys: { key: string; label: string }[] 
 
 const ALL_EVENT_KEYS = EVENT_KEY_GROUPS.flatMap(g => g.keys)
 
+// Set recomendado para el funnel inmobiliario: cubre lead → contacto →
+// calificación → tasación → captación → venta. Meta optimiza campañas con
+// eventos estándar; Purchase queda reservado para la venta real (escriturada).
+const RECOMMENDED_MAPPINGS: Mapping[] = [
+  { stage_key: 'lead_created', meta_event_name: 'Lead', ga4_event_name: 'generate_lead', enabled: true },
+  { stage_key: 'contactado', meta_event_name: 'Contact', ga4_event_name: 'contacto_lead', enabled: true },
+  { stage_key: 'calificado', meta_event_name: 'CompleteRegistration', ga4_event_name: 'lead_calificado', enabled: true },
+  { stage_key: 'en_tasacion', meta_event_name: 'Schedule', ga4_event_name: 'tasacion_agendada', enabled: true },
+  { stage_key: 'captado', meta_event_name: 'SubmitApplication', ga4_event_name: 'captacion', enabled: true },
+  { stage_key: 'reservation_escriturada', meta_event_name: 'Purchase', ga4_event_name: 'purchase', enabled: true },
+]
+
 const META_EVENT_SUGGESTIONS = [
   'Lead', 'Schedule', 'Contact', 'Purchase', 'CompleteRegistration',
   'ViewContent', 'AddToCart', 'InitiateCheckout', 'Subscribe', 'SubmitApplication',
@@ -532,12 +544,27 @@ export default function MarketingConfigPage() {
             {GA4_EVENT_SUGGESTIONS.map(e => <option key={e} value={e} />)}
           </datalist>
 
-          <div className="flex items-center gap-2 mt-3">
+          <div className="flex items-center gap-4 mt-3">
             <button
               onClick={() => setMappings([...mappings, { stage_key: 'lead_created', meta_event_name: 'Lead', ga4_event_name: 'generate_lead', enabled: true }])}
               className="flex items-center gap-1 text-xs text-brand-pink font-medium hover:underline"
             >
               <Plus className="w-3 h-3" /> Agregar mapeo
+            </button>
+            <button
+              onClick={() => {
+                const existing = new Set(mappings.map(m => m.stage_key))
+                const missing = RECOMMENDED_MAPPINGS.filter(r => !existing.has(r.stage_key))
+                if (missing.length === 0) {
+                  toast('Ya tenés todos los mapeos recomendados')
+                  return
+                }
+                setMappings([...mappings, ...missing.map(r => ({ ...r }))])
+                toast(`${missing.length} mapeos recomendados agregados — revisá y guardá`)
+              }}
+              className="flex items-center gap-1 text-xs text-brand-orange font-medium hover:underline"
+            >
+              <CheckCircle2 className="w-3 h-3" /> Usar mapeos recomendados
             </button>
           </div>
 
