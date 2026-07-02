@@ -19,6 +19,7 @@ export interface CreateLeadInput {
   next_step?: string | null
   next_step_date?: string | null
   budget?: number | null
+  timing?: string | null
   contact_id?: string | null
 }
 
@@ -46,7 +47,7 @@ export class CreateLeadUseCase {
       notes: input.notes ?? null,
       estimated_value: input.estimated_value ? parseFloat(String(input.estimated_value)) : null,
       budget: input.budget ?? null,
-      timing: null,
+      timing: input.timing ?? null,
       personas_trabajo: null,
       mascotas: null,
       next_step: input.next_step ?? null,

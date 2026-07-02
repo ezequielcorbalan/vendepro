@@ -27,6 +27,34 @@ export class D1ContactRepository implements ContactRepository {
     return rows.map(r => this.toEntity(r))
   }
 
+  async findByEmailOrPhone(orgId: string, email: string | null, phone: string | null): Promise<Contact | null> {
+    const normEmail = email?.trim().toLowerCase() || null
+    if (normEmail) {
+      const row = await this.db
+        .prepare('SELECT * FROM contacts WHERE org_id = ? AND email IS NOT NULL AND LOWER(TRIM(email)) = ? LIMIT 1')
+        .bind(orgId, normEmail)
+        .first() as any
+      if (row) return this.toEntity(row)
+    }
+
+    // Teléfono: se comparan los últimos 10 dígitos para tolerar prefijos (+54 9, 011)
+    const normPhone = phone?.replace(/\D/g, '') || null
+    if (normPhone && normPhone.length >= 8) {
+      const suffix = normPhone.slice(-10)
+      const row = await this.db
+        .prepare(`
+          SELECT * FROM contacts WHERE org_id = ? AND phone IS NOT NULL AND
+            substr(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone,' ',''),'-',''),'(',''),')',''),'+',''),'.',''), -${suffix.length}) = ?
+          LIMIT 1
+        `)
+        .bind(orgId, suffix)
+        .first() as any
+      if (row) return this.toEntity(row)
+    }
+
+    return null
+  }
+
   async findWithLeadsAndProperties(id: string, orgId: string): Promise<{
     contact: Contact
     leads: Array<{ id: string; full_name: string; stage: string }>

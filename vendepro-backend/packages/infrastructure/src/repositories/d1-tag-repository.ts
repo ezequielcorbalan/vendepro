@@ -20,22 +20,36 @@ export class D1TagRepository implements TagRepository {
     return rows.map(r => this.toEntity(r))
   }
 
+  async findByName(orgId: string, name: string): Promise<Tag | null> {
+    const row = await this.db
+      .prepare('SELECT * FROM tags WHERE org_id = ? AND LOWER(name) = LOWER(?)')
+      .bind(orgId, name)
+      .first() as any
+    return row ? this.toEntity(row) : null
+  }
+
   async save(tag: Tag): Promise<void> {
     const o = tag.toObject()
     await this.db.prepare(`
-      INSERT INTO tags (id, org_id, name, color, created_at)
-      VALUES (?,?,?,?,?)
+      INSERT INTO tags (id, org_id, name, color, is_default, created_at)
+      VALUES (?,?,?,?,?,?)
       ON CONFLICT(id) DO UPDATE SET name=excluded.name, color=excluded.color
-    `).bind(o.id, o.org_id, o.name, o.color, o.created_at).run()
+    `).bind(o.id, o.org_id, o.name, o.color, o.is_default, o.created_at).run()
   }
 
   async addToLead(leadId: string, tagId: string, orgId: string): Promise<void> {
-    const id = crypto.randomUUID().replace(/-/g, '')
-    await this.db.prepare('INSERT OR IGNORE INTO lead_tags (id, lead_id, tag_id, org_id) VALUES (?,?,?,?)').bind(id, leadId, tagId, orgId).run()
+    // lead_tags no tiene org_id: el pertenecer a la org se verifica via tags
+    await this.db.prepare(`
+      INSERT OR IGNORE INTO lead_tags (lead_id, tag_id)
+      SELECT ?, id FROM tags WHERE id = ? AND org_id = ?
+    `).bind(leadId, tagId, orgId).run()
   }
 
   async removeFromLead(leadId: string, tagId: string, orgId: string): Promise<void> {
-    await this.db.prepare('DELETE FROM lead_tags WHERE lead_id = ? AND tag_id = ? AND org_id = ?').bind(leadId, tagId, orgId).run()
+    await this.db.prepare(`
+      DELETE FROM lead_tags
+      WHERE lead_id = ? AND tag_id IN (SELECT id FROM tags WHERE id = ? AND org_id = ?)
+    `).bind(leadId, tagId, orgId).run()
   }
 
   async delete(id: string, orgId: string): Promise<void> {
@@ -43,6 +57,6 @@ export class D1TagRepository implements TagRepository {
   }
 
   private toEntity(row: any): Tag {
-    return Tag.create({ id: row.id, org_id: row.org_id, name: row.name, color: row.color ?? null, created_at: row.created_at })
+    return Tag.create({ id: row.id, org_id: row.org_id, name: row.name, color: row.color ?? null, is_default: row.is_default ?? 0, created_at: row.created_at })
   }
 }
