@@ -10,6 +10,8 @@
     {
       "binding": "DB",
       "database_name": "vendepro-rentals-db",
+      // BLOQUEA EL DEPLOY: crear la DB "vendepro-rentals-db" en el dashboard de
+      // Cloudflare (D1), aplicar migrations/0001_initial.sql y pegar el UUID real aca.
       "database_id": "REPLACE_WITH_ACTUAL_D1_ID"
     }
   ],

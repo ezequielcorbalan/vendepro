@@ -62,6 +62,17 @@ jobs:
         run: npm ci
         working-directory: vendepro-backend
 
+      - name: Deploy
+        run: npx wrangler deploy
+        working-directory: vendepro-backend/packages/${{ inputs.api_name }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      # Corre despues del deploy: si el sync falla (token, worker inexistente),
+      # el codigo nuevo ya esta en produccion y el run marca el error igual.
+      # Antes iba primero y un fallo aca bloqueaba todos los deploys de api-ai
+      # (fallando desde 2026-06-06 sin dejar salir codigo nuevo).
       - name: Sync app secrets to worker
         working-directory: vendepro-backend/packages/${{ inputs.api_name }}
         env:
@@ -72,13 +83,6 @@ jobs:
           if [ -n "$GROQ_API_KEY" ]; then
             printf '%s' "$GROQ_API_KEY" | npx wrangler secret put GROQ_API_KEY
           fi
-
-      - name: Deploy
-        run: npx wrangler deploy
-        working-directory: vendepro-backend/packages/${{ inputs.api_name }}
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
   smoke:
     name: Production smoke (${{ inputs.api_name }})
