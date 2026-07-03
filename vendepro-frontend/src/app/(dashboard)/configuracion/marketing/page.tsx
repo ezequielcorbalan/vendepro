@@ -199,8 +199,11 @@ export default function MarketingConfigPage() {
         ga4_enabled: !!integration.ga4_enabled,
         ga4_measurement_id: integration.ga4_measurement_id || null,
       }
-      if (showTokenInput && accessTokenInput) body.access_token = accessTokenInput
-      if (showGa4SecretInput && ga4SecretInput) body.ga4_api_secret = ga4SecretInput
+      // El input de token también está visible cuando nunca se guardó uno
+      // (has_access_token false), sin pasar por "Cambiar" — mandar siempre
+      // que haya valor tipeado.
+      if (accessTokenInput) body.access_token = accessTokenInput
+      if (ga4SecretInput) body.ga4_api_secret = ga4SecretInput
       const res = await apiFetch('crm', '/marketing/integration', {
         method: 'PUT',
         body: JSON.stringify(body),
