@@ -43,6 +43,13 @@ export class D1ApiTokenRepository implements ApiTokenRepository {
       .run()
   }
 
+  async delete(id: string, orgId: string): Promise<void> {
+    await this.db
+      .prepare('DELETE FROM api_tokens WHERE id = ? AND org_id = ?')
+      .bind(id, orgId)
+      .run()
+  }
+
   async touchLastUsed(id: string): Promise<void> {
     await this.db
       .prepare(`UPDATE api_tokens SET last_used_at = datetime('now') WHERE id = ?`)

@@ -7,6 +7,7 @@ const mockRepo = {
   findById: vi.fn(),
   findByOrg: vi.fn(),
   revoke: vi.fn(),
+  delete: vi.fn(),
   touchLastUsed: vi.fn(),
 }
 

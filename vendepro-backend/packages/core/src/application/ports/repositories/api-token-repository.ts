@@ -5,5 +5,6 @@ export interface ApiTokenRepository {
   findById(id: string): Promise<ApiToken | null>
   findByOrg(orgId: string): Promise<ApiToken[]>
   revoke(id: string, orgId: string): Promise<void>
+  delete(id: string, orgId: string): Promise<void>
   touchLastUsed(id: string): Promise<void>
 }

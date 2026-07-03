@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ListApiTokensUseCase } from '../../../src/application/use-cases/api-tokens/list-api-tokens'
 import { RevokeApiTokenUseCase } from '../../../src/application/use-cases/api-tokens/revoke-api-token'
+import { DeleteApiTokenUseCase } from '../../../src/application/use-cases/api-tokens/delete-api-token'
 import { ApiToken } from '../../../src/domain/entities/api-token'
 import { ValidationError } from '../../../src/domain/errors/validation-error'
 
@@ -9,6 +10,7 @@ const mockRepo = {
   findById: vi.fn(),
   findByOrg: vi.fn(),
   revoke: vi.fn().mockResolvedValue(undefined),
+  delete: vi.fn().mockResolvedValue(undefined),
   touchLastUsed: vi.fn(),
 }
 
@@ -49,6 +51,25 @@ describe('RevokeApiTokenUseCase', () => {
 
   it('rechaza id vacío', async () => {
     const uc = new RevokeApiTokenUseCase(mockRepo)
+    await expect(uc.execute({ id: '', orgId: 'org_mg' })).rejects.toThrow(ValidationError)
+  })
+})
+
+describe('DeleteApiTokenUseCase', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockRepo.delete.mockResolvedValue(undefined)
+  })
+
+  it('elimina definitivamente por id + orgId', async () => {
+    const uc = new DeleteApiTokenUseCase(mockRepo)
+    const result = await uc.execute({ id: 'tok-1', orgId: 'org_mg' })
+    expect(mockRepo.delete).toHaveBeenCalledWith('tok-1', 'org_mg')
+    expect(result).toEqual({ success: true })
+  })
+
+  it('rechaza id vacío', async () => {
+    const uc = new DeleteApiTokenUseCase(mockRepo)
     await expect(uc.execute({ id: '', orgId: 'org_mg' })).rejects.toThrow(ValidationError)
   })
 })

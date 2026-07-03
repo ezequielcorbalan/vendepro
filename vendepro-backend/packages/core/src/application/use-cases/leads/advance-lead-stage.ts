@@ -25,6 +25,7 @@ export interface AdvanceLeadStageOutput {
   autoFollowup: object | null
   syncedPropertyId: string | null
   syncedPropertyStage: PropertyStageValue | null
+  fromStage: string
 }
 
 export class AdvanceLeadStageUseCase {
@@ -131,6 +132,6 @@ export class AdvanceLeadStageUseCase {
       }
     }
 
-    return { autoFollowup, syncedPropertyId, syncedPropertyStage }
+    return { autoFollowup, syncedPropertyId, syncedPropertyStage, fromStage }
   }
 }

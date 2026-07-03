@@ -19,6 +19,7 @@ import {
   D1LandingEventRepository,
   D1OrgVariableRepository,
   fireMarketingEvent,
+  fireWebhookEvent,
 } from '@vendepro/infrastructure'
 import {
   GetPublicReportUseCase,
@@ -264,6 +265,34 @@ app.post('/v1/leads', async (c) => {
       }),
   )
 
+  // Webhook saliente `lead.created` por cada lead creado (n8n → Resend/OneTalk).
+  await Promise.allSettled(
+    result.results
+      .filter((r) => r.ok && r.id)
+      .map((r) => {
+        const lead = rawLeads[r.index] ?? {}
+        return fireWebhookEvent(c.env, {
+          orgId,
+          event: 'lead.created',
+          payload: {
+            lead: {
+              id: r.id!,
+              full_name: lead.full_name ?? null,
+              email: lead.email ?? null,
+              phone: lead.phone ?? null,
+              operation: lead.operation ?? null,
+              source: 'integration_api',
+              source_detail: lead.source_detail ?? null,
+              notes: lead.notes ?? null,
+              contact_id: (r as any).contact_id ?? null,
+              deduped: (r as any).deduped ?? false,
+              tags: Array.isArray(lead.tags) ? lead.tags : [],
+            },
+          },
+        })
+      }),
+  )
+
   return c.json(result, result.created > 0 ? 201 : 400)
 })
 
@@ -318,6 +347,24 @@ app.post('/public/leads', async (c) => {
     actionSource: 'website',
     eventSourceUrl: c.req.header('referer') ?? null,
     ga4ClientId: body.visitorId ?? null,
+  })
+
+  // Webhook saliente `lead.created` (misma semántica que /v1/leads).
+  await fireWebhookEvent(c.env, {
+    orgId: result.org_id,
+    event: 'lead.created',
+    payload: {
+      lead: {
+        id: result.id,
+        full_name: body.full_name ?? null,
+        email: body.email ?? null,
+        phone: body.phone ?? null,
+        operation: body.operation ?? 'otro',
+        source: 'public_api',
+        source_detail: body.source_detail ?? null,
+        notes: body.notes ?? null,
+      },
+    },
   })
 
   return c.json({ ...result, marketing: mk ?? null }, 201)
