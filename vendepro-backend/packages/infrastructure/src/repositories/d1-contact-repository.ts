@@ -115,6 +115,31 @@ export class D1ContactRepository implements ContactRepository {
     ).run()
   }
 
+  async findLeadPropertyByContactIds(contactIds: string[], orgId: string): Promise<Record<string, string>> {
+    const result: Record<string, string> = {}
+    if (contactIds.length === 0) return result
+
+    // D1 limita la cantidad de parámetros por statement — se procesa en chunks
+    const CHUNK = 50
+    for (let i = 0; i < contactIds.length; i += CHUNK) {
+      const chunk = contactIds.slice(i, i + CHUNK)
+      const placeholders = chunk.map(() => '?').join(',')
+      // Ordenado por created_at DESC: el primer property_address por contacto es el más reciente
+      const rows = (await this.db.prepare(`
+        SELECT contact_id, property_address
+        FROM leads
+        WHERE org_id = ? AND contact_id IN (${placeholders})
+          AND property_address IS NOT NULL AND TRIM(property_address) != ''
+        ORDER BY created_at DESC
+      `).bind(orgId, ...chunk).all()).results as any[]
+
+      for (const r of rows) {
+        if (!(r.contact_id in result)) result[r.contact_id] = r.property_address
+      }
+    }
+    return result
+  }
+
   async delete(id: string, orgId: string): Promise<void> {
     await this.db.prepare('DELETE FROM contacts WHERE id = ? AND org_id = ?').bind(id, orgId).run()
   }

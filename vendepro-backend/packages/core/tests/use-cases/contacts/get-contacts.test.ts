@@ -30,6 +30,7 @@ const contactB = Contact.create({
 
 const mockContactRepo = {
   findByOrg: vi.fn(),
+  findLeadPropertyByContactIds: vi.fn(),
 } as any
 
 const mockTagRepo = {
@@ -39,9 +40,10 @@ const mockTagRepo = {
 describe('GetContactsUseCase', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockContactRepo.findLeadPropertyByContactIds.mockResolvedValue({})
   })
 
-  it('sin tagRepo devuelve los contactos planos sin tags', async () => {
+  it('sin tagRepo devuelve los contactos con tags vacíos', async () => {
     mockContactRepo.findByOrg.mockResolvedValue([contactA])
 
     const useCase = new GetContactsUseCase(mockContactRepo)
@@ -49,7 +51,7 @@ describe('GetContactsUseCase', () => {
 
     expect(result.length).toBe(1)
     expect(result[0]!.full_name).toBe('Ana López')
-    expect(result[0]!.tags).toBeUndefined()
+    expect(result[0]!.tags).toEqual([])
   })
 
   it('con tagRepo adjunta los tags de cada contacto (vacío si no tiene)', async () => {
@@ -64,6 +66,20 @@ describe('GetContactsUseCase', () => {
     expect(mockTagRepo.findByContactIds).toHaveBeenCalledWith(['contact-a', 'contact-b'], 'org_mg')
     expect(result[0]!.tags).toEqual([{ id: 'tag-1', name: 'inversor', color: '#6366f1' }])
     expect(result[1]!.tags).toEqual([])
+  })
+
+  it('adjunta property_address del lead más reciente (null si no tiene)', async () => {
+    mockContactRepo.findByOrg.mockResolvedValue([contactA, contactB])
+    mockContactRepo.findLeadPropertyByContactIds.mockResolvedValue({
+      'contact-a': 'Av. Corrientes 1234',
+    })
+
+    const useCase = new GetContactsUseCase(mockContactRepo, mockTagRepo)
+    const result = await useCase.execute('org_mg')
+
+    expect(mockContactRepo.findLeadPropertyByContactIds).toHaveBeenCalledWith(['contact-a', 'contact-b'], 'org_mg')
+    expect(result[0]!.property_address).toBe('Av. Corrientes 1234')
+    expect(result[1]!.property_address).toBeNull()
   })
 
   it('pasa los filtros (incluido tag_id) al repositorio', async () => {

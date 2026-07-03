@@ -100,7 +100,6 @@ export default function ContactosPage() {
   const [filterType, setFilterType] = useState('')
   const [filterAgent, setFilterAgent] = useState('')
   const [filterSource, setFilterSource] = useState('')
-  const [filterNeighborhood, setFilterNeighborhood] = useState('')
   const [filterTag, setFilterTag] = useState('')
   const [tags, setTags] = useState<any[]>([])
   const [sortBy, setSortBy] = useState('recent')
@@ -154,20 +153,13 @@ export default function ContactosPage() {
     return [...set].sort()
   }, [contacts])
 
-  const neighborhoodOptions = useMemo(() => {
-    const set = new Set<string>()
-    contacts.forEach(c => { if (c.neighborhood) set.add(c.neighborhood) })
-    return [...set].sort((a, b) => a.localeCompare(b))
-  }, [contacts])
-
-  // Contactos tras aplicar filtros de origen y barrio (las tabs cuentan sobre esto)
+  // Contactos tras aplicar el filtro de origen (las tabs cuentan sobre esto)
   const filtered = useMemo(() => {
     return contacts.filter(c => {
       if (filterSource && (c.source || '').toLowerCase() !== filterSource) return false
-      if (filterNeighborhood && c.neighborhood !== filterNeighborhood) return false
       return true
     })
-  }, [contacts, filterSource, filterNeighborhood])
+  }, [contacts, filterSource])
 
   const counts = useMemo(() => {
     const c: Record<string, number> = { '': filtered.length }
@@ -201,14 +193,13 @@ export default function ContactosPage() {
   )
 
   // Volver a la primera página cuando cambian filtros, orden o resultados
-  useEffect(() => { setPage(1) }, [search, filterType, filterAgent, filterSource, filterNeighborhood, filterTag, sortBy])
+  useEffect(() => { setPage(1) }, [search, filterType, filterAgent, filterSource, filterTag, sortBy])
 
-  const activeFilterCount = [filterAgent, filterSource, filterNeighborhood, filterTag].filter(Boolean).length
+  const activeFilterCount = [filterAgent, filterSource, filterTag].filter(Boolean).length
 
   function clearFilters() {
     setFilterAgent('')
     setFilterSource('')
-    setFilterNeighborhood('')
     setFilterTag('')
   }
 
@@ -296,14 +287,6 @@ export default function ContactosPage() {
             {sourceOptions.map(s => (
               <option key={s} value={s}>{sourceLabels[s] || s.charAt(0).toUpperCase() + s.slice(1)}</option>
             ))}
-          </select>
-          <select
-            className="border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-600 sm:flex-1"
-            value={filterNeighborhood}
-            onChange={e => setFilterNeighborhood(e.target.value)}
-          >
-            <option value="">Barrio</option>
-            {neighborhoodOptions.map(n => <option key={n} value={n}>{n}</option>)}
           </select>
           {tags.length > 0 && (
             <select
@@ -408,7 +391,7 @@ export default function ContactosPage() {
               <tr className="text-left text-xs uppercase tracking-wide text-gray-400 border-b border-gray-100 bg-gray-50/60">
                 <th className="font-medium px-4 py-3">Nombre</th>
                 <th className="font-medium px-4 py-3">Tipo</th>
-                <th className="font-medium px-4 py-3">Barrio</th>
+                <th className="font-medium px-4 py-3">Propiedad</th>
                 <th className="font-medium px-4 py-3">Origen</th>
                 <th className="font-medium px-4 py-3">Tags</th>
                 <th className="font-medium px-4 py-3">Asignado</th>
@@ -439,8 +422,10 @@ export default function ContactosPage() {
                     <td className="px-4 py-3">
                       <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${t.color}`}>{t.label}</span>
                     </td>
-                    <td className="px-4 py-3 text-gray-600">
-                      {c.neighborhood || <span className="text-gray-300">—</span>}
+                    <td className="px-4 py-3 text-gray-600 max-w-[220px]">
+                      {c.property_address
+                        ? <span className="flex items-center gap-1.5 truncate" title={c.property_address}><MapPin className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" /><span className="truncate">{c.property_address}</span></span>
+                        : <span className="text-gray-300">—</span>}
                     </td>
                     <td className="px-4 py-3">
                       <SourceBadge source={c.source} />
@@ -492,7 +477,7 @@ export default function ContactosPage() {
                           <Mail className="w-3 h-3" />{c.email}
                         </a>
                       )}
-                      {c.neighborhood && <span className="text-xs text-gray-500 flex items-center gap-1"><MapPin className="w-3 h-3" />{c.neighborhood}</span>}
+                      {c.property_address && <span className="text-xs text-gray-500 flex items-center gap-1 min-w-0"><MapPin className="w-3 h-3 flex-shrink-0" /><span className="truncate">{c.property_address}</span></span>}
                     </div>
                     <div className="flex flex-wrap items-center gap-2 mt-2">
                       <SourceBadge source={c.source} />

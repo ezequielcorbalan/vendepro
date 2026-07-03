@@ -274,3 +274,58 @@ describe('D1ContactRepository — findByOrg con tag_id', () => {
     expect(result.length).toBe(0)
   })
 })
+
+describe('D1ContactRepository — findLeadPropertyByContactIds', () => {
+  let env: TestEnv
+
+  beforeAll(async () => {
+    env = await createTestDB()
+  })
+
+  afterAll(async () => {
+    await closeTestDB(env)
+  })
+
+  async function insertLead(orgId: string, contactId: string, address: string | null, createdAt: string) {
+    const leadId = nextId('lead')
+    await env.DB.prepare(
+      `INSERT INTO leads (id, org_id, full_name, source, stage, contact_id, property_address, created_at, updated_at)
+       VALUES (?, ?, 'Lead Prop', 'argenprop', 'nuevo', ?, ?, ?, datetime('now'))`,
+    ).bind(leadId, orgId, contactId, address, createdAt).run()
+    return leadId
+  }
+
+  it('devuelve la dirección del lead más reciente por contacto', async () => {
+    const repo = new D1ContactRepository(env.DB)
+    const org = await seedOrg(env.DB)
+    const user = await seedUser(env.DB, org.id)
+    const contactId = await insertContact(env.DB, org.id, user.id)
+
+    await insertLead(org.id, contactId, 'Dirección Vieja 100', '2026-01-01 10:00:00')
+    await insertLead(org.id, contactId, 'Av. Corrientes 1234', '2026-06-01 10:00:00')
+
+    const result = await repo.findLeadPropertyByContactIds([contactId], org.id)
+    expect(result[contactId]).toBe('Av. Corrientes 1234')
+  })
+
+  it('ignora leads sin property_address y contactos sin leads', async () => {
+    const repo = new D1ContactRepository(env.DB)
+    const org = await seedOrg(env.DB)
+    const user = await seedUser(env.DB, org.id)
+    const sinDireccion = await insertContact(env.DB, org.id, user.id)
+    const sinLeads = await insertContact(env.DB, org.id, user.id)
+    await insertLead(org.id, sinDireccion, null, '2026-06-01 10:00:00')
+    await insertLead(org.id, sinDireccion, '   ', '2026-06-02 10:00:00')
+
+    const result = await repo.findLeadPropertyByContactIds([sinDireccion, sinLeads], org.id)
+    expect(result[sinDireccion]).toBeUndefined()
+    expect(result[sinLeads]).toBeUndefined()
+  })
+
+  it('lista vacía devuelve objeto vacío', async () => {
+    const repo = new D1ContactRepository(env.DB)
+    const org = await seedOrg(env.DB)
+    const result = await repo.findLeadPropertyByContactIds([], org.id)
+    expect(result).toEqual({})
+  })
+})
