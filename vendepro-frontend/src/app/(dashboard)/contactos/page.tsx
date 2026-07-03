@@ -42,6 +42,14 @@ const AVATAR_COLORS = [
   'bg-sky-500', 'bg-violet-500', 'bg-rose-500', 'bg-teal-500',
 ]
 
+const SHORT_MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+function formatShortDate(value?: string | null): string {
+  if (!value) return '—'
+  const d = new Date(value)
+  if (isNaN(d.getTime())) return '—'
+  return `${d.getDate()} ${SHORT_MONTHS[d.getMonth()]} ${d.getFullYear()}`
+}
+
 function Avatar({ name }: { name: string }) {
   const initials = (name || '?')
     .split(/\s+/)
@@ -385,12 +393,14 @@ export default function ContactosPage() {
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-gray-100 shadow-[0_1px_3px_rgba(16,24,40,0.04),0_10px_24px_-14px_rgba(16,24,40,0.15)] overflow-hidden">
-          {/* Tabla desktop */}
-          <table className="hidden md:table w-full text-sm">
+          {/* Tabla desktop — scroll horizontal para que ninguna columna quede recortada */}
+          <div className="hidden md:block overflow-x-auto">
+          <table className="w-full text-sm min-w-[900px]">
             <thead>
               <tr className="text-left text-xs uppercase tracking-wide text-gray-400 border-b border-gray-100 bg-gray-50/60">
                 <th className="font-medium px-4 py-3">Nombre</th>
                 <th className="font-medium px-4 py-3">Tipo</th>
+                <th className="font-medium px-4 py-3 whitespace-nowrap">Alta</th>
                 <th className="font-medium px-4 py-3">Propiedad</th>
                 <th className="font-medium px-4 py-3">Origen</th>
                 <th className="font-medium px-4 py-3">Tags</th>
@@ -422,6 +432,9 @@ export default function ContactosPage() {
                     <td className="px-4 py-3">
                       <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${t.color}`}>{t.label}</span>
                     </td>
+                    <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
+                      {c.created_at ? formatShortDate(c.created_at) : <span className="text-gray-300">—</span>}
+                    </td>
                     <td className="px-4 py-3 text-gray-600 max-w-[220px]">
                       {c.property_address
                         ? <span className="flex items-center gap-1.5 truncate" title={c.property_address}><MapPin className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" /><span className="truncate">{c.property_address}</span></span>
@@ -451,6 +464,7 @@ export default function ContactosPage() {
               })}
             </tbody>
           </table>
+          </div>
 
           {/* Cards mobile */}
           <div className="md:hidden divide-y divide-gray-100">
@@ -483,6 +497,7 @@ export default function ContactosPage() {
                       <SourceBadge source={c.source} />
                       {agentNames[c.agent_id] && <span className="text-xs text-brand-pink font-medium">{agentNames[c.agent_id]}</span>}
                       <TagChips tags={c.tags} max={2} />
+                      {c.created_at && <span className="text-xs text-gray-400 ml-auto whitespace-nowrap">{formatShortDate(c.created_at)}</span>}
                     </div>
                   </div>
                   <button onClick={() => handleDelete(c.id)} className="text-gray-300 hover:text-red-500 p-1 flex-shrink-0">
