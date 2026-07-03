@@ -29,7 +29,9 @@ export class D1ContactRepository implements ContactRepository {
       )`
       binds.push(filters.tag_id)
     }
-    query += ' ORDER BY full_name LIMIT 200'
+    // Tope alto: el frontend pagina y filtra por facetas del lado del cliente,
+    // así que necesita la base completa de la org (acotada por seguridad).
+    query += ' ORDER BY full_name LIMIT 1000'
 
     const rows = (await this.db.prepare(query).bind(...binds).all()).results as any[]
     return rows.map(r => this.toEntity(r))

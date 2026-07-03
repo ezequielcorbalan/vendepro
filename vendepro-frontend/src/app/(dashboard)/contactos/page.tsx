@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
-import { Plus, Search, Trash2, Loader2, BookUser, Phone, Mail, MapPin, X, ChevronRight, SlidersHorizontal } from 'lucide-react'
+import { Plus, Search, Trash2, Loader2, BookUser, Phone, Mail, MapPin, X, ChevronRight, ChevronLeft, SlidersHorizontal } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { applyScopeToParams, isAdminOrSupervisor } from '@/lib/agent-scope'
 import { useToast } from '@/components/ui/Toast'
@@ -105,6 +105,8 @@ export default function ContactosPage() {
   const [tags, setTags] = useState<any[]>([])
   const [sortBy, setSortBy] = useState('recent')
   const [showFilters, setShowFilters] = useState(false)
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 25
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
   const isAdmin = isAdminOrSupervisor()
@@ -182,11 +184,24 @@ export default function ContactosPage() {
       : [...filtered]
     if (sortBy === 'recent') {
       list.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+    } else if (sortBy === 'oldest') {
+      list.sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''))
     } else {
       list.sort((a, b) => (a.full_name || '').localeCompare(b.full_name || ''))
     }
     return list
   }, [filtered, filterType, sortBy])
+
+  // Paginación (client-side sobre la lista ya filtrada y ordenada)
+  const totalPages = Math.max(1, Math.ceil(visible.length / PAGE_SIZE))
+  const currentPage = Math.min(page, totalPages)
+  const paginated = useMemo(
+    () => visible.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [visible, currentPage],
+  )
+
+  // Volver a la primera página cuando cambian filtros, orden o resultados
+  useEffect(() => { setPage(1) }, [search, filterType, filterAgent, filterSource, filterNeighborhood, filterTag, sortBy])
 
   const activeFilterCount = [filterAgent, filterSource, filterNeighborhood, filterTag].filter(Boolean).length
 
@@ -305,7 +320,8 @@ export default function ContactosPage() {
             value={sortBy}
             onChange={e => setSortBy(e.target.value)}
           >
-            <option value="recent">Alta: más reciente</option>
+            <option value="recent">Alta: más recientes</option>
+            <option value="oldest">Alta: más antiguos</option>
             <option value="name">Nombre: A → Z</option>
           </select>
           {activeFilterCount > 0 && (
@@ -400,7 +416,7 @@ export default function ContactosPage() {
               </tr>
             </thead>
             <tbody>
-              {visible.map(c => {
+              {paginated.map(c => {
                 const t = typeLabels[c.contact_type] || typeLabels.otro
                 return (
                   <tr key={c.id} className="border-b last:border-b-0 hover:bg-gray-50/70 group">
@@ -453,7 +469,7 @@ export default function ContactosPage() {
 
           {/* Cards mobile */}
           <div className="md:hidden divide-y">
-            {visible.map(c => {
+            {paginated.map(c => {
               const t = typeLabels[c.contact_type] || typeLabels.otro
               return (
                 <div key={c.id} className="p-4 flex items-start gap-3">
@@ -490,6 +506,30 @@ export default function ContactosPage() {
                 </div>
               )
             })}
+          </div>
+
+          {/* Paginación */}
+          <div className="flex items-center justify-between gap-3 border-t px-4 py-3 text-sm">
+            <span className="text-gray-500">
+              {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, visible.length)} de {visible.length}
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={currentPage <= 1}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:hover:bg-transparent"
+              >
+                <ChevronLeft className="w-4 h-4" /> <span className="hidden sm:inline">Anterior</span>
+              </button>
+              <span className="px-2 text-gray-500 whitespace-nowrap">{currentPage} / {totalPages}</span>
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage >= totalPages}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:hover:bg-transparent"
+              >
+                <span className="hidden sm:inline">Siguiente</span> <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       )}
