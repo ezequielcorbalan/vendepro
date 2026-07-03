@@ -47,6 +47,9 @@ export class CreateLeadWithContactUseCase {
 
   async execute(input: CreateLeadWithContactInput): Promise<{ id: string; contact_id: string }> {
     let contactId = input.contact_id ?? undefined
+    let fullName = input.full_name ?? input.contact_data?.full_name
+    let phone = input.phone ?? input.contact_data?.phone
+    let email = input.email ?? input.contact_data?.email
 
     if (!contactId && input.contact_data) {
       const createContact = new CreateContactUseCase(this.contactRepo, this.ids)
@@ -62,10 +65,24 @@ export class CreateLeadWithContactUseCase {
       throw new ValidationError('Se requiere contact_id o contact_data')
     }
 
+    // Linking to an existing contact without an explicit name (e.g. "Crear lead"
+    // desde el detalle de un contacto): derive name/phone/email from the contact.
+    if (!fullName?.trim()) {
+      const contact = await this.contactRepo.findById(contactId, input.org_id)
+      if (!contact) {
+        throw new ValidationError('Contacto no encontrado')
+      }
+      fullName = contact.full_name
+      phone = phone ?? contact.phone
+      email = email ?? contact.email
+    }
+
     const createLead = new CreateLeadUseCase(this.leadRepo, this.ids)
     const leadResult = await createLead.execute({
       ...input,
-      full_name: input.full_name ?? input.contact_data?.full_name ?? '',
+      full_name: fullName ?? '',
+      phone: phone ?? null,
+      email: email ?? null,
       source: input.source ?? 'manual',
       contact_id: contactId,
     } as CreateLeadInput)

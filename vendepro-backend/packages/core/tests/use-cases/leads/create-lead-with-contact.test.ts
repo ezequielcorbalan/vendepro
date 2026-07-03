@@ -47,6 +47,43 @@ describe('CreateLeadWithContactUseCase', () => {
     expect(result.id).toBe('gen-id-1')
   })
 
+  it('with contact_id and no full_name: derives name/phone/email from the existing contact', async () => {
+    mockContactRepo.findById.mockResolvedValue({
+      id: 'existing-contact-id',
+      full_name: 'Ana López',
+      phone: '1134567890',
+      email: 'ana@example.com',
+    })
+    const useCase = new CreateLeadWithContactUseCase(mockLeadRepo, mockContactRepo, mockIds)
+    const result = await useCase.execute({
+      org_id: 'org_mg',
+      assigned_to: 'agent-1',
+      source: 'manual',
+      contact_id: 'existing-contact-id',
+    })
+
+    expect(mockContactRepo.findById).toHaveBeenCalledWith('existing-contact-id', 'org_mg')
+    expect(mockContactRepo.save).not.toHaveBeenCalled()
+    expect(mockLeadRepo.save).toHaveBeenCalledTimes(1)
+    const savedLead = mockLeadRepo.save.mock.calls[0][0]
+    expect(savedLead.full_name).toBe('Ana López')
+    expect(savedLead.phone).toBe('1134567890')
+    expect(savedLead.email).toBe('ana@example.com')
+    expect(result.contact_id).toBe('existing-contact-id')
+  })
+
+  it('with contact_id but contact not found: throws ValidationError', async () => {
+    mockContactRepo.findById.mockResolvedValue(null)
+    const useCase = new CreateLeadWithContactUseCase(mockLeadRepo, mockContactRepo, mockIds)
+    await expect(useCase.execute({
+      org_id: 'org_mg',
+      assigned_to: 'agent-1',
+      source: 'manual',
+      contact_id: 'ghost-contact-id',
+    })).rejects.toThrow(ValidationError)
+    expect(mockLeadRepo.save).not.toHaveBeenCalled()
+  })
+
   it('with contact_data and no contact_id: creates contact then lead, returns both ids', async () => {
     const useCase = new CreateLeadWithContactUseCase(mockLeadRepo, mockContactRepo, mockIds)
     const result = await useCase.execute({
