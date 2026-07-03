@@ -51,7 +51,7 @@ function Avatar({ name }: { name: string }) {
     .toUpperCase()
   const color = AVATAR_COLORS[(name || '').split('').reduce((a, ch) => a + ch.charCodeAt(0), 0) % AVATAR_COLORS.length]
   return (
-    <div className={`w-10 h-10 rounded-lg ${color} text-white flex items-center justify-center text-sm font-semibold flex-shrink-0`}>
+    <div className={`w-10 h-10 rounded-full ${color} text-white flex items-center justify-center text-sm font-semibold flex-shrink-0 shadow-sm ring-2 ring-white`}>
       {initials}
     </div>
   )
@@ -245,13 +245,13 @@ export default function ContactosPage() {
           <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Contactos</h1>
           <p className="text-sm text-gray-500 mt-1">Base de datos de clientes</p>
         </div>
-        <button onClick={() => setShowForm(true)} className="inline-flex items-center gap-2 bg-brand-pink text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 self-start sm:self-auto">
+        <button onClick={() => setShowForm(true)} className="inline-flex items-center gap-2 bg-brand-pink text-white px-4 py-2.5 rounded-lg text-sm font-medium shadow-sm shadow-brand-pink/30 hover:opacity-90 hover:shadow-md hover:shadow-brand-pink/30 transition-shadow self-start sm:self-auto">
           <Plus className="w-4 h-4" /> Nuevo contacto
         </button>
       </div>
 
       {/* Barra de filtros */}
-      <div className="bg-white rounded-xl border shadow-sm p-3 sm:p-4 mb-4">
+      <div className="bg-white rounded-xl border border-gray-100 shadow-[0_1px_3px_rgba(16,24,40,0.04),0_10px_24px_-14px_rgba(16,24,40,0.15)] p-3 sm:p-4 mb-4">
         <div className="flex gap-2">
           <div className="relative flex-1">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -333,21 +333,21 @@ export default function ContactosPage() {
       </div>
 
       {/* Tabs por tipo */}
-      <div className="flex overflow-x-auto no-scrollbar border-b border-gray-200 -mb-px">
+      <div className="flex overflow-x-auto no-scrollbar gap-1 border-b border-gray-200 mb-4">
         {TABS.map(tab => {
           const active = filterType === tab.key
           return (
             <button
               key={tab.key}
               onClick={() => setFilterType(tab.key)}
-              className={`flex items-center gap-2 whitespace-nowrap px-4 py-2.5 text-sm rounded-t-lg border-b-2 transition-colors ${
+              className={`flex items-center gap-2 whitespace-nowrap px-3.5 py-2.5 text-sm border-b-2 -mb-px transition-colors ${
                 active
-                  ? 'bg-white border-brand-pink text-gray-800 font-semibold border-x border-t border-x-gray-200 border-t-gray-200'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  ? 'border-brand-pink text-gray-900 font-semibold'
+                  : 'border-transparent text-gray-500 hover:text-gray-800'
               }`}
             >
               {tab.label}
-              <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded ${active ? 'bg-brand-pink text-white' : 'bg-gray-200 text-gray-600'}`}>
+              <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-md ${active ? 'bg-brand-pink/10 text-brand-pink' : 'bg-gray-100 text-gray-500'}`}>
                 {counts[tab.key] || 0}
               </span>
             </button>
@@ -391,21 +391,21 @@ export default function ContactosPage() {
       )}
 
       {loading ? (
-        <div className="flex items-center gap-2 text-gray-500 py-12 justify-center bg-white rounded-b-xl border border-t-0">
+        <div className="flex items-center gap-2 text-gray-500 py-12 justify-center bg-white rounded-xl border border-gray-100 shadow-[0_1px_3px_rgba(16,24,40,0.04),0_10px_24px_-14px_rgba(16,24,40,0.15)]">
           <Loader2 className="w-5 h-5 animate-spin" /> Cargando...
         </div>
       ) : visible.length === 0 ? (
-        <div className="bg-white rounded-b-xl rounded-tr-xl border p-8 sm:p-12 text-center">
+        <div className="bg-white rounded-xl border border-gray-100 shadow-[0_1px_3px_rgba(16,24,40,0.04),0_10px_24px_-14px_rgba(16,24,40,0.15)] p-8 sm:p-12 text-center">
           <BookUser className="w-12 h-12 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500 mb-4">{search || filterType || activeFilterCount > 0 ? 'Sin resultados' : 'No hay contactos todavía'}</p>
           <button onClick={() => setShowForm(true)} className="text-brand-pink text-sm hover:underline">Agregar el primer contacto</button>
         </div>
       ) : (
-        <div className="bg-white rounded-b-xl rounded-tr-xl border shadow-sm overflow-hidden">
+        <div className="bg-white rounded-xl border border-gray-100 shadow-[0_1px_3px_rgba(16,24,40,0.04),0_10px_24px_-14px_rgba(16,24,40,0.15)] overflow-hidden">
           {/* Tabla desktop */}
           <table className="hidden md:table w-full text-sm">
             <thead>
-              <tr className="text-left text-xs text-gray-500 border-b bg-gray-50/50">
+              <tr className="text-left text-xs uppercase tracking-wide text-gray-400 border-b border-gray-100 bg-gray-50/60">
                 <th className="font-medium px-4 py-3">Nombre</th>
                 <th className="font-medium px-4 py-3">Tipo</th>
                 <th className="font-medium px-4 py-3">Barrio</th>
@@ -419,7 +419,7 @@ export default function ContactosPage() {
               {paginated.map(c => {
                 const t = typeLabels[c.contact_type] || typeLabels.otro
                 return (
-                  <tr key={c.id} className="border-b last:border-b-0 hover:bg-gray-50/70 group">
+                  <tr key={c.id} className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50/70 transition-colors group">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3 min-w-0">
                         <Avatar name={c.full_name} />
@@ -468,7 +468,7 @@ export default function ContactosPage() {
           </table>
 
           {/* Cards mobile */}
-          <div className="md:hidden divide-y">
+          <div className="md:hidden divide-y divide-gray-100">
             {paginated.map(c => {
               const t = typeLabels[c.contact_type] || typeLabels.otro
               return (
@@ -509,7 +509,7 @@ export default function ContactosPage() {
           </div>
 
           {/* Paginación */}
-          <div className="flex items-center justify-between gap-3 border-t px-4 py-3 text-sm">
+          <div className="flex items-center justify-between gap-3 border-t border-gray-100 bg-gray-50/40 px-4 py-3 text-sm">
             <span className="text-gray-500">
               {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, visible.length)} de {visible.length}
             </span>
