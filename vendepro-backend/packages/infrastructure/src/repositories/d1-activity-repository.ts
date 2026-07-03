@@ -12,6 +12,7 @@ export class D1ActivityRepository implements ActivityRepository {
     if (filters?.lead_id) { query += ' AND a.lead_id = ?'; binds.push(filters.lead_id) }
     if (filters?.contact_id) { query += ' AND a.contact_id = ?'; binds.push(filters.contact_id) }
     if (filters?.property_id) { query += ' AND a.property_id = ?'; binds.push(filters.property_id) }
+    if (filters?.since) { query += ' AND a.created_at >= ?'; binds.push(filters.since) }
     query += ' ORDER BY a.created_at DESC LIMIT 200'
 
     const rows = (await this.db.prepare(query).bind(...binds).all()).results as any[]

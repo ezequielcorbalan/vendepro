@@ -5,6 +5,8 @@ export interface ActivityFilters {
   lead_id?: string
   contact_id?: string
   property_id?: string
+  /** Solo actividades con created_at >= este valor (ISO date/datetime) */
+  since?: string
 }
 
 export interface ActivityRepository {
