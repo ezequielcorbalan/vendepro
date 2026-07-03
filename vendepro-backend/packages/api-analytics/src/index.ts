@@ -14,6 +14,7 @@ import {
   GetNeighborhoodComparisonUseCase,
   GetActiveListingsWithBenchmarkUseCase,
   parseAnalyticsPeriod,
+  periodStartDate,
   computeLeadFunnel,
   computeConversionRate,
 } from '@vendepro/core'
@@ -35,13 +36,18 @@ app.get('/dashboard', async (c) => {
   const db = c.env.DB
   const orgId = c.get('orgId')
 
+  // Período del funnel/pipeline: 'all' = toda la historia; el resto usa una
+  // ventana móvil (semana/mes/trimestre/año) sobre created_at de los leads.
+  const rawPeriod = c.req.query('period')
+  const since = rawPeriod === 'all' ? undefined : periodStartDate(parseAnalyticsPeriod(rawPeriod))
+
   const [base, tasaciones, activity, todayEvents, pendingFollowups] = await Promise.all([
     new GetDashboardStatsUseCase(
       new D1LeadRepository(db),
       new D1PropertyRepository(db),
       new D1ReservationRepository(db),
       new D1CalendarRepository(db),
-    ).execute(orgId, agent_id),
+    ).execute(orgId, agent_id, since),
     new GetAppraisalStatsUseCase(new D1AppraisalRepository(db)).execute(orgId),
     new GetActivityStatsUseCase(new D1ActivityRepository(db)).execute(orgId, agent_id),
     new GetTodayEventsUseCase(new D1CalendarRepository(db)).execute(orgId),

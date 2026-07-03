@@ -101,7 +101,7 @@ function KPICard({ icon, label, value, color, href }: { icon: React.ReactNode; l
 export default function DashboardCRM() {
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [period, setPeriod] = useState<'week' | 'month' | 'quarter' | 'year'>('month')
+  const [period, setPeriod] = useState<'all' | 'week' | 'month' | 'quarter' | 'year'>('all')
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [onboardingUser, setOnboardingUser] = useState('')
 
@@ -182,7 +182,7 @@ export default function DashboardCRM() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex gap-0.5 bg-gray-100 rounded-lg p-0.5">
-            {([['week', 'Sem'], ['month', 'Mes'], ['quarter', 'Trim'], ['year', 'Año']] as const).map(([k, l]) => (
+            {([['all', 'Todo'], ['week', 'Sem'], ['month', 'Mes'], ['quarter', 'Trim'], ['year', 'Año']] as const).map(([k, l]) => (
               <button key={k} onClick={() => setPeriod(k)}
                 className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${period === k ? 'bg-white shadow text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}>
                 {l}

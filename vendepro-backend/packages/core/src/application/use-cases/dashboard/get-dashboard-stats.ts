@@ -23,13 +23,20 @@ export class GetDashboardStatsUseCase {
     private readonly calendarRepo: CalendarRepository,
   ) {}
 
-  async execute(orgId: string, agentId?: string): Promise<DashboardStats> {
-    const [leads, properties, reservations, events] = await Promise.all([
+  /**
+   * @param since  Si se pasa (ISO date/datetime), el funnel y el desglose por
+   *   etapa consideran solo los leads creados desde esa fecha (filtro de período
+   *   del dashboard). Sin `since`, se computa sobre toda la historia.
+   */
+  async execute(orgId: string, agentId?: string, since?: string): Promise<DashboardStats> {
+    const [allLeads, properties, reservations, events] = await Promise.all([
       this.leadRepo.findByOrg(orgId, agentId ? { agent_id: agentId } : undefined),
       this.propertyRepo.findByOrg(orgId, agentId ? { agent_id: agentId } : undefined),
       this.reservationRepo.findByOrg(orgId, agentId ? { agent_id: agentId } : undefined),
       this.calendarRepo.findByOrg(orgId, agentId ? { agent_id: agentId } : undefined),
     ])
+
+    const leads = since ? allLeads.filter(l => (l.created_at ?? '') >= since) : allLeads
 
     const activeLeads = leads.filter(l => l.stage !== 'captado' && l.stage !== 'perdido')
     const urgentLeads = activeLeads.filter(l => l.getUrgency() === 'danger')
