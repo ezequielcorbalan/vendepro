@@ -42,6 +42,14 @@ const AVATAR_COLORS = [
   'bg-sky-500', 'bg-violet-500', 'bg-rose-500', 'bg-teal-500',
 ]
 
+const SHORT_MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+function formatShortDate(value?: string | null): string {
+  if (!value) return '—'
+  const d = new Date(value)
+  if (isNaN(d.getTime())) return '—'
+  return `${d.getDate()} ${SHORT_MONTHS[d.getMonth()]} ${d.getFullYear()}`
+}
+
 function Avatar({ name }: { name: string }) {
   const initials = (name || '?')
     .split(/\s+/)
@@ -395,6 +403,7 @@ export default function ContactosPage() {
                 <th className="font-medium px-4 py-3">Origen</th>
                 <th className="font-medium px-4 py-3">Tags</th>
                 <th className="font-medium px-4 py-3">Asignado</th>
+                <th className="font-medium px-4 py-3 whitespace-nowrap">Alta</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
@@ -437,6 +446,9 @@ export default function ContactosPage() {
                       {agentNames[c.agent_id]
                         ? <span className="text-brand-pink font-medium">{agentNames[c.agent_id]}</span>
                         : <span className="text-gray-300">—</span>}
+                    </td>
+                    <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
+                      {c.created_at ? formatShortDate(c.created_at) : <span className="text-gray-300">—</span>}
                     </td>
                     <td className="px-4 py-3 text-right whitespace-nowrap">
                       <button onClick={() => handleDelete(c.id)} className="text-gray-300 hover:text-red-500 p-1.5 opacity-0 group-hover:opacity-100 transition-opacity" title="Eliminar">
@@ -483,6 +495,7 @@ export default function ContactosPage() {
                       <SourceBadge source={c.source} />
                       {agentNames[c.agent_id] && <span className="text-xs text-brand-pink font-medium">{agentNames[c.agent_id]}</span>}
                       <TagChips tags={c.tags} max={2} />
+                      {c.created_at && <span className="text-xs text-gray-400 ml-auto whitespace-nowrap">{formatShortDate(c.created_at)}</span>}
                     </div>
                   </div>
                   <button onClick={() => handleDelete(c.id)} className="text-gray-300 hover:text-red-500 p-1 flex-shrink-0">
