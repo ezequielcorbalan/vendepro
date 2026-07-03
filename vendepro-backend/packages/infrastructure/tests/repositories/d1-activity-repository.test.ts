@@ -157,3 +157,48 @@ describe('D1ActivityRepository — new methods', () => {
     expect(reunionesEntry?.count).toBeGreaterThanOrEqual(1)
   })
 })
+
+describe('D1ActivityRepository — findByOrg con filtro since', () => {
+  let env: TestEnv
+
+  beforeAll(async () => {
+    env = await createTestDB()
+  })
+
+  afterAll(async () => {
+    await closeTestDB(env)
+  })
+
+  async function insertAt(orgId: string, agentId: string, createdAt: string) {
+    const id = nextId('act')
+    await env.DB.prepare(
+      `INSERT INTO activities (id, org_id, agent_id, activity_type, description, created_at)
+       VALUES (?, ?, ?, 'llamada', 'x', ?)`,
+    ).bind(id, orgId, agentId, createdAt).run()
+    return id
+  }
+
+  it('since filtra las actividades anteriores a la fecha', async () => {
+    const repo = new D1ActivityRepository(env.DB)
+    const org = await seedOrg(env.DB)
+    const user = await seedUser(env.DB, org.id)
+    const vieja = await insertAt(org.id, user.id, '2026-01-15 10:00:00')
+    const nueva = await insertAt(org.id, user.id, '2026-06-20 10:00:00')
+
+    const result = await repo.findByOrg(org.id, { since: '2026-06-01' })
+    const ids = result.map(a => a.id)
+    expect(ids).toContain(nueva)
+    expect(ids).not.toContain(vieja)
+  })
+
+  it('sin since devuelve todas', async () => {
+    const repo = new D1ActivityRepository(env.DB)
+    const org = await seedOrg(env.DB)
+    const user = await seedUser(env.DB, org.id)
+    await insertAt(org.id, user.id, '2026-01-15 10:00:00')
+    await insertAt(org.id, user.id, '2026-06-20 10:00:00')
+
+    const result = await repo.findByOrg(org.id, {})
+    expect(result.length).toBe(2)
+  })
+})

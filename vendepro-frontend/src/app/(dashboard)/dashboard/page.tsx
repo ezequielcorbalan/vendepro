@@ -101,7 +101,8 @@ function KPICard({ icon, label, value, color, href }: { icon: React.ReactNode; l
 export default function DashboardCRM() {
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [period, setPeriod] = useState<'week' | 'month' | 'quarter' | 'year'>('month')
+  // Período que acota SOLO el funnel (los KPIs/pipeline son de toda la historia)
+  const [period, setPeriod] = useState<string>('all')
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [onboardingUser, setOnboardingUser] = useState('')
 
@@ -114,11 +115,14 @@ export default function DashboardCRM() {
   }, [])
 
   useEffect(() => {
-    setLoading(true)
+    // Skeleton solo en la primera carga; al cambiar el período del funnel se
+    // actualiza sin parpadear el resto del dashboard.
+    if (!data) setLoading(true)
     apiFetch('analytics', `/dashboard?period=${period}`)
       .then(r => r.json() as Promise<any>)
       .then(d => { setData(d); setLoading(false) })
       .catch(() => setLoading(false))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [period])
 
   if (loading) {
@@ -147,7 +151,15 @@ export default function DashboardCRM() {
     )
   }
 
-  const { leads, overdueLeads, tasaciones, activity, weeklyActivity, todayEvents, pendingFollowups, agentPerformance, funnel, conversionRate, recentActivities } = data
+  const { leads, overdueLeads, tasaciones, activity, weeklyActivity, todayEvents, pendingFollowups, agentPerformance, funnel, conversionRate, recentActivities, pipelineBreakdown } = data
+
+  // La API devuelve pipelineBreakdown con las claves crudas de etapa
+  // (nuevo, asignado, presentada, invalido, finalizado…). Se usa como
+  // fuente única para el pipeline y los KPIs, evitando desajustes de nombres.
+  const sb: Record<string, number> = pipelineBreakdown || {}
+  const ACTIVE_STAGES = ['nuevo', 'asignado', 'contactado', 'calificado', 'en_tasacion', 'presentada', 'seguimiento']
+  const activeLeads = ACTIVE_STAGES.reduce((sum, s) => sum + (sb[s] || 0), 0)
+  const captaciones = sb['captado'] || 0
 
   const last7 = [...Array(7)].map((_, i) => {
     const d = new Date()
@@ -173,25 +185,17 @@ export default function DashboardCRM() {
           <p className="text-gray-500 text-sm">Resumen ejecutivo del negocio</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex gap-0.5 bg-gray-100 rounded-lg p-0.5">
-            {([['week', 'Sem'], ['month', 'Mes'], ['quarter', 'Trim'], ['year', 'Año']] as const).map(([k, l]) => (
-              <button key={k} onClick={() => setPeriod(k)}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${period === k ? 'bg-white shadow text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}>
-                {l}
-              </button>
-            ))}
-          </div>
           <Link href="/leads" className="bg-brand-pink text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:opacity-90 flex items-center gap-1">
-            <Users className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Nuevo contacto</span>
+            <Users className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Ver leads</span>
           </Link>
         </div>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <KPICard icon={<Users className="w-5 h-5" />} label="Leads activos" value={(leads?.nuevos || 0) + (leads?.asignados || 0) + (leads?.contactados || 0) + (leads?.calificados || 0) + (leads?.en_tasacion || 0) + (leads?.presentada || 0) + (leads?.seguimiento || 0)} color="blue" href="/leads" />
-        <KPICard icon={<Phone className="w-5 h-5" />} label="Contactados" value={leads?.contactados || 0} color="cyan" href="/leads?stage=contactado" />
+        <KPICard icon={<Users className="w-5 h-5" />} label="Leads activos" value={activeLeads} color="blue" href="/leads" />
+        <KPICard icon={<Phone className="w-5 h-5" />} label="Contactados" value={sb['contactado'] || 0} color="cyan" href="/leads?stage=contactado" />
         <KPICard icon={<Calculator className="w-5 h-5" />} label="Tasaciones" value={tasaciones?.total || 0} color="purple" href="/tasaciones" />
-        <KPICard icon={<Home className="w-5 h-5" />} label="Captaciones" value={tasaciones?.captadas || 0} color="green" href="/propiedades/pipeline" />
+        <KPICard icon={<Home className="w-5 h-5" />} label="Captaciones" value={captaciones} color="green" href="/propiedades/pipeline" />
         <KPICard icon={<Activity className="w-5 h-5" />} label="Actividad (30d)" value={activity?.total || 0} color="pink" href="/actividades" />
         <KPICard icon={<Target className="w-5 h-5" />} label="Conversión" value={`${conversionRate || 0}%`} color="amber" href="/mi-performance" />
       </div>
@@ -232,11 +236,28 @@ export default function DashboardCRM() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
         <div className="bg-white rounded-xl border p-4 sm:p-5">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 gap-2">
             <h2 className="font-semibold text-gray-800 flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-pink-500" /> Funnel de conversión
             </h2>
-            <span className="text-xs text-gray-400">lead → captación</span>
+            <select
+              value={period}
+              onChange={e => setPeriod(e.target.value)}
+              className="border border-gray-200 bg-gray-50 rounded-lg px-2.5 py-1.5 text-xs text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-pink/40"
+            >
+              <option value="all">Todo el historial</option>
+              <optgroup label="Período calendario">
+                <option value="cal_month">Este mes</option>
+                <option value="cal_quarter">Este trimestre</option>
+                <option value="cal_year">Este año</option>
+              </optgroup>
+              <optgroup label="Últimos…">
+                <option value="week">Últimos 7 días</option>
+                <option value="month">Últimos 30 días</option>
+                <option value="quarter">Últimos 90 días</option>
+                <option value="year">Último año</option>
+              </optgroup>
+            </select>
           </div>
           <FunnelChart data={funnel || []} />
         </div>
@@ -404,15 +425,9 @@ export default function DashboardCRM() {
         </h2>
         <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-11 gap-2">
           {Object.entries(LEAD_STAGES).map(([key, cfg]) => {
-            const countMap: any = {
-              nuevo: leads?.nuevos, asignado: leads?.asignados, contactado: leads?.contactados,
-              calificado: leads?.calificados, seguimiento: leads?.seguimiento, en_tasacion: leads?.en_tasacion,
-              presentada: leads?.presentada, captado: leads?.captados, perdido: leads?.perdidos,
-              invalido: leads?.invalidos, finalizado: leads?.finalizados,
-            }
             return (
               <Link key={key} href={`/leads?stage=${key}`} className="text-center p-2 rounded-lg hover:bg-gray-50 transition-colors">
-                <p className="text-lg sm:text-xl font-semibold text-gray-800">{countMap[key] || 0}</p>
+                <p className="text-lg sm:text-xl font-semibold text-gray-800">{sb[key] || 0}</p>
                 <p className={`text-[10px] sm:text-xs px-1 py-0.5 rounded-full ${cfg.color} mt-1`}>{cfg.label}</p>
               </Link>
             )

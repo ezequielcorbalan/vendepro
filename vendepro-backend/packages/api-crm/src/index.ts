@@ -367,9 +367,9 @@ app.delete('/calendar', async (c) => {
 
 // ── ACTIVITIES ─────────────────────────────────────────────────
 app.get('/activities', async (c) => {
-  const { agent_id, lead_id, contact_id, property_id } = c.req.query()
+  const { agent_id, lead_id, contact_id, property_id, start } = c.req.query()
   const repo = new D1ActivityRepository(c.env.DB)
-  const activities = await repo.findByOrg(c.get('orgId'), { agent_id, lead_id, contact_id, property_id })
+  const activities = await repo.findByOrg(c.get('orgId'), { agent_id, lead_id, contact_id, property_id, since: start })
   return c.json(activities.map(a => a.toObject?.() ?? a))
 })
 

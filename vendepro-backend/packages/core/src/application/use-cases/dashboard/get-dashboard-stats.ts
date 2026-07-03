@@ -12,7 +12,12 @@ export interface DashboardStats {
   totalReservations: number
   activeReservations: number
   overdueEvents: number
+  /** Desglose por etapa de TODA la historia (KPIs + pipeline) */
   stageBreakdown: Record<string, number>
+  /** Desglose por etapa acotado al período `since` — solo alimenta el funnel */
+  funnelStageBreakdown: Record<string, number>
+  /** Total de leads del período `since` — denominador del funnel */
+  funnelTotalLeads: number
 }
 
 export class GetDashboardStatsUseCase {
@@ -23,27 +28,39 @@ export class GetDashboardStatsUseCase {
     private readonly calendarRepo: CalendarRepository,
   ) {}
 
-  async execute(orgId: string, agentId?: string): Promise<DashboardStats> {
-    const [leads, properties, reservations, events] = await Promise.all([
+  /**
+   * Los KPIs y el pipeline (`stageBreakdown`, totales) son SIEMPRE de toda la
+   * historia. `since` acota únicamente el funnel (`funnelStageBreakdown` /
+   * `funnelTotalLeads`), que es el widget que se filtra por período.
+   */
+  async execute(orgId: string, agentId?: string, since?: string): Promise<DashboardStats> {
+    const [allLeads, properties, reservations, events] = await Promise.all([
       this.leadRepo.findByOrg(orgId, agentId ? { agent_id: agentId } : undefined),
       this.propertyRepo.findByOrg(orgId, agentId ? { agent_id: agentId } : undefined),
       this.reservationRepo.findByOrg(orgId, agentId ? { agent_id: agentId } : undefined),
       this.calendarRepo.findByOrg(orgId, agentId ? { agent_id: agentId } : undefined),
     ])
 
-    const activeLeads = leads.filter(l => l.stage !== 'captado' && l.stage !== 'perdido')
+    const activeLeads = allLeads.filter(l => l.stage !== 'captado' && l.stage !== 'perdido')
     const urgentLeads = activeLeads.filter(l => l.getUrgency() === 'danger')
 
     const stageBreakdown: Record<string, number> = {}
-    for (const lead of leads) {
+    for (const lead of allLeads) {
       stageBreakdown[lead.stage] = (stageBreakdown[lead.stage] ?? 0) + 1
+    }
+
+    // Funnel: acotado al período si hay `since`
+    const funnelLeads = since ? allLeads.filter(l => (l.created_at ?? '') >= since) : allLeads
+    const funnelStageBreakdown: Record<string, number> = {}
+    for (const lead of funnelLeads) {
+      funnelStageBreakdown[lead.stage] = (funnelStageBreakdown[lead.stage] ?? 0) + 1
     }
 
     const now = new Date()
     const overdueEvents = events.filter(e => e.isOverdue(now)).length
 
     return {
-      totalLeads: leads.length,
+      totalLeads: allLeads.length,
       activeLeads: activeLeads.length,
       urgentLeads: urgentLeads.length,
       totalProperties: properties.length,
@@ -52,6 +69,8 @@ export class GetDashboardStatsUseCase {
       activeReservations: reservations.filter(r => r.stage !== 'entregada' && r.stage !== 'cancelada' && r.stage !== 'rechazada').length,
       overdueEvents,
       stageBreakdown,
+      funnelStageBreakdown,
+      funnelTotalLeads: funnelLeads.length,
     }
   }
 }
