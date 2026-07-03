@@ -20,6 +20,32 @@ export class D1TagRepository implements TagRepository {
     return rows.map(r => this.toEntity(r))
   }
 
+  async findByContactIds(contactIds: string[], orgId: string): Promise<Record<string, Array<{ id: string; name: string; color: string | null }>>> {
+    const result: Record<string, Array<{ id: string; name: string; color: string | null }>> = {}
+    if (contactIds.length === 0) return result
+
+    // D1 limita la cantidad de parámetros por statement — se procesa en chunks
+    const CHUNK = 50
+    for (let i = 0; i < contactIds.length; i += CHUNK) {
+      const chunk = contactIds.slice(i, i + CHUNK)
+      const placeholders = chunk.map(() => '?').join(',')
+      const rows = (await this.db.prepare(`
+        SELECT DISTINCT l.contact_id AS contact_id, t.id, t.name, t.color
+        FROM tags t
+        INNER JOIN lead_tags lt ON lt.tag_id = t.id
+        INNER JOIN leads l ON l.id = lt.lead_id
+        WHERE t.org_id = ? AND l.contact_id IN (${placeholders})
+        ORDER BY t.name
+      `).bind(orgId, ...chunk).all()).results as any[]
+
+      for (const r of rows) {
+        const list = result[r.contact_id] ?? (result[r.contact_id] = [])
+        list.push({ id: r.id, name: r.name, color: r.color ?? null })
+      }
+    }
+    return result
+  }
+
   async findByName(orgId: string, name: string): Promise<Tag | null> {
     const row = await this.db
       .prepare('SELECT * FROM tags WHERE org_id = ? AND LOWER(name) = LOWER(?)')

@@ -234,11 +234,12 @@ app.get('/marketing/event-log', async (c) => {
 
 // ── CONTACTS ───────────────────────────────────────────────────
 app.get('/contacts', async (c) => {
-  const { search, agent_id } = c.req.query()
+  const { search, agent_id, tag_id } = c.req.query()
   const repo = new D1ContactRepository(c.env.DB)
-  const useCase = new GetContactsUseCase(repo)
-  const contacts = await useCase.execute(c.get('orgId'), { search, agent_id })
-  return c.json(contacts.map(ct => ct.toObject?.() ?? ct))
+  const tagRepo = new D1TagRepository(c.env.DB)
+  const useCase = new GetContactsUseCase(repo, tagRepo)
+  const contacts = await useCase.execute(c.get('orgId'), { search, agent_id, tag_id })
+  return c.json(contacts)
 })
 
 app.get('/contacts/:id', async (c) => {

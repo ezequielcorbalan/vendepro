@@ -10,8 +10,23 @@
   --color-brand-gray: #6b7280;
 }
 
+/* Compat Tailwind v3 → v4: el default de `border`/`divide` en v4 es
+   `currentColor` (hereda el gris oscuro del texto y se ve como recuadros
+   negros). Restauramos el gris claro que todo el código asume. */
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, #e5e7eb);
+  }
+}
+
 body {
   font-family: 'Poppins', sans-serif;
+  color: #1f2937;
+  background-color: var(--color-brand-light);
 }
 
 /* Slide up animation for toasts */
