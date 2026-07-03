@@ -4,12 +4,14 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
   KeyRound, Plus, Trash2, Loader2, ArrowLeft, Copy, Check,
-  AlertCircle, ShieldAlert, Terminal, CheckCircle2, Radio, Play, RotateCcw,
+  AlertCircle, ShieldAlert, ShieldOff, Terminal, CheckCircle2, Radio, Play, RotateCcw,
+  Webhook as WebhookIcon,
 } from 'lucide-react'
 import { apiFetch, getApiBase } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
 import { getCurrentUser } from '@/lib/auth'
 import { API_SCOPES } from '@/lib/crm-config'
+import WebhooksSection from '@/components/configuracion/WebhooksSection'
 import type { ApiToken } from '@/lib/types'
 
 const IMPORT_ENDPOINT = `${getApiBase('public')}/v1/leads`
@@ -44,7 +46,7 @@ function decodeTid(jwt: string): string | null {
   }
 }
 
-type Tab = 'tokens' | 'test'
+type Tab = 'tokens' | 'webhooks' | 'test'
 
 export default function ConfiguracionApiPage() {
   const { toast } = useToast()
@@ -124,6 +126,20 @@ export default function ConfiguracionApiPage() {
     }
   }
 
+  async function handleDelete(token: ApiToken) {
+    const warning = token.is_active
+      ? `¿Eliminar el token "${token.name}"? Las integraciones que lo usen dejarán de funcionar y desaparece de la lista. No se puede deshacer.`
+      : `¿Eliminar definitivamente el token "${token.name}"? No se puede deshacer.`
+    if (!confirm(warning)) return
+    try {
+      await apiFetch('crm', `/api-tokens/${token.id}?permanent=1`, { method: 'DELETE' })
+      toast('Token eliminado', 'warning')
+      setTokens(prev => prev.filter(t => t.id !== token.id))
+    } catch {
+      toast('Error al eliminar', 'error')
+    }
+  }
+
   async function copyText(text: string, key: string) {
     try {
       await navigator.clipboard.writeText(text)
@@ -174,6 +190,7 @@ export default function ConfiguracionApiPage() {
     s ? new Date(s.replace(' ', 'T')).toLocaleString('es-AR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'
 
   const activeCount = tokens.filter(t => t.is_active).length
+  const [webhookCount, setWebhookCount] = useState<number | null>(null)
 
   if (!isAdmin) {
     return (
@@ -200,7 +217,7 @@ export default function ConfiguracionApiPage() {
             <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 flex items-center gap-2">
               <KeyRound className="w-6 h-6 text-brand-pink" /> Configuración de API
             </h1>
-            <p className="text-gray-500 text-sm mt-1">Tokens para importar leads desde sistemas externos.</p>
+            <p className="text-gray-500 text-sm mt-1">Tokens para importar leads y webhooks para avisar a tus sistemas cuando pasa algo en el CRM.</p>
           </div>
           <button
             onClick={() => setShowCreate(true)}
@@ -246,6 +263,7 @@ export default function ConfiguracionApiPage() {
       <div role="tablist" aria-label="Secciones de API" className="flex gap-1 border-b border-gray-200">
         {([
           { key: 'tokens' as Tab, label: 'Tokens', icon: KeyRound, badge: activeCount || null },
+          { key: 'webhooks' as Tab, label: 'Webhooks', icon: WebhookIcon, badge: webhookCount || null },
           { key: 'test' as Tab, label: 'Prueba en vivo', icon: Radio, badge: null },
         ]).map(t => {
           const active = tab === t.key
@@ -332,21 +350,38 @@ export default function ConfiguracionApiPage() {
                       Creado {fmtDate(token.created_at)}<br />
                       Último uso {fmtDate(token.last_used_at)}
                     </p>
-                    {token.is_active && (
+                    <div className="shrink-0 flex items-center -mr-1 -mb-1">
+                      {token.is_active && (
+                        <button
+                          onClick={() => handleRevoke(token.id, token.name)}
+                          title="Revocar token (queda en la lista, deja de funcionar)"
+                          aria-label={`Revocar token ${token.name}`}
+                          className="flex items-center justify-center w-11 h-11 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-50"
+                        >
+                          <ShieldOff className="w-4 h-4" />
+                        </button>
+                      )}
                       <button
-                        onClick={() => handleRevoke(token.id, token.name)}
-                        title="Revocar token"
-                        aria-label={`Revocar token ${token.name}`}
-                        className="shrink-0 flex items-center justify-center w-11 h-11 -mr-1 -mb-1 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50"
+                        onClick={() => handleDelete(token)}
+                        title="Eliminar token definitivamente"
+                        aria-label={`Eliminar token ${token.name}`}
+                        className="flex items-center justify-center w-11 h-11 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
-                    )}
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── TAB: WEBHOOKS ────────────────────────────────────── */}
+      {tab === 'webhooks' && (
+        <div role="tabpanel">
+          <WebhooksSection onCountChange={setWebhookCount} />
         </div>
       )}
 

@@ -5,9 +5,10 @@ import {
   D1TagRepository, D1StageHistoryRepository, D1OrganizationRepository,
   D1MetaIntegrationRepository, D1StageEventMappingRepository, D1MetaEventLogRepository,
   D1PropertyRepository, D1ApiTokenRepository,
+  D1WebhookRepository, D1WebhookDeliveryRepository, HttpWebhookSender,
   JwtAuthService, CryptoIdGenerator,
   encrypt,
-  createMarketingSender, fireMarketingEvent,
+  createMarketingSender, fireMarketingEvent, fireWebhookEvent,
 } from '@vendepro/infrastructure'
 import { Activity } from '@vendepro/core'
 import {
@@ -19,7 +20,9 @@ import {
   GetMetaIntegrationUseCase, SaveMetaIntegrationUseCase,
   ListStageMappingsUseCase, SaveStageMappingUseCase, DeleteStageMappingUseCase,
   ListMetaEventLogUseCase,
-  CreateApiTokenUseCase, ListApiTokensUseCase, RevokeApiTokenUseCase,
+  CreateApiTokenUseCase, ListApiTokensUseCase, RevokeApiTokenUseCase, DeleteApiTokenUseCase,
+  CreateWebhookUseCase, ListWebhooksUseCase, UpdateWebhookUseCase, DeleteWebhookUseCase,
+  TestWebhookUseCase, ListWebhookDeliveriesUseCase,
 } from '@vendepro/core'
 import {
   CreateLandingFromTemplateUseCase, UpdateLandingBlocksUseCase, AddBlockUseCase,
@@ -89,6 +92,25 @@ app.post('/leads', async (c) => {
     },
     actionSource: 'system_generated',
   })
+  // Webhook saliente `lead.created` (n8n → Resend/OneTalk).
+  await fireWebhookEvent(c.env, {
+    orgId: c.get('orgId'),
+    event: 'lead.created',
+    payload: {
+      lead: {
+        id: result.id,
+        full_name: body.full_name ?? body.contact_data?.full_name ?? null,
+        email: body.email ?? body.contact_data?.email ?? null,
+        phone: body.phone ?? body.contact_data?.phone ?? null,
+        operation: body.operation ?? null,
+        source: 'manual',
+        source_detail: body.source_detail ?? null,
+        notes: body.notes ?? null,
+        contact_id: result.contact_id ?? null,
+        tags: Array.isArray(body.tags) ? body.tags : [],
+      },
+    },
+  })
   return c.json({ ...result, marketing: mk ?? null }, 201)
 })
 
@@ -128,6 +150,18 @@ app.post('/leads/stage', async (c) => {
     leadId: body.id,
     actionSource: 'system_generated',
     ga4ClientId: body.ga4_client_id ?? null,
+  })
+  // Webhook saliente `lead.stage_changed`.
+  await fireWebhookEvent(c.env, {
+    orgId: c.get('orgId'),
+    event: 'lead.stage_changed',
+    payload: {
+      lead_id: body.id,
+      from_stage: result.fromStage,
+      to_stage: body.stage,
+      changed_by: c.get('userId'),
+      notes: body.notes ?? null,
+    },
   })
   return c.json({ ...result, marketing: mk ?? null })
 })
@@ -458,12 +492,89 @@ app.post('/api-tokens', async (c) => {
   return c.json(result, 201)
 })
 
+// Sin query: revoca (queda en la lista como inactivo). Con ?permanent=1:
+// borrado definitivo — desaparece de la lista y el JWT deja de autenticar.
 app.delete('/api-tokens/:id', async (c) => {
   const denied = requireAdmin(c); if (denied) return denied
   const repo = new D1ApiTokenRepository(c.env.DB)
-  const useCase = new RevokeApiTokenUseCase(repo)
+  const permanent = c.req.query('permanent') === '1' || c.req.query('permanent') === 'true'
+  if (permanent) {
+    const useCase = new DeleteApiTokenUseCase(repo)
+    await useCase.execute({ id: c.req.param('id'), orgId: c.get('orgId') })
+  } else {
+    const useCase = new RevokeApiTokenUseCase(repo)
+    await useCase.execute({ id: c.req.param('id'), orgId: c.get('orgId') })
+  }
+  return c.json({ success: true })
+})
+
+// ── WEBHOOKS SALIENTES — sólo admin ─────────────────────────────
+// ABM de webhooks que avisan a sistemas externos (n8n) cuando ocurren eventos
+// del CRM. El secret firma cada entrega (HMAC-SHA256, X-VendePro-Signature).
+const webhookRepos = (env: { DB: D1Database }) => ({
+  repo: new D1WebhookRepository(env.DB),
+  deliveries: new D1WebhookDeliveryRepository(env.DB),
+})
+
+app.get('/webhooks', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const { repo } = webhookRepos(c.env)
+  const useCase = new ListWebhooksUseCase(repo)
+  return c.json(await useCase.execute(c.get('orgId')))
+})
+
+app.post('/webhooks', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const body = (await c.req.json().catch(() => ({}))) as any
+  const { repo } = webhookRepos(c.env)
+  const useCase = new CreateWebhookUseCase(repo, new CryptoIdGenerator())
+  const result = await useCase.execute({
+    orgId: c.get('orgId'),
+    name: body.name ?? null,
+    url: String(body.url ?? ''),
+    events: Array.isArray(body.events) ? body.events : [],
+  })
+  return c.json(result, 201)
+})
+
+app.patch('/webhooks/:id', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const body = (await c.req.json().catch(() => ({}))) as any
+  const { repo } = webhookRepos(c.env)
+  const useCase = new UpdateWebhookUseCase(repo)
+  const result = await useCase.execute({
+    id: c.req.param('id'),
+    orgId: c.get('orgId'),
+    ...(body.name !== undefined ? { name: body.name } : {}),
+    ...(body.url !== undefined ? { url: String(body.url) } : {}),
+    ...(Array.isArray(body.events) ? { events: body.events } : {}),
+    ...(typeof body.is_active === 'boolean' ? { is_active: body.is_active } : {}),
+  })
+  return c.json(result)
+})
+
+app.delete('/webhooks/:id', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const { repo } = webhookRepos(c.env)
+  const useCase = new DeleteWebhookUseCase(repo)
   await useCase.execute({ id: c.req.param('id'), orgId: c.get('orgId') })
   return c.json({ success: true })
+})
+
+// Envía un `webhook.test` al hook puntual para verificar el receptor.
+app.post('/webhooks/:id/test', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const { repo, deliveries } = webhookRepos(c.env)
+  const useCase = new TestWebhookUseCase(repo, deliveries, new HttpWebhookSender(), new CryptoIdGenerator())
+  const result = await useCase.execute({ id: c.req.param('id'), orgId: c.get('orgId') })
+  return c.json(result, result.ok ? 200 : 502)
+})
+
+app.get('/webhooks/:id/deliveries', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const { deliveries } = webhookRepos(c.env)
+  const useCase = new ListWebhookDeliveriesUseCase(deliveries)
+  return c.json(await useCase.execute({ webhookId: c.req.param('id'), orgId: c.get('orgId'), limit: 20 }))
 })
 
 // ── STAGE HISTORY ──────────────────────────────────────────────

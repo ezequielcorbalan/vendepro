@@ -337,3 +337,21 @@ export const API_SCOPES = {
 } as const
 
 export type ApiScope = keyof typeof API_SCOPES
+
+// Eventos disponibles para webhooks salientes (Configuración de API → Webhooks).
+export const WEBHOOK_EVENTS = {
+  'lead.created': {
+    label: 'Lead creado',
+    description: 'Se dispara al entrar un lead (API, web pública o carga manual)',
+  },
+  'lead.stage_changed': {
+    label: 'Cambio de etapa',
+    description: 'Se dispara cuando un lead cambia de etapa en el pipeline',
+  },
+  'appraisal.created': {
+    label: 'Tasación creada',
+    description: 'Se dispara al crear una tasación',
+  },
+} as const
+
+export type WebhookEventKey = keyof typeof WEBHOOK_EVENTS

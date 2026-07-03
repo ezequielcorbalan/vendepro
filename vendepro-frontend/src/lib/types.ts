@@ -272,3 +272,29 @@ export interface ApiToken {
   created_at: string
   updated_at: string
 }
+
+// Webhooks salientes (Configuración → Configuración de API → Webhooks)
+export interface Webhook {
+  id: string
+  org_id: string
+  name: string | null
+  url: string
+  secret: string
+  events: string[]
+  is_active: boolean
+  last_triggered_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface WebhookDelivery {
+  id: string
+  org_id: string
+  webhook_id: string
+  event: string
+  status: 'success' | 'failed'
+  http_status: number | null
+  attempts: number
+  error: string | null
+  created_at: string
+}

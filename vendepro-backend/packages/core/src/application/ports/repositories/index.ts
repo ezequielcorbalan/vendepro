@@ -32,3 +32,4 @@ export type { AppraisalTemplateRepository } from './appraisal-template-repositor
 export type { OrgVariableRepository } from './org-variable-repository'
 export type { AppraisalPdfRepository } from './appraisal-pdf-repository'
 export type { ApiTokenRepository } from './api-token-repository'
+export type { WebhookRepository, WebhookDeliveryRepository, WebhookDeliveryLog } from './webhook-repository'

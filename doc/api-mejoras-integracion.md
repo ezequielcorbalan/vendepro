@@ -92,11 +92,18 @@ propiedades genera dos contactos.
 
 ---
 
-## 3. Webhooks salientes (P2)
+## 3. Webhooks salientes (P2) — ✅ IMPLEMENTADO (03-jul-2026)
 
 **Para qué:** n8n manda el email de bienvenida por Resend y el aviso al equipo por OneTalk
 cuando entra un lead, y reacciona a cambios de etapa (ej. tasación agendada). Hoy VendéPro no
 tiene forma de avisar hacia afuera; es el reemplazo del rol "disparador" que cumplía emBlue.
+
+> Implementación: migración `032_webhooks.sql` (tablas `webhooks` + `webhook_deliveries`),
+> ABM en api-crm (`/webhooks`, sólo admin) + `POST /webhooks/:id/test` + log de entregas,
+> dispatcher `fireWebhookEvent` en infrastructure (HMAC-SHA256, 1 retry ante 5xx/timeout).
+> Eventos cableados: `lead.created` (api-crm manual, api-public `/v1/leads` y `/public/leads`),
+> `lead.stage_changed` (api-crm) y `appraisal.created` (api-properties).
+> UI: Configuración → Configuración de API → pestaña Webhooks.
 
 ### Modelo de datos
 

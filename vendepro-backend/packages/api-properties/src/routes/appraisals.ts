@@ -6,6 +6,7 @@ import {
   D1OrgVariableRepository,
   CryptoIdGenerator,
   fireMarketingEvent,
+  fireWebhookEvent,
   CfBrowserRenderingService,
   R2PdfStorage,
   PdfDownloadTokenSignerImpl,
@@ -86,6 +87,22 @@ export function registerAppraisalRoutes(app: Hono<{ Bindings: Env } & AuthVars>)
         neighborhood: body.neighborhood ?? null,
       },
       actionSource: 'system_generated',
+    })
+    // Webhook saliente `appraisal.created`.
+    await fireWebhookEvent(c.env, {
+      orgId,
+      event: 'appraisal.created',
+      payload: {
+        appraisal: {
+          id: result.id,
+          lead_id: body.lead_id ?? null,
+          contact_id: body.contact_id ?? null,
+          agent_id: agentId,
+          property_address: body.property_address ?? null,
+          neighborhood: body.neighborhood ?? null,
+          suggested_price: typeof body.suggested_price === 'number' ? body.suggested_price : null,
+        },
+      },
     })
     return c.json({ ...result, marketing: mk ?? null }, 201)
   })
