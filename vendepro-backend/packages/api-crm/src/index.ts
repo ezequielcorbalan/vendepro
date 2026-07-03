@@ -154,15 +154,18 @@ app.put('/marketing/integration', async (c) => {
   const body = (await c.req.json()) as any
   const repo = new D1MetaIntegrationRepository(c.env.DB)
   const useCase = new SaveMetaIntegrationUseCase(repo, (plain) => encrypt(plain, c.env.JWT_SECRET))
+  // PATCH semántico: campo ausente (undefined) preserva el valor guardado;
+  // null o '' lo limpian. No coercionar ausentes a null — borraría campos
+  // en updates parciales.
   await useCase.execute({
     orgId: c.get('orgId'),
-    pixel_id: body.pixel_id ?? null,
+    pixel_id: body.pixel_id,
     access_token: body.access_token,
-    stape_endpoint: body.stape_endpoint ?? null,
-    gtm_container_id: body.gtm_container_id ?? null,
-    test_event_code: body.test_event_code ?? null,
+    stape_endpoint: body.stape_endpoint,
+    gtm_container_id: body.gtm_container_id,
+    test_event_code: body.test_event_code,
     enabled: typeof body.enabled === 'boolean' ? body.enabled : undefined,
-    ga4_measurement_id: body.ga4_measurement_id ?? null,
+    ga4_measurement_id: body.ga4_measurement_id,
     ga4_api_secret: body.ga4_api_secret,
     ga4_enabled: typeof body.ga4_enabled === 'boolean' ? body.ga4_enabled : undefined,
   })
