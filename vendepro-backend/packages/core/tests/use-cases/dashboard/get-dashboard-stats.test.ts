@@ -21,25 +21,29 @@ describe('GetDashboardStatsUseCase — filtro de período (since)', () => {
     lead('contactado', '2026-06-28'),
   ]
 
-  it('sin since computa el funnel sobre toda la historia', async () => {
+  it('sin since: funnel = toda la historia (igual que el pipeline)', async () => {
     const { leadRepo, propertyRepo, reservationRepo, calendarRepo } = makeRepos(leads)
     const uc = new GetDashboardStatsUseCase(leadRepo, propertyRepo, reservationRepo, calendarRepo)
     const r = await uc.execute('org1')
 
     expect(r.totalLeads).toBe(4)
     expect(r.stageBreakdown['nuevo']).toBe(2)
-    expect(r.stageBreakdown['captado']).toBe(1)
+    expect(r.funnelTotalLeads).toBe(4)
+    expect(r.funnelStageBreakdown['nuevo']).toBe(2)
   })
 
-  it('con since solo considera los leads creados desde esa fecha', async () => {
+  it('con since: el pipeline (stageBreakdown) NO se acota, solo el funnel', async () => {
     const { leadRepo, propertyRepo, reservationRepo, calendarRepo } = makeRepos(leads)
     const uc = new GetDashboardStatsUseCase(leadRepo, propertyRepo, reservationRepo, calendarRepo)
     const r = await uc.execute('org1', undefined, '2026-06-01')
 
-    // el lead de enero queda afuera
-    expect(r.totalLeads).toBe(3)
-    expect(r.stageBreakdown['nuevo']).toBe(1)
-    expect(r.stageBreakdown['captado']).toBe(1)
-    expect(r.stageBreakdown['contactado']).toBe(1)
+    // Pipeline / KPIs: toda la historia
+    expect(r.totalLeads).toBe(4)
+    expect(r.stageBreakdown['nuevo']).toBe(2)
+    // Funnel: solo el período (el lead de enero queda afuera)
+    expect(r.funnelTotalLeads).toBe(3)
+    expect(r.funnelStageBreakdown['nuevo']).toBe(1)
+    expect(r.funnelStageBreakdown['captado']).toBe(1)
+    expect(r.funnelStageBreakdown['contactado']).toBe(1)
   })
 })

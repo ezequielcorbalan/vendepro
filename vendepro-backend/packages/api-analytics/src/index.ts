@@ -31,15 +31,42 @@ app.use('*', async (c, next) => {
   return createAuthMiddleware(new JwtAuthService(c.env.JWT_SECRET))(c, next)
 })
 
+// Traduce el período del funnel a una fecha de inicio (ISO date) o undefined.
+// Soporta ventanas móviles (week/month/quarter/year) y calendario (cal_*).
+function funnelSince(raw: string | undefined): string | undefined {
+  if (!raw || raw === 'all') return undefined
+  const now = new Date()
+  const iso = (d: Date) => d.toISOString().split('T')[0] ?? ''
+  switch (raw) {
+    case 'cal_week': {
+      const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
+      d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7))
+      return iso(d)
+    }
+    case 'cal_month':
+      return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-01`
+    case 'cal_quarter': {
+      const q = Math.floor(now.getUTCMonth() / 3) * 3
+      return `${now.getUTCFullYear()}-${String(q + 1).padStart(2, '0')}-01`
+    }
+    case 'cal_year':
+      return `${now.getUTCFullYear()}-01-01`
+    default:
+      // week/month/quarter/year (y cualquier otro) → ventana móvil
+      return periodStartDate(parseAnalyticsPeriod(raw))
+  }
+}
+
 app.get('/dashboard', async (c) => {
   const { agent_id } = c.req.query()
   const db = c.env.DB
   const orgId = c.get('orgId')
 
-  // Período del funnel/pipeline: 'all' = toda la historia; el resto usa una
-  // ventana móvil (semana/mes/trimestre/año) sobre created_at de los leads.
-  const rawPeriod = c.req.query('period')
-  const since = rawPeriod === 'all' ? undefined : periodStartDate(parseAnalyticsPeriod(rawPeriod))
+  // Período que acota SOLO el funnel. Soporta:
+  //  - 'all'                              → toda la historia
+  //  - 'week'|'month'|'quarter'|'year'    → ventana móvil (últimos 7/30/90/365 días)
+  //  - 'cal_week'|'cal_month'|'cal_quarter'|'cal_year' → período calendario en curso
+  const since = funnelSince(c.req.query('period'))
 
   const [base, tasaciones, activity, todayEvents, pendingFollowups] = await Promise.all([
     new GetDashboardStatsUseCase(
@@ -69,7 +96,8 @@ app.get('/dashboard', async (c) => {
     archivados: sb['archivado'] ?? 0,
   }
 
-  const funnel = computeLeadFunnel(sb, base.totalLeads)
+  // Funnel: acotado al período. KPIs y conversión: toda la historia.
+  const funnel = computeLeadFunnel(base.funnelStageBreakdown, base.funnelTotalLeads)
   const conversionRate = computeConversionRate(sb, base.totalLeads)
 
   return c.json({

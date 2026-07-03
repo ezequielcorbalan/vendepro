@@ -101,7 +101,8 @@ function KPICard({ icon, label, value, color, href }: { icon: React.ReactNode; l
 export default function DashboardCRM() {
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [period, setPeriod] = useState<'all' | 'week' | 'month' | 'quarter' | 'year'>('all')
+  // Período que acota SOLO el funnel (los KPIs/pipeline son de toda la historia)
+  const [period, setPeriod] = useState<string>('all')
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [onboardingUser, setOnboardingUser] = useState('')
 
@@ -114,11 +115,14 @@ export default function DashboardCRM() {
   }, [])
 
   useEffect(() => {
-    setLoading(true)
+    // Skeleton solo en la primera carga; al cambiar el período del funnel se
+    // actualiza sin parpadear el resto del dashboard.
+    if (!data) setLoading(true)
     apiFetch('analytics', `/dashboard?period=${period}`)
       .then(r => r.json() as Promise<any>)
       .then(d => { setData(d); setLoading(false) })
       .catch(() => setLoading(false))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [period])
 
   if (loading) {
@@ -181,14 +185,6 @@ export default function DashboardCRM() {
           <p className="text-gray-500 text-sm">Resumen ejecutivo del negocio</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex gap-0.5 bg-gray-100 rounded-lg p-0.5">
-            {([['all', 'Todo'], ['week', 'Sem'], ['month', 'Mes'], ['quarter', 'Trim'], ['year', 'Año']] as const).map(([k, l]) => (
-              <button key={k} onClick={() => setPeriod(k)}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${period === k ? 'bg-white shadow text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}>
-                {l}
-              </button>
-            ))}
-          </div>
           <Link href="/leads" className="bg-brand-pink text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:opacity-90 flex items-center gap-1">
             <Users className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Ver leads</span>
           </Link>
@@ -240,11 +236,28 @@ export default function DashboardCRM() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
         <div className="bg-white rounded-xl border p-4 sm:p-5">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 gap-2">
             <h2 className="font-semibold text-gray-800 flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-pink-500" /> Funnel de conversión
             </h2>
-            <span className="text-xs text-gray-400">lead → captación</span>
+            <select
+              value={period}
+              onChange={e => setPeriod(e.target.value)}
+              className="border border-gray-200 bg-gray-50 rounded-lg px-2.5 py-1.5 text-xs text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-pink/40"
+            >
+              <option value="all">Todo el historial</option>
+              <optgroup label="Período calendario">
+                <option value="cal_month">Este mes</option>
+                <option value="cal_quarter">Este trimestre</option>
+                <option value="cal_year">Este año</option>
+              </optgroup>
+              <optgroup label="Últimos…">
+                <option value="week">Últimos 7 días</option>
+                <option value="month">Últimos 30 días</option>
+                <option value="quarter">Últimos 90 días</option>
+                <option value="year">Último año</option>
+              </optgroup>
+            </select>
           </div>
           <FunnelChart data={funnel || []} />
         </div>
