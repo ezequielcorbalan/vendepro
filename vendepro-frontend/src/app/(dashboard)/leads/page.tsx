@@ -547,7 +547,7 @@ export default function LeadsPage() {
             const lead = leads.find(l => l.id === activeDragId)
             return lead ? <div className="bg-white rounded-lg shadow-xl border-2 border-brand-pink p-3 w-60 opacity-90">
               <p className="text-sm font-medium text-gray-800 truncate">{lead.full_name}</p>
-              <p className="text-[10px] text-gray-400">{lead.operation} · {lead.neighborhood}</p>
+              <p className="text-[10px] text-gray-400 truncate">{lead.operation}{lead.property_address ? ` · ${lead.property_address}` : lead.neighborhood ? ` · ${lead.neighborhood}` : ''}</p>
             </div> : null
           })() : null}
         </DragOverlay>
@@ -877,10 +877,17 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
                 {lead.phone && <span className="text-gray-600">{lead.phone}</span>}
                 {lead.phone && lead.operation && <span className="text-gray-300 mx-1">·</span>}
                 {lead.operation && <span className="capitalize">{lead.operation}</span>}
-                {lead.neighborhood && <><span className="text-gray-300 mx-1">·</span><span>{lead.neighborhood}</span></>}
               </p>
             </div>
           </div>
+
+          {/* Dirección de la propiedad — visible de un vistazo */}
+          {(lead.property_address || lead.neighborhood) && (
+            <div className="flex items-center gap-1.5 text-xs font-medium text-gray-700 pl-10 min-w-0">
+              <MapPin className="w-3.5 h-3.5 text-brand-pink shrink-0" />
+              <span className="truncate">{lead.property_address || lead.neighborhood}</span>
+            </div>
+          )}
 
           {/* Row 2: agent + activity + urgency */}
           <div className="flex items-center gap-2 text-[11px] text-gray-500 flex-wrap pl-10">
@@ -980,8 +987,8 @@ function KanbanCard({ lead, onAdvance, onMoveTo }: { lead: any; onAdvance: () =>
     <div className={`bg-white border rounded-xl p-3 hover:shadow-md transition-all relative ${urgency === 'danger' ? 'border-red-200 bg-red-50/30' : ''}`}>
       <Link href={`/leads/${lead.id}`}>
         <div className="flex items-center justify-between mb-1">
-          <h4 className="text-sm font-medium text-gray-800 truncate">{lead.full_name}{lead.property_address ? <span className="text-gray-500 font-normal text-[10px] ml-1">· {lead.property_address}</span> : ''}</h4>
-          {badge && <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${badge.class}`}>{badge.text}</span>}
+          <h4 className="text-sm font-medium text-gray-800 truncate">{lead.full_name}</h4>
+          {badge && <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${badge.class}`}>{badge.text}</span>}
         </div>
         {lead.tags?.length > 0 && (
           <div className="flex gap-1 mb-1">
@@ -991,8 +998,11 @@ function KanbanCard({ lead, onAdvance, onMoveTo }: { lead: any; onAdvance: () =>
           </div>
         )}
         <div className="space-y-1 text-xs text-gray-500">
+          {(lead.property_address || lead.neighborhood) && (
+            <p className="flex items-center gap-1 font-medium text-gray-700 min-w-0"><MapPin className="w-3 h-3 text-brand-pink shrink-0" /><span className="truncate">{lead.property_address || lead.neighborhood}</span></p>
+          )}
           {lead.phone && <p className="flex items-center gap-1"><Phone className="w-3 h-3" />{lead.phone}</p>}
-          {lead.operation && <p className="capitalize">{lead.operation}{lead.neighborhood ? ` · ${lead.neighborhood}` : ''}</p>}
+          {lead.operation && <p className="capitalize">{lead.operation}</p>}
           {lead.next_step && <p className="text-gray-500 truncate">→ {lead.next_step}</p>}
         </div>
       </Link>
