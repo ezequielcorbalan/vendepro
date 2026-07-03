@@ -147,7 +147,15 @@ export default function DashboardCRM() {
     )
   }
 
-  const { leads, overdueLeads, tasaciones, activity, weeklyActivity, todayEvents, pendingFollowups, agentPerformance, funnel, conversionRate, recentActivities } = data
+  const { leads, overdueLeads, tasaciones, activity, weeklyActivity, todayEvents, pendingFollowups, agentPerformance, funnel, conversionRate, recentActivities, pipelineBreakdown } = data
+
+  // La API devuelve pipelineBreakdown con las claves crudas de etapa
+  // (nuevo, asignado, presentada, invalido, finalizado…). Se usa como
+  // fuente única para el pipeline y los KPIs, evitando desajustes de nombres.
+  const sb: Record<string, number> = pipelineBreakdown || {}
+  const ACTIVE_STAGES = ['nuevo', 'asignado', 'contactado', 'calificado', 'en_tasacion', 'presentada', 'seguimiento']
+  const activeLeads = ACTIVE_STAGES.reduce((sum, s) => sum + (sb[s] || 0), 0)
+  const captaciones = sb['captado'] || 0
 
   const last7 = [...Array(7)].map((_, i) => {
     const d = new Date()
@@ -182,16 +190,16 @@ export default function DashboardCRM() {
             ))}
           </div>
           <Link href="/leads" className="bg-brand-pink text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:opacity-90 flex items-center gap-1">
-            <Users className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Nuevo contacto</span>
+            <Users className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Ver leads</span>
           </Link>
         </div>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <KPICard icon={<Users className="w-5 h-5" />} label="Leads activos" value={(leads?.nuevos || 0) + (leads?.asignados || 0) + (leads?.contactados || 0) + (leads?.calificados || 0) + (leads?.en_tasacion || 0) + (leads?.presentada || 0) + (leads?.seguimiento || 0)} color="blue" href="/leads" />
-        <KPICard icon={<Phone className="w-5 h-5" />} label="Contactados" value={leads?.contactados || 0} color="cyan" href="/leads?stage=contactado" />
+        <KPICard icon={<Users className="w-5 h-5" />} label="Leads activos" value={activeLeads} color="blue" href="/leads" />
+        <KPICard icon={<Phone className="w-5 h-5" />} label="Contactados" value={sb['contactado'] || 0} color="cyan" href="/leads?stage=contactado" />
         <KPICard icon={<Calculator className="w-5 h-5" />} label="Tasaciones" value={tasaciones?.total || 0} color="purple" href="/tasaciones" />
-        <KPICard icon={<Home className="w-5 h-5" />} label="Captaciones" value={tasaciones?.captadas || 0} color="green" href="/propiedades/pipeline" />
+        <KPICard icon={<Home className="w-5 h-5" />} label="Captaciones" value={captaciones} color="green" href="/propiedades/pipeline" />
         <KPICard icon={<Activity className="w-5 h-5" />} label="Actividad (30d)" value={activity?.total || 0} color="pink" href="/actividades" />
         <KPICard icon={<Target className="w-5 h-5" />} label="Conversión" value={`${conversionRate || 0}%`} color="amber" href="/mi-performance" />
       </div>
@@ -404,15 +412,9 @@ export default function DashboardCRM() {
         </h2>
         <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-11 gap-2">
           {Object.entries(LEAD_STAGES).map(([key, cfg]) => {
-            const countMap: any = {
-              nuevo: leads?.nuevos, asignado: leads?.asignados, contactado: leads?.contactados,
-              calificado: leads?.calificados, seguimiento: leads?.seguimiento, en_tasacion: leads?.en_tasacion,
-              presentada: leads?.presentada, captado: leads?.captados, perdido: leads?.perdidos,
-              invalido: leads?.invalidos, finalizado: leads?.finalizados,
-            }
             return (
               <Link key={key} href={`/leads?stage=${key}`} className="text-center p-2 rounded-lg hover:bg-gray-50 transition-colors">
-                <p className="text-lg sm:text-xl font-semibold text-gray-800">{countMap[key] || 0}</p>
+                <p className="text-lg sm:text-xl font-semibold text-gray-800">{sb[key] || 0}</p>
                 <p className={`text-[10px] sm:text-xs px-1 py-0.5 rounded-full ${cfg.color} mt-1`}>{cfg.label}</p>
               </Link>
             )
