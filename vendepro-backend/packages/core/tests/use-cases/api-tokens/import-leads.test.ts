@@ -2,7 +2,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ImportLeadsUseCase, MAX_IMPORT_BATCH, slugifyTag } from '../../../src/application/use-cases/api-tokens/import-leads'
 import { ValidationError } from '../../../src/domain/errors/validation-error'
 
-const mockLeadRepo = { findById: vi.fn(), findByOrg: vi.fn(), save: vi.fn().mockResolvedValue(undefined), delete: vi.fn() }
+const mockLeadRepo = {
+  findById: vi.fn(),
+  findByOrg: vi.fn(),
+  save: vi.fn().mockResolvedValue(undefined),
+  delete: vi.fn(),
+  findOpenByContactAndSourceDetail: vi.fn().mockResolvedValue(null),
+}
 const mockContactRepo = {
   findById: vi.fn(),
   findByOrg: vi.fn(),
@@ -31,6 +37,7 @@ describe('ImportLeadsUseCase', () => {
     idCounter = 0
     mockIds.generate.mockImplementation(() => `gen-${++idCounter}`)
     mockLeadRepo.save.mockResolvedValue(undefined)
+    mockLeadRepo.findOpenByContactAndSourceDetail.mockResolvedValue(null)
     mockContactRepo.save.mockResolvedValue(undefined)
     mockContactRepo.findByEmailOrPhone.mockResolvedValue(null)
     mockUserRepo.findFirstAdminByOrg.mockResolvedValue({ id: 'admin-1' })
@@ -137,6 +144,97 @@ describe('ImportLeadsUseCase', () => {
     })
     expect(result.created).toBe(1)
     expect(mockContactRepo.save).toHaveBeenCalledTimes(1)
+  })
+
+  // ── Dedup de leads abiertos (duplicate) ─────────────────────────
+
+  function makeOpenLead(overrides: Record<string, unknown> = {}) {
+    const state = { id: 'lead-abierto', notes: 'nota original', ...overrides }
+    return {
+      get id() { return state.id },
+      get notes() { return state.notes as string | null },
+      update: vi.fn((d: { notes: string }) => { state.notes = d.notes }),
+      _state: state,
+    }
+  }
+
+  it('si el contacto tiene lead abierto con el mismo source_detail: duplicate true, sin lead nuevo, nota agregada', async () => {
+    mockContactRepo.findByEmailOrPhone.mockResolvedValue({ id: 'contact-existente' })
+    const openLead = makeOpenLead()
+    mockLeadRepo.findOpenByContactAndSourceDetail.mockResolvedValue(openLead)
+
+    const uc = new ImportLeadsUseCase(mockLeadRepo, mockContactRepo, mockUserRepo, mockIds, mockTagRepo)
+    const result = await uc.execute({
+      orgId: 'org_mg',
+      leads: [{ full_name: 'Juan Pérez', email: 'juan@mail.com', source_detail: 'zonaprop', notes: 'sigue interesado', tags: ['zonaprop'] }],
+    })
+
+    expect(mockLeadRepo.findOpenByContactAndSourceDetail).toHaveBeenCalledWith('contact-existente', 'zonaprop', 'org_mg')
+    expect(result.results[0]).toMatchObject({ ok: true, id: 'lead-abierto', contact_id: 'contact-existente', deduped: true, duplicate: true })
+    expect(result.created).toBe(0)
+    expect(result.duplicates).toBe(1)
+    expect(result.failed).toBe(0)
+    expect(result.ok).toBe(true)
+    // guarda el lead existente con la nota nueva, sin crear contacto ni lead
+    expect(mockLeadRepo.save).toHaveBeenCalledTimes(1)
+    expect(mockLeadRepo.save).toHaveBeenCalledWith(openLead)
+    expect(openLead._state.notes).toContain('nota original')
+    expect(openLead._state.notes).toContain('Consulta repetida')
+    expect(openLead._state.notes).toContain('sigue interesado')
+    expect(mockContactRepo.save).not.toHaveBeenCalled()
+    // los tags del item duplicado NO se aplican
+    expect(mockTagRepo.addToLead).not.toHaveBeenCalled()
+  })
+
+  it('contacto existente sin lead abierto con ese source_detail: crea lead nuevo (deduped, no duplicate)', async () => {
+    mockContactRepo.findByEmailOrPhone.mockResolvedValue({ id: 'contact-existente' })
+    mockLeadRepo.findOpenByContactAndSourceDetail.mockResolvedValue(null)
+
+    const uc = new ImportLeadsUseCase(mockLeadRepo, mockContactRepo, mockUserRepo, mockIds)
+    const result = await uc.execute({
+      orgId: 'org_mg',
+      leads: [{ full_name: 'Juan', email: 'juan@mail.com', source_detail: 'argenprop' }],
+    })
+
+    expect(result.created).toBe(1)
+    expect(result.duplicates).toBe(0)
+    expect(result.results[0].deduped).toBe(true)
+    expect(result.results[0].duplicate).toBeFalsy()
+  })
+
+  it('si la búsqueda de lead abierto falla, crea el lead igual (best-effort)', async () => {
+    mockContactRepo.findByEmailOrPhone.mockResolvedValue({ id: 'contact-existente' })
+    mockLeadRepo.findOpenByContactAndSourceDetail.mockRejectedValue(new Error('db error'))
+
+    const uc = new ImportLeadsUseCase(mockLeadRepo, mockContactRepo, mockUserRepo, mockIds)
+    const result = await uc.execute({
+      orgId: 'org_mg',
+      leads: [{ full_name: 'Juan', email: 'juan@mail.com', source_detail: 'zonaprop' }],
+    })
+
+    expect(result.created).toBe(1)
+    expect(result.results[0].duplicate).toBeFalsy()
+  })
+
+  it('sin contacto existente no consulta leads abiertos', async () => {
+    const uc = new ImportLeadsUseCase(mockLeadRepo, mockContactRepo, mockUserRepo, mockIds)
+    await uc.execute({ orgId: 'org_mg', leads: [{ full_name: 'Nueva', email: 'n@mail.com' }] })
+    expect(mockLeadRepo.findOpenByContactAndSourceDetail).not.toHaveBeenCalled()
+  })
+
+  it('lote 100% duplicados sigue siendo ok:true', async () => {
+    mockContactRepo.findByEmailOrPhone.mockResolvedValue({ id: 'contact-existente' })
+    mockLeadRepo.findOpenByContactAndSourceDetail.mockResolvedValue(makeOpenLead())
+
+    const uc = new ImportLeadsUseCase(mockLeadRepo, mockContactRepo, mockUserRepo, mockIds)
+    const result = await uc.execute({
+      orgId: 'org_mg',
+      leads: [{ full_name: 'Juan', email: 'juan@mail.com', source_detail: 'zonaprop' }],
+    })
+
+    expect(result.ok).toBe(true)
+    expect(result.created).toBe(0)
+    expect(result.duplicates).toBe(1)
   })
 
   // ── Tags ────────────────────────────────────────────────────────

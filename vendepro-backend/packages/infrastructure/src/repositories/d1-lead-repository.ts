@@ -85,6 +85,22 @@ export class D1LeadRepository implements LeadRepository {
     return rows.map(r => ({ id: r.id, full_name: r.full_name, next_step: r.next_step ?? null, next_step_date: r.next_step_date ?? null, stage: r.stage }))
   }
 
+  async findOpenByContactAndSourceDetail(contactId: string, sourceDetail: string | null, orgId: string): Promise<Lead | null> {
+    // Terminales según el dominio (lead-stage.ts TERMINAL): invalido/finalizado/perdido.
+    const row = await this.db
+      .prepare(`
+        SELECT l.*, u.full_name as assigned_name FROM leads l
+        LEFT JOIN users u ON l.assigned_to = u.id
+        WHERE l.contact_id = ? AND l.org_id = ?
+          AND l.stage NOT IN ('invalido','finalizado','perdido')
+          AND ((? IS NULL AND l.source_detail IS NULL) OR l.source_detail = ?)
+        ORDER BY l.created_at DESC LIMIT 1
+      `)
+      .bind(contactId, orgId, sourceDetail, sourceDetail)
+      .first() as any
+    return row ? this.toEntity(row) : null
+  }
+
   async exportAllWithAssignedName(orgId: string): Promise<Array<Record<string, unknown>>> {
     const rows = (await this.db
       .prepare(`SELECT l.*, u.full_name as assigned_name FROM leads l LEFT JOIN users u ON l.assigned_to = u.id WHERE l.org_id = ? ORDER BY l.created_at DESC`)

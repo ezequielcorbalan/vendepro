@@ -34,12 +34,15 @@ export interface ImportLeadResult {
   id?: string
   contact_id?: string
   deduped?: boolean
+  /** true si la consulta ya tenía un lead abierto con el mismo source_detail: no se creó lead nuevo. */
+  duplicate?: boolean
   error?: string
 }
 
 export interface ImportLeadsResult {
   ok: boolean
   created: number
+  duplicates: number
   failed: number
   results: ImportLeadResult[]
 }
@@ -64,6 +67,10 @@ export function slugifyTag(raw: string): string {
  *
  * Dedup: si ya existe un contacto en la org con el mismo email (o teléfono,
  * últimos 10 dígitos), se reutiliza en vez de crear uno nuevo (`deduped: true`).
+ * Si además el contacto ya tiene un lead ABIERTO (stage no terminal) con el mismo
+ * source_detail, NO se crea lead nuevo: la consulta se agrega como nota al lead
+ * existente y el item devuelve `duplicate: true` con el id existente. Los tags del
+ * item duplicado NO se aplican (describen la consulta nueva, no el lead existente).
  * Tags: se normalizan a slug y se auto-crean si no existen; un tag que falla
  * no aborta el lead.
  */
@@ -104,6 +111,16 @@ export class ImportLeadsUseCase {
 
         const existing = await this.findExistingContact(input.orgId, lead)
 
+        if (existing) {
+          const openLead = await this.findOpenLead(input.orgId, existing.id, lead.source_detail ?? null)
+          if (openLead) {
+            this.appendDuplicateNote(openLead, lead)
+            await this.leadRepo.save(openLead)
+            results.push({ index, ok: true, id: openLead.id, contact_id: existing.id, deduped: true, duplicate: true })
+            continue
+          }
+        }
+
         const res = await createLeadWithContact.execute({
           org_id: input.orgId,
           assigned_to: null, // lead sin asignar (cola de nuevos)
@@ -141,11 +158,13 @@ export class ImportLeadsUseCase {
       }
     }
 
-    const created = results.filter((r) => r.ok).length
+    const created = results.filter((r) => r.ok && !r.duplicate).length
+    const duplicates = results.filter((r) => r.duplicate).length
     return {
-      ok: created > 0,
+      ok: created + duplicates > 0,
       created,
-      failed: results.length - created,
+      duplicates,
+      failed: results.length - created - duplicates,
       results,
     }
   }
@@ -157,6 +176,23 @@ export class ImportLeadsUseCase {
     } catch {
       return null // dedup best-effort: si falla la búsqueda, se crea contacto nuevo
     }
+  }
+
+  private async findOpenLead(orgId: string, contactId: string, sourceDetail: string | null) {
+    try {
+      return await this.leadRepo.findOpenByContactAndSourceDetail(contactId, sourceDetail, orgId)
+    } catch {
+      return null // best-effort: si falla la búsqueda, se crea el lead como siempre
+    }
+  }
+
+  /** Registra la consulta repetida como nota en el lead abierto existente. */
+  private appendDuplicateNote(openLead: { notes: string | null; update: (d: { notes: string }) => void }, lead: ImportLeadItem): void {
+    const date = new Date().toISOString().slice(0, 10)
+    const origin = lead.source_detail ? `, ${lead.source_detail}` : ''
+    const prop = lead.property_address ? ` — Propiedad: ${lead.property_address}` : ''
+    const note = `[${date}] Consulta repetida (import API${origin}): ${lead.notes?.trim() || 'sin mensaje'}${prop}`
+    openLead.update({ notes: openLead.notes ? `${openLead.notes}\n\n${note}` : note })
   }
 
   private async applyTags(orgId: string, leadId: string, rawTags?: string[]): Promise<void> {

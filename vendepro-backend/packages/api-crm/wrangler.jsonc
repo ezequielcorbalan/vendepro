@@ -6,6 +6,9 @@
   "routes": [
     { "pattern": "crm.api.vendepro.com.ar", "custom_domain": true }
   ],
+  "triggers": {
+    "crons": ["*/15 * * * *"]
+  },
   "d1_databases": [
     {
       "binding": "DB",

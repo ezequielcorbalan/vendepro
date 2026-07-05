@@ -35,6 +35,7 @@ const sourceLabels: Record<string, string> = {
   whatsapp: 'WhatsApp',
   referido: 'Referido',
   api: 'API',
+  kiteprop: 'KiteProp',
 }
 
 const AVATAR_COLORS = [

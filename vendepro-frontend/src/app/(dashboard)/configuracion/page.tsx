@@ -5,7 +5,7 @@ import Link from 'next/link'
 import {
   Settings, Save, Loader2, Building2, Calendar, User,
   ClipboardList, FileText, CheckCircle, XCircle, Megaphone,
-  HelpCircle, PlayCircle, KeyRound,
+  HelpCircle, PlayCircle, KeyRound, Plug,
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
@@ -148,6 +148,12 @@ export default function ConfiguracionPage() {
       iconColor: 'text-purple-500',
       title: 'Configuración de API',
       subtitle: 'Tokens para importar leads',
+    }, {
+      href: '/configuracion/conexiones',
+      icon: <Plug className="w-5 h-5" />,
+      iconColor: 'text-amber-500',
+      title: 'Conexiones',
+      subtitle: 'KiteProp y otros CRMs externos',
     }] : []),
   ]
 

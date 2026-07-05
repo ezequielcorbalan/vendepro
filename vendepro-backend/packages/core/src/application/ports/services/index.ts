@@ -8,3 +8,4 @@ export type { BrowserRenderingService, BrowserRenderPdfOptions } from './browser
 export type { PdfStorage, PdfObject, PdfPutMeta } from './pdf-storage'
 export type { PdfDownloadTokenSigner, PdfDownloadTokenPayload } from './pdf-download-token-signer'
 export type { WebhookSender, WebhookSendResult } from './webhook-sender'
+export type { KitepropGateway, KitepropContactDTO, KitepropContactsPage, KitepropTestResult } from './kiteprop-gateway'

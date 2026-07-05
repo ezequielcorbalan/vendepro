@@ -298,3 +298,30 @@ export interface WebhookDelivery {
   error: string | null
   created_at: string
 }
+
+// Integración con un CRM externo (KiteProp). Vista pública: nunca incluye la key.
+export interface CrmIntegration {
+  id: string
+  org_id: string
+  provider: string
+  name: string | null
+  enabled: boolean
+  has_api_key: boolean
+  config_json: string | null
+  last_sync_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface IntegrationSyncLogEntry {
+  id: string
+  org_id: string
+  integration_id: string
+  kind: 'auto' | 'manual' | 'backfill' | 'test'
+  status: 'ok' | 'partial' | 'error'
+  contacts_created: number
+  contacts_skipped: number
+  error: string | null
+  started_at: string
+  finished_at: string | null
+}

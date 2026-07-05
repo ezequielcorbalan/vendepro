@@ -136,6 +136,7 @@ export const LEAD_SOURCES = {
   referido:    { label: 'Referido' },
   cartel:      { label: 'Cartel' },
   telefono:    { label: 'Teléfono' },
+  kiteprop:    { label: 'KiteProp' },
   manual:      { label: 'Carga manual' },
   otro:        { label: 'Otro' },
 } as const

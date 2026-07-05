@@ -238,9 +238,10 @@ app.post('/v1/leads', async (c) => {
   const result = await uc.execute({ orgId, leads: rawLeads })
 
   // Hook marketing por cada lead creado (mismo `lead_created` que /public/leads).
+  // Los duplicados no crearon lead nuevo: no disparan eventos.
   await Promise.allSettled(
     result.results
-      .filter((r) => r.ok && r.id)
+      .filter((r) => r.ok && r.id && !r.duplicate)
       .map((r) => {
         const lead = rawLeads[r.index] ?? {}
         return fireMarketingEvent(c.env, {
@@ -266,9 +267,10 @@ app.post('/v1/leads', async (c) => {
   )
 
   // Webhook saliente `lead.created` por cada lead creado (n8n → Resend/OneTalk).
+  // Los duplicados no crearon lead nuevo: no disparan `lead.created`.
   await Promise.allSettled(
     result.results
-      .filter((r) => r.ok && r.id)
+      .filter((r) => r.ok && r.id && !r.duplicate)
       .map((r) => {
         const lead = rawLeads[r.index] ?? {}
         return fireWebhookEvent(c.env, {
@@ -293,7 +295,8 @@ app.post('/v1/leads', async (c) => {
       }),
   )
 
-  return c.json(result, result.created > 0 ? 201 : 400)
+  // Un lote 100% duplicados también es éxito (el integrador no debe reintentar).
+  return c.json(result, result.created > 0 || result.duplicates > 0 ? 201 : 400)
 })
 
 // ── PUBLIC LEADS (LEGACY, deprecado — usar POST /v1/leads con Bearer JWT) ──
