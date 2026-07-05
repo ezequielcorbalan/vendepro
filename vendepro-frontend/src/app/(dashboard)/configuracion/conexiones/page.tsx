@@ -3,13 +3,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import {
-  Plug, ArrowLeft, Loader2, Save, CheckCircle2, XCircle, ShieldAlert,
-  RefreshCw, Download, Radio, AlertCircle, History,
+  Plug, ArrowLeft, Loader2, Save, CheckCircle2, XCircle,
+  RefreshCw, Download, Radio, AlertCircle, History, Calendar, Unplug,
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
 import { getCurrentUser } from '@/lib/auth'
-import type { CrmIntegration, IntegrationSyncLogEntry } from '@/lib/types'
+import type { CrmIntegration, GoogleIntegration, IntegrationSyncLogEntry } from '@/lib/types'
 
 const KEY_PLACEHOLDER = '********'
 
@@ -31,6 +31,10 @@ export default function ConexionesPage() {
   const [loading, setLoading] = useState(true)
   const [integration, setIntegration] = useState<CrmIntegration | null>(null)
   const [log, setLog] = useState<IntegrationSyncLogEntry[]>([])
+
+  // Google Calendar (personal del usuario logueado)
+  const [google, setGoogle] = useState<GoogleIntegration | null>(null)
+  const [googleBusy, setGoogleBusy] = useState(false)
 
   // Form
   const [apiKeyInput, setApiKeyInput] = useState('')
@@ -58,10 +62,73 @@ export default function ConexionesPage() {
     setLoading(false)
   }, [])
 
+  const loadGoogle = useCallback(async () => {
+    try {
+      const res = await apiFetch('crm', '/integrations/google')
+      const data = (await res.json()) as any
+      setGoogle(res.ok ? data : null)
+    } catch { setGoogle(null) }
+  }, [])
+
   useEffect(() => {
+    loadGoogle()
     if (!isAdmin) { setLoading(false); return }
     loadAll()
-  }, [isAdmin, loadAll])
+  }, [isAdmin, loadAll, loadGoogle])
+
+  // Al volver del consentimiento de Google llega ?google=ok|error.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const status = params.get('google')
+    if (!status) return
+    if (status === 'ok') toast('Google Calendar conectado')
+    else toast(`No se pudo conectar Google Calendar${params.get('reason') ? ` (${params.get('reason')})` : ''}`, 'error')
+    window.history.replaceState(null, '', window.location.pathname)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  async function handleGoogleConnect() {
+    setGoogleBusy(true)
+    try {
+      const res = await apiFetch('crm', '/integrations/google/auth-url')
+      const data = (await res.json()) as any
+      if (!res.ok || !data.url) throw new Error(data?.error)
+      window.location.href = data.url
+      return // el flujo sigue en Google y vuelve por redirect
+    } catch (err: any) {
+      toast(err?.message || 'No se pudo iniciar la conexión con Google', 'error')
+    }
+    setGoogleBusy(false)
+  }
+
+  async function handleGoogleDisconnect() {
+    if (!confirm('¿Desconectar tu Google Calendar? Los eventos ya copiados no se borran.')) return
+    setGoogleBusy(true)
+    try {
+      const res = await apiFetch('crm', '/integrations/google', { method: 'DELETE' })
+      if (!res.ok) throw new Error()
+      toast('Google Calendar desconectado')
+      await loadGoogle()
+    } catch {
+      toast('Error al desconectar', 'error')
+    }
+    setGoogleBusy(false)
+  }
+
+  async function handleGoogleToggle(enabled: boolean) {
+    setGoogle(g => g ? { ...g, enabled } : g)
+    try {
+      const res = await apiFetch('crm', '/integrations/google', {
+        method: 'PUT',
+        body: JSON.stringify({ enabled }),
+      })
+      if (!res.ok) throw new Error()
+      toast(enabled ? 'Sincronización activada' : 'Sincronización pausada')
+    } catch {
+      toast('No se pudo actualizar', 'error')
+      await loadGoogle()
+    }
+  }
 
   async function handleSave() {
     setSaving(true)
@@ -155,19 +222,6 @@ export default function ConexionesPage() {
     setBackfilling(false)
   }
 
-  if (!isAdmin) {
-    return (
-      <div className="max-w-2xl mx-auto text-center py-16">
-        <ShieldAlert className="w-10 h-10 text-amber-500 mx-auto mb-3" />
-        <p className="text-gray-800 font-medium">Acceso restringido</p>
-        <p className="text-sm text-gray-500 mt-1">Sólo administradores pueden gestionar conexiones.</p>
-        <Link href="/configuracion" className="inline-flex items-center gap-2 text-sm text-brand-pink mt-4">
-          <ArrowLeft className="w-4 h-4" /> Volver a Configuración
-        </Link>
-      </div>
-    )
-  }
-
   if (loading) {
     return <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
   }
@@ -185,10 +239,73 @@ export default function ConexionesPage() {
           <Plug className="w-6 h-6 text-brand-pink" /> Conexiones
         </h1>
         <p className="text-gray-500 text-sm mt-1">
-          Conectá VendéPro con otros CRMs. Los contactos nuevos de KiteProp se importan automáticamente cada 15 minutos.
+          Conectá VendéPro con tus otras herramientas: tu Google Calendar personal y otros CRMs.
         </p>
       </div>
 
+      {/* Google Calendar (personal del usuario) */}
+      <div className="bg-white rounded-xl border p-5 space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-red-50 text-red-500 flex items-center justify-center">
+              <Calendar className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="font-semibold text-gray-800">Google Calendar</p>
+              <p className="text-xs text-gray-500">
+                {google?.connected
+                  ? <>Conectado{google.email ? <> como <span className="font-medium">{google.email}</span></> : ''} · tus eventos del CRM se copian a tu calendar</>
+                  : 'Copiá automáticamente tus eventos del CRM (visitas, reuniones, tasaciones) a tu calendar personal'}
+              </p>
+            </div>
+          </div>
+          {google?.connected && (
+            <label className="flex items-center gap-2 cursor-pointer shrink-0">
+              <input
+                type="checkbox"
+                checked={google.enabled}
+                onChange={e => handleGoogleToggle(e.target.checked)}
+                className="w-4 h-4 accent-[#ff007c]"
+              />
+              <span className="text-sm font-medium text-gray-700">Activa</span>
+            </label>
+          )}
+        </div>
+
+        {google && !google.configured && (
+          <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-sm text-amber-800">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            Falta configurar las credenciales de Google en el servidor (GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET).
+          </div>
+        )}
+
+        <div className="flex flex-wrap items-center gap-2">
+          {google?.connected ? (
+            <button
+              onClick={handleGoogleDisconnect}
+              disabled={googleBusy}
+              className="flex items-center gap-2 border border-gray-300 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
+            >
+              {googleBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Unplug className="w-4 h-4" />}
+              Desconectar
+            </button>
+          ) : (
+            <button
+              onClick={handleGoogleConnect}
+              disabled={googleBusy || !google?.configured}
+              className="flex items-center gap-2 bg-brand-pink text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50"
+            >
+              {googleBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calendar className="w-4 h-4" />}
+              Conectar con Google
+            </button>
+          )}
+        </div>
+        <p className="text-[11px] text-gray-400">
+          La conexión es personal: cada agente conecta su propia cuenta. Se piden permisos sólo sobre eventos de calendario.
+        </p>
+      </div>
+
+      {isAdmin && (<>
       {/* KiteProp */}
       <div className="bg-white rounded-xl border p-5 space-y-4">
         <div className="flex items-center justify-between gap-3">
@@ -329,6 +446,7 @@ export default function ConexionesPage() {
           </ul>
         )}
       </div>
+      </>)}
     </div>
   )
 }

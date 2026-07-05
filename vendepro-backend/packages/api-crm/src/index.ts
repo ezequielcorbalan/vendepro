@@ -8,6 +8,7 @@ import {
   D1WebhookRepository, D1WebhookDeliveryRepository, HttpWebhookSender,
   D1OrgIntegrationRepository, D1IntegrationLinkRepository, D1IntegrationSyncLogRepository,
   KitepropMcpClient,
+  D1UserIntegrationRepository, GoogleCalendarHttpClient, buildGoogleAuthUrl,
   JwtAuthService, CryptoIdGenerator,
   encrypt, decrypt,
   createMarketingSender, fireMarketingEvent, fireWebhookEvent,
@@ -27,6 +28,9 @@ import {
   TestWebhookUseCase, ListWebhookDeliveriesUseCase,
   SaveOrgIntegrationUseCase, GetOrgIntegrationUseCase,
   TestKitepropConnectionUseCase, SyncKitepropContactsUseCase,
+  GetGoogleIntegrationUseCase, ConnectGoogleCalendarUseCase,
+  DisconnectGoogleCalendarUseCase, SaveGoogleIntegrationSettingsUseCase,
+  SyncEventToGoogleUseCase,
 } from '@vendepro/core'
 import {
   CreateLandingFromTemplateUseCase, UpdateLandingBlocksUseCase, AddBlockUseCase,
@@ -42,7 +46,15 @@ import {
   D1LandingVersionRepository, D1LandingEventRepository,
 } from '@vendepro/infrastructure'
 
-type Env = { DB: D1Database; JWT_SECRET: string }
+type Env = {
+  DB: D1Database
+  JWT_SECRET: string
+  // Google Calendar OAuth (secrets vía wrangler secret put / dashboard)
+  GOOGLE_CLIENT_ID?: string
+  GOOGLE_CLIENT_SECRET?: string
+  // Fallback del redirect al frontend post-OAuth (normalmente sale del header Origin)
+  FRONTEND_URL?: string
+}
 type AuthVars = { Variables: { userId: string; userRole: string; orgId: string } }
 
 const app = new Hono<{ Bindings: Env } & AuthVars>()
@@ -50,8 +62,13 @@ const app = new Hono<{ Bindings: Env } & AuthVars>()
 app.use('*', corsMiddleware)
 app.onError(errorHandler)
 
+const GOOGLE_CALLBACK_PATH = '/integrations/google/callback'
+
 // Apply auth to all routes
 app.use('*', async (c, next) => {
+  // El callback OAuth llega por redirect del navegador (sin Bearer): se
+  // autentica con el JWT firmado que viaja en `state`.
+  if (c.req.path === GOOGLE_CALLBACK_PATH) return next()
   const authService = new JwtAuthService(c.env.JWT_SECRET)
   return createAuthMiddleware(authService)(c, next)
 })
@@ -350,6 +367,139 @@ app.get('/integrations/kiteprop/log', async (c) => {
   return c.json(list)
 })
 
+// ── INTEGRACIÓN GOOGLE CALENDAR (por usuario, no admin-only) ───
+// Cada agente conecta SU cuenta: los eventos del CRM se espejan en su
+// calendar y el cliente recibe la invitación de Google por email.
+
+function googleConfigured(env: Env): boolean {
+  return !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET)
+}
+
+function googleGateway(env: Env) {
+  return new GoogleCalendarHttpClient(env.GOOGLE_CLIENT_ID ?? '', env.GOOGLE_CLIENT_SECRET ?? '')
+}
+
+function googleRedirectUri(c: any): string {
+  return new URL(c.req.url).origin + GOOGLE_CALLBACK_PATH
+}
+
+function buildGoogleSync(env: Env) {
+  return new SyncEventToGoogleUseCase(
+    new D1UserIntegrationRepository(env.DB),
+    new D1CalendarRepository(env.DB),
+    new D1ContactRepository(env.DB),
+    googleGateway(env),
+    (plain) => encrypt(plain, env.JWT_SECRET),
+    (cipher) => decrypt(cipher, env.JWT_SECRET),
+  )
+}
+
+/**
+ * Espejo best-effort de un evento local en el Google Calendar del agente.
+ * Nunca tira: la operación local ya se completó y no debe revertirse.
+ */
+async function mirrorEventToGoogle(
+  env: Env,
+  input: { orgId: string; agentId: string; action: 'upsert' | 'delete'; eventId?: string; googleEventId?: string | null; attendeeEmail?: string | null },
+): Promise<{ synced: boolean; inviteSent: boolean; reason?: string } | null> {
+  if (!googleConfigured(env)) return null
+  try {
+    return await buildGoogleSync(env).execute(input)
+  } catch (err: any) {
+    return { synced: false, inviteSent: false, reason: err?.message || 'sync_failed' }
+  }
+}
+
+app.get('/integrations/google', async (c) => {
+  try {
+    const useCase = new GetGoogleIntegrationUseCase(new D1UserIntegrationRepository(c.env.DB))
+    const view = await useCase.execute({ userId: c.get('userId') })
+    return c.json({ configured: googleConfigured(c.env), ...view })
+  } catch {
+    // tabla user_integrations ausente (migración 035 sin aplicar)
+    return c.json({ configured: googleConfigured(c.env), connected: false, enabled: false, auto_invite: true, email: null, last_sync_at: null })
+  }
+})
+
+app.put('/integrations/google', async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as any
+  const useCase = new SaveGoogleIntegrationSettingsUseCase(new D1UserIntegrationRepository(c.env.DB))
+  const view = await useCase.execute({
+    userId: c.get('userId'),
+    enabled: typeof body.enabled === 'boolean' ? body.enabled : undefined,
+    auto_invite: typeof body.auto_invite === 'boolean' ? body.auto_invite : undefined,
+  })
+  return c.json({ configured: googleConfigured(c.env), ...view })
+})
+
+app.get('/integrations/google/auth-url', async (c) => {
+  if (!googleConfigured(c.env)) {
+    return c.json({ error: 'Google Calendar no está configurado en el servidor (faltan GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET)' }, 501)
+  }
+  const authService = new JwtAuthService(c.env.JWT_SECRET)
+  const state = await authService.createToken({
+    purpose: 'google_calendar_oauth',
+    sub: c.get('userId'),
+    org_id: c.get('orgId'),
+    return_to: c.req.header('Origin') || c.env.FRONTEND_URL || '',
+  }, { expiresIn: '10m' })
+  return c.json({
+    url: buildGoogleAuthUrl({ clientId: c.env.GOOGLE_CLIENT_ID as string, redirectUri: googleRedirectUri(c), state }),
+  })
+})
+
+// Redirect de Google (sin Bearer: el middleware lo deja pasar y acá se
+// valida el JWT de `state`, que lleva userId/orgId y expira a los 10 min).
+app.get(GOOGLE_CALLBACK_PATH, async (c) => {
+  const { code, state, error } = c.req.query()
+  const authService = new JwtAuthService(c.env.JWT_SECRET)
+  const payload = state ? await authService.verifyToken(state) : null
+
+  const returnTo = typeof payload?.return_to === 'string' && payload.return_to ? payload.return_to : (c.env.FRONTEND_URL || '')
+  const finish = (status: 'ok' | 'error', reason?: string) => {
+    if (!returnTo) return c.json({ google: status, reason: reason ?? null }, status === 'ok' ? 200 : 400)
+    const url = new URL('/configuracion/conexiones', returnTo)
+    url.searchParams.set('google', status)
+    if (reason) url.searchParams.set('reason', reason)
+    return c.redirect(url.toString(), 302)
+  }
+
+  if (!payload || payload.purpose !== 'google_calendar_oauth' || typeof payload.sub !== 'string') {
+    return finish('error', 'state_invalido')
+  }
+  if (error) return finish('error', String(error))
+  if (!code) return finish('error', 'sin_code')
+  if (!googleConfigured(c.env)) return finish('error', 'no_configurado')
+
+  try {
+    const useCase = new ConnectGoogleCalendarUseCase(
+      new D1UserIntegrationRepository(c.env.DB),
+      googleGateway(c.env),
+      new CryptoIdGenerator(),
+      (plain) => encrypt(plain, c.env.JWT_SECRET),
+    )
+    await useCase.execute({
+      orgId: String(payload.org_id ?? ''),
+      userId: payload.sub,
+      code,
+      redirectUri: googleRedirectUri(c),
+    })
+    return finish('ok')
+  } catch {
+    return finish('error', 'canje_fallido')
+  }
+})
+
+app.delete('/integrations/google', async (c) => {
+  const useCase = new DisconnectGoogleCalendarUseCase(
+    new D1UserIntegrationRepository(c.env.DB),
+    googleGateway(c.env),
+    (cipher) => decrypt(cipher, c.env.JWT_SECRET),
+  )
+  const result = await useCase.execute({ userId: c.get('userId') })
+  return c.json(result)
+})
+
 // ── CONTACTS ───────────────────────────────────────────────────
 app.get('/contacts', async (c) => {
   const { search, agent_id, tag_id } = c.req.query()
@@ -420,7 +570,15 @@ app.post('/calendar', async (c) => {
   const repo = new D1CalendarRepository(c.env.DB)
   const useCase = new CreateCalendarEventUseCase(repo, new CryptoIdGenerator())
   const result = await useCase.execute({ ...body, org_id: c.get('orgId'), agent_id: body.agent_id || c.get('userId') })
-  return c.json(result, 201)
+  // Espejo en el Google Calendar del agente (si lo conectó). Best-effort.
+  const google = await mirrorEventToGoogle(c.env, {
+    orgId: c.get('orgId'),
+    agentId: body.agent_id || c.get('userId'),
+    eventId: result.id,
+    action: 'upsert',
+    attendeeEmail: typeof body.client_email === 'string' ? body.client_email : null,
+  })
+  return c.json({ ...result, google }, 201)
 })
 
 app.put('/calendar/complete', async (c) => {
@@ -436,13 +594,30 @@ app.put('/calendar/reschedule', async (c) => {
   const repo = new D1CalendarRepository(c.env.DB)
   const useCase = new RescheduleEventUseCase(repo)
   await useCase.execute({ eventId: body.id, orgId: c.get('orgId'), startAt: body.start_at, endAt: body.end_at })
+  // Si el evento estaba espejado en Google, actualiza el horario allá también.
+  try {
+    const event = await repo.findById(body.id, c.get('orgId'))
+    if (event?.google_event_id) {
+      await mirrorEventToGoogle(c.env, {
+        orgId: c.get('orgId'), agentId: event.agent_id, eventId: event.id, action: 'upsert',
+      })
+    }
+  } catch { /* best-effort */ }
   return c.json({ success: true })
 })
 
 app.delete('/calendar', async (c) => {
   const { id } = c.req.query()
+  if (!id) return c.json({ error: 'id es requerido' }, 400)
   const repo = new D1CalendarRepository(c.env.DB)
+  // Leer antes de borrar: el espejo en Google se cancela después del delete local.
+  const event = await repo.findById(id, c.get('orgId')).catch(() => null)
   await repo.delete(id, c.get('orgId'))
+  if (event?.google_event_id) {
+    await mirrorEventToGoogle(c.env, {
+      orgId: c.get('orgId'), agentId: event.agent_id, action: 'delete', googleEventId: event.google_event_id,
+    })
+  }
   return c.json({ success: true })
 })
 

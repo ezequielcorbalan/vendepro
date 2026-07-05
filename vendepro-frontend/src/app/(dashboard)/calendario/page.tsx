@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import {
   Plus, X, ChevronLeft, ChevronRight, Calendar, Phone, Users, Home, Eye,
   ClipboardList, RefreshCw, FileText, FileSignature, CheckCircle2, Trash2,
-  MessageCircle
+  MessageCircle, Link2
 } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import { EVENT_TYPES } from '@/lib/crm-config'
@@ -34,6 +34,48 @@ function fmtTime(s: string | null) {
 
 function getET(key: string) {
   return (EVENT_TYPES as any)[key] || EVENT_TYPES.otro
+}
+
+// ── Link "Agregar a Google Calendar" para el cliente ────────────
+// Semi-automático: se genera al instante, se copia o se manda por WhatsApp.
+// No requiere que nadie conecte nada: es un link público de Google.
+
+/** '2026-07-10T15:00' → '20260710T150000' (hora argentina; los ISO absolutos se convierten a UTC-3). */
+function gcalStamp(s: string): string {
+  if (/Z$|[+-]\d{2}:\d{2}$/.test(s)) {
+    const ar = new Date(new Date(s).getTime() - 3 * 3600 * 1000) // ARG = UTC-3 fijo
+    return ar.toISOString().slice(0, 19).replace(/[-:]/g, '')
+  }
+  const compact = s.replace(/[-:]/g, '').split('.')[0]
+  return compact.length === 13 ? `${compact}00` : compact.slice(0, 15)
+}
+
+function stampPlusOneHour(stamp: string): string {
+  const iso = `${stamp.slice(0, 4)}-${stamp.slice(4, 6)}-${stamp.slice(6, 8)}T${stamp.slice(9, 11)}:${stamp.slice(11, 13)}:${stamp.slice(13, 15)}Z`
+  return new Date(new Date(iso).getTime() + 3600e3).toISOString().slice(0, 19).replace(/[-:]/g, '')
+}
+
+function clientCalendarLink(ev: { title: string; start_at: string | null; end_at?: string | null; notes?: string | null; description?: string | null }): string | null {
+  if (!ev.start_at) return null
+  const start = gcalStamp(ev.start_at)
+  const end = ev.end_at ? gcalStamp(ev.end_at) : stampPlusOneHour(start)
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: ev.title,
+    dates: `${start}/${end}`,
+    ctz: 'America/Argentina/Buenos_Aires',
+  })
+  const details = ev.description ?? ev.notes
+  if (details) params.set('details', details)
+  return `https://calendar.google.com/calendar/render?${params.toString()}`
+}
+
+function clientInviteMessage(ev: { title: string; start_at: string | null; end_at?: string | null; notes?: string | null; description?: string | null }): string {
+  const when = ev.start_at
+    ? `${new Date(ev.start_at).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })} a las ${fmtTime(ev.start_at)} hs`
+    : ''
+  const link = clientCalendarLink(ev)
+  return `¡Hola! Te confirmo nuestra cita: *${ev.title}*${when ? ` el ${when}` : ''}.${link ? ` Podés agendarla en tu calendario desde acá: ${link}` : ''}`
 }
 
 function ETIcon({ type, className }: { type: string; className?: string }) {
@@ -104,7 +146,13 @@ export default function CalendarioPage() {
       })
       const data = (await res.json()) as any
       if (data.id) {
-        toast('Evento creado')
+        // Link para el cliente listo en el portapapeles (best-effort).
+        const link = clientCalendarLink(form)
+        let copied = false
+        if (link) {
+          try { await navigator.clipboard.writeText(link); copied = true } catch { /* sin permiso: queda el botón por evento */ }
+        }
+        toast(copied ? 'Evento creado · link para el cliente copiado' : 'Evento creado')
         setShowCreate(false)
         setForm({ title: '', event_type: 'llamada', start_at: '', end_at: '', notes: '' })
         loadEvents()
@@ -129,6 +177,17 @@ export default function CalendarioPage() {
     await apiFetch('crm', `/calendar?id=${id}`, { method: 'DELETE' })
     toast('Evento eliminado', 'warning')
     loadEvents()
+  }
+
+  const copyClientLink = async (ev: any) => {
+    const link = clientCalendarLink(ev)
+    if (!link) { toast('El evento no tiene fecha de inicio', 'error'); return }
+    try {
+      await navigator.clipboard.writeText(link)
+      toast('Link copiado — mandáselo al cliente para que lo agende')
+    } catch {
+      prompt('Copiá el link para el cliente:', link)
+    }
   }
 
   // Build month grid
@@ -259,8 +318,18 @@ export default function CalendarioPage() {
                       {ev.lead_phone && (
                         <>
                           <a href={`tel:${ev.lead_phone}`} className="p-1.5 rounded hover:bg-blue-50 text-blue-500"><Phone className="w-3.5 h-3.5" /></a>
-                          <a href={`https://wa.me/${ev.lead_phone.replace(/\D/g,'')}`} target="_blank" rel="noreferrer" className="p-1.5 rounded hover:bg-green-50 text-green-500"><MessageCircle className="w-3.5 h-3.5" /></a>
+                          <a
+                            href={`https://wa.me/${ev.lead_phone.replace(/\D/g,'')}${ev.start_at ? `?text=${encodeURIComponent(clientInviteMessage(ev))}` : ''}`}
+                            target="_blank" rel="noreferrer" title="WhatsApp con la cita y el link para agendar"
+                            className="p-1.5 rounded hover:bg-green-50 text-green-500"
+                          ><MessageCircle className="w-3.5 h-3.5" /></a>
                         </>
+                      )}
+                      {ev.start_at && (
+                        <button onClick={() => copyClientLink(ev)} title="Copiar link para que el cliente lo agende"
+                          className="p-1.5 rounded hover:bg-purple-50 text-gray-400 hover:text-purple-500">
+                          <Link2 className="w-3.5 h-3.5" />
+                        </button>
                       )}
                       {!ev.completed && (
                         <button onClick={() => completeEvent(ev.id)} className="p-1.5 rounded hover:bg-green-50 text-gray-400 hover:text-green-500">
@@ -297,6 +366,12 @@ export default function CalendarioPage() {
                     <p className={`text-sm font-medium ${cfg.color} truncate`}>{ev.title}</p>
                     <p className="text-xs text-gray-400">{fmtTime(ev.start_at)}{ev.lead_name ? ` · ${ev.lead_name}` : ''}</p>
                   </div>
+                  {ev.start_at && (
+                    <button onClick={() => copyClientLink(ev)} title="Copiar link para que el cliente lo agende"
+                      className="text-gray-400 hover:text-purple-500">
+                      <Link2 className="w-4 h-4" />
+                    </button>
+                  )}
                   {ev.completed === 1 && <CheckCircle2 className="w-4 h-4 text-green-500" />}
                   {!ev.completed && (
                     <button onClick={() => completeEvent(ev.id)} className="text-gray-400 hover:text-green-500">
