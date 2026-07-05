@@ -121,7 +121,7 @@ export default function ConexionesPage() {
   }
 
   async function handleBackfill() {
-    if (!confirm('¿Importar el histórico completo de contactos de KiteProp? Se crean sólo contactos (no leads) y los repetidos se omiten. Puede tomar varios minutos.')) return
+    if (!confirm('¿Importar el histórico completo de contactos? Se crean sólo contactos (no leads) y los repetidos se omiten. Puede tomar varios minutos.')) return
     setBackfilling(true)
     setBackfillProgress({ created: 0, skipped: 0 })
     try {
@@ -182,21 +182,23 @@ export default function ConexionesPage() {
           <ArrowLeft className="w-4 h-4" /> Volver a Configuración
         </Link>
         <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 flex items-center gap-2">
-          <Plug className="w-6 h-6 text-brand-pink" /> Conexiones
+          <Plug className="w-6 h-6 text-brand-pink" /> Integraciones
         </h1>
         <p className="text-gray-500 text-sm mt-1">
-          Conectá VendéPro con otros CRMs. Los contactos nuevos de KiteProp se importan automáticamente cada 15 minutos.
+          Los contactos nuevos se importan automáticamente al CRM cada 15 minutos.
         </p>
       </div>
 
-      {/* KiteProp */}
+      {/* Integración de contactos (provider interno: kiteprop) */}
       <div className="bg-white rounded-xl border p-5 space-y-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-semibold">K</div>
+            <div className="w-10 h-10 rounded-lg bg-pink-50 text-brand-pink flex items-center justify-center">
+              <Plug className="w-5 h-5" />
+            </div>
             <div>
-              <p className="font-semibold text-gray-800">KiteProp</p>
-              <p className="text-xs text-gray-500">Importa contactos nuevos al CRM · Último sync {fmtDate(integration?.last_sync_at ?? null)}</p>
+              <p className="font-semibold text-gray-800">Importación de contactos</p>
+              <p className="text-xs text-gray-500">Trae los contactos nuevos al CRM · Último sync {fmtDate(integration?.last_sync_at ?? null)}</p>
             </div>
           </div>
           <label className="flex items-center gap-2 cursor-pointer shrink-0">
@@ -212,7 +214,7 @@ export default function ConexionesPage() {
 
         {/* API Key */}
         <div>
-          <label className={labelCls}>API Key de KiteProp</label>
+          <label className={labelCls}>API Key</label>
           {hasKey && !showKeyInput ? (
             <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-3 py-2">
               <span className="text-sm text-green-700 flex items-center gap-1.5">
@@ -236,7 +238,7 @@ export default function ConexionesPage() {
             />
           )}
           <p className="text-[11px] text-gray-400 mt-1">
-            Se genera en KiteProp → Configuración → API Keys. Se guarda cifrada y nunca se muestra de nuevo.
+            Se guarda cifrada y nunca se muestra de nuevo.
           </p>
         </div>
 
