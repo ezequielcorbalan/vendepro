@@ -130,6 +130,9 @@ export * from './use-cases/visit-forms/index'
 // Marketing (Meta Conversion API)
 export * from './use-cases/marketing/index'
 
+// Integraciones con CRMs externos (KiteProp)
+export * from './use-cases/integrations/index'
+
 // Sold Properties (cierres reales para tasaciones)
 export * from './use-cases/sold-properties/index'
 
