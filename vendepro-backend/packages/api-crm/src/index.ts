@@ -1,13 +1,15 @@
 import { Hono } from 'hono'
 import {
   corsMiddleware, errorHandler, createAuthMiddleware,
-  D1LeadRepository, D1ContactRepository, D1CalendarRepository, D1ActivityRepository,
+  D1LeadRepository, D1ContactRepository, D1CalendarRepository, D1ActivityRepository, D1UserRepository,
   D1TagRepository, D1StageHistoryRepository, D1OrganizationRepository,
   D1MetaIntegrationRepository, D1StageEventMappingRepository, D1MetaEventLogRepository,
   D1PropertyRepository, D1ApiTokenRepository,
   D1WebhookRepository, D1WebhookDeliveryRepository, HttpWebhookSender,
+  D1OrgIntegrationRepository, D1IntegrationLinkRepository, D1IntegrationSyncLogRepository,
+  KitepropMcpClient,
   JwtAuthService, CryptoIdGenerator,
-  encrypt,
+  encrypt, decrypt,
   createMarketingSender, fireMarketingEvent, fireWebhookEvent,
 } from '@vendepro/infrastructure'
 import { Activity } from '@vendepro/core'
@@ -23,6 +25,8 @@ import {
   CreateApiTokenUseCase, ListApiTokensUseCase, RevokeApiTokenUseCase, DeleteApiTokenUseCase,
   CreateWebhookUseCase, ListWebhooksUseCase, UpdateWebhookUseCase, DeleteWebhookUseCase,
   TestWebhookUseCase, ListWebhookDeliveriesUseCase,
+  SaveOrgIntegrationUseCase, GetOrgIntegrationUseCase,
+  TestKitepropConnectionUseCase, SyncKitepropContactsUseCase,
 } from '@vendepro/core'
 import {
   CreateLandingFromTemplateUseCase, UpdateLandingBlocksUseCase, AddBlockUseCase,
@@ -267,6 +271,83 @@ app.get('/marketing/event-log', async (c) => {
   const useCase = new ListMetaEventLogUseCase(repo)
   const list = await useCase.execute(c.get('orgId'), Number.isFinite(limit) ? limit : 50)
   return c.json(list.map(l => l.toObject()))
+})
+
+// ── INTEGRACIONES CRM (KiteProp) ───────────────────────────────
+// Config sensible: TODAS las rutas (incluido el GET) son sólo admin.
+
+function buildKitepropSync(env: Env) {
+  return new SyncKitepropContactsUseCase(
+    new D1OrgIntegrationRepository(env.DB),
+    new D1IntegrationLinkRepository(env.DB),
+    new D1IntegrationSyncLogRepository(env.DB),
+    new D1ContactRepository(env.DB),
+    new D1UserRepository(env.DB),
+    new KitepropMcpClient(),
+    new CryptoIdGenerator(),
+    (cipher) => decrypt(cipher, env.JWT_SECRET),
+  )
+}
+
+app.get('/integrations/kiteprop', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const useCase = new GetOrgIntegrationUseCase(new D1OrgIntegrationRepository(c.env.DB))
+  const result = await useCase.execute({ orgId: c.get('orgId'), provider: 'kiteprop' })
+  return c.json(result)
+})
+
+app.put('/integrations/kiteprop', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const body = (await c.req.json()) as any
+  const useCase = new SaveOrgIntegrationUseCase(
+    new D1OrgIntegrationRepository(c.env.DB),
+    new CryptoIdGenerator(),
+    (plain) => encrypt(plain, c.env.JWT_SECRET),
+  )
+  // PATCH semántico: undefined preserva; '' limpia; '********' no pisa.
+  const result = await useCase.execute({
+    orgId: c.get('orgId'),
+    provider: 'kiteprop',
+    name: body.name,
+    api_key: body.api_key,
+    enabled: typeof body.enabled === 'boolean' ? body.enabled : undefined,
+  })
+  return c.json(result)
+})
+
+app.post('/integrations/kiteprop/test', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const body = (await c.req.json().catch(() => ({}))) as any
+  const useCase = new TestKitepropConnectionUseCase(
+    new D1OrgIntegrationRepository(c.env.DB),
+    new KitepropMcpClient(),
+    (cipher) => decrypt(cipher, c.env.JWT_SECRET),
+  )
+  const result = await useCase.execute({
+    orgId: c.get('orgId'),
+    api_key: typeof body.api_key === 'string' ? body.api_key : undefined,
+  })
+  return c.json(result)
+})
+
+app.post('/integrations/kiteprop/sync', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const result = await buildKitepropSync(c.env).execute({ orgId: c.get('orgId'), mode: 'manual' })
+  return c.json(result, result.ok ? 200 : 400)
+})
+
+app.post('/integrations/kiteprop/backfill', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  // Chunked: la UI repite el POST hasta done:true (límite de subrequests).
+  const result = await buildKitepropSync(c.env).execute({ orgId: c.get('orgId'), mode: 'backfill' })
+  return c.json(result, result.ok ? 200 : 400)
+})
+
+app.get('/integrations/kiteprop/log', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const repo = new D1IntegrationSyncLogRepository(c.env.DB)
+  const list = await repo.listByOrg(c.get('orgId'), 20)
+  return c.json(list)
 })
 
 // ── CONTACTS ───────────────────────────────────────────────────
@@ -779,4 +860,30 @@ app.patch('/landing-templates/:id', async (c) => {
   return c.json({ ok: true })
 })
 
-export default app
+// ── CRON: sync automático de integraciones (cada 15 min, wrangler triggers) ──
+// Recorre las orgs con KiteProp habilitado; una org que falla no frena a las
+// demás (su error queda en integration_sync_log).
+async function runKitepropAutoSync(env: Env): Promise<void> {
+  const integrationRepo = new D1OrgIntegrationRepository(env.DB)
+  let integrations
+  try {
+    integrations = await integrationRepo.findEnabledByProvider('kiteprop')
+  } catch {
+    return // tabla ausente u otro error de infra: el próximo tick reintenta
+  }
+  for (const integration of integrations) {
+    try {
+      await buildKitepropSync(env).execute({ orgId: integration.org_id, mode: 'auto' })
+    } catch {
+      // aislado por org; el detalle queda en el sync log
+    }
+  }
+}
+
+async function scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
+  ctx.waitUntil(runKitepropAutoSync(env))
+}
+
+// El default sigue siendo la app de Hono (los tests usan app.request) con el
+// handler `scheduled` adosado: wrangler resuelve default.fetch y default.scheduled.
+export default Object.assign(app, { scheduled })
