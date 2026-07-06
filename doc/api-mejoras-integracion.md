@@ -195,7 +195,12 @@ Respuesta esperada:
 
 ## Fuera de alcance (lo resuelve n8n)
 
-- Envío de emails (Resend) — n8n los dispara al recibir el webhook.
+- ~~Envío de emails (Resend) — n8n los dispara al recibir el webhook.~~
+  **Actualización jul-2026:** el envío de emails pasó a ser nativo de VendéPro
+  vía Resend (los clientes white-label no tienen n8n). Ver módulo de email
+  marketing: `packages/infrastructure/src/services/resend-email-service.ts`,
+  rutas `/marketing/email/*` en api-crm y baja pública `/public/unsubscribe/:token`
+  en api-public. Secret requerido: `RESEND_API_KEY` en api-crm.
 - Mensajería OneTalk — ídem.
 - Parseo de los emails de ZonaProp — sigue siendo el nodo Code de n8n.
 - Conversiones Meta CAPI — ya cubierto por la integración de marketing existente.

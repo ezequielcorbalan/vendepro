@@ -9,6 +9,7 @@ import {
   D1OrgIntegrationRepository, D1IntegrationLinkRepository, D1IntegrationSyncLogRepository,
   KitepropMcpClient,
   D1UserIntegrationRepository, GoogleCalendarHttpClient, buildGoogleAuthUrl,
+  D1EmailSettingsRepository, D1EmailSuppressionRepository, ResendEmailService,
   JwtAuthService, CryptoIdGenerator,
   encrypt, decrypt,
   createMarketingSender, fireMarketingEvent, fireWebhookEvent,
@@ -31,6 +32,8 @@ import {
   GetGoogleIntegrationUseCase, ConnectGoogleCalendarUseCase,
   DisconnectGoogleCalendarUseCase, SaveGoogleIntegrationSettingsUseCase,
   SyncEventToGoogleUseCase,
+  GetEmailSettingsUseCase, SaveEmailSettingsUseCase,
+  SendTestEmailUseCase, ListEmailSuppressionsUseCase,
 } from '@vendepro/core'
 import {
   CreateLandingFromTemplateUseCase, UpdateLandingBlocksUseCase, AddBlockUseCase,
@@ -54,6 +57,8 @@ type Env = {
   GOOGLE_CLIENT_SECRET?: string
   // Fallback del redirect al frontend post-OAuth (normalmente sale del header Origin)
   FRONTEND_URL?: string
+  // Email marketing (Resend) — secret vía wrangler secret put / dashboard
+  RESEND_API_KEY?: string
 }
 type AuthVars = { Variables: { userId: string; userRole: string; orgId: string } }
 
@@ -288,6 +293,52 @@ app.get('/marketing/event-log', async (c) => {
   const useCase = new ListMetaEventLogUseCase(repo)
   const list = await useCase.execute(c.get('orgId'), Number.isFinite(limit) ? limit : 50)
   return c.json(list.map(l => l.toObject()))
+})
+
+// ── MARKETING — EMAIL (Resend) ─────────────────────────────────
+
+app.get('/marketing/email/settings', async (c) => {
+  const useCase = new GetEmailSettingsUseCase(new D1EmailSettingsRepository(c.env.DB))
+  const result = await useCase.execute(c.get('orgId'))
+  return c.json(result)
+})
+
+app.put('/marketing/email/settings', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const body = (await c.req.json()) as any
+  const useCase = new SaveEmailSettingsUseCase(new D1EmailSettingsRepository(c.env.DB))
+  // PATCH semántico (mismo criterio que /marketing/integration):
+  // ausente preserva, null/'' limpia.
+  await useCase.execute({
+    orgId: c.get('orgId'),
+    from_name: body.from_name,
+    from_email: body.from_email,
+    reply_to: body.reply_to,
+    enabled: typeof body.enabled === 'boolean' ? body.enabled : undefined,
+  })
+  return c.json({ success: true })
+})
+
+app.post('/marketing/email/test', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  if (!c.env.RESEND_API_KEY) {
+    return c.json({ error: 'Envío de emails no disponible: falta configurar RESEND_API_KEY en el worker' }, 503)
+  }
+  const body = (await c.req.json().catch(() => ({}))) as any
+  const useCase = new SendTestEmailUseCase(
+    new D1EmailSettingsRepository(c.env.DB),
+    new ResendEmailService(c.env.RESEND_API_KEY),
+  )
+  const result = await useCase.execute({ orgId: c.get('orgId'), to: body.to })
+  return c.json(result, result.ok ? 200 : 502)
+})
+
+app.get('/marketing/email/suppressions', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const limit = parseInt(c.req.query('limit') ?? '100', 10)
+  const useCase = new ListEmailSuppressionsUseCase(new D1EmailSuppressionRepository(c.env.DB))
+  const list = await useCase.execute(c.get('orgId'), Number.isFinite(limit) ? limit : 100)
+  return c.json(list.map(s => s.toObject()))
 })
 
 // ── INTEGRACIONES CRM (KiteProp) ───────────────────────────────
