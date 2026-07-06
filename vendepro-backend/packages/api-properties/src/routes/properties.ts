@@ -144,7 +144,8 @@ export function registerPropertyRoutes(app: Hono<{ Bindings: Env } & AuthVars>) 
     const propertyId = c.req.param('id')
     const orgId = c.get('orgId')
     const body = (await c.req.json()) as any
-    const newPrice = Number(body.price)
+    // Acepta `price` y `price_usd` — versiones previas del widget mandaban price_usd
+    const newPrice = Number(body.price ?? body.price_usd)
     if (!Number.isFinite(newPrice) || newPrice <= 0) {
       return c.json({ error: 'Precio inválido' }, 400)
     }
