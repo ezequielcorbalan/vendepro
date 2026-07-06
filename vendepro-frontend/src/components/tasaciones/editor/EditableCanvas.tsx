@@ -1,0 +1,336 @@
+'use client'
+import { useMemo, useState } from 'react'
+import {
+  DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors, type DragEndEvent,
+} from '@dnd-kit/core'
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import {
+  GripVertical, Trash2, Plus, Lock, AlignLeft, AlignCenter, AlignRight,
+  Heading1, Heading2, Heading3, Type, Image as ImageIcon, Minus, Quote, Link2, AlertTriangle,
+} from 'lucide-react'
+import { hydrateBlocks } from '../renderer/hydrate-blocks'
+import { BlockRenderer } from '../renderer/BlockRenderer'
+import { getBlockCompleteness } from '../renderer/block-completeness'
+import { getBlockMeta } from '../renderer/block-catalog'
+import { FREE_BLOCK_TYPES, WEB_ONLY_TYPES } from '../renderer/types'
+import type { AppraisalBlockType, AppraisalContext, BlockOverrides, RenderMode, TemplateBlock } from '../renderer/types'
+import { blockDataAttrs } from '../renderer/block-utils'
+import { HeadingBlock } from '../renderer/blocks/HeadingBlock'
+import { RichTextBlock } from '../renderer/blocks/RichTextBlock'
+import { ImageBlock } from '../renderer/blocks/ImageBlock'
+import { DividerBlock } from '../renderer/blocks/DividerBlock'
+import { CalloutBlock } from '../renderer/blocks/CalloutBlock'
+import { ButtonLinkBlock } from '../renderer/blocks/ButtonLinkBlock'
+import '../renderer/print.css'
+
+interface Props {
+  snapshot: TemplateBlock[]
+  overrides: BlockOverrides
+  appraisal: AppraisalContext
+  mode: RenderMode
+  onAdd: (type: AppraisalBlockType, atIndex: number) => void
+  onRemove: (blockId: string) => void
+  onReorder: (from: number, to: number) => void
+  onPatchData: (blockId: string, patch: Record<string, unknown>) => void
+  /** Abre el formulario del bloque estructurado (edición vía overrides). */
+  onEditStructured?: (blockId: string) => void
+}
+
+// Paleta de elementos libres que se pueden insertar en la tasación.
+const PALETTE: Array<{ type: AppraisalBlockType; icon: typeof Type; seed: Record<string, unknown> }> = [
+  { type: 'heading', icon: Heading2, seed: { level: 2, align: 'left' } },
+  { type: 'rich_text', icon: Type, seed: {} },
+  { type: 'image', icon: ImageIcon, seed: { width: 'wide', align: 'center' } },
+  { type: 'divider', icon: Minus, seed: { style: 'line', size: 'md' } },
+  { type: 'callout', icon: Quote, seed: { tone: 'accent' } },
+  { type: 'button_link', icon: Link2, seed: {} },
+]
+
+export function EditableCanvas({
+  snapshot, overrides, appraisal, mode, onAdd, onRemove, onReorder, onPatchData, onEditStructured,
+}: Props) {
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor),
+  )
+
+  const hydrated = useMemo(
+    () => hydrateBlocks({ snapshot, overrides, appraisal, resolvedVars: {}, mode }),
+    [snapshot, overrides, appraisal, mode],
+  )
+
+  const brandStyle = {
+    '--brand-color': appraisal.org?.brand_color ?? '#ff007c',
+    '--brand-accent-color': appraisal.org?.brand_accent_color ?? '#e17a2a',
+  } as React.CSSProperties
+
+  function handleDragEnd(e: DragEndEvent) {
+    const { active, over } = e
+    if (!over || active.id === over.id) return
+    const from = snapshot.findIndex(b => b.id === active.id)
+    const to = snapshot.findIndex(b => b.id === over.id)
+    if (from >= 0 && to >= 0) onReorder(from, to)
+  }
+
+  return (
+    <div style={brandStyle} className="bg-white">
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={snapshot.map(b => b.id)} strategy={verticalListSortingStrategy}>
+          {/* Insertar al principio */}
+          <InsertZone onInsert={(t) => onAdd(t, 0)} />
+          {snapshot.map((block, index) => {
+            const h = hydrated.find(x => x.id === block.id)
+            const isFree = FREE_BLOCK_TYPES.has(block.type)
+            const completeness = h ? getBlockCompleteness(h, appraisal) : { complete: true, missingLabel: null }
+            return (
+              <div key={block.id}>
+                <SortableBlock
+                  block={block}
+                  selected={selectedId === block.id}
+                  isFree={isFree}
+                  incomplete={!completeness.complete}
+                  missingLabel={completeness.missingLabel}
+                  onSelect={() => setSelectedId(block.id)}
+                  onRemove={() => onRemove(block.id)}
+                  onPatchData={(patch) => onPatchData(block.id, patch)}
+                  onEditStructured={onEditStructured ? () => onEditStructured(block.id) : undefined}
+                >
+                  {isFree
+                    ? <EditableFreeBlock block={block} onChange={(patch) => onPatchData(block.id, patch)} />
+                    : (h ? <BlockRenderer block={h} mode={mode} appraisal={appraisal} /> : null)}
+                </SortableBlock>
+                {/* Insertar después de este bloque */}
+                <InsertZone onInsert={(t) => onAdd(t, index + 1)} />
+              </div>
+            )
+          })}
+          {snapshot.length === 0 && (
+            <div className="flex flex-col items-center justify-center px-8 py-24 text-center text-slate-400">
+              <Plus className="mb-2 h-8 w-8" />
+              <p className="text-sm">Agregá tu primer elemento con el botón <span className="font-medium">+</span> de arriba.</p>
+            </div>
+          )}
+        </SortableContext>
+      </DndContext>
+    </div>
+  )
+}
+
+function SortableBlock({
+  block, selected, isFree, incomplete, missingLabel, children,
+  onSelect, onRemove, onPatchData, onEditStructured,
+}: {
+  block: TemplateBlock
+  selected: boolean
+  isFree: boolean
+  incomplete: boolean
+  missingLabel: string | null
+  children: React.ReactNode
+  onSelect: () => void
+  onRemove: () => void
+  onPatchData: (patch: Record<string, unknown>) => void
+  onEditStructured?: () => void
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: block.id })
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      onClick={onSelect}
+      className={`group relative border-y-2 transition-colors ${
+        selected ? 'border-brand-pink/70' : 'border-transparent hover:border-brand-pink/20'
+      }`}
+    >
+      {/* Rail de controles */}
+      <div className={`absolute left-1 top-1 z-20 flex items-center gap-1 transition-opacity ${selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+        <button
+          {...attributes}
+          {...listeners}
+          onClick={(e) => e.stopPropagation()}
+          className="cursor-grab rounded bg-white/90 p-1 text-slate-500 shadow-sm hover:text-slate-800 active:cursor-grabbing"
+          title="Arrastrar para reordenar"
+          aria-label="Reordenar bloque"
+        >
+          <GripVertical className="h-4 w-4" />
+        </button>
+        <span className="rounded bg-white/90 px-2 py-0.5 text-[10px] font-medium text-slate-500 shadow-sm">
+          {getBlockMeta(block.type).label}
+        </span>
+        {!isFree && (
+          <span className="flex items-center gap-0.5 rounded bg-white/90 px-1.5 py-0.5 text-[10px] text-slate-400 shadow-sm" title="Bloque del template">
+            <Lock className="h-3 w-3" /> template
+          </span>
+        )}
+      </div>
+
+      <div className={`absolute right-1 top-1 z-20 flex items-center gap-1 transition-opacity ${selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+        {!isFree && onEditStructured && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onEditStructured() }}
+            className="rounded bg-white/90 px-2 py-1 text-[11px] font-medium text-slate-600 shadow-sm hover:text-brand-pink"
+          >
+            Editar campos
+          </button>
+        )}
+        <button
+          onClick={(e) => { e.stopPropagation(); if (confirm('¿Eliminar este bloque de la tasación?')) onRemove() }}
+          className="rounded bg-white/90 p-1 text-slate-400 shadow-sm hover:text-rose-600"
+          title="Eliminar bloque"
+          aria-label="Eliminar bloque"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </div>
+
+      {/* Toolbar de opciones del bloque libre seleccionado */}
+      {isFree && selected && (
+        <div className="absolute left-1/2 top-1 z-20 -translate-x-1/2" onClick={(e) => e.stopPropagation()}>
+          <FreeBlockToolbar block={block} onPatch={onPatchData} />
+        </div>
+      )}
+
+      {incomplete && (
+        <div className="flex items-center gap-1.5 bg-amber-50 px-4 py-1 text-[11px] text-amber-800">
+          <AlertTriangle className="h-3 w-3 shrink-0" />
+          No se va a publicar{missingLabel ? ` — falta ${missingLabel}.` : ' porque faltan datos.'}
+        </div>
+      )}
+
+      {children}
+    </div>
+  )
+}
+
+function FreeBlockToolbar({ block, onPatch }: { block: TemplateBlock; onPatch: (patch: Record<string, unknown>) => void }) {
+  const d = block.data as any
+  const wrap = 'flex items-center gap-0.5 rounded-lg border border-slate-200 bg-white px-1 py-1 shadow-md'
+  const btn = (active: boolean) => `rounded p-1 ${active ? 'bg-brand-pink/10 text-brand-pink' : 'text-slate-500 hover:bg-slate-100'}`
+
+  switch (block.type) {
+    case 'heading':
+      return (
+        <div className={wrap}>
+          {[1, 2, 3].map(lvl => {
+            const Icon = lvl === 1 ? Heading1 : lvl === 2 ? Heading2 : Heading3
+            return <button key={lvl} className={btn((d.level ?? 2) === lvl)} onClick={() => onPatch({ level: lvl })} title={`Título ${lvl}`} aria-label={`Título nivel ${lvl}`} aria-pressed={(d.level ?? 2) === lvl}><Icon className="h-4 w-4" /></button>
+          })}
+          <span className="mx-1 h-4 w-px bg-slate-200" />
+          <AlignButtons value={d.align ?? 'left'} onChange={(align) => onPatch({ align })} />
+        </div>
+      )
+    case 'image':
+      return (
+        <div className={wrap}>
+          {(['medium', 'wide', 'full'] as const).map(w => (
+            <button key={w} className={btn((d.width ?? 'wide') === w)} onClick={() => onPatch({ width: w })} title={w}>
+              <span className="px-1 text-[11px] capitalize">{w === 'medium' ? 'S' : w === 'wide' ? 'M' : 'L'}</span>
+            </button>
+          ))}
+          <span className="mx-1 h-4 w-px bg-slate-200" />
+          <AlignButtons value={d.align ?? 'center'} onChange={(align) => onPatch({ align })} />
+        </div>
+      )
+    case 'divider':
+      return (
+        <div className={wrap}>
+          <button className={btn((d.style ?? 'line') === 'line')} onClick={() => onPatch({ style: 'line' })} title="Línea"><Minus className="h-4 w-4" /></button>
+          <button className={btn((d.style ?? 'line') === 'space')} onClick={() => onPatch({ style: 'space' })} title="Espacio"><span className="px-1 text-[11px]">␣</span></button>
+          <span className="mx-1 h-4 w-px bg-slate-200" />
+          {(['sm', 'md', 'lg'] as const).map(s => (
+            <button key={s} className={btn((d.size ?? 'md') === s)} onClick={() => onPatch({ size: s })} title={s}><span className="px-1 text-[11px] uppercase">{s}</span></button>
+          ))}
+        </div>
+      )
+    case 'callout':
+      return (
+        <div className={wrap}>
+          <button className={btn((d.tone ?? 'accent') === 'accent')} onClick={() => onPatch({ tone: 'accent' })} title="Marca"><span className="px-1 text-[11px]">Marca</span></button>
+          <button className={btn((d.tone ?? 'accent') === 'info')} onClick={() => onPatch({ tone: 'info' })} title="Neutro"><span className="px-1 text-[11px]">Neutro</span></button>
+        </div>
+      )
+    case 'button_link':
+      return (
+        <div className={wrap}>
+          <input
+            type="url"
+            aria-label="Enlace del botón"
+            defaultValue={d.url ?? ''}
+            onBlur={(e) => onPatch({ url: e.target.value.trim() || null })}
+            placeholder="https://enlace-del-boton…"
+            className="w-56 rounded px-2 py-0.5 text-xs outline-none focus:ring-2 focus:ring-brand-pink/40"
+          />
+        </div>
+      )
+    default:
+      return null
+  }
+}
+
+function AlignButtons({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const btn = (active: boolean) => `rounded p-1 ${active ? 'bg-brand-pink/10 text-brand-pink' : 'text-slate-500 hover:bg-slate-100'}`
+  return (
+    <>
+      <button className={btn(value === 'left')} onClick={() => onChange('left')} title="Izquierda" aria-label="Alinear a la izquierda" aria-pressed={value === 'left'}><AlignLeft className="h-4 w-4" /></button>
+      <button className={btn(value === 'center')} onClick={() => onChange('center')} title="Centro" aria-label="Centrar" aria-pressed={value === 'center'}><AlignCenter className="h-4 w-4" /></button>
+      <button className={btn(value === 'right')} onClick={() => onChange('right')} title="Derecha" aria-label="Alinear a la derecha" aria-pressed={value === 'right'}><AlignRight className="h-4 w-4" /></button>
+    </>
+  )
+}
+
+function EditableFreeBlock({ block, onChange }: { block: TemplateBlock; onChange: (patch: Record<string, unknown>) => void }) {
+  const attrs = blockDataAttrs(block)
+  const data = block.data as any
+  const edit = { onChange }
+  switch (block.type) {
+    case 'heading': return <HeadingBlock data={data} edit={edit} {...attrs} />
+    case 'rich_text': return <RichTextBlock data={data} edit={edit} {...attrs} />
+    case 'image': return <ImageBlock data={data} edit={edit} {...attrs} />
+    case 'divider': return <DividerBlock data={data} edit={edit} {...attrs} />
+    case 'callout': return <CalloutBlock data={data} edit={edit} {...attrs} />
+    case 'button_link': return <ButtonLinkBlock data={data} edit={edit} {...attrs} />
+    default: return null
+  }
+}
+
+function InsertZone({ onInsert }: { onInsert: (type: AppraisalBlockType) => void }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="group/insert relative flex h-6 items-center justify-center">
+      <div className={`pointer-events-none absolute inset-x-6 top-1/2 h-px -translate-y-1/2 transition-colors ${open ? 'bg-brand-pink/30' : 'bg-transparent group-hover/insert:bg-brand-pink/30'}`} />
+      <button
+        onClick={() => setOpen(o => !o)}
+        className={`z-10 flex h-5 w-5 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 shadow-sm transition-opacity hover:border-brand-pink hover:text-brand-pink ${open ? 'opacity-100' : 'opacity-0 group-hover/insert:opacity-100 focus:opacity-100'}`}
+        title="Insertar elemento aquí"
+        aria-label="Insertar elemento"
+      >
+        <Plus className="h-3.5 w-3.5" />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
+          <div className="absolute top-6 z-30 flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
+            {PALETTE.map(({ type, icon: Icon }) => (
+              <button
+                key={type}
+                onClick={() => { onInsert(type); setOpen(false) }}
+                className="flex w-24 flex-col items-center gap-1 rounded-lg px-2 py-2 text-[11px] text-slate-600 hover:bg-rose-50/50 hover:text-brand-pink"
+              >
+                <Icon className="h-4 w-4" />
+                {getBlockMeta(type).label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+export { PALETTE }
+export function isWebOnly(type: AppraisalBlockType): boolean {
+  return WEB_ONLY_TYPES.has(type)
+}

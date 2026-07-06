@@ -74,6 +74,30 @@ export const BLOCK_CATALOG: Record<AppraisalBlockType, BlockMeta> = {
     label: 'Ficha del asesor',
     description: 'Foto y datos de contacto (solo versión web).',
   },
+  heading: {
+    label: 'Título',
+    description: 'Encabezado de sección editable.',
+  },
+  rich_text: {
+    label: 'Texto',
+    description: 'Párrafo con formato (negrita, cursiva, listas, links).',
+  },
+  image: {
+    label: 'Imagen',
+    description: 'Imagen subida con epígrafe y tamaño.',
+  },
+  divider: {
+    label: 'Separador',
+    description: 'Línea divisoria o espacio en blanco.',
+  },
+  callout: {
+    label: 'Destacado',
+    description: 'Bloque resaltado para una idea clave.',
+  },
+  button_link: {
+    label: 'Botón / enlace',
+    description: 'Botón con link (solo versión web).',
+  },
 }
 
 export function getBlockMeta(type: AppraisalBlockType): BlockMeta {
