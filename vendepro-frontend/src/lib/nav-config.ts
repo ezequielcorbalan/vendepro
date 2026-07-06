@@ -20,7 +20,6 @@ import {
   Target,
   Home,
   Globe,
-  KeyRound,
   Megaphone,
   Briefcase,
   type LucideIcon,
@@ -65,13 +64,6 @@ export const menuSections: NavSection[] = [
     ],
   },
   {
-    title: 'Marketing',
-    links: [
-      { href: '/marketing', label: 'Publicidad', icon: Megaphone },
-      { href: '/landings', label: 'Landings', icon: Globe },
-    ],
-  },
-  {
     title: 'Comercial',
     links: [
       { href: '/tasaciones', label: 'Tasaciones', icon: ClipboardList },
@@ -82,13 +74,19 @@ export const menuSections: NavSection[] = [
         label: 'Operaciones',
         icon: Briefcase,
         children: [
+          { href: '/reportes', label: 'Reportes', icon: FileBarChart },
           { href: '/reservas', label: 'Reservas', icon: FileCheck },
           { href: '/vendidas', label: 'Vendidas', icon: DollarSign },
           { href: '/alquiladas', label: 'Alquiladas', icon: Home },
-          { href: '/reportes', label: 'Reportes', icon: FileBarChart },
         ],
       },
-      { href: 'https://alquileres.vendepro.com.ar', label: 'Alquileres', icon: KeyRound, external: true },
+    ],
+  },
+  {
+    title: 'Marketing',
+    links: [
+      { href: '/marketing', label: 'Publicidad', icon: Megaphone },
+      { href: '/landings', label: 'Landings', icon: Globe },
     ],
   },
 ]
