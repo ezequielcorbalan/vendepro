@@ -17,17 +17,18 @@ export class D1MetaIntegrationRepository implements MetaIntegrationRepository {
     await this.db.prepare(`
       INSERT INTO meta_integration (
         org_id, pixel_id, access_token_encrypted, stape_endpoint,
-        gtm_container_id, test_event_code, enabled,
+        gtm_container_id, test_event_code, ad_account_id, enabled,
         ga4_measurement_id, ga4_api_secret_encrypted, ga4_enabled,
         created_at, updated_at
       )
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
       ON CONFLICT(org_id) DO UPDATE SET
         pixel_id=excluded.pixel_id,
         access_token_encrypted=excluded.access_token_encrypted,
         stape_endpoint=excluded.stape_endpoint,
         gtm_container_id=excluded.gtm_container_id,
         test_event_code=excluded.test_event_code,
+        ad_account_id=excluded.ad_account_id,
         enabled=excluded.enabled,
         ga4_measurement_id=excluded.ga4_measurement_id,
         ga4_api_secret_encrypted=excluded.ga4_api_secret_encrypted,
@@ -40,6 +41,7 @@ export class D1MetaIntegrationRepository implements MetaIntegrationRepository {
       o.stape_endpoint,
       o.gtm_container_id,
       o.test_event_code,
+      o.ad_account_id,
       o.enabled ? 1 : 0,
       o.ga4_measurement_id,
       o.ga4_api_secret_encrypted,
@@ -57,6 +59,7 @@ export class D1MetaIntegrationRepository implements MetaIntegrationRepository {
       stape_endpoint: row.stape_endpoint ?? null,
       gtm_container_id: row.gtm_container_id ?? null,
       test_event_code: row.test_event_code ?? null,
+      ad_account_id: row.ad_account_id ?? null,
       enabled: !!row.enabled,
       ga4_measurement_id: row.ga4_measurement_id ?? null,
       ga4_api_secret_encrypted: row.ga4_api_secret_encrypted ?? null,

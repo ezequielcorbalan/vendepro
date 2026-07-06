@@ -1,4 +1,5 @@
 export * from './get-meta-integration'
+export * from './get-campaign-insights'
 export * from './save-meta-integration'
 export * from './list-stage-mappings'
 export * from './save-stage-mapping'
