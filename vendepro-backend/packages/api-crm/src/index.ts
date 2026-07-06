@@ -518,6 +518,7 @@ app.get('/contacts/:id', async (c) => {
   if (!detail) return c.json({ error: 'Contacto no encontrado' }, 404)
   return c.json({
     ...detail.contact.toObject(),
+    agent_name: detail.agent_name,
     leads: detail.leads,
     properties: detail.properties,
   })

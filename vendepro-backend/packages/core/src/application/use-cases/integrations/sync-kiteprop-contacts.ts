@@ -3,7 +3,7 @@ import type { IntegrationLinkRepository } from '../../ports/repositories/integra
 import type { IntegrationSyncLogRepository } from '../../ports/repositories/integration-sync-log-repository'
 import type { ContactRepository } from '../../ports/repositories/contact-repository'
 import type { UserRepository } from '../../ports/repositories/user-repository'
-import type { KitepropGateway, KitepropContactDTO } from '../../ports/services/kiteprop-gateway'
+import type { KitepropGateway, KitepropContactDTO, KitepropMessageDTO, KitepropPropertyRef } from '../../ports/services/kiteprop-gateway'
 import type { IdGenerator } from '../../ports/id-generator'
 import { Contact } from '../../../domain/entities/contact'
 import type { TokenDecryptor } from './test-kiteprop-connection'
@@ -18,6 +18,8 @@ export interface SyncKitepropContactsInput {
 export interface SyncKitepropContactsResult {
   ok: boolean
   created: number
+  /** Contactos existentes enriquecidos con la consulta (message-driven). */
+  enriched: number
   skipped: number
   pagesProcessed: number
   /** backfill: false si quedan páginas (la UI/el próximo cron retoma). */
@@ -28,21 +30,26 @@ export interface SyncKitepropContactsResult {
 
 const PROVIDER = 'kiteprop'
 const PAGE_SIZE = 25
+const NOTES_MAX = 1500
+
+/** Normaliza un nombre para comparar agentes: minúsculas, sin acentos, trim. */
+function normalizeName(s: string): string {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
+}
 
 /**
- * Sincroniza contactos de KiteProp → VendéPro. Crea SOLO contactos (no leads),
- * con source 'kiteprop' y el primer admin de la org como dueño.
+ * Sincroniza KiteProp → VendéPro (solo contactos, no leads).
  *
- * Idempotencia en dos capas: integration_links (mapping id externo → contacto,
- * batch por página) y ContactRepository.findByEmailOrPhone (si la persona ya
- * existía por otro origen, solo se crea el link).
+ * - auto/manual: MESSAGE-DRIVEN. Recorre las consultas de portal (search_messages).
+ *   Cada consulta enriquece al contacto con el agente real (mapeado por email),
+ *   el portal de origen y el texto del mensaje + la propiedad consultada.
+ * - backfill: CONTACT-DRIVEN. Recorre la agenda completa (search_contacts) para la
+ *   carga histórica base; sin enriquecimiento por consulta.
  *
- * Modos:
- * - auto/manual: incremental desde last_sync_at (date_from por día; el overlap
- *   es inofensivo gracias a los links). last_sync_at solo avanza si la corrida
- *   terminó (done) para no saltear contactos.
- * - backfill: histórico completo, chunked; el progreso se guarda en
- *   config_json.backfill_next_page para reanudar entre requests.
+ * Idempotencia con integration_links en dos claves:
+ * - external_id = "<id contacto>"  → mapping persona.
+ * - external_id = "msg:<id mensaje>" → consulta ya procesada (no re-escribe).
+ * Dedupe de personas: link de contacto + ContactRepository.findByEmailOrPhone.
  */
 export class SyncKitepropContactsUseCase {
   constructor(
@@ -56,141 +63,285 @@ export class SyncKitepropContactsUseCase {
     private readonly decryptKey: TokenDecryptor,
   ) {}
 
+  // Caches por corrida (evitan repetir llamadas MCP/D1)
+  private propCache = new Map<number, KitepropPropertyRef | null>()
+  private agentCache = new Map<string, string | null>() // email normalizado → user.id
+  private orgUsers: Array<{ id: string; email: string; full_name: string }> | null = null
+
   async execute(input: SyncKitepropContactsInput): Promise<SyncKitepropContactsResult> {
     const startedAt = new Date().toISOString()
-    const maxPages = input.maxPages ?? (input.mode === 'backfill' ? 5 : 10)
+    this.propCache.clear()
+    this.agentCache.clear()
+    this.orgUsers = null
 
     const integration = await this.integrationRepo.findByOrgAndProvider(input.orgId, PROVIDER)
-    if (!integration) {
-      return this.fail(input, null, startedAt, 'La integración KiteProp no está configurada')
-    }
-    if (!integration.enabled) {
-      return this.fail(input, integration.id, startedAt, 'La integración KiteProp está deshabilitada')
-    }
-    if (!integration.credentials_encrypted) {
-      return this.fail(input, integration.id, startedAt, 'No hay API key configurada')
-    }
+    if (!integration) return this.fail(input, null, startedAt, 'La integración KiteProp no está configurada')
+    if (!integration.enabled) return this.fail(input, integration.id, startedAt, 'La integración KiteProp está deshabilitada')
+    if (!integration.credentials_encrypted) return this.fail(input, integration.id, startedAt, 'No hay API key configurada')
 
     const apiKey = await this.decryptKey(integration.credentials_encrypted)
-    if (!apiKey) {
-      return this.fail(input, integration.id, startedAt, 'No se pudo desencriptar la API key. Volvé a ingresarla.')
-    }
+    if (!apiKey) return this.fail(input, integration.id, startedAt, 'No se pudo desencriptar la API key. Volvé a ingresarla.')
 
     const admin = await this.userRepo.findFirstAdminByOrg(input.orgId)
-    if (!admin) {
-      return this.fail(input, integration.id, startedAt, 'Organización sin administrador configurado')
-    }
+    if (!admin) return this.fail(input, integration.id, startedAt, 'Organización sin administrador configurado')
 
-    // Rango de la corrida
     const config = integration.getConfig()
-    let page: number
-    let dateFrom: string | undefined
+    const maxPages = input.maxPages ?? (input.mode === 'backfill' ? 5 : 3)
+
+    const acc: RunAcc = { created: 0, enriched: 0, skipped: 0, pagesProcessed: 0, done: false, page: 1, runError: null, itemError: null }
+
     if (input.mode === 'backfill') {
-      page = Number(config.backfill_next_page ?? 1) || 1
+      acc.page = Number(config.backfill_next_page ?? 1) || 1
+      await this.runBackfill(input.orgId, apiKey, admin.id, maxPages, acc)
     } else {
-      page = 1
       // Incremental: desde la fecha (día) del último sync; si nunca corrió, desde hoy.
-      dateFrom = (integration.last_sync_at ?? new Date().toISOString()).slice(0, 10)
+      const dateFrom = (integration.last_sync_at ?? new Date().toISOString()).slice(0, 10)
+      await this.runMessages(input.orgId, apiKey, admin.id, dateFrom, maxPages, acc)
     }
 
-    let created = 0
-    let skipped = 0
-    let pagesProcessed = 0
-    let done = false
-    let runError: string | null = null
-    let itemError: string | null = null
+    // Persistir estado
+    if (input.mode === 'backfill') {
+      integration.setConfig({ ...config, backfill_next_page: acc.done ? null : acc.page, backfill_done: acc.done })
+    } else if (acc.done && !acc.runError) {
+      integration.update({ last_sync_at: new Date().toISOString() })
+    }
+    await this.integrationRepo.save(integration)
 
-    while (pagesProcessed < maxPages) {
+    const error = acc.runError ?? acc.itemError
+    const status: 'ok' | 'partial' | 'error' =
+      acc.runError && acc.pagesProcessed === 0 ? 'error' : (!acc.done || error ? 'partial' : 'ok')
+
+    await this.writeLog(input, integration.id, startedAt, status, acc.created + acc.enriched, acc.skipped, error)
+
+    return {
+      ok: status !== 'error',
+      created: acc.created,
+      enriched: acc.enriched,
+      skipped: acc.skipped,
+      pagesProcessed: acc.pagesProcessed,
+      done: acc.done,
+      ...(acc.done ? {} : { nextPage: acc.page }),
+      ...(error ? { error } : {}),
+    }
+  }
+
+  // ─────────────────────────── MESSAGE-DRIVEN (auto/manual) ───────────────────────────
+
+  private async runMessages(orgId: string, apiKey: string, adminId: string, dateFrom: string, maxPages: number, acc: RunAcc): Promise<void> {
+    let page = 1
+    while (acc.pagesProcessed < maxPages) {
       let pageData
       try {
-        pageData = await this.gateway.fetchContacts(apiKey, { page, limit: PAGE_SIZE, dateFrom })
+        pageData = await this.gateway.fetchMessages(apiKey, { page, limit: PAGE_SIZE })
       } catch (e) {
-        // 429/5xx/timeout: cortar la corrida; lo procesado queda cubierto por los links.
-        runError = e instanceof Error ? e.message : 'Error consultando KiteProp'
+        acc.runError = e instanceof Error ? e.message : 'Error consultando KiteProp'
+        break
+      }
+
+      // Marca de consultas ya procesadas (batch): external_id = "msg:<id>".
+      const msgIds = pageData.data.map((m) => `msg:${m.external_id}`)
+      let processed: Record<string, string> = {}
+      try {
+        processed = await this.linkRepo.findContactIds(orgId, PROVIDER, msgIds)
+      } catch { /* best-effort */ }
+
+      let reachedCutoff = false
+      for (const msg of pageData.data) {
+        // KiteProp ignora date_from; con id:desc cortamos al pasar la marca.
+        if (msg.created_at.slice(0, 10) < dateFrom) { reachedCutoff = true; break }
+        if (processed[`msg:${msg.external_id}`]) { acc.skipped++; continue }
+        try {
+          const outcome = await this.processMessage(orgId, apiKey, adminId, msg)
+          if (outcome === 'created') acc.created++
+          else if (outcome === 'enriched') acc.enriched++
+          else acc.skipped++
+        } catch (e) {
+          acc.skipped++
+          if (!acc.itemError) acc.itemError = e instanceof Error ? e.message : 'Error procesando consulta'
+        }
+      }
+
+      acc.pagesProcessed++
+      if (reachedCutoff || pageData.current_page >= pageData.last_page || pageData.data.length === 0) { acc.done = true; break }
+      page++
+    }
+    acc.page = page
+    if (!acc.runError && !acc.done && acc.pagesProcessed >= maxPages) acc.done = false
+  }
+
+  /** Crea o enriquece el contacto con los datos de una consulta de portal. */
+  private async processMessage(orgId: string, apiKey: string, adminId: string, msg: KitepropMessageDTO): Promise<'created' | 'enriched' | 'skipped'> {
+    const propRef = msg.property_id != null ? await this.getPropertyRefCached(apiKey, msg.property_id) : null
+    const agentId = await this.resolveAgent(orgId, propRef?.agent_email ?? null, propRef?.agent_name ?? null)
+    const line = this.enrichedNote(msg, propRef)
+    const portal = msg.source || null
+
+    // ¿La persona ya existe? Por link de contacto o por email/teléfono.
+    const c = msg.contact
+    let existingId = await this.safeFindContactId(orgId, c.external_id)
+    if (!existingId && (c.email || c.phone)) {
+      const found = await this.safeFindByEmailOrPhone(orgId, c.email, c.phone)
+      if (found) existingId = found.id
+    }
+
+    if (existingId) {
+      const existing = await this.contactRepo.findById(existingId, orgId)
+      if (existing) {
+        const o = existing.toObject()
+        const enriched = Contact.create({
+          ...o,
+          // El portal real reemplaza el 'kiteprop' genérico; nunca lo borra si ya era un portal.
+          source: portal ?? o.source,
+          // Solo pisamos el agente si mapeamos uno real (no admin/fallback).
+          agent_id: agentId ?? o.agent_id,
+          notes: this.prependNote(o.notes, line),
+        })
+        await this.contactRepo.save(enriched)
+      }
+      await this.linkRepo.save(orgId, PROVIDER, c.external_id, existingId)
+      await this.linkRepo.save(orgId, PROVIDER, `msg:${msg.external_id}`, existingId)
+      return 'enriched'
+    }
+
+    // Contacto nuevo
+    const contact = Contact.create({
+      id: this.ids.generate(),
+      org_id: orgId,
+      full_name: c.full_name,
+      phone: c.phone,
+      email: c.email,
+      contact_type: 'otro',
+      neighborhood: null,
+      notes: line,
+      source: portal ?? PROVIDER,
+      agent_id: agentId ?? adminId,
+    })
+    await this.contactRepo.save(contact)
+    await this.linkRepo.save(orgId, PROVIDER, c.external_id, contact.id)
+    await this.linkRepo.save(orgId, PROVIDER, `msg:${msg.external_id}`, contact.id)
+    return 'created'
+  }
+
+  private enrichedNote(msg: KitepropMessageDTO, propRef: KitepropPropertyRef | null): string {
+    const date = msg.created_at.slice(0, 10)
+    const parts: string[] = ['vía KiteProp']
+    if (msg.source) parts.push(this.portalLabel(msg.source))
+    if (propRef && (propRef.code || propRef.title)) {
+      const ref = [propRef.code, propRef.title].filter(Boolean).join(' — ')
+      parts.push(`Consultó: ${ref}`)
+    }
+    if (msg.body) parts.push(`«${msg.body}»`)
+    parts.push(date)
+    return parts.join(' · ')
+  }
+
+  private prependNote(current: string | null, line: string): string {
+    const combined = current ? `${line}\n${current}` : line
+    return combined.length > NOTES_MAX ? combined.slice(0, NOTES_MAX) : combined
+  }
+
+  private portalLabel(slug: string): string {
+    const map: Record<string, string> = {
+      argenprop: 'Argenprop', zonaprop: 'Zonaprop', mercadolibre: 'MercadoLibre',
+      buscainmueble: 'Buscainmueble', whatsapp_bot_instagram: 'Instagram',
+    }
+    return map[slug] ?? slug
+  }
+
+  // ─────────────────────────── Mapeo de agente ───────────────────────────
+
+  /** Mapea el agente de KiteProp a un usuario de VendéPro: email → nombre → null (cae al admin). */
+  private async resolveAgent(orgId: string, email: string | null, name: string | null): Promise<string | null> {
+    const key = (email ?? name ?? '').toLowerCase().trim()
+    if (!key) return null
+    if (this.agentCache.has(key)) return this.agentCache.get(key)!
+
+    let userId: string | null = null
+    if (email) {
+      try {
+        const u = await this.userRepo.findByEmail(email)
+        if (u) userId = u.id
+      } catch { /* sigue con fallback */ }
+    }
+    if (!userId && name) {
+      const users = await this.getOrgUsers(orgId)
+      const target = normalizeName(name)
+      const match = users.find((u) => normalizeName(u.full_name) === target)
+      if (match) userId = match.id
+    }
+    this.agentCache.set(key, userId)
+    return userId
+  }
+
+  private async getOrgUsers(orgId: string): Promise<Array<{ id: string; email: string; full_name: string }>> {
+    if (this.orgUsers) return this.orgUsers
+    try {
+      const users = await this.userRepo.findByOrg(orgId)
+      this.orgUsers = users.map((u) => ({ id: u.id, email: u.email, full_name: u.full_name }))
+    } catch {
+      this.orgUsers = []
+    }
+    return this.orgUsers
+  }
+
+  private async getPropertyRefCached(apiKey: string, propertyId: number): Promise<KitepropPropertyRef | null> {
+    if (this.propCache.has(propertyId)) return this.propCache.get(propertyId)!
+    let ref: KitepropPropertyRef | null = null
+    try {
+      ref = await this.gateway.getPropertyRef(apiKey, propertyId)
+    } catch { ref = null }
+    this.propCache.set(propertyId, ref)
+    return ref
+  }
+
+  private async safeFindContactId(orgId: string, externalId: string): Promise<string | null> {
+    try { return await this.linkRepo.findContactId(orgId, PROVIDER, externalId) } catch { return null }
+  }
+
+  private async safeFindByEmailOrPhone(orgId: string, email: string | null, phone: string | null) {
+    try { return await this.contactRepo.findByEmailOrPhone(orgId, email, phone) } catch { return null }
+  }
+
+  // ─────────────────────────── CONTACT-DRIVEN (backfill) ───────────────────────────
+
+  private async runBackfill(orgId: string, apiKey: string, adminId: string, maxPages: number, acc: RunAcc): Promise<void> {
+    let page = acc.page
+    while (acc.pagesProcessed < maxPages) {
+      let pageData
+      try {
+        pageData = await this.gateway.fetchContacts(apiKey, { page, limit: PAGE_SIZE })
+      } catch (e) {
+        acc.runError = e instanceof Error ? e.message : 'Error consultando KiteProp'
         break
       }
 
       const externalIds = pageData.data.map((c) => c.external_id)
       let linked: Record<string, string> = {}
-      try {
-        linked = await this.linkRepo.findContactIds(input.orgId, PROVIDER, externalIds)
-      } catch {
-        // best-effort: sin el batch, el dedupe por email/teléfono sigue cubriendo
-      }
+      try { linked = await this.linkRepo.findContactIds(orgId, PROVIDER, externalIds) } catch { /* best-effort */ }
 
-      // Corte incremental del lado cliente: KiteProp ignora date_from (verificado
-      // en producción 05-jul-2026), así que con orden id:desc (más nuevos primero)
-      // cortamos apenas aparece un contacto anterior a la marca.
-      let reachedCutoff = false
       for (const dto of pageData.data) {
-        if (dateFrom && dto.created_at.slice(0, 10) < dateFrom) {
-          reachedCutoff = true
-          break
-        }
-        if (linked[dto.external_id]) {
-          skipped++
-          continue
-        }
+        if (linked[dto.external_id]) { acc.skipped++; continue }
         try {
-          const result = await this.importContact(input.orgId, admin.id, dto)
-          if (result === 'created') created++
-          else skipped++
+          const result = await this.importContact(orgId, adminId, dto)
+          if (result === 'created') acc.created++
+          else acc.skipped++
         } catch (e) {
-          skipped++
-          if (!itemError) itemError = e instanceof Error ? e.message : 'Error importando contacto'
+          acc.skipped++
+          if (!acc.itemError) acc.itemError = e instanceof Error ? e.message : 'Error importando contacto'
         }
       }
 
-      pagesProcessed++
-      if (reachedCutoff || pageData.current_page >= pageData.last_page || pageData.data.length === 0) {
-        done = true
-        break
-      }
+      acc.pagesProcessed++
+      if (pageData.current_page >= pageData.last_page || pageData.data.length === 0) { acc.done = true; break }
       page++
     }
-
-    if (!runError && !done && pagesProcessed >= maxPages) {
-      // Se cortó por el tope de páginas: corrida parcial, reanudable.
-      done = false
-    }
-
-    // Persistir estado de la integración
-    if (input.mode === 'backfill') {
-      integration.setConfig({ ...config, backfill_next_page: done ? null : page, backfill_done: done })
-    } else if (done && !runError) {
-      integration.update({ last_sync_at: new Date().toISOString() })
-    }
-    await this.integrationRepo.save(integration)
-
-    const error = runError ?? itemError
-    const status: 'ok' | 'partial' | 'error' =
-      runError && pagesProcessed === 0 ? 'error' : (!done || error ? 'partial' : 'ok')
-
-    await this.writeLog(input, integration.id, startedAt, status, created, skipped, error)
-
-    return {
-      ok: status !== 'error',
-      created,
-      skipped,
-      pagesProcessed,
-      done,
-      ...(done ? {} : { nextPage: page }),
-      ...(error ? { error } : {}),
-    }
+    acc.page = page
+    if (!acc.runError && !acc.done && acc.pagesProcessed >= maxPages) acc.done = false
   }
 
-  /** Importa un contacto: link existente por email/teléfono o alta nueva. */
+  /** Alta base de un contacto (backfill): sin enriquecimiento por consulta. */
   private async importContact(orgId: string, adminId: string, dto: KitepropContactDTO): Promise<'created' | 'linked'> {
-    // ¿La persona ya existe por otro origen? Solo crear el mapping.
-    let existing = null
-    if (dto.email || dto.phone) {
-      try {
-        existing = await this.contactRepo.findByEmailOrPhone(orgId, dto.email, dto.phone)
-      } catch {
-        existing = null
-      }
-    }
-
+    const existing = await this.safeFindByEmailOrPhone(orgId, dto.email, dto.phone)
     if (existing) {
       await this.linkRepo.save(orgId, PROVIDER, dto.external_id, existing.id)
       return 'linked'
@@ -210,7 +361,7 @@ export class SyncKitepropContactsUseCase {
       contact_type: 'otro',
       neighborhood: null,
       notes: notesParts.join(' · '),
-      source: PROVIDER,
+      source: dto.source ?? PROVIDER,
       agent_id: adminId,
     })
     await this.contactRepo.save(contact)
@@ -218,27 +369,14 @@ export class SyncKitepropContactsUseCase {
     return 'created'
   }
 
-  private async fail(
-    input: SyncKitepropContactsInput,
-    integrationId: string | null,
-    startedAt: string,
-    error: string,
-  ): Promise<SyncKitepropContactsResult> {
-    if (integrationId) {
-      await this.writeLog(input, integrationId, startedAt, 'error', 0, 0, error)
-    }
-    return { ok: false, created: 0, skipped: 0, pagesProcessed: 0, done: false, error }
+  // ─────────────────────────── shared ───────────────────────────
+
+  private async fail(input: SyncKitepropContactsInput, integrationId: string | null, startedAt: string, error: string): Promise<SyncKitepropContactsResult> {
+    if (integrationId) await this.writeLog(input, integrationId, startedAt, 'error', 0, 0, error)
+    return { ok: false, created: 0, enriched: 0, skipped: 0, pagesProcessed: 0, done: false, error }
   }
 
-  private async writeLog(
-    input: SyncKitepropContactsInput,
-    integrationId: string,
-    startedAt: string,
-    status: 'ok' | 'partial' | 'error',
-    created: number,
-    skipped: number,
-    error: string | null,
-  ): Promise<void> {
+  private async writeLog(input: SyncKitepropContactsInput, integrationId: string, startedAt: string, status: 'ok' | 'partial' | 'error', created: number, skipped: number, error: string | null): Promise<void> {
     try {
       await this.syncLogRepo.save({
         id: this.ids.generate(),
@@ -252,8 +390,17 @@ export class SyncKitepropContactsUseCase {
         started_at: startedAt,
         finished_at: new Date().toISOString(),
       })
-    } catch {
-      // el log nunca voltea el sync
-    }
+    } catch { /* el log nunca voltea el sync */ }
   }
+}
+
+interface RunAcc {
+  created: number
+  enriched: number
+  skipped: number
+  pagesProcessed: number
+  done: boolean
+  page: number
+  runError: string | null
+  itemError: string | null
 }
