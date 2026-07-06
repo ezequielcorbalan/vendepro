@@ -130,6 +130,9 @@ export * from './use-cases/visit-forms/index'
 // Marketing (Meta Conversion API)
 export * from './use-cases/marketing/index'
 
+// Campañas de email (Resend)
+export * from './use-cases/email-campaigns/index'
+
 // Integraciones con CRMs externos (KiteProp)
 export * from './use-cases/integrations/index'
 

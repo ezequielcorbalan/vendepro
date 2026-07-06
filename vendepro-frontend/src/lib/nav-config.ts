@@ -21,6 +21,7 @@ import {
   Globe,
   Megaphone,
   Briefcase,
+  Mail,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -85,7 +86,8 @@ export const menuSections: NavSection[] = [
   {
     title: 'Marketing',
     links: [
-      { href: '/marketing', label: 'Publicidad', icon: Megaphone },
+      { href: '/marketing', label: 'Publicidad', icon: Megaphone, exact: true },
+      { href: '/marketing/emails', label: 'Emails', icon: Mail },
       { href: '/landings', label: 'Landings', icon: Globe },
     ],
   },

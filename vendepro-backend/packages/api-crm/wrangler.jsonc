@@ -7,7 +7,8 @@
     { "pattern": "crm.api.vendepro.com.ar", "custom_domain": true }
   ],
   "triggers": {
-    "crons": ["*/15 * * * *"]
+    // */15: sync KiteProp · */5: despachador de campañas de email
+    "crons": ["*/15 * * * *", "*/5 * * * *"]
   },
   "d1_databases": [
     {
