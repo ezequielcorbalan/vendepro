@@ -22,6 +22,7 @@ import {
   Globe,
   KeyRound,
   Megaphone,
+  Briefcase,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -33,6 +34,12 @@ export interface NavLink {
   exact?: boolean
   /** When true, renders as <a target="_blank"> instead of Next.js Link */
   external?: boolean
+  /**
+   * When present, this link is a collapsible group. `href` acts only as a
+   * stable key/identity (not a navigable route) and the group is active when
+   * any child is active.
+   */
+  children?: NavLink[]
 }
 
 export interface NavSection {
@@ -46,6 +53,7 @@ export const menuSections: NavSection[] = [
     links: [
       { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { href: '/calendario', label: 'Calendario', icon: CalendarDays },
+      { href: '/actividades', label: 'Actividad', icon: Activity },
       { href: '/mi-performance', label: 'Mi Performance', icon: TrendingUp },
     ],
   },
@@ -53,10 +61,14 @@ export const menuSections: NavSection[] = [
     title: 'CRM',
     links: [
       { href: '/leads', label: 'Leads', icon: BookUser },
-      { href: '/landings', label: 'Landings', icon: Globe },
-      { href: '/marketing', label: 'Marketing', icon: Megaphone },
       { href: '/contactos', label: 'Contactos', icon: UserCheck },
-      { href: '/actividades', label: 'Actividad', icon: Activity },
+    ],
+  },
+  {
+    title: 'Marketing',
+    links: [
+      { href: '/marketing', label: 'Publicidad', icon: Megaphone },
+      { href: '/landings', label: 'Landings', icon: Globe },
     ],
   },
   {
@@ -65,10 +77,17 @@ export const menuSections: NavSection[] = [
       { href: '/tasaciones', label: 'Tasaciones', icon: ClipboardList },
       { href: '/propiedades/pipeline', label: 'Pipeline', icon: Building2 },
       { href: '/propiedades', label: 'Propiedades', icon: BarChart3, exact: true },
-      { href: '/reservas', label: 'Reservas', icon: FileCheck },
-      { href: '/vendidas', label: 'Vendidas', icon: DollarSign },
-      { href: '/alquiladas', label: 'Alquiladas', icon: Home },
-      { href: '/reportes', label: 'Reportes', icon: FileBarChart },
+      {
+        href: '/operaciones',
+        label: 'Operaciones',
+        icon: Briefcase,
+        children: [
+          { href: '/reservas', label: 'Reservas', icon: FileCheck },
+          { href: '/vendidas', label: 'Vendidas', icon: DollarSign },
+          { href: '/alquiladas', label: 'Alquiladas', icon: Home },
+          { href: '/reportes', label: 'Reportes', icon: FileBarChart },
+        ],
+      },
       { href: 'https://alquileres.vendepro.com.ar', label: 'Alquileres', icon: KeyRound, external: true },
     ],
   },
@@ -88,8 +107,8 @@ export const adminMobileLinks: NavLink[] = [
   { href: '/admin/auditoria', label: 'Auditoría', icon: FileBarChart },
 ]
 
-/** All agent links for mobile nav (flat list) */
+/** All agent links for mobile nav (flat list — groups expanded to their children) */
 export const agentMobileLinks: NavLink[] = [
-  ...menuSections.flatMap(s => s.links),
+  ...menuSections.flatMap(s => s.links.flatMap(l => (l.children ? l.children : [l]))),
   { href: '/configuracion', label: 'Configuración', icon: Settings },
 ]
