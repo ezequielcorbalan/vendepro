@@ -1,11 +1,13 @@
 'use client'
 import { useState, useCallback, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, ExternalLink, Loader2, CheckCircle2, AlertCircle, PanelLeftClose, PanelLeftOpen, LayoutTemplate, Wand2 } from 'lucide-react'
+import { ArrowLeft, ExternalLink, Loader2, CheckCircle2, AlertCircle, PanelLeftClose, PanelLeftOpen, Wand2 } from 'lucide-react'
 import { useEditorState } from './useEditorState'
 import { useAutosave } from './useAutosave'
 import { BlockList } from './BlockList'
 import { SyncBanner } from './SyncBanner'
+import { EditableCanvas, PALETTE, isWebOnly } from './EditableCanvas'
+import { FREE_BLOCK_TYPES } from '../renderer/types'
 import { TemplateRenderer } from '../renderer/TemplateRenderer'
 import { publishAppraisal, generatePdf, addComparable, updateComparable, deleteComparable } from '../shared/api'
 import type { ComparableData } from '../shared/ComparableCard'
@@ -47,9 +49,15 @@ function buildCtx(a: any, org: OrgCtx | null): AppraisalContext {
 }
 
 export function EditorShell({ initial, snapshot, context }: Props) {
-  const [state, dispatch] = useEditorState(initial)
+  const [state, dispatch] = useEditorState(initial, snapshot)
   const [mode, setMode] = useState<RenderMode>('web')
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false)
+  const [openBlockId, setOpenBlockId] = useState<string | null>(null)
+
+  const addBlock = useCallback((type: Parameters<typeof isWebOnly>[0], atIndex: number) => {
+    const seed = PALETTE.find(p => p.type === type)?.seed ?? {}
+    dispatch({ type: 'add_block', blockType: type, atIndex, data: seed, webOnly: isWebOnly(type) })
+  }, [dispatch])
   const [pdfStatus, setPdfStatus] = useState<'idle' | 'generating' | 'error'>('idle')
   const [monthlyUsed, setMonthlyUsed] = useState<number | null>(null)
 
@@ -321,11 +329,18 @@ export function EditorShell({ initial, snapshot, context }: Props) {
             </div>
           </section>
 
-          {snapshot.length > 0 && (
+          {state.snapshot.some(b => !FREE_BLOCK_TYPES.has(b.type)) && (
             <section className="mt-6">
               <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Bloques del template</h2>
+              <p className="mt-1 text-xs text-slate-400">Los elementos de texto, imagen y separadores se editan directo en el preview.</p>
               <div className="mt-3">
-                <BlockList blocks={snapshot} overrides={state.overrides} onPatchOverride={(id, patch) => dispatch({ type: 'patch_override', blockId: id, patch })} context={context} />
+                <BlockList
+                  blocks={state.snapshot.filter(b => !FREE_BLOCK_TYPES.has(b.type))}
+                  overrides={state.overrides}
+                  onPatchOverride={(id, patch) => dispatch({ type: 'patch_override', blockId: id, patch })}
+                  context={context}
+                  openId={openBlockId}
+                />
               </div>
             </section>
           )}
@@ -337,14 +352,20 @@ export function EditorShell({ initial, snapshot, context }: Props) {
               <button onClick={() => setMode('web')} className={`rounded px-3 py-1 text-xs ${mode === 'web' ? 'bg-slate-900 text-white' : 'text-slate-500'}`}>Web</button>
               <button onClick={() => setMode('print')} className={`rounded px-3 py-1 text-xs ${mode === 'print' ? 'bg-slate-900 text-white' : 'text-slate-500'}`}>Print</button>
             </div>
-            {snapshot.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-24 px-8 text-center">
-                <LayoutTemplate className="h-10 w-10 mb-3 text-slate-300" />
-                <p className="text-sm font-medium text-slate-500">Sin template asignado</p>
-                <p className="text-xs mt-1 text-slate-400">Esta tasación no tiene un template seleccionado.<br />El preview aparece aquí una vez asignado.</p>
-              </div>
+            {mode === 'web' ? (
+              <EditableCanvas
+                snapshot={state.snapshot}
+                overrides={state.overrides}
+                appraisal={ctx}
+                mode="web"
+                onAdd={addBlock}
+                onRemove={(id) => dispatch({ type: 'remove_block', blockId: id })}
+                onReorder={(from, to) => dispatch({ type: 'reorder_blocks', from, to })}
+                onPatchData={(id, patch) => dispatch({ type: 'patch_block_data', blockId: id, patch })}
+                onEditStructured={(id) => { setSidebarCollapsed(false); setOpenBlockId(id) }}
+              />
             ) : (
-              <TemplateRenderer snapshot={snapshot} overrides={state.overrides} appraisal={ctx} mode={mode} editing />
+              <TemplateRenderer snapshot={state.snapshot} overrides={state.overrides} appraisal={ctx} mode="print" />
             )}
           </div>
         </div>
@@ -357,7 +378,7 @@ export function EditorShell({ initial, snapshot, context }: Props) {
         <div className="fixed inset-0 z-40 bg-white lg:hidden">
           <button onClick={() => setMobilePreviewOpen(false)} className="absolute right-4 top-4 z-10 rounded-full bg-slate-900 px-3 py-1 text-xs text-white">Cerrar</button>
           <div className="h-full overflow-y-auto">
-            <TemplateRenderer snapshot={snapshot} overrides={state.overrides} appraisal={ctx} mode={mode} editing />
+            <TemplateRenderer snapshot={state.snapshot} overrides={state.overrides} appraisal={ctx} mode={mode} editing />
           </div>
         </div>
       )}

@@ -328,9 +328,17 @@ export default function FichaDetailPage() {
         <Link href={backHref} className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-gray-600">
           <ArrowLeft className="w-4 h-4" /> Volver
         </Link>
-        <button onClick={handleDelete} className="p-1.5 border rounded-lg text-gray-400 hover:text-red-500 hover:border-red-200">
-          <Trash2 className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => router.push(`/propiedades/nueva?ficha_id=${fichaId}${leadId ? `&lead_id=${leadId}` : ''}`)}
+            className="flex items-center gap-1.5 bg-green-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-green-700 font-medium"
+          >
+            <Home className="w-3.5 h-3.5" /> Crear propiedad
+          </button>
+          <button onClick={handleDelete} className="p-1.5 border rounded-lg text-gray-400 hover:text-red-500 hover:border-red-200">
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       <div className="flex items-center gap-3 mb-6">

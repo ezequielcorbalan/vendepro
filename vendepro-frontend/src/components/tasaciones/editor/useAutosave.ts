@@ -1,18 +1,24 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { updateAppraisal, patchBlockOverride } from '../shared/api'
+import type { TemplateBlock } from '../renderer/types'
 
 export type SaveStatus = 'idle' | 'debouncing' | 'saving' | 'saved' | 'error'
 
 interface PendingPatches {
   appraisal: Record<string, unknown>
   overrides: Record<string, Record<string, unknown>>
+  /** Lista completa de bloques a persistir (template_snapshot_json) cuando el snapshot está sucio. */
+  blocks?: TemplateBlock[] | null
+  blocksRev?: number | null
 }
+
+interface SavedPatches extends PendingPatches {}
 
 interface Params {
   appraisalId: string
   pending: PendingPatches
-  onConsume: (saved: PendingPatches) => void
+  onConsume: (saved: SavedPatches) => void
 }
 
 const DEBOUNCE_MS = 2000
@@ -20,6 +26,7 @@ const DEBOUNCE_MS = 2000
 function hasPending(p: PendingPatches): boolean {
   if (Object.keys(p.appraisal).length > 0) return true
   for (const v of Object.values(p.overrides)) if (Object.keys(v).length > 0) return true
+  if (p.blocks != null) return true
   return false
 }
 
@@ -43,15 +50,21 @@ export function useAutosave({ appraisalId, pending, onConsume }: Params) {
       timerRef.current = null
     }
     if (savingRef.current) return
-    const snapshot: PendingPatches = {
+    const snapshot: SavedPatches = {
       appraisal: { ...pendingRef.current.appraisal },
       overrides: Object.fromEntries(
         Object.entries(pendingRef.current.overrides).map(([k, v]) => [k, { ...v }])
       ),
+      blocks: pendingRef.current.blocks ?? null,
+      blocksRev: pendingRef.current.blocksRev ?? null,
     }
-    const hasAppraisal = Object.keys(snapshot.appraisal).length > 0
+    const hasBlocks = snapshot.blocks != null
     const overrideEntries = Object.entries(snapshot.overrides).filter(([, v]) => Object.keys(v).length > 0)
-    if (!hasAppraisal && overrideEntries.length === 0) return
+    // Los bloques (snapshot completo) viajan junto con el patch de campos en el mismo PUT.
+    const appraisalPayload: Record<string, unknown> = { ...snapshot.appraisal }
+    if (hasBlocks) appraisalPayload.template_snapshot_json = snapshot.blocks
+    const hasAppraisalPut = Object.keys(appraisalPayload).length > 0
+    if (!hasAppraisalPut && overrideEntries.length === 0) return
     const keepalive = opts?.keepalive
     savingRef.current = true
     if (mountedRef.current) {
@@ -60,7 +73,7 @@ export function useAutosave({ appraisalId, pending, onConsume }: Params) {
     }
     try {
       const tasks: Promise<unknown>[] = []
-      if (hasAppraisal) tasks.push(updateAppraisal(appraisalId, snapshot.appraisal, { keepalive }))
+      if (hasAppraisalPut) tasks.push(updateAppraisal(appraisalId, appraisalPayload, { keepalive }))
       for (const [blockId, patch] of overrideEntries) {
         tasks.push(patchBlockOverride(appraisalId, blockId, patch, { keepalive }))
       }

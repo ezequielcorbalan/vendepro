@@ -132,6 +132,50 @@ const AgentContactCardData = z.object({
   whatsapp_link: z.string().url().optional().nullable(),
 })
 
+// ── Bloques libres (editor WYSIWYG por tasación) ──────────────────────
+// Schemas laxos a propósito: un bloque recién insertado arranca vacío
+// (data mínima). La "completitud" para publicar/PDF se decide en el
+// frontend (block-completeness), no acá.
+const HeadingData = z.object({
+  text: z.string().max(300).optional(),
+  level: z.union([z.literal(1), z.literal(2), z.literal(3)]).optional(),
+  align: z.enum(['left', 'center', 'right']).optional(),
+})
+
+const RichTextData = z.object({
+  html: z.string().max(20000).optional(),
+})
+
+const ImageData = z.object({
+  url: z.string().url().optional().nullable(),
+  caption: z.string().max(300).optional(),
+  width: z.enum(['full', 'wide', 'medium']).optional(),
+  align: z.enum(['left', 'center', 'right']).optional(),
+})
+
+const GalleryData = z.object({
+  images: z.array(z.object({
+    url: z.string().url(),
+    caption: z.string().max(200).optional(),
+  })).max(30).optional(),
+  columns: z.union([z.literal(2), z.literal(3), z.literal(4)]).optional(),
+})
+
+const DividerData = z.object({
+  style: z.enum(['line', 'space']).optional(),
+  size: z.enum(['sm', 'md', 'lg']).optional(),
+})
+
+const CalloutData = z.object({
+  text: z.string().max(1000).optional(),
+  tone: z.enum(['info', 'accent']).optional(),
+})
+
+const ButtonLinkData = z.object({
+  label: z.string().max(120).optional(),
+  url: z.string().url().optional().nullable(),
+})
+
 const dataByType: Record<AppraisalBlockType, z.ZodTypeAny> = {
   cover: CoverData,
   proposal_commercial: ProposalCommercialData,
@@ -150,6 +194,13 @@ const dataByType: Record<AppraisalBlockType, z.ZodTypeAny> = {
   extra_media: ExtraMediaData,
   cta_whatsapp: CtaWhatsappData,
   agent_contact_card: AgentContactCardData,
+  heading: HeadingData,
+  rich_text: RichTextData,
+  image: ImageData,
+  gallery: GalleryData,
+  divider: DividerData,
+  callout: CalloutData,
+  button_link: ButtonLinkData,
 }
 
 const TemplateBlockSchema = z.object({

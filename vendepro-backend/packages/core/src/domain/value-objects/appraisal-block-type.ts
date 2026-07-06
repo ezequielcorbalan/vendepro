@@ -26,10 +26,26 @@ export const WEB_ONLY_BLOCK_TYPES = [
   'agent_contact_card',
 ] as const
 
+/**
+ * Bloques "libres" que el asesor arma a mano en cada tasación (editor WYSIWYG).
+ * Contenido arbitrario, no atado a datos de la tasación ni de la org.
+ * `button_link` es web-only (no se imprime en el PDF).
+ */
+export const FREE_BLOCK_TYPES = [
+  'heading',
+  'rich_text',
+  'image',
+  'gallery',
+  'divider',
+  'callout',
+  'button_link',
+] as const
+
 export const APPRAISAL_BLOCK_TYPES = [
   ...STRUCTURAL_BLOCK_TYPES,
   ...DYNAMIC_BLOCK_TYPES,
   ...WEB_ONLY_BLOCK_TYPES,
+  ...FREE_BLOCK_TYPES,
 ] as const
 
 export type AppraisalBlockType = typeof APPRAISAL_BLOCK_TYPES[number]
@@ -38,10 +54,14 @@ export type AppraisalBlockType = typeof APPRAISAL_BLOCK_TYPES[number]
 export const PDF_LOCKED_TYPES = new Set<AppraisalBlockType>([
   'cover', 'property_data', 'swot', 'price_projection',
   ...WEB_ONLY_BLOCK_TYPES,
+  'button_link',
 ])
 
 /** Types that are always web-only (include_in_pdf forced false). */
-export const WEB_ONLY_TYPES_SET = new Set<AppraisalBlockType>(WEB_ONLY_BLOCK_TYPES)
+export const WEB_ONLY_TYPES_SET = new Set<AppraisalBlockType>([
+  ...WEB_ONLY_BLOCK_TYPES,
+  'button_link',
+])
 
 export function assertAppraisalBlockType(value: string): asserts value is AppraisalBlockType {
   if (!(APPRAISAL_BLOCK_TYPES as readonly string[]).includes(value)) {

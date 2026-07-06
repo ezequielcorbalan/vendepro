@@ -27,6 +27,20 @@ const CONTACT_TYPES = [
   { value: 'otro', label: 'Otro' },
 ]
 
+// La ficha guarda la tipología como texto libre; la propiedad usa un enum con
+// CHECK constraint. Mapeamos por palabra clave y caemos a 'departamento' por defecto.
+function normalizePropertyType(raw: string | null | undefined): string {
+  if (!raw) return 'departamento'
+  const s = raw.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+  if (/\bph\b/.test(s)) return 'ph'
+  if (s.includes('depto') || s.includes('dpto') || s.includes('departamento')) return 'departamento'
+  if (s.includes('casa')) return 'casa'
+  if (s.includes('local')) return 'local'
+  if (s.includes('terreno') || s.includes('lote')) return 'terreno'
+  if (s.includes('oficina')) return 'oficina'
+  return 'departamento'
+}
+
 export default function NuevaPropiedadPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -79,7 +93,7 @@ export default function NuevaPropiedadPage() {
               ...prev,
               address: ficha.address || prev.address,
               neighborhood: ficha.neighborhood || prev.neighborhood,
-              property_type: ficha.property_type || prev.property_type,
+              property_type: ficha.property_type ? normalizePropertyType(ficha.property_type) : prev.property_type,
               rooms: ficha.bedrooms != null ? String(ficha.bedrooms) : prev.rooms,
               size_m2: ficha.covered_area != null ? String(ficha.covered_area) : prev.size_m2,
             }))

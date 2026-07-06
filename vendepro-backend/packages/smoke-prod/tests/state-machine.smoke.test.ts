@@ -22,6 +22,7 @@ import {
   getProperty,
   getStageHistory,
   cleanup,
+  sweepStaleSmokeArtifacts,
   req,
   SMOKE_RUN_ID,
 } from './api-client'
@@ -29,7 +30,13 @@ import {
 beforeAll(async () => {
   const u = await login()
   console.log(`[smoke] login ok — ${u.email} (${u.role}) org=${u.orgId} run=${SMOKE_RUN_ID}`)
-}, 30_000)
+  // Red auto-sanante: limpia leads/contactos SMOKE TEST huérfanos de runs viejos
+  // (procesos que murieron por resource-limits antes del afterAll). Corre acá —
+  // no en afterAll— para que se ejecute aunque los tests crasheen después. El
+  // filtro de edad lo hace seguro frente a los 8 deploys concurrentes.
+  const s = await sweepStaleSmokeArtifacts()
+  console.log(`[smoke] sweep viejos — leads=${s.leads} contacts=${s.contacts}${s.capped ? ' (tope alcanzado, drena en próximos runs)' : ''}`)
+}, 120_000)
 
 afterAll(async () => {
   const c = await cleanup()

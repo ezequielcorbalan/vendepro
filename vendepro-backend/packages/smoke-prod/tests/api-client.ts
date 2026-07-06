@@ -59,7 +59,10 @@ export const created = {
 }
 
 export const SMOKE_RUN_ID = Date.now()
-export const tag = (label: string) => `SMOKE TEST ${label} ${SMOKE_RUN_ID}`
+// Todo lo que crea el smoke lleva este prefijo en el full_name. El barrido
+// (sweepStaleSmokeArtifacts) lo usa para encontrar y limpiar fugas de runs viejos.
+export const TAG_PREFIX = 'SMOKE TEST'
+export const tag = (label: string) => `${TAG_PREFIX} ${label} ${SMOKE_RUN_ID}`
 
 export async function createLead(label: string, opts: { stage?: string } = {}): Promise<string> {
   const name = tag(label)
@@ -227,6 +230,61 @@ export async function cleanup(): Promise<{ events: number; props: number; leads:
     else console.warn(`[cleanup] contact ${id}: ${r.status}`)
   }
   return counts
+}
+
+// created_at viene de datetime('now') en UTC ("YYYY-MM-DD HH:MM:SS", sin zona).
+// Lo normalizamos a ISO-UTC para parsear consistente en cualquier runner.
+function ageMs(createdAt: unknown): number {
+  if (typeof createdAt !== 'string' || !createdAt) return 0
+  const iso = createdAt.includes('T') ? createdAt : `${createdAt.replace(' ', 'T')}Z`
+  const t = Date.parse(iso)
+  return Number.isFinite(t) ? Date.now() - t : 0
+}
+
+// Red de seguridad auto-sanante: borra leads/contactos con tag `SMOKE TEST` que
+// hayan quedado huérfanos de runs anteriores (cuando el proceso murió por
+// "worker exceeded resource limits" antes de correr afterAll, o un assert cortó
+// antes de trackear la entidad).
+//
+// SEGURIDAD ANTE CONCURRENCIA: las 8 APIs deployan en paralelo y comparten la
+// misma DB de prod. Por eso SOLO borramos filas con más de `maxAgeMs` de vida:
+// los leads de un run concurrente tienen segundos, nunca se tocan. Además hay
+// tope de tiempo (`budgetMs`) y de borrados (`maxDeletes`) para no saturar el
+// worker cuando el backlog es grande — el resto drena en runs siguientes.
+export async function sweepStaleSmokeArtifacts(
+  { maxAgeMs = 3_600_000, budgetMs = 45_000, maxDeletes = 200 } = {},
+): Promise<{ leads: number; contacts: number; capped: boolean }> {
+  const deadline = Date.now() + budgetMs
+  const q = encodeURIComponent(TAG_PREFIX)
+  const result = { leads: 0, contacts: 0, capped: false }
+
+  const sweep = async (kind: 'leads' | 'contacts') => {
+    // La lista topea en 500; iteramos hasta que no queden viejos o toquemos un límite.
+    for (let guard = 0; guard < 20; guard++) {
+      if (Date.now() > deadline || result.leads + result.contacts >= maxDeletes) {
+        result.capped = true
+        return
+      }
+      const r = await req<any[]>('GET', 'crm', `/${kind}?search=${q}`)
+      const rows = Array.isArray(r.data) ? r.data : []
+      const stale = rows.filter(
+        (x) => typeof x?.full_name === 'string' && x.full_name.startsWith(TAG_PREFIX) && ageMs(x.created_at) > maxAgeMs,
+      )
+      if (stale.length === 0) return
+      for (const x of stale) {
+        if (Date.now() > deadline || result.leads + result.contacts >= maxDeletes) {
+          result.capped = true
+          return
+        }
+        const d = await req('DELETE', 'crm', `/${kind}?id=${x.id}`)
+        if (d.status === 200) result[kind]++
+      }
+    }
+  }
+
+  await sweep('leads')      // leads primero: al borrarlos se desvincula todo
+  await sweep('contacts')   // contactos después (respeta la FK lead→contact)
+  return result
 }
 
 // Manual chain to reach a lead stage from 'nuevo'. Matches MANUAL_TRANSITIONS.

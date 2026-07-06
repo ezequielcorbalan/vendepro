@@ -27,6 +27,32 @@ describe('SaveMetaIntegrationUseCase', () => {
     expect(o.pixel_id).toBe('123')
   })
 
+  it('guarda el ad_account_id y lo preserva en updates parciales', async () => {
+    const repo = makeRepo(null)
+    const uc = new SaveMetaIntegrationUseCase(repo, encrypt)
+    await uc.execute({ orgId: 'org_mg', ad_account_id: 'act_123456' })
+    expect(savedObject(repo).ad_account_id).toBe('act_123456')
+
+    const existing = {
+      access_token_encrypted: null,
+      ga4_api_secret_encrypted: null,
+      pixel_id: null,
+      stape_endpoint: null,
+      gtm_container_id: null,
+      test_event_code: null,
+      ad_account_id: 'act_123456',
+      ga4_measurement_id: null,
+      enabled: true,
+      ga4_enabled: false,
+      update: function (p: any) { Object.assign(this, p) },
+      toObject: function () { const { update, toObject, ...rest } = this as any; return rest },
+    }
+    const repo2 = makeRepo(existing)
+    const uc2 = new SaveMetaIntegrationUseCase(repo2, encrypt)
+    await uc2.execute({ orgId: 'org_mg', pixel_id: '999' })
+    expect(savedObject(repo2).ad_account_id).toBe('act_123456') // undefined preserva
+  })
+
   it('normaliza el stape_endpoint sin esquema a https://', async () => {
     const repo = makeRepo(null)
     const uc = new SaveMetaIntegrationUseCase(repo, encrypt)

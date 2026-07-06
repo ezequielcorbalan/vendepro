@@ -12,6 +12,7 @@ import {
 } from '@/lib/crm-config'
 import { apiFetch } from '@/lib/api'
 import { getScopedAgentId } from '@/lib/agent-scope'
+import ActivityTabs from '@/components/layout/ActivityTabs'
 
 const ICON_MAP: Record<string, any> = {
   Phone, MessageCircle, Users, Home, Eye, Calculator, Clock,
@@ -130,6 +131,7 @@ export default function ActividadesPage() {
 
   return (
     <div className="space-y-5">
+      <ActivityTabs />
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
         <div>

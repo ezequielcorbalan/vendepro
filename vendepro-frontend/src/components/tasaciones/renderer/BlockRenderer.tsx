@@ -18,6 +18,13 @@ import { VideoGalleryBlock } from './blocks/VideoGalleryBlock'
 import { ExtraMediaBlock } from './blocks/ExtraMediaBlock'
 import { CtaWhatsappBlock } from './blocks/CtaWhatsappBlock'
 import { AgentContactCardBlock } from './blocks/AgentContactCardBlock'
+import { HeadingBlock } from './blocks/HeadingBlock'
+import { RichTextBlock } from './blocks/RichTextBlock'
+import { ImageBlock } from './blocks/ImageBlock'
+import { GalleryBlock } from './blocks/GalleryBlock'
+import { DividerBlock } from './blocks/DividerBlock'
+import { CalloutBlock } from './blocks/CalloutBlock'
+import { ButtonLinkBlock } from './blocks/ButtonLinkBlock'
 
 interface Props {
   block: HydratedBlock
@@ -63,6 +70,20 @@ export function BlockRenderer({ block, mode, appraisal }: Props) {
       return <CtaWhatsappBlock data={data as any} {...attrs} />
     case 'agent_contact_card':
       return <AgentContactCardBlock data={data as any} appraisal={appraisal} {...attrs} />
+    case 'heading':
+      return <HeadingBlock data={data as any} {...attrs} />
+    case 'rich_text':
+      return <RichTextBlock data={data as any} {...attrs} />
+    case 'image':
+      return <ImageBlock data={data as any} {...attrs} />
+    case 'gallery':
+      return <GalleryBlock data={data as any} {...attrs} />
+    case 'divider':
+      return <DividerBlock data={data as any} {...attrs} />
+    case 'callout':
+      return <CalloutBlock data={data as any} {...attrs} />
+    case 'button_link':
+      return <ButtonLinkBlock data={data as any} {...attrs} />
     default:
       return <UnknownBlock type={block.type} {...attrs} />
   }

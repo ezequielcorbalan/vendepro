@@ -11,6 +11,8 @@ export interface SaveMetaIntegrationInput {
   stape_endpoint?: string | null
   gtm_container_id?: string | null
   test_event_code?: string | null
+  /** Ad Account de Meta (con o sin prefijo act_). */
+  ad_account_id?: string | null
   enabled?: boolean
   // GA4 Measurement Protocol
   ga4_measurement_id?: string | null
@@ -77,6 +79,7 @@ export class SaveMetaIntegrationUseCase {
       stape_endpoint: null,
       gtm_container_id: null,
       test_event_code: null,
+      ad_account_id: null,
       ga4_measurement_id: null,
       ga4_api_secret_encrypted: null,
     })
@@ -85,6 +88,7 @@ export class SaveMetaIntegrationUseCase {
     const stape = cleanUrl(input.stape_endpoint)
     const gtm = cleanText(input.gtm_container_id)
     const testCode = cleanText(input.test_event_code)
+    const adAccount = cleanText(input.ad_account_id)
     const ga4Id = cleanText(input.ga4_measurement_id)
 
     next.update({
@@ -93,6 +97,7 @@ export class SaveMetaIntegrationUseCase {
       stape_endpoint: stape !== undefined ? stape : next.stape_endpoint,
       gtm_container_id: gtm !== undefined ? gtm : next.gtm_container_id,
       test_event_code: testCode !== undefined ? testCode : next.test_event_code,
+      ad_account_id: adAccount !== undefined ? adAccount : next.ad_account_id,
       enabled: input.enabled !== undefined ? input.enabled : next.enabled,
       ga4_measurement_id: ga4Id !== undefined ? ga4Id : next.ga4_measurement_id,
       ga4_api_secret_encrypted: encryptedGa4Secret,

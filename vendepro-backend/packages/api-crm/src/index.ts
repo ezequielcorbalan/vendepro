@@ -229,6 +229,7 @@ app.put('/marketing/integration', async (c) => {
     stape_endpoint: body.stape_endpoint,
     gtm_container_id: body.gtm_container_id,
     test_event_code: body.test_event_code,
+    ad_account_id: body.ad_account_id,
     enabled: typeof body.enabled === 'boolean' ? body.enabled : undefined,
     ga4_measurement_id: body.ga4_measurement_id,
     ga4_api_secret: body.ga4_api_secret,
@@ -681,6 +682,7 @@ app.get('/contacts/:id', async (c) => {
   if (!detail) return c.json({ error: 'Contacto no encontrado' }, 404)
   return c.json({
     ...detail.contact.toObject(),
+    agent_name: detail.agent_name,
     leads: detail.leads,
     properties: detail.properties,
   })

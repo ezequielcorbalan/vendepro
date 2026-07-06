@@ -80,7 +80,9 @@ export default function MobileHeader({ profile }: { profile: Profile }) {
             <nav className="flex-1 p-4 space-y-1 overflow-y-auto" aria-label="Navegación principal">
               {links.map((link) => {
                 const Icon = link.icon
-                const isActive = pathname === link.href || (!link.exact && pathname.startsWith(link.href + '/'))
+                const isActive = pathname === link.href
+                  || (!link.exact && pathname.startsWith(link.href + '/'))
+                  || !!link.matchPaths?.some((p) => pathname === p || pathname.startsWith(p + '/'))
                 return (
                   <Link
                     key={link.href}

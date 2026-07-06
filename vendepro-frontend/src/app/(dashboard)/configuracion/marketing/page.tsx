@@ -74,6 +74,7 @@ interface Integration {
   stape_endpoint?: string
   gtm_container_id?: string
   test_event_code?: string
+  ad_account_id?: string
   enabled?: boolean
   has_access_token?: boolean
   ga4_enabled?: boolean
@@ -196,6 +197,7 @@ export default function MarketingConfigPage() {
         stape_endpoint: integration.stape_endpoint || null,
         gtm_container_id: integration.gtm_container_id || null,
         test_event_code: integration.test_event_code || null,
+        ad_account_id: integration.ad_account_id || null,
         enabled: !!integration.enabled,
         ga4_enabled: !!integration.ga4_enabled,
         ga4_measurement_id: integration.ga4_measurement_id || null,
@@ -366,6 +368,19 @@ export default function MarketingConfigPage() {
               <p className="text-[10px] text-gray-400 mt-1">
                 Custom domain de tu contenedor sGTM. Si lo configurás, Meta CAPI y GA4 MP atraviesan tu Stape (tracking first-party).
                 Si no, va directo a graph.facebook.com / google-analytics.com.
+              </p>
+            </div>
+
+            <div>
+              <label className={labelCls}>Ad Account ID</label>
+              <input
+                value={integration.ad_account_id || ''}
+                onChange={e => setIntegration({ ...integration, ad_account_id: e.target.value })}
+                placeholder="act_1234567890"
+                className={inputCls}
+              />
+              <p className="text-[10px] text-gray-400 mt-1">
+                Lo ves en Meta Ads Manager (act_…). Habilita el panel de campañas — el token debe tener permiso <code>ads_read</code>.
               </p>
             </div>
 

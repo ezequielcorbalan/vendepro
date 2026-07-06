@@ -115,19 +115,21 @@ describe('Integration API — API tokens + lead import', () => {
       operation: 'venta',
       source_detail: 'smoke',
     })
+    // Trackear ANTES de los expect: si un assert falla, el lead ya creado igual
+    // se limpia en afterAll (de lo contrario quedaba huérfano en prod).
+    trackResults(r.data.results)
     expect(r.status, JSON.stringify(r.data)).toBe(201)
     expect(r.data.created).toBe(1)
     expect(r.data.failed).toBe(0)
     expect(r.data.results?.[0]?.ok).toBe(true)
     expect(r.data.results?.[0]?.id).toBeTruthy()
-    trackResults(r.data.results)
   })
 
   it('T4 imported lead lands unassigned and in stage "nuevo"', async () => {
     const full_name = tag('IMPORT-verify')
     const r = await importLeads(state.token, { full_name })
-    expect(r.status).toBe(201)
     trackResults(r.data.results)
+    expect(r.status).toBe(201)
 
     // Find it via CRM (poll for D1 read-replica consistency).
     const deadline = Date.now() + 8_000
@@ -147,21 +149,21 @@ describe('Integration API — API tokens + lead import', () => {
     const a = tag('IMPORT-batch-a')
     const b = tag('IMPORT-batch-b')
     const r = await importLeads(state.token, { leads: [{ full_name: a }, { full_name: b }] })
+    trackResults(r.data.results)
     expect(r.status, JSON.stringify(r.data)).toBe(201)
     expect(r.data.created).toBe(2)
     expect(r.data.results).toHaveLength(2)
-    trackResults(r.data.results)
   })
 
   it('T6 a batch with an invalid item fails only that item', async () => {
     const ok = tag('IMPORT-mixed-ok')
     const r = await importLeads(state.token, { leads: [{ full_name: ok }, { full_name: '' }] })
+    trackResults(r.data.results)
     expect(r.status).toBe(201)
     expect(r.data.created).toBe(1)
     expect(r.data.failed).toBe(1)
     expect(r.data.results[1].ok).toBe(false)
     expect(r.data.results[1].error).toBeTruthy()
-    trackResults(r.data.results)
   })
 
   it('T7 request without a token is rejected (401)', async () => {

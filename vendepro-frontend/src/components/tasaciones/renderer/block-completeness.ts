@@ -64,8 +64,34 @@ export function getBlockCompleteness(
       return count > 0 ? ok : missing(kind === 'venta' ? 'al menos una propiedad vendida en la zona' : 'al menos una propiedad comparable')
     }
 
+    case 'heading':
+      return hasText((block.data as { text?: unknown }).text) ? ok : missing('el texto del título')
+
+    case 'rich_text': {
+      const html = (block.data as { html?: unknown }).html
+      // Consideramos vacío si al sacar tags no queda texto.
+      const text = typeof html === 'string' ? html.replace(/<[^>]*>/g, '').trim() : ''
+      return text.length > 0 ? ok : missing('el texto del párrafo')
+    }
+
+    case 'image':
+      return hasText((block.data as { url?: unknown }).url) ? ok : missing('la imagen')
+
+    case 'gallery': {
+      const imgs = (block.data as { images?: unknown }).images
+      return Array.isArray(imgs) && imgs.length > 0 ? ok : missing('al menos una imagen en la galería')
+    }
+
+    case 'callout':
+      return hasText((block.data as { text?: unknown }).text) ? ok : missing('el texto destacado')
+
+    case 'button_link': {
+      const d = block.data as { label?: unknown; url?: unknown }
+      return hasText(d.label) && hasText(d.url) ? ok : missing('el texto y el enlace del botón')
+    }
+
     default:
-      // cover, work_conditions y bloques estáticos / de organización
+      // cover, work_conditions, divider y bloques estáticos / de organización
       // siempre se consideran completos.
       return ok
   }

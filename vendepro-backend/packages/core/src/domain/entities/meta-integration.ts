@@ -7,6 +7,8 @@ export interface MetaIntegrationProps {
   stape_endpoint: string | null
   gtm_container_id: string | null
   test_event_code: string | null
+  /** Ad Account de Meta (act_XXXX) — habilita lectura de campañas (ads_read). */
+  ad_account_id: string | null
   enabled: boolean
   // GA4 Measurement Protocol (server-side) — opcional, se fan-out via
   // el mismo stape_endpoint si está configurado.
@@ -39,6 +41,7 @@ export class MetaIntegration {
       stape_endpoint: input.stape_endpoint ?? null,
       gtm_container_id: input.gtm_container_id ?? null,
       test_event_code: input.test_event_code ?? null,
+      ad_account_id: input.ad_account_id ?? null,
       enabled: input.enabled ?? false,
       ga4_measurement_id: input.ga4_measurement_id ?? null,
       ga4_api_secret_encrypted: input.ga4_api_secret_encrypted ?? null,
@@ -59,6 +62,7 @@ export class MetaIntegration {
   get stape_endpoint() { return this.props.stape_endpoint }
   get gtm_container_id() { return this.props.gtm_container_id }
   get test_event_code() { return this.props.test_event_code }
+  get ad_account_id() { return this.props.ad_account_id }
   get enabled() { return this.props.enabled }
   get ga4_measurement_id() { return this.props.ga4_measurement_id }
   get ga4_api_secret_encrypted() { return this.props.ga4_api_secret_encrypted }

@@ -703,6 +703,12 @@ export default function LeadDetailPage() {
                     {ficha.neighborhood ? ` · ${ficha.neighborhood}` : ''}
                   </p>
                 </div>
+                <button
+                  onClick={() => router.push(`/propiedades/nueva?lead_id=${leadId}&ficha_id=${ficha.id}`)}
+                  className="flex items-center gap-1 text-xs text-green-700 hover:bg-green-50 font-medium px-2 py-1 rounded-lg shrink-0"
+                >
+                  <Home className="w-3.5 h-3.5" /> Crear propiedad
+                </button>
                 <Link
                   href={`/fichas/${ficha.id}`}
                   className="text-xs text-brand-pink hover:underline font-medium px-2 py-1 shrink-0"

@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ChevronRight, ChevronDown, Lock } from 'lucide-react'
 import type { TemplateBlock } from '../renderer/types'
 import { getBlockMeta } from '../renderer/block-catalog'
@@ -10,10 +10,17 @@ interface Props {
   overrides: Record<string, Record<string, unknown>>
   onPatchOverride: (blockId: string, patch: Record<string, unknown>) => void
   context: 'appraisal' | 'template'
+  /** Fuerza expandir un bloque (p.ej. al tocar "Editar campos" en el canvas). */
+  openId?: string | null
 }
 
-export function BlockList({ blocks, overrides, onPatchOverride, context }: Props) {
+export function BlockList({ blocks, overrides, onPatchOverride, context, openId }: Props) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    if (openId) setExpanded(prev => new Set(prev).add(openId))
+  }, [openId])
+
   const toggle = (id: string) => {
     const next = new Set(expanded)
     next.has(id) ? next.delete(id) : next.add(id)

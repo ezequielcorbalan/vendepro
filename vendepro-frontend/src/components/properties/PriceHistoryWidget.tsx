@@ -7,6 +7,7 @@ import { apiFetch } from '@/lib/api'
 interface PriceChange {
   id: string
   price_usd: number
+  previous_price_usd: number | null
   reason: string | null
   changed_at: string
 }
@@ -29,6 +30,7 @@ export default function PriceHistoryWidget({
   const [newPrice, setNewPrice] = useState('')
   const [reason, setReason] = useState('')
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     load()
@@ -48,18 +50,27 @@ export default function PriceHistoryWidget({
     const parsed = parseFloat(newPrice)
     if (!parsed || parsed <= 0) return
     setSaving(true)
+    setError(null)
     try {
-      await apiFetch('properties', `/properties/${propertyId}/price-change`, {
+      const res = await apiFetch('properties', `/properties/${propertyId}/price-change`, {
         method: 'POST',
-        body: JSON.stringify({ price_usd: parsed, reason: reason || null }),
+        body: JSON.stringify({ price: parsed, reason: reason || null }),
       })
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as any
+        setError(data?.error || 'No se pudo guardar el ajuste')
+        return
+      }
       onPriceChanged(parsed)
       setNewPrice('')
       setReason('')
       setShowModal(false)
       load()
-    } catch { /* noop */ }
-    setSaving(false)
+    } catch {
+      setError('No se pudo guardar el ajuste')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -92,15 +103,15 @@ export default function PriceHistoryWidget({
         ) : (
           <div className="space-y-2">
             {history.slice(0, 5).map((h, i) => {
-              const prev = history[i + 1]
-              const delta = prev ? ((h.price_usd - prev.price_usd) / prev.price_usd) * 100 : 0
+              const prevPrice = h.previous_price_usd ?? history[i + 1]?.price_usd ?? null
+              const delta = prevPrice ? ((h.price_usd - prevPrice) / prevPrice) * 100 : null
               return (
                 <div key={h.id} className="flex items-center justify-between text-xs border-b border-gray-100 pb-1.5">
                   <div>
                     <p className="font-medium text-gray-700">USD {Number(h.price_usd).toLocaleString('es-AR')}</p>
                     <p className="text-gray-400">{new Date(h.changed_at).toLocaleDateString('es-AR')}{h.reason ? ` · ${h.reason}` : ''}</p>
                   </div>
-                  {prev && (
+                  {delta !== null && delta !== 0 && (
                     <span className={`flex items-center gap-0.5 font-medium ${delta > 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {delta > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                       {delta > 0 ? '+' : ''}{delta.toFixed(1)}%
@@ -141,6 +152,18 @@ export default function PriceHistoryWidget({
                     placeholder="0"
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-pink/20 focus:border-brand-pink outline-none"
                   />
+                  {(() => {
+                    const parsed = parseFloat(newPrice)
+                    if (!currentPrice || !parsed || parsed <= 0) return null
+                    const delta = ((parsed - currentPrice) / currentPrice) * 100
+                    if (delta === 0) return null
+                    return (
+                      <p className={`mt-1 flex items-center gap-0.5 text-[11px] font-medium ${delta > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {delta > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                        {delta > 0 ? '+' : ''}{delta.toFixed(1)}% respecto del precio actual
+                      </p>
+                    )
+                  })()}
                 </div>
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">Motivo (opcional)</label>
@@ -153,6 +176,10 @@ export default function PriceHistoryWidget({
                   />
                 </div>
               </div>
+
+              {error && (
+                <p className="mt-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>
+              )}
 
               <button
                 onClick={submitChange}

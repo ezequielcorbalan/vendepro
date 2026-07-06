@@ -16,11 +16,9 @@ import {
   CalendarDays,
   UserCheck,
   FileCheck,
-  TrendingUp,
   Target,
   Home,
   Globe,
-  KeyRound,
   Megaphone,
   Briefcase,
   Mail,
@@ -35,6 +33,8 @@ export interface NavLink {
   exact?: boolean
   /** When true, renders as <a target="_blank"> instead of Next.js Link */
   external?: boolean
+  /** Extra pathnames that should also mark this link as active (e.g. sibling tabs) */
+  matchPaths?: string[]
   /**
    * When present, this link is a collapsible group. `href` acts only as a
    * stable key/identity (not a navigable route) and the group is active when
@@ -54,8 +54,7 @@ export const menuSections: NavSection[] = [
     links: [
       { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { href: '/calendario', label: 'Calendario', icon: CalendarDays },
-      { href: '/actividades', label: 'Actividad', icon: Activity },
-      { href: '/mi-performance', label: 'Mi Performance', icon: TrendingUp },
+      { href: '/actividades', label: 'Actividad', icon: Activity, matchPaths: ['/mi-performance'] },
     ],
   },
   {
@@ -63,14 +62,6 @@ export const menuSections: NavSection[] = [
     links: [
       { href: '/leads', label: 'Leads', icon: BookUser },
       { href: '/contactos', label: 'Contactos', icon: UserCheck },
-    ],
-  },
-  {
-    title: 'Marketing',
-    links: [
-      { href: '/marketing', label: 'Publicidad', icon: Megaphone, exact: true },
-      { href: '/marketing/emails', label: 'Emails', icon: Mail },
-      { href: '/landings', label: 'Landings', icon: Globe },
     ],
   },
   {
@@ -84,13 +75,20 @@ export const menuSections: NavSection[] = [
         label: 'Operaciones',
         icon: Briefcase,
         children: [
+          { href: '/reportes', label: 'Reportes', icon: FileBarChart },
           { href: '/reservas', label: 'Reservas', icon: FileCheck },
           { href: '/vendidas', label: 'Vendidas', icon: DollarSign },
           { href: '/alquiladas', label: 'Alquiladas', icon: Home },
-          { href: '/reportes', label: 'Reportes', icon: FileBarChart },
         ],
       },
-      { href: 'https://alquileres.vendepro.com.ar', label: 'Alquileres', icon: KeyRound, external: true },
+    ],
+  },
+  {
+    title: 'Marketing',
+    links: [
+      { href: '/marketing', label: 'Publicidad', icon: Megaphone, exact: true },
+      { href: '/marketing/emails', label: 'Emails', icon: Mail },
+      { href: '/landings', label: 'Landings', icon: Globe },
     ],
   },
 ]
