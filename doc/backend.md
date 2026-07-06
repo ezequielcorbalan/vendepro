@@ -86,6 +86,16 @@ app.post('/leads', async (c) => {
 
 Los bindings (DB, R2) van en `wrangler.jsonc`. Los secrets se setean con `wrangler secret put`.
 
+## Crons (api-crm)
+
+Dos cron triggers en `packages/api-crm/wrangler.jsonc`, despachados por `event.cron`:
+
+- `*/15 * * * *` — sync automático de integraciones (KiteProp)
+- `*/5 * * * *` — despachador de campañas de email (Resend). El camino
+  rápido es un `waitUntil` al encolar; el cron barre programadas, reintentos
+  y colas largas. Lotes de 100 (límite del batch API de Resend), 3 reintentos
+  por destinatario.
+
 ## Recursos Cloudflare existentes (NO renombrar)
 
 - D1 database activa: `vendepro-db` / ID: `45d18f94-807b-466f-8742-32bbc61fc7fb`

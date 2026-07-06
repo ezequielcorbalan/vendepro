@@ -1,11 +1,12 @@
 import { Hono } from 'hono'
-import { corsMiddleware, errorHandler, createAuthMiddleware, JwtAuthService, AnthropicAIService, D1LandingRepository, GroqAIService } from '@vendepro/infrastructure'
+import { corsMiddleware, errorHandler, createAuthMiddleware, JwtAuthService, AnthropicAIService, D1LandingRepository, GroqAIService, AnthropicEmailContentGenerator, D1OrganizationRepository } from '@vendepro/infrastructure'
 import {
   ExtractPropertyMetricsUseCase,
   ExtractComparableFromScreenshotUseCase,
   ExtractLeadFromTextUseCase,
   ExtractLeadFromImageUseCase,
   EditBlockWithAIUseCase,
+  GenerateEmailCampaignContentUseCase,
 } from '@vendepro/core'
 
 type Env = { DB: D1Database; JWT_SECRET: string; ANTHROPIC_API_KEY: string; GROQ_API_KEY: string }
@@ -54,6 +55,24 @@ app.post('/extract-comparable', async (c) => {
     if (typeof e?.statusCode === 'number') return c.json({ error: e.message }, e.statusCode)
     throw e
   }
+})
+
+// Genera el borrador de una campaña de email marketing con IA.
+// Usa nombre y color de marca de la org para que el HTML salga brandeado.
+app.post('/generate-email-campaign', async (c) => {
+  const body = (await c.req.json()) as any
+  const org = await new D1OrganizationRepository(c.env.DB).findById(c.get('orgId'))
+  const useCase = new GenerateEmailCampaignContentUseCase(
+    new AnthropicEmailContentGenerator(c.env.ANTHROPIC_API_KEY),
+  )
+  const content = await useCase.execute({
+    brief: body.brief ?? '',
+    kind: body.kind,
+    orgName: org?.name ?? null,
+    audienceDescription: body.audience_description ?? null,
+    brandColor: org?.brand_color ?? null,
+  })
+  return c.json(content)
 })
 
 app.post('/extract-image', async (c) => {

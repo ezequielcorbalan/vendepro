@@ -10,6 +10,8 @@ import {
   KitepropMcpClient,
   D1UserIntegrationRepository, GoogleCalendarHttpClient, buildGoogleAuthUrl,
   D1EmailSettingsRepository, D1EmailSuppressionRepository, ResendEmailService,
+  D1EmailCampaignRepository, D1EmailCampaignSendRepository, D1EmailAudienceRepository,
+  HmacUnsubscribeTokenSigner,
   JwtAuthService, CryptoIdGenerator,
   encrypt, decrypt,
   createMarketingSender, fireMarketingEvent, fireWebhookEvent,
@@ -34,6 +36,9 @@ import {
   SyncEventToGoogleUseCase,
   GetEmailSettingsUseCase, SaveEmailSettingsUseCase,
   SendTestEmailUseCase, ListEmailSuppressionsUseCase,
+  CreateEmailCampaignUseCase, UpdateEmailCampaignUseCase, ListEmailCampaignsUseCase,
+  GetEmailCampaignUseCase, DeleteEmailCampaignUseCase, CancelEmailCampaignUseCase,
+  PreviewCampaignAudienceUseCase, QueueCampaignSendUseCase, ProcessEmailQueueUseCase,
 } from '@vendepro/core'
 import {
   CreateLandingFromTemplateUseCase, UpdateLandingBlocksUseCase, AddBlockUseCase,
@@ -339,6 +344,113 @@ app.get('/marketing/email/suppressions', async (c) => {
   const useCase = new ListEmailSuppressionsUseCase(new D1EmailSuppressionRepository(c.env.DB))
   const list = await useCase.execute(c.get('orgId'), Number.isFinite(limit) ? limit : 100)
   return c.json(list.map(s => s.toObject()))
+})
+
+// ── MARKETING — CAMPAÑAS DE EMAIL ──────────────────────────────
+
+app.get('/marketing/email/campaigns', async (c) => {
+  const useCase = new ListEmailCampaignsUseCase(new D1EmailCampaignRepository(c.env.DB))
+  const list = await useCase.execute(c.get('orgId'))
+  return c.json(list.map(x => x.toObject()))
+})
+
+app.get('/marketing/email/campaigns/:id', async (c) => {
+  const useCase = new GetEmailCampaignUseCase(
+    new D1EmailCampaignRepository(c.env.DB),
+    new D1EmailCampaignSendRepository(c.env.DB),
+  )
+  const result = await useCase.execute(c.req.param('id'), c.get('orgId'))
+  return c.json(result)
+})
+
+app.post('/marketing/email/campaigns', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const body = (await c.req.json()) as any
+  const useCase = new CreateEmailCampaignUseCase(new D1EmailCampaignRepository(c.env.DB), new CryptoIdGenerator())
+  const result = await useCase.execute({
+    orgId: c.get('orgId'),
+    userId: c.get('userId'),
+    name: body.name,
+    subject: body.subject,
+    preheader: body.preheader,
+    html: body.html,
+    text: body.text,
+    segment: body.segment ?? null,
+  })
+  return c.json(result, 201)
+})
+
+app.put('/marketing/email/campaigns/:id', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const body = (await c.req.json()) as any
+  const useCase = new UpdateEmailCampaignUseCase(new D1EmailCampaignRepository(c.env.DB))
+  await useCase.execute({
+    id: c.req.param('id'),
+    orgId: c.get('orgId'),
+    name: body.name,
+    subject: body.subject,
+    preheader: body.preheader,
+    html: body.html,
+    text: body.text,
+    segment: body.segment,
+    scheduled_at: body.scheduled_at,
+  })
+  return c.json({ success: true })
+})
+
+app.delete('/marketing/email/campaigns/:id', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const useCase = new DeleteEmailCampaignUseCase(
+    new D1EmailCampaignRepository(c.env.DB),
+    new D1EmailCampaignSendRepository(c.env.DB),
+  )
+  await useCase.execute(c.req.param('id'), c.get('orgId'))
+  return c.json({ success: true })
+})
+
+// Conteo en vivo de la audiencia para el wizard.
+app.post('/marketing/email/campaigns/preview-audience', async (c) => {
+  const body = (await c.req.json()) as any
+  const useCase = new PreviewCampaignAudienceUseCase(new D1EmailAudienceRepository(c.env.DB))
+  const result = await useCase.execute(c.get('orgId'), body.segment)
+  return c.json(result)
+})
+
+// Encola el envío (ahora o programado) y dispara el primer procesamiento
+// sin bloquear la respuesta — el cron barre lo que quede.
+app.post('/marketing/email/campaigns/:id/send', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  if (!c.env.RESEND_API_KEY) {
+    return c.json({ error: 'Envío de emails no disponible: falta configurar RESEND_API_KEY en el worker' }, 503)
+  }
+  const body = (await c.req.json().catch(() => ({}))) as any
+  const useCase = new QueueCampaignSendUseCase(
+    new D1EmailCampaignRepository(c.env.DB),
+    new D1EmailCampaignSendRepository(c.env.DB),
+    new D1EmailAudienceRepository(c.env.DB),
+    new D1EmailSettingsRepository(c.env.DB),
+    new CryptoIdGenerator(),
+  )
+  const result = await useCase.execute({
+    campaignId: c.req.param('id'),
+    orgId: c.get('orgId'),
+    scheduledAt: body.scheduled_at ?? null,
+  })
+  if (result.status === 'sending') {
+    c.executionCtx.waitUntil(runEmailQueue(c.env))
+  }
+  return c.json(result)
+})
+
+// Cancela una campaña programada (vuelve a draft).
+app.post('/marketing/email/campaigns/:id/cancel', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const useCase = new CancelEmailCampaignUseCase(
+    new D1EmailCampaignRepository(c.env.DB),
+    new D1EmailCampaignSendRepository(c.env.DB),
+  )
+  await useCase.execute(c.req.param('id'), c.get('orgId'))
+  return c.json({ success: true })
 })
 
 // ── INTEGRACIONES CRM (KiteProp) ───────────────────────────────
@@ -1106,7 +1218,35 @@ async function runKitepropAutoSync(env: Env): Promise<void> {
   }
 }
 
-async function scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
+// ── CRON: despachador de campañas de email (cada 5 min, sweeper) ──
+// El camino rápido es el waitUntil al encolar; el cron retoma campañas
+// programadas, reintentos y colas largas (>500 emails por corrida).
+function buildEmailQueueProcessor(env: Env) {
+  return new ProcessEmailQueueUseCase(
+    new D1EmailCampaignRepository(env.DB),
+    new D1EmailCampaignSendRepository(env.DB),
+    new D1EmailSettingsRepository(env.DB),
+    new ResendEmailService(env.RESEND_API_KEY ?? ''),
+    new HmacUnsubscribeTokenSigner(env.JWT_SECRET),
+    env.FRONTEND_URL ?? 'https://vendepro.com.ar',
+  )
+}
+
+async function runEmailQueue(env: Env): Promise<void> {
+  if (!env.RESEND_API_KEY) return // sin provider configurado no hay nada que despachar
+  try {
+    await buildEmailQueueProcessor(env).execute()
+  } catch {
+    // el próximo tick reintenta; los fallos por fila quedan en email_campaign_sends
+  }
+}
+
+async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
+  // Dos crons registrados en wrangler.jsonc — se distinguen por patrón.
+  if (event.cron === '*/5 * * * *') {
+    ctx.waitUntil(runEmailQueue(env))
+    return
+  }
   ctx.waitUntil(runKitepropAutoSync(env))
 }
 
