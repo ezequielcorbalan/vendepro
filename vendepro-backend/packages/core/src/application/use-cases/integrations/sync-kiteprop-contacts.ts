@@ -118,7 +118,15 @@ export class SyncKitepropContactsUseCase {
         // best-effort: sin el batch, el dedupe por email/teléfono sigue cubriendo
       }
 
+      // Corte incremental del lado cliente: KiteProp ignora date_from (verificado
+      // en producción 05-jul-2026), así que con orden id:desc (más nuevos primero)
+      // cortamos apenas aparece un contacto anterior a la marca.
+      let reachedCutoff = false
       for (const dto of pageData.data) {
+        if (dateFrom && dto.created_at.slice(0, 10) < dateFrom) {
+          reachedCutoff = true
+          break
+        }
         if (linked[dto.external_id]) {
           skipped++
           continue
@@ -134,7 +142,7 @@ export class SyncKitepropContactsUseCase {
       }
 
       pagesProcessed++
-      if (pageData.current_page >= pageData.last_page || pageData.data.length === 0) {
+      if (reachedCutoff || pageData.current_page >= pageData.last_page || pageData.data.length === 0) {
         done = true
         break
       }
