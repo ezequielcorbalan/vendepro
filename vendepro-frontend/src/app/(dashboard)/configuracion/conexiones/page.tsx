@@ -109,7 +109,10 @@ export default function ConexionesPage() {
       const res = await apiFetch('crm', '/integrations/kiteprop/sync', { method: 'POST' })
       const data = (await res.json()) as any
       if (data.ok) {
-        toast(`Sincronizado: ${data.created} contactos nuevos, ${data.skipped} ya existentes`)
+        const parts = [`${data.created ?? 0} nuevos`]
+        if (data.enriched) parts.push(`${data.enriched} enriquecidos`)
+        parts.push(`${data.skipped ?? 0} sin cambios`)
+        toast(`Sincronizado: ${parts.join(', ')}`)
       } else {
         toast(data.error || 'No se pudo sincronizar', 'error')
       }

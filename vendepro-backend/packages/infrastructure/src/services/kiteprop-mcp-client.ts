@@ -1,4 +1,4 @@
-import type { KitepropGateway, KitepropContactDTO, KitepropContactsPage, KitepropTestResult } from '@vendepro/core'
+import type { KitepropGateway, KitepropContactDTO, KitepropContactsPage, KitepropTestResult, KitepropMessageDTO, KitepropMessagesPage, KitepropPropertyRef } from '@vendepro/core'
 
 /**
  * Cliente del servidor MCP de KiteProp (https://mcp.kiteprop.com).
@@ -53,6 +53,59 @@ export class KitepropMcpClient implements KitepropGateway {
       tags: Array.isArray(c.tags) ? c.tags.map((t: unknown) => String(t)) : [],
       category: c.category?.name ?? null,
       created_at: c.created_at ?? new Date().toISOString(),
+    }
+  }
+
+  async fetchMessages(apiKey: string, opts: { page: number; limit?: number }): Promise<KitepropMessagesPage> {
+    const result = await this.callTool(apiKey, 'search_messages', {
+      page: opts.page,
+      limit: opts.limit ?? 25,
+      order: 'id:desc',
+    })
+
+    const rows: any[] = Array.isArray(result?.data) ? result.data : []
+    const meta = result?.meta ?? {}
+    return {
+      data: rows.map((m) => this.toMessageDTO(m)),
+      current_page: Number(meta.current_page ?? opts.page),
+      last_page: Number(meta.last_page ?? opts.page),
+      total: Number(meta.total ?? rows.length),
+    }
+  }
+
+  private toMessageDTO(m: any): KitepropMessageDTO {
+    const c = m.contact ?? {}
+    return {
+      external_id: String(m.id),
+      body: String(m.body ?? '').trim(),
+      source: m.source ?? null,
+      property_id: m.property_id != null ? Number(m.property_id) : null,
+      created_at: m.created_at ?? new Date().toISOString(),
+      contact: {
+        external_id: String(c.id),
+        full_name: String(c.full_name ?? '').trim() || 'Sin nombre',
+        email: c.email ?? null,
+        phone: c.phone ?? c.whatsapp_formatted ?? null,
+      },
+    }
+  }
+
+  async getPropertyRef(apiKey: string, propertyId: number): Promise<KitepropPropertyRef | null> {
+    let result: any
+    try {
+      result = await this.callTool(apiKey, 'get_property', { property_id: propertyId })
+    } catch {
+      return null // best-effort: sin la propiedad, el enriquecimiento sigue sin ella
+    }
+    const p = result?.data ?? result
+    if (!p || (p.id == null && p.code == null)) return null
+    const user = p.user ?? p.assigned_user ?? null
+    return {
+      code: p.code ?? (p.id != null ? `KP${p.id}` : null),
+      title: p.title ?? null,
+      address: p.address ?? null,
+      agent_email: user?.email ?? null,
+      agent_name: user?.full_name ?? null,
     }
   }
 

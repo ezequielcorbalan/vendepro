@@ -211,6 +211,7 @@ export interface Contact {
   agent_id: string
   created_at: string
   // Populated in GET /contacts/:id
+  agent_name?: string | null
   leads?: ContactLead[]
   properties?: ContactProperty[]
 }

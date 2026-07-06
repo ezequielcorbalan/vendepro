@@ -134,4 +134,81 @@ describe('KitepropMcpClient', () => {
     expect(result.ok).toBe(false)
     expect(result.error).not.toContain('kp_secreta')
   })
+
+  // ── fetchMessages ───────────────────────────────────────────────
+
+  const MESSAGES_PAGE = {
+    data: [
+      {
+        id: 1571447,
+        body: 'Hola, vi en Argenprop este Departamento en Alquiler en Villa Urquiza y quiero más información.',
+        source: 'argenprop',
+        property_id: 522301,
+        created_at: '2026-07-06T10:56:00.000000Z',
+        contact: { id: 1357652, full_name: 'Romina', email: 'rominaaces@gmail.com', phone: '2345503872', whatsapp_formatted: null },
+      },
+      {
+        id: 1571440,
+        body: 'Consulta sin teléfono',
+        source: 'zonaprop',
+        property_id: null,
+        created_at: '2026-07-06T09:00:00.000000Z',
+        contact: { id: 1357000, full_name: 'Sin Tel', email: null, phone: null, whatsapp_formatted: '+5491133334444' },
+      },
+    ],
+    meta: { current_page: 1, last_page: 2, total: 30 },
+  }
+
+  it('fetchMessages llama search_messages id:desc y mapea body/source/property_id/contact', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(rpcResponse(MESSAGES_PAGE))
+
+    const client = new KitepropMcpClient()
+    const page = await client.fetchMessages('kp_test', { page: 1 })
+
+    const args = JSON.parse(fetchSpy.mock.calls[0][1]?.body as string).params
+    expect(args.name).toBe('search_messages')
+    expect(args.arguments).toEqual({ page: 1, limit: 25, order: 'id:desc' })
+
+    expect(page.current_page).toBe(1)
+    expect(page.last_page).toBe(2)
+    expect(page.data).toHaveLength(2)
+    expect(page.data[0]).toEqual({
+      external_id: '1571447',
+      body: 'Hola, vi en Argenprop este Departamento en Alquiler en Villa Urquiza y quiero más información.',
+      source: 'argenprop',
+      property_id: 522301,
+      created_at: '2026-07-06T10:56:00.000000Z',
+      contact: { external_id: '1357652', full_name: 'Romina', email: 'rominaaces@gmail.com', phone: '2345503872' },
+    })
+    // sin phone usa whatsapp_formatted; property_id null se preserva
+    expect(page.data[1].property_id).toBeNull()
+    expect(page.data[1].contact.phone).toBe('+5491133334444')
+  })
+
+  // ── getPropertyRef ──────────────────────────────────────────────
+
+  it('getPropertyRef mapea code/title/address + agente (user.email)', async () => {
+    const PROP = { data: { id: 522301, code: 'KP522301', title: 'Oficina en alquiler. Villa Urquiza', address: 'Av. Triunvirato 4000', user: { id: 7688, full_name: 'Andrés Giunta', email: 'andresgiunta@deinmobiliarios.com' } } }
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(rpcResponse(PROP))
+
+    const client = new KitepropMcpClient()
+    const ref = await client.getPropertyRef('kp_test', 522301)
+    expect(ref).toEqual({
+      code: 'KP522301',
+      title: 'Oficina en alquiler. Villa Urquiza',
+      address: 'Av. Triunvirato 4000',
+      agent_email: 'andresgiunta@deinmobiliarios.com',
+      agent_name: 'Andrés Giunta',
+    })
+  })
+
+  it('getPropertyRef devuelve null (best-effort) si el tool falla', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ jsonrpc: '2.0', id: 1, error: { code: -32000, message: 'not found' } }), {
+        status: 200, headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+    const client = new KitepropMcpClient()
+    expect(await client.getPropertyRef('kp_test', 999)).toBeNull()
+  })
 })

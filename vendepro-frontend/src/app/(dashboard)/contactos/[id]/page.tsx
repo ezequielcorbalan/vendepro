@@ -13,6 +13,14 @@ import type { Contact } from '@/lib/types'
 
 const CONTACT_TYPES = ['propietario', 'comprador', 'inversor', 'inquilino', 'vendedor', 'otro']
 
+const SOURCE_LABELS: Record<string, string> = {
+  argenprop: 'Argenprop', zonaprop: 'Zonaprop', mercadolibre: 'MercadoLibre',
+  buscainmueble: 'Buscainmueble', instagram: 'Instagram', whatsapp_bot_instagram: 'Instagram',
+  whatsapp: 'WhatsApp', web: 'Web', referido: 'Referido', manual: 'Manual', api: 'API',
+  kiteprop: 'Integración',
+}
+const sourceLabel = (s: string) => SOURCE_LABELS[s.toLowerCase()] ?? (s.charAt(0).toUpperCase() + s.slice(1))
+
 const STAGE_LABELS: Record<string, string> = {
   nuevo: 'Nuevo',
   contactado: 'Contactado',
@@ -177,8 +185,22 @@ export default function ContactDetailPage() {
               <span>{contact.neighborhood}</span>
             </div>
           )}
+          {contact.agent_name && (
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <User className="w-4 h-4 text-gray-400 flex-shrink-0" />
+              <span>Asignado a <span className="font-medium text-gray-800">{contact.agent_name}</span></span>
+            </div>
+          )}
+          {contact.source && (
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <ExternalLink className="w-4 h-4 text-gray-400 flex-shrink-0" />
+              <span className="text-xs bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-md">
+                {sourceLabel(contact.source)}
+              </span>
+            </div>
+          )}
           {contact.notes && (
-            <div className="col-span-2 text-sm text-gray-600 bg-gray-50 rounded-lg p-3">
+            <div className="col-span-2 text-sm text-gray-600 bg-gray-50 rounded-lg p-3 whitespace-pre-wrap">
               {contact.notes}
             </div>
           )}
