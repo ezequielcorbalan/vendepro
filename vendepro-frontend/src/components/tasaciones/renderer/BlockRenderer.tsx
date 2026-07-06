@@ -21,6 +21,7 @@ import { AgentContactCardBlock } from './blocks/AgentContactCardBlock'
 import { HeadingBlock } from './blocks/HeadingBlock'
 import { RichTextBlock } from './blocks/RichTextBlock'
 import { ImageBlock } from './blocks/ImageBlock'
+import { GalleryBlock } from './blocks/GalleryBlock'
 import { DividerBlock } from './blocks/DividerBlock'
 import { CalloutBlock } from './blocks/CalloutBlock'
 import { ButtonLinkBlock } from './blocks/ButtonLinkBlock'
@@ -75,6 +76,8 @@ export function BlockRenderer({ block, mode, appraisal }: Props) {
       return <RichTextBlock data={data as any} {...attrs} />
     case 'image':
       return <ImageBlock data={data as any} {...attrs} />
+    case 'gallery':
+      return <GalleryBlock data={data as any} {...attrs} />
     case 'divider':
       return <DividerBlock data={data as any} {...attrs} />
     case 'callout':

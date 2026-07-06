@@ -77,6 +77,11 @@ export function getBlockCompleteness(
     case 'image':
       return hasText((block.data as { url?: unknown }).url) ? ok : missing('la imagen')
 
+    case 'gallery': {
+      const imgs = (block.data as { images?: unknown }).images
+      return Array.isArray(imgs) && imgs.length > 0 ? ok : missing('al menos una imagen en la galería')
+    }
+
     case 'callout':
       return hasText((block.data as { text?: unknown }).text) ? ok : missing('el texto destacado')
 

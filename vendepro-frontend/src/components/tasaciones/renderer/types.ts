@@ -10,14 +10,14 @@ export const APPRAISAL_BLOCK_TYPES = [
   'comparables_list', 'price_projection', 'work_conditions',
   'video_gallery', 'extra_media', 'cta_whatsapp', 'agent_contact_card',
   // Bloques libres (editor WYSIWYG por tasación)
-  'heading', 'rich_text', 'image', 'divider', 'callout', 'button_link',
+  'heading', 'rich_text', 'image', 'gallery', 'divider', 'callout', 'button_link',
 ] as const
 
 export type AppraisalBlockType = typeof APPRAISAL_BLOCK_TYPES[number]
 
 /** Tipos de bloque libres que el asesor arma a mano en cada tasación. */
 export const FREE_BLOCK_TYPES = new Set<AppraisalBlockType>([
-  'heading', 'rich_text', 'image', 'divider', 'callout', 'button_link',
+  'heading', 'rich_text', 'image', 'gallery', 'divider', 'callout', 'button_link',
 ])
 
 export const WEB_ONLY_TYPES = new Set<AppraisalBlockType>([

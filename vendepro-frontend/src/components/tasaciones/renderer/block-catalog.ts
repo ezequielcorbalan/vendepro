@@ -86,6 +86,10 @@ export const BLOCK_CATALOG: Record<AppraisalBlockType, BlockMeta> = {
     label: 'Imagen',
     description: 'Imagen subida con epígrafe y tamaño.',
   },
+  gallery: {
+    label: 'Galería',
+    description: 'Varias imágenes agrupadas en una grilla.',
+  },
   divider: {
     label: 'Separador',
     description: 'Línea divisoria o espacio en blanco.',

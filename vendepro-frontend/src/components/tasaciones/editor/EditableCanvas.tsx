@@ -7,7 +7,7 @@ import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-
 import { CSS } from '@dnd-kit/utilities'
 import {
   GripVertical, Trash2, Plus, Lock, AlignLeft, AlignCenter, AlignRight,
-  Heading1, Heading2, Heading3, Type, Image as ImageIcon, Minus, Quote, Link2, AlertTriangle,
+  Heading1, Heading2, Heading3, Type, Image as ImageIcon, Images, Minus, Quote, Link2, AlertTriangle,
 } from 'lucide-react'
 import { hydrateBlocks } from '../renderer/hydrate-blocks'
 import { BlockRenderer } from '../renderer/BlockRenderer'
@@ -19,6 +19,7 @@ import { blockDataAttrs } from '../renderer/block-utils'
 import { HeadingBlock } from '../renderer/blocks/HeadingBlock'
 import { RichTextBlock } from '../renderer/blocks/RichTextBlock'
 import { ImageBlock } from '../renderer/blocks/ImageBlock'
+import { GalleryBlock } from '../renderer/blocks/GalleryBlock'
 import { DividerBlock } from '../renderer/blocks/DividerBlock'
 import { CalloutBlock } from '../renderer/blocks/CalloutBlock'
 import { ButtonLinkBlock } from '../renderer/blocks/ButtonLinkBlock'
@@ -42,6 +43,7 @@ const PALETTE: Array<{ type: AppraisalBlockType; icon: typeof Type; seed: Record
   { type: 'heading', icon: Heading2, seed: { level: 2, align: 'left' } },
   { type: 'rich_text', icon: Type, seed: {} },
   { type: 'image', icon: ImageIcon, seed: { width: 'wide', align: 'center' } },
+  { type: 'gallery', icon: Images, seed: { columns: 3, images: [] } },
   { type: 'divider', icon: Minus, seed: { style: 'line', size: 'md' } },
   { type: 'callout', icon: Quote, seed: { tone: 'accent' } },
   { type: 'button_link', icon: Link2, seed: {} },
@@ -234,6 +236,17 @@ function FreeBlockToolbar({ block, onPatch }: { block: TemplateBlock; onPatch: (
           <AlignButtons value={d.align ?? 'center'} onChange={(align) => onPatch({ align })} />
         </div>
       )
+    case 'gallery':
+      return (
+        <div className={wrap}>
+          <span className="px-1 text-[11px] text-slate-400">Columnas</span>
+          {[2, 3, 4].map(c => (
+            <button key={c} className={btn((d.columns ?? 3) === c)} onClick={() => onPatch({ columns: c })} title={`${c} columnas`} aria-label={`${c} columnas`} aria-pressed={(d.columns ?? 3) === c}>
+              <span className="px-1 text-[11px]">{c}</span>
+            </button>
+          ))}
+        </div>
+      )
     case 'divider':
       return (
         <div className={wrap}>
@@ -289,6 +302,7 @@ function EditableFreeBlock({ block, onChange }: { block: TemplateBlock; onChange
     case 'heading': return <HeadingBlock data={data} edit={edit} {...attrs} />
     case 'rich_text': return <RichTextBlock data={data} edit={edit} {...attrs} />
     case 'image': return <ImageBlock data={data} edit={edit} {...attrs} />
+    case 'gallery': return <GalleryBlock data={data} edit={edit} {...attrs} />
     case 'divider': return <DividerBlock data={data} edit={edit} {...attrs} />
     case 'callout': return <CalloutBlock data={data} edit={edit} {...attrs} />
     case 'button_link': return <ButtonLinkBlock data={data} edit={edit} {...attrs} />

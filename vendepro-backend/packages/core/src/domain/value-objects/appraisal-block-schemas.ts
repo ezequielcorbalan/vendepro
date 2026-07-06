@@ -153,6 +153,14 @@ const ImageData = z.object({
   align: z.enum(['left', 'center', 'right']).optional(),
 })
 
+const GalleryData = z.object({
+  images: z.array(z.object({
+    url: z.string().url(),
+    caption: z.string().max(200).optional(),
+  })).max(30).optional(),
+  columns: z.union([z.literal(2), z.literal(3), z.literal(4)]).optional(),
+})
+
 const DividerData = z.object({
   style: z.enum(['line', 'space']).optional(),
   size: z.enum(['sm', 'md', 'lg']).optional(),
@@ -189,6 +197,7 @@ const dataByType: Record<AppraisalBlockType, z.ZodTypeAny> = {
   heading: HeadingData,
   rich_text: RichTextData,
   image: ImageData,
+  gallery: GalleryData,
   divider: DividerData,
   callout: CalloutData,
   button_link: ButtonLinkData,

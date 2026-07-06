@@ -35,6 +35,7 @@ export const FREE_BLOCK_TYPES = [
   'heading',
   'rich_text',
   'image',
+  'gallery',
   'divider',
   'callout',
   'button_link',
