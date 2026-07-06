@@ -88,6 +88,14 @@ jobs:
     name: Production smoke (${{ inputs.api_name }})
     runs-on: ubuntu-latest
     needs: deploy
+    # Serializa el smoke entre los 8 workflows de API: todos comparten este group,
+    # así los smokes nunca corren en paralelo contra prod. Un cambio en core/infra
+    # dispara los 8 deploys a la vez; sin esto, 8 smokes concurrentes saturaban
+    # crm.api ("Worker exceeded resource limits"). cancel-in-progress: false ⇒
+    # hacen cola y corren de a uno (cada worker se valida y puede auto-rollback).
+    concurrency:
+      group: prod-smoke
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
 
