@@ -21,6 +21,9 @@ export interface CalendarEventProps {
   completed: number
   created_at: string
   updated_at: string
+  // Espejo en Google Calendar (columnas de 035; opcionales si la migración no corrió)
+  google_event_id?: string | null
+  invite_sent_at?: string | null
   // Joined
   agent_name?: string
   lead_name?: string
@@ -63,6 +66,8 @@ export class CalendarEvent {
   get completed() { return this.props.completed }
   get created_at() { return this.props.created_at }
   get updated_at() { return this.props.updated_at }
+  get google_event_id() { return this.props.google_event_id }
+  get invite_sent_at() { return this.props.invite_sent_at }
   get agent_name() { return this.props.agent_name }
   get lead_name() { return this.props.lead_name }
   get contact_name() { return this.props.contact_name }

@@ -12,6 +12,11 @@ export interface CalendarRepository {
   findByOrg(orgId: string, filters?: CalendarFilters): Promise<CalendarEvent[]>
   save(event: CalendarEvent): Promise<void>
   delete(id: string, orgId: string): Promise<void>
+  /**
+   * Vincula el evento local con su espejo en Google Calendar. Best-effort:
+   * si las columnas de la migración 035 no existen todavía, no debe tirar.
+   */
+  setGoogleMeta(id: string, orgId: string, googleEventId: string | null, inviteSentAt: string | null): Promise<void>
   /** Returns events for a specific date (YYYY-MM-DD), excluding cancelled ones, ordered by start_at */
   findByOrgAndDate(orgId: string, date: string): Promise<CalendarEvent[]>
 }

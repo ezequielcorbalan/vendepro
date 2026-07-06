@@ -314,6 +314,17 @@ export interface CrmIntegration {
   updated_at: string
 }
 
+// Conexión Google Calendar del usuario logueado (por agente, no por org).
+export interface GoogleIntegration {
+  /** false si el server no tiene GOOGLE_CLIENT_ID/SECRET configurados */
+  configured: boolean
+  connected: boolean
+  enabled: boolean
+  auto_invite: boolean
+  email: string | null
+  last_sync_at: string | null
+}
+
 export interface IntegrationSyncLogEntry {
   id: string
   org_id: string
