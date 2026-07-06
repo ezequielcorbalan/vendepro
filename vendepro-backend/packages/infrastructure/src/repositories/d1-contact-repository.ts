@@ -67,11 +67,12 @@ export class D1ContactRepository implements ContactRepository {
 
   async findWithLeadsAndProperties(id: string, orgId: string): Promise<{
     contact: Contact
+    agent_name: string | null
     leads: Array<{ id: string; full_name: string; stage: string }>
     properties: Array<{ id: string; address: string; status: string }>
   } | null> {
     const contactRow = await this.db
-      .prepare('SELECT * FROM contacts WHERE id = ? AND org_id = ?')
+      .prepare('SELECT c.*, u.full_name AS agent_name FROM contacts c LEFT JOIN users u ON c.agent_id = u.id WHERE c.id = ? AND c.org_id = ?')
       .bind(id, orgId)
       .first() as any
     if (!contactRow) return null
@@ -96,7 +97,7 @@ export class D1ContactRepository implements ContactRepository {
       status: r.status,
     }))
 
-    return { contact: this.toEntity(contactRow), leads, properties }
+    return { contact: this.toEntity(contactRow), agent_name: contactRow.agent_name ?? null, leads, properties }
   }
 
   async save(contact: Contact): Promise<void> {
@@ -107,7 +108,7 @@ export class D1ContactRepository implements ContactRepository {
       ON CONFLICT(id) DO UPDATE SET
         full_name=excluded.full_name, phone=excluded.phone, email=excluded.email,
         contact_type=excluded.contact_type, neighborhood=excluded.neighborhood,
-        notes=excluded.notes, source=excluded.source
+        notes=excluded.notes, source=excluded.source, agent_id=excluded.agent_id
     `).bind(
       o.id, o.org_id, o.full_name, o.phone, o.email,
       o.contact_type, o.neighborhood, o.notes, o.source,

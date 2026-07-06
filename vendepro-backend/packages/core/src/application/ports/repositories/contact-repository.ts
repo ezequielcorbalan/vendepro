@@ -18,6 +18,7 @@ export interface ContactRepository {
   searchByName(orgId: string, query: string, limit: number): Promise<Array<{ id: string; full_name: string }>>
   findWithLeadsAndProperties(id: string, orgId: string): Promise<{
     contact: Contact
+    agent_name: string | null
     leads: Array<{ id: string; full_name: string; stage: string }>
     properties: Array<{ id: string; address: string; status: string }>
   } | null>
