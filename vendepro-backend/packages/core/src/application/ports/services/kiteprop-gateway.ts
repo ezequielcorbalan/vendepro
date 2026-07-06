@@ -57,6 +57,20 @@ export interface KitepropPropertyRef {
   agent_name: string | null
 }
 
+/** Agente (usuario) de KiteProp — para el mapeo configurable a usuarios de VendéPro. */
+export interface KitepropAgentDTO {
+  external_id: string // id del usuario en KiteProp
+  full_name: string
+  email: string | null
+}
+
+/** Agente asignado a un contacto en KiteProp (get_contact.assigned_user). */
+export interface KitepropContactAgent {
+  external_id: string
+  email: string | null
+  name: string | null
+}
+
 export interface KitepropGateway {
   /** Valida la API key contra KiteProp (get_my_profile). No lanza: devuelve ok/error. */
   testConnection(apiKey: string): Promise<KitepropTestResult>
@@ -66,4 +80,8 @@ export interface KitepropGateway {
   fetchMessages(apiKey: string, opts: { page: number; limit?: number }): Promise<KitepropMessagesPage>
   /** Referencia + agente de una propiedad por id. null si no existe o falla. */
   getPropertyRef(apiKey: string, propertyId: number): Promise<KitepropPropertyRef | null>
+  /** Lista de agentes/usuarios de KiteProp (list_users) para el mapeo. */
+  fetchAgents(apiKey: string): Promise<KitepropAgentDTO[]>
+  /** Agente asignado a un contacto (get_contact.assigned_user). null si falla. */
+  getContactAgent(apiKey: string, contactId: string): Promise<KitepropContactAgent | null>
 }

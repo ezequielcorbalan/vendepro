@@ -9,6 +9,6 @@ export type { BrowserRenderingService, BrowserRenderPdfOptions } from './browser
 export type { PdfStorage, PdfObject, PdfPutMeta } from './pdf-storage'
 export type { PdfDownloadTokenSigner, PdfDownloadTokenPayload } from './pdf-download-token-signer'
 export type { WebhookSender, WebhookSendResult } from './webhook-sender'
-export type { KitepropGateway, KitepropContactDTO, KitepropContactsPage, KitepropTestResult, KitepropMessageDTO, KitepropMessagesPage, KitepropPropertyRef } from './kiteprop-gateway'
+export type { KitepropGateway, KitepropContactDTO, KitepropContactsPage, KitepropTestResult, KitepropMessageDTO, KitepropMessagesPage, KitepropPropertyRef, KitepropAgentDTO, KitepropContactAgent } from './kiteprop-gateway'
 export type { GoogleCalendarGateway, GoogleTokenSet, GoogleEventPayload } from './google-calendar-gateway'
 export type { UnsubscribeTokenSigner, UnsubscribeTokenPayload } from './unsubscribe-token-signer'

@@ -29,6 +29,7 @@ import {
   TestWebhookUseCase, ListWebhookDeliveriesUseCase,
   SaveOrgIntegrationUseCase, GetOrgIntegrationUseCase,
   TestKitepropConnectionUseCase, SyncKitepropContactsUseCase,
+  GetKitepropAgentsUseCase, SaveAgentMapUseCase,
   GetGoogleIntegrationUseCase, ConnectGoogleCalendarUseCase,
   DisconnectGoogleCalendarUseCase, SaveGoogleIntegrationSettingsUseCase,
   SyncEventToGoogleUseCase,
@@ -409,6 +410,36 @@ app.post('/integrations/kiteprop/backfill', async (c) => {
   const denied = requireAdmin(c); if (denied) return denied
   // Chunked: la UI repite el POST hasta done:true (límite de subrequests).
   const result = await buildKitepropSync(c.env).execute({ orgId: c.get('orgId'), mode: 'backfill' })
+  return c.json(result, result.ok ? 200 : 400)
+})
+
+// Re-procesa el histórico de consultas (message-driven, sin corte por fecha):
+// re-atribuye el agente mapeado y trae la propiedad a los contactos ya importados.
+app.post('/integrations/kiteprop/enrich', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const result = await buildKitepropSync(c.env).execute({ orgId: c.get('orgId'), mode: 'enrich' })
+  return c.json(result, result.ok ? 200 : 400)
+})
+
+// Agentes de KiteProp + el mapeo guardado (para la UI de mapeo).
+app.get('/integrations/kiteprop/agents', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const useCase = new GetKitepropAgentsUseCase(
+    new D1OrgIntegrationRepository(c.env.DB),
+    new KitepropMcpClient(),
+    (cipher) => decrypt(cipher, c.env.JWT_SECRET),
+  )
+  const result = await useCase.execute(c.get('orgId'))
+  return c.json(result)
+})
+
+// Guarda el mapeo agente KiteProp → usuario VendéPro.
+app.put('/integrations/kiteprop/agent-map', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const body = (await c.req.json().catch(() => ({}))) as any
+  const map = (body.map && typeof body.map === 'object') ? body.map as Record<string, string> : {}
+  const useCase = new SaveAgentMapUseCase(new D1OrgIntegrationRepository(c.env.DB))
+  const result = await useCase.execute({ orgId: c.get('orgId'), map })
   return c.json(result, result.ok ? 200 : 400)
 })
 
