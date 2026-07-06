@@ -152,8 +152,8 @@ export default function ConfiguracionPage() {
       href: '/configuracion/conexiones',
       icon: <Plug className="w-5 h-5" />,
       iconColor: 'text-amber-500',
-      title: 'Conexiones',
-      subtitle: 'KiteProp y otros CRMs externos',
+      title: 'Integraciones',
+      subtitle: 'Importación automática de contactos',
     }] : []),
   ]
 
