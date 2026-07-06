@@ -18,6 +18,8 @@ import {
   D1LandingVersionRepository,
   D1LandingEventRepository,
   D1OrgVariableRepository,
+  D1EmailSuppressionRepository,
+  HmacUnsubscribeTokenSigner,
   fireMarketingEvent,
   fireWebhookEvent,
 } from '@vendepro/infrastructure'
@@ -34,6 +36,7 @@ import {
   RecordLandingEventUseCase,
   SubmitLeadFromLandingUseCase,
   ImportLeadsUseCase,
+  ProcessUnsubscribeUseCase,
 } from '@vendepro/core'
 
 type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket }
@@ -512,6 +515,27 @@ app.get('/public/pdf/:orgId/:appraisalId/:filename', async (c) => {
       'Cache-Control': 'private, max-age=900',
     },
   })
+})
+
+// ── EMAIL UNSUBSCRIBE (/u/:token en el frontend) ──────────────────
+// GET: verifica el token y devuelve el email (para la página de
+// confirmación). POST: ejecuta la baja. Idempotente en ambos casos.
+app.get('/public/unsubscribe/:token', async (c) => {
+  const signer = new HmacUnsubscribeTokenSigner(c.env.JWT_SECRET)
+  const payload = await signer.verify(c.req.param('token'))
+  if (!payload) return c.json({ ok: false }, 404)
+  return c.json({ ok: true, email: payload.email })
+})
+
+app.post('/public/unsubscribe/:token', async (c) => {
+  const uc = new ProcessUnsubscribeUseCase(
+    new HmacUnsubscribeTokenSigner(c.env.JWT_SECRET),
+    new D1EmailSuppressionRepository(c.env.DB),
+    new CryptoIdGenerator(),
+  )
+  const result = await uc.execute(c.req.param('token'))
+  if (!result.ok) return c.json(result, 404)
+  return c.json(result)
 })
 
 export default app

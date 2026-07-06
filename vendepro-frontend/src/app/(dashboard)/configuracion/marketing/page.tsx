@@ -4,11 +4,12 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
   Megaphone, Settings, BarChart3, Activity, Save, Loader2,
-  Plus, Trash2, ArrowLeft, Send, AlertCircle, CheckCircle2,
+  Plus, Trash2, ArrowLeft, Send, AlertCircle, CheckCircle2, Mail,
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
 import { getCurrentUser } from '@/lib/auth'
+import EmailSection from '@/components/configuracion/EmailSection'
 
 const EVENT_KEY_GROUPS: { label: string; keys: { key: string; label: string }[] }[] = [
   {
@@ -125,7 +126,7 @@ export default function MarketingConfigPage() {
   const profile = getCurrentUser()
   const isAdmin = profile?.role === 'admin' || profile?.role === 'owner'
 
-  const [tab, setTab] = useState<'config' | 'mappings' | 'log'>('config')
+  const [tab, setTab] = useState<'config' | 'mappings' | 'log' | 'email'>('config')
   const [loading, setLoading] = useState(true)
 
   const [integration, setIntegration] = useState<Integration>({})
@@ -299,6 +300,7 @@ export default function MarketingConfigPage() {
           { id: 'config', label: 'Configuración', icon: Settings },
           { id: 'mappings', label: 'Mapeo de eventos', icon: BarChart3 },
           { id: 'log', label: 'Log de eventos', icon: Activity },
+          { id: 'email', label: 'Email', icon: Mail },
         ] as const).map(t => {
           const Icon = t.icon
           return (
@@ -581,6 +583,8 @@ export default function MarketingConfigPage() {
           </button>
         </div>
       )}
+
+      {tab === 'email' && <EmailSection />}
 
       {tab === 'log' && (
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">

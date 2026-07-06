@@ -16,6 +16,7 @@ const PUBLIC_PREFIXES = [
   '/v/',   // public visit forms
   '/p/',   // public prefactibilidades
   '/l/',   // landings públicas
+  '/u/',   // baja de emails de marketing (unsubscribe)
   '/_next',
   '/favicon',
   '/logo',
