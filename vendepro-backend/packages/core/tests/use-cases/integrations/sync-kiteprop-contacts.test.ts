@@ -34,6 +34,8 @@ const mockGateway = {
   fetchContacts: vi.fn(),
   fetchMessages: vi.fn(),
   getPropertyRef: vi.fn().mockResolvedValue(null),
+  fetchAgents: vi.fn().mockResolvedValue([]),
+  getContactAgent: vi.fn().mockResolvedValue(null),
 }
 let idCounter = 0
 const mockIds = { generate: vi.fn(() => `gen-${++idCounter}`) }
@@ -139,6 +141,49 @@ describe('SyncKitepropContactsUseCase', () => {
 
     await makeUc().execute({ orgId: 'org_mg', mode: 'manual' })
     expect(mockContactRepo.save.mock.calls[0][0].agent_id).toBe('admin-1')
+  })
+
+  it('agent_map: usa el usuario mapeado del agente ASIGNADO en KiteProp (prioridad sobre email/propiedad)', async () => {
+    mockGateway.fetchMessages.mockResolvedValue(page([kpMessage(1)]))
+    // El contacto está asignado a Marcela (id 7673) en KiteProp
+    mockGateway.getContactAgent.mockResolvedValue({ external_id: '7673', email: 'marcelagenta@dein.com', name: 'Marcela Genta' })
+    // El agente de la propiedad es otro (no debería ganarle al asignado)
+    mockGateway.getPropertyRef.mockResolvedValue({ code: 'KP1', title: 'X', address: null, agent_email: 'otro@dein.com', agent_name: 'Otro' })
+    mockIntegrationRepo.findByOrgAndProvider.mockResolvedValue(
+      integration({ config_json: JSON.stringify({ agent_map: { '7673': 'user-marcela' } }) }),
+    )
+
+    await makeUc().execute({ orgId: 'org_mg', mode: 'manual' })
+    expect(mockContactRepo.save.mock.calls[0][0].agent_id).toBe('user-marcela')
+    expect(mockUserRepo.findByEmail).not.toHaveBeenCalled() // el mapeo directo cortó antes
+  })
+
+  it('modo enrich: sin corte por fecha, procesa consultas viejas y persiste enrich_next_page', async () => {
+    // last_sync_at = 2026-07-01; en auto estas se cortarían por viejas. Enrich las procesa.
+    mockGateway.fetchMessages
+      .mockResolvedValueOnce(page([kpMessage(1, { created_at: '2026-06-10T10:00:00.000Z' })], 1, 3, 60))
+      .mockResolvedValueOnce(page([kpMessage(2, { contactId: 2, created_at: '2026-06-05T10:00:00.000Z' })], 2, 3, 60))
+
+    const result = await makeUc().execute({ orgId: 'org_mg', mode: 'enrich', maxPages: 2 })
+
+    expect(result.created).toBe(2)
+    expect(result.done).toBe(false)
+    expect(result.nextPage).toBe(3)
+    const savedIntegration: OrgIntegration = mockIntegrationRepo.save.mock.calls[0][0]
+    expect(savedIntegration.getConfig().enrich_next_page).toBe(3)
+    expect(savedIntegration.last_sync_at).toBe('2026-07-01T00:00:00.000Z') // enrich no toca last_sync_at
+  })
+
+  it('modo enrich reanuda desde enrich_next_page y marca done', async () => {
+    mockIntegrationRepo.findByOrgAndProvider.mockResolvedValue(
+      integration({ config_json: JSON.stringify({ enrich_next_page: 3 }) }),
+    )
+    mockGateway.fetchMessages.mockResolvedValue(page([kpMessage(9, { created_at: '2026-05-01T10:00:00.000Z' })], 3, 3, 60))
+
+    const result = await makeUc().execute({ orgId: 'org_mg', mode: 'enrich' })
+    expect(mockGateway.fetchMessages.mock.calls[0][1].page).toBe(3)
+    expect(result.done).toBe(true)
+    expect((mockIntegrationRepo.save.mock.calls[0][0] as OrgIntegration).getConfig().enrich_done).toBe(true)
   })
 
   it('contacto existente (por link): enriquece source/agente/notas y cuenta enriched', async () => {

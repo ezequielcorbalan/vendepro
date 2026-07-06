@@ -1,4 +1,4 @@
-import type { KitepropGateway, KitepropContactDTO, KitepropContactsPage, KitepropTestResult, KitepropMessageDTO, KitepropMessagesPage, KitepropPropertyRef } from '@vendepro/core'
+import type { KitepropGateway, KitepropContactDTO, KitepropContactsPage, KitepropTestResult, KitepropMessageDTO, KitepropMessagesPage, KitepropPropertyRef, KitepropAgentDTO, KitepropContactAgent } from '@vendepro/core'
 
 /**
  * Cliente del servidor MCP de KiteProp (https://mcp.kiteprop.com).
@@ -87,6 +87,33 @@ export class KitepropMcpClient implements KitepropGateway {
         email: c.email ?? null,
         phone: c.phone ?? c.whatsapp_formatted ?? null,
       },
+    }
+  }
+
+  async fetchAgents(apiKey: string): Promise<KitepropAgentDTO[]> {
+    const result = await this.callTool(apiKey, 'list_users', { limit: 25 })
+    const rows: any[] = Array.isArray(result?.data) ? result.data : (Array.isArray(result) ? result : [])
+    return rows.map((u) => ({
+      external_id: String(u.id),
+      full_name: String(u.full_name ?? `${u.first_name ?? ''} ${u.last_name ?? ''}`.trim()) || 'Sin nombre',
+      email: u.email ?? null,
+    }))
+  }
+
+  async getContactAgent(apiKey: string, contactId: string): Promise<KitepropContactAgent | null> {
+    let result: any
+    try {
+      result = await this.callTool(apiKey, 'get_contact', { id: Number(contactId) })
+    } catch {
+      return null // best-effort
+    }
+    const c = result?.data ?? result
+    const u = c?.assigned_user ?? c?.user ?? null
+    if (!u || u.id == null) return null
+    return {
+      external_id: String(u.id),
+      email: u.email ?? null,
+      name: u.full_name ?? null,
     }
   }
 

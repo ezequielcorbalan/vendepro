@@ -3,14 +3,20 @@ import type { IntegrationLinkRepository } from '../../ports/repositories/integra
 import type { IntegrationSyncLogRepository } from '../../ports/repositories/integration-sync-log-repository'
 import type { ContactRepository } from '../../ports/repositories/contact-repository'
 import type { UserRepository } from '../../ports/repositories/user-repository'
-import type { KitepropGateway, KitepropContactDTO, KitepropMessageDTO, KitepropPropertyRef } from '../../ports/services/kiteprop-gateway'
+import type { KitepropGateway, KitepropContactDTO, KitepropMessageDTO, KitepropPropertyRef, KitepropContactAgent } from '../../ports/services/kiteprop-gateway'
 import type { IdGenerator } from '../../ports/id-generator'
 import { Contact } from '../../../domain/entities/contact'
 import type { TokenDecryptor } from './test-kiteprop-connection'
 
 export interface SyncKitepropContactsInput {
   orgId: string
-  mode: 'auto' | 'manual' | 'backfill'
+  /**
+   * - auto/manual: incremental message-driven desde last_sync_at.
+   * - enrich: message-driven de TODO el histórico (sin corte por fecha), chunked;
+   *   re-atribuye/enriquece los contactos ya importados.
+   * - backfill: contact-driven (agenda base), sin enriquecer.
+   */
+  mode: 'auto' | 'manual' | 'enrich' | 'backfill'
   /** Tope de páginas por corrida (límite de subrequests de Workers). */
   maxPages?: number
 }
@@ -65,12 +71,15 @@ export class SyncKitepropContactsUseCase {
 
   // Caches por corrida (evitan repetir llamadas MCP/D1)
   private propCache = new Map<number, KitepropPropertyRef | null>()
-  private agentCache = new Map<string, string | null>() // email normalizado → user.id
+  private contactAgentCache = new Map<string, KitepropContactAgent | null>() // contactId → agente asignado en KiteProp
+  private agentCache = new Map<string, string | null>() // clave agente KiteProp → user.id VendéPro
   private orgUsers: Array<{ id: string; email: string; full_name: string }> | null = null
+  private agentMap: Record<string, string> = {} // config: id agente KiteProp → id usuario VendéPro
 
   async execute(input: SyncKitepropContactsInput): Promise<SyncKitepropContactsResult> {
     const startedAt = new Date().toISOString()
     this.propCache.clear()
+    this.contactAgentCache.clear()
     this.agentCache.clear()
     this.orgUsers = null
 
@@ -86,6 +95,7 @@ export class SyncKitepropContactsUseCase {
     if (!admin) return this.fail(input, integration.id, startedAt, 'Organización sin administrador configurado')
 
     const config = integration.getConfig()
+    this.agentMap = (config.agent_map && typeof config.agent_map === 'object') ? (config.agent_map as Record<string, string>) : {}
     const maxPages = input.maxPages ?? (input.mode === 'backfill' ? 5 : 3)
 
     const acc: RunAcc = { created: 0, enriched: 0, skipped: 0, pagesProcessed: 0, done: false, page: 1, runError: null, itemError: null }
@@ -93,15 +103,21 @@ export class SyncKitepropContactsUseCase {
     if (input.mode === 'backfill') {
       acc.page = Number(config.backfill_next_page ?? 1) || 1
       await this.runBackfill(input.orgId, apiKey, admin.id, maxPages, acc)
+    } else if (input.mode === 'enrich') {
+      // Histórico de consultas, sin corte por fecha, reanudable por config.
+      acc.page = Number(config.enrich_next_page ?? 1) || 1
+      await this.runMessages(input.orgId, apiKey, admin.id, undefined, acc.page, maxPages, acc)
     } else {
       // Incremental: desde la fecha (día) del último sync; si nunca corrió, desde hoy.
       const dateFrom = (integration.last_sync_at ?? new Date().toISOString()).slice(0, 10)
-      await this.runMessages(input.orgId, apiKey, admin.id, dateFrom, maxPages, acc)
+      await this.runMessages(input.orgId, apiKey, admin.id, dateFrom, 1, maxPages, acc)
     }
 
     // Persistir estado
     if (input.mode === 'backfill') {
       integration.setConfig({ ...config, backfill_next_page: acc.done ? null : acc.page, backfill_done: acc.done })
+    } else if (input.mode === 'enrich') {
+      integration.setConfig({ ...config, enrich_next_page: acc.done ? null : acc.page, enrich_done: acc.done })
     } else if (acc.done && !acc.runError) {
       integration.update({ last_sync_at: new Date().toISOString() })
     }
@@ -127,8 +143,8 @@ export class SyncKitepropContactsUseCase {
 
   // ─────────────────────────── MESSAGE-DRIVEN (auto/manual) ───────────────────────────
 
-  private async runMessages(orgId: string, apiKey: string, adminId: string, dateFrom: string, maxPages: number, acc: RunAcc): Promise<void> {
-    let page = 1
+  private async runMessages(orgId: string, apiKey: string, adminId: string, dateFrom: string | undefined, startPage: number, maxPages: number, acc: RunAcc): Promise<void> {
+    let page = startPage
     while (acc.pagesProcessed < maxPages) {
       let pageData
       try {
@@ -147,8 +163,8 @@ export class SyncKitepropContactsUseCase {
 
       let reachedCutoff = false
       for (const msg of pageData.data) {
-        // KiteProp ignora date_from; con id:desc cortamos al pasar la marca.
-        if (msg.created_at.slice(0, 10) < dateFrom) { reachedCutoff = true; break }
+        // KiteProp ignora date_from; con id:desc cortamos al pasar la marca (solo incremental).
+        if (dateFrom && msg.created_at.slice(0, 10) < dateFrom) { reachedCutoff = true; break }
         if (processed[`msg:${msg.external_id}`]) { acc.skipped++; continue }
         try {
           const outcome = await this.processMessage(orgId, apiKey, adminId, msg)
@@ -172,7 +188,7 @@ export class SyncKitepropContactsUseCase {
   /** Crea o enriquece el contacto con los datos de una consulta de portal. */
   private async processMessage(orgId: string, apiKey: string, adminId: string, msg: KitepropMessageDTO): Promise<'created' | 'enriched' | 'skipped'> {
     const propRef = msg.property_id != null ? await this.getPropertyRefCached(apiKey, msg.property_id) : null
-    const agentId = await this.resolveAgent(orgId, propRef?.agent_email ?? null, propRef?.agent_name ?? null)
+    const agentId = await this.resolveAgentForContact(orgId, apiKey, msg.contact.external_id, propRef)
     const line = this.enrichedNote(msg, propRef)
     const portal = msg.source || null
 
@@ -250,19 +266,45 @@ export class SyncKitepropContactsUseCase {
 
   // ─────────────────────────── Mapeo de agente ───────────────────────────
 
-  /** Mapea el agente de KiteProp a un usuario de VendéPro: email → nombre → null (cae al admin). */
-  private async resolveAgent(orgId: string, email: string | null, name: string | null): Promise<string | null> {
-    const key = (email ?? name ?? '').toLowerCase().trim()
+  /**
+   * Resuelve el usuario de VendéPro para un contacto. Prioridad:
+   * 1) agente ASIGNADO al contacto en KiteProp (get_contact.assigned_user)
+   * 2) agente de la PROPIEDAD consultada (respaldo)
+   * Cada candidato se resuelve por: agent_map (config) → email → nombre.
+   * Devuelve null si nada matchea (el caller cae al admin).
+   */
+  private async resolveAgentForContact(orgId: string, apiKey: string, contactId: string, propRef: KitepropPropertyRef | null): Promise<string | null> {
+    const assigned = await this.getContactAgentCached(apiKey, contactId)
+    const candidates: Array<{ external_id: string | null; email: string | null; name: string | null }> = []
+    if (assigned) candidates.push({ external_id: assigned.external_id, email: assigned.email, name: assigned.name })
+    if (propRef) candidates.push({ external_id: null, email: propRef.agent_email, name: propRef.agent_name })
+
+    for (const cand of candidates) {
+      const userId = await this.resolveAgent(orgId, cand.external_id, cand.email, cand.name)
+      if (userId) return userId
+    }
+    return null
+  }
+
+  /** Resuelve un agente de KiteProp a un usuario de VendéPro: agent_map → email → nombre → null. */
+  private async resolveAgent(orgId: string, kitepropId: string | null, email: string | null, name: string | null): Promise<string | null> {
+    const key = (kitepropId ?? email ?? name ?? '').toLowerCase().trim()
     if (!key) return null
     if (this.agentCache.has(key)) return this.agentCache.get(key)!
 
     let userId: string | null = null
-    if (email) {
+    // 1) Mapeo explícito por id de agente KiteProp (configurable en la UI).
+    if (kitepropId && this.agentMap[kitepropId]) {
+      userId = this.agentMap[kitepropId]
+    }
+    // 2) Match por email.
+    if (!userId && email) {
       try {
         const u = await this.userRepo.findByEmail(email)
         if (u) userId = u.id
       } catch { /* sigue con fallback */ }
     }
+    // 3) Match por nombre.
     if (!userId && name) {
       const users = await this.getOrgUsers(orgId)
       const target = normalizeName(name)
@@ -271,6 +313,16 @@ export class SyncKitepropContactsUseCase {
     }
     this.agentCache.set(key, userId)
     return userId
+  }
+
+  private async getContactAgentCached(apiKey: string, contactId: string): Promise<KitepropContactAgent | null> {
+    if (this.contactAgentCache.has(contactId)) return this.contactAgentCache.get(contactId)!
+    let agent: KitepropContactAgent | null = null
+    try {
+      agent = await this.gateway.getContactAgent(apiKey, contactId)
+    } catch { agent = null }
+    this.contactAgentCache.set(contactId, agent)
+    return agent
   }
 
   private async getOrgUsers(orgId: string): Promise<Array<{ id: string; email: string; full_name: string }>> {

@@ -4,12 +4,15 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import {
   Plug, ArrowLeft, Loader2, Save, CheckCircle2, XCircle,
-  RefreshCw, Download, Radio, AlertCircle, History, Calendar, Unplug,
+  RefreshCw, Download, Radio, AlertCircle, History, Calendar, Unplug, Users, Sparkles,
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
 import { getCurrentUser } from '@/lib/auth'
 import type { CrmIntegration, GoogleIntegration, IntegrationSyncLogEntry } from '@/lib/types'
+
+type KpAgent = { external_id: string; full_name: string; email: string | null }
+type VpUser = { id: string; full_name?: string; email?: string; role?: string }
 
 const KEY_PLACEHOLDER = '********'
 
@@ -49,6 +52,26 @@ export default function ConexionesPage() {
   const [backfilling, setBackfilling] = useState(false)
   const [backfillProgress, setBackfillProgress] = useState<{ created: number; skipped: number } | null>(null)
 
+  // Mapeo de agentes + re-procesar consultas
+  const [kpAgents, setKpAgents] = useState<KpAgent[]>([])
+  const [vpUsers, setVpUsers] = useState<VpUser[]>([])
+  const [agentMap, setAgentMap] = useState<Record<string, string>>({})
+  const [savingMap, setSavingMap] = useState(false)
+  const [enriching, setEnriching] = useState(false)
+  const [enrichProgress, setEnrichProgress] = useState<{ created: number; enriched: number } | null>(null)
+
+  const loadAgents = useCallback(async () => {
+    try {
+      const [agentsRes, usersRes] = await Promise.all([
+        apiFetch('crm', '/integrations/kiteprop/agents').then(r => r.json() as Promise<any>).catch(() => null),
+        apiFetch('admin', '/agents').then(r => r.json() as Promise<any>).catch(() => []),
+      ])
+      setKpAgents(Array.isArray(agentsRes?.kiteprop) ? agentsRes.kiteprop : [])
+      setAgentMap(agentsRes?.map && typeof agentsRes.map === 'object' ? agentsRes.map : {})
+      setVpUsers(Array.isArray(usersRes) ? usersRes : [])
+    } catch { /* sección vacía si falla */ }
+  }, [])
+
   const loadAll = useCallback(async () => {
     try {
       const [cfg, logData] = await Promise.all([
@@ -75,6 +98,53 @@ export default function ConexionesPage() {
     if (!isAdmin) { setLoading(false); return }
     loadAll()
   }, [isAdmin, loadAll, loadGoogle])
+
+  // Cargar agentes cuando ya hay API key configurada.
+  useEffect(() => {
+    if (isAdmin && integration?.has_api_key) loadAgents()
+  }, [isAdmin, integration?.has_api_key, loadAgents])
+
+  async function handleSaveAgentMap() {
+    setSavingMap(true)
+    try {
+      const res = await apiFetch('crm', '/integrations/kiteprop/agent-map', {
+        method: 'PUT',
+        body: JSON.stringify({ map: agentMap }),
+      })
+      const data = (await res.json()) as any
+      if (!res.ok || !data.ok) throw new Error()
+      setAgentMap(data.map ?? agentMap)
+      toast('Mapeo de agentes guardado')
+    } catch {
+      toast('Error guardando el mapeo', 'error')
+    }
+    setSavingMap(false)
+  }
+
+  async function handleEnrich() {
+    if (!confirm('¿Re-procesar las consultas históricas? Se re-asigna el agente mapeado y se trae la propiedad consultada a los contactos ya importados. Puede tomar varios minutos.')) return
+    setEnriching(true)
+    setEnrichProgress({ created: 0, enriched: 0 })
+    try {
+      let done = false, created = 0, enriched = 0, guard = 0
+      while (!done && guard < 200) {
+        guard++
+        const res = await apiFetch('crm', '/integrations/kiteprop/enrich', { method: 'POST' })
+        const data = (await res.json()) as any
+        if (!data.ok) { toast(data.error || 'Se interrumpió; volvé a intentar para retomar', 'error'); break }
+        created += data.created ?? 0
+        enriched += data.enriched ?? 0
+        setEnrichProgress({ created, enriched })
+        done = !!data.done
+        if (data.error) { toast(`Parcial: ${data.error}. Volvé a intentar para retomar.`, 'warning'); break }
+      }
+      if (done) toast(`Consultas re-procesadas: ${created} nuevos, ${enriched} enriquecidos`)
+      await loadAll()
+    } catch {
+      toast('Error de conexión', 'error')
+    }
+    setEnriching(false)
+  }
 
   // Al volver del consentimiento de Google llega ?google=ok|error.
   useEffect(() => {
@@ -420,6 +490,74 @@ export default function ConexionesPage() {
           </div>
         )}
       </div>
+
+      {/* Mapeo de agentes */}
+      {hasKey && (
+        <div className="bg-white rounded-xl border p-5 space-y-4">
+          <div>
+            <p className="font-semibold text-gray-800 flex items-center gap-2">
+              <Users className="w-4 h-4 text-gray-400" /> Agentes
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              Asigná cada agente de KiteProp a un usuario de VendéPro. Los leads nuevos se asignan al usuario mapeado; usá <em>Re-procesar consultas</em> para re-atribuir los ya importados.
+            </p>
+          </div>
+
+          {kpAgents.length === 0 ? (
+            <p className="text-sm text-gray-400">No se pudieron cargar los agentes de KiteProp.</p>
+          ) : (
+            <div className="divide-y divide-gray-50">
+              {kpAgents.map(a => (
+                <div key={a.external_id} className="flex items-center justify-between gap-3 py-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-800 truncate">{a.full_name}</p>
+                    {a.email && <p className="text-xs text-gray-400 truncate">{a.email}</p>}
+                  </div>
+                  <select
+                    value={agentMap[a.external_id] ?? ''}
+                    onChange={e => setAgentMap(m => ({ ...m, [a.external_id]: e.target.value }))}
+                    className="shrink-0 border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/50 focus:border-brand-pink max-w-[55%]"
+                  >
+                    <option value="">— sin asignar —</option>
+                    {vpUsers.map(u => (
+                      <option key={u.id} value={u.id}>{u.full_name || u.email || u.id}</option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <button
+              onClick={handleSaveAgentMap}
+              disabled={savingMap || kpAgents.length === 0}
+              className="flex items-center gap-2 bg-brand-pink text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50"
+            >
+              {savingMap ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              Guardar mapeo
+            </button>
+            <button
+              onClick={handleEnrich}
+              disabled={enriching || !integration?.enabled}
+              title={!integration?.enabled ? 'Activá y guardá la integración primero' : undefined}
+              className="flex items-center gap-2 border border-gray-300 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
+            >
+              {enriching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              Re-procesar consultas
+            </button>
+          </div>
+
+          {enriching && enrichProgress && (
+            <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+              <Loader2 className="w-4 h-4 animate-spin text-amber-500 shrink-0" />
+              <p className="text-sm text-amber-800">
+                Re-procesando consultas… <strong>{enrichProgress.enriched}</strong> enriquecidos, {enrichProgress.created} nuevos.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Log de sincronizaciones */}
       <div className="bg-white rounded-xl border p-5">

@@ -211,4 +211,42 @@ describe('KitepropMcpClient', () => {
     const client = new KitepropMcpClient()
     expect(await client.getPropertyRef('kp_test', 999)).toBeNull()
   })
+
+  // ── fetchAgents / getContactAgent ───────────────────────────────
+
+  it('fetchAgents mapea list_users a {external_id, full_name, email}', async () => {
+    const USERS = { data: [
+      { id: 7673, first_name: 'Marcela', last_name: 'Genta', full_name: 'Marcela Genta', email: 'marcelagenta@dein.com' },
+      { id: 7688, first_name: 'Andrés', last_name: 'Giunta', full_name: 'Andrés Giunta', email: 'andresgiunta@dein.com' },
+    ] }
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(rpcResponse(USERS))
+
+    const client = new KitepropMcpClient()
+    const agents = await client.fetchAgents('kp_test')
+
+    expect(JSON.parse(fetchSpy.mock.calls[0][1]?.body as string).params.name).toBe('list_users')
+    expect(agents).toEqual([
+      { external_id: '7673', full_name: 'Marcela Genta', email: 'marcelagenta@dein.com' },
+      { external_id: '7688', full_name: 'Andrés Giunta', email: 'andresgiunta@dein.com' },
+    ])
+  })
+
+  it('getContactAgent extrae assigned_user de get_contact', async () => {
+    const CONTACT = { data: { id: 1640158, full_name: 'Cristina', assigned_user: { id: 7673, full_name: 'Marcela Genta', email: 'marcelagenta@dein.com' } } }
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(rpcResponse(CONTACT))
+
+    const client = new KitepropMcpClient()
+    const agent = await client.getContactAgent('kp_test', '1640158')
+
+    const args = JSON.parse(fetchSpy.mock.calls[0][1]?.body as string).params
+    expect(args.name).toBe('get_contact')
+    expect(args.arguments).toEqual({ id: 1640158 })
+    expect(agent).toEqual({ external_id: '7673', email: 'marcelagenta@dein.com', name: 'Marcela Genta' })
+  })
+
+  it('getContactAgent devuelve null si el contacto no tiene agente o falla', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(rpcResponse({ data: { id: 1, full_name: 'X', assigned_user: null } }))
+    const client = new KitepropMcpClient()
+    expect(await client.getContactAgent('kp_test', '1')).toBeNull()
+  })
 })
