@@ -137,6 +137,39 @@ describe('SyncKitepropContactsUseCase', () => {
     expect(savedIntegration.last_sync_at).not.toBe('2026-07-01T00:00:00.000Z')
   })
 
+  it('corta al encontrar un contacto anterior a dateFrom (KiteProp ignora date_from)', async () => {
+    // last_sync_at = 2026-07-01; página con 1 nuevo y 1 viejo (orden id:desc)
+    mockGateway.fetchContacts.mockResolvedValue(page([
+      kpContact(200, { created_at: '2026-07-03T10:00:00.000Z' }),
+      kpContact(100, { created_at: '2026-06-15T10:00:00.000Z' }), // anterior a la marca
+      kpContact(50, { created_at: '2026-06-01T10:00:00.000Z' }),
+    ], 1, 5, 70))
+
+    const result = await makeUc().execute({ orgId: 'org_mg', mode: 'auto' })
+
+    // procesa solo el nuevo, corta sin pedir más páginas y marca done
+    expect(result.created).toBe(1)
+    expect(result.skipped).toBe(0)
+    expect(result.done).toBe(true)
+    expect(mockGateway.fetchContacts).toHaveBeenCalledTimes(1)
+    expect(mockContactRepo.save).toHaveBeenCalledTimes(1)
+    expect(mockContactRepo.save.mock.calls[0][0].full_name).toBe('Contacto 200')
+    // al terminar (done) avanza last_sync_at
+    const savedIntegration: OrgIntegration = mockIntegrationRepo.save.mock.calls[0][0]
+    expect(savedIntegration.last_sync_at).not.toBe('2026-07-01T00:00:00.000Z')
+  })
+
+  it('backfill no aplica corte por fecha (procesa contactos viejos)', async () => {
+    mockGateway.fetchContacts.mockResolvedValue(page([
+      kpContact(100, { created_at: '2026-01-15T10:00:00.000Z' }),
+    ], 1, 1, 1))
+
+    const result = await makeUc().execute({ orgId: 'org_mg', mode: 'backfill' })
+
+    expect(result.created).toBe(1)
+    expect(result.done).toBe(true)
+  })
+
   it('auto/manual usa dateFrom del last_sync_at (por día)', async () => {
     mockGateway.fetchContacts.mockResolvedValue(page([]))
     await makeUc().execute({ orgId: 'org_mg', mode: 'auto' })
