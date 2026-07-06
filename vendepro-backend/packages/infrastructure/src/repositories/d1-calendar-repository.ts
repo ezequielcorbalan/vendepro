@@ -48,6 +48,17 @@ export class D1CalendarRepository implements CalendarRepository {
     await this.db.prepare('DELETE FROM calendar_events WHERE id = ? AND org_id = ?').bind(id, orgId).run()
   }
 
+  async setGoogleMeta(id: string, orgId: string, googleEventId: string | null, inviteSentAt: string | null): Promise<void> {
+    try {
+      await this.db
+        .prepare('UPDATE calendar_events SET google_event_id = ?, invite_sent_at = ? WHERE id = ? AND org_id = ?')
+        .bind(googleEventId, inviteSentAt, id, orgId)
+        .run()
+    } catch {
+      // columnas de la migración 035 ausentes: el evento igual quedó en Google
+    }
+  }
+
   async findByOrgAndDate(orgId: string, date: string): Promise<CalendarEvent[]> {
     // Note: the v2 schema has no `status` column on calendar_events (only `completed` INTEGER).
     // Filter completed=0 to return only pending events for the day.
@@ -66,6 +77,7 @@ export class D1CalendarRepository implements CalendarRepository {
       contact_id: row.contact_id, property_id: row.property_id, appraisal_id: row.appraisal_id,
       reservation_id: row.reservation_id, color: row.color, completed: row.completed ?? 0,
       created_at: row.created_at, updated_at: row.updated_at, agent_name: row.agent_name,
+      google_event_id: row.google_event_id ?? null, invite_sent_at: row.invite_sent_at ?? null,
     })
   }
 }
