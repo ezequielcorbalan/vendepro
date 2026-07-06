@@ -70,10 +70,41 @@ function IntegrationBadge({ name, enabled, detail }: { name: string; enabled: bo
   )
 }
 
+interface CampaignRow {
+  campaign_id: string
+  campaign_name: string
+  spend: number
+  impressions: number
+  clicks: number
+  leads: number
+  account_currency: string | null
+  crm_leads: number
+  crm_calificados: number
+  crm_captados: number
+  cpl: number | null
+}
+
+interface CampaignsResponse {
+  status: 'ok' | 'not_configured' | 'missing_ad_account' | 'token_error' | 'api_error'
+  error: string | null
+  campaigns: CampaignRow[]
+}
+
+function fmtMoney(value: number, currency: string | null): string {
+  try {
+    return new Intl.NumberFormat('es-AR', currency
+      ? { style: 'currency', currency, maximumFractionDigits: 0 }
+      : { maximumFractionDigits: 0 }).format(value)
+  } catch {
+    return `${currency ?? ''} ${Math.round(value).toLocaleString('es-AR')}`.trim()
+  }
+}
+
 export default function MarketingPage() {
   const [period, setPeriod] = useState<Period>('month')
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [campaignsData, setCampaignsData] = useState<CampaignsResponse | null>(null)
 
   useEffect(() => {
     setLoading(true)
@@ -81,6 +112,14 @@ export default function MarketingPage() {
       .then(r => r.json() as Promise<any>)
       .then(d => { setData(d); setLoading(false) })
       .catch(() => setLoading(false))
+  }, [period])
+
+  useEffect(() => {
+    setCampaignsData(null)
+    apiFetch('analytics', `/marketing/campaigns?period=${period}`)
+      .then(r => r.json() as Promise<any>)
+      .then(d => setCampaignsData(d))
+      .catch(() => setCampaignsData({ status: 'api_error', error: 'No se pudieron cargar las campañas', campaigns: [] }))
   }, [period])
 
   const totalLeads: number = data?.totalLeads ?? 0
@@ -266,12 +305,11 @@ export default function MarketingPage() {
             Abrir Meta Ads <ExternalLink className="w-3 h-3" />
           </a>
         </div>
-        {integration.meta.enabled ? (
-          <div className="text-center py-8 text-gray-400">
-            <p className="text-sm">Integración con Meta Ads API próximamente</p>
-            <p className="text-xs mt-1">Verás ROI, CPL y captaciones por campaña en tiempo real</p>
+        {campaignsData === null ? (
+          <div className="space-y-2">
+            {[...Array(3)].map((_, i) => <div key={i} className="h-10 bg-gray-100 rounded animate-pulse" />)}
           </div>
-        ) : (
+        ) : campaignsData.status === 'not_configured' ? (
           <div className="rounded-lg bg-gray-50 border border-dashed border-gray-200 p-6 text-center">
             <p className="text-sm font-medium text-gray-600 mb-1">Conectá Meta Conversion API para ver campañas</p>
             <p className="text-xs text-gray-400 mb-3">Gasto, leads, calificados, CPL y ROI por campaña</p>
@@ -279,6 +317,70 @@ export default function MarketingPage() {
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand-pink text-white text-xs font-medium hover:bg-[#e0006e] transition-colors">
               <Settings className="w-3.5 h-3.5" /> Configurar ahora
             </Link>
+          </div>
+        ) : campaignsData.status === 'missing_ad_account' ? (
+          <div className="rounded-lg bg-blue-50 border border-dashed border-blue-200 p-6 text-center">
+            <p className="text-sm font-medium text-blue-800 mb-1">Todo listo — falta el Ad Account ID</p>
+            <p className="text-xs text-blue-600 mb-3">
+              Cargá tu Ad Account (act_…) en Ajustes → Marketing y asegurate de que el token tenga permiso <code>ads_read</code>.
+              Las campañas aparecen solas al guardarlo.
+            </p>
+            <Link href="/configuracion/marketing"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand-pink text-white text-xs font-medium hover:bg-[#e0006e] transition-colors">
+              <Settings className="w-3.5 h-3.5" /> Completar configuración
+            </Link>
+          </div>
+        ) : campaignsData.status !== 'ok' ? (
+          <div className="rounded-lg bg-red-50 border border-red-200 p-4">
+            <p className="text-sm font-medium text-red-700 flex items-center gap-1.5">
+              <AlertCircle className="w-4 h-4" /> No se pudieron leer las campañas de Meta
+            </p>
+            <p className="text-xs text-red-600 mt-1">
+              {campaignsData.status === 'token_error'
+                ? 'El token guardado no es válido — volvé a cargarlo en Ajustes → Marketing.'
+                : campaignsData.error ?? 'Error desconocido.'}
+            </p>
+            <p className="text-xs text-red-500 mt-1">
+              Si el error menciona permisos, el token necesita <code>ads_read</code> sobre el ad account (se agrega en Meta Business → System Users).
+            </p>
+          </div>
+        ) : campaignsData.campaigns.length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-8">Sin campañas con actividad en este período</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-[10px] uppercase tracking-wide text-gray-400 border-b border-gray-100">
+                  <th className="text-left font-medium py-2 pr-3">Campaña</th>
+                  <th className="text-right font-medium py-2 px-3">Gasto</th>
+                  <th className="text-right font-medium py-2 px-3">Impresiones</th>
+                  <th className="text-right font-medium py-2 px-3">Clicks</th>
+                  <th className="text-right font-medium py-2 px-3">Leads Meta</th>
+                  <th className="text-right font-medium py-2 px-3">Leads CRM</th>
+                  <th className="text-right font-medium py-2 px-3">Calificados</th>
+                  <th className="text-right font-medium py-2 px-3">Captados</th>
+                  <th className="text-right font-medium py-2 pl-3">CPL</th>
+                </tr>
+              </thead>
+              <tbody>
+                {campaignsData.campaigns.map(cp => (
+                  <tr key={cp.campaign_id} className="border-b border-gray-50 last:border-0">
+                    <td className="py-2.5 pr-3 font-medium text-gray-700 max-w-[220px] truncate" title={cp.campaign_name}>{cp.campaign_name}</td>
+                    <td className="py-2.5 px-3 text-right text-gray-700">{fmtMoney(cp.spend, cp.account_currency)}</td>
+                    <td className="py-2.5 px-3 text-right text-gray-500">{cp.impressions.toLocaleString('es-AR')}</td>
+                    <td className="py-2.5 px-3 text-right text-gray-500">{cp.clicks.toLocaleString('es-AR')}</td>
+                    <td className="py-2.5 px-3 text-right text-gray-700">{cp.leads}</td>
+                    <td className="py-2.5 px-3 text-right text-gray-700">{cp.crm_leads}</td>
+                    <td className="py-2.5 px-3 text-right text-gray-700">{cp.crm_calificados}</td>
+                    <td className="py-2.5 px-3 text-right font-semibold text-emerald-600">{cp.crm_captados}</td>
+                    <td className="py-2.5 pl-3 text-right font-semibold text-gray-800">{cp.cpl !== null ? fmtMoney(cp.cpl, cp.account_currency) : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="text-[10px] text-gray-400 mt-2">
+              Leads CRM atribuidos por nombre de campaña (source_detail de la landing). Datos de Meta cacheados 15 min.
+            </p>
           </div>
         )}
       </div>

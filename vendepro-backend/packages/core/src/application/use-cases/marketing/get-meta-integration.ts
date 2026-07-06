@@ -6,6 +6,7 @@ export interface GetMetaIntegrationOutput {
   stape_endpoint: string | null
   gtm_container_id: string | null
   test_event_code: string | null
+  ad_account_id: string | null
   enabled: boolean
   has_access_token: boolean
   /** Mascarilla cliente: nunca enviamos el token plain */
@@ -31,6 +32,7 @@ export class GetMetaIntegrationUseCase {
         stape_endpoint: null,
         gtm_container_id: null,
         test_event_code: null,
+        ad_account_id: null,
         enabled: false,
         has_access_token: false,
         access_token: '',
@@ -47,6 +49,7 @@ export class GetMetaIntegrationUseCase {
       stape_endpoint: pub.stape_endpoint,
       gtm_container_id: pub.gtm_container_id,
       test_event_code: pub.test_event_code,
+      ad_account_id: pub.ad_account_id,
       enabled: pub.enabled,
       has_access_token: pub.has_access_token,
       access_token: pub.has_access_token ? '********' : '',

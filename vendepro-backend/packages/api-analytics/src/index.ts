@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
-import { corsMiddleware, errorHandler, createAuthMiddleware, D1LeadRepository, D1PropertyRepository, D1ReservationRepository, D1CalendarRepository, D1AnalyticsReportRepository, D1ActivityRepository, D1AppraisalRepository, D1ContactRepository, D1ObjectiveRepository, D1UserRepository, JwtAuthService } from '@vendepro/infrastructure'
+import { corsMiddleware, errorHandler, createAuthMiddleware, D1LeadRepository, D1PropertyRepository, D1ReservationRepository, D1CalendarRepository, D1AnalyticsReportRepository, D1ActivityRepository, D1AppraisalRepository, D1ContactRepository, D1ObjectiveRepository, D1UserRepository, D1MetaIntegrationRepository, JwtAuthService, MetaAdsInsightsHttp, decrypt } from '@vendepro/infrastructure'
 import {
+  GetCampaignInsightsUseCase,
   GetDashboardStatsUseCase,
   GetAppraisalStatsUseCase,
   GetActivityStatsUseCase,
@@ -225,21 +226,22 @@ app.get('/reports', async (c) => {
 })
 
 // ── MARKETING DASHBOARD ──────────────────────────────────────
+
+function marketingFromDate(period: string): string {
+  const now = new Date()
+  if (period === 'quarter') {
+    const q = new Date(now); q.setMonth(q.getMonth() - 3)
+    return q.toISOString().slice(0, 10)
+  }
+  if (period === 'year') return `${now.getFullYear()}-01-01`
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+}
+
 app.get('/marketing', async (c) => {
   const orgId = c.get('orgId')
   const db = c.env.DB
   const period = c.req.query('period') ?? 'month'
-
-  const now = new Date()
-  let fromDate: string
-  if (period === 'quarter') {
-    const q = new Date(now); q.setMonth(q.getMonth() - 3)
-    fromDate = q.toISOString().slice(0, 10)
-  } else if (period === 'year') {
-    fromDate = `${now.getFullYear()}-01-01`
-  } else {
-    fromDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
-  }
+  const fromDate = marketingFromDate(period)
 
   const [leadsBySource, leadsByDay, stageBreakdown, metaEvents, metaIntegration] = await Promise.all([
     db.prepare(`SELECT source, COUNT(*) as count FROM leads WHERE org_id = ? AND created_at >= ? GROUP BY source ORDER BY count DESC`).bind(orgId, fromDate).all(),
@@ -272,6 +274,85 @@ app.get('/marketing', async (c) => {
       ga4: { enabled: !!metaIntegration && (metaIntegration as any).ga4_enabled === 1, measurementId: (metaIntegration as any)?.ga4_measurement_id ?? null },
     },
   })
+})
+
+// ── MARKETING — CAMPAÑAS META ADS ────────────────────────────
+// Insights por campaña (Marketing API) cruzados con leads del CRM.
+// La atribución matchea leads.source_detail (campaña de la landing)
+// contra el nombre de campaña en Meta, case-insensitive.
+
+const QUALIFIED_STAGES = new Set(['calificado', 'en_tasacion', 'presentada', 'seguimiento', 'captado'])
+const CAMPAIGNS_CACHE_SECONDS = 900 // Meta Insights ratelimitea agresivo
+
+app.get('/marketing/campaigns', async (c) => {
+  const orgId = c.get('orgId')
+  const db = c.env.DB
+  const period = c.req.query('period') ?? 'month'
+  const fromDate = marketingFromDate(period)
+  const until = new Date().toISOString().slice(0, 10)
+
+  const cache: Cache | undefined = (globalThis as any).caches?.default
+  const cacheKey = new Request(`https://cache.vendepro.internal/marketing-campaigns?org=${orgId}&period=${period}&until=${until}`)
+  if (cache) {
+    const hit = await cache.match(cacheKey).catch(() => undefined)
+    // Copia: los headers de una Response cacheada son inmutables y el
+    // middleware CORS necesita poder setearlos.
+    if (hit) return new Response(hit.body, hit)
+  }
+
+  const useCase = new GetCampaignInsightsUseCase(
+    new D1MetaIntegrationRepository(db),
+    new MetaAdsInsightsHttp(),
+    (cipher) => decrypt(cipher, c.env.JWT_SECRET),
+  )
+  const result = await useCase.execute({ orgId, since: fromDate, until })
+
+  // Atribución CRM: leads del período agrupados por campaña y stage.
+  const crmByCampaign: Record<string, { leads: number; calificados: number; captados: number }> = {}
+  if (result.status === 'ok' && result.campaigns.length > 0) {
+    const rows = await db.prepare(`
+      SELECT lower(source_detail) as campaign_key, stage, COUNT(*) as count
+      FROM leads
+      WHERE org_id = ? AND created_at >= ? AND source_detail IS NOT NULL AND source_detail != ''
+      GROUP BY campaign_key, stage
+    `).bind(orgId, fromDate).all().catch(() => ({ results: [] }))
+    for (const r of (rows.results as any[])) {
+      const entry = crmByCampaign[r.campaign_key] ?? (crmByCampaign[r.campaign_key] = { leads: 0, calificados: 0, captados: 0 })
+      entry.leads += r.count
+      if (QUALIFIED_STAGES.has(r.stage)) entry.calificados += r.count
+      if (r.stage === 'captado') entry.captados += r.count
+    }
+  }
+
+  const campaigns = result.campaigns.map(cp => {
+    const crm = crmByCampaign[cp.campaign_name.toLowerCase()] ?? { leads: 0, calificados: 0, captados: 0 }
+    const leadsForCpl = crm.leads > 0 ? crm.leads : cp.leads
+    return {
+      ...cp,
+      crm_leads: crm.leads,
+      crm_calificados: crm.calificados,
+      crm_captados: crm.captados,
+      cpl: leadsForCpl > 0 ? cp.spend / leadsForCpl : null,
+    }
+  }).sort((a, b) => b.spend - a.spend)
+
+  const response = Response.json({
+    status: result.status,
+    error: result.error ?? null,
+    period,
+    from: fromDate,
+    to: until,
+    campaigns,
+  }, {
+    headers: { 'Cache-Control': `max-age=${CAMPAIGNS_CACHE_SECONDS}` },
+  })
+
+  // Solo cachear respuestas exitosas — un error transitorio de Meta no
+  // debe quedar pegado 15 minutos.
+  if (cache && result.status === 'ok') {
+    await cache.put(cacheKey, response.clone()).catch(() => {})
+  }
+  return response
 })
 
 export default app
