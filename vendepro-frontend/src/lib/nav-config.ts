@@ -16,7 +16,6 @@ import {
   CalendarDays,
   UserCheck,
   FileCheck,
-  TrendingUp,
   Target,
   Home,
   Globe,
@@ -33,6 +32,8 @@ export interface NavLink {
   exact?: boolean
   /** When true, renders as <a target="_blank"> instead of Next.js Link */
   external?: boolean
+  /** Extra pathnames that should also mark this link as active (e.g. sibling tabs) */
+  matchPaths?: string[]
   /**
    * When present, this link is a collapsible group. `href` acts only as a
    * stable key/identity (not a navigable route) and the group is active when
@@ -52,8 +53,7 @@ export const menuSections: NavSection[] = [
     links: [
       { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { href: '/calendario', label: 'Calendario', icon: CalendarDays },
-      { href: '/actividades', label: 'Actividad', icon: Activity },
-      { href: '/mi-performance', label: 'Mi Performance', icon: TrendingUp },
+      { href: '/actividades', label: 'Actividad', icon: Activity, matchPaths: ['/mi-performance'] },
     ],
   },
   {

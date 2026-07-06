@@ -46,7 +46,11 @@ export default function Sidebar({ profile }: { profile: Profile }) {
   const settingsActive = pathname.startsWith('/configuracion') || pathname.startsWith('/perfil')
 
   const isLeafActive = (link: NavLink) =>
-    !link.external && (pathname === link.href || (!link.exact && pathname.startsWith(link.href + '/')))
+    !link.external && (
+      pathname === link.href ||
+      (!link.exact && pathname.startsWith(link.href + '/')) ||
+      !!link.matchPaths?.some((p) => pathname === p || pathname.startsWith(p + '/'))
+    )
   const isGroupActive = (link: NavLink) => !!link.children?.some(isLeafActive)
   const toggleGroup = (href: string, activeDefault: boolean) =>
     setOpenGroups(prev => ({ ...prev, [href]: !(prev[href] ?? activeDefault) }))

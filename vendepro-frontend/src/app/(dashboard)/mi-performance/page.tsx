@@ -11,6 +11,7 @@ import {
   getObjectiveSemaforo, getPeriodProgressPct, PROPERTY_STAGES
 } from '@/lib/crm-config'
 import { apiFetch } from '@/lib/api'
+import ActivityTabs from '@/components/layout/ActivityTabs'
 
 const ICON_MAP: Record<string, any> = {
   Phone, MessageCircle, Users, Home, Eye, Calculator, Clock, FileText,
@@ -54,14 +55,18 @@ export default function MiPerformancePage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-brand-pink" />
+      <div className="space-y-6">
+        <ActivityTabs />
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-brand-pink" />
+        </div>
       </div>
     )
   }
   if (!data || data.error) {
     return (
       <div className="space-y-6">
+        <ActivityTabs />
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Mi Performance</h1>
         </div>
@@ -79,6 +84,7 @@ export default function MiPerformancePage() {
 
   return (
     <div className="space-y-6">
+      <ActivityTabs />
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
