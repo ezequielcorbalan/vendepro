@@ -43,8 +43,9 @@ describe('MethodologyBlock — edición inline', () => {
 describe('CtaWhatsappBlock — edición inline', () => {
   it('con edit, muestra los campos aunque no haya teléfono cargado, y commitea el texto', () => {
     const onChange = vi.fn()
-    render(<CtaWhatsappBlock data={{}} edit={{ onChange }} />)
-    const textEl = screen.getByText('¿Hablamos por WhatsApp?')
+    render(<CtaWhatsappBlock data={{ text: 'Hola' }} edit={{ onChange }} />)
+    expect(screen.getByPlaceholderText('5491158574005')).toBeInTheDocument()
+    const textEl = screen.getByText('Hola')
     textEl.textContent = 'Escribinos'
     fireEvent.blur(textEl)
     expect(onChange).toHaveBeenCalledWith({ text: 'Escribinos' })
