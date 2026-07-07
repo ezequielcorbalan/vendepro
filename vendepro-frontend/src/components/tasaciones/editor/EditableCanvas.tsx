@@ -24,6 +24,7 @@ import { GalleryBlock } from '../renderer/blocks/GalleryBlock'
 import { DividerBlock } from '../renderer/blocks/DividerBlock'
 import { CalloutBlock } from '../renderer/blocks/CalloutBlock'
 import { ButtonLinkBlock } from '../renderer/blocks/ButtonLinkBlock'
+import { BlockEditPopover } from './BlockEditPopover'
 import '../renderer/print.css'
 
 interface Props {
@@ -56,6 +57,7 @@ export function EditableCanvas({
   snapshot, overrides, appraisal, mode, onAdd, onRemove, onReorder, onPatchData, onPatchOverride, onEditStructured,
 }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor),
@@ -107,11 +109,21 @@ export function EditableCanvas({
                   onSelect={() => setSelectedId(block.id)}
                   onRemove={() => onRemove(block.id)}
                   onPatchData={(patch) => onPatchData(block.id, patch)}
-                  onEditStructured={onEditStructured ? () => onEditStructured(block.id) : undefined}
+                  onEditStructured={!isFree ? () => setEditingId(block.id) : undefined}
                 >
                   {isFree
                     ? <EditableFreeBlock block={block} onChange={(patch) => onPatchData(block.id, patch)} />
                     : (h ? <BlockRenderer block={h} mode={mode} appraisal={appraisal} /> : null)}
+                  {editingId === block.id && (
+                    <div className="absolute right-2 top-10 z-30">
+                      <BlockEditPopover
+                        block={block}
+                        override={overrides[block.id] ?? {}}
+                        onPatch={(patch) => onPatchOverride(block.id, patch)}
+                        onClose={() => setEditingId(null)}
+                      />
+                    </div>
+                  )}
                 </SortableBlock>
                 {/* Insertar después de este bloque */}
                 <InsertZone onInsert={(t) => onAdd(t, index + 1)} />
