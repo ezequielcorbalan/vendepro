@@ -362,6 +362,7 @@ export function EditorShell({ initial, snapshot, context }: Props) {
                 onRemove={(id) => dispatch({ type: 'remove_block', blockId: id })}
                 onReorder={(from, to) => dispatch({ type: 'reorder_blocks', from, to })}
                 onPatchData={(id, patch) => dispatch({ type: 'patch_block_data', blockId: id, patch })}
+                onPatchOverride={(id, patch) => dispatch({ type: 'patch_override', blockId: id, patch })}
                 onEditStructured={(id) => { setSidebarCollapsed(false); setOpenBlockId(id) }}
               />
             ) : (

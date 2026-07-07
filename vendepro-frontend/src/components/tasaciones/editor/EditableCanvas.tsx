@@ -8,6 +8,7 @@ import { CSS } from '@dnd-kit/utilities'
 import {
   GripVertical, Trash2, Plus, Lock, AlignLeft, AlignCenter, AlignRight,
   Heading1, Heading2, Heading3, Type, Image as ImageIcon, Images, Minus, Quote, Link2, AlertTriangle,
+  PaintBucket,
 } from 'lucide-react'
 import { hydrateBlocks } from '../renderer/hydrate-blocks'
 import { BlockRenderer } from '../renderer/BlockRenderer'
@@ -34,6 +35,8 @@ interface Props {
   onRemove: (blockId: string) => void
   onReorder: (from: number, to: number) => void
   onPatchData: (blockId: string, patch: Record<string, unknown>) => void
+  /** Persiste un patch de un bloque bloqueado del template como override puntual de esta tasación. */
+  onPatchOverride: (blockId: string, patch: Record<string, unknown>) => void
   /** Abre el formulario del bloque estructurado (edición vía overrides). */
   onEditStructured?: (blockId: string) => void
 }
@@ -50,7 +53,7 @@ const PALETTE: Array<{ type: AppraisalBlockType; icon: typeof Type; seed: Record
 ]
 
 export function EditableCanvas({
-  snapshot, overrides, appraisal, mode, onAdd, onRemove, onReorder, onPatchData, onEditStructured,
+  snapshot, overrides, appraisal, mode, onAdd, onRemove, onReorder, onPatchData, onPatchOverride, onEditStructured,
 }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const sensors = useSensors(
@@ -86,6 +89,11 @@ export function EditableCanvas({
             const h = hydrated.find(x => x.id === block.id)
             const isFree = FREE_BLOCK_TYPES.has(block.type)
             const completeness = h ? getBlockCompleteness(h, appraisal) : { complete: true, missingLabel: null }
+            const backgroundColor = isFree
+              ? ((block.data as any).background_color ?? null)
+              : ((h?.resolved_data as any)?.background_color ?? null)
+            const persistPatch = (patch: Record<string, unknown>) =>
+              isFree ? onPatchData(block.id, patch) : onPatchOverride(block.id, patch)
             return (
               <div key={block.id}>
                 <SortableBlock
@@ -94,6 +102,8 @@ export function EditableCanvas({
                   isFree={isFree}
                   incomplete={!completeness.complete}
                   missingLabel={completeness.missingLabel}
+                  backgroundColor={backgroundColor}
+                  onBackgroundChange={(color) => persistPatch({ background_color: color })}
                   onSelect={() => setSelectedId(block.id)}
                   onRemove={() => onRemove(block.id)}
                   onPatchData={(patch) => onPatchData(block.id, patch)}
@@ -121,19 +131,21 @@ export function EditableCanvas({
 }
 
 function SortableBlock({
-  block, selected, isFree, incomplete, missingLabel, children,
-  onSelect, onRemove, onPatchData, onEditStructured,
+  block, selected, isFree, incomplete, missingLabel, backgroundColor, children,
+  onSelect, onRemove, onPatchData, onEditStructured, onBackgroundChange,
 }: {
   block: TemplateBlock
   selected: boolean
   isFree: boolean
   incomplete: boolean
   missingLabel: string | null
+  backgroundColor: string | null
   children: React.ReactNode
   onSelect: () => void
   onRemove: () => void
   onPatchData: (patch: Record<string, unknown>) => void
   onEditStructured?: () => void
+  onBackgroundChange: (color: string | null) => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: block.id })
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }
@@ -170,6 +182,7 @@ function SortableBlock({
       </div>
 
       <div className={`absolute right-1 top-1 z-20 flex items-center gap-1 transition-opacity ${selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+        <BackgroundColorButton value={backgroundColor} onChange={onBackgroundChange} />
         {!isFree && onEditStructured && (
           <button
             onClick={(e) => { e.stopPropagation(); onEditStructured() }}
@@ -203,6 +216,41 @@ function SortableBlock({
       )}
 
       {children}
+    </div>
+  )
+}
+
+function BackgroundColorButton({ value, onChange }: { value: string | null; onChange: (color: string | null) => void }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="relative">
+      <button
+        onClick={(e) => { e.stopPropagation(); setOpen(o => !o) }}
+        className="rounded bg-white/90 p-1 text-slate-400 shadow-sm hover:text-slate-700"
+        title="Color de fondo"
+        aria-label="Color de fondo del bloque"
+      >
+        <PaintBucket className="h-4 w-4" style={value ? { color: value } : undefined} />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-6 z-30 flex items-center gap-2 rounded-lg border border-slate-200 bg-white p-2 shadow-lg" onClick={(e) => e.stopPropagation()}>
+            <input
+              type="color"
+              value={value ?? '#ffffff'}
+              onChange={(e) => onChange(e.target.value)}
+              className="h-7 w-7 rounded border border-slate-300 p-0.5"
+              aria-label="Elegir color de fondo"
+            />
+            {value && (
+              <button onClick={() => { onChange(null); setOpen(false) }} className="text-xs text-slate-500 hover:text-rose-600">
+                Quitar
+              </button>
+            )}
+          </div>
+        </>
+      )}
     </div>
   )
 }
