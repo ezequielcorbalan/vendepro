@@ -446,7 +446,7 @@ git commit -m "feat(tasaciones): soporte genérico de background_color en el ren
 **Interfaces:**
 - Consumes: nada nuevo (usa los mismos `block-forms/*` ya existentes).
 - Produces: `BlockForm` ahora SIEMPRE renderiza el form correspondiente cuando `context === 'appraisal'`, sin importar `binding_mode`; agrega un aviso cuando el bloque viene bloqueado del template. Esto es lo que consume Task 4 (popover) y lo que ya usa `BlockList.tsx` (panel lateral, sin cambios).
-- El comportamiento para `context === 'template'` (admin) NO cambia — sigue bloqueado igual que hoy.
+- El comportamiento para `context === 'template'` (admin) NO cambia: hoy `BlockForm` **nunca** bloquea en `context === 'template'` (el gate original solo mira `context === 'appraisal'`) — `BlockAdminForm.tsx:173` y `StaticBlocksHome.tsx` dependen de que el form se renderice sin restricción ahí para poder cargar contenido de bloques `system`/`org-static`/`org-variable` desde el admin. No agregar ningún gate nuevo para `context === 'template'`.
 
 - [ ] **Step 1: Escribir el test que falla**
 
@@ -479,9 +479,10 @@ describe('BlockForm — edición de bloques bloqueados', () => {
     expect(screen.queryByText(/solo aplican a esta tasación/i)).not.toBeInTheDocument()
   })
 
-  it('en context=template con binding_mode bloqueado, se mantiene el bloqueo original', () => {
+  it('en context=template, siempre renderiza el form real sin importar el binding_mode (comportamiento original sin cambios)', () => {
     render(<BlockForm block={block('system')} override={{}} onPatch={vi.fn()} context="template" />)
-    expect(screen.getByText(/se configura desde configuración/i)).toBeInTheDocument()
+    expect(screen.getByText(/título/i)).toBeInTheDocument()
+    expect(screen.queryByText(/se configura desde configuración/i)).not.toBeInTheDocument()
   })
 })
 ```
@@ -525,15 +526,6 @@ interface Props {
 const TASACION_EDITABLE: Set<BindingMode> = new Set(['tasacion', 'default-override'])
 
 export function BlockForm({ block, override, onPatch, context, compact }: Props) {
-  const isLockedInTemplate = context === 'template' && !TASACION_EDITABLE.has(block.binding_mode)
-  if (isLockedInTemplate) {
-    return (
-      <div className="rounded border border-slate-200 bg-slate-50 p-3 text-xs text-slate-500">
-        Este bloque se configura desde Configuración → Tasación → Templates.
-      </div>
-    )
-  }
-
   const isLockedInAppraisal = context === 'appraisal' && !TASACION_EDITABLE.has(block.binding_mode)
   const merged = { ...block.data, ...override }
   const props = { data: merged, onPatch }
