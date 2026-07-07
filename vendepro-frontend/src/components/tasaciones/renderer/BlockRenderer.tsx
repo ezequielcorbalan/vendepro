@@ -32,59 +32,94 @@ interface Props {
   appraisal: AppraisalContext
 }
 
+// Tipos que ya aplican background_color por su cuenta (tienen un `style` propio
+// en su elemento raíz que pisaría un wrapper genérico). El resto no define
+// `style` en su raíz, así que el wrapper de abajo alcanza sin tocar cada uno.
+const SELF_MANAGES_BACKGROUND = new Set(['cover', 'price_projection'])
+
 export function BlockRenderer({ block, mode, appraisal }: Props) {
   const attrs = blockDataAttrs(block)
   const data = block.resolved_data
+  const backgroundColor = (data as { background_color?: string | null }).background_color || undefined
+
+  let content: React.ReactNode
   switch (block.type) {
     case 'cover':
-      return <CoverBlock data={data as any} appraisal={appraisal} {...attrs} />
+      content = <CoverBlock data={data as any} appraisal={appraisal} {...attrs} />
+      break
     case 'property_data':
-      return <PropertyDataBlock data={data as any} {...attrs} />
+      content = <PropertyDataBlock data={data as any} {...attrs} />
+      break
     case 'swot':
-      return <SwotBlock data={data as any} {...attrs} />
+      content = <SwotBlock data={data as any} {...attrs} />
+      break
     case 'work_conditions':
-      return <WorkConditionsBlock data={data as any} {...attrs} />
+      content = <WorkConditionsBlock data={data as any} {...attrs} />
+      break
     case 'comparables_list':
-      return <ComparablesListBlock data={data as any} {...attrs} />
+      content = <ComparablesListBlock data={data as any} {...attrs} />
+      break
     case 'proposal_commercial':
-      return <ProposalCommercialBlock data={data as any} {...attrs} />
+      content = <ProposalCommercialBlock data={data as any} {...attrs} />
+      break
     case 'services_grid':
-      return <ServicesGridBlock data={data as any} {...attrs} />
+      content = <ServicesGridBlock data={data as any} {...attrs} />
+      break
     case 'market_stats':
-      return <MarketStatsBlock data={data as any} {...attrs} />
+      content = <MarketStatsBlock data={data as any} {...attrs} />
+      break
     case 'funnel_chart':
-      return <FunnelChartBlock data={data as any} {...attrs} />
+      content = <FunnelChartBlock data={data as any} {...attrs} />
+      break
     case 'methodology':
-      return <MethodologyBlock data={data as any} {...attrs} />
+      content = <MethodologyBlock data={data as any} {...attrs} />
+      break
     case 'notary_charts':
-      return <NotaryChartsBlock data={data as any} {...attrs} />
+      content = <NotaryChartsBlock data={data as any} {...attrs} />
+      break
     case 'zone_map':
-      return <ZoneMapBlock data={data as any} {...attrs} />
+      content = <ZoneMapBlock data={data as any} {...attrs} />
+      break
     case 'price_projection':
-      return <PriceProjectionBlock data={data as any} {...attrs} />
+      content = <PriceProjectionBlock data={data as any} {...attrs} />
+      break
     case 'video_gallery':
-      return <VideoGalleryBlock data={data as any} {...attrs} />
+      content = <VideoGalleryBlock data={data as any} {...attrs} />
+      break
     case 'extra_media':
-      return <ExtraMediaBlock data={data as any} {...attrs} />
+      content = <ExtraMediaBlock data={data as any} {...attrs} />
+      break
     case 'cta_whatsapp':
-      return <CtaWhatsappBlock data={data as any} {...attrs} />
+      content = <CtaWhatsappBlock data={data as any} {...attrs} />
+      break
     case 'agent_contact_card':
-      return <AgentContactCardBlock data={data as any} appraisal={appraisal} {...attrs} />
+      content = <AgentContactCardBlock data={data as any} appraisal={appraisal} {...attrs} />
+      break
     case 'heading':
-      return <HeadingBlock data={data as any} {...attrs} />
+      content = <HeadingBlock data={data as any} {...attrs} />
+      break
     case 'rich_text':
-      return <RichTextBlock data={data as any} {...attrs} />
+      content = <RichTextBlock data={data as any} {...attrs} />
+      break
     case 'image':
-      return <ImageBlock data={data as any} {...attrs} />
+      content = <ImageBlock data={data as any} {...attrs} />
+      break
     case 'gallery':
-      return <GalleryBlock data={data as any} {...attrs} />
+      content = <GalleryBlock data={data as any} {...attrs} />
+      break
     case 'divider':
-      return <DividerBlock data={data as any} {...attrs} />
+      content = <DividerBlock data={data as any} {...attrs} />
+      break
     case 'callout':
-      return <CalloutBlock data={data as any} {...attrs} />
+      content = <CalloutBlock data={data as any} {...attrs} />
+      break
     case 'button_link':
-      return <ButtonLinkBlock data={data as any} {...attrs} />
+      content = <ButtonLinkBlock data={data as any} {...attrs} />
+      break
     default:
-      return <UnknownBlock type={block.type} {...attrs} />
+      content = <UnknownBlock type={block.type} {...attrs} />
   }
+
+  if (!backgroundColor || SELF_MANAGES_BACKGROUND.has(block.type)) return content
+  return <div style={{ backgroundColor }}>{content}</div>
 }

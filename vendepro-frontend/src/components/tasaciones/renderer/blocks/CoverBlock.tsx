@@ -4,6 +4,7 @@ interface CoverData {
   title?: string
   subtitle?: string
   cover_image_url?: string | null
+  background_color?: string | null
   agent_display?: {
     name?: string
     phone?: string
@@ -26,11 +27,14 @@ export function CoverBlock({ data, appraisal, ...attrs }: Props) {
   const sizeClasses = hasCoverImage
     ? 'min-h-[80vh] py-16 md:min-h-screen'
     : 'min-h-[40vh] py-12 md:min-h-[50vh]'
+  const sectionStyle = data.background_color
+    ? { backgroundColor: data.background_color }
+    : { backgroundImage: 'linear-gradient(180deg, var(--brand-color, #ff007c) 0%, var(--brand-accent-color, #e17a2a) 100%)' }
   return (
     <section
       {...attrs}
       className={`relative flex items-end text-white px-6 md:px-12 ${sizeClasses}`}
-      style={{ backgroundImage: 'linear-gradient(180deg, var(--brand-color, #ff007c) 0%, var(--brand-accent-color, #e17a2a) 100%)' }}
+      style={sectionStyle}
     >
       {data.cover_image_url && (
         <img src={data.cover_image_url} alt="" className="absolute inset-0 h-full w-full object-cover opacity-30" />
