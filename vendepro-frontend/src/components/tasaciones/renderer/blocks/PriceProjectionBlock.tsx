@@ -4,6 +4,7 @@ interface Data {
   test?: number | null
   expected_close?: number | null
   usd_per_m2?: number | null
+  background_color?: string | null
 }
 interface Props { data: Data; [key: `data-${string}`]: string | undefined }
 
@@ -19,12 +20,15 @@ export function PriceProjectionBlock({ data, ...attrs }: Props) {
   const suggested = money(data.suggested)
   const test = money(data.test)
   const close = money(data.expected_close)
+  const sectionStyle = data.background_color
+    ? { backgroundColor: data.background_color }
+    : { backgroundImage: BRAND_GRADIENT }
 
   return (
     <section
       {...attrs}
       className="relative overflow-hidden px-6 py-16 text-white md:px-12 md:py-24"
-      style={{ backgroundImage: BRAND_GRADIENT }}
+      style={sectionStyle}
     >
       <div className="relative z-10 mx-auto max-w-5xl">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80 md:text-sm">

@@ -298,16 +298,18 @@ function EditableFreeBlock({ block, onChange }: { block: TemplateBlock; onChange
   const attrs = blockDataAttrs(block)
   const data = block.data as any
   const edit = { onChange }
+  let content: React.ReactNode
   switch (block.type) {
-    case 'heading': return <HeadingBlock data={data} edit={edit} {...attrs} />
-    case 'rich_text': return <RichTextBlock data={data} edit={edit} {...attrs} />
-    case 'image': return <ImageBlock data={data} edit={edit} {...attrs} />
-    case 'gallery': return <GalleryBlock data={data} edit={edit} {...attrs} />
-    case 'divider': return <DividerBlock data={data} edit={edit} {...attrs} />
-    case 'callout': return <CalloutBlock data={data} edit={edit} {...attrs} />
-    case 'button_link': return <ButtonLinkBlock data={data} edit={edit} {...attrs} />
+    case 'heading': content = <HeadingBlock data={data} edit={edit} {...attrs} />; break
+    case 'rich_text': content = <RichTextBlock data={data} edit={edit} {...attrs} />; break
+    case 'image': content = <ImageBlock data={data} edit={edit} {...attrs} />; break
+    case 'gallery': content = <GalleryBlock data={data} edit={edit} {...attrs} />; break
+    case 'divider': content = <DividerBlock data={data} edit={edit} {...attrs} />; break
+    case 'callout': content = <CalloutBlock data={data} edit={edit} {...attrs} />; break
+    case 'button_link': content = <ButtonLinkBlock data={data} edit={edit} {...attrs} />; break
     default: return null
   }
+  return data.background_color ? <div style={{ backgroundColor: data.background_color }}>{content}</div> : content
 }
 
 function InsertZone({ onInsert }: { onInsert: (type: AppraisalBlockType) => void }) {

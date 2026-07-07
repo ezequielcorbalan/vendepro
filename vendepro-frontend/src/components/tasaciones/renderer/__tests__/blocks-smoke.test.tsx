@@ -19,7 +19,7 @@ describe('blocks smoke tests', () => {
     it(`renders ${type} without crashing`, () => {
       const block: TemplateBlock = {
         id: `b-${type}`, type, binding_mode: 'tasacion', include_in_pdf: true, sort_order: 0,
-        data: { title: 'T', phone: '+5411', videos: [], media: [], services: [{ label: 'S' }], items: [{ title: 'I', body: 'B' }], funnel: [{ label: 'A', value: 1 }] },
+        data: { title: 'T', phone: '+5411', videos: [], media: [], services: [{ label: 'S' }], items: [{ title: 'I', body: 'B' }], funnel: [{ label: 'A', value: 1 }], background_color: '#112233' },
       }
       expect(() => render(<TemplateRenderer snapshot={[block]} appraisal={appraisal} />)).not.toThrow()
     })
