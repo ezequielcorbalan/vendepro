@@ -11,6 +11,8 @@ import {
   D1UserIntegrationRepository, GoogleCalendarHttpClient, buildGoogleAuthUrl,
   D1EmailSettingsRepository, D1EmailSuppressionRepository, ResendEmailService,
   D1EmailCampaignRepository, D1EmailCampaignSendRepository, D1EmailAudienceRepository,
+  D1EmailAutomationRepository, D1EmailAutomationEnrollmentRepository, D1EmailAutomationSendRepository,
+  enrollInAutomations,
   HmacUnsubscribeTokenSigner,
   JwtAuthService, CryptoIdGenerator,
   encrypt, decrypt,
@@ -40,6 +42,9 @@ import {
   CreateEmailCampaignUseCase, UpdateEmailCampaignUseCase, ListEmailCampaignsUseCase,
   GetEmailCampaignUseCase, DeleteEmailCampaignUseCase, CancelEmailCampaignUseCase,
   PreviewCampaignAudienceUseCase, QueueCampaignSendUseCase, ProcessEmailQueueUseCase,
+  CreateEmailAutomationUseCase, UpdateEmailAutomationUseCase, ListEmailAutomationsUseCase,
+  GetEmailAutomationUseCase, DeleteEmailAutomationUseCase, SetAutomationStatusUseCase,
+  EnrollSegmentUseCase, ListAutomationEnrollmentsUseCase, ProcessAutomationsUseCase,
 } from '@vendepro/core'
 import {
   CreateLandingFromTemplateUseCase, UpdateLandingBlocksUseCase, AddBlockUseCase,
@@ -143,6 +148,17 @@ app.post('/leads', async (c) => {
       },
     },
   })
+  // Automatizaciones: inscribe el lead en las secuencias con trigger `lead_created`.
+  await enrollInAutomations(c.env, {
+    orgId: c.get('orgId'),
+    event: 'lead_created',
+    recipient: {
+      email: body.email ?? body.contact_data?.email ?? '',
+      name: body.full_name ?? body.contact_data?.full_name ?? null,
+      contact_id: result.contact_id ?? null,
+      lead_id: result.id,
+    },
+  })
   return c.json({ ...result, marketing: mk ?? null }, 201)
 })
 
@@ -195,6 +211,22 @@ app.post('/leads/stage', async (c) => {
       notes: body.notes ?? null,
     },
   })
+  // Automatizaciones: inscribe en secuencias con trigger `stage:<nuevo_stage>`.
+  // Requiere el email del lead (no viene en el body): lo buscamos.
+  const stageLead = await repo.findById(body.id, c.get('orgId')).catch(() => null)
+  const leadObj = stageLead?.toObject?.() ?? (stageLead as any)
+  if (leadObj?.email) {
+    await enrollInAutomations(c.env, {
+      orgId: c.get('orgId'),
+      event: `stage:${body.stage}`,
+      recipient: {
+        email: leadObj.email,
+        name: leadObj.full_name ?? null,
+        contact_id: leadObj.contact_id ?? null,
+        lead_id: body.id,
+      },
+    })
+  }
   return c.json({ ...result, marketing: mk ?? null })
 })
 
@@ -453,6 +485,100 @@ app.post('/marketing/email/campaigns/:id/cancel', async (c) => {
   )
   await useCase.execute(c.req.param('id'), c.get('orgId'))
   return c.json({ success: true })
+})
+
+// ── MARKETING — AUTOMATIZACIONES (secuencias drip) ─────────────
+
+function automationDeps(env: Env) {
+  return {
+    repo: new D1EmailAutomationRepository(env.DB),
+    enroll: new D1EmailAutomationEnrollmentRepository(env.DB),
+    sends: new D1EmailAutomationSendRepository(env.DB),
+  }
+}
+
+app.get('/marketing/email/automations', async (c) => {
+  const d = automationDeps(c.env)
+  const useCase = new ListEmailAutomationsUseCase(d.repo, d.enroll)
+  const list = await useCase.execute(c.get('orgId'))
+  return c.json(list)
+})
+
+app.get('/marketing/email/automations/:id', async (c) => {
+  const d = automationDeps(c.env)
+  const useCase = new GetEmailAutomationUseCase(d.repo, d.enroll, d.sends)
+  const result = await useCase.execute(c.req.param('id'), c.get('orgId'))
+  return c.json(result)
+})
+
+app.get('/marketing/email/automations/:id/enrollments', async (c) => {
+  const d = automationDeps(c.env)
+  const useCase = new ListAutomationEnrollmentsUseCase(d.enroll)
+  const list = await useCase.execute(c.req.param('id'), c.get('orgId'))
+  return c.json(list)
+})
+
+app.post('/marketing/email/automations', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const body = (await c.req.json()) as any
+  const useCase = new CreateEmailAutomationUseCase(new D1EmailAutomationRepository(c.env.DB), new CryptoIdGenerator())
+  const result = await useCase.execute({
+    orgId: c.get('orgId'),
+    userId: c.get('userId'),
+    name: body.name,
+    trigger_event: body.trigger_event ?? null,
+    steps: body.steps ?? null,
+  })
+  return c.json(result, 201)
+})
+
+app.put('/marketing/email/automations/:id', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const body = (await c.req.json()) as any
+  const useCase = new UpdateEmailAutomationUseCase(new D1EmailAutomationRepository(c.env.DB))
+  await useCase.execute({
+    id: c.req.param('id'),
+    orgId: c.get('orgId'),
+    name: body.name,
+    trigger_event: body.trigger_event,
+    steps: body.steps,
+  })
+  return c.json({ success: true })
+})
+
+app.delete('/marketing/email/automations/:id', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const d = automationDeps(c.env)
+  const useCase = new DeleteEmailAutomationUseCase(d.repo, d.enroll, d.sends)
+  await useCase.execute(c.req.param('id'), c.get('orgId'))
+  return c.json({ success: true })
+})
+
+// Activar / pausar / volver a borrador.
+app.post('/marketing/email/automations/:id/status', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const body = (await c.req.json()) as any
+  const useCase = new SetAutomationStatusUseCase(new D1EmailAutomationRepository(c.env.DB))
+  await useCase.execute(c.req.param('id'), c.get('orgId'), body.status)
+  return c.json({ success: true })
+})
+
+// Inscripción manual de un segmento en la automatización.
+app.post('/marketing/email/automations/:id/enroll', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const body = (await c.req.json()) as any
+  const useCase = new EnrollSegmentUseCase(
+    new D1EmailAutomationRepository(c.env.DB),
+    new D1EmailAutomationEnrollmentRepository(c.env.DB),
+    new D1EmailAudienceRepository(c.env.DB),
+    new CryptoIdGenerator(),
+  )
+  const result = await useCase.execute({
+    automationId: c.req.param('id'),
+    orgId: c.get('orgId'),
+    segment: body.segment,
+  })
+  return c.json(result)
 })
 
 // ── INTEGRACIONES CRM (KiteProp) ───────────────────────────────
@@ -1274,10 +1400,35 @@ async function runEmailQueue(env: Env): Promise<void> {
   }
 }
 
+// Despachador de automatizaciones (secuencias drip). Corre en el mismo tick */5.
+function buildAutomationProcessor(env: Env) {
+  return new ProcessAutomationsUseCase(
+    new D1EmailAutomationRepository(env.DB),
+    new D1EmailAutomationEnrollmentRepository(env.DB),
+    new D1EmailAutomationSendRepository(env.DB),
+    new D1EmailSettingsRepository(env.DB),
+    new D1EmailSuppressionRepository(env.DB),
+    new ResendEmailService(env.RESEND_API_KEY ?? ''),
+    new HmacUnsubscribeTokenSigner(env.JWT_SECRET),
+    new CryptoIdGenerator(),
+    env.FRONTEND_URL ?? 'https://vendepro.com.ar',
+  )
+}
+
+async function runAutomations(env: Env): Promise<void> {
+  if (!env.RESEND_API_KEY) return
+  try {
+    await buildAutomationProcessor(env).execute()
+  } catch {
+    // el próximo tick reintenta; los fallos por email quedan en email_automation_sends
+  }
+}
+
 async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
   // Dos crons registrados en wrangler.jsonc — se distinguen por patrón.
   if (event.cron === '*/5 * * * *') {
     ctx.waitUntil(runEmailQueue(env))
+    ctx.waitUntil(runAutomations(env))
     return
   }
   ctx.waitUntil(runKitepropAutoSync(env))

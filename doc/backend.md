@@ -94,7 +94,10 @@ Dos cron triggers en `packages/api-crm/wrangler.jsonc`, despachados por `event.c
 - `*/5 * * * *` — despachador de campañas de email (Resend). El camino
   rápido es un `waitUntil` al encolar; el cron barre programadas, reintentos
   y colas largas. Lotes de 100 (límite del batch API de Resend), 3 reintentos
-  por destinatario.
+  por destinatario. En el mismo tick corre el despachador de
+  **automatizaciones** (secuencias drip): toma inscripciones activas cuyo
+  próximo paso venció, envía y agenda el siguiente. Inscripción por evento
+  (`enrollInAutomations` en lead_created / stage:*) o manual por segmento.
 
 ## Recursos Cloudflare existentes (NO renombrar)
 

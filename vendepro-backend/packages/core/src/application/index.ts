@@ -133,6 +133,9 @@ export * from './use-cases/marketing/index'
 // Campañas de email (Resend)
 export * from './use-cases/email-campaigns/index'
 
+// Automatizaciones de email (secuencias drip)
+export * from './use-cases/email-automations/index'
+
 // Integraciones con CRMs externos (KiteProp)
 export * from './use-cases/integrations/index'
 
