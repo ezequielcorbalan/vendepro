@@ -2,6 +2,8 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, fireEvent, screen } from '@testing-library/react'
 import { CoverBlock } from '../blocks/CoverBlock'
 import { MethodologyBlock } from '../blocks/MethodologyBlock'
+import { CtaWhatsappBlock } from '../blocks/CtaWhatsappBlock'
+import { AgentContactCardBlock } from '../blocks/AgentContactCardBlock'
 import type { AppraisalContext } from '../types'
 
 const appraisal: AppraisalContext = {
@@ -35,5 +37,32 @@ describe('MethodologyBlock — edición inline', () => {
     bodyEl.textContent = 'Nuevo cuerpo'
     fireEvent.blur(bodyEl)
     expect(onChange).toHaveBeenCalledWith({ body: 'Nuevo cuerpo' })
+  })
+})
+
+describe('CtaWhatsappBlock — edición inline', () => {
+  it('con edit, muestra los campos aunque no haya teléfono cargado, y commitea el texto', () => {
+    const onChange = vi.fn()
+    render(<CtaWhatsappBlock data={{}} edit={{ onChange }} />)
+    const textEl = screen.getByText('¿Hablamos por WhatsApp?')
+    textEl.textContent = 'Escribinos'
+    fireEvent.blur(textEl)
+    expect(onChange).toHaveBeenCalledWith({ text: 'Escribinos' })
+  })
+
+  it('sin edit y sin teléfono, no renderiza nada', () => {
+    const { container } = render(<CtaWhatsappBlock data={{}} />)
+    expect(container.firstChild).toBeNull()
+  })
+})
+
+describe('AgentContactCardBlock — edición inline', () => {
+  it('con edit, el nombre es contenteditable y commitea', () => {
+    const onChange = vi.fn()
+    render(<AgentContactCardBlock data={{ name: 'Marcela' }} appraisal={appraisal} edit={{ onChange }} />)
+    const nameEl = screen.getByText('Marcela')
+    nameEl.textContent = 'Marcela G.'
+    fireEvent.blur(nameEl)
+    expect(onChange).toHaveBeenCalledWith({ name: 'Marcela G.' })
   })
 })
