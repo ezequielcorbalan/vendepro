@@ -22,6 +22,7 @@ import {
   Megaphone,
   Briefcase,
   Mail,
+  Workflow,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -88,6 +89,7 @@ export const menuSections: NavSection[] = [
     links: [
       { href: '/marketing', label: 'Publicidad', icon: Megaphone, exact: true },
       { href: '/marketing/emails', label: 'Emails', icon: Mail },
+      { href: '/marketing/automations', label: 'Automatizaciones', icon: Workflow },
       { href: '/landings', label: 'Landings', icon: Globe },
     ],
   },

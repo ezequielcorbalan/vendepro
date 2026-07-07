@@ -41,3 +41,7 @@ export type { EmailSettingsRepository } from './email-settings-repository'
 export type { EmailSuppressionRepository } from './email-suppression-repository'
 export type { EmailCampaignRepository, EmailCampaignSendRepository, CampaignSendRow } from './email-campaign-repository'
 export type { EmailAudienceRepository, AudienceRecipient } from './email-audience-repository'
+export type {
+  EmailAutomationRepository, EmailAutomationEnrollmentRepository, EmailAutomationSendRepository,
+  EnrollmentRow, AutomationSendRow,
+} from './email-automation-repository'

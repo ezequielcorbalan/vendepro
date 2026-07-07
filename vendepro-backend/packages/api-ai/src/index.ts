@@ -7,6 +7,7 @@ import {
   ExtractLeadFromImageUseCase,
   EditBlockWithAIUseCase,
   GenerateEmailCampaignContentUseCase,
+  GenerateAutomationSequenceUseCase,
 } from '@vendepro/core'
 
 type Env = { DB: D1Database; JWT_SECRET: string; ANTHROPIC_API_KEY: string; GROQ_API_KEY: string }
@@ -73,6 +74,23 @@ app.post('/generate-email-campaign', async (c) => {
     brandColor: org?.brand_color ?? null,
   })
   return c.json(content)
+})
+
+// Genera una secuencia coordinada de emails (automatización drip) con IA.
+app.post('/generate-email-sequence', async (c) => {
+  const body = (await c.req.json()) as any
+  const org = await new D1OrganizationRepository(c.env.DB).findById(c.get('orgId'))
+  const useCase = new GenerateAutomationSequenceUseCase(
+    new AnthropicEmailContentGenerator(c.env.ANTHROPIC_API_KEY),
+  )
+  const steps = await useCase.execute({
+    brief: body.brief ?? '',
+    stepCount: body.step_count ?? 3,
+    orgName: org?.name ?? null,
+    audienceDescription: body.audience_description ?? null,
+    brandColor: org?.brand_color ?? null,
+  })
+  return c.json({ steps })
 })
 
 app.post('/extract-image', async (c) => {

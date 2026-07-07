@@ -3,6 +3,7 @@ import type { EmailSettingsRepository } from '../../ports/repositories/email-set
 import type { EmailService, SendEmailInput } from '../../ports/services/email-service'
 import type { UnsubscribeTokenSigner } from '../../ports/services/unsubscribe-token-signer'
 import type { EmailCampaign } from '../../../domain/entities/email-campaign'
+import { buildPersonalizedEmail } from '../email-shared/personalize'
 
 const BATCH_SIZE = 100
 const MAX_ATTEMPTS = 3
@@ -110,32 +111,15 @@ export class ProcessEmailQueueUseCase {
     from: { email: string; name: string },
     replyTo: string | null,
   ): Promise<SendEmailInput> {
-    const firstName = (row.name ?? '').trim().split(/\s+/)[0] || ''
-    const substitute = (s: string) => s
-      .replace(/\{\{\s*nombre\s*\}\}/gi, firstName)
-      .replace(/\{\{\s*email\s*\}\}/gi, row.email)
-
-    const token = await this.unsubscribeSigner.sign({ orgId: campaign.org_id, email: row.email })
-    const unsubscribeUrl = `${this.publicBaseUrl}/u/${token}`
-
-    const html = appendUnsubscribeHtml(substitute(campaign.html ?? ''), unsubscribeUrl)
-    const text = `${substitute(campaign.text ?? '')}\n\n—\nPara dejar de recibir estos emails: ${unsubscribeUrl}`
-
-    return {
+    return buildPersonalizedEmail({
+      orgId: campaign.org_id,
+      recipient: { email: row.email, name: row.name },
+      fields: { subject: campaign.subject ?? '', html: campaign.html ?? '', text: campaign.text ?? '' },
       from,
-      to: { email: row.email, name: row.name ?? '' },
-      subject: substitute(campaign.subject ?? ''),
-      html,
-      text,
-      replyTo: replyTo ?? undefined,
+      replyTo,
+      publicBaseUrl: this.publicBaseUrl,
+      signer: this.unsubscribeSigner,
       tags: { kind: 'campaign', campaign_id: campaign.id },
-    }
+    })
   }
-}
-
-function appendUnsubscribeHtml(html: string, url: string): string {
-  const footer = `<p style="margin-top:32px;font-size:12px;color:#999;text-align:center;">` +
-    `¿No querés recibir más estos emails? <a href="${url}" style="color:#999;">Cancelar suscripción</a></p>`
-  // Insertar antes del cierre del body si existe; si no, al final.
-  return /<\/body>/i.test(html) ? html.replace(/<\/body>/i, `${footer}</body>`) : html + footer
 }

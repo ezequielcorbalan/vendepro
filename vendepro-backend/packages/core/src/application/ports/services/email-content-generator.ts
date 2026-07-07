@@ -18,10 +18,30 @@ export interface GeneratedEmailContent {
   text: string
 }
 
+export interface GenerateSequenceInput {
+  /** Objetivo global de la secuencia. */
+  brief: string
+  /** Cantidad de emails en la secuencia. */
+  stepCount: number
+  orgName?: string | null
+  audienceDescription?: string | null
+  brandColor?: string | null
+}
+
+export interface GeneratedSequenceStep extends GeneratedEmailContent {
+  /** Demora sugerida desde el paso anterior (horas). */
+  delay_hours: number
+}
+
 /**
  * Genera el borrador de una campaña de email con IA.
  * El resultado SIEMPRE es un borrador editable — la IA nunca envía.
  */
 export interface EmailContentGenerator {
   generate(input: GenerateEmailContentInput): Promise<GeneratedEmailContent>
+  /**
+   * Genera una secuencia coordinada de N emails (drip). Cada paso incluye
+   * una demora sugerida respecto del anterior.
+   */
+  generateSequence(input: GenerateSequenceInput): Promise<GeneratedSequenceStep[]>
 }

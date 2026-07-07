@@ -12,4 +12,7 @@ export type { WebhookSender, WebhookSendResult } from './webhook-sender'
 export type { KitepropGateway, KitepropContactDTO, KitepropContactsPage, KitepropTestResult, KitepropMessageDTO, KitepropMessagesPage, KitepropPropertyRef } from './kiteprop-gateway'
 export type { GoogleCalendarGateway, GoogleTokenSet, GoogleEventPayload } from './google-calendar-gateway'
 export type { UnsubscribeTokenSigner, UnsubscribeTokenPayload } from './unsubscribe-token-signer'
-export type { EmailContentGenerator, GenerateEmailContentInput, GeneratedEmailContent } from './email-content-generator'
+export type {
+  EmailContentGenerator, GenerateEmailContentInput, GeneratedEmailContent,
+  GenerateSequenceInput, GeneratedSequenceStep,
+} from './email-content-generator'
