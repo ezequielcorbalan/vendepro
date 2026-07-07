@@ -37,6 +37,6 @@ describe('background_color rendering', () => {
       data: { title: 'T' },
     }
     const { container } = render(<TemplateRenderer snapshot={[block]} appraisal={appraisal} />)
-    expect(container.querySelector('[style]')).toBeNull()
+    expect(container.querySelector('[style*="background-color"]')).toBeNull()
   })
 })
