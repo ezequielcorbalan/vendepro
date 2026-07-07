@@ -291,7 +291,7 @@ export default function MarketingConfigPage() {
           </div>
           <div>
             <h1 className="text-xl font-semibold text-gray-800">Marketing</h1>
-            <p className="text-sm text-gray-500 mt-0.5">Meta Conversion API + Google Analytics 4 + GTM (server-side opcional vía Stape)</p>
+            <p className="text-sm text-gray-500 mt-0.5">Meta Conversion API + Google Analytics 4 + GTM</p>
           </div>
         </div>
       </div>
@@ -355,20 +355,6 @@ export default function MarketingConfigPage() {
                 placeholder="GTM-XXXXXX"
                 className={inputCls}
               />
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className={labelCls}>Stape Endpoint (server-side GTM)</label>
-              <input
-                value={integration.stape_endpoint || ''}
-                onChange={e => setIntegration({ ...integration, stape_endpoint: e.target.value })}
-                placeholder="https://sss.midominio.com"
-                className={inputCls}
-              />
-              <p className="text-[10px] text-gray-400 mt-1">
-                Custom domain de tu contenedor sGTM. Si lo configurás, Meta CAPI y GA4 MP atraviesan tu Stape (tracking first-party).
-                Si no, va directo a graph.facebook.com / google-analytics.com.
-              </p>
             </div>
 
             <div>
