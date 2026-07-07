@@ -1,4 +1,6 @@
 import type { AppraisalContext } from '../types'
+import { InlineEditable } from './InlineEditable'
+import { ImageEditControls } from './ImageEditControls'
 
 interface CoverData {
   title?: string
@@ -16,14 +18,13 @@ interface CoverData {
 interface Props {
   data: CoverData
   appraisal: AppraisalContext
+  edit?: { onChange: (patch: Partial<CoverData>) => void }
   [key: `data-${string}`]: string | undefined
 }
 
-export function CoverBlock({ data, appraisal, ...attrs }: Props) {
+export function CoverBlock({ data, appraisal, edit, ...attrs }: Props) {
   const agent = data.agent_display ?? appraisal.agent ?? undefined
   const hasCoverImage = !!data.cover_image_url
-  // Sin imagen de portada el degradado queda enorme y vacío: achicamos la
-  // altura para que el header sea compacto. Con imagen mantenemos el tamaño full.
   const sizeClasses = hasCoverImage
     ? 'min-h-[80vh] py-16 md:min-h-screen'
     : 'min-h-[40vh] py-12 md:min-h-[50vh]'
@@ -39,6 +40,11 @@ export function CoverBlock({ data, appraisal, ...attrs }: Props) {
       {data.cover_image_url && (
         <img src={data.cover_image_url} alt="" className="absolute inset-0 h-full w-full object-cover opacity-30" />
       )}
+      {edit && (
+        <div className="absolute right-4 top-4 z-20">
+          <ImageEditControls compact={hasCoverImage} onUploaded={(url) => edit.onChange({ cover_image_url: url })} />
+        </div>
+      )}
       {appraisal.org?.logo_url && (
         <img
           src={appraisal.org.logo_url}
@@ -50,10 +56,32 @@ export function CoverBlock({ data, appraisal, ...attrs }: Props) {
         <p className="text-xs font-semibold uppercase tracking-[0.2em] opacity-90 md:text-sm">
           Tasación profesional
         </p>
-        <h1 className="mt-3 font-poppins text-4xl font-bold leading-tight md:text-6xl">
-          {data.title ?? '¿Querés saber cuánto vale tu propiedad?'}
-        </h1>
-        {data.subtitle && <p className="mt-3 text-lg opacity-90 md:text-xl">{data.subtitle}</p>}
+        {edit ? (
+          <InlineEditable
+            as="h1"
+            plaintext
+            value={data.title ?? ''}
+            placeholder="¿Querés saber cuánto vale tu propiedad?"
+            className="mt-3 font-poppins text-4xl font-bold leading-tight md:text-6xl"
+            onCommit={(title) => edit.onChange({ title })}
+          />
+        ) : (
+          <h1 className="mt-3 font-poppins text-4xl font-bold leading-tight md:text-6xl">
+            {data.title ?? '¿Querés saber cuánto vale tu propiedad?'}
+          </h1>
+        )}
+        {edit ? (
+          <InlineEditable
+            as="p"
+            plaintext
+            value={data.subtitle ?? ''}
+            placeholder="Subtítulo (opcional)…"
+            className="mt-3 text-lg opacity-90 md:text-xl"
+            onCommit={(subtitle) => edit.onChange({ subtitle })}
+          />
+        ) : data.subtitle ? (
+          <p className="mt-3 text-lg opacity-90 md:text-xl">{data.subtitle}</p>
+        ) : null}
         <p className="mt-6 text-sm opacity-90 md:text-base">
           {appraisal.property_address}
           {appraisal.neighborhood ? ` · ${appraisal.neighborhood}` : ''}
