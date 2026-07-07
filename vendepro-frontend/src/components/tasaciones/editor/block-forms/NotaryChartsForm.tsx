@@ -1,7 +1,7 @@
 'use client'
 import ImageUpload from '@/components/landings/ImageUpload'
 
-interface Props { data: any; onPatch: (p: Record<string, unknown>) => void }
+interface Props { data: any; onPatch: (p: Record<string, unknown>) => void; compact?: boolean }
 
 /**
  * Form de "Gastos e impuestos" — históricamente se cargaba referenciando
@@ -9,7 +9,7 @@ interface Props { data: any; onPatch: (p: Record<string, unknown>) => void }
  * un nombre y una imagen por gráfico. El renderer mantiene compatibilidad
  * con la forma vieja (chart_1_var/chart_2_var) para tasaciones existentes.
  */
-export function NotaryChartsForm({ data, onPatch }: Props) {
+export function NotaryChartsForm({ data, onPatch, compact }: Props) {
   return (
     <div className="space-y-4 p-3">
       <label className="flex flex-col gap-1">
@@ -23,7 +23,7 @@ export function NotaryChartsForm({ data, onPatch }: Props) {
         />
       </label>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className={`grid grid-cols-1 gap-4 ${compact ? '' : 'md:grid-cols-2'}`}>
         <div className="space-y-2 rounded border border-slate-200 bg-slate-50/40 p-3">
           <label className="flex flex-col gap-1">
             <span className="text-xs uppercase tracking-wide text-slate-600">Nombre del gráfico 1</span>
