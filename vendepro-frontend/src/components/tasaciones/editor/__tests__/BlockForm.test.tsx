@@ -24,8 +24,9 @@ describe('BlockForm — edición de bloques bloqueados', () => {
     expect(screen.queryByText(/solo aplican a esta tasación/i)).not.toBeInTheDocument()
   })
 
-  it('en context=template con binding_mode bloqueado, se mantiene el bloqueo original', () => {
+  it('en context=template, siempre renderiza el form real sin importar el binding_mode (comportamiento original sin cambios)', () => {
     render(<BlockForm block={block('system')} override={{}} onPatch={vi.fn()} context="template" />)
-    expect(screen.getByText(/se configura desde configuración/i)).toBeInTheDocument()
+    expect(screen.getByText(/título/i)).toBeInTheDocument()
+    expect(screen.queryByText(/se configura desde configuración/i)).not.toBeInTheDocument()
   })
 })

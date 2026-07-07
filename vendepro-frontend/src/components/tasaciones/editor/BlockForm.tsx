@@ -27,15 +27,6 @@ interface Props {
 const TASACION_EDITABLE: Set<BindingMode> = new Set(['tasacion', 'default-override'])
 
 export function BlockForm({ block, override, onPatch, context, compact }: Props) {
-  const isLockedInTemplate = context === 'template' && !TASACION_EDITABLE.has(block.binding_mode)
-  if (isLockedInTemplate) {
-    return (
-      <div className="rounded border border-slate-200 bg-slate-50 p-3 text-xs text-slate-500">
-        Este bloque se configura desde Configuración → Tasación → Templates.
-      </div>
-    )
-  }
-
   const isLockedInAppraisal = context === 'appraisal' && !TASACION_EDITABLE.has(block.binding_mode)
   const merged = { ...block.data, ...override }
   const props = { data: merged, onPatch }
