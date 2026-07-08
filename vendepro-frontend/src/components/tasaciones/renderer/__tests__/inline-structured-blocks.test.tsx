@@ -4,6 +4,7 @@ import { CoverBlock } from '../blocks/CoverBlock'
 import { MethodologyBlock } from '../blocks/MethodologyBlock'
 import { CtaWhatsappBlock } from '../blocks/CtaWhatsappBlock'
 import { AgentContactCardBlock } from '../blocks/AgentContactCardBlock'
+import { ZoneMapBlock } from '../blocks/ZoneMapBlock'
 import type { AppraisalContext } from '../types'
 
 const appraisal: AppraisalContext = {
@@ -65,5 +66,21 @@ describe('AgentContactCardBlock — edición inline', () => {
     nameEl.textContent = 'Marcela G.'
     fireEvent.blur(nameEl)
     expect(onChange).toHaveBeenCalledWith({ name: 'Marcela G.' })
+  })
+})
+
+describe('ZoneMapBlock — edición inline', () => {
+  it('con edit, el título es contenteditable y los stats son inputs numéricos', () => {
+    const onChange = vi.fn()
+    render(<ZoneMapBlock data={{ title: 'Zona', avg_m2_price: 3000 }} edit={{ onChange }} />)
+    const titleEl = screen.getByText('Zona')
+    titleEl.textContent = 'Otra zona'
+    fireEvent.blur(titleEl)
+    expect(onChange).toHaveBeenCalledWith({ title: 'Otra zona' })
+
+    const avgInput = screen.getByLabelText('Promedio USD/m²') as HTMLInputElement
+    fireEvent.change(avgInput, { target: { value: '3500' } })
+    fireEvent.blur(avgInput)
+    expect(onChange).toHaveBeenCalledWith({ avg_m2_price: 3500 })
   })
 })
