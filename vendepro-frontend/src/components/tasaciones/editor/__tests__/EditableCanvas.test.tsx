@@ -46,3 +46,21 @@ describe('EditableCanvas — color de fondo', () => {
     expect(onPatchData).not.toHaveBeenCalled()
   })
 })
+
+describe('EditableCanvas — bloques estructurados inline', () => {
+  it('methodology (binding_mode system) edita el título inline y persiste vía onPatchOverride', () => {
+    const snapshot: TemplateBlock[] = [{ id: 'b1', type: 'methodology', binding_mode: 'system', include_in_pdf: true, sort_order: 0, data: { title: 'Original' } }]
+    const onPatchOverride = vi.fn()
+    render(
+      <EditableCanvas
+        snapshot={snapshot} overrides={{}} appraisal={appraisal} mode="web"
+        onAdd={noop} onRemove={noop} onReorder={noop}
+        onPatchData={vi.fn()} onPatchOverride={onPatchOverride}
+      />
+    )
+    const titleEl = screen.getByText('Original')
+    titleEl.textContent = 'Editado'
+    fireEvent.blur(titleEl)
+    expect(onPatchOverride).toHaveBeenCalledWith('b1', { title: 'Editado' })
+  })
+})

@@ -14,8 +14,8 @@ import { hydrateBlocks } from '../renderer/hydrate-blocks'
 import { BlockRenderer } from '../renderer/BlockRenderer'
 import { getBlockCompleteness } from '../renderer/block-completeness'
 import { getBlockMeta } from '../renderer/block-catalog'
-import { FREE_BLOCK_TYPES, WEB_ONLY_TYPES } from '../renderer/types'
-import type { AppraisalBlockType, AppraisalContext, BlockOverrides, RenderMode, TemplateBlock } from '../renderer/types'
+import { FREE_BLOCK_TYPES, INLINE_STRUCTURED_TYPES, WEB_ONLY_TYPES } from '../renderer/types'
+import type { AppraisalBlockType, AppraisalContext, BlockOverrides, HydratedBlock, RenderMode, TemplateBlock } from '../renderer/types'
 import { blockDataAttrs } from '../renderer/block-utils'
 import { HeadingBlock } from '../renderer/blocks/HeadingBlock'
 import { RichTextBlock } from '../renderer/blocks/RichTextBlock'
@@ -24,6 +24,11 @@ import { GalleryBlock } from '../renderer/blocks/GalleryBlock'
 import { DividerBlock } from '../renderer/blocks/DividerBlock'
 import { CalloutBlock } from '../renderer/blocks/CalloutBlock'
 import { ButtonLinkBlock } from '../renderer/blocks/ButtonLinkBlock'
+import { CoverBlock } from '../renderer/blocks/CoverBlock'
+import { MethodologyBlock } from '../renderer/blocks/MethodologyBlock'
+import { CtaWhatsappBlock } from '../renderer/blocks/CtaWhatsappBlock'
+import { AgentContactCardBlock } from '../renderer/blocks/AgentContactCardBlock'
+import { ZoneMapBlock } from '../renderer/blocks/ZoneMapBlock'
 import { BlockEditPopover } from './BlockEditPopover'
 import '../renderer/print.css'
 
@@ -90,6 +95,7 @@ export function EditableCanvas({
           {snapshot.map((block, index) => {
             const h = hydrated.find(x => x.id === block.id)
             const isFree = FREE_BLOCK_TYPES.has(block.type)
+            const isInlineStructured = INLINE_STRUCTURED_TYPES.has(block.type)
             const completeness = h ? getBlockCompleteness(h, appraisal) : { complete: true, missingLabel: null }
             const backgroundColor = isFree
               ? ((block.data as any).background_color ?? null)
@@ -113,7 +119,9 @@ export function EditableCanvas({
                 >
                   {isFree
                     ? <EditableFreeBlock block={block} onChange={(patch) => onPatchData(block.id, patch)} />
-                    : (h ? <BlockRenderer block={h} mode={mode} appraisal={appraisal} /> : null)}
+                    : isInlineStructured
+                      ? (h ? <EditableStructuredBlock block={h} appraisal={appraisal} onChange={(patch) => onPatchOverride(block.id, patch)} /> : null)
+                      : (h ? <BlockRenderer block={h} mode={mode} appraisal={appraisal} /> : null)}
                   {editingId === block.id && (
                     <div className="absolute right-2 top-10 z-30">
                       <BlockEditPopover
@@ -367,6 +375,28 @@ function EditableFreeBlock({ block, onChange }: { block: TemplateBlock; onChange
     case 'divider': content = <DividerBlock data={data} edit={edit} {...attrs} />; break
     case 'callout': content = <CalloutBlock data={data} edit={edit} {...attrs} />; break
     case 'button_link': content = <ButtonLinkBlock data={data} edit={edit} {...attrs} />; break
+    default: return null
+  }
+  return data.background_color ? <div style={{ backgroundColor: data.background_color }}>{content}</div> : content
+}
+
+function EditableStructuredBlock({
+  block, appraisal, onChange,
+}: {
+  block: HydratedBlock
+  appraisal: AppraisalContext
+  onChange: (patch: Record<string, unknown>) => void
+}) {
+  const attrs = blockDataAttrs(block)
+  const data = block.resolved_data as any
+  const edit = { onChange }
+  let content: React.ReactNode
+  switch (block.type) {
+    case 'cover': content = <CoverBlock data={data} appraisal={appraisal} edit={edit} {...attrs} />; break
+    case 'methodology': content = <MethodologyBlock data={data} edit={edit} {...attrs} />; break
+    case 'cta_whatsapp': content = <CtaWhatsappBlock data={data} edit={edit} {...attrs} />; break
+    case 'agent_contact_card': content = <AgentContactCardBlock data={data} appraisal={appraisal} edit={edit} {...attrs} />; break
+    case 'zone_map': content = <ZoneMapBlock data={data} edit={edit} {...attrs} />; break
     default: return null
   }
   return data.background_color ? <div style={{ backgroundColor: data.background_color }}>{content}</div> : content
