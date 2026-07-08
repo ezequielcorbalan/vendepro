@@ -25,6 +25,15 @@ export const WEB_ONLY_TYPES = new Set<AppraisalBlockType>([
   'button_link',
 ])
 
+/**
+ * Tipos estructurados cuyos campos son escalares (texto simple / imagen /
+ * número) y por eso se editan inline directo en el canvas, igual que los
+ * bloques libres — no tienen arrays ni datos calculados de la tasación.
+ */
+export const INLINE_STRUCTURED_TYPES = new Set<AppraisalBlockType>([
+  'cover', 'methodology', 'cta_whatsapp', 'agent_contact_card', 'zone_map',
+])
+
 export const PAGE_BREAK_BEFORE = new Set<AppraisalBlockType>([
   'proposal_commercial', 'property_data', 'comparables_list', 'price_projection', 'work_conditions',
 ])
