@@ -1,6 +1,17 @@
 import { Property } from '@vendepro/core'
 import type { PropertyRepository, PropertyFilters, PropertyProps, PropertyPhoto, OperationType, CommercialStage, PropertyStatusCatalog, PropertyPriceHistoryEntry } from '@vendepro/core'
 
+/** lower/trim, sin acentos, sin puntuación y con espacios colapsados — para match de direcciones. */
+function normalizeAddress(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[.,;]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 export class D1PropertyRepository implements PropertyRepository {
   constructor(private readonly db: D1Database) {}
 
@@ -80,10 +91,10 @@ export class D1PropertyRepository implements PropertyRepository {
     await this.db.prepare(`
       INSERT INTO properties (id, org_id, address, neighborhood, city, property_type, rooms, size_m2,
         asking_price, currency, owner_name, owner_phone, owner_email, contact_id, public_slug, cover_photo,
-        agent_id, status, commercial_stage, operation_type,
+        agent_id, status, source, commercial_stage, operation_type,
         operation_type_id, commercial_stage_id, status_id,
         lead_id, created_at, updated_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
       ON CONFLICT(id) DO UPDATE SET
         address=excluded.address, neighborhood=excluded.neighborhood, rooms=excluded.rooms,
         size_m2=excluded.size_m2, asking_price=excluded.asking_price, currency=excluded.currency,
@@ -99,7 +110,7 @@ export class D1PropertyRepository implements PropertyRepository {
       o.id, o.org_id, o.address, o.neighborhood, o.city, o.property_type, o.rooms, o.size_m2,
       o.asking_price, o.currency, o.owner_name, o.owner_phone, o.owner_email, o.contact_id ?? null,
       o.public_slug, o.cover_photo, o.agent_id,
-      o.status, o.commercial_stage, o.operation_type ?? 'venta',
+      o.status, o.source ?? 'manual', o.commercial_stage, o.operation_type ?? 'venta',
       o.operation_type_id ?? 1, o.commercial_stage_id ?? null, o.status_id ?? 1,
       o.lead_id ?? null,
       o.created_at, o.updated_at
@@ -365,6 +376,19 @@ export class D1PropertyRepository implements PropertyRepository {
     return rows.map(r => ({ id: r.id, address: r.address }))
   }
 
+  async findByNormalizedAddress(orgId: string, address: string): Promise<Property | null> {
+    const normalized = normalizeAddress(address)
+    if (!normalized) return null
+    // Candidatos por LIKE con el primer token (aprovecha el filtro SQL) y match
+    // exacto normalizado en memoria — el volumen por org es chico (LIMIT 200 en listados).
+    const rows = (await this.db
+      .prepare('SELECT p.* FROM properties p WHERE p.org_id = ? LIMIT 500')
+      .bind(orgId)
+      .all()).results as any[]
+    const match = rows.find(r => normalizeAddress(String(r.address ?? '')) === normalized)
+    return match ? this.toEntity(match) : null
+  }
+
   async addPriceHistory(entry: PropertyPriceHistoryEntry): Promise<void> {
     await this.db
       .prepare(`
@@ -429,6 +453,7 @@ export class D1PropertyRepository implements PropertyRepository {
       cover_photo: row.cover_photo ?? null,
       agent_id: row.agent_id,
       status: row.status,
+      source: row.source === 'kiteprop' ? 'kiteprop' : 'manual',
       commercial_stage: row.commercial_stage ?? null,
       operation_type: row.operation_type ?? 'venta',
       operation_type_id: row.operation_type_id ?? 1,

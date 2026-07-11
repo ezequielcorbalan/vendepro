@@ -57,6 +57,26 @@ export interface KitepropPropertyRef {
   agent_name: string | null
 }
 
+/**
+ * Propiedad completa de KiteProp (get_property) para importarla como propiedad
+ * local. Todos los campos son best-effort: si el payload no los trae, null.
+ */
+export interface KitepropPropertyDTO {
+  external_id: string // String(id) de KiteProp
+  code: string | null // 'KP522301'
+  title: string | null
+  address: string | null
+  neighborhood: string | null
+  property_type: string | null // texto libre de KiteProp (se normaliza al importar)
+  rooms: number | null
+  size_m2: number | null
+  price: number | null
+  currency: string | null // 'USD' | 'ARS'
+  cover_photo: string | null
+  agent_email: string | null
+  agent_name: string | null
+}
+
 /** Agente (usuario) de KiteProp — para el mapeo configurable a usuarios de VendéPro. */
 export interface KitepropAgentDTO {
   external_id: string // id del usuario en KiteProp
@@ -80,6 +100,8 @@ export interface KitepropGateway {
   fetchMessages(apiKey: string, opts: { page: number; limit?: number }): Promise<KitepropMessagesPage>
   /** Referencia + agente de una propiedad por id. null si no existe o falla. */
   getPropertyRef(apiKey: string, propertyId: number): Promise<KitepropPropertyRef | null>
+  /** Propiedad completa por id (para importarla como propiedad local). null si no existe o falla. */
+  getProperty(apiKey: string, propertyId: number): Promise<KitepropPropertyDTO | null>
   /** Lista de agentes/usuarios de KiteProp (list_users) para el mapeo. */
   fetchAgents(apiKey: string): Promise<KitepropAgentDTO[]>
   /** Agente asignado a un contacto (get_contact.assigned_user). null si falla. */

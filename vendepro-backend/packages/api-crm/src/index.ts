@@ -5,6 +5,7 @@ import {
   D1TagRepository, D1StageHistoryRepository, D1OrganizationRepository,
   D1MetaIntegrationRepository, D1StageEventMappingRepository, D1MetaEventLogRepository,
   D1PropertyRepository, D1ApiTokenRepository,
+  D1LeadPropertyRepository, D1PropertyLinkRepository,
   D1WebhookRepository, D1WebhookDeliveryRepository, HttpWebhookSender,
   D1OrgIntegrationRepository, D1IntegrationLinkRepository, D1IntegrationSyncLogRepository,
   KitepropMcpClient,
@@ -19,6 +20,8 @@ import {
 import { Activity } from '@vendepro/core'
 import {
   GetLeadsUseCase, UpdateLeadUseCase, DeleteLeadUseCase, AdvanceLeadStageUseCase,
+  LinkLeadPropertyUseCase, UpdateLeadPropertyStatusUseCase, UnlinkLeadPropertyUseCase,
+  GetLeadPropertiesUseCase, GetPropertyInterestedLeadsUseCase,
   GetContactsUseCase, CreateContactUseCase, UpdateContactUseCase, DeleteContactUseCase,
   GetCalendarEventsUseCase, CreateCalendarEventUseCase, ToggleEventCompleteUseCase, RescheduleEventUseCase,
   CreateLeadWithContactUseCase, GetContactDetailUseCase, CreateTagUseCase,
@@ -86,7 +89,7 @@ app.use('*', async (c, next) => {
 
 // ── LEADS ──────────────────────────────────────────────────────
 app.get('/leads', async (c) => {
-  const { id, stage, agent_id, search } = c.req.query()
+  const { id, stage, agent_id, search, pipeline } = c.req.query()
   const repo = new D1LeadRepository(c.env.DB)
   // Detalle de un lead puntual: ?id=X devuelve el lead solo, no toda la lista.
   if (id) {
@@ -95,7 +98,8 @@ app.get('/leads', async (c) => {
     return c.json(lead.toObject?.() ?? lead)
   }
   const useCase = new GetLeadsUseCase(repo)
-  const leads = await useCase.execute(c.get('orgId'), { stage, agent_id, search })
+  // Sin ?pipeline devuelve ambos (backward-compat con export/AI panel).
+  const leads = await useCase.execute(c.get('orgId'), { stage, agent_id, search, pipeline })
   return c.json(leads.map(l => l.toObject?.() ?? l))
 })
 
@@ -135,6 +139,7 @@ app.post('/leads', async (c) => {
         email: body.email ?? body.contact_data?.email ?? null,
         phone: body.phone ?? body.contact_data?.phone ?? null,
         operation: body.operation ?? null,
+        pipeline: body.pipeline === 'comprador' ? 'comprador' : 'vendedor',
         source: 'manual',
         source_detail: body.source_detail ?? null,
         notes: body.notes ?? null,
@@ -196,6 +201,58 @@ app.post('/leads/stage', async (c) => {
     },
   })
   return c.json({ ...result, marketing: mk ?? null })
+})
+
+// ── LEAD PROPERTIES (propiedades de interés de un lead comprador) ──
+app.get('/lead-properties', async (c) => {
+  const { lead_id, property_id } = c.req.query()
+  const repo = new D1LeadPropertyRepository(c.env.DB)
+  if (lead_id) {
+    const useCase = new GetLeadPropertiesUseCase(repo)
+    return c.json(await useCase.execute({ orgId: c.get('orgId'), leadId: lead_id }))
+  }
+  if (property_id) {
+    const useCase = new GetPropertyInterestedLeadsUseCase(repo)
+    return c.json(await useCase.execute({ orgId: c.get('orgId'), propertyId: property_id }))
+  }
+  return c.json({ error: 'Falta lead_id o property_id' }, 400)
+})
+
+app.post('/lead-properties', async (c) => {
+  const body = (await c.req.json()) as any
+  const useCase = new LinkLeadPropertyUseCase(
+    new D1LeadPropertyRepository(c.env.DB),
+    new D1LeadRepository(c.env.DB),
+    new D1PropertyRepository(c.env.DB),
+    new CryptoIdGenerator(),
+  )
+  const result = await useCase.execute({
+    orgId: c.get('orgId'),
+    leadId: body.lead_id,
+    propertyId: body.property_id,
+    notes: body.notes ?? null,
+  })
+  return c.json(result, result.created ? 201 : 200)
+})
+
+app.put('/lead-properties', async (c) => {
+  const body = (await c.req.json()) as any
+  const useCase = new UpdateLeadPropertyStatusUseCase(new D1LeadPropertyRepository(c.env.DB))
+  const result = await useCase.execute({
+    orgId: c.get('orgId'),
+    id: body.id,
+    status: body.status,
+    feedback: body.feedback,
+    notes: body.notes,
+  })
+  return c.json(result)
+})
+
+app.delete('/lead-properties', async (c) => {
+  const { id } = c.req.query()
+  if (!id) return c.json({ error: 'Falta id' }, 400)
+  const useCase = new UnlinkLeadPropertyUseCase(new D1LeadPropertyRepository(c.env.DB))
+  return c.json(await useCase.execute({ orgId: c.get('orgId'), id }))
 })
 
 // ── MARKETING (Meta CAPI + GA4 MP + Stape sGTM) ────────────────
@@ -468,6 +525,11 @@ function buildKitepropSync(env: Env) {
     new KitepropMcpClient(),
     new CryptoIdGenerator(),
     (cipher) => decrypt(cipher, env.JWT_SECRET),
+    // Leads compradores + import de propiedades consultadas (local-first).
+    new D1LeadRepository(env.DB),
+    new D1LeadPropertyRepository(env.DB),
+    new D1PropertyLinkRepository(env.DB),
+    new D1PropertyRepository(env.DB),
   )
 }
 
@@ -493,6 +555,7 @@ app.put('/integrations/kiteprop', async (c) => {
     name: body.name,
     api_key: body.api_key,
     enabled: typeof body.enabled === 'boolean' ? body.enabled : undefined,
+    create_buyer_leads: typeof body.create_buyer_leads === 'boolean' ? body.create_buyer_leads : undefined,
   })
   return c.json(result)
 })

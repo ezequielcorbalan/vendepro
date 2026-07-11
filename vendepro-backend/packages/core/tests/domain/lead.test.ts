@@ -92,4 +92,63 @@ describe('Lead entity', () => {
     const lead = Lead.create({ ...baseProps, stage: 'presentada' as any })
     expect(lead.needsFollowupEvent()).toBe(true)
   })
+
+  it('defaults pipeline to vendedor', () => {
+    const lead = Lead.create(baseProps)
+    expect(lead.pipeline).toBe('vendedor')
+  })
+})
+
+describe('Lead entity — pipeline comprador', () => {
+  const buyerProps = { ...baseProps, pipeline: 'comprador' as const }
+
+  it('creates a buyer lead with buyer stages', () => {
+    const lead = Lead.create({ ...buyerProps, stage: 'visita_agendada' as any })
+    expect(lead.pipeline).toBe('comprador')
+    expect(lead.stage).toBe('visita_agendada')
+  })
+
+  it('rejects vendor stages on buyer leads', () => {
+    expect(() => Lead.create({ ...buyerProps, stage: 'en_tasacion' as any })).toThrow(ValidationError)
+    expect(() => Lead.create({ ...buyerProps, stage: 'captado' as any })).toThrow(ValidationError)
+  })
+
+  it('rejects buyer stages on vendor leads', () => {
+    expect(() => Lead.create({ ...baseProps, stage: 'oferta' as any })).toThrow(ValidationError)
+  })
+
+  it('advanceStage uses the buyer state machine', () => {
+    const lead = Lead.create(buyerProps)
+    lead.advanceStage('contactado')
+    lead.advanceStage('calificado')
+    lead.advanceStage('visita_agendada')
+    expect(lead.stage).toBe('visita_agendada')
+    expect(() => lead.advanceStage('cerrado' as any)).toThrow(ValidationError)
+  })
+
+  it('sets firstContactAt on nuevo→contactado for buyers too', () => {
+    const lead = Lead.create(buyerProps)
+    const { firstContactAt } = lead.advanceStage('contactado')
+    expect(firstContactAt).not.toBeNull()
+  })
+
+  it('overrideStage rejects stages from the other pipeline', () => {
+    const lead = Lead.create(buyerProps)
+    expect(() => lead.overrideStage('captado' as any)).toThrow(ValidationError)
+    lead.overrideStage('oferta' as any)
+    expect(lead.stage).toBe('oferta')
+  })
+
+  it('update cannot change the pipeline', () => {
+    const lead = Lead.create(buyerProps)
+    lead.update({ pipeline: 'vendedor', notes: 'x' } as any)
+    expect(lead.pipeline).toBe('comprador')
+    expect(lead.notes).toBe('x')
+  })
+
+  it('cerrado is ok urgency (not urgent)', () => {
+    const old = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+    const lead = Lead.create({ ...buyerProps, stage: 'cerrado' as any, created_at: old, updated_at: old })
+    expect(lead.getUrgency()).toBe('ok')
+  })
 })

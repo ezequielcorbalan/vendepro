@@ -14,18 +14,21 @@ import { pushFromApiResponse } from '@/components/marketing/dataLayer'
 import { useToast } from '@/components/ui/Toast'
 import { useConfirm } from '@/components/ui/useConfirm'
 import {
-  LEAD_STAGES, LEAD_SOURCES, OPERATION_TYPES,
-  formatWhatsApp, type LeadStage,
+  LEAD_SOURCES, OPERATION_TYPES,
+  formatWhatsApp, getStageConfig,
   PROPERTY_STAGES, type PropertyStage,
 } from '@/lib/crm-config'
 import { formatDate } from '@/lib/utils'
 import { LeadStagePipeline } from '@/components/leads/LeadStagePipeline'
+import { LeadPropertiesSection } from '@/components/leads/LeadPropertiesSection'
 
 const STAGE_DOT_COLORS: Record<string, string> = {
   nuevo: '#3b82f6', asignado: '#6366f1', contactado: '#06b6d4',
   calificado: '#10b981', en_tasacion: '#8b5cf6', presentada: '#ec4899',
   seguimiento: '#f59e0b', captado: '#22c55e', perdido: '#ef4444',
   invalido: '#6b7280', finalizado: '#10b981',
+  // Pipeline comprador
+  visita_agendada: '#8b5cf6', visito: '#a855f7', oferta: '#f59e0b', cerrado: '#22c55e',
 }
 
 // Etapas en las que conviene tener una propiedad/tasación vinculada: si el lead
@@ -47,6 +50,7 @@ export default function LeadDetailPage() {
   const [saving, setSaving] = useState(false)
   const [editForm, setEditForm] = useState<any>({})
   const [propModal, setPropModal] = useState<{ targetStage: string; requireProperty: boolean } | null>(null)
+  const [showReservaModal, setShowReservaModal] = useState(false)
   const [orgTags, setOrgTags] = useState<any[]>([])
   const [showTagPicker, setShowTagPicker] = useState(false)
   const [tagsLoading, setTagsLoading] = useState(false)
@@ -108,8 +112,19 @@ export default function LeadDetailPage() {
     } catch { toast('Error al eliminar', 'error') }
   }
 
+  const isBuyer = lead?.pipeline === 'comprador'
+
   const handleStageChange = async (stage: string) => {
     if (editing || stage === lead.stage) return
+    if (isBuyer) {
+      // Cerrado (oferta aceptada): sugerir crear la reserva vinculada.
+      if (stage === 'cerrado') {
+        setShowReservaModal(true)
+        return
+      }
+      await applyStageChange(stage)
+      return
+    }
     if (stage === 'finalizado') {
       toast('Finalizado se asigna automáticamente cuando la propiedad se vende', 'warning')
       return
@@ -132,7 +147,7 @@ export default function LeadDetailPage() {
   // (corrección de errores); hacia adelante manda la máquina de estados, así que
   // solo se puede avanzar a la transición válida siguiente (no saltear etapas).
   const applyStageChange = async (stage: string) => {
-    if (linkedProperty) {
+    if (linkedProperty && !isBuyer) {
       const curLabel = PROPERTY_STAGES[linkedProperty.commercial_stage as PropertyStage]?.label || linkedProperty.commercial_stage || 'sin etapa'
       const { confirmed } = await askConfirm({
         title: 'Propiedad vinculada',
@@ -165,8 +180,8 @@ export default function LeadDetailPage() {
       } else {
         // Hacia atrás (orden menor) = corrección → bypass. Hacia adelante = la
         // máquina de estados valida (solo deja avanzar a la transición válida).
-        const curOrder = LEAD_STAGES[lead.stage as LeadStage]?.order ?? 0
-        const targetOrder = LEAD_STAGES[stage as LeadStage]?.order ?? 0
+        const curOrder = getStageConfig(lead.stage, lead.pipeline).order
+        const targetOrder = getStageConfig(stage, lead.pipeline).order
         const override = targetOrder < curOrder
         const res = await apiFetch('crm', '/leads/stage', {
           method: 'POST',
@@ -175,7 +190,7 @@ export default function LeadDetailPage() {
         const result = (await res.json()) as any
         if (!res.ok) { toast(result?.error || 'No se pudo avanzar a esa etapa', 'error'); return }
         pushFromApiResponse(result, { entity_type: 'lead', entity_id: leadId, event_name_fallback: stage })
-        toast(`Etapa: ${LEAD_STAGES[stage as LeadStage]?.label || stage}`)
+        toast(`Etapa: ${getStageConfig(stage, lead.pipeline).label}`)
         if (result.autoFollowup) toast(`Seguimiento automático creado para ${formatDate(result.autoFollowup.start_at)}`)
         if (result.syncedPropertyId) {
           const propLabel = PROPERTY_STAGES[result.syncedPropertyStage as PropertyStage]?.label || result.syncedPropertyStage
@@ -278,7 +293,7 @@ export default function LeadDetailPage() {
     )
   }
 
-  const stage = LEAD_STAGES[lead.stage as LeadStage] || LEAD_STAGES.nuevo
+  const stage = getStageConfig(lead.stage, lead.pipeline)
 
   return (
     <div className="space-y-4">
@@ -303,28 +318,32 @@ export default function LeadDetailPage() {
               </button>
             </>
           )}
-          <button
-            onClick={() => {
-              const qs = new URLSearchParams({ lead_id: leadId })
-              if (lead?.property_address) qs.set('address', lead.property_address)
-              if (lead?.neighborhood) qs.set('neighborhood', lead.neighborhood)
-              router.push(`/fichas/nueva?${qs.toString()}`)
-            }}
-            disabled={editing}
-            className="flex items-center gap-1.5 border border-brand-orange text-brand-orange px-3 py-1.5 rounded-lg text-sm hover:bg-orange-50 font-medium disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <FileText className="w-3.5 h-3.5" /> Ficha de tasación
-          </button>
-          <button
-            onClick={() => {
-              const qs = new URLSearchParams({ lead_id: leadId })
-              if (fichas.length > 0) qs.set('ficha_id', fichas[0].id)
-              router.push(`/propiedades/nueva?${qs.toString()}`)
-            }}
-            className="flex items-center gap-1.5 bg-green-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-green-700 font-medium"
-          >
-            <Home className="w-3.5 h-3.5" /> Crear propiedad
-          </button>
+          {!isBuyer && (
+            <>
+              <button
+                onClick={() => {
+                  const qs = new URLSearchParams({ lead_id: leadId })
+                  if (lead?.property_address) qs.set('address', lead.property_address)
+                  if (lead?.neighborhood) qs.set('neighborhood', lead.neighborhood)
+                  router.push(`/fichas/nueva?${qs.toString()}`)
+                }}
+                disabled={editing}
+                className="flex items-center gap-1.5 border border-brand-orange text-brand-orange px-3 py-1.5 rounded-lg text-sm hover:bg-orange-50 font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <FileText className="w-3.5 h-3.5" /> Ficha de tasación
+              </button>
+              <button
+                onClick={() => {
+                  const qs = new URLSearchParams({ lead_id: leadId })
+                  if (fichas.length > 0) qs.set('ficha_id', fichas[0].id)
+                  router.push(`/propiedades/nueva?${qs.toString()}`)
+                }}
+                className="flex items-center gap-1.5 bg-green-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-green-700 font-medium"
+              >
+                <Home className="w-3.5 h-3.5" /> Crear propiedad
+              </button>
+            </>
+          )}
           <button onClick={handleDelete} className="p-1.5 border rounded-lg text-gray-400 hover:text-red-500 hover:border-red-200">
             <Trash2 className="w-4 h-4" />
           </button>
@@ -524,7 +543,7 @@ export default function LeadDetailPage() {
       </div>
 
       {/* Pipeline */}
-      <LeadStagePipeline currentStage={lead.stage} onSelect={handleStageChange} disabled={editing} />
+      <LeadStagePipeline currentStage={lead.stage} pipeline={isBuyer ? 'comprador' : 'vendedor'} onSelect={handleStageChange} disabled={editing} />
 
       {/* Two-column: Datos + Actividades */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
@@ -666,7 +685,11 @@ export default function LeadDetailPage() {
         </div>
       </div>
 
+      {/* Comprador: propiedades de interés. Vendedor: fichas de tasación. */}
+      {isBuyer && <LeadPropertiesSection leadId={leadId} />}
+
       {/* Fichas de tasación */}
+      {!isBuyer && (
       <div className="bg-white border rounded-xl p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-bold text-gray-900 flex items-center gap-2">
@@ -720,6 +743,7 @@ export default function LeadDetailPage() {
           </div>
         )}
       </div>
+      )}
 
       {/* Historial de etapas */}
       {stageHistory.length > 0 && (
@@ -732,7 +756,6 @@ export default function LeadDetailPage() {
           </div>
           <div className="space-y-3">
             {stageHistory.map((h: any) => {
-              const toStage = LEAD_STAGES[h.to_stage as LeadStage]
               const dotColor = STAGE_DOT_COLORS[h.to_stage] ?? '#9ca3af'
               return (
                 <div key={h.id ?? h.changed_at ?? h.created_at} className="flex items-start gap-3">
@@ -742,7 +765,7 @@ export default function LeadDetailPage() {
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-800">
-                      {LEAD_STAGES[h.from_stage as LeadStage]?.label ?? h.from_stage} → {toStage?.label ?? h.to_stage}
+                      {h.from_stage ? getStageConfig(h.from_stage, lead.pipeline).label : '—'} → {getStageConfig(h.to_stage, lead.pipeline).label}
                     </p>
                     <p className="text-xs text-gray-400">
                       {h.changed_by_name ?? 'Sistema'} · {h.created_at ? formatDate(h.created_at) : ''}
@@ -768,7 +791,7 @@ export default function LeadDetailPage() {
               {propModal.requireProperty ? (
                 <>Para marcar a <strong>{lead.full_name}</strong> como &ldquo;Captado&rdquo; primero tenés que crear y vincular una propiedad.</>
               ) : (
-                <><strong>{lead.full_name}</strong> no tiene una propiedad ni tasación vinculada. Para &ldquo;{LEAD_STAGES[propModal.targetStage as LeadStage]?.label || propModal.targetStage}&rdquo; conviene tener una. ¿Qué querés hacer?</>
+                <><strong>{lead.full_name}</strong> no tiene una propiedad ni tasación vinculada. Para &ldquo;{getStageConfig(propModal.targetStage, lead.pipeline).label}&rdquo; conviene tener una. ¿Qué querés hacer?</>
               )}
             </p>
             <div className="space-y-2">
@@ -784,6 +807,33 @@ export default function LeadDetailPage() {
                 </button>
               )}
               <button onClick={() => setPropModal(null)} className="w-full px-4 py-2 text-sm text-gray-400">Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Comprador → Cerrado: sugerir crear la reserva (no obligatorio) */}
+      {showReservaModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowReservaModal(false)}>
+          <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-5" onClick={e => e.stopPropagation()}>
+            <h3 className="font-semibold text-gray-800 mb-2">Cerrar comprador</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              La oferta de <strong>{lead.full_name}</strong> fue aceptada. ¿Querés crear la reserva para seguir el cierre en Operaciones?
+            </p>
+            <div className="space-y-2">
+              <button
+                onClick={async () => { setShowReservaModal(false); await applyStageChange('cerrado'); router.push('/reservas') }}
+                className="w-full px-4 py-3 bg-pink-600 text-white rounded-xl text-sm font-medium hover:bg-pink-700"
+              >
+                Cerrar y crear reserva
+              </button>
+              <button
+                onClick={async () => { setShowReservaModal(false); await applyStageChange('cerrado') }}
+                className="w-full px-4 py-3 border rounded-xl text-sm text-gray-600 hover:bg-gray-50"
+              >
+                Solo cerrar
+              </button>
+              <button onClick={() => setShowReservaModal(false)} className="w-full px-4 py-2 text-sm text-gray-400">Cancelar</button>
             </div>
           </div>
         </div>

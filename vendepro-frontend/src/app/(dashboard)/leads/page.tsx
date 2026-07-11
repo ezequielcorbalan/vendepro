@@ -8,10 +8,11 @@ import {
   ChevronRight, Check, Tag, Loader2
 } from 'lucide-react'
 import {
-  LEAD_STAGES, LEAD_STAGE_KEYS, LEAD_PIPELINE_STAGES, LEAD_SOURCES,
-  LEAD_TERMINAL_STAGES, LEAD_AGENT_FINAL_STAGES,
+  LEAD_STAGES, LEAD_SOURCES,
+  LEAD_AGENT_FINAL_STAGES, BUYER_LEAD_TERMINAL_STAGES,
   OPERATION_TYPES, getLeadChecklist, getLeadChecklistScore,
-  getLeadUrgency, getUrgencyBadge, formatWhatsApp, type LeadStage
+  getLeadUrgency, getUrgencyBadge, formatWhatsApp,
+  getStagesForPipeline, getStageConfig, type LeadStage, type LeadPipelineKey
 } from '@/lib/crm-config'
 import type { Lead, Contact } from '@/lib/types'
 import { useToast } from '@/components/ui/Toast'
@@ -21,6 +22,12 @@ import { apiFetch } from '@/lib/api'
 import { scopeQueryString } from '@/lib/agent-scope'
 import { pushFromApiResponse } from '@/components/marketing/dataLayer'
 import { DndContext, DragOverlay, useDraggable, useDroppable, type DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
+
+/** Etapas que cierran el trabajo del agente según el pipeline del lead. */
+function isAgentFinalStage(lead: any): boolean {
+  if (lead?.pipeline === 'comprador') return (BUYER_LEAD_TERMINAL_STAGES as readonly string[]).includes(lead.stage)
+  return (LEAD_AGENT_FINAL_STAGES as readonly string[]).includes(lead.stage)
+}
 
 function timeAgo(dateStr: string): string {
   const diff = (Date.now() - new Date(dateStr).getTime()) / 60000
@@ -39,6 +46,10 @@ export default function LeadsPage() {
   const [leads, setLeads] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<'list' | 'kanban'>('list')
+  const [pipeline, setPipeline] = useState<LeadPipelineKey>(
+    searchParams.get('pipeline') === 'comprador' ? 'comprador' : 'vendedor'
+  )
+  const stages = getStagesForPipeline(pipeline)
   const [search, setSearch] = useState('')
   const [filterStage, setFilterStage] = useState<string>(searchParams.get('stage') || '')
   const [filterSource, setFilterSource] = useState('')
@@ -64,28 +75,44 @@ export default function LeadsPage() {
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
   const [showNewContactForm, setShowNewContactForm] = useState(false)
   const [contactForm, setContactForm] = useState({
-    full_name: '', phone: '', email: '', contact_type: 'propietario'
+    full_name: '', phone: '', email: '',
+    contact_type: searchParams.get('pipeline') === 'comprador' ? 'comprador' : 'propietario'
   })
   const contactSearchRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const [form, setForm] = useState({
     source: 'manual', source_detail: '',
-    property_address: '', neighborhood: '', operation: 'venta',
+    property_address: '', neighborhood: '', operation: 'venta', budget: '',
     notes: '', estimated_value: '', assigned_to: '', next_step: '', next_step_date: ''
   })
 
-  const loadLeads = () => {
+  const loadLeads = useCallback((p: LeadPipelineKey = pipeline) => {
     const scope = scopeQueryString()
-    apiFetch('crm', `/leads${scope}`)
+    apiFetch('crm', `/leads${scope}${scope ? '&' : '?'}pipeline=${p}`)
       .then(r => r.json() as Promise<any>)
       .then(d => { setLeads(Array.isArray(d) ? d : []); setLoading(false) })
       .catch(() => setLoading(false))
-  }
+  }, [pipeline])
 
   useEffect(() => {
+    setLoading(true)
     loadLeads()
+  }, [pipeline]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
     apiFetch('admin', '/agents').then(r => r.json() as Promise<any>).then(d => { if (Array.isArray(d)) setAgents(d) }).catch(() => {})
   }, [])
+
+  const switchPipeline = (p: LeadPipelineKey) => {
+    if (p === pipeline) return
+    setPipeline(p)
+    setFilterStage('')
+    // Refleja la pestaña en la URL sin re-render de Next
+    const url = new URL(window.location.href)
+    if (p === 'comprador') url.searchParams.set('pipeline', 'comprador')
+    else url.searchParams.delete('pipeline')
+    window.history.replaceState(null, '', url.toString())
+  }
 
   // Auto-open create modal when coming from contact detail (?new=1&contact_id=X)
   useEffect(() => {
@@ -151,10 +178,10 @@ export default function LeadsPage() {
 
   const stageCounts = useMemo(() => {
     const counts: Record<string, number> = {}
-    LEAD_STAGE_KEYS.forEach(s => { counts[s] = 0 })
+    stages.keys.forEach(s => { counts[s] = 0 })
     leads.forEach(l => { if (counts[l.stage] !== undefined) counts[l.stage]++ })
     return counts
-  }, [leads])
+  }, [leads, stages.keys])
 
   const closeCreateModal = () => {
     setShowCreate(false)
@@ -163,10 +190,10 @@ export default function LeadsPage() {
     setContactResults([])
     setSelectedContact(null)
     setShowNewContactForm(false)
-    setContactForm({ full_name: '', phone: '', email: '', contact_type: 'propietario' })
+    setContactForm({ full_name: '', phone: '', email: '', contact_type: pipeline === 'comprador' ? 'comprador' : 'propietario' })
     setForm({
       source: 'manual', source_detail: '', property_address: '', neighborhood: '',
-      operation: 'venta', notes: '', estimated_value: '', assigned_to: '',
+      operation: 'venta', budget: '', notes: '', estimated_value: '', assigned_to: '',
       next_step: '', next_step_date: ''
     })
   }
@@ -175,6 +202,8 @@ export default function LeadsPage() {
     setSaving(true)
     try {
       const payload: any = { ...form }
+
+      if (pipeline === 'comprador') payload.pipeline = 'comprador'
 
       if (selectedContact?.id) {
         payload.contact_id = selectedContact.id
@@ -203,11 +232,13 @@ export default function LeadsPage() {
   }
 
   const advanceStage = async (lead: any) => {
-    const currentIdx = (LEAD_PIPELINE_STAGES as readonly string[]).indexOf(lead.stage)
-    if (currentIdx < 0 || currentIdx >= LEAD_PIPELINE_STAGES.length - 1) return
-    const nextStage = LEAD_PIPELINE_STAGES[currentIdx + 1]
+    const leadStages = getStagesForPipeline(lead.pipeline === 'comprador' ? 'comprador' : 'vendedor')
+    const pipelineStages = leadStages.pipelineStages
+    const currentIdx = pipelineStages.indexOf(lead.stage)
+    if (currentIdx < 0 || currentIdx >= pipelineStages.length - 1) return
+    const nextStage = pipelineStages[currentIdx + 1]
 
-    // en_tasacion → show convert modal
+    // en_tasacion → show convert modal (solo pipeline vendedor)
     if (nextStage === 'en_tasacion') {
       setShowConvertModal(lead)
       return
@@ -220,7 +251,7 @@ export default function LeadsPage() {
       })
       const result = (await res.json()) as any
       pushFromApiResponse(result, { entity_type: 'lead', entity_id: lead.id, event_name_fallback: nextStage })
-      const stageLabel = LEAD_STAGES[nextStage as LeadStage]?.label || nextStage
+      const stageLabel = getStageConfig(nextStage, lead.pipeline).label
       toast(`${lead.full_name} → ${stageLabel}`)
       if (result.autoFollowup) {
         toast(`Seguimiento automático creado para ${result.autoFollowup.date}`)
@@ -296,7 +327,8 @@ export default function LeadsPage() {
           body: JSON.stringify({ id: leadId, stage })
         })
         pushFromApiResponse(await r.json().catch(() => ({})), { entity_type: 'lead', entity_id: leadId, event_name_fallback: stage })
-        const stageLabel = LEAD_STAGES[stage as LeadStage]?.label || stage
+        const movedLead = leads.find(l => l.id === leadId)
+        const stageLabel = getStageConfig(stage, movedLead?.pipeline).label
         toast(`Movido a ${stageLabel}`)
       }
       loadLeads()
@@ -362,7 +394,9 @@ export default function LeadsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Leads</h1>
-          <p className="text-gray-500 text-sm">{leads.length} lead{leads.length !== 1 ? 's' : ''} en el pipeline</p>
+          <p className="text-gray-500 text-sm">
+            {leads.length} lead{leads.length !== 1 ? 's' : ''} en el pipeline {pipeline === 'comprador' ? 'de compradores' : 'de captación'}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <div className="hidden sm:flex bg-gray-100 rounded-lg p-0.5">
@@ -379,7 +413,7 @@ export default function LeadsPage() {
                 ['Nombre', 'Teléfono', 'Email', 'Operación', 'Etapa', 'Barrio', 'Valor USD', 'Agente', 'Próximo paso', 'Creado'],
                 ...filtered.map(l => [
                   l.full_name, l.phone || '', l.email || '', l.operation || '',
-                  LEAD_STAGES[l.stage as LeadStage]?.label || l.stage,
+                  getStageConfig(l.stage, l.pipeline).label,
                   l.neighborhood || '', l.estimated_value || '', l.assigned_name || '',
                   l.next_step || '', new Date(l.created_at).toLocaleDateString('es-AR')
                 ])
@@ -402,6 +436,26 @@ export default function LeadsPage() {
             <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Nuevo lead</span><span className="sm:hidden">Nuevo</span>
           </button>
         </div>
+      </div>
+
+      {/* Pestañas de pipeline: Vendedores | Compradores */}
+      <div className="flex items-center gap-1 border-b border-gray-200">
+        {([
+          { key: 'vendedor' as const, label: 'Vendedores' },
+          { key: 'comprador' as const, label: 'Compradores' },
+        ]).map(t => (
+          <button
+            key={t.key}
+            onClick={() => switchPipeline(t.key)}
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+              pipeline === t.key
+                ? 'border-brand-pink text-brand-pink'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
       {/* Search + Filters */}
@@ -427,7 +481,7 @@ export default function LeadsPage() {
             <label className="text-xs text-gray-500 mb-1 block">Etapa</label>
             <select value={filterStage} onChange={e => setFilterStage(e.target.value)} className="w-full border rounded-lg px-2 py-1.5 text-sm">
               <option value="">Todas</option>
-              {LEAD_STAGE_KEYS.map(s => <option key={s} value={s}>{LEAD_STAGES[s].label}</option>)}
+              {stages.keys.map(s => <option key={s} value={s}>{stages.config[s].label}</option>)}
             </select>
           </div>
           <div>
@@ -462,10 +516,10 @@ export default function LeadsPage() {
         <button onClick={() => setFilterStage('')} className={`shrink-0 px-3 py-1 rounded-full text-xs font-medium border transition-colors ${!filterStage ? 'bg-gray-800 text-white border-gray-800' : 'text-gray-600 border-gray-200 hover:border-gray-400'}`}>
           Todos ({leads.length})
         </button>
-        {LEAD_STAGE_KEYS.map(s => (
+        {stages.keys.map(s => (
           <button key={s} onClick={() => setFilterStage(filterStage === s ? '' : s)}
-            className={`shrink-0 px-3 py-1 rounded-full text-xs font-medium border transition-colors ${filterStage === s ? 'bg-gray-800 text-white border-gray-800' : `${LEAD_STAGES[s].color} border-transparent`}`}>
-            {LEAD_STAGES[s].label} ({stageCounts[s]})
+            className={`shrink-0 px-3 py-1 rounded-full text-xs font-medium border transition-colors ${filterStage === s ? 'bg-gray-800 text-white border-gray-800' : `${stages.config[s].color} border-transparent`}`}>
+            {stages.config[s].label} ({stageCounts[s]})
           </button>
         ))}
       </div>
@@ -505,14 +559,14 @@ export default function LeadsPage() {
       ) : (
         <DndContext sensors={sensors} onDragStart={e => setActiveDragId(e.active.id as string)} onDragEnd={handleDragEnd} onDragCancel={() => setActiveDragId(null)}>
         <div className="overflow-x-auto pb-4 -mx-2 px-2">
-          <div className="flex gap-3" style={{ minWidth: `${LEAD_PIPELINE_STAGES.length * 260}px` }}>
-            {LEAD_PIPELINE_STAGES.map(stage => {
+          <div className="flex gap-3" style={{ minWidth: `${stages.pipelineStages.length * 260}px` }}>
+            {stages.pipelineStages.map(stage => {
               const stageLeads = filtered.filter(l => l.stage === stage)
               const hasOverdue = stageLeads.some(l => getLeadUrgency(l) === 'danger')
               return (
                 <DroppableColumn key={stage} id={stage}>
-                  <div className={`flex items-center justify-between mb-2 px-2 py-1.5 rounded-lg ${LEAD_STAGES[stage].color}`}>
-                    <span className="text-xs font-semibold">{LEAD_STAGES[stage].label}</span>
+                  <div className={`flex items-center justify-between mb-2 px-2 py-1.5 rounded-lg ${stages.config[stage].color}`}>
+                    <span className="text-xs font-semibold">{stages.config[stage].label}</span>
                     <div className="flex items-center gap-1">
                       {hasOverdue && <AlertTriangle className="w-3 h-3 text-red-500" />}
                       <span className="text-xs font-bold">{stageLeads.length}</span>
@@ -528,7 +582,7 @@ export default function LeadsPage() {
           {(() => {
             const perdidos = leads.filter(l => l.stage === 'perdido').length
             const invalidos = leads.filter(l => l.stage === 'invalido').length
-            const finalizados = leads.filter(l => l.stage === 'finalizado').length
+            const finalizados = pipeline === 'vendedor' ? leads.filter(l => l.stage === 'finalizado').length : 0
             const total = perdidos + invalidos + finalizados
             if (total === 0) return null
             const parts: string[] = []
@@ -682,9 +736,18 @@ export default function LeadsPage() {
                   <select value={form.operation} onChange={e => setForm({ ...form, operation: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full">
                     {Object.entries(OPERATION_TYPES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
                   </select>
-                  <input placeholder="Barrio/Zona" value={form.neighborhood} onChange={e => setForm({ ...form, neighborhood: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
-                  <input placeholder="Dirección propiedad" value={form.property_address} onChange={e => setForm({ ...form, property_address: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
-                  <input placeholder="Valor estimado (USD)" type="number" value={form.estimated_value} onChange={e => setForm({ ...form, estimated_value: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
+                  {pipeline === 'comprador' ? (
+                    <>
+                      <input placeholder="Zona de interés" value={form.neighborhood} onChange={e => setForm({ ...form, neighborhood: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
+                      <input placeholder="Presupuesto (ej: hasta 150.000 USD)" value={form.budget} onChange={e => setForm({ ...form, budget: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
+                    </>
+                  ) : (
+                    <>
+                      <input placeholder="Barrio/Zona" value={form.neighborhood} onChange={e => setForm({ ...form, neighborhood: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
+                      <input placeholder="Dirección propiedad" value={form.property_address} onChange={e => setForm({ ...form, property_address: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
+                      <input placeholder="Valor estimado (USD)" type="number" value={form.estimated_value} onChange={e => setForm({ ...form, estimated_value: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
+                    </>
+                  )}
                   {agents.length > 0 && (
                     <select value={form.assigned_to} onChange={e => setForm({ ...form, assigned_to: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full">
                       <option value="">Asignar agente...</option>
@@ -765,11 +828,14 @@ const STAGE_BORDER: Record<string, string> = {
   calificado: 'border-l-emerald-400', en_tasacion: 'border-l-purple-400', presentada: 'border-l-pink-500',
   seguimiento: 'border-l-yellow-400', captado: 'border-l-green-500', perdido: 'border-l-red-400',
   invalido: 'border-l-gray-300', finalizado: 'border-l-emerald-500',
+  // Pipeline comprador
+  visita_agendada: 'border-l-violet-400', visito: 'border-l-purple-400',
+  oferta: 'border-l-amber-400', cerrado: 'border-l-green-500',
 }
 const AVATAR_COLORS = ['bg-pink-400','bg-purple-400','bg-blue-400','bg-emerald-400','bg-orange-400','bg-cyan-500','bg-indigo-400']
 function avatarColor(name: string) { return AVATAR_COLORS[(name || 'X').charCodeAt(0) % AVATAR_COLORS.length] }
 function urgencyText(lead: any): { text: string; cls: string } | null {
-  if ((LEAD_AGENT_FINAL_STAGES as readonly string[]).includes(lead.stage)) return null
+  if (isAgentFinalStage(lead)) return null
   const diffH = (Date.now() - new Date(lead.updated_at || lead.created_at).getTime()) / 3600000
   const days = Math.floor(diffH / 24)
   if (lead.stage === 'nuevo' && diffH > 24) return { text: 'Sin asignar +24h', cls: 'text-red-500' }
@@ -780,7 +846,7 @@ function urgencyText(lead: any): { text: string; cls: string } | null {
 
 // ── LeadCard (List view) ──
 function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any; onAdvance: () => void; onLost: () => void; onDelete: () => void; onRefresh: () => void }) {
-  const stage = LEAD_STAGES[lead.stage as LeadStage] || LEAD_STAGES.nuevo
+  const stage = getStageConfig(lead.stage, lead.pipeline)
   const urgency = getLeadUrgency(lead)
   const checklist = getLeadChecklist(lead)
   const score = getLeadChecklistScore(lead)
@@ -931,7 +997,7 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
               <Phone className="w-5 h-5" />
             </div>
           )}
-          {!(LEAD_AGENT_FINAL_STAGES as readonly string[]).includes(lead.stage) && (
+          {!isAgentFinalStage(lead) && (
             <button onClick={onAdvance} className="flex-1 w-12 flex items-center justify-center text-brand-pink hover:bg-pink-50 active:bg-pink-100 border-t border-gray-100 transition-colors">
               <ArrowRight className="w-5 h-5" />
             </button>
@@ -960,7 +1026,7 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
         ) : (
           <span className="flex-1 flex items-center justify-center py-2.5 text-xs text-gray-300">Sin teléfono</span>
         )}
-        {!(LEAD_AGENT_FINAL_STAGES as readonly string[]).includes(lead.stage) && (
+        {!isAgentFinalStage(lead) && (
           <button onClick={onAdvance} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-brand-pink hover:bg-pink-50 transition-colors">
             <ArrowRight className="w-3.5 h-3.5" /> Avanzar
           </button>
@@ -1023,13 +1089,16 @@ function KanbanCard({ lead, onAdvance, onMoveTo }: { lead: any; onAdvance: () =>
         <>
           <div className="fixed inset-0 z-10" onClick={() => setShowMove(false)} />
           <div className="absolute right-2 top-full mt-1 z-20 bg-white border rounded-lg shadow-lg py-1 min-w-[140px] max-h-60 overflow-y-auto">
-            {LEAD_STAGE_KEYS.filter(s => s !== lead.stage).map(s => (
-              <button key={s} onClick={() => { onMoveTo(s); setShowMove(false) }}
-                className="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 flex items-center gap-2">
-                <span className={`w-2 h-2 rounded-full ${LEAD_STAGES[s].color.split(' ')[0]}`} />
-                {LEAD_STAGES[s].label}
-              </button>
-            ))}
+            {(() => {
+              const leadStages = getStagesForPipeline(lead.pipeline === 'comprador' ? 'comprador' : 'vendedor')
+              return leadStages.keys.filter(s => s !== lead.stage).map(s => (
+                <button key={s} onClick={() => { onMoveTo(s); setShowMove(false) }}
+                  className="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${leadStages.config[s].color.split(' ')[0]}`} />
+                  {leadStages.config[s].label}
+                </button>
+              ))
+            })()}
           </div>
         </>
       )}

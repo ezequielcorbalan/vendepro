@@ -35,7 +35,8 @@ export class GetDashboardStatsUseCase {
    */
   async execute(orgId: string, agentId?: string, since?: string): Promise<DashboardStats> {
     const [allLeads, properties, reservations, events] = await Promise.all([
-      this.leadRepo.findByOrg(orgId, agentId ? { agent_id: agentId } : undefined),
+      // KPIs y funnel son del pipeline vendedor (los compradores tienen métricas propias).
+      this.leadRepo.findByOrg(orgId, { pipeline: 'vendedor', ...(agentId ? { agent_id: agentId } : {}) }),
       this.propertyRepo.findByOrg(orgId, agentId ? { agent_id: agentId } : undefined),
       this.reservationRepo.findByOrg(orgId, agentId ? { agent_id: agentId } : undefined),
       this.calendarRepo.findByOrg(orgId, agentId ? { agent_id: agentId } : undefined),

@@ -15,12 +15,12 @@ export class D1PropertyVisitFormRepository implements PropertyVisitFormRepositor
     await this.db
       .prepare(
         `INSERT INTO property_visit_forms (
-           id, org_id, property_id, agent_id, slug,
+           id, org_id, property_id, agent_id, lead_id, slug,
            visitor_name, visitor_email, visitor_phone,
            rating, liked, disliked, subjective_price_usd,
            buy_intention, source, situation, observations,
            submitted_at, archived_at, deleted_at, sent_at, created_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(id) DO UPDATE SET
            visitor_name = excluded.visitor_name,
            visitor_email = excluded.visitor_email,
@@ -42,6 +42,7 @@ export class D1PropertyVisitFormRepository implements PropertyVisitFormRepositor
         o.org_id,
         o.property_id,
         o.agent_id,
+        o.lead_id ?? null,
         o.slug,
         o.visitor_name,
         o.visitor_email,
@@ -84,7 +85,7 @@ export class D1PropertyVisitFormRepository implements PropertyVisitFormRepositor
       .prepare(
         `SELECT
            f.id as f_id, f.org_id as f_org_id, f.property_id as f_property_id,
-           f.agent_id as f_agent_id, f.slug as f_slug,
+           f.agent_id as f_agent_id, f.lead_id as f_lead_id, f.slug as f_slug,
            f.visitor_name as f_visitor_name, f.visitor_email as f_visitor_email,
            f.visitor_phone as f_visitor_phone,
            f.rating as f_rating, f.liked as f_liked, f.disliked as f_disliked,
@@ -114,6 +115,7 @@ export class D1PropertyVisitFormRepository implements PropertyVisitFormRepositor
       org_id: row.f_org_id,
       property_id: row.f_property_id,
       agent_id: row.f_agent_id,
+      lead_id: row.f_lead_id ?? null,
       slug: row.f_slug,
       visitor_name: row.f_visitor_name,
       visitor_email: row.f_visitor_email,
@@ -180,6 +182,7 @@ export class D1PropertyVisitFormRepository implements PropertyVisitFormRepositor
       org_id: row.org_id,
       property_id: row.property_id,
       agent_id: row.agent_id,
+      lead_id: row.lead_id ?? null,
       slug: row.slug,
       visitor_name: row.visitor_name ?? null,
       visitor_email: row.visitor_email ?? null,

@@ -3,9 +3,17 @@ import type { IntegrationLinkRepository } from '../../ports/repositories/integra
 import type { IntegrationSyncLogRepository } from '../../ports/repositories/integration-sync-log-repository'
 import type { ContactRepository } from '../../ports/repositories/contact-repository'
 import type { UserRepository } from '../../ports/repositories/user-repository'
-import type { KitepropGateway, KitepropContactDTO, KitepropMessageDTO, KitepropPropertyRef, KitepropContactAgent } from '../../ports/services/kiteprop-gateway'
+import type { LeadRepository } from '../../ports/repositories/lead-repository'
+import type { LeadPropertyRepository } from '../../ports/repositories/lead-property-repository'
+import type { PropertyLinkRepository } from '../../ports/repositories/property-link-repository'
+import type { PropertyRepository } from '../../ports/repositories/property-repository'
+import type { KitepropGateway, KitepropContactDTO, KitepropMessageDTO, KitepropPropertyDTO, KitepropContactAgent } from '../../ports/services/kiteprop-gateway'
 import type { IdGenerator } from '../../ports/id-generator'
 import { Contact } from '../../../domain/entities/contact'
+import { Lead } from '../../../domain/entities/lead'
+import { LeadProperty } from '../../../domain/entities/lead-property'
+import { Property } from '../../../domain/entities/property'
+import { slugify } from '../../../shared/utils'
 import type { TokenDecryptor } from './test-kiteprop-connection'
 
 export interface SyncKitepropContactsInput {
@@ -44,11 +52,17 @@ function normalizeName(s: string): string {
 }
 
 /**
- * Sincroniza KiteProp → VendéPro (solo contactos, no leads).
+ * Sincroniza KiteProp → VendéPro.
  *
  * - auto/manual: MESSAGE-DRIVEN. Recorre las consultas de portal (search_messages).
  *   Cada consulta enriquece al contacto con el agente real (mapeado por email),
  *   el portal de origen y el texto del mensaje + la propiedad consultada.
+ *   Además (config.create_buyer_leads, default ON) crea el LEAD COMPRADOR:
+ *   un solo lead comprador abierto por contacto; cada consulta suma la propiedad
+ *   consultada a lead_properties, importándola como propiedad LOCAL si hace falta
+ *   (property_links mapea aviso KiteProp → propiedad VendéPro).
+ * - enrich: message-driven histórico. NO crea leads compradores (inundaría el
+ *   pipeline con consultas viejas); solo re-atribuye/enriquece contactos.
  * - backfill: CONTACT-DRIVEN. Recorre la agenda completa (search_contacts) para la
  *   carga histórica base; sin enriquecimiento por consulta.
  *
@@ -67,18 +81,26 @@ export class SyncKitepropContactsUseCase {
     private readonly gateway: KitepropGateway,
     private readonly ids: IdGenerator,
     private readonly decryptKey: TokenDecryptor,
+    // Opcionales: sin ellos el sync se comporta como antes (solo contactos).
+    private readonly leadRepo?: LeadRepository,
+    private readonly leadPropertyRepo?: LeadPropertyRepository,
+    private readonly propertyLinkRepo?: PropertyLinkRepository,
+    private readonly propertyRepo?: PropertyRepository,
   ) {}
 
   // Caches por corrida (evitan repetir llamadas MCP/D1)
-  private propCache = new Map<number, KitepropPropertyRef | null>()
+  private propCache = new Map<number, KitepropPropertyDTO | null>()
+  private localPropertyCache = new Map<string, string | null>() // external_id KiteProp → property.id local
   private contactAgentCache = new Map<string, KitepropContactAgent | null>() // contactId → agente asignado en KiteProp
   private agentCache = new Map<string, string | null>() // clave agente KiteProp → user.id VendéPro
   private orgUsers: Array<{ id: string; email: string; full_name: string }> | null = null
   private agentMap: Record<string, string> = {} // config: id agente KiteProp → id usuario VendéPro
+  private createBuyerLeads = false // resuelto por corrida en execute()
 
   async execute(input: SyncKitepropContactsInput): Promise<SyncKitepropContactsResult> {
     const startedAt = new Date().toISOString()
     this.propCache.clear()
+    this.localPropertyCache.clear()
     this.contactAgentCache.clear()
     this.agentCache.clear()
     this.orgUsers = null
@@ -96,6 +118,12 @@ export class SyncKitepropContactsUseCase {
 
     const config = integration.getConfig()
     this.agentMap = (config.agent_map && typeof config.agent_map === 'object') ? (config.agent_map as Record<string, string>) : {}
+    // Leads compradores: default ON, solo en incremental (auto/manual) — enrich
+    // recorre TODO el histórico y crearía leads para consultas viejas.
+    this.createBuyerLeads =
+      config.create_buyer_leads !== false &&
+      (input.mode === 'auto' || input.mode === 'manual') &&
+      !!this.leadRepo && !!this.leadPropertyRepo
     const maxPages = input.maxPages ?? (input.mode === 'backfill' ? 5 : 3)
 
     const acc: RunAcc = { created: 0, enriched: 0, skipped: 0, pagesProcessed: 0, done: false, page: 1, runError: null, itemError: null }
@@ -167,7 +195,7 @@ export class SyncKitepropContactsUseCase {
         if (dateFrom && msg.created_at.slice(0, 10) < dateFrom) { reachedCutoff = true; break }
         if (processed[`msg:${msg.external_id}`]) { acc.skipped++; continue }
         try {
-          const outcome = await this.processMessage(orgId, apiKey, adminId, msg)
+          const outcome = await this.processMessage(orgId, apiKey, adminId, msg, acc)
           if (outcome === 'created') acc.created++
           else if (outcome === 'enriched') acc.enriched++
           else acc.skipped++
@@ -186,8 +214,8 @@ export class SyncKitepropContactsUseCase {
   }
 
   /** Crea o enriquece el contacto con los datos de una consulta de portal. */
-  private async processMessage(orgId: string, apiKey: string, adminId: string, msg: KitepropMessageDTO): Promise<'created' | 'enriched' | 'skipped'> {
-    const propRef = msg.property_id != null ? await this.getPropertyRefCached(apiKey, msg.property_id) : null
+  private async processMessage(orgId: string, apiKey: string, adminId: string, msg: KitepropMessageDTO, acc?: RunAcc): Promise<'created' | 'enriched' | 'skipped'> {
+    const propRef = msg.property_id != null ? await this.getPropertyCached(apiKey, msg.property_id) : null
     const agentId = await this.resolveAgentForContact(orgId, apiKey, msg.contact.external_id, propRef)
     const line = this.enrichedNote(msg, propRef)
     const portal = msg.source || null
@@ -199,6 +227,9 @@ export class SyncKitepropContactsUseCase {
       const found = await this.safeFindByEmailOrPhone(orgId, c.email, c.phone)
       if (found) existingId = found.id
     }
+
+    let contactId: string
+    let outcome: 'created' | 'enriched'
 
     if (existingId) {
       const existing = await this.contactRepo.findById(existingId, orgId)
@@ -214,31 +245,210 @@ export class SyncKitepropContactsUseCase {
         })
         await this.contactRepo.save(enriched)
       }
-      await this.linkRepo.save(orgId, PROVIDER, c.external_id, existingId)
-      await this.linkRepo.save(orgId, PROVIDER, `msg:${msg.external_id}`, existingId)
-      return 'enriched'
+      contactId = existingId
+      outcome = 'enriched'
+    } else {
+      // Contacto nuevo
+      const contact = Contact.create({
+        id: this.ids.generate(),
+        org_id: orgId,
+        full_name: c.full_name,
+        phone: c.phone,
+        email: c.email,
+        contact_type: 'otro',
+        neighborhood: null,
+        notes: line,
+        source: portal ?? PROVIDER,
+        agent_id: agentId ?? adminId,
+      })
+      await this.contactRepo.save(contact)
+      contactId = contact.id
+      outcome = 'created'
     }
 
-    // Contacto nuevo
-    const contact = Contact.create({
-      id: this.ids.generate(),
-      org_id: orgId,
-      full_name: c.full_name,
-      phone: c.phone,
-      email: c.email,
-      contact_type: 'otro',
-      neighborhood: null,
-      notes: line,
-      source: portal ?? PROVIDER,
-      agent_id: agentId ?? adminId,
-    })
-    await this.contactRepo.save(contact)
-    await this.linkRepo.save(orgId, PROVIDER, c.external_id, contact.id)
-    await this.linkRepo.save(orgId, PROVIDER, `msg:${msg.external_id}`, contact.id)
-    return 'created'
+    await this.linkRepo.save(orgId, PROVIDER, c.external_id, contactId)
+    await this.linkRepo.save(orgId, PROVIDER, `msg:${msg.external_id}`, contactId)
+
+    // Lead comprador: best-effort — un fallo acá NUNCA voltea el contacto ya creado.
+    if (this.createBuyerLeads) {
+      try {
+        await this.ensureBuyerLead(orgId, apiKey, adminId, msg, propRef, agentId, contactId, line)
+      } catch (e) {
+        if (acc && !acc.itemError) {
+          acc.itemError = e instanceof Error ? e.message : 'Error creando lead comprador'
+        }
+      }
+    }
+
+    return outcome
   }
 
-  private enrichedNote(msg: KitepropMessageDTO, propRef: KitepropPropertyRef | null): string {
+  // ─────────────────────────── LEAD COMPRADOR ───────────────────────────
+
+  /**
+   * Garantiza el lead comprador del contacto (uno solo abierto por contacto) y
+   * la fila lead_properties de la propiedad consultada (importándola como
+   * propiedad local si todavía no está mapeada en property_links).
+   */
+  private async ensureBuyerLead(
+    orgId: string,
+    apiKey: string,
+    adminId: string,
+    msg: KitepropMessageDTO,
+    propDto: KitepropPropertyDTO | null,
+    agentId: string | null,
+    contactId: string,
+    line: string,
+  ): Promise<void> {
+    if (!this.leadRepo || !this.leadPropertyRepo) return
+
+    let lead = await this.leadRepo.findOpenBuyerByContact(contactId, orgId)
+    if (!lead) {
+      const c = msg.contact
+      lead = Lead.create({
+        id: this.ids.generate(),
+        org_id: orgId,
+        pipeline: 'comprador',
+        full_name: c.full_name,
+        phone: c.phone,
+        email: c.email,
+        source: msg.source ?? PROVIDER,
+        source_detail: propDto?.code ?? null,
+        property_address: null,
+        neighborhood: null,
+        property_type: null,
+        operation: 'venta',
+        stage: 'nuevo',
+        assigned_to: agentId ?? adminId,
+        notes: line,
+        estimated_value: null,
+        budget: null,
+        timing: null,
+        personas_trabajo: null,
+        mascotas: null,
+        next_step: null,
+        next_step_date: null,
+        lost_reason: null,
+        first_contact_at: null,
+        contact_id: contactId,
+      })
+      await this.leadRepo.save(lead)
+    }
+
+    if (msg.property_id == null) return
+    const localPropertyId = await this.ensureLocalProperty(orgId, apiKey, msg.property_id, propDto, agentId, adminId)
+    if (!localPropertyId) return
+
+    const existing = await this.leadPropertyRepo.findByLeadAndProperty(lead.id, localPropertyId, orgId)
+    // Si ya existe no tocamos su status (puede estar 'visitada'/'descartada').
+    if (existing) return
+
+    await this.leadPropertyRepo.save(LeadProperty.create({
+      id: this.ids.generate(),
+      org_id: orgId,
+      lead_id: lead.id,
+      property_id: localPropertyId,
+      status: 'interesado',
+      notes: msg.body || null,
+      feedback: null,
+    }))
+  }
+
+  /**
+   * Resuelve el aviso de KiteProp a una propiedad LOCAL:
+   * 1) property_links (ya mapeada) → 2) match por dirección normalizada (una
+   * captación propia ya cargada) → 3) importarla (source 'kiteprop', publicada).
+   * Devuelve null si no hay datos suficientes (el lead queda sin relación).
+   */
+  private async ensureLocalProperty(
+    orgId: string,
+    apiKey: string,
+    kitepropPropertyId: number,
+    propDto: KitepropPropertyDTO | null,
+    agentId: string | null,
+    adminId: string,
+  ): Promise<string | null> {
+    if (!this.propertyLinkRepo || !this.propertyRepo) return null
+    const externalId = String(kitepropPropertyId)
+    if (this.localPropertyCache.has(externalId)) return this.localPropertyCache.get(externalId)!
+
+    let localId: string | null = null
+    try {
+      localId = await this.propertyLinkRepo.findPropertyId(orgId, PROVIDER, externalId)
+
+      if (!localId) {
+        const dto = propDto ?? await this.getPropertyCached(apiKey, kitepropPropertyId)
+        if (dto) {
+          // Match por dirección: no duplicar una captación propia ya cargada.
+          const matched = dto.address
+            ? await this.propertyRepo.findByNormalizedAddress(orgId, dto.address)
+            : null
+          if (matched) {
+            localId = matched.id
+          } else {
+            localId = await this.importProperty(orgId, dto, agentId, adminId)
+          }
+          if (localId) await this.propertyLinkRepo.save(orgId, PROVIDER, externalId, localId, dto.code)
+        }
+      }
+    } catch {
+      localId = null // best-effort: sin propiedad local, el lead igual existe
+    }
+
+    this.localPropertyCache.set(externalId, localId)
+    return localId
+  }
+
+  /** Importa el aviso de KiteProp como propiedad local (source 'kiteprop'). */
+  private async importProperty(
+    orgId: string,
+    dto: KitepropPropertyDTO,
+    agentId: string | null,
+    adminId: string,
+  ): Promise<string | null> {
+    if (!this.propertyRepo) return null
+    const id = this.ids.generate()
+    const address = dto.address ?? dto.title
+    if (!address) return null // sin dirección ni título no hay propiedad útil
+
+    const validTypes = ['departamento', 'casa', 'ph', 'local', 'terreno', 'oficina']
+    const rawType = (dto.property_type ?? '').toLowerCase()
+    const propertyType = validTypes.find(t => rawType.includes(t)) ?? 'departamento'
+    const slugBase = dto.code ? dto.code.toLowerCase() : slugify(address)
+
+    const property = Property.create({
+      id,
+      org_id: orgId,
+      address,
+      neighborhood: dto.neighborhood ?? 'Sin especificar',
+      city: 'Buenos Aires',
+      property_type: propertyType as any,
+      rooms: dto.rooms,
+      size_m2: dto.size_m2,
+      asking_price: dto.price,
+      currency: (dto.currency === 'ARS' ? 'ARS' : 'USD') as any,
+      owner_name: '(Importada de KiteProp)',
+      owner_phone: null,
+      owner_email: null,
+      contact_id: null,
+      lead_id: null,
+      public_slug: `${slugify(slugBase)}-${id.slice(0, 6)}`,
+      cover_photo: dto.cover_photo,
+      agent_id: agentId ?? adminId,
+      status: 'active',
+      source: 'kiteprop',
+      // Está publicada en KiteProp: entra al pipeline comercial como publicada.
+      commercial_stage: 'publicada',
+      operation_type: 'venta',
+      operation_type_id: 1,
+      commercial_stage_id: null,
+      status_id: 1,
+    })
+    await this.propertyRepo.save(property)
+    return id
+  }
+
+  private enrichedNote(msg: KitepropMessageDTO, propRef: KitepropPropertyDTO | null): string {
     const date = msg.created_at.slice(0, 10)
     const parts: string[] = ['vía KiteProp']
     if (msg.source) parts.push(this.portalLabel(msg.source))
@@ -273,7 +483,7 @@ export class SyncKitepropContactsUseCase {
    * Cada candidato se resuelve por: agent_map (config) → email → nombre.
    * Devuelve null si nada matchea (el caller cae al admin).
    */
-  private async resolveAgentForContact(orgId: string, apiKey: string, contactId: string, propRef: KitepropPropertyRef | null): Promise<string | null> {
+  private async resolveAgentForContact(orgId: string, apiKey: string, contactId: string, propRef: KitepropPropertyDTO | null): Promise<string | null> {
     const assigned = await this.getContactAgentCached(apiKey, contactId)
     const candidates: Array<{ external_id: string | null; email: string | null; name: string | null }> = []
     if (assigned) candidates.push({ external_id: assigned.external_id, email: assigned.email, name: assigned.name })
@@ -336,14 +546,14 @@ export class SyncKitepropContactsUseCase {
     return this.orgUsers
   }
 
-  private async getPropertyRefCached(apiKey: string, propertyId: number): Promise<KitepropPropertyRef | null> {
+  private async getPropertyCached(apiKey: string, propertyId: number): Promise<KitepropPropertyDTO | null> {
     if (this.propCache.has(propertyId)) return this.propCache.get(propertyId)!
-    let ref: KitepropPropertyRef | null = null
+    let dto: KitepropPropertyDTO | null = null
     try {
-      ref = await this.gateway.getPropertyRef(apiKey, propertyId)
-    } catch { ref = null }
-    this.propCache.set(propertyId, ref)
-    return ref
+      dto = await this.gateway.getProperty(apiKey, propertyId)
+    } catch { dto = null }
+    this.propCache.set(propertyId, dto)
+    return dto
   }
 
   private async safeFindContactId(orgId: string, externalId: string): Promise<string | null> {

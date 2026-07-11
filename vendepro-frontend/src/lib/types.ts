@@ -238,7 +238,8 @@ export interface Lead {
   neighborhood: string | null
   property_type: string | null
   operation: string | null
-  stage: LeadStage
+  /** Etapa del pipeline del lead (vendedor o comprador — ver crm-config). */
+  stage: string
   assigned_to: string | null
   assigned_name: string | null
   notes: string | null
@@ -257,6 +258,44 @@ export interface Lead {
   last_activity_at: string | null
   appraisal_count?: number
   contact_id?: string | null
+  /** 'vendedor' (captación, default) | 'comprador' */
+  pipeline?: 'vendedor' | 'comprador'
+}
+
+// Propiedad de interés de un lead comprador (tabla lead_properties + JOIN properties)
+export interface LeadPropertyItem {
+  id: string
+  lead_id: string
+  property_id: string
+  status: string
+  notes: string | null
+  feedback: string | null
+  created_at: string
+  updated_at: string
+  property_address: string
+  property_neighborhood: string
+  property_cover_photo: string | null
+  property_asking_price: number | null
+  property_currency: string | null
+  property_source: string
+}
+
+// Lead interesado en una propiedad (tabla lead_properties + JOIN leads)
+export interface InterestedLead {
+  id: string
+  lead_id: string
+  property_id: string
+  status: string
+  notes: string | null
+  feedback: string | null
+  created_at: string
+  updated_at: string
+  lead_full_name: string
+  lead_stage: string
+  lead_pipeline: string
+  lead_phone: string | null
+  lead_assigned_to: string | null
+  lead_assigned_name: string | null
 }
 
 // Tokens de API de integración (Configuración → Configuración de API)

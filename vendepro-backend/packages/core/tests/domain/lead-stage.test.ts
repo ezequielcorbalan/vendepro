@@ -86,3 +86,79 @@ describe('LeadStage value object', () => {
     }
   })
 })
+
+describe('LeadStage — pipeline comprador', () => {
+  it('creates buyer stages', () => {
+    const stage = LeadStage.create('visita_agendada', 'comprador')
+    expect(stage.value).toBe('visita_agendada')
+    expect(stage.pipeline).toBe('comprador')
+  })
+
+  it('rejects vendor-only stages in comprador pipeline', () => {
+    for (const s of ['asignado', 'en_tasacion', 'presentada', 'seguimiento', 'captado', 'finalizado']) {
+      expect(() => LeadStage.create(s, 'comprador')).toThrow(ValidationError)
+    }
+  })
+
+  it('rejects buyer-only stages in vendedor pipeline (default)', () => {
+    for (const s of ['visita_agendada', 'visito', 'oferta', 'cerrado']) {
+      expect(() => LeadStage.create(s)).toThrow(ValidationError)
+    }
+  })
+
+  it('follows the happy path nuevo → ... → cerrado', () => {
+    let stage = LeadStage.create('nuevo', 'comprador')
+    for (const next of ['contactado', 'calificado', 'visita_agendada', 'visito', 'oferta', 'cerrado'] as const) {
+      stage = stage.transitionTo(next)
+    }
+    expect(stage.value).toBe('cerrado')
+    expect(stage.pipeline).toBe('comprador')
+  })
+
+  it('allows the visit loop: visito → visita_agendada', () => {
+    const stage = LeadStage.create('visito', 'comprador')
+    expect(stage.canTransitionTo('visita_agendada')).toBe(true)
+  })
+
+  it('allows fallen offer: oferta → visito', () => {
+    const stage = LeadStage.create('oferta', 'comprador')
+    expect(stage.canTransitionTo('visito')).toBe(true)
+  })
+
+  it('blocks skipping stages', () => {
+    expect(LeadStage.create('nuevo', 'comprador').canTransitionTo('visita_agendada')).toBe(false)
+    expect(LeadStage.create('contactado', 'comprador').canTransitionTo('oferta')).toBe(false)
+    expect(LeadStage.create('calificado', 'comprador').canTransitionTo('cerrado')).toBe(false)
+  })
+
+  it('allows invalido/perdido from any active stage', () => {
+    for (const from of ['nuevo', 'contactado', 'calificado', 'visita_agendada', 'visito', 'oferta'] as const) {
+      expect(LeadStage.create(from, 'comprador').canTransitionTo('invalido')).toBe(true)
+      expect(LeadStage.create(from, 'comprador').canTransitionTo('perdido')).toBe(true)
+    }
+  })
+
+  it('terminal buyer states have no outgoing transitions (manual ni sync)', () => {
+    for (const final of ['cerrado', 'invalido', 'perdido'] as const) {
+      const stage = LeadStage.create(final, 'comprador')
+      expect(stage.canTransitionTo('nuevo')).toBe(false)
+      expect(stage.canTransitionTo('visito', { source: 'sync' })).toBe(false)
+    }
+  })
+
+  it('isFinal/isAgentFinal treat cerrado as terminal', () => {
+    expect(LeadStage.create('cerrado', 'comprador').isFinal()).toBe(true)
+    expect(LeadStage.create('cerrado', 'comprador').isAgentFinal()).toBe(true)
+    expect(LeadStage.create('oferta', 'comprador').isFinal()).toBe(false)
+    expect(LeadStage.create('oferta', 'comprador').isAgentFinal()).toBe(false)
+  })
+
+  it('transitionTo keeps the pipeline', () => {
+    const next = LeadStage.create('nuevo', 'comprador').transitionTo('contactado')
+    expect(next.pipeline).toBe('comprador')
+  })
+
+  it('rejects an unknown pipeline', () => {
+    expect(() => LeadStage.create('nuevo', 'inversor' as any)).toThrow(ValidationError)
+  })
+})

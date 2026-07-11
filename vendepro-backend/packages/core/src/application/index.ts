@@ -16,6 +16,9 @@ export * from './use-cases/leads/update-lead'
 export * from './use-cases/leads/advance-lead-stage'
 export * from './use-cases/leads/delete-lead'
 
+// Lead properties (propiedades de interés de un lead comprador)
+export * from './use-cases/lead-properties/index'
+
 // Contacts
 export * from './use-cases/contacts/get-contacts'
 export * from './use-cases/contacts/create-contact'

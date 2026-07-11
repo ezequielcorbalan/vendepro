@@ -1,5 +1,7 @@
 export * from './d1-user-repository'
 export * from './d1-lead-repository'
+export * from './d1-lead-property-repository'
+export * from './d1-property-link-repository'
 export * from './d1-contact-repository'
 export * from './d1-property-repository'
 export * from './d1-calendar-repository'

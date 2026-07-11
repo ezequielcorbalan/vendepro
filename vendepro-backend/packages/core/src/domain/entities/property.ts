@@ -4,6 +4,8 @@ import { canTransitionPropertyStatus } from '../rules/property-rules'
 
 export type PropertyType = 'departamento' | 'casa' | 'ph' | 'local' | 'terreno' | 'oficina'
 export type Currency = 'USD' | 'ARS'
+/** Origen del alta: cargada en VendéPro o importada por el sync de KiteProp. */
+export type PropertySource = 'manual' | 'kiteprop'
 
 export interface PropertyProps {
   id: string
@@ -24,6 +26,7 @@ export interface PropertyProps {
   agent_id: string | null
   org_id: string
   status: PropertyStatus
+  source?: PropertySource
   commercial_stage: string | null
   operation_type: string
   operation_type_id: number
@@ -83,6 +86,7 @@ export class Property {
   get agent_id() { return this.props.agent_id }
   get org_id() { return this.props.org_id }
   get status() { return this.props.status }
+  get source() { return this.props.source ?? 'manual' }
   get commercial_stage() { return this.props.commercial_stage }
   get operation_type() { return this.props.operation_type }
   get operation_type_id() { return this.props.operation_type_id }

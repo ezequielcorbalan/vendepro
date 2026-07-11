@@ -71,8 +71,9 @@ export class GetAgentStatsUseCase {
     const [agentUser, allLeads, totalTas, actMonth, actQuarter, actYear, agentObjectives, allProperties] =
       await Promise.all([
         safeRun(() => this.users.findProfileById(agentId), null),
-        // Pragmatic: use findByOrg + JS count to avoid scope creep on LeadRepository
-        safeRun(() => this.leads.findByOrg(orgId, { agent_id: agentId }), []),
+        // Pragmatic: use findByOrg + JS count to avoid scope creep on LeadRepository.
+        // Solo pipeline vendedor: las conversiones lead→tasación→captación son de captación.
+        safeRun(() => this.leads.findByOrg(orgId, { agent_id: agentId, pipeline: 'vendedor' }), []),
         safeRun(() => this.appraisals.countByAgent(orgId, agentId), 0),
         safeRun(() => this.activities.aggregateByTypeSince(orgId, agentId, monthAgo.toISOString()), []),
         safeRun(() => this.activities.aggregateByTypeSince(orgId, agentId, quarterAgo.toISOString()), []),

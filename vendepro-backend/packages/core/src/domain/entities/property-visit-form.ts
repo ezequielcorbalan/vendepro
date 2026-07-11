@@ -39,6 +39,8 @@ export interface PropertyVisitFormProps {
   org_id: string
   property_id: string
   agent_id: string
+  /** Lead comprador que originó la ficha: su feedback cae en lead_properties. */
+  lead_id?: string | null
   slug: string
   visitor_name: string | null
   visitor_email: string | null
@@ -184,6 +186,7 @@ export class PropertyVisitForm {
   get org_id() { return this.props.org_id }
   get property_id() { return this.props.property_id }
   get agent_id() { return this.props.agent_id }
+  get lead_id() { return this.props.lead_id ?? null }
   get slug() { return this.props.slug }
   get visitor_name() { return this.props.visitor_name }
   get visitor_email() { return this.props.visitor_email }

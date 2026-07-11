@@ -35,4 +35,31 @@ describe('CreateLeadUseCase', () => {
       assigned_to: 'agent-1',
     })).rejects.toThrow(ValidationError)
   })
+
+  it('defaults pipeline to vendedor', async () => {
+    const useCase = new CreateLeadUseCase(mockLeadRepo, mockIdGen)
+    await useCase.execute({
+      org_id: 'org_mg',
+      full_name: 'Ana López',
+      source: 'manual',
+      assigned_to: 'agent-1',
+    })
+    expect(mockLeadRepo.save).toHaveBeenCalledWith(
+      expect.objectContaining({ pipeline: 'vendedor', stage: 'nuevo' })
+    )
+  })
+
+  it('creates a buyer lead when pipeline=comprador', async () => {
+    const useCase = new CreateLeadUseCase(mockLeadRepo, mockIdGen)
+    await useCase.execute({
+      org_id: 'org_mg',
+      pipeline: 'comprador',
+      full_name: 'Comprador Test',
+      source: 'zonaprop',
+      assigned_to: 'agent-1',
+    })
+    expect(mockLeadRepo.save).toHaveBeenCalledWith(
+      expect.objectContaining({ pipeline: 'comprador', stage: 'nuevo' })
+    )
+  })
 })

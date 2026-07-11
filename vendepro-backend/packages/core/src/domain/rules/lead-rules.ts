@@ -1,9 +1,9 @@
-import type { LeadStageValue } from '../value-objects/lead-stage'
+import type { AnyLeadStageValue } from '../value-objects/lead-stage'
 
 export type LeadUrgency = 'ok' | 'warning' | 'danger' | 'lost'
 
 export interface LeadForUrgency {
-  stage: LeadStageValue
+  stage: AnyLeadStageValue
   created_at: string
   updated_at: string
 }
@@ -15,7 +15,7 @@ export interface LeadForUrgency {
  */
 export function getLeadUrgency(lead: LeadForUrgency): LeadUrgency {
   if (lead.stage === 'perdido' || lead.stage === 'invalido') return 'lost'
-  if (lead.stage === 'captado' || lead.stage === 'finalizado') return 'ok'
+  if (lead.stage === 'captado' || lead.stage === 'finalizado' || lead.stage === 'cerrado') return 'ok'
 
   const now = new Date()
   const updated = lead.updated_at ? new Date(lead.updated_at) : new Date(lead.created_at)

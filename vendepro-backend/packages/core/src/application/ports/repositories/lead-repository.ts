@@ -4,6 +4,8 @@ export interface LeadFilters {
   stage?: string
   agent_id?: string
   search?: string
+  /** 'vendedor' | 'comprador'. Sin filtro devuelve ambos (backward-compat). */
+  pipeline?: string
 }
 
 export interface LeadRepository {
@@ -23,4 +25,10 @@ export interface LeadRepository {
    * Usado por el dedup de import (doc/api-mejoras-integracion.md §2).
    */
   findOpenByContactAndSourceDetail(contactId: string, sourceDetail: string | null, orgId: string): Promise<Lead | null>
+  /**
+   * Lead comprador ABIERTO (stage no terminal del pipeline comprador) del contacto.
+   * Regla de negocio: un solo lead comprador abierto por contacto — las consultas
+   * nuevas del mismo contacto suman propiedades de interés, no leads.
+   */
+  findOpenBuyerByContact(contactId: string, orgId: string): Promise<Lead | null>
 }

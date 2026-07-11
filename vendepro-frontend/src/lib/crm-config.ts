@@ -23,6 +23,80 @@ export const LEAD_TERMINAL_STAGES: LeadStage[] = ['perdido', 'invalido', 'finali
 export const LEAD_AGENT_FINAL_STAGES: LeadStage[] = ['captado', ...LEAD_TERMINAL_STAGES]
 export const LEAD_PIPELINE_STAGES = LEAD_STAGE_KEYS.filter(s => !LEAD_TERMINAL_STAGES.includes(s))
 
+// ── PIPELINE COMPRADOR ──────────────────────────────────────
+// Flujo: nuevo → contactado → calificado → visita_agendada → visito → oferta → cerrado
+// Loop operativo: visito ↔ visita_agendada (un comprador visita varias propiedades);
+// oferta → visito (oferta caída que sigue buscando).
+export const BUYER_LEAD_STAGES = {
+  nuevo:           { label: 'Nuevo',           color: 'bg-blue-100 text-blue-800',       order: 1 },
+  contactado:      { label: 'Contactado',      color: 'bg-cyan-100 text-cyan-800',       order: 2 },
+  calificado:      { label: 'Calificado',      color: 'bg-emerald-100 text-emerald-800', order: 3 },
+  visita_agendada: { label: 'Visita agendada', color: 'bg-violet-100 text-violet-800',   order: 4 },
+  visito:          { label: 'Visitó',          color: 'bg-purple-100 text-purple-800',   order: 5 },
+  oferta:          { label: 'Oferta',          color: 'bg-amber-100 text-amber-800',     order: 6 },
+  cerrado:         { label: 'Cerrado',         color: 'bg-green-100 text-green-800',     order: 7 },
+  perdido:         { label: 'Perdido',         color: 'bg-red-100 text-red-800',         order: 9 },
+  invalido:        { label: 'Inválido',        color: 'bg-gray-100 text-gray-700',       order: 90 },
+} as const
+
+export type BuyerLeadStage = keyof typeof BUYER_LEAD_STAGES
+export const BUYER_LEAD_STAGE_KEYS = Object.keys(BUYER_LEAD_STAGES) as BuyerLeadStage[]
+export const BUYER_LEAD_TERMINAL_STAGES: BuyerLeadStage[] = ['cerrado', 'perdido', 'invalido']
+export const BUYER_LEAD_PIPELINE_STAGES = BUYER_LEAD_STAGE_KEYS.filter(s => s !== 'perdido' && s !== 'invalido')
+
+export type LeadPipelineKey = 'vendedor' | 'comprador'
+
+// Espejo de BUYER_MANUAL_TRANSITIONS del backend (lead-stage.ts).
+// IMPORTANTE: mantener sincronizado con el backend si cambian las transiciones.
+export const BUYER_LEAD_FORWARD_TRANSITIONS: Record<BuyerLeadStage, BuyerLeadStage[]> = {
+  nuevo:           ['contactado', 'invalido', 'perdido'],
+  contactado:      ['calificado', 'invalido', 'perdido'],
+  calificado:      ['visita_agendada', 'invalido', 'perdido'],
+  visita_agendada: ['visito', 'invalido', 'perdido'],
+  visito:          ['visita_agendada', 'oferta', 'invalido', 'perdido'],
+  oferta:          ['cerrado', 'visito', 'invalido', 'perdido'],
+  cerrado:         [],
+  invalido:        [],
+  perdido:         [],
+}
+
+/** Config de stages del pipeline pedido (badge/chips/kanban/stepper). */
+export function getStagesForPipeline(pipeline: LeadPipelineKey) {
+  if (pipeline === 'comprador') {
+    return {
+      config: BUYER_LEAD_STAGES as Record<string, { label: string; color: string; order: number }>,
+      keys: BUYER_LEAD_STAGE_KEYS as string[],
+      pipelineStages: BUYER_LEAD_PIPELINE_STAGES as string[],
+      terminalStages: BUYER_LEAD_TERMINAL_STAGES as string[],
+    }
+  }
+  return {
+    config: LEAD_STAGES as Record<string, { label: string; color: string; order: number }>,
+    keys: LEAD_STAGE_KEYS as string[],
+    pipelineStages: LEAD_PIPELINE_STAGES as string[],
+    terminalStages: LEAD_TERMINAL_STAGES as string[],
+  }
+}
+
+/** Config de un stage según el pipeline del lead (fallback gris si es desconocido). */
+export function getStageConfig(stage: string, pipeline?: string | null) {
+  const cfg = pipeline === 'comprador'
+    ? (BUYER_LEAD_STAGES as Record<string, { label: string; color: string; order: number }>)[stage]
+    : (LEAD_STAGES as Record<string, { label: string; color: string; order: number }>)[stage]
+  return cfg ?? { label: stage, color: 'bg-gray-100 text-gray-600', order: 0 }
+}
+
+// ── LEAD PROPERTIES (propiedades de interés de un comprador) ──
+export const LEAD_PROPERTY_STATUSES = {
+  interesado:      { label: 'Interesado',      color: 'bg-blue-100 text-blue-800' },
+  visita_agendada: { label: 'Visita agendada', color: 'bg-violet-100 text-violet-800' },
+  visitada:        { label: 'Visitada',        color: 'bg-purple-100 text-purple-800' },
+  descartada:      { label: 'Descartada',      color: 'bg-gray-100 text-gray-600' },
+  oferto:          { label: 'Ofertó',          color: 'bg-amber-100 text-amber-800' },
+} as const
+
+export type LeadPropertyStatus = keyof typeof LEAD_PROPERTY_STATUSES
+
 // Espejo de MANUAL_TRANSITIONS del backend (lead-stage.ts). Define a qué etapas
 // se puede AVANZAR manualmente desde cada una. El movimiento hacia atrás (orden
 // menor) siempre se permite como corrección (bypass) y no depende de esta tabla.
@@ -44,12 +118,16 @@ export const LEAD_FORWARD_TRANSITIONS: Record<LeadStage, LeadStage[]> = {
 // ¿Se puede mover manualmente de `from` a `to` desde el pipeline?
 // - Hacia atrás (orden menor): siempre (corrección / bypass).
 // - Hacia adelante: solo si es una transición válida de la máquina de estados.
-export function canMoveLeadStageManually(from: LeadStage, to: LeadStage): boolean {
+export function canMoveLeadStageManually(from: string, to: string, pipeline: LeadPipelineKey = 'vendedor'): boolean {
   if (from === to) return false
-  const fromOrder = LEAD_STAGES[from]?.order ?? 0
-  const toOrder = LEAD_STAGES[to]?.order ?? 0
+  const { config } = getStagesForPipeline(pipeline)
+  const fromOrder = config[from]?.order ?? 0
+  const toOrder = config[to]?.order ?? 0
   if (toOrder < fromOrder) return true
-  return LEAD_FORWARD_TRANSITIONS[from]?.includes(to) ?? false
+  const forward = pipeline === 'comprador'
+    ? (BUYER_LEAD_FORWARD_TRANSITIONS as Record<string, string[]>)[from]
+    : (LEAD_FORWARD_TRANSITIONS as Record<string, string[]>)[from]
+  return forward?.includes(to) ?? false
 }
 
 export const DEFAULT_TAGS = {
@@ -58,19 +136,6 @@ export const DEFAULT_TAGS = {
   inversor:    { label: 'Inversor',    color: '#f59e0b' },
   aliado:      { label: 'Aliado',      color: '#10b981' },
 } as const
-
-export const TAG_PIPELINES: Record<string, LeadStage[]> = {
-  propietario: ['nuevo', 'asignado', 'contactado', 'calificado', 'en_tasacion', 'presentada', 'seguimiento', 'captado', 'perdido'],
-  comprador:   ['nuevo', 'asignado', 'contactado', 'calificado', 'seguimiento', 'captado', 'perdido'],
-  inversor:    ['nuevo', 'contactado', 'calificado', 'seguimiento', 'captado', 'perdido'],
-  aliado:      ['nuevo', 'contactado'],
-}
-
-export function getPipelineForTag(tagName: string | null): LeadStage[] {
-  if (!tagName) return TAG_PIPELINES.propietario
-  const key = tagName.toLowerCase()
-  return TAG_PIPELINES[key] || TAG_PIPELINES.propietario
-}
 
 export const PROPERTY_STAGES = {
   propuesta:     { label: 'Propuesta',       color: 'bg-gray-100 text-gray-700',       order: 0 },
@@ -272,7 +337,7 @@ export function getLeadChecklistScore(lead: any): number {
 
 export function getLeadUrgency(lead: any): 'ok' | 'warning' | 'danger' | 'lost' {
   if (lead.stage === 'perdido' || lead.stage === 'invalido') return 'lost'
-  if (lead.stage === 'finalizado' || lead.stage === 'captado') return 'ok'
+  if (lead.stage === 'finalizado' || lead.stage === 'captado' || lead.stage === 'cerrado') return 'ok'
   const now = new Date()
   const updated = lead.updated_at ? new Date(lead.updated_at) : new Date(lead.created_at)
   const diffH = (now.getTime() - updated.getTime()) / (1000 * 60 * 60)

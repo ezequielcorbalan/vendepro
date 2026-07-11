@@ -43,6 +43,7 @@ export default function ConexionesPage() {
   const [apiKeyInput, setApiKeyInput] = useState('')
   const [showKeyInput, setShowKeyInput] = useState(false)
   const [enabled, setEnabled] = useState(false)
+  const [createBuyerLeads, setCreateBuyerLeads] = useState(true)
   const [saving, setSaving] = useState(false)
 
   // Acciones
@@ -80,6 +81,10 @@ export default function ConexionesPage() {
       ])
       setIntegration(cfg && cfg.id ? cfg : null)
       setEnabled(!!cfg?.enabled)
+      try {
+        const config = cfg?.config_json ? JSON.parse(cfg.config_json) : {}
+        setCreateBuyerLeads(config?.create_buyer_leads !== false)
+      } catch { setCreateBuyerLeads(true) }
       setLog(Array.isArray(logData) ? logData : [])
     } catch { /* estado de error implícito: integration null */ }
     setLoading(false)
@@ -203,7 +208,7 @@ export default function ConexionesPage() {
   async function handleSave() {
     setSaving(true)
     try {
-      const body: any = { enabled }
+      const body: any = { enabled, create_buyer_leads: createBuyerLeads }
       if (apiKeyInput.trim()) body.api_key = apiKeyInput.trim()
       const res = await apiFetch('crm', '/integrations/kiteprop', {
         method: 'PUT',
@@ -399,6 +404,26 @@ export default function ConexionesPage() {
               className="w-4 h-4 accent-[#ff007c]"
             />
             <span className="text-sm font-medium text-gray-700">Activa</span>
+          </label>
+        </div>
+
+        {/* Leads compradores automáticos por consulta de portal */}
+        <div className="flex items-center justify-between gap-3 mt-3 pt-3 border-t border-gray-100">
+          <div>
+            <p className="text-sm font-medium text-gray-700">Leads compradores automáticos</p>
+            <p className="text-xs text-gray-500">
+              Cada consulta de portal crea un lead en el pipeline de Compradores con la propiedad
+              consultada vinculada (se importa como propiedad local si no existe). Guardá para aplicar.
+            </p>
+          </div>
+          <label className="flex items-center gap-2 cursor-pointer shrink-0">
+            <input
+              type="checkbox"
+              checked={createBuyerLeads}
+              onChange={e => setCreateBuyerLeads(e.target.checked)}
+              className="w-4 h-4 accent-[#ff007c]"
+            />
+            <span className="text-sm font-medium text-gray-700">Activo</span>
           </label>
         </div>
 
