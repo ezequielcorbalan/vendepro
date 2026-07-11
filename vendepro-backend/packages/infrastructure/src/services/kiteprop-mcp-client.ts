@@ -1,4 +1,4 @@
-import type { KitepropGateway, KitepropContactDTO, KitepropContactsPage, KitepropTestResult, KitepropMessageDTO, KitepropMessagesPage, KitepropPropertyRef, KitepropAgentDTO, KitepropContactAgent } from '@vendepro/core'
+import type { KitepropGateway, KitepropContactDTO, KitepropContactsPage, KitepropTestResult, KitepropMessageDTO, KitepropMessagesPage, KitepropPropertyRef, KitepropPropertyDTO, KitepropAgentDTO, KitepropContactAgent } from '@vendepro/core'
 
 /**
  * Cliente del servidor MCP de KiteProp (https://mcp.kiteprop.com).
@@ -118,6 +118,18 @@ export class KitepropMcpClient implements KitepropGateway {
   }
 
   async getPropertyRef(apiKey: string, propertyId: number): Promise<KitepropPropertyRef | null> {
+    const dto = await this.getProperty(apiKey, propertyId)
+    if (!dto) return null
+    return {
+      code: dto.code,
+      title: dto.title,
+      address: dto.address,
+      agent_email: dto.agent_email,
+      agent_name: dto.agent_name,
+    }
+  }
+
+  async getProperty(apiKey: string, propertyId: number): Promise<KitepropPropertyDTO | null> {
     let result: any
     try {
       result = await this.callTool(apiKey, 'get_property', { property_id: propertyId })
@@ -127,12 +139,29 @@ export class KitepropMcpClient implements KitepropGateway {
     const p = result?.data ?? result
     if (!p || (p.id == null && p.code == null)) return null
     const user = p.user ?? p.assigned_user ?? null
+    // Best-effort sobre las variantes de nombres que expone KiteProp: cada campo
+    // cae a null si el payload no lo trae (la importación degrada con placeholders).
+    const num = (v: unknown): number | null => {
+      const n = typeof v === 'string' ? Number(v) : v
+      return typeof n === 'number' && Number.isFinite(n) ? n : null
+    }
+    const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v.trim() : null)
+    const operation = Array.isArray(p.operations) ? p.operations[0] : null
+    const priceEntry = operation && Array.isArray(operation.prices) ? operation.prices[0] : null
     return {
-      code: p.code ?? (p.id != null ? `KP${p.id}` : null),
-      title: p.title ?? null,
-      address: p.address ?? null,
-      agent_email: user?.email ?? null,
-      agent_name: user?.full_name ?? null,
+      external_id: String(p.id ?? propertyId),
+      code: str(p.code) ?? (p.id != null ? `KP${p.id}` : null),
+      title: str(p.title),
+      address: str(p.address) ?? str(p.full_address) ?? str(p.fake_address),
+      neighborhood: str(p.neighborhood?.name) ?? str(p.neighborhood) ?? str(p.location?.name),
+      property_type: str(p.type?.name) ?? str(p.property_type) ?? str(p.type),
+      rooms: num(p.rooms) ?? num(p.room_amount) ?? num(p.suite_amount),
+      size_m2: num(p.total_surface) ?? num(p.surface) ?? num(p.roofed_surface),
+      price: num(p.price) ?? num(priceEntry?.price) ?? num(operation?.price),
+      currency: str(p.currency) ?? str(priceEntry?.currency),
+      cover_photo: str(p.cover_photo) ?? str(p.main_photo) ?? str(Array.isArray(p.photos) ? (p.photos[0]?.image ?? p.photos[0]?.url ?? p.photos[0]) : null),
+      agent_email: str(user?.email),
+      agent_name: str(user?.full_name) ?? str(user?.name),
     }
   }
 

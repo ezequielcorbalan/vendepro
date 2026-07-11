@@ -34,6 +34,7 @@ const mockGateway = {
   fetchContacts: vi.fn(),
   fetchMessages: vi.fn(),
   getPropertyRef: vi.fn().mockResolvedValue(null),
+  getProperty: vi.fn().mockResolvedValue(null),
   fetchAgents: vi.fn().mockResolvedValue([]),
   getContactAgent: vi.fn().mockResolvedValue(null),
 }
@@ -98,7 +99,7 @@ describe('SyncKitepropContactsUseCase', () => {
     mockUserRepo.findFirstAdminByOrg.mockResolvedValue({ id: 'admin-1' })
     mockUserRepo.findByEmail.mockResolvedValue(null)
     mockUserRepo.findByOrg.mockResolvedValue([])
-    mockGateway.getPropertyRef.mockResolvedValue(null)
+    mockGateway.getProperty.mockResolvedValue(null)
     decrypt.mockResolvedValue('kp_key')
   })
 
@@ -106,7 +107,7 @@ describe('SyncKitepropContactsUseCase', () => {
 
   it('crea contacto nuevo con portal como source, agente por email y notas con mensaje + propiedad', async () => {
     mockGateway.fetchMessages.mockResolvedValue(page([kpMessage(1)]))
-    mockGateway.getPropertyRef.mockResolvedValue({ code: 'KP501', title: 'Oficina Villa Urquiza', address: 'Av. 100', agent_email: 'andres@dein.com', agent_name: 'Andrés Giunta' })
+    mockGateway.getProperty.mockResolvedValue({ code: 'KP501', title: 'Oficina Villa Urquiza', address: 'Av. 100', agent_email: 'andres@dein.com', agent_name: 'Andrés Giunta' })
     mockUserRepo.findByEmail.mockResolvedValue({ id: 'user-andres' })
 
     const result = await makeUc().execute({ orgId: 'org_mg', mode: 'manual' })
@@ -127,7 +128,7 @@ describe('SyncKitepropContactsUseCase', () => {
 
   it('agente: fallback por nombre cuando no matchea el email', async () => {
     mockGateway.fetchMessages.mockResolvedValue(page([kpMessage(1)]))
-    mockGateway.getPropertyRef.mockResolvedValue({ code: 'KP501', title: 'X', address: null, agent_email: 'noexiste@dein.com', agent_name: 'Andrés Giunta' })
+    mockGateway.getProperty.mockResolvedValue({ code: 'KP501', title: 'X', address: null, agent_email: 'noexiste@dein.com', agent_name: 'Andrés Giunta' })
     mockUserRepo.findByEmail.mockResolvedValue(null)
     mockUserRepo.findByOrg.mockResolvedValue([{ id: 'user-andres', email: 'otro@vp.com', full_name: 'Andres Giunta' }])
 
@@ -137,7 +138,7 @@ describe('SyncKitepropContactsUseCase', () => {
 
   it('agente: cae al admin cuando no matchea ni por email ni por nombre', async () => {
     mockGateway.fetchMessages.mockResolvedValue(page([kpMessage(1)]))
-    mockGateway.getPropertyRef.mockResolvedValue({ code: null, title: null, address: null, agent_email: 'x@x.com', agent_name: 'Nadie' })
+    mockGateway.getProperty.mockResolvedValue({ code: null, title: null, address: null, agent_email: 'x@x.com', agent_name: 'Nadie' })
 
     await makeUc().execute({ orgId: 'org_mg', mode: 'manual' })
     expect(mockContactRepo.save.mock.calls[0][0].agent_id).toBe('admin-1')
@@ -148,7 +149,7 @@ describe('SyncKitepropContactsUseCase', () => {
     // El contacto está asignado a Marcela (id 7673) en KiteProp
     mockGateway.getContactAgent.mockResolvedValue({ external_id: '7673', email: 'marcelagenta@dein.com', name: 'Marcela Genta' })
     // El agente de la propiedad es otro (no debería ganarle al asignado)
-    mockGateway.getPropertyRef.mockResolvedValue({ code: 'KP1', title: 'X', address: null, agent_email: 'otro@dein.com', agent_name: 'Otro' })
+    mockGateway.getProperty.mockResolvedValue({ code: 'KP1', title: 'X', address: null, agent_email: 'otro@dein.com', agent_name: 'Otro' })
     mockIntegrationRepo.findByOrgAndProvider.mockResolvedValue(
       integration({ config_json: JSON.stringify({ agent_map: { '7673': 'user-marcela' } }) }),
     )
@@ -188,7 +189,7 @@ describe('SyncKitepropContactsUseCase', () => {
 
   it('contacto existente (por link): enriquece source/agente/notas y cuenta enriched', async () => {
     mockGateway.fetchMessages.mockResolvedValue(page([kpMessage(1, { contactId: 77 })]))
-    mockGateway.getPropertyRef.mockResolvedValue({ code: 'KP501', title: 'Oficina', address: null, agent_email: 'a@dein.com', agent_name: 'Andrés' })
+    mockGateway.getProperty.mockResolvedValue({ code: 'KP501', title: 'Oficina', address: null, agent_email: 'a@dein.com', agent_name: 'Andrés' })
     mockUserRepo.findByEmail.mockResolvedValue({ id: 'user-andres' })
     mockLinkRepo.findContactId.mockResolvedValue('contact-77')
     mockContactRepo.findById.mockResolvedValue(Contact.create({
@@ -224,11 +225,11 @@ describe('SyncKitepropContactsUseCase', () => {
       kpMessage(1, { property_id: 999, contactId: 1 }),
       kpMessage(2, { property_id: 999, contactId: 2 }),
     ]))
-    mockGateway.getPropertyRef.mockResolvedValue({ code: 'KP999', title: 'T', address: null, agent_email: null, agent_name: null })
+    mockGateway.getProperty.mockResolvedValue({ code: 'KP999', title: 'T', address: null, agent_email: null, agent_name: null })
 
     await makeUc().execute({ orgId: 'org_mg', mode: 'manual' })
-    expect(mockGateway.getPropertyRef).toHaveBeenCalledTimes(1)
-    expect(mockGateway.getPropertyRef).toHaveBeenCalledWith('kp_key', 999)
+    expect(mockGateway.getProperty).toHaveBeenCalledTimes(1)
+    expect(mockGateway.getProperty).toHaveBeenCalledWith('kp_key', 999)
   })
 
   it('corta al pasar la marca de fecha (KiteProp ignora date_from)', async () => {
@@ -339,5 +340,180 @@ describe('SyncKitepropContactsUseCase', () => {
     expect(mockGateway.fetchContacts.mock.calls[0][1].page).toBe(3)
     expect(result.done).toBe(true)
     expect((mockIntegrationRepo.save.mock.calls[0][0] as OrgIntegration).getConfig().backfill_done).toBe(true)
+  })
+})
+
+// ─────────────── LEADS COMPRADORES (message-driven + repos opcionales) ───────────────
+
+const mockLeadRepo = {
+  findById: vi.fn(),
+  findByOrg: vi.fn(),
+  save: vi.fn().mockResolvedValue(undefined),
+  delete: vi.fn(),
+  findOpenBuyerByContact: vi.fn().mockResolvedValue(null),
+} as any
+const mockLeadPropertyRepo = {
+  findById: vi.fn(),
+  findByLead: vi.fn(),
+  findByLeadAndProperty: vi.fn().mockResolvedValue(null),
+  findByLeadWithProperty: vi.fn(),
+  findInterestedByProperty: vi.fn(),
+  save: vi.fn().mockResolvedValue(undefined),
+  delete: vi.fn(),
+} as any
+const mockPropertyLinkRepo = {
+  findPropertyId: vi.fn().mockResolvedValue(null),
+  save: vi.fn().mockResolvedValue(undefined),
+} as any
+const mockPropertyRepo = {
+  findById: vi.fn(),
+  findByNormalizedAddress: vi.fn().mockResolvedValue(null),
+  save: vi.fn().mockResolvedValue(undefined),
+} as any
+
+function makeBuyerUc() {
+  return new SyncKitepropContactsUseCase(
+    mockIntegrationRepo, mockLinkRepo, mockSyncLogRepo,
+    mockContactRepo, mockUserRepo, mockGateway, mockIds, decrypt,
+    mockLeadRepo, mockLeadPropertyRepo, mockPropertyLinkRepo, mockPropertyRepo,
+  )
+}
+
+const kpPropertyDto = (over: Record<string, unknown> = {}) => ({
+  external_id: '501', code: 'KP501', title: 'Depto 3 amb', address: 'Av. Cabildo 1234',
+  neighborhood: 'Belgrano', property_type: 'Departamento', rooms: 3, size_m2: 75,
+  price: 150000, currency: 'USD', cover_photo: null,
+  agent_email: 'andres@dein.com', agent_name: 'Andrés Giunta', ...over,
+})
+
+describe('SyncKitepropContactsUseCase — leads compradores', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    idCounter = 0
+    mockIds.generate.mockImplementation(() => `gen-${++idCounter}`)
+    mockIntegrationRepo.findByOrgAndProvider.mockResolvedValue(integration())
+    mockIntegrationRepo.save.mockResolvedValue(undefined)
+    mockLinkRepo.findContactId.mockResolvedValue(null)
+    mockLinkRepo.findContactIds.mockResolvedValue({})
+    mockLinkRepo.save.mockResolvedValue(undefined)
+    mockSyncLogRepo.save.mockResolvedValue(undefined)
+    mockContactRepo.findById.mockResolvedValue(null)
+    mockContactRepo.findByEmailOrPhone.mockResolvedValue(null)
+    mockContactRepo.save.mockResolvedValue(undefined)
+    mockUserRepo.findFirstAdminByOrg.mockResolvedValue({ id: 'admin-1' })
+    mockUserRepo.findByEmail.mockResolvedValue(null)
+    mockUserRepo.findByOrg.mockResolvedValue([])
+    mockGateway.getProperty.mockResolvedValue(kpPropertyDto())
+    decrypt.mockResolvedValue('kp_key')
+    mockLeadRepo.findOpenBuyerByContact.mockResolvedValue(null)
+    mockLeadRepo.save.mockResolvedValue(undefined)
+    mockLeadPropertyRepo.findByLeadAndProperty.mockResolvedValue(null)
+    mockLeadPropertyRepo.save.mockResolvedValue(undefined)
+    mockPropertyLinkRepo.findPropertyId.mockResolvedValue(null)
+    mockPropertyLinkRepo.save.mockResolvedValue(undefined)
+    mockPropertyRepo.findByNormalizedAddress.mockResolvedValue(null)
+    mockPropertyRepo.save.mockResolvedValue(undefined)
+  })
+
+  it('consulta nueva: crea contacto + lead comprador + propiedad importada + link + lead_property', async () => {
+    mockGateway.fetchMessages.mockResolvedValue(page([kpMessage(1)]))
+
+    const result = await makeBuyerUc().execute({ orgId: 'org_mg', mode: 'manual' })
+
+    expect(result.created).toBe(1)
+    // Lead comprador en 'nuevo' con contact_id y source del portal
+    expect(mockLeadRepo.save).toHaveBeenCalledWith(expect.objectContaining({
+      pipeline: 'comprador', stage: 'nuevo', source: 'argenprop',
+    }))
+    // Propiedad importada como local (source kiteprop, publicada)
+    expect(mockPropertyRepo.save).toHaveBeenCalledWith(expect.objectContaining({
+      source: 'kiteprop', commercial_stage: 'publicada', address: 'Av. Cabildo 1234',
+    }))
+    // Link aviso KiteProp → propiedad local
+    expect(mockPropertyLinkRepo.save).toHaveBeenCalledWith('org_mg', 'kiteprop', '501', expect.any(String), 'KP501')
+    // Relación de interés
+    expect(mockLeadPropertyRepo.save).toHaveBeenCalledWith(expect.objectContaining({ status: 'interesado' }))
+  })
+
+  it('mismo contacto con lead comprador abierto: NO crea 2º lead, SÍ agrega la propiedad', async () => {
+    mockGateway.fetchMessages.mockResolvedValue(page([kpMessage(1)]))
+    mockLeadRepo.findOpenBuyerByContact.mockResolvedValue({ id: 'lead-open' })
+
+    await makeBuyerUc().execute({ orgId: 'org_mg', mode: 'manual' })
+
+    expect(mockLeadRepo.save).not.toHaveBeenCalled()
+    expect(mockLeadPropertyRepo.save).toHaveBeenCalledWith(expect.objectContaining({ lead_id: 'lead-open' }))
+  })
+
+  it('aviso ya mapeado en property_links: reusa la propiedad local sin importar', async () => {
+    mockGateway.fetchMessages.mockResolvedValue(page([kpMessage(1)]))
+    mockPropertyLinkRepo.findPropertyId.mockResolvedValue('prop-local-1')
+
+    await makeBuyerUc().execute({ orgId: 'org_mg', mode: 'manual' })
+
+    expect(mockPropertyRepo.save).not.toHaveBeenCalled()
+    expect(mockLeadPropertyRepo.save).toHaveBeenCalledWith(expect.objectContaining({ property_id: 'prop-local-1' }))
+  })
+
+  it('match por dirección: no duplica una captación propia, solo crea el link', async () => {
+    mockGateway.fetchMessages.mockResolvedValue(page([kpMessage(1)]))
+    mockPropertyRepo.findByNormalizedAddress.mockResolvedValue({ id: 'prop-captada' })
+
+    await makeBuyerUc().execute({ orgId: 'org_mg', mode: 'manual' })
+
+    expect(mockPropertyRepo.save).not.toHaveBeenCalled()
+    expect(mockPropertyLinkRepo.save).toHaveBeenCalledWith('org_mg', 'kiteprop', '501', 'prop-captada', 'KP501')
+  })
+
+  it('relación existente (p.ej. visitada): no la pisa', async () => {
+    mockGateway.fetchMessages.mockResolvedValue(page([kpMessage(1)]))
+    mockPropertyLinkRepo.findPropertyId.mockResolvedValue('prop-local-1')
+    mockLeadPropertyRepo.findByLeadAndProperty.mockResolvedValue({ id: 'lp-1', status: 'visitada' })
+
+    await makeBuyerUc().execute({ orgId: 'org_mg', mode: 'manual' })
+
+    expect(mockLeadPropertyRepo.save).not.toHaveBeenCalled()
+  })
+
+  it('flag create_buyer_leads: false → solo contacto, sin lead', async () => {
+    mockIntegrationRepo.findByOrgAndProvider.mockResolvedValue(
+      integration({ config_json: JSON.stringify({ create_buyer_leads: false }) }),
+    )
+    mockGateway.fetchMessages.mockResolvedValue(page([kpMessage(1)]))
+
+    const result = await makeBuyerUc().execute({ orgId: 'org_mg', mode: 'manual' })
+
+    expect(result.created).toBe(1) // el contacto
+    expect(mockLeadRepo.save).not.toHaveBeenCalled()
+    expect(mockLeadPropertyRepo.save).not.toHaveBeenCalled()
+  })
+
+  it('modo enrich: NO crea leads compradores (histórico)', async () => {
+    mockGateway.fetchMessages.mockResolvedValue(page([kpMessage(1)]))
+
+    await makeBuyerUc().execute({ orgId: 'org_mg', mode: 'enrich' })
+
+    expect(mockLeadRepo.save).not.toHaveBeenCalled()
+  })
+
+  it('fallo creando el lead NO voltea la creación del contacto', async () => {
+    mockGateway.fetchMessages.mockResolvedValue(page([kpMessage(1)]))
+    mockLeadRepo.findOpenBuyerByContact.mockRejectedValue(new Error('D1 down'))
+
+    const result = await makeBuyerUc().execute({ orgId: 'org_mg', mode: 'manual' })
+
+    expect(result.created).toBe(1) // el contacto se creó igual
+    expect(mockContactRepo.save).toHaveBeenCalled()
+    expect(result.error).toBe('D1 down')
+  })
+
+  it('fallo de getProperty: el lead se crea igual, sin relación de propiedad', async () => {
+    mockGateway.fetchMessages.mockResolvedValue(page([kpMessage(1)]))
+    mockGateway.getProperty.mockResolvedValue(null)
+
+    await makeBuyerUc().execute({ orgId: 'org_mg', mode: 'manual' })
+
+    expect(mockLeadRepo.save).toHaveBeenCalledWith(expect.objectContaining({ pipeline: 'comprador' }))
+    expect(mockLeadPropertyRepo.save).not.toHaveBeenCalled()
   })
 })

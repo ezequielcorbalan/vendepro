@@ -30,6 +30,7 @@ export function registerVisitFormRoutes(app: Hono<{ Bindings: Env } & AuthVars>)
         org_id: c.get('orgId'),
         agent_id: c.get('userId'),
         property_id: body.property_id,
+        lead_id: typeof body.lead_id === 'string' && body.lead_id ? body.lead_id : null,
       })
       return c.json(
         {

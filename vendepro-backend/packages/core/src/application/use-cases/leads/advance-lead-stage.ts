@@ -6,7 +6,7 @@ import type { IdGenerator } from '../../ports/id-generator'
 import { NotFoundError } from '../../../domain/errors/not-found'
 import { ValidationError } from '../../../domain/errors/validation-error'
 import { CalendarEvent } from '../../../domain/entities/calendar-event'
-import type { LeadStageValue } from '../../../domain/value-objects/lead-stage'
+import type { AnyLeadStageValue } from '../../../domain/value-objects/lead-stage'
 import type { PropertyStageValue } from '../../../domain/value-objects/property-stage'
 import { SyncEngine } from '../../../domain/rules/sync-engine'
 import type { SendMetaConversionEventUseCase } from '../marketing/send-meta-conversion-event'
@@ -14,7 +14,7 @@ import type { SendMetaConversionEventUseCase } from '../marketing/send-meta-conv
 export interface AdvanceLeadStageInput {
   leadId: string
   orgId: string
-  newStage: LeadStageValue
+  newStage: AnyLeadStageValue
   changedBy: string
   notes?: string | null
   /** Corrección manual: saltea la máquina de transiciones (bypass total). */
@@ -42,9 +42,14 @@ export class AdvanceLeadStageUseCase {
     const lead = await this.leadRepo.findById(input.leadId, input.orgId)
     if (!lead) throw new NotFoundError('Lead no encontrado')
 
+    // Los side effects comerciales (invariante de captado, sync lead→property,
+    // auto-followup de presentada) son del pipeline vendedor; el comprador solo
+    // mueve su máquina de estados y loggea stage_history.
+    const isVendor = lead.pipeline !== 'comprador'
+
     // Invariante de negocio (incluso con override): un lead no puede pasar a
     // "captado" sin una propiedad vinculada. Captado = la propiedad fue captada.
-    if (input.newStage === 'captado' && this.propertyRepo) {
+    if (isVendor && input.newStage === 'captado' && this.propertyRepo) {
       const linked = await this.propertyRepo.findByLeadId(input.leadId, input.orgId)
       if (!linked) {
         throw new ValidationError('No se puede pasar a "captado" sin una propiedad vinculada')
@@ -71,7 +76,7 @@ export class AdvanceLeadStageUseCase {
     let syncedPropertyId: string | null = null
     let syncedPropertyStage: PropertyStageValue | null = null
     let propertyId: string | null = null
-    if (this.propertyRepo) {
+    if (isVendor && this.propertyRepo) {
       const property = await this.propertyRepo.findByLeadId(lead.id, input.orgId)
       if (property) {
         propertyId = property.id
@@ -96,7 +101,7 @@ export class AdvanceLeadStageUseCase {
     }
 
     let autoFollowup: object | null = null
-    if (input.newStage === 'presentada') {
+    if (isVendor && input.newStage === 'presentada') {
       const followupDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
       const event = CalendarEvent.create({
         id: this.idGen.generate(),

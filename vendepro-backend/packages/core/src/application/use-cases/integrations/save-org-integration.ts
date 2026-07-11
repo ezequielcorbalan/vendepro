@@ -10,6 +10,8 @@ export interface SaveOrgIntegrationInput {
   /** '********' (placeholder) → no actualiza; '' → limpia. */
   api_key?: string | null
   enabled?: boolean
+  /** Crear leads compradores por cada consulta de portal (default ON; undefined preserva). */
+  create_buyer_leads?: boolean
 }
 
 const TOKEN_PLACEHOLDER = '********'
@@ -54,6 +56,11 @@ export class SaveOrgIntegrationUseCase {
         ? new Date().toISOString()
         : next.last_sync_at,
     })
+
+    // Flag no sensible en config_json (merge: preserva backfill/enrich/agent_map).
+    if (input.create_buyer_leads !== undefined) {
+      next.setConfig({ ...next.getConfig(), create_buyer_leads: input.create_buyer_leads })
+    }
 
     await this.repo.save(next)
     return next.toPublicView()

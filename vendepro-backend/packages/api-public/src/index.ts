@@ -12,6 +12,7 @@ import {
   D1UserRepository,
   D1ContactRepository,
   D1LeadRepository,
+  D1LeadPropertyRepository,
   D1TagRepository,
   CryptoIdGenerator,
   D1LandingRepository,
@@ -147,7 +148,9 @@ app.get('/public/property-visit-form/:slug', async (c) => {
 app.post('/public/property-visit-form/:slug/submit', async (c) => {
   const body = (await c.req.json()) as any
   const visitFormRepo = new D1PropertyVisitFormRepository(c.env.DB)
-  const uc = new SubmitVisitFormUseCase(visitFormRepo)
+  // Si la ficha nació de un lead comprador, el submit marca su relación
+  // lead_properties como 'visitada' con el feedback resumido.
+  const uc = new SubmitVisitFormUseCase(visitFormRepo, new D1LeadPropertyRepository(c.env.DB))
   const priceRaw = body.subjective_price_usd
   const price =
     priceRaw === null || priceRaw === undefined || priceRaw === ''

@@ -137,3 +137,96 @@ describe('AdvanceLeadStageUseCase', () => {
     )
   })
 })
+
+describe('AdvanceLeadStageUseCase — pipeline comprador', () => {
+  const makeBuyerLead = (stage: string = 'nuevo') => Lead.create({
+    id: 'buyer-1',
+    org_id: 'org_mg',
+    pipeline: 'comprador',
+    full_name: 'Comprador Test',
+    phone: '1134567892',
+    email: null,
+    source: 'zonaprop',
+    source_detail: 'KP522301',
+    property_address: null,
+    neighborhood: null,
+    property_type: null,
+    operation: 'venta',
+    stage: stage as any,
+    assigned_to: 'agent-1',
+    notes: null,
+    estimated_value: null,
+    budget: null,
+    timing: null,
+    personas_trabajo: null,
+    mascotas: null,
+    next_step: null,
+    next_step_date: null,
+    lost_reason: null,
+    first_contact_at: null,
+    contact_id: 'contact-1',
+  })
+
+  const mockPropertyRepo = {
+    findByLeadId: vi.fn(),
+    findById: vi.fn(),
+    updateStage: vi.fn(),
+  } as any
+
+  beforeEach(() => {
+    mockPropertyRepo.findByLeadId.mockReset()
+    mockPropertyRepo.updateStage.mockReset()
+  })
+
+  it('avanza etapas compradoras y loggea history', async () => {
+    mockLeadRepo.findById.mockResolvedValue(makeBuyerLead('visito'))
+
+    const useCase = new AdvanceLeadStageUseCase(mockLeadRepo, mockCalendarRepo, mockStageHistoryRepo, mockIdGen, mockPropertyRepo)
+    const result = await useCase.execute({ leadId: 'buyer-1', orgId: 'org_mg', newStage: 'oferta' as any, changedBy: 'agent-1' })
+
+    expect(mockLeadRepo.save).toHaveBeenCalled()
+    expect(mockStageHistoryRepo.log).toHaveBeenCalledWith(
+      expect.objectContaining({ from_stage: 'visito', to_stage: 'oferta', entity_type: 'lead' })
+    )
+    expect(result.autoFollowup).toBeNull()
+    expect(result.syncedPropertyId).toBeNull()
+  })
+
+  it('NO consulta propiedades ni dispara SyncEngine para compradores', async () => {
+    mockLeadRepo.findById.mockResolvedValue(makeBuyerLead('nuevo'))
+
+    const useCase = new AdvanceLeadStageUseCase(mockLeadRepo, mockCalendarRepo, mockStageHistoryRepo, mockIdGen, mockPropertyRepo)
+    await useCase.execute({ leadId: 'buyer-1', orgId: 'org_mg', newStage: 'contactado', changedBy: 'agent-1' })
+
+    expect(mockPropertyRepo.findByLeadId).not.toHaveBeenCalled()
+    expect(mockPropertyRepo.updateStage).not.toHaveBeenCalled()
+  })
+
+  it('rechaza transiciones inválidas del pipeline comprador', async () => {
+    mockLeadRepo.findById.mockResolvedValue(makeBuyerLead('nuevo'))
+
+    const useCase = new AdvanceLeadStageUseCase(mockLeadRepo, mockCalendarRepo, mockStageHistoryRepo, mockIdGen, mockPropertyRepo)
+    await expect(useCase.execute({ leadId: 'buyer-1', orgId: 'org_mg', newStage: 'cerrado' as any, changedBy: 'agent-1' }))
+      .rejects.toThrow(ValidationError)
+  })
+
+  it('el loop visito → visita_agendada funciona', async () => {
+    mockLeadRepo.findById.mockResolvedValue(makeBuyerLead('visito'))
+
+    const useCase = new AdvanceLeadStageUseCase(mockLeadRepo, mockCalendarRepo, mockStageHistoryRepo, mockIdGen, mockPropertyRepo)
+    await expect(
+      useCase.execute({ leadId: 'buyer-1', orgId: 'org_mg', newStage: 'visita_agendada' as any, changedBy: 'agent-1' })
+    ).resolves.toBeDefined()
+  })
+
+  it('no crea followup automático (presentada no existe en comprador)', async () => {
+    // Incluso con override a un stage cualquiera, el gate isVendor evita side effects.
+    mockLeadRepo.findById.mockResolvedValue(makeBuyerLead('oferta'))
+
+    const useCase = new AdvanceLeadStageUseCase(mockLeadRepo, mockCalendarRepo, mockStageHistoryRepo, mockIdGen, mockPropertyRepo)
+    const result = await useCase.execute({ leadId: 'buyer-1', orgId: 'org_mg', newStage: 'cerrado' as any, changedBy: 'agent-1' })
+
+    expect(mockCalendarRepo.save).not.toHaveBeenCalled()
+    expect(result.autoFollowup).toBeNull()
+  })
+})

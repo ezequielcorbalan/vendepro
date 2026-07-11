@@ -1,9 +1,12 @@
 import type { LeadRepository } from '../../ports/repositories/lead-repository'
 import type { IdGenerator } from '../../ports/id-generator'
+import type { LeadPipeline } from '../../../domain/value-objects/lead-stage'
 import { Lead } from '../../../domain/entities/lead'
 
 export interface CreateLeadInput {
   org_id: string
+  /** 'vendedor' (default) | 'comprador' */
+  pipeline?: LeadPipeline
   full_name: string
   phone?: string | null
   email?: string | null
@@ -42,6 +45,7 @@ export class CreateLeadUseCase {
       neighborhood: input.neighborhood ?? null,
       property_type: input.property_type ?? 'departamento',
       operation: input.operation ?? 'venta',
+      pipeline: input.pipeline ?? 'vendedor',
       stage: 'nuevo',
       assigned_to: input.assigned_to ?? null,
       notes: input.notes ?? null,

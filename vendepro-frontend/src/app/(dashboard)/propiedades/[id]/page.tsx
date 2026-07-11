@@ -7,6 +7,7 @@ import { ArrowLeft, Building2, Loader2, Phone, Mail, User, MapPin, DollarSign, C
 import { apiFetch } from '@/lib/api'
 import { PhotoGallery } from '@/components/ui/PhotoGallery'
 import { VisitFormsSection } from '@/components/properties/VisitFormsSection'
+import { InterestedLeadsSection } from '@/components/properties/InterestedLeadsSection'
 import AuthorizationWidget from '@/components/properties/AuthorizationWidget'
 import PriceHistoryWidget from '@/components/properties/PriceHistoryWidget'
 import DocChecklistWidget from '@/components/properties/DocChecklistWidget'
@@ -135,6 +136,11 @@ export default function PropiedadDetailPage() {
             <span className={`text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap ${stageColor[stage] || 'bg-gray-100 text-gray-600'}`}>
               {stageLabel[stage] || stage}
             </span>
+            {(property as any).source === 'kiteprop' && (
+              <span className="text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap bg-indigo-50 text-indigo-600 border border-indigo-100">
+                Importada de KiteProp
+              </span>
+            )}
             <Link href={`/tasaciones/nueva?property_id=${id}`}
               className="inline-flex items-center gap-1.5 bg-brand-pink text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:opacity-90">
               <Plus className="w-4 h-4" /> Nueva tasación
@@ -297,6 +303,8 @@ export default function PropiedadDetailPage() {
       {/* Fichas de visita */}
       <div className="mt-6">
         <VisitFormsSection propertyId={id} refreshKey={visitRefreshKey} />
+
+        <InterestedLeadsSection propertyId={id} />
       </div>
 
       {showGenerate && (

@@ -2,16 +2,17 @@
 
 import { ChevronRight, Target, CheckCircle2, Circle, XCircle } from 'lucide-react'
 import {
-  LEAD_STAGES, type LeadStage,
-  LEAD_PIPELINE_STAGES, canMoveLeadStageManually,
+  getStagesForPipeline, canMoveLeadStageManually, type LeadPipelineKey,
 } from '@/lib/crm-config'
 
 /** Estados terminales que se pueden setear manualmente desde el pipeline. */
-const MANUAL_TERMINAL_STAGES: LeadStage[] = ['perdido', 'invalido']
+const MANUAL_TERMINAL_STAGES = ['perdido', 'invalido'] as const
 
 interface LeadStagePipelineProps {
   /** Etapa actual del lead (la columna `stage`). */
   currentStage: string
+  /** Pipeline del lead: define qué etapas muestra el stepper. */
+  pipeline?: LeadPipelineKey
   /**
    * Se dispara al clickear una etapa. Es un bypass: permite mover a cualquier
    * etapa (incluso hacia atrás) para corregir errores. La validación de negocio
@@ -26,10 +27,17 @@ interface LeadStagePipelineProps {
  * cualquier etapa con un click (corrección manual / bypass), incluidos los
  * estados terminales y volver atrás desde ellos.
  */
-export function LeadStagePipeline({ currentStage, onSelect, disabled = false }: LeadStagePipelineProps) {
+export function LeadStagePipeline({ currentStage, pipeline = 'vendedor', onSelect, disabled = false }: LeadStagePipelineProps) {
+  const { config } = getStagesForPipeline(pipeline)
+  // Etapas del stepper: las no-terminales-perdidas. En comprador, 'cerrado' es la
+  // etapa ganada y va en el stepper (como 'captado' en vendedor); 'finalizado'
+  // (vendedor, solo-sync) se muestra como chip informativo.
+  const stepperStages = Object.keys(config).filter(
+    s => s !== 'perdido' && s !== 'invalido' && s !== 'finalizado'
+  )
   const isTerminalLost = currentStage === 'perdido' || currentStage === 'invalido'
   const isFinalized = currentStage === 'finalizado'
-  const rawOrder = LEAD_STAGES[currentStage as LeadStage]?.order ?? 0
+  const rawOrder = config[currentStage]?.order ?? 0
   const currentOrder = isTerminalLost ? 0 : isFinalized ? 999 : rawOrder
 
   return (
@@ -39,19 +47,21 @@ export function LeadStagePipeline({ currentStage, onSelect, disabled = false }: 
           <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-sm">
             <Target className="w-3.5 h-3.5 text-white" />
           </div>
-          <p className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Pipeline</p>
+          <p className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
+            Pipeline{pipeline === 'comprador' ? ' comprador' : ''}
+          </p>
         </div>
         <span className="text-[10px] text-gray-400">Clickeá una etapa para mover (incluso hacia atrás)</span>
       </div>
 
       <div className="overflow-hidden">
         <div className="flex items-center gap-0 flex-wrap">
-          {LEAD_PIPELINE_STAGES.map((s, i) => {
-            const stageData = LEAD_STAGES[s]
+          {stepperStages.map((s, i) => {
+            const stageData = config[s]
             const isCompleted = stageData.order < currentOrder
             const isCurrent = s === currentStage
-            const isLast = i === LEAD_PIPELINE_STAGES.length - 1
-            const movable = canMoveLeadStageManually(currentStage as LeadStage, s)
+            const isLast = i === stepperStages.length - 1
+            const movable = canMoveLeadStageManually(currentStage, s, pipeline)
             const isDisabled = disabled || (!isCurrent && !movable)
             return (
               <div key={s} className="flex items-center">
@@ -106,19 +116,19 @@ export function LeadStagePipeline({ currentStage, onSelect, disabled = false }: 
                 } disabled:cursor-not-allowed`}
               >
                 <XCircle className="w-3.5 h-3.5" />
-                {LEAD_STAGES[s].label}
+                {config[s]?.label ?? s}
               </button>
             )
           })}
-          {isFinalized && (
+          {isFinalized && config.finalizado && (
             <span
               aria-current="step"
               data-stage="finalizado"
               data-current="true"
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${LEAD_STAGES.finalizado.color} border-transparent`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${config.finalizado.color} border-transparent`}
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
-              {LEAD_STAGES.finalizado.label}
+              {config.finalizado.label}
             </span>
           )}
         </div>

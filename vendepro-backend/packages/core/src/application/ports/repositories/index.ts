@@ -1,5 +1,7 @@
 export * from './user-repository'
 export * from './lead-repository'
+export * from './lead-property-repository'
+export * from './property-link-repository'
 export * from './contact-repository'
 export * from './property-repository'
 export * from './report-repository'

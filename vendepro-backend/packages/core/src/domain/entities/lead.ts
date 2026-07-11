@@ -1,5 +1,5 @@
-import { LeadStage, LEAD_STAGES } from '../value-objects/lead-stage'
-import type { LeadStageValue } from '../value-objects/lead-stage'
+import { LeadStage, PIPELINE_STAGES } from '../value-objects/lead-stage'
+import type { AnyLeadStageValue, LeadPipeline } from '../value-objects/lead-stage'
 import { ValidationError } from '../errors/validation-error'
 import { getLeadUrgency, getLeadChecklist, getLeadChecklistScore } from '../rules/lead-rules'
 import type { LeadUrgency } from '../rules/lead-rules'
@@ -16,7 +16,8 @@ export interface LeadProps {
   neighborhood: string | null
   property_type: string | null
   operation: string
-  stage: LeadStageValue
+  pipeline: LeadPipeline
+  stage: AnyLeadStageValue
   assigned_to: string | null
   notes: string | null
   estimated_value: number | null
@@ -40,7 +41,7 @@ export interface LeadProps {
 export class Lead {
   private constructor(private props: LeadProps) {}
 
-  static create(props: Omit<LeadProps, 'created_at' | 'updated_at'> & { created_at?: string; updated_at?: string }): Lead {
+  static create(props: Omit<LeadProps, 'pipeline' | 'created_at' | 'updated_at'> & { pipeline?: LeadPipeline; created_at?: string; updated_at?: string }): Lead {
     if (!props.full_name || props.full_name.trim().length < 2) {
       throw new ValidationError('Nombre es requerido (mín. 2 caracteres)', { full_name: 'Requerido' })
     }
@@ -51,12 +52,18 @@ export class Lead {
     if (props.operation && !validOps.includes(props.operation)) {
       throw new ValidationError(`Operación inválida: "${props.operation}"`)
     }
-    if (!LEAD_STAGES.includes(props.stage)) {
-      throw new ValidationError(`Stage inválido: "${props.stage}"`)
+    const pipeline: LeadPipeline = props.pipeline ?? 'vendedor'
+    const validStages = PIPELINE_STAGES[pipeline]
+    if (!validStages) {
+      throw new ValidationError(`Pipeline inválido: "${pipeline}"`)
+    }
+    if (!validStages.includes(props.stage)) {
+      throw new ValidationError(`Stage inválido: "${props.stage}" (pipeline ${pipeline})`)
     }
     const now = new Date().toISOString()
     return new Lead({
       ...props,
+      pipeline,
       created_at: props.created_at ?? now,
       updated_at: props.updated_at ?? now,
     })
@@ -68,6 +75,7 @@ export class Lead {
   get full_name() { return this.props.full_name }
   get phone() { return this.props.phone }
   get email() { return this.props.email }
+  get pipeline() { return this.props.pipeline }
   get stage() { return this.props.stage }
   get operation() { return this.props.operation }
   get assigned_to() { return this.props.assigned_to }
@@ -94,8 +102,8 @@ export class Lead {
   get last_activity_at() { return this.props.last_activity_at }
 
   // ── Domain Methods ──────────────────────────────────
-  advanceStage(newStage: LeadStageValue, notes?: string): { firstContactAt: string | null } {
-    const current = LeadStage.create(this.props.stage)
+  advanceStage(newStage: AnyLeadStageValue, notes?: string): { firstContactAt: string | null } {
+    const current = LeadStage.create(this.props.stage, this.props.pipeline)
     current.transitionTo(newStage) // throws if invalid
 
     const oldStage = this.props.stage
@@ -115,11 +123,11 @@ export class Lead {
   /**
    * Corrección manual: setea la etapa salteando la máquina de transiciones
    * (bypass total, para corregir errores del usuario). Solo valida que la etapa
-   * exista. Conserva el efecto de primer contacto.
+   * exista en el pipeline del lead. Conserva el efecto de primer contacto.
    */
-  overrideStage(newStage: LeadStageValue): { firstContactAt: string | null } {
-    if (!LEAD_STAGES.includes(newStage)) {
-      throw new ValidationError(`Stage inválido: "${newStage}"`)
+  overrideStage(newStage: AnyLeadStageValue): { firstContactAt: string | null } {
+    if (!PIPELINE_STAGES[this.props.pipeline].includes(newStage)) {
+      throw new ValidationError(`Stage inválido: "${newStage}" (pipeline ${this.props.pipeline})`)
     }
     const oldStage = this.props.stage
     let firstContactAt: string | null = null
@@ -132,20 +140,22 @@ export class Lead {
     return { firstContactAt }
   }
 
-  syncStage(newStage: LeadStageValue): void {
-    const current = LeadStage.create(this.props.stage)
+  syncStage(newStage: AnyLeadStageValue): void {
+    const current = LeadStage.create(this.props.stage, this.props.pipeline)
     current.transitionTo(newStage, { source: 'sync' })
     this.props.stage = newStage
     this.props.updated_at = new Date().toISOString()
   }
 
-  update(data: Partial<Omit<LeadProps, 'id' | 'org_id' | 'created_at'>>): void {
+  update(data: Partial<Omit<LeadProps, 'id' | 'org_id' | 'pipeline' | 'created_at'>>): void {
     if (data.full_name !== undefined && data.full_name.trim().length < 2) {
       throw new ValidationError('Nombre es requerido (mín. 2 caracteres)')
     }
     if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
       throw new ValidationError('Email no válido')
     }
+    // pipeline es inmutable post-creación (como id/org_id)
+    delete (data as Record<string, unknown>).pipeline
     Object.assign(this.props, data)
     this.props.updated_at = new Date().toISOString()
   }

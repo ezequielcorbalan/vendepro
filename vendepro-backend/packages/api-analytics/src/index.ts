@@ -246,7 +246,8 @@ app.get('/marketing', async (c) => {
   const [leadsBySource, leadsByDay, stageBreakdown, metaEvents, metaIntegration] = await Promise.all([
     db.prepare(`SELECT source, COUNT(*) as count FROM leads WHERE org_id = ? AND created_at >= ? GROUP BY source ORDER BY count DESC`).bind(orgId, fromDate).all(),
     db.prepare(`SELECT substr(created_at, 1, 10) as day, COUNT(*) as count FROM leads WHERE org_id = ? AND created_at >= ? GROUP BY day ORDER BY day ASC`).bind(orgId, fromDate).all(),
-    db.prepare(`SELECT stage, COUNT(*) as count FROM leads WHERE org_id = ? AND created_at >= ? GROUP BY stage`).bind(orgId, fromDate).all(),
+    // Funnel vendor-shaped: solo pipeline vendedor (leadsBySource/leadsByDay quedan con todos — volumen real).
+    db.prepare(`SELECT stage, COUNT(*) as count FROM leads WHERE org_id = ? AND created_at >= ? AND COALESCE(pipeline, 'vendedor') = 'vendedor' GROUP BY stage`).bind(orgId, fromDate).all(),
     db.prepare(`SELECT event_name, status, COUNT(*) as count FROM meta_event_log WHERE org_id = ? GROUP BY event_name, status`).bind(orgId).all().catch(() => ({ results: [] })),
     db.prepare(`SELECT enabled, pixel_id, ga4_enabled, ga4_measurement_id FROM meta_integration WHERE org_id = ?`).bind(orgId).first().catch(() => null),
   ])
@@ -314,6 +315,7 @@ app.get('/marketing/campaigns', async (c) => {
       SELECT lower(source_detail) as campaign_key, stage, COUNT(*) as count
       FROM leads
       WHERE org_id = ? AND created_at >= ? AND source_detail IS NOT NULL AND source_detail != ''
+        AND COALESCE(pipeline, 'vendedor') = 'vendedor'
       GROUP BY campaign_key, stage
     `).bind(orgId, fromDate).all().catch(() => ({ results: [] }))
     for (const r of (rows.results as any[])) {

@@ -8,6 +8,8 @@ export interface GenerateVisitFormLinkInput {
   org_id: string
   agent_id: string
   property_id: string
+  /** Lead comprador que va a visitar (opcional): linkea el feedback a lead_properties. */
+  lead_id?: string | null
 }
 
 export interface GenerateVisitFormLinkOutput {
@@ -45,6 +47,7 @@ export class GenerateVisitFormLinkUseCase {
       org_id: input.org_id,
       agent_id: input.agent_id,
       property_id: input.property_id,
+      lead_id: input.lead_id ?? null,
       slug,
       visitor_name: null,
       visitor_email: null,

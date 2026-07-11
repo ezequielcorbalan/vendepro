@@ -97,6 +97,11 @@ export interface PropertyRepository {
   markExternalReport(id: string, orgId: string): Promise<void>
   clearExternalReport(id: string, orgId: string): Promise<void>
   searchByAddress(orgId: string, query: string, limit: number): Promise<Array<{ id: string; address: string }>>
+  /**
+   * Match exacto por dirección normalizada (lower/trim/sin acentos ni espacios
+   * repetidos). Usado por el import de KiteProp para no duplicar captaciones propias.
+   */
+  findByNormalizedAddress(orgId: string, address: string): Promise<Property | null>
   findByPublicSlug(slug: string): Promise<Property | null>
   addPriceHistory(entry: PropertyPriceHistoryEntry): Promise<void>
   findPriceHistory(propertyId: string, orgId: string): Promise<PropertyPriceHistoryEntry[]>

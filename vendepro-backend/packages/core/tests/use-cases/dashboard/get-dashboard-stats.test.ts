@@ -46,4 +46,14 @@ describe('GetDashboardStatsUseCase — filtro de período (since)', () => {
     expect(r.funnelStageBreakdown['captado']).toBe(1)
     expect(r.funnelStageBreakdown['contactado']).toBe(1)
   })
+
+  it('KPIs/funnel piden solo el pipeline vendedor (compradores no contaminan)', async () => {
+    const { leadRepo, propertyRepo, reservationRepo, calendarRepo } = makeRepos(leads)
+    const uc = new GetDashboardStatsUseCase(leadRepo, propertyRepo, reservationRepo, calendarRepo)
+    await uc.execute('org1')
+    expect(leadRepo.findByOrg).toHaveBeenCalledWith('org1', expect.objectContaining({ pipeline: 'vendedor' }))
+
+    await uc.execute('org1', 'agent-1')
+    expect(leadRepo.findByOrg).toHaveBeenCalledWith('org1', expect.objectContaining({ pipeline: 'vendedor', agent_id: 'agent-1' }))
+  })
 })
