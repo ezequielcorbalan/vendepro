@@ -4,10 +4,10 @@ import type { MetaIntegrationRepository } from '@vendepro/core'
 export class D1MetaIntegrationRepository implements MetaIntegrationRepository {
   constructor(private readonly db: D1Database) {}
 
-  async findByOrg(orgId: string): Promise<MetaIntegration | null> {
+  async findByAgent(agentId: string): Promise<MetaIntegration | null> {
     const row = await this.db
-      .prepare(`SELECT * FROM meta_integration WHERE org_id = ?`)
-      .bind(orgId)
+      .prepare(`SELECT * FROM meta_integration WHERE agent_id = ?`)
+      .bind(agentId)
       .first() as any
     return row ? this.toEntity(row) : null
   }
@@ -16,13 +16,13 @@ export class D1MetaIntegrationRepository implements MetaIntegrationRepository {
     const o = integration.toObject()
     await this.db.prepare(`
       INSERT INTO meta_integration (
-        org_id, pixel_id, access_token_encrypted, stape_endpoint,
+        agent_id, org_id, pixel_id, access_token_encrypted, stape_endpoint,
         gtm_container_id, test_event_code, ad_account_id, enabled,
         ga4_measurement_id, ga4_api_secret_encrypted, ga4_enabled,
         created_at, updated_at
       )
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
-      ON CONFLICT(org_id) DO UPDATE SET
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      ON CONFLICT(agent_id) DO UPDATE SET
         pixel_id=excluded.pixel_id,
         access_token_encrypted=excluded.access_token_encrypted,
         stape_endpoint=excluded.stape_endpoint,
@@ -35,6 +35,7 @@ export class D1MetaIntegrationRepository implements MetaIntegrationRepository {
         ga4_enabled=excluded.ga4_enabled,
         updated_at=excluded.updated_at
     `).bind(
+      o.agent_id,
       o.org_id,
       o.pixel_id,
       o.access_token_encrypted,
@@ -53,6 +54,7 @@ export class D1MetaIntegrationRepository implements MetaIntegrationRepository {
 
   private toEntity(row: any): MetaIntegration {
     return MetaIntegration.fromPersistence({
+      agent_id: row.agent_id,
       org_id: row.org_id,
       pixel_id: row.pixel_id ?? null,
       access_token_encrypted: row.access_token_encrypted ?? null,

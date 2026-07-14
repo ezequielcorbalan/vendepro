@@ -8,11 +8,11 @@ export class D1MetaEventLogRepository implements MetaEventLogRepository {
     const o = log.toObject()
     await this.db.prepare(`
       INSERT INTO meta_event_log (
-        id, org_id, provider, entity_type, entity_id, lead_id,
+        id, org_id, agent_id, provider, entity_type, entity_id, lead_id,
         event_id, event_name, status,
         response_code, response_body, attempts, last_error, sent_at, created_at
       )
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
       ON CONFLICT(id) DO UPDATE SET
         status=excluded.status,
         response_code=excluded.response_code,
@@ -23,6 +23,7 @@ export class D1MetaEventLogRepository implements MetaEventLogRepository {
     `).bind(
       o.id,
       o.org_id,
+      o.agent_id,
       o.provider,
       o.entity_type,
       o.entity_id,
@@ -71,10 +72,19 @@ export class D1MetaEventLogRepository implements MetaEventLogRepository {
     return rows.map(r => this.toEntity(r))
   }
 
+  async findRecentByAgent(agentId: string, limit: number): Promise<MetaEventLog[]> {
+    const rows = (await this.db
+      .prepare(`SELECT * FROM meta_event_log WHERE agent_id = ? ORDER BY created_at DESC LIMIT ?`)
+      .bind(agentId, limit)
+      .all()).results as any[]
+    return rows.map(r => this.toEntity(r))
+  }
+
   private toEntity(row: any): MetaEventLog {
     return MetaEventLog.fromPersistence({
       id: row.id,
       org_id: row.org_id,
+      agent_id: row.agent_id ?? null,
       provider: (row.provider ?? 'meta') as any,
       entity_type: row.entity_type ?? null,
       entity_id: row.entity_id ?? null,

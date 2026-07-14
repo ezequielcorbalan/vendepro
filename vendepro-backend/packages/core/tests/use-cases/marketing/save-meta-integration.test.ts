@@ -5,7 +5,7 @@ const encrypt = vi.fn(async (s: string) => `enc(${s})`)
 
 function makeRepo(existing: any = null) {
   return {
-    findByOrg: vi.fn().mockResolvedValue(existing),
+    findByAgent: vi.fn().mockResolvedValue(existing),
     save: vi.fn().mockResolvedValue(undefined),
   } as any
 }
@@ -20,7 +20,7 @@ describe('SaveMetaIntegrationUseCase', () => {
   it('guarda el access token la primera vez (sin integración previa)', async () => {
     const repo = makeRepo(null)
     const uc = new SaveMetaIntegrationUseCase(repo, encrypt)
-    await uc.execute({ orgId: 'org_mg', pixel_id: '123', access_token: 'EAAtoken', enabled: true })
+    await uc.execute({ agentId: 'agent_1', orgId: 'org_mg', pixel_id: '123', access_token: 'EAAtoken', enabled: true })
 
     const o = savedObject(repo)
     expect(o.access_token_encrypted).toBe('enc(EAAtoken)')
@@ -30,7 +30,7 @@ describe('SaveMetaIntegrationUseCase', () => {
   it('guarda el ad_account_id y lo preserva en updates parciales', async () => {
     const repo = makeRepo(null)
     const uc = new SaveMetaIntegrationUseCase(repo, encrypt)
-    await uc.execute({ orgId: 'org_mg', ad_account_id: 'act_123456' })
+    await uc.execute({ agentId: 'agent_1', orgId: 'org_mg', ad_account_id: 'act_123456' })
     expect(savedObject(repo).ad_account_id).toBe('act_123456')
 
     const existing = {
@@ -49,21 +49,21 @@ describe('SaveMetaIntegrationUseCase', () => {
     }
     const repo2 = makeRepo(existing)
     const uc2 = new SaveMetaIntegrationUseCase(repo2, encrypt)
-    await uc2.execute({ orgId: 'org_mg', pixel_id: '999' })
+    await uc2.execute({ agentId: 'agent_1', orgId: 'org_mg', pixel_id: '999' })
     expect(savedObject(repo2).ad_account_id).toBe('act_123456') // undefined preserva
   })
 
   it('normaliza el stape_endpoint sin esquema a https://', async () => {
     const repo = makeRepo(null)
     const uc = new SaveMetaIntegrationUseCase(repo, encrypt)
-    await uc.execute({ orgId: 'org_mg', stape_endpoint: 'sst.midominio.com' })
+    await uc.execute({ agentId: 'agent_1', orgId: 'org_mg', stape_endpoint: 'sst.midominio.com' })
     expect(savedObject(repo).stape_endpoint).toBe('https://sst.midominio.com')
   })
 
   it('respeta un endpoint que ya trae esquema', async () => {
     const repo = makeRepo(null)
     const uc = new SaveMetaIntegrationUseCase(repo, encrypt)
-    await uc.execute({ orgId: 'org_mg', stape_endpoint: 'https://sst.midominio.com' })
+    await uc.execute({ agentId: 'agent_1', orgId: 'org_mg', stape_endpoint: 'https://sst.midominio.com' })
     expect(savedObject(repo).stape_endpoint).toBe('https://sst.midominio.com')
   })
 
@@ -83,7 +83,7 @@ describe('SaveMetaIntegrationUseCase', () => {
     }
     const repo = makeRepo(existing)
     const uc = new SaveMetaIntegrationUseCase(repo, encrypt)
-    await uc.execute({ orgId: 'org_mg', test_event_code: '', stape_endpoint: null })
+    await uc.execute({ agentId: 'agent_1', orgId: 'org_mg', test_event_code: '', stape_endpoint: null })
 
     const o = savedObject(repo)
     expect(o.test_event_code).toBeNull()   // '' limpia
@@ -108,7 +108,7 @@ describe('SaveMetaIntegrationUseCase', () => {
     }
     const repo = makeRepo(existing)
     const uc = new SaveMetaIntegrationUseCase(repo, encrypt)
-    await uc.execute({ orgId: 'org_mg', access_token: '********' })
+    await uc.execute({ agentId: 'agent_1', orgId: 'org_mg', access_token: '********' })
     expect(savedObject(repo).access_token_encrypted).toBe('enc(viejo)')
   })
 
@@ -128,7 +128,7 @@ describe('SaveMetaIntegrationUseCase', () => {
     }
     const repo = makeRepo(existing)
     const uc = new SaveMetaIntegrationUseCase(repo, encrypt)
-    await uc.execute({ orgId: 'org_mg', access_token: '' })
+    await uc.execute({ agentId: 'agent_1', orgId: 'org_mg', access_token: '' })
     expect(savedObject(repo).access_token_encrypted).toBeNull()
   })
 })

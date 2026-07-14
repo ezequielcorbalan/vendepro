@@ -287,13 +287,15 @@ const CAMPAIGNS_CACHE_SECONDS = 900 // Meta Insights ratelimitea agresivo
 
 app.get('/marketing/campaigns', async (c) => {
   const orgId = c.get('orgId')
+  // El Ad Account es por-agente: las campañas se leen de la config del usuario.
+  const agentId = c.get('userId')
   const db = c.env.DB
   const period = c.req.query('period') ?? 'month'
   const fromDate = marketingFromDate(period)
   const until = new Date().toISOString().slice(0, 10)
 
   const cache: Cache | undefined = (globalThis as any).caches?.default
-  const cacheKey = new Request(`https://cache.vendepro.internal/marketing-campaigns?org=${orgId}&period=${period}&until=${until}`)
+  const cacheKey = new Request(`https://cache.vendepro.internal/marketing-campaigns?agent=${agentId}&period=${period}&until=${until}`)
   if (cache) {
     const hit = await cache.match(cacheKey).catch(() => undefined)
     // Copia: los headers de una Response cacheada son inmutables y el
@@ -306,7 +308,7 @@ app.get('/marketing/campaigns', async (c) => {
     new MetaAdsInsightsHttp(),
     (cipher) => decrypt(cipher, c.env.JWT_SECRET),
   )
-  const result = await useCase.execute({ orgId, since: fromDate, until })
+  const result = await useCase.execute({ agentId, since: fromDate, until })
 
   // Atribución CRM: leads del período agrupados por campaña y stage.
   const crmByCampaign: Record<string, { leads: number; calificados: number; captados: number }> = {}

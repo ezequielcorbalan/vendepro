@@ -4,6 +4,8 @@ import { MetaIntegration } from '../../../domain/entities/meta-integration'
 export type TokenEncryptor = (plaintext: string) => Promise<string>
 
 export interface SaveMetaIntegrationInput {
+  /** Agente dueño de esta config (la integración es por-agente). */
+  agentId: string
   orgId: string
   pixel_id?: string | null
   /** '********' (placeholder) → no actualiza; '' → limpia. */
@@ -59,7 +61,7 @@ export class SaveMetaIntegrationUseCase {
   ) {}
 
   async execute(input: SaveMetaIntegrationInput): Promise<{ ok: true }> {
-    const existing = await this.repo.findByOrg(input.orgId)
+    const existing = await this.repo.findByAgent(input.agentId)
 
     const encryptedToken = await applySecretPatch(
       input.access_token,
@@ -73,6 +75,7 @@ export class SaveMetaIntegrationUseCase {
     )
 
     const next = existing ?? MetaIntegration.create({
+      agent_id: input.agentId,
       org_id: input.orgId,
       pixel_id: null,
       access_token_encrypted: null,

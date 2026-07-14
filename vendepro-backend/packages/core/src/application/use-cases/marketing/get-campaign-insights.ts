@@ -4,7 +4,8 @@ import type { MetaAdsInsightsService, CampaignInsight } from '../../ports/servic
 export type TokenDecryptor = (ciphertext: string) => Promise<string | null>
 
 export interface GetCampaignInsightsInput {
-  orgId: string
+  /** Agente cuyo Ad Account se consulta (config por-agente). */
+  agentId: string
   /** YYYY-MM-DD */
   since: string
   /** YYYY-MM-DD */
@@ -33,7 +34,7 @@ export class GetCampaignInsightsUseCase {
   ) {}
 
   async execute(input: GetCampaignInsightsInput): Promise<GetCampaignInsightsOutput> {
-    const integration = await this.repo.findByOrg(input.orgId)
+    const integration = await this.repo.findByAgent(input.agentId)
     if (!integration || !integration.enabled || !integration.access_token_encrypted) {
       return { status: 'not_configured', campaigns: [] }
     }

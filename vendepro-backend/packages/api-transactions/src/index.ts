@@ -31,10 +31,12 @@ app.post('/reservations', async (c) => {
   const historyRepo = new D1StageHistoryRepository(c.env.DB)
   const useCase = new CreateReservationUseCase(repo, historyRepo, new CryptoIdGenerator())
   const orgId = c.get('orgId')
-  const result = await useCase.execute({ ...body, org_id: orgId, agent_id: body.agent_id || c.get('userId') })
+  const reservationAgentId = body.agent_id || c.get('userId')
+  const result = await useCase.execute({ ...body, org_id: orgId, agent_id: reservationAgentId })
   // Hook marketing: evento `reservation_created`.
   const mk = await fireMarketingEvent(c.env, {
     orgId,
+    agentId: reservationAgentId,
     eventKey: 'reservation_created',
     entityType: 'reservation',
     entityId: result.id,
@@ -58,10 +60,14 @@ app.put('/reservations/stage', async (c) => {
   const useCase = new AdvanceReservationStageUseCase(repo, historyRepo)
   const orgId = c.get('orgId')
   await useCase.execute({ reservationId: body.id, orgId, newStage: body.stage, changedBy: c.get('userId') })
+  // El evento dispara bajo la config del agente dueño de la reserva.
+  const stageReservation = await repo.findById(body.id, orgId).catch(() => null)
+  const reservationAgentId = (stageReservation?.toObject?.() ?? (stageReservation as any))?.agent_id ?? c.get('userId')
   // Hook marketing: evento por stage de reserva (configurable por mapping).
   // Mapeos recomendados: 'reservada'→InitiateCheckout, 'escriturada'→Purchase.
   const mk = await fireMarketingEvent(c.env, {
     orgId,
+    agentId: reservationAgentId,
     eventKey: `reservation_${body.stage}`,
     entityType: 'reservation',
     entityId: body.id,
