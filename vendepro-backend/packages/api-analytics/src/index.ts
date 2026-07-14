@@ -248,7 +248,9 @@ app.get('/marketing', async (c) => {
     db.prepare(`SELECT substr(created_at, 1, 10) as day, COUNT(*) as count FROM leads WHERE org_id = ? AND created_at >= ? GROUP BY day ORDER BY day ASC`).bind(orgId, fromDate).all(),
     // Funnel vendor-shaped: solo pipeline vendedor (leadsBySource/leadsByDay quedan con todos — volumen real).
     db.prepare(`SELECT stage, COUNT(*) as count FROM leads WHERE org_id = ? AND created_at >= ? AND COALESCE(pipeline, 'vendedor') = 'vendedor' GROUP BY stage`).bind(orgId, fromDate).all(),
-    db.prepare(`SELECT event_name, status, COUNT(*) as count FROM meta_event_log WHERE org_id = ? GROUP BY event_name, status`).bind(orgId).all().catch(() => ({ results: [] })),
+    // Solo eventos de Meta CAPI (no GA4, que se loguea aparte con sus propios
+    // nombres) y solo del período seleccionado — igual que el resto del panel.
+    db.prepare(`SELECT event_name, status, COUNT(*) as count FROM meta_event_log WHERE org_id = ? AND provider = 'meta' AND created_at >= ? GROUP BY event_name, status`).bind(orgId, fromDate).all().catch(() => ({ results: [] })),
     db.prepare(`SELECT enabled, pixel_id, ga4_enabled, ga4_measurement_id FROM meta_integration WHERE org_id = ?`).bind(orgId).first().catch(() => null),
   ])
 
