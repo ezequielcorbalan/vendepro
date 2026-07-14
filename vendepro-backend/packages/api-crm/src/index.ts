@@ -121,6 +121,8 @@ app.post('/leads', async (c) => {
   // Hook marketing: evento `lead_created` (Meta + GA4 si están mapeados).
   const mk = await fireMarketingEvent(c.env, {
     orgId: c.get('orgId'),
+    // El evento dispara bajo la config del agente asignado al lead.
+    agentId: body.assigned_to || c.get('userId'),
     eventKey: 'lead_created',
     entityType: 'lead',
     entityId: result.id,
@@ -195,8 +197,15 @@ app.post('/leads/stage', async (c) => {
   const useCase = new AdvanceLeadStageUseCase(repo, calRepo, historyRepo, idGen, propRepo)
   const result = await useCase.execute({ leadId: body.id, orgId: c.get('orgId'), newStage: body.stage, changedBy: c.get('userId'), notes: body.notes, override: body.override === true })
 
+  // Leemos el lead una vez: sirve para atribuir el evento marketing al
+  // agente asignado y para la inscripción en automatizaciones (abajo).
+  const stageLead = await repo.findById(body.id, c.get('orgId')).catch(() => null)
+  const leadObj = stageLead?.toObject?.() ?? (stageLead as any)
+  const stageAgentId = leadObj?.assigned_to ?? c.get('userId')
+
   const mk = await fireMarketingEvent(c.env, {
     orgId: c.get('orgId'),
+    agentId: stageAgentId,
     eventKey: body.stage,
     entityType: 'lead',
     entityId: body.id,
@@ -217,9 +226,7 @@ app.post('/leads/stage', async (c) => {
     },
   })
   // Automatizaciones: inscribe en secuencias con trigger `stage:<nuevo_stage>`.
-  // Requiere el email del lead (no viene en el body): lo buscamos.
-  const stageLead = await repo.findById(body.id, c.get('orgId')).catch(() => null)
-  const leadObj = stageLead?.toObject?.() ?? (stageLead as any)
+  // Reusa el lead ya leído arriba (tiene el email, que no viene en el body).
   if (leadObj?.email) {
     await enrollInAutomations(c.env, {
       orgId: c.get('orgId'),
@@ -297,15 +304,16 @@ function requireAdmin(c: any) {
   return null
 }
 
+// La integración de marketing es POR AGENTE: cada usuario configura su
+// propio pixel/GA4 sobre su userId. No es admin-only.
 app.get('/marketing/integration', async (c) => {
   const repo = new D1MetaIntegrationRepository(c.env.DB)
   const useCase = new GetMetaIntegrationUseCase(repo)
-  const result = await useCase.execute(c.get('orgId'))
+  const result = await useCase.execute(c.get('userId'), c.get('orgId'))
   return c.json(result)
 })
 
 app.put('/marketing/integration', async (c) => {
-  const denied = requireAdmin(c); if (denied) return denied
   const body = (await c.req.json()) as any
   const repo = new D1MetaIntegrationRepository(c.env.DB)
   const useCase = new SaveMetaIntegrationUseCase(repo, (plain) => encrypt(plain, c.env.JWT_SECRET))
@@ -313,6 +321,7 @@ app.put('/marketing/integration', async (c) => {
   // null o '' lo limpian. No coercionar ausentes a null — borraría campos
   // en updates parciales.
   await useCase.execute({
+    agentId: c.get('userId'),
     orgId: c.get('orgId'),
     pixel_id: body.pixel_id,
     access_token: body.access_token,
@@ -358,14 +367,15 @@ app.delete('/marketing/mappings/:id', async (c) => {
   return c.json({ success: true })
 })
 
+// Prueba de evento contra la config del propio agente.
 app.post('/marketing/test-event', async (c) => {
-  const denied = requireAdmin(c); if (denied) return denied
   const body = (await c.req.json().catch(() => ({}))) as any
   const stageKey = body.stage_key as string
   if (!stageKey) return c.json({ error: 'stage_key es requerido' }, 400)
   const sender = createMarketingSender(c.env)
   const result = await sender.execute({
     orgId: c.get('orgId'),
+    agentId: c.get('userId'),
     eventKey: stageKey,
     entityType: 'lead',
     entityId: `test-${Date.now()}`,
@@ -383,11 +393,18 @@ app.post('/marketing/test-event', async (c) => {
   return c.json(result)
 })
 
+// Admin/owner ven el log de toda la org; el agente ve solo sus eventos.
 app.get('/marketing/event-log', async (c) => {
   const limit = parseInt(c.req.query('limit') ?? '50', 10)
+  const role = c.get('userRole') as string
+  const isAdmin = role === 'admin' || role === 'owner'
   const repo = new D1MetaEventLogRepository(c.env.DB)
   const useCase = new ListMetaEventLogUseCase(repo)
-  const list = await useCase.execute(c.get('orgId'), Number.isFinite(limit) ? limit : 50)
+  const list = await useCase.execute(
+    c.get('orgId'),
+    Number.isFinite(limit) ? limit : 50,
+    isAdmin ? undefined : c.get('userId'),
+  )
   return c.json(list.map(l => l.toObject()))
 })
 

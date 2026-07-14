@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
   Megaphone, Settings, BarChart3, Activity, Save, Loader2,
-  Plus, Trash2, ArrowLeft, Send, AlertCircle, CheckCircle2, Mail,
+  Plus, Trash2, ArrowLeft, Send, CheckCircle2, Mail,
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
@@ -146,8 +146,9 @@ export default function MarketingConfigPage() {
   const [testResult, setTestResult] = useState<TestResult | null>(null)
   const [testRunning, setTestRunning] = useState(false)
 
+  // La config de pixel/GA4 es por-agente: todo usuario carga la suya.
+  // Los mapeos etapa→evento son de la org (solo admin los edita).
   useEffect(() => {
-    if (!isAdmin) { setLoading(false); return }
     Promise.all([
       apiFetch('crm', '/marketing/integration').then(r => r.json() as Promise<any>).catch(() => ({})),
       apiFetch('crm', '/marketing/mappings').then(r => r.json() as Promise<any>).catch(() => []),
@@ -156,26 +157,16 @@ export default function MarketingConfigPage() {
       setMappings(Array.isArray(mp) ? mp : (mp?.mappings || []))
       setLoading(false)
     }).catch(() => setLoading(false))
-  }, [isAdmin])
+  }, [])
 
   useEffect(() => {
-    if (tab === 'log' && isAdmin) {
+    if (tab === 'log') {
       apiFetch('crm', '/marketing/event-log?limit=50')
         .then(r => r.json() as Promise<any>)
         .then(d => setLog(Array.isArray(d) ? d : (d?.events || [])))
         .catch(() => setLog([]))
     }
-  }, [tab, isAdmin])
-
-  if (!isAdmin) {
-    return (
-      <div className="max-w-2xl mx-auto py-12 text-center">
-        <AlertCircle className="w-10 h-10 text-amber-500 mx-auto mb-3" />
-        <p className="text-gray-700 font-medium">Acceso restringido</p>
-        <p className="text-sm text-gray-500 mt-1">Solo administradores pueden configurar el marketing.</p>
-      </div>
-    )
-  }
+  }, [tab])
 
   if (loading) {
     return (
@@ -291,7 +282,7 @@ export default function MarketingConfigPage() {
           </div>
           <div>
             <h1 className="text-xl font-semibold text-gray-800">Marketing</h1>
-            <p className="text-sm text-gray-500 mt-0.5">Meta Conversion API + Google Analytics 4 + GTM</p>
+            <p className="text-sm text-gray-500 mt-0.5">Tu Meta Pixel + Google Analytics 4 + GTM — la configuración es por agente</p>
           </div>
         </div>
       </div>
@@ -300,10 +291,11 @@ export default function MarketingConfigPage() {
       <div className="flex gap-1 mb-5 bg-gray-100 rounded-xl p-1 max-w-fit">
         {([
           { id: 'config', label: 'Configuración', icon: Settings },
-          { id: 'mappings', label: 'Mapeo de eventos', icon: BarChart3 },
+          // Mapeos (funnel de la org) y Email son admin-only.
+          ...(isAdmin ? [{ id: 'mappings', label: 'Mapeo de eventos', icon: BarChart3 }] as const : []),
           { id: 'log', label: 'Log de eventos', icon: Activity },
-          { id: 'email', label: 'Email', icon: Mail },
-        ] as const).map(t => {
+          ...(isAdmin ? [{ id: 'email', label: 'Email', icon: Mail }] as const : []),
+        ] as { id: 'config' | 'mappings' | 'log' | 'email'; label: string; icon: typeof Settings }[]).map(t => {
           const Icon = t.icon
           return (
             <button

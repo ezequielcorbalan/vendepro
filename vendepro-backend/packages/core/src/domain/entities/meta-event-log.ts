@@ -6,6 +6,8 @@ export type MarketingProvider = 'meta' | 'ga4'
 export interface MetaEventLogProps {
   id: string
   org_id: string
+  /** Agente dueño de la config que disparó el evento (para ver "mis eventos"). */
+  agent_id: string | null
   provider: MarketingProvider
   /** Tipo de entidad CRM que originó el evento: lead/appraisal/reservation/... */
   entity_type: string | null
@@ -27,8 +29,9 @@ export class MetaEventLog {
   private constructor(private props: MetaEventLogProps) {}
 
   static create(
-    input: Omit<MetaEventLogProps, 'created_at' | 'status' | 'attempts' | 'response_code' | 'response_body' | 'last_error' | 'sent_at' | 'provider' | 'entity_type' | 'entity_id'>
+    input: Omit<MetaEventLogProps, 'created_at' | 'status' | 'attempts' | 'response_code' | 'response_body' | 'last_error' | 'sent_at' | 'provider' | 'entity_type' | 'entity_id' | 'agent_id'>
       & {
+        agent_id?: string | null
         provider?: MarketingProvider
         entity_type?: string | null
         entity_id?: string | null
@@ -46,6 +49,7 @@ export class MetaEventLog {
     return new MetaEventLog({
       id: input.id,
       org_id: input.org_id,
+      agent_id: input.agent_id ?? null,
       provider: input.provider ?? 'meta',
       entity_type: input.entity_type ?? null,
       entity_id: input.entity_id ?? null,
@@ -68,6 +72,7 @@ export class MetaEventLog {
 
   get id() { return this.props.id }
   get org_id() { return this.props.org_id }
+  get agent_id() { return this.props.agent_id }
   get provider() { return this.props.provider }
   get entity_type() { return this.props.entity_type }
   get entity_id() { return this.props.entity_id }

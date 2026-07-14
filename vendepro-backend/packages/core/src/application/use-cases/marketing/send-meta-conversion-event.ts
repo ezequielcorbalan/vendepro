@@ -19,6 +19,8 @@ import {
 
 export interface SendMetaConversionEventInput {
   orgId: string
+  /** Agente dueño de la config de pixel a usar (integración por-agente). */
+  agentId?: string | null
   leadId: string
   stageKey: string
   leadDataOverride?: {
@@ -73,6 +75,7 @@ export class SendMetaConversionEventUseCase {
   async execute(input: SendMetaConversionEventInput): Promise<SendMetaConversionEventOutput> {
     const out = await this.delegate.execute({
       orgId: input.orgId,
+      agentId: input.agentId ?? null,
       eventKey: input.stageKey,
       entityType: 'lead',
       entityId: input.leadId,

@@ -21,6 +21,11 @@ export interface MarketingUserData {
 
 export interface SendMarketingEventInput {
   orgId: string
+  /**
+   * Agente dueño de la config de pixel/GA4 a usar. La integración es
+   * por-agente: si no se pasa (o el agente no configuró), el evento es noop.
+   */
+  agentId?: string | null
   /** Clave lógica del evento — ej. stage del lead, 'lead_created', 'appraisal_created'. */
   eventKey: string
   /** Tipo de entidad CRM que originó el evento. */
@@ -118,7 +123,14 @@ export class SendMarketingEventUseCase {
       ga4: { status: 'skipped' },
     }
 
-    const integration = await this.integrations.findByOrg(input.orgId)
+    // La config es por-agente: sin agente no hay a quién atribuir el evento.
+    if (!input.agentId) {
+      out.meta = { status: 'noop', reason: 'no_agent' }
+      out.ga4 = { status: 'noop', reason: 'no_agent' }
+      return out
+    }
+
+    const integration = await this.integrations.findByAgent(input.agentId)
     if (!integration) {
       out.meta = { status: 'noop', reason: 'no_integration' }
       out.ga4 = { status: 'noop', reason: 'no_integration' }
@@ -170,6 +182,7 @@ export class SendMarketingEventUseCase {
     // ─── Meta CAPI ─────────────────────────────────────────────
     out.meta = await this.sendMeta({
       orgId: input.orgId,
+      agentId: input.agentId,
       integration,
       eventName: mapping.meta_event_name,
       eventId,
@@ -194,6 +207,7 @@ export class SendMarketingEventUseCase {
     if (mapping.ga4_event_name && mapping.ga4_event_name.trim().length > 0) {
       out.ga4 = await this.sendGa4({
         orgId: input.orgId,
+        agentId: input.agentId,
         integration,
         eventName: mapping.ga4_event_name,
         eventId,
@@ -215,6 +229,7 @@ export class SendMarketingEventUseCase {
 
   private async sendMeta(args: {
     orgId: string
+    agentId: string | null
     integration: { pixel_id: string | null; access_token_encrypted: string | null; stape_endpoint: string | null; enabled: boolean }
     eventName: string
     eventId: string
@@ -254,6 +269,7 @@ export class SendMarketingEventUseCase {
     const log = MetaEventLog.create({
       id: this.ids.generate(),
       org_id: args.orgId,
+      agent_id: args.agentId,
       provider: 'meta',
       entity_type: args.entityType,
       entity_id: args.entityId,
@@ -295,6 +311,7 @@ export class SendMarketingEventUseCase {
 
   private async sendGa4(args: {
     orgId: string
+    agentId: string | null
     integration: {
       ga4_enabled: boolean
       ga4_measurement_id: string | null
@@ -333,6 +350,7 @@ export class SendMarketingEventUseCase {
     const log = MetaEventLog.create({
       id: this.ids.generate(),
       org_id: args.orgId,
+      agent_id: args.agentId,
       provider: 'ga4',
       entity_type: args.entityType,
       entity_id: args.entityId,

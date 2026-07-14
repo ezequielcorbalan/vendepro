@@ -75,6 +75,7 @@ export function registerAppraisalRoutes(app: Hono<{ Bindings: Env } & AuthVars>)
     // Hook marketing: evento `appraisal_created`.
     const mk = await fireMarketingEvent(c.env, {
       orgId,
+      agentId,
       eventKey: 'appraisal_created',
       entityType: 'appraisal',
       entityId: result.id,

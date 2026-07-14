@@ -1,6 +1,9 @@
 import { ValidationError } from '../errors/validation-error'
 
 export interface MetaIntegrationProps {
+  /** Identidad: la config es por agente/usuario (no por org). */
+  agent_id: string
+  /** Org a la que pertenece el agente (multi-tenant / referencia). */
   org_id: string
   pixel_id: string | null
   access_token_encrypted: string | null
@@ -30,11 +33,15 @@ export class MetaIntegration {
       updated_at?: string
     },
   ): MetaIntegration {
+    if (!input.agent_id || input.agent_id.trim().length === 0) {
+      throw new ValidationError('agent_id es requerido')
+    }
     if (!input.org_id || input.org_id.trim().length === 0) {
       throw new ValidationError('org_id es requerido')
     }
     const now = new Date().toISOString()
     return new MetaIntegration({
+      agent_id: input.agent_id,
       org_id: input.org_id,
       pixel_id: input.pixel_id ?? null,
       access_token_encrypted: input.access_token_encrypted ?? null,
@@ -56,6 +63,7 @@ export class MetaIntegration {
   }
 
   // Getters
+  get agent_id() { return this.props.agent_id }
   get org_id() { return this.props.org_id }
   get pixel_id() { return this.props.pixel_id }
   get access_token_encrypted() { return this.props.access_token_encrypted }
@@ -70,7 +78,7 @@ export class MetaIntegration {
   get created_at() { return this.props.created_at }
   get updated_at() { return this.props.updated_at }
 
-  update(patch: Partial<Omit<MetaIntegrationProps, 'org_id' | 'created_at'>>): void {
+  update(patch: Partial<Omit<MetaIntegrationProps, 'agent_id' | 'org_id' | 'created_at'>>): void {
     Object.assign(this.props, patch)
     this.props.updated_at = new Date().toISOString()
   }

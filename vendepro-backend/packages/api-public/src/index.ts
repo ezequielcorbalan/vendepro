@@ -180,6 +180,8 @@ app.post('/public/property-visit-form/:slug/submit', async (c) => {
   if (form) {
     const mk = await fireMarketingEvent(c.env, {
       orgId: form.org_id,
+      // Config por-agente: dispara bajo el pixel del agente dueño de la ficha.
+      agentId: form.agent_id,
       eventKey: 'visit_form_submitted',
       entityType: 'visit_form',
       entityId: form.id,
@@ -416,6 +418,8 @@ app.post('/l/:slug/submit', async (c) => {
   if (landing && (r as any).leadId) {
     const mk = await fireMarketingEvent(c.env, {
       orgId: landing.org_id,
+      // Config por-agente: dispara bajo el pixel del agente dueño de la landing.
+      agentId: landing.agent_id,
       eventKey: 'landing_lead_submitted',
       entityType: 'lead',
       entityId: (r as any).leadId,
@@ -469,6 +473,8 @@ app.post('/l/:slug/event', async (c) => {
     if (landing) {
       const mk = await fireMarketingEvent(c.env, {
         orgId: landing.org_id,
+        // Config por-agente: dispara bajo el pixel del agente dueño de la landing.
+        agentId: landing.agent_id,
         eventKey: 'landing_viewed',
         entityType: 'landing',
         entityId: landing.id,

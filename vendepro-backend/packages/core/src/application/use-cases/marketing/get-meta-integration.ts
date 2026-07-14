@@ -1,6 +1,7 @@
 import type { MetaIntegrationRepository } from '../../ports/repositories/meta-integration-repository'
 
 export interface GetMetaIntegrationOutput {
+  agent_id: string
   org_id: string
   pixel_id: string | null
   stape_endpoint: string | null
@@ -23,10 +24,11 @@ export interface GetMetaIntegrationOutput {
 export class GetMetaIntegrationUseCase {
   constructor(private readonly repo: MetaIntegrationRepository) {}
 
-  async execute(orgId: string): Promise<GetMetaIntegrationOutput> {
-    const integration = await this.repo.findByOrg(orgId)
+  async execute(agentId: string, orgId: string): Promise<GetMetaIntegrationOutput> {
+    const integration = await this.repo.findByAgent(agentId)
     if (!integration) {
       return {
+        agent_id: agentId,
         org_id: orgId,
         pixel_id: null,
         stape_endpoint: null,
@@ -44,6 +46,7 @@ export class GetMetaIntegrationUseCase {
     }
     const pub = integration.toPublicView()
     return {
+      agent_id: pub.agent_id,
       org_id: pub.org_id,
       pixel_id: pub.pixel_id,
       stape_endpoint: pub.stape_endpoint,

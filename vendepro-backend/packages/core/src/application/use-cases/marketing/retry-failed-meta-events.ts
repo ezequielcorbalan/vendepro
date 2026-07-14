@@ -35,23 +35,39 @@ export class RetryFailedMetaEventsUseCase {
     const maxAttempts = input.maxAttempts ?? 3
     const limit = input.limit ?? 25
 
-    const integration = await this.integrations.findByOrg(input.orgId)
-    if (!integration || !integration.enabled || !integration.pixel_id || !integration.access_token_encrypted) {
-      return { retried: 0, succeeded: 0, failed: 0 }
-    }
-    const accessToken = await this.decryptToken(integration.access_token_encrypted)
-    if (!accessToken) return { retried: 0, succeeded: 0, failed: 0 }
-
     const failed = await this.logs.findFailedToRetry(input.orgId, maxAttempts, limit)
     let succeeded = 0
     let stillFailed = 0
 
+    // La integración es por-agente: resolvemos la config del agente dueño de
+    // cada log (cache por agente). Logs sin agente o con integración
+    // deshabilitada se saltan.
+    const cache = new Map<string, { pixelId: string; token: string; stape: string | null; testCode: string | null } | null>()
+    const resolve = async (agentId: string | null) => {
+      if (!agentId) return null
+      if (cache.has(agentId)) return cache.get(agentId)!
+      const integration = await this.integrations.findByAgent(agentId)
+      let resolved: { pixelId: string; token: string; stape: string | null; testCode: string | null } | null = null
+      if (integration && integration.enabled && integration.pixel_id && integration.access_token_encrypted) {
+        const token = await this.decryptToken(integration.access_token_encrypted)
+        if (token) {
+          resolved = { pixelId: integration.pixel_id, token, stape: integration.stape_endpoint, testCode: integration.test_event_code }
+        }
+      }
+      cache.set(agentId, resolved)
+      return resolved
+    }
+
+    let retried = 0
     for (const log of failed) {
+      const cfg = await resolve(log.agent_id)
+      if (!cfg) continue
+      retried++
       log.incrementAttempts()
       const result = await this.api.sendEvent({
-        pixelId: integration.pixel_id,
-        accessToken,
-        endpoint: integration.stape_endpoint ?? 'https://graph.facebook.com',
+        pixelId: cfg.pixelId,
+        accessToken: cfg.token,
+        endpoint: cfg.stape ?? 'https://graph.facebook.com',
         payload: {
           event_name: log.event_name,
           event_time: Math.floor(Date.now() / 1000),
@@ -59,7 +75,7 @@ export class RetryFailedMetaEventsUseCase {
           action_source: 'system_generated',
           user_data: {},
         },
-        testEventCode: integration.test_event_code,
+        testEventCode: cfg.testCode,
       })
       if (result.ok) {
         log.markSent(result.status, result.body.slice(0, 4000))
@@ -71,6 +87,6 @@ export class RetryFailedMetaEventsUseCase {
       await this.logs.save(log)
     }
 
-    return { retried: failed.length, succeeded, failed: stillFailed }
+    return { retried, succeeded, failed: stillFailed }
   }
 }
