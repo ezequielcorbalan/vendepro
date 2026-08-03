@@ -186,6 +186,7 @@ export * from './use-cases/webhooks/delete-webhook'
 export * from './use-cases/webhooks/test-webhook'
 export * from './use-cases/webhooks/list-webhook-deliveries'
 export * from './use-cases/webhooks/dispatch-webhook-event'
+export * from './use-cases/webhooks/lead-webhook-payload'
 
 // Appraisal Rendering
 export { HydrateTemplateBlocksUseCase } from './use-cases/appraisal-rendering/hydrate-template-blocks'
