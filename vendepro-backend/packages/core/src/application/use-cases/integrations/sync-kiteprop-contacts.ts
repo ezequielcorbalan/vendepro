@@ -14,7 +14,29 @@ import { Lead } from '../../../domain/entities/lead'
 import { LeadProperty } from '../../../domain/entities/lead-property'
 import { Property } from '../../../domain/entities/property'
 import { slugify } from '../../../shared/utils'
+import { buildLeadProperty, type LeadPropertyPayload } from '../webhooks/lead-webhook-payload'
 import type { TokenDecryptor } from './test-kiteprop-connection'
+
+/**
+ * Hook opcional que se invoca al CREAR un lead comprador nuevo desde KiteProp.
+ * Lo usa la capa API para disparar el webhook `lead.created` (con el agente
+ * asignado y la propiedad consultada). El core no conoce webhooks: solo
+ * notifica el hecho con datos ya armados.
+ */
+export type KitepropLeadCreatedHook = (info: {
+  orgId: string
+  leadId: string
+  /** user_id del agente asignado (agente KiteProp mapeado, o admin de la org). */
+  assignedTo: string | null
+  full_name: string | null
+  email: string | null
+  phone: string | null
+  operation: string | null
+  source: string | null
+  source_detail: string | null
+  contact_id: string | null
+  property: LeadPropertyPayload | null
+}) => void | Promise<void>
 
 export interface SyncKitepropContactsInput {
   orgId: string
@@ -86,6 +108,8 @@ export class SyncKitepropContactsUseCase {
     private readonly leadPropertyRepo?: LeadPropertyRepository,
     private readonly propertyLinkRepo?: PropertyLinkRepository,
     private readonly propertyRepo?: PropertyRepository,
+    /** Notifica cada lead comprador nuevo (para el webhook `lead.created`). */
+    private readonly onLeadCreated?: KitepropLeadCreatedHook,
   ) {}
 
   // Caches por corrida (evitan repetir llamadas MCP/D1)
@@ -333,6 +357,33 @@ export class SyncKitepropContactsUseCase {
         contact_id: contactId,
       })
       await this.leadRepo.save(lead)
+
+      // Notifica el lead nuevo (la API dispara el webhook `lead.created`).
+      // Solo en la rama de creación: un lead comprador ya existente no re-dispara.
+      if (this.onLeadCreated) {
+        try {
+          await this.onLeadCreated({
+            orgId,
+            leadId: lead.id,
+            assignedTo: agentId ?? adminId,
+            full_name: c.full_name ?? null,
+            email: c.email ?? null,
+            phone: c.phone ?? null,
+            operation: 'venta',
+            source: msg.source ?? PROVIDER,
+            source_detail: propDto?.code ?? null,
+            contact_id: contactId,
+            property: buildLeadProperty({
+              external_id: propDto?.external_id ?? (msg.property_id != null ? String(msg.property_id) : null),
+              address: propDto?.address ?? null,
+              neighborhood: propDto?.neighborhood ?? null,
+              operation: 'venta',
+              portal: msg.source ?? null,
+              listing_url: null,
+            }),
+          })
+        } catch { /* el webhook es best-effort: no frena el sync */ }
+      }
     }
 
     if (msg.property_id == null) return
