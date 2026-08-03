@@ -120,6 +120,7 @@ export class SyncKitepropContactsUseCase {
   private orgUsers: Array<{ id: string; email: string; full_name: string }> | null = null
   private agentMap: Record<string, string> = {} // config: id agente KiteProp → id usuario VendéPro
   private createBuyerLeads = false // resuelto por corrida en execute()
+  private reassignBuyerLeads = false // re-proceso ("Re-procesar consultas"): re-atribuye leads ya creados
 
   async execute(input: SyncKitepropContactsInput): Promise<SyncKitepropContactsResult> {
     const startedAt = new Date().toISOString()
@@ -148,6 +149,10 @@ export class SyncKitepropContactsUseCase {
       config.create_buyer_leads !== false &&
       (input.mode === 'auto' || input.mode === 'manual') &&
       !!this.leadRepo && !!this.leadPropertyRepo
+    // "Re-procesar consultas" (enrich): re-atribuye los leads compradores ya
+    // creados al agente que el mapeo resuelve ahora (p. ej. tras corregir el
+    // agent_map). No crea leads; solo mueve el assigned_to de los existentes.
+    this.reassignBuyerLeads = input.mode === 'enrich' && !!this.leadRepo
     const maxPages = input.maxPages ?? (input.mode === 'backfill' ? 5 : 3)
 
     const acc: RunAcc = { created: 0, enriched: 0, skipped: 0, pagesProcessed: 0, done: false, page: 1, runError: null, itemError: null }
@@ -292,6 +297,13 @@ export class SyncKitepropContactsUseCase {
 
     await this.linkRepo.save(orgId, PROVIDER, c.external_id, contactId)
     await this.linkRepo.save(orgId, PROVIDER, `msg:${msg.external_id}`, contactId)
+
+    // Re-proceso: re-asigna el lead comprador ya existente si el mapeo resuelve
+    // ahora un agente distinto. Solo con agente MAPEADO (agentId != null) — nunca
+    // reasigna hacia el admin/fallback, así no empeora una asignación correcta.
+    if (this.reassignBuyerLeads && agentId) {
+      await this.reassignOpenBuyerLead(orgId, contactId, agentId)
+    }
 
     // Lead comprador: best-effort — un fallo acá NUNCA voltea el contacto ya creado.
     if (this.createBuyerLeads) {
@@ -536,15 +548,33 @@ export class SyncKitepropContactsUseCase {
    */
   private async resolveAgentForContact(orgId: string, apiKey: string, contactId: string, propRef: KitepropPropertyDTO | null): Promise<string | null> {
     const assigned = await this.getContactAgentCached(apiKey, contactId)
-    const candidates: Array<{ external_id: string | null; email: string | null; name: string | null }> = []
-    if (assigned) candidates.push({ external_id: assigned.external_id, email: assigned.email, name: assigned.name })
-    if (propRef) candidates.push({ external_id: null, email: propRef.agent_email, name: propRef.agent_name })
 
-    for (const cand of candidates) {
-      const userId = await this.resolveAgent(orgId, cand.external_id, cand.email, cand.name)
-      if (userId) return userId
+    // El agente asignado al contacto en KiteProp es AUTORITATIVO: si el contacto
+    // tiene agente, usamos ese. Si no mapea a un user de VendéPro, devolvemos null
+    // (el caller cae al admin) — NO al agente del aviso. Antes, un agente sin
+    // mapear hacía caer el lead al que publicó la propiedad, amontonando leads
+    // ajenos en ese agente.
+    if (assigned) {
+      return this.resolveAgent(orgId, assigned.external_id, assigned.email, assigned.name)
+    }
+
+    // Solo cuando el contacto NO tiene agente asignado usamos el del aviso como respaldo.
+    if (propRef) {
+      return this.resolveAgent(orgId, null, propRef.agent_email, propRef.agent_name)
     }
     return null
+  }
+
+  /** Re-asigna el lead comprador abierto de un contacto al agente resuelto (re-proceso). */
+  private async reassignOpenBuyerLead(orgId: string, contactId: string, agentId: string): Promise<void> {
+    if (!this.leadRepo) return
+    try {
+      const lead = await this.leadRepo.findOpenBuyerByContact(contactId, orgId)
+      if (lead && lead.assigned_to !== agentId) {
+        lead.update({ assigned_to: agentId })
+        await this.leadRepo.save(lead)
+      }
+    } catch { /* best-effort: un fallo de reasignación no frena el re-proceso */ }
   }
 
   /** Resuelve un agente de KiteProp a un usuario de VendéPro: agent_map → email → nombre → null. */

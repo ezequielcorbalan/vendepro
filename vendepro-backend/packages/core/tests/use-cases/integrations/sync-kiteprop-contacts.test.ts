@@ -159,6 +159,64 @@ describe('SyncKitepropContactsUseCase', () => {
     expect(mockUserRepo.findByEmail).not.toHaveBeenCalled() // el mapeo directo cortó antes
   })
 
+  it('agente: si el contacto TIENE agente asignado pero no mapea, cae al admin (NO al agente del aviso)', async () => {
+    mockGateway.fetchMessages.mockResolvedValue(page([kpMessage(1)]))
+    // El contacto está asignado a Marcela en KiteProp, pero Marcela no mapea a ningún user.
+    mockGateway.getContactAgent.mockResolvedValue({ external_id: '9999', email: 'marcela-sinmapear@dein.com', name: 'Marcela Genta' })
+    // El aviso lo publicó Andrés, que SÍ existe — no debe ganar (antes se lo llevaba él).
+    mockGateway.getProperty.mockResolvedValue({ code: 'KP1', title: 'X', address: null, agent_email: 'andres@dein.com', agent_name: 'Andrés Giunta' })
+    mockUserRepo.findByEmail.mockImplementation(async (email: string) => email === 'andres@dein.com' ? { id: 'user-andres' } : null)
+
+    await makeUc().execute({ orgId: 'org_mg', mode: 'manual' })
+    // Agente del contacto es autoritativo: no resuelve → admin, nunca el del aviso.
+    expect(mockContactRepo.save.mock.calls[0][0].agent_id).toBe('admin-1')
+    expect(mockUserRepo.findByEmail).not.toHaveBeenCalledWith('andres@dein.com')
+  })
+
+  it('enrich: re-asigna el lead comprador existente al agente mapeado (Re-procesar consultas)', async () => {
+    mockGateway.fetchMessages.mockResolvedValue(page([kpMessage(1)]))
+    mockGateway.getContactAgent.mockResolvedValue({ external_id: '7673', email: 'm@dein.com', name: 'Marcela' })
+    mockIntegrationRepo.findByOrgAndProvider.mockResolvedValue(
+      integration({ config_json: JSON.stringify({ agent_map: { '7673': 'user-correct' } }) }),
+    )
+    // Lead comprador ya creado, asignado al agente EQUIVOCADO.
+    const existingLead: any = { assigned_to: 'user-wrong', update(p: any) { Object.assign(this, p) } }
+    const leadRepo: any = {
+      findOpenBuyerByContact: vi.fn().mockResolvedValue(existingLead),
+      save: vi.fn().mockResolvedValue(undefined),
+    }
+    const uc = new SyncKitepropContactsUseCase(
+      mockIntegrationRepo, mockLinkRepo, mockSyncLogRepo, mockContactRepo, mockUserRepo,
+      mockGateway, mockIds, decrypt, leadRepo, {} as any, {} as any, {} as any,
+    )
+
+    await uc.execute({ orgId: 'org_mg', mode: 'enrich' })
+
+    expect(leadRepo.save).toHaveBeenCalledTimes(1)
+    expect(leadRepo.save.mock.calls[0][0].assigned_to).toBe('user-correct')
+  })
+
+  it('enrich: NO re-asigna si el lead ya está en el agente correcto', async () => {
+    mockGateway.fetchMessages.mockResolvedValue(page([kpMessage(1)]))
+    mockGateway.getContactAgent.mockResolvedValue({ external_id: '7673', email: 'm@dein.com', name: 'Marcela' })
+    mockIntegrationRepo.findByOrgAndProvider.mockResolvedValue(
+      integration({ config_json: JSON.stringify({ agent_map: { '7673': 'user-correct' } }) }),
+    )
+    const existingLead: any = { assigned_to: 'user-correct', update: vi.fn() }
+    const leadRepo: any = {
+      findOpenBuyerByContact: vi.fn().mockResolvedValue(existingLead),
+      save: vi.fn().mockResolvedValue(undefined),
+    }
+    const uc = new SyncKitepropContactsUseCase(
+      mockIntegrationRepo, mockLinkRepo, mockSyncLogRepo, mockContactRepo, mockUserRepo,
+      mockGateway, mockIds, decrypt, leadRepo, {} as any, {} as any, {} as any,
+    )
+
+    await uc.execute({ orgId: 'org_mg', mode: 'enrich' })
+    expect(existingLead.update).not.toHaveBeenCalled()
+    expect(leadRepo.save).not.toHaveBeenCalled()
+  })
+
   it('modo enrich: sin corte por fecha, procesa consultas viejas y persiste enrich_next_page', async () => {
     // last_sync_at = 2026-07-01; en auto estas se cortarían por viejas. Enrich las procesa.
     mockGateway.fetchMessages
