@@ -52,7 +52,7 @@ export function ConfirmDialog({
             }`}>
               <AlertTriangle className={`w-4.5 h-4.5 ${isDanger ? 'text-red-600' : 'text-white'}`} />
             </div>
-            <h2 className="text-lg font-semibold text-gray-900 leading-tight">{title}</h2>
+            <h2 className="text-lg font-semibold text-ink leading-tight">{title}</h2>
           </div>
           <button onClick={onCancel} aria-label="Cerrar" className="p-1.5 hover:bg-gray-100 rounded-lg shrink-0">
             <X className="w-5 h-5 text-gray-500" />
@@ -68,7 +68,7 @@ export function ConfirmDialog({
               value={reason}
               onChange={e => setReason(e.target.value)}
               placeholder={reasonPlaceholder}
-              className="mt-3 w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-brand-pink"
+              className="mt-3 w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none"
             />
           )}
         </div>
@@ -83,7 +83,7 @@ export function ConfirmDialog({
           <button
             onClick={() => onConfirm(reason)}
             className={`px-5 py-2 rounded-full text-sm font-semibold text-white transition-colors ${
-              isDanger ? 'bg-red-600 hover:bg-red-700' : 'bg-brand-pink hover:bg-[#e60070]'
+              isDanger ? 'bg-red-600 hover:bg-red-700' : 'bg-brand-pink hover:bg-brand-pink-hover'
             }`}
           >
             {confirmLabel}

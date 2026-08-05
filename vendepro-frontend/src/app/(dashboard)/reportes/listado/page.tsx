@@ -97,12 +97,12 @@ export default function ListadoPage() {
             value={neighborhood}
             onChange={e => setNeighborhood(e.target.value)}
             placeholder="Barrio"
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/30 focus:border-brand-pink"
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none"
           />
           <select
             value={status}
             onChange={e => setStatus(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/30 focus:border-brand-pink"
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none"
           >
             <option value="">Todos</option>
             <option value="published">Publicados</option>
@@ -112,13 +112,13 @@ export default function ListadoPage() {
             type="date"
             value={from}
             onChange={e => setFrom(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/30 focus:border-brand-pink"
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none"
           />
           <input
             type="date"
             value={to}
             onChange={e => setTo(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/30 focus:border-brand-pink"
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none"
           />
         </div>
       </div>
@@ -190,7 +190,7 @@ export default function ListadoPage() {
                     </td>
                     <td className="py-2 px-2 text-right text-gray-700 font-semibold">{r.views_per_day}</td>
                     <td className="py-2 px-2 text-right text-gray-700 hidden md:table-cell">{r.portal_visits}</td>
-                    <td className="py-2 px-2 text-right font-semibold text-gray-800">{r.offers}</td>
+                    <td className="py-2 px-2 text-right font-semibold text-ink">{r.offers}</td>
                     <td className="py-2 px-2 text-right">
                       {r.public_slug && r.status === 'published' ? (
                         <a

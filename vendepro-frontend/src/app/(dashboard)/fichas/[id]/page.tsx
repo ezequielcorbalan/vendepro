@@ -19,7 +19,7 @@ function Section({ title, icon: Icon, children, defaultOpen = false }: { title: 
       <button type="button" onClick={() => setOpen(!open)} className="w-full flex items-center justify-between px-4 py-3.5 text-left">
         <div className="flex items-center gap-2.5">
           <Icon className="w-4 h-4 text-brand-pink" />
-          <span className="text-sm font-semibold text-gray-800">{title}</span>
+          <span className="text-sm font-semibold text-ink">{title}</span>
         </div>
         {open ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
       </button>
@@ -28,7 +28,7 @@ function Section({ title, icon: Icon, children, defaultOpen = false }: { title: 
   )
 }
 
-const inputClass = 'w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-pink/30 focus:border-brand-pink outline-none bg-white'
+const inputClass = 'w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none bg-white'
 const labelClass = 'block text-xs font-medium text-gray-500 mb-1'
 
 function RadioGroup({ label, options, value, onChange }: { label: string; options: { value: string; label: string }[]; value: string; onChange: (v: string) => void }) {
@@ -346,7 +346,7 @@ export default function FichaDetailPage() {
           <ClipboardList className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h1 className="text-lg font-bold text-gray-800">Ficha de Tasación</h1>
+          <h1 className="text-lg font-bold text-ink">Ficha de Tasación</h1>
           <p className="text-xs text-gray-400">{f.address || 'Sin dirección'}</p>
         </div>
       </div>

@@ -5,9 +5,12 @@
    con soporte de opacidad y variantes (hover:/focus:). */
 @theme {
   --color-brand-pink: #ff007c;
+  --color-brand-pink-hover: #e0006e;   /* hover del rosa de marca (unifica #e60070/#e0006e/#e6006f) */
   --color-brand-orange: #ff8017;
+  --color-brand-orange-hover: #e6720f; /* hover del naranja de marca */
   --color-brand-light: #f9fafb;
   --color-brand-gray: #6b7280;
+  --color-ink: #27272a;                /* gris oscuro base de la tipografía (no negro pleno) → utilidad text-ink */
 }
 
 /* Compat Tailwind v3 → v4: el default de `border`/`divide` en v4 es
@@ -25,8 +28,22 @@
 
 body {
   font-family: 'Poppins', sans-serif;
-  color: #1f2937;
+  color: var(--color-ink);
   background-color: var(--color-brand-light);
+}
+
+/* Selects: estilo consistente en toda la app. Quita el chrome nativo del OS
+   (incluido su anillo de foco) y usa un chevron de línea propio (gris). El
+   borde/padding lo aportan las clases Tailwind de cada select. */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.6rem center;
+  background-size: 1rem;
+  padding-right: 2rem !important;
+  cursor: pointer;
 }
 
 /* Slide up animation for toasts */
@@ -38,14 +55,15 @@ body {
   animation: slide-up 0.2s ease-out;
 }
 
-/* ── Accesibilidad ──────────────────────────────────────────── */
-/* Foco visible solo por teclado (no en click de mouse): anillo de marca. */
+/* ── Foco ────────────────────────────────────────────────────── */
+/* Foco gris tenue, visible solo en navegación por teclado (no en click de mouse).
+   !important para ganarle a los `focus:outline-none` inline de varios inputs. */
 :focus-visible {
-  outline: 2px solid var(--color-brand-pink);
+  outline: 2px solid #9ca3af !important; /* gray-400 */
   outline-offset: 2px;
   border-radius: 4px;
 }
-/* Evita el outline por defecto cuando el foco no es por teclado. */
+/* Sin outline cuando el foco no viene del teclado (p. ej. click de mouse). */
 :focus:not(:focus-visible) {
   outline: none;
 }

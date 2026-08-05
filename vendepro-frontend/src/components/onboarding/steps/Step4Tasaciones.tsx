@@ -7,7 +7,7 @@ export default function Step4Tasaciones() {
         <ClipboardList className="w-8 h-8 text-purple-600" />
       </div>
       <div className="space-y-1">
-        <h2 className="text-2xl font-bold text-gray-800">Tasaciones profesionales</h2>
+        <h2 className="text-2xl font-bold text-ink">Tasaciones profesionales</h2>
         <p className="text-gray-500 text-sm max-w-sm">
           Cuando un propietario quiere vender, abrís una Tasación vinculada al lead y gestionás todo el proceso desde ahí.
         </p>

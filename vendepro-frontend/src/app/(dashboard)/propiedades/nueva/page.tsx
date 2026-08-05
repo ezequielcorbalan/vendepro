@@ -240,7 +240,7 @@ export default function NuevaPropiedadPage() {
     setLoading(false)
   }
 
-  const inputClass = 'w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/50 focus:border-brand-pink'
+  const inputClass = 'w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none'
 
   if (initializing) {
     return (
@@ -252,17 +252,17 @@ export default function NuevaPropiedadPage() {
 
   return (
     <div>
-      <Link href="/propiedades" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 mb-6">
+      <Link href="/propiedades" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-ink mb-6">
         <ArrowLeft className="w-4 h-4" /> Volver a propiedades
       </Link>
 
-      <h1 className="text-2xl font-semibold text-gray-800 mb-4">Nueva propiedad</h1>
+      <h1 className="text-2xl font-semibold text-ink mb-4">Nueva propiedad</h1>
 
       {linkedLeadName && (
         <div className="mb-6 flex items-center gap-2 bg-pink-50 border border-pink-100 rounded-xl px-3 py-2.5 text-sm max-w-md">
           <Link2 className="w-4 h-4 text-brand-pink shrink-0" />
           <span className="text-gray-500">Propiedad vinculada al lead:</span>
-          <span className="font-semibold text-gray-800 truncate">{linkedLeadName}</span>
+          <span className="font-semibold text-ink truncate">{linkedLeadName}</span>
         </div>
       )}
 
@@ -338,7 +338,7 @@ export default function NuevaPropiedadPage() {
         <hr className="border-gray-200" />
 
         <div>
-          <h2 className="text-lg font-medium text-gray-800 mb-3">Datos del propietario</h2>
+          <h2 className="text-lg font-medium text-ink mb-3">Datos del propietario</h2>
 
           {/* Contact selector */}
           <div className="mb-4">
@@ -346,7 +346,7 @@ export default function NuevaPropiedadPage() {
             {selectedContact ? (
               <div className="flex items-center justify-between bg-pink-50 border border-pink-200 rounded-lg px-4 py-2.5">
                 <div>
-                  <p className="text-sm font-medium text-gray-800">{selectedContact.full_name}</p>
+                  <p className="text-sm font-medium text-ink">{selectedContact.full_name}</p>
                   <p className="text-xs text-gray-500">{selectedContact.contact_type}{selectedContact.phone ? ` · ${selectedContact.phone}` : ''}</p>
                 </div>
                 <button type="button" onClick={clearContact} className="text-gray-400 hover:text-gray-600">
@@ -362,7 +362,7 @@ export default function NuevaPropiedadPage() {
                     value={contactSearch}
                     onChange={e => { setContactSearch(e.target.value); setShowNewContactForm(false) }}
                     placeholder="Buscar por nombre o teléfono..."
-                    className="w-full border border-gray-300 rounded-lg pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/50 focus:border-brand-pink"
+                    className="w-full border border-gray-300 rounded-lg pl-9 pr-4 py-2.5 text-sm focus:outline-none"
                   />
                 </div>
                 {contactResults.length > 0 && (
@@ -375,7 +375,7 @@ export default function NuevaPropiedadPage() {
                         className="w-full text-left px-4 py-2.5 hover:bg-gray-50 flex items-center justify-between"
                       >
                         <div>
-                          <p className="text-sm font-medium text-gray-800">{c.full_name}</p>
+                          <p className="text-sm font-medium text-ink">{c.full_name}</p>
                           <p className="text-xs text-gray-500">{c.contact_type}{c.phone ? ` · ${c.phone}` : ''}</p>
                         </div>
                       </button>
@@ -413,7 +413,7 @@ export default function NuevaPropiedadPage() {
                   {CONTACT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </select>
                 <div className="flex gap-2">
-                  <button type="button" onClick={handleCreateContact} disabled={creatingContact} className="flex items-center gap-2 bg-brand-pink text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50">
+                  <button type="button" onClick={handleCreateContact} disabled={creatingContact} className="flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50">
                     {creatingContact ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
                     Crear y vincular
                   </button>
@@ -442,7 +442,7 @@ export default function NuevaPropiedadPage() {
         </div>
 
         <div className="flex justify-end">
-          <button type="submit" disabled={loading} className="flex items-center gap-2 bg-brand-pink text-white px-6 py-2.5 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
+          <button type="submit" disabled={loading} className="flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-6 py-2.5 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
             {loading ? 'Guardando...' : 'Crear propiedad'}
           </button>

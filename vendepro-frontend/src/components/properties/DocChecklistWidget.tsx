@@ -152,7 +152,7 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
             <FileCheck2 className="w-4.5 h-4.5 text-white" />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-gray-800">Documentación</h2>
+            <h2 className="text-sm font-semibold text-ink">Documentación</h2>
             <p className="text-xs text-gray-500">{resolvedItems} de {totalItems} resueltos</p>
           </div>
         </div>
@@ -204,7 +204,7 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
               value={cloudInput}
               onChange={e => setCloudInput(e.target.value)}
               placeholder="https://drive.google.com/..."
-              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-pink/20 focus:border-brand-pink outline-none"
+              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none"
             />
             <button
               onClick={saveCloudUrl}
@@ -307,7 +307,7 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
               onKeyDown={e => { if (e.key === 'Enter') addCustomDoc() }}
               autoFocus
               placeholder="Ej: Aprobación banco hipotecario"
-              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-pink/20 focus:border-brand-pink outline-none"
+              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none"
             />
             <button
               onClick={addCustomDoc}

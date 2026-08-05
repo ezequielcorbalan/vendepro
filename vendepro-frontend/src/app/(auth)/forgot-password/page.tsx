@@ -33,7 +33,7 @@ export default function ForgotPasswordPage() {
       <div className="bg-white rounded-2xl shadow-lg p-5 sm:p-8 w-full max-w-md">
         <div className="text-center mb-6">
           <img src="/brand/logo-horizontal.png" alt="VendéPro" className="h-12 sm:h-16 mx-auto mb-3" />
-          <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Recuperar contraseña</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold text-ink">Recuperar contraseña</h1>
           <p className="text-gray-500 text-sm mt-1">
             {sent
               ? 'Revisá tu bandeja de entrada'
@@ -64,7 +64,7 @@ export default function ForgotPasswordPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-pink/50 focus:border-brand-pink"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none"
                 placeholder="tu@email.com"
               />
             </div>
@@ -72,7 +72,7 @@ export default function ForgotPasswordPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-brand-pink text-white font-medium py-2.5 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+              className="w-full bg-gradient-to-br from-brand-pink to-brand-orange text-white font-medium py-2.5 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
             >
               {loading ? 'Enviando...' : 'Enviar instrucciones'}
             </button>

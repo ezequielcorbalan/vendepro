@@ -123,7 +123,7 @@ export default function AudienceStep({
           </span>
         ) : preview ? (
           <div className="min-w-0">
-            <p className="text-sm text-gray-800">
+            <p className="text-sm text-ink">
               <span className="font-semibold">{preview.count}</span> destinatario{preview.count === 1 ? '' : 's'} con email válido
               <span className="text-gray-400"> (excluye bajas y rebotes)</span>
             </p>

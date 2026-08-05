@@ -25,7 +25,7 @@ function KPI({ label, value, sub, icon, color }: { label: string; value: number;
         <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${color}`}>{icon}</div>
         <span className="text-[10px] text-gray-400 uppercase tracking-wider">{label}</span>
       </div>
-      <p className="text-2xl font-black text-gray-800">{value}</p>
+      <p className="text-2xl font-black text-ink">{value}</p>
       {sub && <p className="text-[10px] text-gray-400 mt-0.5">{sub}</p>}
     </div>
   )
@@ -68,7 +68,7 @@ export default function MiPerformancePage() {
       <div className="space-y-6">
         <ActivityTabs />
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Mi Performance</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-ink">Mi Performance</h1>
         </div>
         <div className="bg-red-50 text-red-600 rounded-xl p-6">Error cargando datos</div>
       </div>
@@ -88,7 +88,7 @@ export default function MiPerformancePage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Mi Performance</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-ink">Mi Performance</h1>
           <p className="text-sm text-gray-500">{data.agent?.full_name || 'Agente'}</p>
         </div>
         <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
@@ -97,7 +97,7 @@ export default function MiPerformancePage() {
               key={p}
               onClick={() => setPeriod(p)}
               className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                period === p ? 'bg-white shadow text-gray-800' : 'text-gray-500 hover:text-gray-700'
+                period === p ? 'bg-white shadow text-ink' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               {p === 'month' ? 'Mes' : p === 'quarter' ? 'Trimestre' : 'Año'}
@@ -116,7 +116,7 @@ export default function MiPerformancePage() {
 
       {/* Conversion Funnel */}
       <div className="bg-white rounded-xl border border-gray-100 p-5">
-        <h2 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
+        <h2 className="text-sm font-semibold text-ink mb-4 flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-brand-pink" /> Tasas de conversión
         </h2>
         <div className="flex flex-col sm:flex-row gap-3">
@@ -129,7 +129,7 @@ export default function MiPerformancePage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Activity Breakdown */}
         <div className="bg-white rounded-xl border border-gray-100 p-5">
-          <h2 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-ink mb-4 flex items-center gap-2">
             <BarChart3 className="w-4 h-4 text-indigo-500" /> Actividad por tipo · {periodLabel}
           </h2>
           <div className="space-y-2">
@@ -146,7 +146,7 @@ export default function MiPerformancePage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-0.5">
                       <span className="text-xs text-gray-600 truncate">{cfg.label}</span>
-                      <span className="text-xs font-bold text-gray-800 ml-2">{count}</span>
+                      <span className="text-xs font-bold text-ink ml-2">{count}</span>
                     </div>
                     <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                       <div
@@ -163,7 +163,7 @@ export default function MiPerformancePage() {
 
         {/* Objectives */}
         <div className="bg-white rounded-xl border border-gray-100 p-5">
-          <h2 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-ink mb-4 flex items-center gap-2">
             <Target className="w-4 h-4 text-orange-500" /> Objetivos activos
           </h2>
           {!data.objectives?.length ? (
@@ -187,7 +187,7 @@ export default function MiPerformancePage() {
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${semaforo.color}`}>{semaforo.label}</span>
                     </div>
                     <div className="flex items-end justify-between mb-1.5">
-                      <span className="text-lg font-black text-gray-800">{realized}<span className="text-sm font-normal text-gray-400">/{obj.target}</span></span>
+                      <span className="text-lg font-black text-ink">{realized}<span className="text-sm font-normal text-gray-400">/{obj.target}</span></span>
                       <span className="text-xs text-gray-400">{pct}%</span>
                     </div>
                     <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -215,7 +215,7 @@ export default function MiPerformancePage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Pipeline comercial */}
         <div className="bg-white rounded-xl border border-gray-100 p-5">
-          <h2 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-ink mb-4 flex items-center gap-2">
             <Briefcase className="w-4 h-4 text-emerald-500" /> Pipeline comercial
           </h2>
           <div className="space-y-2">
@@ -226,7 +226,7 @@ export default function MiPerformancePage() {
                 <div key={key} className="flex items-center gap-3">
                   <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${cfg.color}`}>{cfg.label}</span>
                   <div className="flex-1 h-px bg-gray-100" />
-                  <span className="text-sm font-bold text-gray-800">{val}</span>
+                  <span className="text-sm font-bold text-ink">{val}</span>
                 </div>
               )
             })}
@@ -235,7 +235,7 @@ export default function MiPerformancePage() {
 
         {/* Top barrios */}
         <div className="bg-white rounded-xl border border-gray-100 p-5">
-          <h2 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-ink mb-4 flex items-center gap-2">
             <MapPin className="w-4 h-4 text-red-500" /> Barrios más trabajados
           </h2>
           {!data.topBarrios?.length ? (
@@ -246,7 +246,7 @@ export default function MiPerformancePage() {
                 <div key={i} className="flex items-center gap-3">
                   <span className="text-xs font-bold text-gray-400 w-5">{i + 1}</span>
                   <span className="text-sm text-gray-700 flex-1">{b.neighborhood}</span>
-                  <span className="text-sm font-bold text-gray-800">{b.count}</span>
+                  <span className="text-sm font-bold text-ink">{b.count}</span>
                 </div>
               ))}
             </div>
@@ -257,7 +257,7 @@ export default function MiPerformancePage() {
       {/* Quarter comparison */}
       {data.quarterComparison && (
         <div className="bg-white rounded-xl border border-gray-100 p-5">
-          <h2 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-ink mb-4 flex items-center gap-2">
             <BarChart3 className="w-4 h-4 text-purple-500" /> Comparación trimestral
           </h2>
           <div className="grid grid-cols-3 gap-3 mb-4">
@@ -267,7 +267,7 @@ export default function MiPerformancePage() {
             </div>
             <div className="text-center">
               <p className="text-[10px] text-gray-400 uppercase">Trim. actual</p>
-              <p className="text-xl font-black text-gray-800">{data.quarterComparison.current}</p>
+              <p className="text-xl font-black text-ink">{data.quarterComparison.current}</p>
             </div>
             <div className="text-center">
               <p className="text-[10px] text-gray-400 uppercase">Variación</p>
@@ -288,7 +288,7 @@ export default function MiPerformancePage() {
                     <span className="w-24 text-gray-500 truncate">{cfg?.label || curr.activity_type}</span>
                     <span className="text-gray-400 w-8 text-right">{prevCount}</span>
                     <ArrowRight className="w-3 h-3 text-gray-300" />
-                    <span className="font-bold text-gray-800 w-8">{curr.count}</span>
+                    <span className="font-bold text-ink w-8">{curr.count}</span>
                     <span className={`text-[10px] font-medium ${diff > 0 ? 'text-green-600' : diff < 0 ? 'text-red-500' : 'text-gray-400'}`}>
                       {diff > 0 ? '+' : ''}{diff}
                     </span>
@@ -303,7 +303,7 @@ export default function MiPerformancePage() {
       {/* Weekly trend */}
       {data.weeklyTrend?.length > 0 && (
         <div className="bg-white rounded-xl border border-gray-100 p-5">
-          <h2 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-ink mb-4 flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-blue-500" /> Evolución semanal
           </h2>
           <div className="flex items-end gap-2 h-24">

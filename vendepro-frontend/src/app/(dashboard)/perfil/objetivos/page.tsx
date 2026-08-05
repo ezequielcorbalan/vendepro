@@ -139,13 +139,13 @@ export default function MisObjetivosPage() {
 
   return (
     <div>
-      <Link href="/perfil" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 mb-4">
+      <Link href="/perfil" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-ink mb-4">
         <ArrowLeft className="w-4 h-4" /> Volver a mi perfil
       </Link>
 
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-semibold text-ink flex items-center gap-2">
             <Target className="w-6 h-6 text-orange-500" /> Mis objetivos
           </h1>
           <p className="text-sm text-gray-400 mt-1">
@@ -155,7 +155,7 @@ export default function MisObjetivosPage() {
         {mode === null && (
           <button
             onClick={() => setMode('method')}
-            className="inline-flex items-center gap-1.5 bg-brand-pink text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
+            className="inline-flex items-center gap-1.5 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
           >
             <Plus className="w-4 h-4" /> Nuevo
           </button>
@@ -175,7 +175,7 @@ export default function MisObjetivosPage() {
             >
               <Zap className="w-5 h-5 text-brand-pink shrink-0" />
               <div>
-                <div className="text-sm font-semibold text-gray-800">Método probado</div>
+                <div className="text-sm font-semibold text-ink">Método probado</div>
                 <div className="text-xs text-gray-400">Keller, Magnin, Agenda</div>
               </div>
               <ChevronRight className="w-4 h-4 text-gray-300 ml-auto group-hover:text-brand-pink" />
@@ -186,7 +186,7 @@ export default function MisObjetivosPage() {
             >
               <SlidersHorizontal className="w-5 h-5 text-gray-500 shrink-0" />
               <div>
-                <div className="text-sm font-semibold text-gray-800">Personalizado</div>
+                <div className="text-sm font-semibold text-ink">Personalizado</div>
                 <div className="text-xs text-gray-400">Métrica a métrica</div>
               </div>
               <ChevronRight className="w-4 h-4 text-gray-300 ml-auto group-hover:text-gray-500" />
@@ -199,7 +199,7 @@ export default function MisObjetivosPage() {
       {mode === 'method' && (
         <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6 space-y-5">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2"><Zap className="w-4 h-4 text-brand-pink" /> Elegí tu método</h2>
+            <h2 className="text-sm font-semibold text-ink flex items-center gap-2"><Zap className="w-4 h-4 text-brand-pink" /> Elegí tu método</h2>
             <button onClick={cancel} className="text-xs text-gray-400 hover:text-gray-600">Cancelar</button>
           </div>
 
@@ -229,7 +229,7 @@ export default function MisObjetivosPage() {
                     <button
                       key={k}
                       onClick={() => setMethodPeriod(k)}
-                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${methodPeriod === k ? 'bg-white shadow text-gray-800' : 'text-gray-500'}`}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${methodPeriod === k ? 'bg-white shadow text-ink' : 'text-gray-500'}`}
                     >
                       {v.label}
                     </button>
@@ -242,7 +242,7 @@ export default function MisObjetivosPage() {
                 <div className="flex flex-wrap gap-x-4 gap-y-1">
                   {tplMetrics && Object.entries(tplMetrics).map(([m, v]) => (
                     <span key={m} className="text-xs text-gray-600">
-                      <span className="font-medium text-gray-800">{v}</span> {(OBJECTIVE_METRICS as any)[m]?.label}
+                      <span className="font-medium text-ink">{v}</span> {(OBJECTIVE_METRICS as any)[m]?.label}
                     </span>
                   ))}
                 </div>
@@ -258,7 +258,7 @@ export default function MisObjetivosPage() {
                       value={ticketPromedio || ''}
                       onChange={e => setTicketPromedio(parseInt(e.target.value) || 0)}
                       placeholder="ej. 150.000"
-                      className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-brand-orange focus:border-brand-orange"
+                      className="w-full border rounded-lg px-3 py-2 text-sm"
                     />
                   </div>
                   <div>
@@ -268,7 +268,7 @@ export default function MisObjetivosPage() {
                       value={comisionPct || ''}
                       onChange={e => setComisionPct(parseFloat(e.target.value) || 0)}
                       placeholder="ej. 3"
-                      className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-brand-orange focus:border-brand-orange"
+                      className="w-full border rounded-lg px-3 py-2 text-sm"
                     />
                   </div>
                 </div>
@@ -294,7 +294,7 @@ export default function MisObjetivosPage() {
           <button
             onClick={saveMethod}
             disabled={saving || !selectedTemplate}
-            className="w-full bg-brand-pink text-white py-2.5 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-2"
+            className="w-full bg-gradient-to-br from-brand-pink to-brand-orange text-white py-2.5 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-2"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {saving ? 'Guardando...' : 'Adoptar este método'}
@@ -306,7 +306,7 @@ export default function MisObjetivosPage() {
       {mode === 'custom' && (
         <div className="bg-white rounded-xl border border-gray-100 p-5 mb-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2"><SlidersHorizontal className="w-4 h-4 text-gray-500" /> Objetivo personalizado</h2>
+            <h2 className="text-sm font-semibold text-ink flex items-center gap-2"><SlidersHorizontal className="w-4 h-4 text-gray-500" /> Objetivo personalizado</h2>
             <button onClick={cancel} className="text-xs text-gray-400 hover:text-gray-600">Cancelar</button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -350,7 +350,7 @@ export default function MisObjetivosPage() {
             <button
               onClick={saveCustom}
               disabled={saving}
-              className="flex-1 bg-brand-pink text-white py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
+              className="flex-1 bg-gradient-to-br from-brand-pink to-brand-orange text-white py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Crear
             </button>
@@ -374,7 +374,7 @@ export default function MisObjetivosPage() {
             return (
               <div key={obj.id} className="p-4 flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-gray-800">{metricCfg?.label || obj.metric}</p>
+                  <p className="font-medium text-ink">{metricCfg?.label || obj.metric}</p>
                   <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                     <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{periodCfg?.label || obj.period_type}</span>
                     <span className="text-xs text-gray-400">Objetivo: <strong className="text-gray-700">{obj.target}</strong></span>
@@ -401,7 +401,7 @@ export default function MisObjetivosPage() {
           </button>
           <button
             onClick={() => setMode('custom')}
-            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 border border-gray-200 px-3 py-1.5 rounded-lg hover:border-gray-400 transition-colors"
+            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-ink border border-gray-200 px-3 py-1.5 rounded-lg hover:border-gray-400 transition-colors"
           >
             <SlidersHorizontal className="w-3.5 h-3.5" /> Agregar personalizado
           </button>

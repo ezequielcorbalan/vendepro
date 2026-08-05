@@ -32,7 +32,7 @@ export function AgentContactCardBlock({ data, appraisal, edit, ...attrs }: Props
         >
           Tu asesor
         </p>
-        <h2 className="mt-2 font-poppins text-3xl font-bold leading-tight text-slate-900 md:text-5xl">
+        <h2 className="mt-2 font-poppins text-3xl font-bold leading-tight text-ink md:text-5xl">
           ¿Hablamos?
         </h2>
 
@@ -73,11 +73,11 @@ export function AgentContactCardBlock({ data, appraisal, edit, ...attrs }: Props
                   plaintext
                   value={name ?? ''}
                   placeholder="Nombre del asesor"
-                  className="mt-2 font-poppins text-2xl font-bold leading-tight text-slate-900 md:text-3xl"
+                  className="mt-2 font-poppins text-2xl font-bold leading-tight text-ink md:text-3xl"
                   onCommit={(v) => edit.onChange({ name: v })}
                 />
               ) : (
-                <p className="mt-2 font-poppins text-2xl font-bold leading-tight text-slate-900 md:text-3xl">
+                <p className="mt-2 font-poppins text-2xl font-bold leading-tight text-ink md:text-3xl">
                   {name}
                 </p>
               )}

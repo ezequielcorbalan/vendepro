@@ -66,7 +66,7 @@ export default function ConfigDrawer({
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h2 className="font-semibold text-gray-900">Configuración</h2>
+          <h2 className="font-semibold text-ink">Configuración</h2>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
             <X className="w-4 h-4" />
           </button>
@@ -155,7 +155,7 @@ export default function ConfigDrawer({
           <button
             onClick={save}
             disabled={saving}
-            className="w-full inline-flex items-center justify-center gap-2 bg-brand-pink hover:bg-[#e60070] text-white font-semibold py-2.5 rounded-full disabled:opacity-60"
+            className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange hover:opacity-90 text-white font-semibold py-2.5 rounded-full disabled:opacity-60"
           >
             <Save className="w-4 h-4" /> {saving ? 'Guardando…' : 'Guardar'}
           </button>

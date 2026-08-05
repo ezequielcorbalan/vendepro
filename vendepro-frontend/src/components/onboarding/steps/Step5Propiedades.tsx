@@ -7,7 +7,7 @@ export default function Step5Propiedades() {
         <Building2 className="w-8 h-8 text-green-600" />
       </div>
       <div className="space-y-1">
-        <h2 className="text-2xl font-bold text-gray-800">Gestión de propiedades</h2>
+        <h2 className="text-2xl font-bold text-ink">Gestión de propiedades</h2>
         <p className="text-gray-500 text-sm max-w-sm">
           Una vez captada la propiedad, la gestionás desde documentación hasta la venta o alquiler.
         </p>

@@ -56,7 +56,7 @@ export default function LandingsPage() {
     <div className="p-4 md:p-8 max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Landings</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-ink">Landings</h1>
           <p className="text-sm text-gray-500 mt-1">Creá landings con IA a partir de templates curados.</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -68,7 +68,7 @@ export default function LandingsPage() {
           </button>
           <button
             onClick={() => { setCreateAsTasacionTemplate(false); setShowCreate(true) }}
-            className="inline-flex items-center gap-2 bg-brand-pink hover:bg-[#e60070] text-white font-semibold px-5 py-2.5 rounded-full"
+            className="inline-flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange hover:opacity-90 text-white font-semibold px-5 py-2.5 rounded-full"
           >
             <Plus className="w-4 h-4" /> Nueva landing
           </button>
@@ -76,15 +76,15 @@ export default function LandingsPage() {
       </div>
 
       <div className="flex items-center gap-4 border-b border-gray-200 mb-4">
-        <button onClick={() => setTab('mine')} className={`pb-3 px-1 text-sm font-medium ${tab === 'mine' ? 'border-b-2 border-brand-pink text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
+        <button onClick={() => setTab('mine')} className={`pb-3 px-1 text-sm font-medium ${tab === 'mine' ? 'border-b-2 border-brand-pink text-ink' : 'text-gray-500 hover:text-gray-700'}`}>
           Mías
         </button>
         {isAdmin && (
           <>
-            <button onClick={() => setTab('org')} className={`pb-3 px-1 text-sm font-medium ${tab === 'org' ? 'border-b-2 border-brand-pink text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
+            <button onClick={() => setTab('org')} className={`pb-3 px-1 text-sm font-medium ${tab === 'org' ? 'border-b-2 border-brand-pink text-ink' : 'text-gray-500 hover:text-gray-700'}`}>
               Todas del org
             </button>
-            <button onClick={() => setTab('pending_review')} className={`pb-3 px-1 text-sm font-medium ${tab === 'pending_review' ? 'border-b-2 border-brand-pink text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
+            <button onClick={() => setTab('pending_review')} className={`pb-3 px-1 text-sm font-medium ${tab === 'pending_review' ? 'border-b-2 border-brand-pink text-ink' : 'text-gray-500 hover:text-gray-700'}`}>
               Pendientes de aprobación
             </button>
           </>
@@ -117,7 +117,7 @@ export default function LandingsPage() {
           placeholder="Buscar por slug o título…"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="w-full bg-white border border-gray-200 rounded-full pl-9 pr-4 py-2 text-sm focus:outline-none focus:border-brand-pink"
+          className="w-full bg-white border border-gray-200 rounded-full pl-9 pr-4 py-2 text-sm focus:outline-none"
         />
       </div>
 

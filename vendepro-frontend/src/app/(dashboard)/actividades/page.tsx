@@ -135,7 +135,7 @@ export default function ActividadesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Actividad Comercial</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold text-ink">Actividad Comercial</h1>
           <p className="text-gray-500 text-sm">{activities.length} actividades en el período</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -154,7 +154,7 @@ export default function ActividadesPage() {
             <Sparkles className="w-4 h-4" /> con IA
           </button>
           <button onClick={() => setShowCreate(true)}
-            className="bg-brand-pink text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:opacity-90">
+            className="bg-gradient-to-br from-brand-pink to-brand-orange text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:opacity-90">
             <Plus className="w-4 h-4" /> Registrar
           </button>
         </div>
@@ -170,7 +170,7 @@ export default function ActividadesPage() {
               <div className={`w-10 h-10 rounded-full flex items-center justify-center ${cfg.color} mb-2`}>
                 <Ico className="w-5 h-5" />
               </div>
-              <p className="text-2xl font-bold text-gray-800">{metrics[k]}</p>
+              <p className="text-2xl font-bold text-ink">{metrics[k]}</p>
               <p className="text-xs text-gray-500 text-center mt-0.5">{cfg.label}</p>
             </div>
           )
@@ -179,7 +179,7 @@ export default function ActividadesPage() {
 
       {/* Objectives */}
       <div className="bg-white rounded-xl border p-5">
-        <h2 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+        <h2 className="font-semibold text-ink mb-4 flex items-center gap-2">
           <Target className="w-4 h-4 text-pink-500" /> Objetivos del período
         </h2>
         {objectivesWithProgress.length === 0 ? (
@@ -203,7 +203,7 @@ export default function ActividadesPage() {
                     </span>
                   </div>
                   <span className="text-sm text-gray-400 shrink-0 ml-4">
-                    <span className="font-semibold text-gray-800">{obj.realized}/{obj.target}</span> ({obj.pct}%)
+                    <span className="font-semibold text-ink">{obj.realized}/{obj.target}</span> ({obj.pct}%)
                   </span>
                 </div>
                 <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
@@ -222,7 +222,7 @@ export default function ActividadesPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Últimos 30 días chart */}
         <div className="bg-white rounded-xl border p-5">
-          <h2 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+          <h2 className="font-semibold text-ink mb-4 flex items-center gap-2">
             <BarChart3 className="w-4 h-4 text-pink-500" /> Últimos 30 días
           </h2>
           <ResponsiveContainer width="100%" height={110}>
@@ -239,14 +239,14 @@ export default function ActividadesPage() {
             </BarChart>
           </ResponsiveContainer>
           <div className="text-center mt-3">
-            <p className="text-3xl font-bold text-gray-800">{activities.length}</p>
+            <p className="text-3xl font-bold text-ink">{activities.length}</p>
             <p className="text-xs text-gray-400">Total del período</p>
           </div>
         </div>
 
         {/* Actividad reciente */}
         <div className="bg-white rounded-xl border p-5">
-          <h2 className="font-semibold text-gray-800 mb-4">Actividad reciente</h2>
+          <h2 className="font-semibold text-ink mb-4">Actividad reciente</h2>
           {loading ? (
             <div className="space-y-3">
               {[...Array(4)].map((_, i) => (
@@ -269,7 +269,7 @@ export default function ActividadesPage() {
                       <Ico className="w-4 h-4" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-800">{cfg.label}</p>
+                      <p className="text-sm font-semibold text-ink">{cfg.label}</p>
                       {a.description && (
                         <p className="text-xs text-gray-500 truncate">{a.description}</p>
                       )}
@@ -298,7 +298,7 @@ export default function ActividadesPage() {
           <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-5"
             onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-800">Registrar actividad</h3>
+              <h3 className="font-semibold text-ink">Registrar actividad</h3>
               <button onClick={() => setShowCreate(false)}><X className="w-5 h-5 text-gray-400" /></button>
             </div>
             <div className="space-y-3">
@@ -322,7 +322,7 @@ export default function ActividadesPage() {
               <button onClick={() => setShowCreate(false)}
                 className="flex-1 border rounded-lg py-2 text-sm">Cancelar</button>
               <button onClick={handleCreate} disabled={saving}
-                className="flex-1 bg-brand-pink text-white rounded-lg py-2 text-sm font-medium disabled:opacity-50">
+                className="flex-1 bg-gradient-to-br from-brand-pink to-brand-orange text-white rounded-lg py-2 text-sm font-medium disabled:opacity-50">
                 {saving ? 'Guardando...' : 'Registrar'}
               </button>
             </div>

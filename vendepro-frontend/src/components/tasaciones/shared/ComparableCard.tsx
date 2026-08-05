@@ -44,7 +44,7 @@ interface Props {
 }
 
 const inputClass =
-  'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand-pink focus:outline-none focus:ring-2 focus:ring-brand-pink/30'
+  'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none'
 const labelClass = 'mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500'
 
 const EXTRACTABLE_KEYS = [
@@ -152,7 +152,7 @@ export function ComparableCard({
             ? <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" />
             : <ChevronUp className="h-4 w-4 shrink-0 text-slate-400" />}
           {kindPill}
-          <span className="truncate text-sm font-semibold text-slate-800">{summaryAddress}</span>
+          <span className="truncate text-sm font-semibold text-ink">{summaryAddress}</span>
           {summaryPrice && (
             <span className="ml-auto whitespace-nowrap text-xs font-semibold text-slate-700">
               {summaryPrice}

@@ -108,7 +108,7 @@ export default function ContactDetailPage() {
 
   if (error || !contact) return (
     <div>
-      <Link href="/contactos" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 mb-6">
+      <Link href="/contactos" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-ink mb-6">
         <ArrowLeft className="w-4 h-4" /> Volver a contactos
       </Link>
       <div className="bg-white rounded-xl shadow-sm p-8 text-center">
@@ -124,7 +124,7 @@ export default function ContactDetailPage() {
 
   return (
     <div className="space-y-6">
-      <Link href="/contactos" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800">
+      <Link href="/contactos" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-ink">
         <ArrowLeft className="w-4 h-4" /> Volver a contactos
       </Link>
 
@@ -136,7 +136,7 @@ export default function ContactDetailPage() {
               <User className="w-6 h-6 text-brand-pink" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-gray-800">{contact.full_name}</h1>
+              <h1 className="text-xl font-semibold text-ink">{contact.full_name}</h1>
               <span className="inline-block mt-0.5 text-xs font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
                 {contactTypeLabel[contact.contact_type] ?? contact.contact_type}
               </span>
@@ -159,7 +159,7 @@ export default function ContactDetailPage() {
             <Link href={`/leads?new=1&contact_id=${contact.id}`} className="flex items-center gap-1.5 text-sm bg-gray-800 hover:bg-gray-700 text-white px-3 py-2 rounded-lg transition-colors">
               <UserPlus className="w-3.5 h-3.5" /> Nuevo lead
             </Link>
-            <Link href={`/propiedades/nueva?contact_id=${contact.id}`} className="flex items-center gap-1.5 text-sm bg-brand-pink hover:opacity-90 text-white px-3 py-2 rounded-lg transition-opacity">
+            <Link href={`/propiedades/nueva?contact_id=${contact.id}`} className="flex items-center gap-1.5 text-sm bg-gradient-to-br from-brand-pink to-brand-orange hover:opacity-90 text-white px-3 py-2 rounded-lg transition-opacity">
               <Home className="w-3.5 h-3.5" /> Crear propiedad
             </Link>
           </div>
@@ -188,7 +188,7 @@ export default function ContactDetailPage() {
           {contact.agent_name && (
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <User className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span>Asignado a <span className="font-medium text-gray-800">{contact.agent_name}</span></span>
+              <span>Asignado a <span className="font-medium text-ink">{contact.agent_name}</span></span>
             </div>
           )}
           {contact.source && (
@@ -209,7 +209,7 @@ export default function ContactDetailPage() {
 
       {/* Leads vinculados */}
       <div className="bg-white rounded-xl shadow-sm p-5 sm:p-6">
-        <h2 className="text-base font-semibold text-gray-800 mb-4 flex items-center gap-2">
+        <h2 className="text-base font-semibold text-ink mb-4 flex items-center gap-2">
           <User className="w-4 h-4 text-gray-400" />
           Leads vinculados
           {contact.leads && contact.leads.length > 0 && (
@@ -223,7 +223,7 @@ export default function ContactDetailPage() {
             {contact.leads.map(lead => (
               <Link key={lead.id} href={`/leads/${lead.id}`} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-colors group">
                 <div>
-                  <p className="text-sm font-medium text-gray-800">{lead.full_name}</p>
+                  <p className="text-sm font-medium text-ink">{lead.full_name}</p>
                   <p className="text-xs text-gray-500 mt-0.5">{STAGE_LABELS[lead.stage] ?? lead.stage}</p>
                 </div>
                 <ExternalLink className="w-3.5 h-3.5 text-gray-300 group-hover:text-gray-500" />
@@ -235,7 +235,7 @@ export default function ContactDetailPage() {
 
       {/* Propiedades vinculadas */}
       <div className="bg-white rounded-xl shadow-sm p-5 sm:p-6">
-        <h2 className="text-base font-semibold text-gray-800 mb-4 flex items-center gap-2">
+        <h2 className="text-base font-semibold text-ink mb-4 flex items-center gap-2">
           <Building2 className="w-4 h-4 text-gray-400" />
           Propiedades vinculadas
           {contact.properties && contact.properties.length > 0 && (
@@ -249,7 +249,7 @@ export default function ContactDetailPage() {
             {contact.properties.map(prop => (
               <Link key={prop.id} href={`/propiedades/${prop.id}`} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-colors group">
                 <div>
-                  <p className="text-sm font-medium text-gray-800">{prop.address}</p>
+                  <p className="text-sm font-medium text-ink">{prop.address}</p>
                   <p className="text-xs text-gray-500 mt-0.5">
                     {STATUS_LABELS[prop.status] ?? prop.status}
                     {prop.asking_price ? ` · ${prop.currency} ${prop.asking_price.toLocaleString('es-AR')}` : ''}
@@ -267,14 +267,14 @@ export default function ContactDetailPage() {
         <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowEdit(false)}>
           <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="sticky top-0 bg-white border-b px-4 py-3 flex items-center justify-between rounded-t-2xl">
-              <h3 className="font-semibold text-gray-800">Editar contacto</h3>
+              <h3 className="font-semibold text-ink">Editar contacto</h3>
               <button onClick={() => setShowEdit(false)} aria-label="Cerrar" className="p-1 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
             </div>
             <div className="p-4 space-y-3">
               <div>
                 <label className="text-xs text-gray-500 mb-1 block">Nombre completo *</label>
                 <input value={editForm.full_name} onChange={e => setEditForm((f: any) => ({ ...f, full_name: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-pink/20 focus:border-brand-pink" autoFocus />
+                  className="w-full border rounded-lg px-3 py-2 text-sm" autoFocus />
               </div>
               <div>
                 <label className="text-xs text-gray-500 mb-1 block">Tipo</label>
@@ -309,7 +309,7 @@ export default function ContactDetailPage() {
             <div className="sticky bottom-0 bg-white border-t px-4 py-3 flex gap-2">
               <button onClick={() => setShowEdit(false)} className="flex-1 px-4 py-2 border rounded-lg text-sm">Cancelar</button>
               <button onClick={handleSaveEdit} disabled={saving}
-                className="flex-1 px-4 py-2 bg-brand-pink text-white rounded-lg text-sm font-medium disabled:opacity-50">
+                className="flex-1 px-4 py-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white rounded-lg text-sm font-medium disabled:opacity-50">
                 {saving ? 'Guardando...' : 'Guardar'}
               </button>
             </div>

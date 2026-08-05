@@ -66,7 +66,7 @@ export function InterestedLeadsSection({ propertyId }: { propertyId: string }) {
                     <div className="flex items-center gap-2 flex-wrap">
                       <Link
                         href={`/leads/${item.lead_id}`}
-                        className="text-sm font-semibold text-gray-800 hover:text-brand-pink truncate"
+                        className="text-sm font-semibold text-ink hover:text-brand-pink truncate"
                       >
                         {item.lead_full_name}
                       </Link>

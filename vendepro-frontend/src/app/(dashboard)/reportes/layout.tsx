@@ -17,7 +17,7 @@ export default function ReportesLayout({ children }: { children: React.ReactNode
     <div className="space-y-4 sm:space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Reportes</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold text-ink">Reportes</h1>
           <p className="text-gray-500 text-sm">Performance y listado de reportes publicados</p>
         </div>
       </div>

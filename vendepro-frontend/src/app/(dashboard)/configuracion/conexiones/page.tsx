@@ -16,7 +16,7 @@ type VpUser = { id: string; full_name?: string; email?: string; role?: string }
 
 const KEY_PLACEHOLDER = '********'
 
-const inputCls = 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/50 focus:border-brand-pink'
+const inputCls = 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none'
 const labelCls = 'block text-sm font-medium text-gray-700 mb-1'
 
 const KIND_LABELS: Record<string, string> = {
@@ -310,10 +310,10 @@ export default function ConexionesPage() {
     <div className="max-w-3xl mx-auto space-y-5">
       {/* Header */}
       <div>
-        <Link href="/configuracion" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 mb-4">
+        <Link href="/configuracion" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-ink mb-4">
           <ArrowLeft className="w-4 h-4" /> Volver a Configuración
         </Link>
-        <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 flex items-center gap-2">
+        <h1 className="text-xl sm:text-2xl font-semibold text-ink flex items-center gap-2">
           <Plug className="w-6 h-6 text-brand-pink" /> Integraciones
         </h1>
         <p className="text-gray-500 text-sm mt-1">
@@ -329,7 +329,7 @@ export default function ConexionesPage() {
               <Calendar className="w-5 h-5" />
             </div>
             <div>
-              <p className="font-semibold text-gray-800">Google Calendar</p>
+              <p className="font-semibold text-ink">Google Calendar</p>
               <p className="text-xs text-gray-500">
                 {google?.connected
                   ? <>Conectado{google.email ? <> como <span className="font-medium">{google.email}</span></> : ''} · tus eventos del CRM se copian a tu calendar</>
@@ -371,7 +371,7 @@ export default function ConexionesPage() {
             <button
               onClick={handleGoogleConnect}
               disabled={googleBusy || !google?.configured}
-              className="flex items-center gap-2 bg-brand-pink text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50"
+              className="flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50"
             >
               {googleBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calendar className="w-4 h-4" />}
               Conectar con Google
@@ -392,7 +392,7 @@ export default function ConexionesPage() {
               <Plug className="w-5 h-5" />
             </div>
             <div>
-              <p className="font-semibold text-gray-800">Importación de contactos</p>
+              <p className="font-semibold text-ink">Importación de contactos</p>
               <p className="text-xs text-gray-500">Trae los contactos nuevos al CRM · Último sync {fmtDate(integration?.last_sync_at ?? null)}</p>
             </div>
           </div>
@@ -473,7 +473,7 @@ export default function ConexionesPage() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-2 bg-brand-pink text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50"
+            className="flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Guardar
@@ -520,7 +520,7 @@ export default function ConexionesPage() {
       {hasKey && (
         <div className="bg-white rounded-xl border p-5 space-y-4">
           <div>
-            <p className="font-semibold text-gray-800 flex items-center gap-2">
+            <p className="font-semibold text-ink flex items-center gap-2">
               <Users className="w-4 h-4 text-gray-400" /> Agentes
             </p>
             <p className="text-xs text-gray-500 mt-1">
@@ -535,13 +535,13 @@ export default function ConexionesPage() {
               {kpAgents.map(a => (
                 <div key={a.external_id} className="flex items-center justify-between gap-3 py-2">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-800 truncate">{a.full_name}</p>
+                    <p className="text-sm font-medium text-ink truncate">{a.full_name}</p>
                     {a.email && <p className="text-xs text-gray-400 truncate">{a.email}</p>}
                   </div>
                   <select
                     value={agentMap[a.external_id] ?? ''}
                     onChange={e => setAgentMap(m => ({ ...m, [a.external_id]: e.target.value }))}
-                    className="shrink-0 border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/50 focus:border-brand-pink max-w-[55%]"
+                    className="shrink-0 border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none max-w-[55%]"
                   >
                     <option value="">— sin asignar —</option>
                     {vpUsers.map(u => (
@@ -557,7 +557,7 @@ export default function ConexionesPage() {
             <button
               onClick={handleSaveAgentMap}
               disabled={savingMap || kpAgents.length === 0}
-              className="flex items-center gap-2 bg-brand-pink text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50"
+              className="flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50"
             >
               {savingMap ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               Guardar mapeo
@@ -586,7 +586,7 @@ export default function ConexionesPage() {
 
       {/* Log de sincronizaciones */}
       <div className="bg-white rounded-xl border p-5">
-        <p className="font-semibold text-gray-800 flex items-center gap-2 mb-3">
+        <p className="font-semibold text-ink flex items-center gap-2 mb-3">
           <History className="w-4 h-4 text-gray-400" /> Últimas sincronizaciones
         </p>
         {log.length === 0 ? (

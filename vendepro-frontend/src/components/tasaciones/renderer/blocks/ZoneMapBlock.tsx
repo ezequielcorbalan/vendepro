@@ -48,11 +48,11 @@ export function ZoneMapBlock({ data, edit, ...attrs }: Props) {
             plaintext
             value={data.title ?? ''}
             placeholder="¿Qué está pasando en tu zona?"
-            className="mt-2 font-poppins text-3xl font-bold leading-tight text-slate-900 md:text-5xl"
+            className="mt-2 font-poppins text-3xl font-bold leading-tight text-ink md:text-5xl"
             onCommit={(title) => edit.onChange({ title })}
           />
         ) : (
-          <h2 className="mt-2 font-poppins text-3xl font-bold leading-tight text-slate-900 md:text-5xl">
+          <h2 className="mt-2 font-poppins text-3xl font-bold leading-tight text-ink md:text-5xl">
             {data.title ?? '¿Qué está pasando en tu zona?'}
           </h2>
         )}

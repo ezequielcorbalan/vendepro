@@ -50,7 +50,7 @@ export default function AuditoriaPage() {
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-semibold text-ink flex items-center gap-2">
             <FileText className="w-6 h-6 text-brand-pink" /> Auditoría
           </h1>
           <p className="text-sm text-gray-400 mt-0.5">{total} cambios de estado registrados</p>
@@ -101,7 +101,7 @@ export default function AuditoriaPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <Link href={entityLink} className="text-sm font-medium text-gray-800 hover:text-brand-pink truncate">
+                        <Link href={entityLink} className="text-sm font-medium text-ink hover:text-brand-pink truncate">
                           {r.entity_name || r.entity_id?.slice(0, 8)}
                         </Link>
                         <span className="text-[10px] text-gray-400">{cfg.label}</span>

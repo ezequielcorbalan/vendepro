@@ -163,7 +163,7 @@ export default function WebhooksSection({ onCountChange }: { onCountChange?: (n:
         </p>
         <button
           onClick={() => setShowCreate(true)}
-          className="shrink-0 flex items-center gap-2 bg-brand-pink text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90"
+          className="shrink-0 flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90"
         >
           <Plus className="w-4 h-4" /> Nuevo webhook
         </button>
@@ -184,7 +184,7 @@ export default function WebhooksSection({ onCountChange }: { onCountChange?: (n:
           <p className="text-sm text-gray-500 mt-1 mb-4">Creá uno para que tu sistema reciba los eventos del CRM en tiempo real.</p>
           <button
             onClick={() => setShowCreate(true)}
-            className="inline-flex items-center gap-2 bg-brand-pink text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
+            className="inline-flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
           >
             <Plus className="w-4 h-4" /> Nuevo webhook
           </button>
@@ -199,8 +199,8 @@ export default function WebhooksSection({ onCountChange }: { onCountChange?: (n:
                     <WebhookIcon className="w-4 h-4" />
                   </div>
                   <div className="min-w-0">
-                    {w.name && <p className="font-medium text-gray-800 truncate">{w.name}</p>}
-                    <p className={`text-xs font-mono truncate ${w.name ? 'text-gray-500' : 'text-gray-800 font-medium'}`}>{w.url}</p>
+                    {w.name && <p className="font-medium text-ink truncate">{w.name}</p>}
+                    <p className={`text-xs font-mono truncate ${w.name ? 'text-gray-500' : 'text-ink font-medium'}`}>{w.url}</p>
                   </div>
                 </div>
                 <div className="shrink-0 flex items-center gap-2">
@@ -256,7 +256,7 @@ export default function WebhooksSection({ onCountChange }: { onCountChange?: (n:
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => toggleDeliveries(w)}
-                    className="flex items-center gap-1 px-2.5 h-9 rounded-lg text-xs font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-50"
+                    className="flex items-center gap-1 px-2.5 h-9 rounded-lg text-xs font-medium text-gray-500 hover:text-ink hover:bg-gray-50"
                   >
                     Entregas {openDeliveries === w.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                   </button>
@@ -324,7 +324,7 @@ export default function WebhooksSection({ onCountChange }: { onCountChange?: (n:
             onClick={e => e.stopPropagation()}
             onKeyDown={e => { if (e.key === 'Escape') setShowCreate(false) }}
           >
-            <h3 id="new-webhook-title" className="font-semibold text-gray-800 mb-1">Nuevo webhook</h3>
+            <h3 id="new-webhook-title" className="font-semibold text-ink mb-1">Nuevo webhook</h3>
             <p className="text-sm text-gray-500 mb-4">Vamos a hacer un POST a esta URL cada vez que ocurra un evento seleccionado.</p>
 
             <label htmlFor="webhook-name" className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
@@ -333,7 +333,7 @@ export default function WebhooksSection({ onCountChange }: { onCountChange?: (n:
               placeholder="Ej: n8n producción"
               value={name}
               onChange={e => setName(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/50 focus:border-brand-pink"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none"
             />
 
             <label htmlFor="webhook-url" className="block text-sm font-medium text-gray-700 mb-1 mt-3">
@@ -345,7 +345,7 @@ export default function WebhooksSection({ onCountChange }: { onCountChange?: (n:
               placeholder="https://tu-n8n.com/webhook/vendepro"
               value={url}
               onChange={e => setUrl(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-pink/50 focus:border-brand-pink"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm font-mono focus:outline-none"
             />
 
             <p className="block text-sm font-medium text-gray-700 mb-1 mt-3">
@@ -361,7 +361,7 @@ export default function WebhooksSection({ onCountChange }: { onCountChange?: (n:
                     className="mt-0.5 w-4 h-4 accent-[#ff007c]"
                   />
                   <span className="text-sm">
-                    <span className="text-gray-800 font-medium">{WEBHOOK_EVENTS[key].label}</span>
+                    <span className="text-ink font-medium">{WEBHOOK_EVENTS[key].label}</span>
                     <span className="block text-xs text-gray-500">{WEBHOOK_EVENTS[key].description}</span>
                   </span>
                 </label>
@@ -378,7 +378,7 @@ export default function WebhooksSection({ onCountChange }: { onCountChange?: (n:
               <button
                 onClick={handleCreate}
                 disabled={!urlValid || events.length === 0 || saving}
-                className="flex-1 bg-brand-pink text-white rounded-lg py-2 text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 bg-gradient-to-br from-brand-pink to-brand-orange text-white rounded-lg py-2 text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                 {saving ? 'Creando...' : 'Crear webhook'}

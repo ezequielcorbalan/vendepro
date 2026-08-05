@@ -61,17 +61,14 @@ export default function Sidebar({ profile }: { profile: Profile }) {
     const Icon = link.icon
     const isActive = isLeafActive(link)
     const className = cn(
-      'flex items-center rounded-lg text-sm font-medium transition-all relative group',
+      'flex items-center text-sm font-medium transition-all relative group',
       collapsed ? 'justify-center h-11 w-11 mx-auto' : sub ? 'gap-3 px-3 py-2' : 'gap-3 px-3 py-2.5',
       isActive
-        ? 'bg-gradient-to-r from-brand-pink/10 to-brand-orange/10 text-brand-pink shadow-sm'
-        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+        ? 'bg-gradient-to-r from-brand-pink/10 to-brand-orange/10 text-brand-pink'
+        : 'rounded-lg text-gray-600 hover:bg-gray-50 hover:text-ink'
     )
     const inner = (
       <>
-        {isActive && (
-          <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-gradient-to-b from-brand-pink to-brand-orange rounded-r-full" />
-        )}
         <Icon className={cn('w-5 h-5 shrink-0 transition-transform', isActive && 'scale-110')} aria-hidden="true" />
         {!collapsed && link.label}
         {!collapsed && link.external && <ExternalLink className="w-3 h-3 ml-auto opacity-40" aria-hidden="true" />}
@@ -201,7 +198,7 @@ export default function Sidebar({ profile }: { profile: Profile }) {
                       aria-expanded={open}
                       className={cn(
                         'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all',
-                        groupActive ? 'text-brand-pink' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        groupActive ? 'text-brand-pink' : 'text-gray-600 hover:bg-gray-50 hover:text-ink'
                       )}
                     >
                       <GroupIcon className="w-5 h-5 shrink-0" aria-hidden="true" />
@@ -236,7 +233,7 @@ export default function Sidebar({ profile }: { profile: Profile }) {
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-800 truncate">{profile.full_name || profile.email}</p>
+              <p className="text-sm font-medium text-ink truncate">{profile.full_name || profile.email}</p>
               <p className="text-xs text-gray-500 truncate">{profile.role === 'admin' ? 'Administrador' : 'Agente'}</p>
             </div>
           )}

@@ -67,7 +67,7 @@ function AgentCard({ agent, objectives, onDelete }: { agent: Agent; objectives: 
       <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between p-4 hover:bg-gray-50">
         <div className="flex items-center gap-2">
           <Users className="w-4 h-4 text-gray-400" />
-          <span className="font-medium text-gray-800">{agent.full_name}</span>
+          <span className="font-medium text-ink">{agent.full_name}</span>
           <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{objectives.length}</span>
         </div>
         {open ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
@@ -80,7 +80,7 @@ function AgentCard({ agent, objectives, onDelete }: { agent: Agent; objectives: 
               <div key={obj.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 group">
                 <span className="text-sm text-gray-700 flex-1 truncate">{cfg?.label || obj.metric}</span>
                 <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">{obj.period_type}</span>
-                <span className="text-sm font-bold text-gray-800 w-12 text-right">{obj.target}</span>
+                <span className="text-sm font-bold text-ink w-12 text-right">{obj.target}</span>
                 <span className="text-[10px] text-gray-400 w-20 text-right hidden sm:block">{obj.period_start?.slice(5)}</span>
                 <button
                   onClick={() => onDelete(obj.id)}
@@ -213,20 +213,20 @@ export default function ObjetivosConfigPage() {
     <div className="space-y-6">
       <Link
         href="/configuracion"
-        className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800"
+        className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-ink"
       >
         <ArrowLeft className="w-4 h-4" /> Volver a Configuración
       </Link>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-semibold text-ink flex items-center gap-2">
             <Target className="w-6 h-6 text-brand-pink" /> Objetivos por agente
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">{objectives.length} objetivos activos</p>
         </div>
         <button
           onClick={() => setShowBatch(!showBatch)}
-          className="bg-brand-pink text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 flex items-center gap-1.5"
+          className="bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 flex items-center gap-1.5"
         >
           <Plus className="w-4 h-4" /> Crear en batch
         </button>
@@ -234,7 +234,7 @@ export default function ObjetivosConfigPage() {
 
       {showBatch && (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-6 space-y-4">
-          <h2 className="font-semibold text-gray-800">Crear objetivos en batch</h2>
+          <h2 className="font-semibold text-ink">Crear objetivos en batch</h2>
 
           {/* Plantillas de método */}
           <div>
@@ -264,7 +264,7 @@ export default function ObjetivosConfigPage() {
                 <button
                   key={k}
                   onClick={() => handlePeriodChange(k as any)}
-                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${batchPeriod === k ? 'bg-white shadow text-gray-800' : 'text-gray-500'}`}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${batchPeriod === k ? 'bg-white shadow text-ink' : 'text-gray-500'}`}
                 >
                   {v.label}
                 </button>
@@ -312,7 +312,7 @@ export default function ObjetivosConfigPage() {
                       value={batchTargets[metric] || ''}
                       onChange={e => setBatchTargets(prev => ({ ...prev, [metric]: parseInt(e.target.value) || 0 }))}
                       placeholder="0"
-                      className="w-16 text-right border rounded px-2 py-1 text-sm focus:ring-1 focus:ring-brand-pink focus:border-brand-pink"
+                      className="w-16 text-right border rounded px-2 py-1 text-sm"
                     />
                   </div>
                 ))}
@@ -331,7 +331,7 @@ export default function ObjetivosConfigPage() {
                   value={ticketPromedio || ''}
                   onChange={e => setTicketPromedio(parseInt(e.target.value) || 0)}
                   placeholder="ej. 150000"
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-brand-orange focus:border-brand-orange"
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
                 />
               </div>
               <div>
@@ -341,7 +341,7 @@ export default function ObjetivosConfigPage() {
                   value={comisionPct || ''}
                   onChange={e => setComisionPct(parseFloat(e.target.value) || 0)}
                   placeholder="ej. 3"
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-brand-orange focus:border-brand-orange"
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
                 />
               </div>
             </div>
@@ -379,7 +379,7 @@ export default function ObjetivosConfigPage() {
             <button
               onClick={saveBatch}
               disabled={saving}
-              className="bg-brand-pink text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 flex items-center gap-1.5"
+              className="bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 flex items-center gap-1.5"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               {saving ? 'Guardando...' : 'Guardar objetivos'}

@@ -59,7 +59,7 @@ export function PriceProjectionBlock({ data, ...attrs }: Props) {
           </article>
 
           <article
-            className="relative rounded-3xl bg-white p-6 text-slate-900 shadow-xl md:p-8"
+            className="relative rounded-3xl bg-white p-6 text-ink shadow-xl md:p-8"
           >
             <p
               className="text-xs font-semibold uppercase tracking-[0.18em]"

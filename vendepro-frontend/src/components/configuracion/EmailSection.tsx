@@ -113,7 +113,7 @@ export default function EmailSection() {
     setTesting(false)
   }
 
-  const inputCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-pink/20 focus:border-brand-pink outline-none'
+  const inputCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none'
   const labelCls = 'block text-sm font-medium text-gray-700 mb-1'
 
   if (loading) {
@@ -130,7 +130,7 @@ export default function EmailSection() {
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
         <div className="flex items-center gap-2 mb-4">
           <Mail className="w-4 h-4 text-brand-pink" />
-          <h2 className="font-semibold text-gray-800">Remitente</h2>
+          <h2 className="font-semibold text-ink">Remitente</h2>
         </div>
         <p className="text-sm text-gray-500 mb-4">
           Nombre y dirección desde la que salen los emails de marketing. El dominio del
@@ -156,7 +156,7 @@ export default function EmailSection() {
                 type="checkbox"
                 checked={enabled}
                 onChange={e => setEnabled(e.target.checked)}
-                className="w-4 h-4 rounded border-gray-300 text-brand-pink focus:ring-brand-pink/30"
+                className="w-4 h-4 rounded border-gray-300 text-brand-pink"
               />
               <span className="text-sm text-gray-700">Envío de emails habilitado</span>
             </label>
@@ -166,7 +166,7 @@ export default function EmailSection() {
           <button
             onClick={saveSettings}
             disabled={saving}
-            className="inline-flex items-center gap-2 bg-brand-pink text-white text-sm font-medium px-4 py-2 rounded-lg hover:opacity-90 disabled:opacity-50"
+            className="inline-flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white text-sm font-medium px-4 py-2 rounded-lg hover:opacity-90 disabled:opacity-50"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Guardar
@@ -178,7 +178,7 @@ export default function EmailSection() {
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
         <div className="flex items-center gap-2 mb-4">
           <Send className="w-4 h-4 text-brand-orange" />
-          <h2 className="font-semibold text-gray-800">Email de prueba</h2>
+          <h2 className="font-semibold text-ink">Email de prueba</h2>
         </div>
         <p className="text-sm text-gray-500 mb-4">
           Verificá la configuración antes de habilitar campañas. El envío usa el remitente guardado.
@@ -218,7 +218,7 @@ export default function EmailSection() {
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
         <div className="flex items-center gap-2 mb-4">
           <Ban className="w-4 h-4 text-gray-500" />
-          <h2 className="font-semibold text-gray-800">Lista de supresión</h2>
+          <h2 className="font-semibold text-ink">Lista de supresión</h2>
           <span className="text-xs text-gray-400">({suppressions.length})</span>
         </div>
         <p className="text-sm text-gray-500 mb-4">

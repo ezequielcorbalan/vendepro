@@ -153,7 +153,7 @@ export default function PropertyFilters({ properties, config }: { properties: an
         <input
           value={searchText} onChange={e => setSearchText(e.target.value)}
           placeholder="Buscar dirección, barrio, propietario, agente..."
-          className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-pink/20 focus:border-brand-pink bg-white"
+          className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white"
         />
       </div>
 
@@ -263,7 +263,7 @@ export default function PropertyFilters({ properties, config }: { properties: an
                 </div>
 
                 <Link href={`/propiedades/${property.id}`}>
-                  <h3 className="font-semibold text-gray-800 mb-0.5 hover:text-brand-pink transition-colors leading-snug">{property.address}</h3>
+                  <h3 className="font-semibold text-ink mb-0.5 hover:text-brand-pink transition-colors leading-snug">{property.address}</h3>
                   <p className="text-xs text-gray-500">
                     {[property.neighborhood, property.property_type, opType?.label].filter(Boolean).join(' · ')}
                   </p>

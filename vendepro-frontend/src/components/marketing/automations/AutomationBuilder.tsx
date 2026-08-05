@@ -123,13 +123,13 @@ export default function AutomationBuilder({ automationId }: { automationId?: str
     return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-brand-pink" /></div>
   }
 
-  const inputCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-pink/20 focus:border-brand-pink outline-none'
+  const inputCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none'
   const labelCls = 'block text-sm font-medium text-gray-700 mb-1'
   const selectedTrigger = TRIGGER_OPTIONS.find(t => t.value === trigger)
 
   return (
     <div className="max-w-3xl mx-auto">
-      <Link href="/marketing/automations" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 mb-6">
+      <Link href="/marketing/automations" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-ink mb-6">
         <ArrowLeft className="w-4 h-4" /> Volver a automatizaciones
       </Link>
 
@@ -140,7 +140,7 @@ export default function AutomationBuilder({ automationId }: { automationId?: str
             <Workflow className="w-5 h-5 text-white" />
           </div>
           <input
-            className="flex-1 text-lg font-semibold text-gray-800 border-0 border-b border-transparent focus:border-brand-pink outline-none placeholder:text-gray-300"
+            className="flex-1 text-lg font-semibold text-ink border-0 border-b border-transparent outline-none placeholder:text-gray-300"
             placeholder="Nombre de la automatización"
             value={name}
             onChange={e => setName(e.target.value)}
@@ -163,7 +163,7 @@ export default function AutomationBuilder({ automationId }: { automationId?: str
         <div className="border border-brand-pink/30 bg-brand-pink/[0.03] rounded-xl p-4">
           <div className="flex items-center gap-2 mb-3">
             <Sparkles className="w-4 h-4 text-brand-pink" />
-            <p className="text-sm font-semibold text-gray-800">Generar la secuencia con IA</p>
+            <p className="text-sm font-semibold text-ink">Generar la secuencia con IA</p>
           </div>
           <textarea
             className={`${inputCls} min-h-[70px]`}
@@ -237,14 +237,14 @@ function StepCard({
   isFirst: boolean
 }) {
   const [view, setView] = useState<'preview' | 'html'>('preview')
-  const inputCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-pink/20 focus:border-brand-pink outline-none'
+  const inputCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none'
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
       <div className="flex items-center gap-3 p-4 cursor-pointer" onClick={onToggle}>
         <span className="w-7 h-7 rounded-full bg-gray-100 text-gray-600 text-sm flex items-center justify-center shrink-0 font-medium">{index + 1}</span>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-800 truncate">{step.subject || 'Email sin asunto'}</p>
+          <p className="text-sm font-medium text-ink truncate">{step.subject || 'Email sin asunto'}</p>
           <p className="inline-flex items-center gap-1 text-xs text-gray-400 mt-0.5">
             <Clock className="w-3 h-3" /> {isFirst ? 'Al inscribirse' : describeDelay(step.delay_hours)}
           </p>

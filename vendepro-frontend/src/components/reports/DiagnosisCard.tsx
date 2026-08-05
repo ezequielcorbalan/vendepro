@@ -59,7 +59,7 @@ export default function DiagnosisCard({
                       <Icon className="w-3.5 h-3.5 text-brand-pink" />
                     </div>
                     <div className="min-w-0">
-                      <p className="font-medium text-gray-800 text-xs">{s.label}</p>
+                      <p className="font-medium text-ink text-xs">{s.label}</p>
                       <p className="text-gray-500 text-[10px] leading-tight">{s.hint}</p>
                     </div>
                   </div>

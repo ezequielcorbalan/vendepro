@@ -73,7 +73,7 @@ export default function ActiveListingsTable({ data }: Props) {
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-sm" aria-hidden="true">
             <Home className="w-4 h-4 text-white" />
           </div>
-          <h2 className="font-semibold text-gray-800">Mis avisos activos</h2>
+          <h2 className="font-semibold text-ink">Mis avisos activos</h2>
           {noReportCount > 0 && (
             <span className="ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">
               {noReportCount} sin reportes aún
@@ -158,7 +158,7 @@ export default function ActiveListingsTable({ data }: Props) {
                     <td className="py-2.5 px-2 text-right">
                       {hasReports ? (
                         <>
-                          <span className="font-semibold text-gray-800">{row.avg_views_per_day}</span>
+                          <span className="font-semibold text-ink">{row.avg_views_per_day}</span>
                           <span className="text-[10px] text-gray-400 ml-0.5">vis/día</span>
                         </>
                       ) : (

@@ -59,7 +59,7 @@ export default function ContentStep({
     setGenerating(false)
   }
 
-  const inputCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-pink/20 focus:border-brand-pink outline-none'
+  const inputCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none'
   const labelCls = 'block text-sm font-medium text-gray-700 mb-1'
 
   return (
@@ -68,7 +68,7 @@ export default function ContentStep({
       <div className="border border-brand-pink/30 bg-brand-pink/[0.03] rounded-xl p-4">
         <div className="flex items-center gap-2 mb-3">
           <Sparkles className="w-4 h-4 text-brand-pink" />
-          <p className="text-sm font-semibold text-gray-800">Generar con IA</p>
+          <p className="text-sm font-semibold text-ink">Generar con IA</p>
         </div>
         <div className="flex flex-wrap gap-2 mb-3">
           {CAMPAIGN_KINDS.map(k => (

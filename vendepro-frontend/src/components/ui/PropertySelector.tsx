@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Search, Building2, Plus } from 'lucide-react'
+import { Search, Building2, Plus, X } from 'lucide-react'
 import Link from 'next/link'
 import { apiFetch } from '@/lib/api'
 
@@ -67,10 +67,10 @@ export function PropertySelector({ value, onChange }: PropertySelectorProps) {
         <div className="flex items-center gap-3 bg-brand-pink/5 border border-brand-pink/30 rounded-lg px-3 py-2">
           <Building2 className="w-4 h-4 text-brand-pink flex-shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-800 truncate">{value.address}</p>
+            <p className="text-sm font-medium text-ink truncate">{value.address}</p>
             <p className="text-xs text-gray-500">{value.neighborhood} · {value.property_type}</p>
           </div>
-          <button type="button" onClick={clear} className="text-gray-400 hover:text-gray-600 text-sm">✕</button>
+          <button type="button" onClick={clear} className="text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
         </div>
       ) : (
         <div className="relative">
@@ -82,7 +82,7 @@ export function PropertySelector({ value, onChange }: PropertySelectorProps) {
             onFocus={() => { if (query) setOpen(true) }}
             onBlur={() => setTimeout(() => setOpen(false), 150)}
             placeholder="Buscar propiedad por dirección o barrio..."
-            className="w-full border rounded-lg pl-9 pr-3 py-2 text-sm focus:ring-2 focus:ring-brand-pink/50 focus:border-brand-pink"
+            className="w-full border rounded-lg pl-9 pr-3 py-2 text-sm"
           />
         </div>
       )}
@@ -103,7 +103,7 @@ export function PropertySelector({ value, onChange }: PropertySelectorProps) {
               {results.map(p => (
                 <button key={p.id} type="button" onMouseDown={() => select(p)}
                   className="w-full text-left px-3 py-2.5 hover:bg-gray-50 border-b last:border-0">
-                  <p className="text-sm font-medium text-gray-800">{p.address}</p>
+                  <p className="text-sm font-medium text-ink">{p.address}</p>
                   <p className="text-xs text-gray-500">
                     {p.neighborhood} · {p.property_type}{p.size_m2 ? ` · ${p.size_m2} m²` : ''}
                   </p>

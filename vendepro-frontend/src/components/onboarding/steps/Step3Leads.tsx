@@ -7,7 +7,7 @@ export default function Step3Leads() {
         <BookUser className="w-8 h-8 text-blue-600" />
       </div>
       <div className="space-y-1">
-        <h2 className="text-2xl font-bold text-gray-800">Capturá tus prospectos</h2>
+        <h2 className="text-2xl font-bold text-ink">Capturá tus prospectos</h2>
         <p className="text-gray-500 text-sm max-w-sm">
           Cada interesado entra como Lead y avanza por el pipeline hasta convertirse en una captación o venta.
         </p>

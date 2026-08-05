@@ -147,7 +147,7 @@ export default function PublicAppraisalShell({ data }: { data: PublicAppraisalDa
             <div className="flex items-start gap-3 mb-3">
               <FileText className="w-5 h-5 mt-1" style={{ color: branding.primary }} />
               <div className="flex-1">
-                <h2 className="text-xl font-semibold text-gray-900">
+                <h2 className="text-xl font-semibold text-ink">
                   {proposal.title || 'Propuesta de Comercialización'}
                 </h2>
                 {proposal.subtitle && (
@@ -177,7 +177,7 @@ export default function PublicAppraisalShell({ data }: { data: PublicAppraisalDa
             <div className="flex items-start gap-2">
               <MapPin className="w-5 h-5 mt-1" style={{ color: branding.primary }} />
               <div className="flex-1">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                <h1 className="text-2xl sm:text-3xl font-bold text-ink">
                   {appraisal.property_address || <Placeholder>Dirección…</Placeholder>}
                 </h1>
                 <p className="text-gray-500 mt-1">
@@ -214,7 +214,7 @@ export default function PublicAppraisalShell({ data }: { data: PublicAppraisalDa
         {/* 3. FODA */}
         {(appraisal.strengths || appraisal.weaknesses || appraisal.opportunities || appraisal.threats) && (
           <section className="bg-white rounded-xl border p-6">
-            <h2 className="font-semibold text-gray-800 mb-4">Análisis FODA</h2>
+            <h2 className="font-semibold text-ink mb-4">Análisis FODA</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {appraisal.strengths && (
                 <div className="bg-green-50 rounded-lg p-4">
@@ -243,7 +243,7 @@ export default function PublicAppraisalShell({ data }: { data: PublicAppraisalDa
             </div>
             {appraisal.publication_analysis && (
               <div className="mt-4 bg-gray-50 rounded-lg p-4">
-                <p className="font-medium text-gray-800 mb-1 text-sm">Análisis de publicación</p>
+                <p className="font-medium text-ink mb-1 text-sm">Análisis de publicación</p>
                 <p className="text-sm text-gray-600 whitespace-pre-wrap">{appraisal.publication_analysis}</p>
               </div>
             )}
@@ -253,7 +253,7 @@ export default function PublicAppraisalShell({ data }: { data: PublicAppraisalDa
         {/* 4. Competencia */}
         {comparables.length > 0 && (
           <section className="bg-white rounded-xl border p-6">
-            <h2 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <h2 className="font-semibold text-ink mb-4 flex items-center gap-2">
               <TrendingUp className="w-4 h-4" style={{ color: branding.primary }} /> Competencia de mercado
             </h2>
             <div className="overflow-x-auto">
@@ -294,7 +294,7 @@ export default function PublicAppraisalShell({ data }: { data: PublicAppraisalDa
         {/* 5. Situación de mercado */}
         {market && (market.title || market.body || (market.media_urls && market.media_urls.length > 0)) && (
           <section className="bg-white rounded-xl border p-6">
-            <h2 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+            <h2 className="font-semibold text-ink mb-3 flex items-center gap-2">
               <LineChart className="w-4 h-4" style={{ color: branding.primary }} />
               {market.title || 'Situación del mercado'}
             </h2>
@@ -316,7 +316,7 @@ export default function PublicAppraisalShell({ data }: { data: PublicAppraisalDa
         {/* 6. Tasación (valores sugeridos) */}
         {(suggested != null || testP != null || closeP != null) && (
           <section className="bg-white rounded-xl border p-6">
-            <h2 className="font-semibold text-gray-800 mb-4">Valores sugeridos</h2>
+            <h2 className="font-semibold text-ink mb-4">Valores sugeridos</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {suggested != null && (
                 <div className="p-4 rounded-lg" style={{ background: `${branding.primary}10` }}>
@@ -329,13 +329,13 @@ export default function PublicAppraisalShell({ data }: { data: PublicAppraisalDa
               {testP != null && (
                 <div className="p-4 rounded-lg bg-gray-50">
                   <p className="text-xs text-gray-500">Prueba 30 días</p>
-                  <p className="text-xl font-bold text-gray-800">USD {testP.toLocaleString('es-AR')}</p>
+                  <p className="text-xl font-bold text-ink">USD {testP.toLocaleString('es-AR')}</p>
                 </div>
               )}
               {closeP != null && (
                 <div className="p-4 rounded-lg bg-gray-50">
                   <p className="text-xs text-gray-500">Cierre 120 días</p>
-                  <p className="text-xl font-bold text-gray-800">USD {closeP.toLocaleString('es-AR')}</p>
+                  <p className="text-xl font-bold text-ink">USD {closeP.toLocaleString('es-AR')}</p>
                 </div>
               )}
             </div>
@@ -348,7 +348,7 @@ export default function PublicAppraisalShell({ data }: { data: PublicAppraisalDa
         {/* 7. Videos de la propiedad */}
         {videoLinks.length > 0 && (
           <section className="bg-white rounded-xl border p-6">
-            <h2 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+            <h2 className="font-semibold text-ink mb-3 flex items-center gap-2">
               <Film className="w-4 h-4" style={{ color: branding.primary }} /> Videos de la propiedad
             </h2>
             <div className="space-y-4">
@@ -376,7 +376,7 @@ export default function PublicAppraisalShell({ data }: { data: PublicAppraisalDa
         {/* Video explicativo del tasador (campo separado existente) */}
         {appraisal.video_tasacion_url && youtubeEmbed(appraisal.video_tasacion_url) && (
           <section className="bg-white rounded-xl border p-6">
-            <h2 className="font-semibold text-gray-800 mb-3">Video del tasador</h2>
+            <h2 className="font-semibold text-ink mb-3">Video del tasador</h2>
             <div className="aspect-video rounded-xl overflow-hidden">
               <iframe
                 src={youtubeEmbed(appraisal.video_tasacion_url) || ''}
@@ -394,7 +394,7 @@ export default function PublicAppraisalShell({ data }: { data: PublicAppraisalDa
           (work.extras && work.extras.length > 0) || work.legal_text
         ) && (
           <section className="bg-white rounded-xl border p-6">
-            <h2 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+            <h2 className="font-semibold text-ink mb-3 flex items-center gap-2">
               <Handshake className="w-4 h-4" style={{ color: branding.primary }} /> Condiciones de trabajo
             </h2>
             <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">

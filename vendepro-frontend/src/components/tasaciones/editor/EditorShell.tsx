@@ -203,7 +203,7 @@ export function EditorShell({ initial, snapshot, context }: Props) {
         <div className="flex items-center gap-3">
           <Link
             href={`/tasaciones/${state.appraisal.id}/wizard`}
-            className="flex items-center gap-1.5 rounded border border-slate-200 px-3 py-1 text-xs text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+            className="flex items-center gap-1.5 rounded border border-slate-200 px-3 py-1 text-xs text-slate-600 hover:bg-slate-50 hover:text-ink"
             title="Abrir el wizard completo de edición"
           >
             <Wand2 className="h-3.5 w-3.5" /> Edición completa
@@ -226,7 +226,7 @@ export function EditorShell({ initial, snapshot, context }: Props) {
                   alert(e?.message ?? 'Error al publicar')
                 }
               }}
-              className="rounded bg-brand-pink px-3 py-1 text-xs font-semibold text-white"
+              className="rounded bg-gradient-to-br from-brand-pink to-brand-orange px-3 py-1 text-xs font-semibold text-white"
             >
               Publicar
             </button>
@@ -372,7 +372,7 @@ export function EditorShell({ initial, snapshot, context }: Props) {
         </div>
       </div>
 
-      <button onClick={() => setMobilePreviewOpen(true)} className="fixed bottom-6 right-6 z-30 rounded-full bg-brand-pink px-5 py-3 text-sm font-semibold text-white shadow-lg lg:hidden">
+      <button onClick={() => setMobilePreviewOpen(true)} className="fixed bottom-6 right-6 z-30 rounded-full bg-gradient-to-br from-brand-pink to-brand-orange px-5 py-3 text-sm font-semibold text-white shadow-lg lg:hidden">
         Preview
       </button>
       {mobilePreviewOpen && (

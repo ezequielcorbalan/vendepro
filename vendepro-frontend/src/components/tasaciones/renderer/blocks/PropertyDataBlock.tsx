@@ -44,7 +44,7 @@ export function PropertyDataBlock({ data, ...attrs }: Props) {
         >
           La propiedad
         </p>
-        <h2 className="mt-2 font-poppins text-3xl font-bold leading-tight text-slate-900 md:text-5xl">
+        <h2 className="mt-2 font-poppins text-3xl font-bold leading-tight text-ink md:text-5xl">
           {data.title ?? 'Datos de la propiedad'}
         </h2>
 
@@ -61,7 +61,7 @@ export function PropertyDataBlock({ data, ...attrs }: Props) {
                 {visibleLocation.map(r => (
                   <div key={r.label} className="border-b border-slate-100 pb-3">
                     <dt className="text-xs uppercase tracking-wide text-slate-400">{r.label}</dt>
-                    <dd className="mt-1 text-base font-semibold text-slate-900 md:text-lg">{r.value}</dd>
+                    <dd className="mt-1 text-base font-semibold text-ink md:text-lg">{r.value}</dd>
                   </div>
                 ))}
               </dl>
@@ -80,7 +80,7 @@ export function PropertyDataBlock({ data, ...attrs }: Props) {
                 {visibleAreas.map(r => (
                   <div key={r.label} className="rounded-2xl bg-[#f2f2f2] px-5 py-4">
                     <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{r.label}</dt>
-                    <dd className="mt-2 font-poppins text-2xl font-bold leading-none text-slate-900 md:text-3xl">
+                    <dd className="mt-2 font-poppins text-2xl font-bold leading-none text-ink md:text-3xl">
                       {r.value}
                       <span className="ml-1 text-sm font-medium text-slate-500">{r.suffix}</span>
                     </dd>

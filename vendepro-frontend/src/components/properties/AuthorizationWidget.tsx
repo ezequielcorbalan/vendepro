@@ -59,7 +59,7 @@ export default function AuthorizationWidget({
         <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-sm">
           <Calendar className="w-4.5 h-4.5 text-white" />
         </div>
-        <h2 className="text-sm font-semibold text-gray-800">Autorización de venta</h2>
+        <h2 className="text-sm font-semibold text-ink">Autorización de venta</h2>
       </div>
 
       <div className="grid grid-cols-2 gap-3 mb-3">
@@ -69,7 +69,7 @@ export default function AuthorizationWidget({
             type="date"
             value={startDate}
             onChange={e => setStartDate(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-pink/20 focus:border-brand-pink outline-none"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none"
           />
         </div>
         <div>
@@ -79,7 +79,7 @@ export default function AuthorizationWidget({
             value={durationDays}
             onChange={e => setDurationDays(e.target.value)}
             placeholder="180"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-pink/20 focus:border-brand-pink outline-none"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none"
           />
         </div>
       </div>

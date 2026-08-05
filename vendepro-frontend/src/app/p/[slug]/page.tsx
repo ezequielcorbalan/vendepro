@@ -48,7 +48,7 @@ export default async function PrefactPage({
 
       <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
         <div className="bg-white rounded-2xl border p-6">
-          <h1 className="text-2xl font-bold text-gray-900">Prefactibilidad</h1>
+          <h1 className="text-2xl font-bold text-ink">Prefactibilidad</h1>
           <p className="text-gray-500 mt-1">{p.address}</p>
           {p.neighborhood && (
             <p className="text-gray-400 text-sm flex items-center gap-1 mt-1">
@@ -59,25 +59,25 @@ export default async function PrefactPage({
 
         {(p.land_area || p.buildable_area || p.buildable_m2) && (
           <div className="bg-white rounded-xl border p-6">
-            <h2 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <h2 className="font-semibold text-ink mb-4 flex items-center gap-2">
               <Ruler className="w-4 h-4" style={{ color: branding.primary }} /> Datos técnicos
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {p.land_area && (
                 <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xl font-bold text-gray-800">{p.land_area}</p>
+                  <p className="text-xl font-bold text-ink">{p.land_area}</p>
                   <p className="text-xs text-gray-500 mt-1">m² lote</p>
                 </div>
               )}
               {p.buildable_m2 && (
                 <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xl font-bold text-gray-800">{p.buildable_m2}</p>
+                  <p className="text-xl font-bold text-ink">{p.buildable_m2}</p>
                   <p className="text-xs text-gray-500 mt-1">m² construibles</p>
                 </div>
               )}
               {p.floors && (
                 <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xl font-bold text-gray-800">{p.floors}</p>
+                  <p className="text-xl font-bold text-ink">{p.floors}</p>
                   <p className="text-xs text-gray-500 mt-1">pisos</p>
                 </div>
               )}
@@ -87,7 +87,7 @@ export default async function PrefactPage({
 
         {(p.estimated_value || p.cost_per_m2) && (
           <div className="bg-white rounded-xl border p-6">
-            <h2 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <h2 className="font-semibold text-ink mb-4 flex items-center gap-2">
               <DollarSign className="w-4 h-4" style={{ color: branding.primary }} /> Análisis económico
             </h2>
             <div className="grid grid-cols-2 gap-4">
@@ -99,7 +99,7 @@ export default async function PrefactPage({
               )}
               {p.cost_per_m2 && (
                 <div className="text-center p-4 bg-gray-50 rounded-xl">
-                  <p className="text-2xl font-bold text-gray-800">USD {Number(p.cost_per_m2).toLocaleString('es-AR')}</p>
+                  <p className="text-2xl font-bold text-ink">USD {Number(p.cost_per_m2).toLocaleString('es-AR')}</p>
                   <p className="text-xs text-gray-500 mt-1">por m²</p>
                 </div>
               )}
@@ -109,7 +109,7 @@ export default async function PrefactPage({
 
         {p.notes && (
           <div className="bg-white rounded-xl border p-6">
-            <h2 className="font-semibold text-gray-800 mb-3">Observaciones</h2>
+            <h2 className="font-semibold text-ink mb-3">Observaciones</h2>
             <p className="text-sm text-gray-600 whitespace-pre-wrap">{p.notes}</p>
           </div>
         )}

@@ -185,7 +185,7 @@ function SortableBlock({
           {...attributes}
           {...listeners}
           onClick={(e) => e.stopPropagation()}
-          className="cursor-grab rounded bg-white/90 p-1 text-slate-500 shadow-sm hover:text-slate-800 active:cursor-grabbing"
+          className="cursor-grab rounded bg-white/90 p-1 text-slate-500 shadow-sm hover:text-ink active:cursor-grabbing"
           title="Arrastrar para reordenar"
           aria-label="Reordenar bloque"
         >
@@ -342,7 +342,7 @@ function FreeBlockToolbar({ block, onPatch }: { block: TemplateBlock; onPatch: (
             defaultValue={d.url ?? ''}
             onBlur={(e) => onPatch({ url: e.target.value.trim() || null })}
             placeholder="https://enlace-del-boton…"
-            className="w-56 rounded px-2 py-0.5 text-xs outline-none focus:ring-2 focus:ring-brand-pink/40"
+            className="w-56 rounded px-2 py-0.5 text-xs outline-none"
           />
         </div>
       )

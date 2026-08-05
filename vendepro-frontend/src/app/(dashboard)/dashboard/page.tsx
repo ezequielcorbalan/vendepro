@@ -4,19 +4,18 @@ import Link from 'next/link'
 import {
   Users, Phone, CalendarDays, Target, TrendingUp, AlertTriangle,
   Clock, ArrowRight, CheckCircle2, BarChart3, ChevronRight,
-  Home, Calculator, Activity
+  Home, Calculator, Activity, MessageCircle
 } from 'lucide-react'
-import { LEAD_STAGES, EVENT_TYPES } from '@/lib/crm-config'
+import { LEAD_STAGES, EVENT_TYPES, getStageDot } from '@/lib/crm-config'
 import { apiFetch } from '@/lib/api'
 import { getCurrentUser, isOnboardingDone, markOnboardingDone } from '@/lib/auth'
 import OnboardingModal from '@/components/onboarding/OnboardingModal'
 
 function FunnelChart({ data }: { data: { stage: string; count: number }[] }) {
   const max = Math.max(...data.map(d => d.count), 1)
-  const colors = ['#3B82F6', '#06B6D4', '#10B981', '#8B5CF6', '#EC4899', '#F59E0B', '#22C55E']
   return (
     <div className="space-y-2">
-      {data.map((item, i) => {
+      {data.map((item) => {
         const pct = Math.max((item.count / max) * 100, 8)
         return (
           <div key={item.stage} className="flex items-center gap-2 sm:gap-3">
@@ -24,7 +23,7 @@ function FunnelChart({ data }: { data: { stage: string; count: number }[] }) {
             <div className="flex-1 h-7 bg-gray-50 rounded overflow-hidden">
               <div
                 className="h-full rounded flex items-center px-2 transition-all duration-500"
-                style={{ width: `${pct}%`, backgroundColor: colors[i % colors.length] }}
+                style={{ width: `${pct}%`, backgroundColor: getStageDot(item.stage), filter: 'saturate(0.6)' }}
               >
                 <span className="text-white text-xs font-semibold">{item.count}</span>
               </div>
@@ -68,31 +67,28 @@ function KPICard({ icon, label, value, color, href }: { icon: React.ReactNode; l
     cyan: 'bg-cyan-50 text-cyan-600',
     purple: 'bg-purple-50 text-purple-600',
     green: 'bg-green-50 text-green-600',
-    pink: 'bg-gradient-to-br from-brand-pink to-brand-orange text-white',
+    pink: 'bg-pink-50 text-brand-pink',
     amber: 'bg-amber-50 text-amber-600',
   }
   const inner = (
     <>
-      <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-2 shadow-sm ${colorMap[color]}`}>
+      <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-2 ${colorMap[color]}`}>
         {icon}
       </div>
-      <p className="text-xl sm:text-2xl font-bold text-gray-800">{value}</p>
+      <p className="text-xl sm:text-2xl font-bold text-ink">{value}</p>
       <p className="text-xs text-gray-500 mt-0.5">{label}</p>
     </>
   )
-  const baseClass = 'bg-white rounded-2xl border border-gray-200 p-3 sm:p-4 shadow-sm relative overflow-hidden'
-  const accent = <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-brand-pink to-brand-orange opacity-60" />
+  const baseClass = 'bg-white rounded-2xl border p-3 sm:p-4 relative overflow-hidden'
   if (href) {
     return (
-      <a href={href} className={`${baseClass} hover:shadow-md hover:border-brand-pink/30 transition-all block`}>
-        {accent}
+      <a href={href} className={`${baseClass} transition-all block`}>
         {inner}
       </a>
     )
   }
   return (
     <div className={baseClass}>
-      {accent}
       {inner}
     </div>
   )
@@ -144,7 +140,7 @@ export default function DashboardCRM() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Dashboard</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-ink">Dashboard</h1>
         </div>
         <div className="text-center py-12 text-gray-500">Error al cargar el dashboard</div>
       </div>
@@ -181,11 +177,11 @@ export default function DashboardCRM() {
     <div className="space-y-5 sm:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Dashboard CRM</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold text-ink">Dashboard CRM</h1>
           <p className="text-gray-500 text-sm">Resumen ejecutivo del negocio</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Link href="/leads" className="bg-brand-pink text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:opacity-90 flex items-center gap-1">
+          <Link href="/leads" className="bg-gradient-to-br from-brand-pink to-brand-orange text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:opacity-90 flex items-center gap-1">
             <Users className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Ver leads</span>
           </Link>
         </div>
@@ -237,13 +233,13 @@ export default function DashboardCRM() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
         <div className="bg-white rounded-xl border p-4 sm:p-5">
           <div className="flex items-center justify-between mb-4 gap-2">
-            <h2 className="font-semibold text-gray-800 flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-pink-500" /> Funnel de conversión
+            <h2 className="font-semibold text-ink flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-gray-600" /> Funnel de conversión
             </h2>
             <select
               value={period}
               onChange={e => setPeriod(e.target.value)}
-              className="border border-gray-200 bg-gray-50 rounded-lg px-2.5 py-1.5 text-xs text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-pink/40"
+              className="border border-gray-200 bg-gray-50 rounded-lg px-2.5 py-1.5 text-xs text-gray-600 focus:outline-none"
             >
               <option value="all">Todo el historial</option>
               <optgroup label="Período calendario">
@@ -264,13 +260,13 @@ export default function DashboardCRM() {
 
         <div className="bg-white rounded-xl border p-4 sm:p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-gray-800 flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-pink-500" /> Actividad semanal
+            <h2 className="font-semibold text-ink flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-gray-600" /> Actividad semanal
             </h2>
             <div className="flex gap-3 text-xs text-gray-500">
-              <span>📞 {activity?.llamadas || 0}</span>
-              <span>🤝 {activity?.reuniones || 0}</span>
-              <span>🏠 {activity?.visitas || 0}</span>
+              <span className="flex items-center gap-1"><Phone className="w-3.5 h-3.5" /> {activity?.llamadas || 0}</span>
+              <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" /> {activity?.reuniones || 0}</span>
+              <span className="flex items-center gap-1"><Home className="w-3.5 h-3.5" /> {activity?.visitas || 0}</span>
             </div>
           </div>
           {weekData.some(d => d.count > 0) ? (
@@ -285,8 +281,8 @@ export default function DashboardCRM() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
         <div className="bg-white rounded-xl border p-4 sm:p-5">
-          <h2 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-            <CalendarDays className="w-4 h-4 text-blue-500" /> Hoy
+          <h2 className="font-semibold text-ink mb-3 flex items-center gap-2">
+            <CalendarDays className="w-4 h-4 text-gray-600" /> Hoy
           </h2>
           {todayEvents && todayEvents.length > 0 ? (
             <div className="space-y-2">
@@ -313,8 +309,8 @@ export default function DashboardCRM() {
         </div>
 
         <div className="bg-white rounded-xl border p-4 sm:p-5">
-          <h2 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-            <Clock className="w-4 h-4 text-yellow-500" /> Seguimientos
+          <h2 className="font-semibold text-ink mb-3 flex items-center gap-2">
+            <Clock className="w-4 h-4 text-gray-600" /> Seguimientos
           </h2>
           {pendingFollowups && pendingFollowups.length > 0 ? (
             <div className="space-y-2">
@@ -339,8 +335,8 @@ export default function DashboardCRM() {
         </div>
 
         <div className="bg-white rounded-xl border p-4 sm:p-5">
-          <h2 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-            <Users className="w-4 h-4 text-purple-500" /> Equipo
+          <h2 className="font-semibold text-ink mb-3 flex items-center gap-2">
+            <Users className="w-4 h-4 text-gray-600" /> Equipo
           </h2>
           {agentPerformance && agentPerformance.length > 0 ? (
             <div className="space-y-3">
@@ -394,19 +390,19 @@ export default function DashboardCRM() {
       {recentActivities && recentActivities.length > 0 && (
         <div className="bg-white rounded-xl border p-4 sm:p-5">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-gray-800 flex items-center gap-2">
-              <Activity className="w-4 h-4 text-pink-500" /> Actividad reciente
+            <h2 className="font-semibold text-ink flex items-center gap-2">
+              <Activity className="w-4 h-4 text-gray-600" /> Actividad reciente
             </h2>
             <Link href="/actividades" className="text-xs text-brand-pink hover:underline">Ver todo →</Link>
           </div>
           <div className="space-y-1.5">
             {recentActivities.slice(0, 6).map((a: any) => {
-              const typeLabel = a.activity_type === 'llamada' ? '📞' : a.activity_type === 'whatsapp' ? '💬' : a.activity_type === 'reunion' ? '👥' : a.activity_type === 'visita_captacion' ? '🏠' : a.activity_type === 'tasacion' ? '📋' : '📝'
+              const TypeIcon = a.activity_type === 'llamada' ? Phone : a.activity_type === 'whatsapp' ? MessageCircle : a.activity_type === 'reunion' ? Users : a.activity_type === 'visita_captacion' ? Home : a.activity_type === 'tasacion' ? Calculator : Activity
               const mins = Math.floor((Date.now() - new Date(a.created_at).getTime()) / 60000)
               const timeAgo = mins < 60 ? `${mins}m` : mins < 1440 ? `${Math.floor(mins / 60)}h` : `${Math.floor(mins / 1440)}d`
               return (
                 <div key={a.id} className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-gray-50">
-                  <span className="text-sm">{typeLabel}</span>
+                  <TypeIcon className="w-4 h-4 text-gray-500 shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-gray-700 truncate">{a.description || a.activity_type}</p>
                     <p className="text-[10px] text-gray-400 truncate">{a.agent_name}{a.lead_name ? ` · ${a.lead_name}` : ''}</p>
@@ -420,14 +416,14 @@ export default function DashboardCRM() {
       )}
 
       <div className="bg-white rounded-xl border p-4 sm:p-5">
-        <h2 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-          <Target className="w-4 h-4 text-pink-500" /> Pipeline de leads
+        <h2 className="font-semibold text-ink mb-3 flex items-center gap-2">
+          <Target className="w-4 h-4 text-gray-600" /> Pipeline de leads
         </h2>
         <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-11 gap-2">
           {Object.entries(LEAD_STAGES).map(([key, cfg]) => {
             return (
               <Link key={key} href={`/leads?stage=${key}`} className="text-center p-2 rounded-lg hover:bg-gray-50 transition-colors">
-                <p className="text-lg sm:text-xl font-semibold text-gray-800">{sb[key] || 0}</p>
+                <p className="text-lg sm:text-xl font-semibold text-ink">{sb[key] || 0}</p>
                 <p className={`text-[10px] sm:text-xs px-1 py-0.5 rounded-full ${cfg.color} mt-1`}>{cfg.label}</p>
               </Link>
             )

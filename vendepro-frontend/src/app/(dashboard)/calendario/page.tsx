@@ -204,19 +204,19 @@ export default function CalendarioPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Calendario</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold text-ink">Calendario</h1>
           <p className="text-sm text-gray-500">{events.length} evento{events.length !== 1 ? 's' : ''} este mes</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex gap-0.5 bg-gray-100 rounded-lg p-0.5">
             {(['month', 'agenda'] as const).map(v => (
               <button key={v} onClick={() => setView(v)}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium capitalize transition-colors ${view === v ? 'bg-white shadow text-gray-800' : 'text-gray-500'}`}>
+                className={`px-3 py-1.5 rounded-md text-xs font-medium capitalize transition-colors ${view === v ? 'bg-white shadow text-ink' : 'text-gray-500'}`}>
                 {v === 'month' ? 'Mes' : 'Agenda'}
               </button>
             ))}
           </div>
-          <button onClick={() => setShowCreate(true)} className="bg-brand-pink text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:opacity-90">
+          <button onClick={() => setShowCreate(true)} className="bg-gradient-to-br from-brand-pink to-brand-orange text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:opacity-90">
             <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Nuevo evento</span>
           </button>
         </div>
@@ -227,7 +227,7 @@ export default function CalendarioPage() {
           {/* Nav */}
           <div className="flex items-center justify-between px-4 py-3 border-b">
             <button onClick={handlePrev} className="p-2 hover:bg-gray-100 rounded-lg"><ChevronLeft className="w-5 h-5" /></button>
-            <h2 className="font-semibold text-gray-800">{MONTH_NAMES[month]} {year}</h2>
+            <h2 className="font-semibold text-ink">{MONTH_NAMES[month]} {year}</h2>
             <button onClick={handleNext} className="p-2 hover:bg-gray-100 rounded-lg"><ChevronRight className="w-5 h-5" /></button>
           </div>
 
@@ -302,7 +302,7 @@ export default function CalendarioPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className={`text-sm font-medium ${ev.completed ? 'line-through text-gray-400' : 'text-gray-800'}`}>{ev.title}</p>
+                        <p className={`text-sm font-medium ${ev.completed ? 'line-through text-gray-400' : 'text-ink'}`}>{ev.title}</p>
                         {isOverdue && <span className="text-[10px] px-1.5 py-0.5 bg-red-100 text-red-600 rounded-full font-medium">VENCIDO</span>}
                         {ev.completed === 1 && <CheckCircle2 className="w-4 h-4 text-green-500" />}
                       </div>
@@ -351,7 +351,7 @@ export default function CalendarioPage() {
       {selectedDate && selectedEvents.length > 0 && (
         <div className="bg-white rounded-xl border p-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-gray-800 text-sm">
+            <h3 className="font-semibold text-ink text-sm">
               {new Date(selectedDate + 'T12:00:00').toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}
             </h3>
             <button onClick={() => setSelectedDate(null)} className="p-1 hover:bg-gray-100 rounded"><X className="w-4 h-4 text-gray-400" /></button>
@@ -390,7 +390,7 @@ export default function CalendarioPage() {
         <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowCreate(false)}>
           <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-5" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-800">Nuevo evento</h3>
+              <h3 className="font-semibold text-ink">Nuevo evento</h3>
               <button onClick={() => setShowCreate(false)}><X className="w-5 h-5 text-gray-400" /></button>
             </div>
             <div className="space-y-3">
@@ -417,7 +417,7 @@ export default function CalendarioPage() {
             <div className="flex gap-2 mt-4">
               <button onClick={() => setShowCreate(false)} className="flex-1 border rounded-lg py-2 text-sm">Cancelar</button>
               <button onClick={handleCreate} disabled={!form.title || !form.start_at || saving}
-                className="flex-1 bg-brand-pink text-white rounded-lg py-2 text-sm font-medium disabled:opacity-50">
+                className="flex-1 bg-gradient-to-br from-brand-pink to-brand-orange text-white rounded-lg py-2 text-sm font-medium disabled:opacity-50">
                 {saving ? 'Guardando...' : 'Crear'}
               </button>
             </div>

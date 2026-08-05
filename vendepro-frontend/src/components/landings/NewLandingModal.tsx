@@ -52,7 +52,7 @@ export default function NewLandingModal({ onClose, asTasacionTemplate = false }:
       <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-xl flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <div className="flex items-center gap-2">
-            <h2 className="text-xl font-semibold text-gray-900">
+            <h2 className="text-xl font-semibold text-ink">
               {asTasacionTemplate ? 'Nueva plantilla de tasación' : 'Nueva landing'}
             </h2>
             {asTasacionTemplate && (
@@ -93,7 +93,7 @@ export default function NewLandingModal({ onClose, asTasacionTemplate = false }:
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-600">{t.kind === 'lead_capture' ? 'Captación' : 'Propiedad'}</span>
                       </div>
-                      <h3 className="font-semibold text-gray-900 mb-1">{t.name}</h3>
+                      <h3 className="font-semibold text-ink mb-1">{t.name}</h3>
                       {t.description && <p className="text-sm text-gray-600 line-clamp-2">{t.description}</p>}
                     </div>
                   </button>
@@ -105,7 +105,7 @@ export default function NewLandingModal({ onClose, asTasacionTemplate = false }:
 
         {step === 'name' && selectedTemplate && (
           <div className="flex-1 overflow-auto p-6">
-            <p className="text-sm text-gray-500 mb-6">Template elegido: <strong className="text-gray-900">{selectedTemplate.name}</strong></p>
+            <p className="text-sm text-gray-500 mb-6">Template elegido: <strong className="text-ink">{selectedTemplate.name}</strong></p>
 
             <label className="block text-sm font-medium text-gray-700 mb-2">Nombre / slug de la landing</label>
             <input
@@ -113,7 +113,7 @@ export default function NewLandingModal({ onClose, asTasacionTemplate = false }:
               value={slugBase}
               onChange={e => setSlugBase(e.target.value)}
               placeholder="ej: palermo-soho"
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-brand-pink"
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none"
             />
             {slugBase && (
               <p className="mt-2 text-xs text-gray-500">
@@ -123,9 +123,9 @@ export default function NewLandingModal({ onClose, asTasacionTemplate = false }:
             {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
             <div className="flex items-center justify-between mt-8">
-              <button onClick={() => setStep('template')} className="text-sm text-gray-600 hover:text-gray-900">← Volver</button>
+              <button onClick={() => setStep('template')} className="text-sm text-gray-600 hover:text-ink">← Volver</button>
               <button onClick={submit} disabled={creating || !slugBase.trim()}
-                className="inline-flex items-center gap-2 bg-brand-pink hover:bg-[#e60070] text-white font-semibold px-6 py-2.5 rounded-full disabled:opacity-60">
+                className="inline-flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange hover:opacity-90 text-white font-semibold px-6 py-2.5 rounded-full disabled:opacity-60">
                 {creating ? <><Loader2 className="w-4 h-4 animate-spin" />Creando…</> : 'Crear landing'}
               </button>
             </div>

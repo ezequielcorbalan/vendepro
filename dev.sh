@@ -203,14 +203,17 @@ cmd_fullstack() {
     "api-public:8708"
   )
 
+  inspector=9230
   for entry in "${APIS[@]}"; do
     pkg="${entry%%:*}"
     port="${entry##*:}"
     info "  → $pkg en :$port"
     (cd "$BACKEND/packages/$pkg" && \
       npx wrangler dev --port "$port" \
+        --inspector-port "$inspector" \
         --persist-to "$SHARED_STATE" \
         2>&1 | sed "s/^/[$pkg] /") &
+    inspector=$((inspector + 1))
   done
 
   # Esperar a que los workers arranquen

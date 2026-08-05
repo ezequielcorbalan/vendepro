@@ -34,7 +34,7 @@ export default function EditorToolbar({ landing, isAdmin, dirty, saving, onOpenV
       <Link href="/landings" className="p-2 hover:bg-gray-100 rounded-lg"><ArrowLeft className="w-4 h-4" /></Link>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <h1 className="font-semibold text-gray-900 truncate">{landing.seo_title || landing.full_slug}</h1>
+          <h1 className="font-semibold text-ink truncate">{landing.seo_title || landing.full_slug}</h1>
           <StatusBadge status={landing.status} />
           {saving && <span className="text-xs text-gray-500">Guardando…</span>}
           {!saving && dirty && <span className="text-xs text-amber-600">Sin guardar</span>}
@@ -48,7 +48,7 @@ export default function EditorToolbar({ landing, isAdmin, dirty, saving, onOpenV
       <button onClick={onOpenPreview} className="p-2 hover:bg-gray-100 rounded-lg" title="Vista previa"><Eye className="w-4 h-4 text-gray-600" /></button>
 
       {landing.status === 'draft' && !isAdmin && (
-        <button onClick={() => handle(onRequestPublish)} disabled={busy} className="inline-flex items-center gap-2 bg-brand-pink hover:bg-[#e60070] text-white text-sm font-semibold px-4 py-2 rounded-full disabled:opacity-60">
+        <button onClick={() => handle(onRequestPublish)} disabled={busy} className="inline-flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange hover:opacity-90 text-white text-sm font-semibold px-4 py-2 rounded-full disabled:opacity-60">
           <Send className="w-4 h-4" /> Solicitar publicación
         </button>
       )}
@@ -71,9 +71,9 @@ export default function EditorToolbar({ landing, isAdmin, dirty, saving, onOpenV
       {showReject && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowReject(false)}>
           <div className="bg-white rounded-2xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
-            <h3 className="font-semibold text-gray-900 mb-3">Rechazar solicitud</h3>
+            <h3 className="font-semibold text-ink mb-3">Rechazar solicitud</h3>
             <textarea value={note} onChange={e => setNote(e.target.value)} placeholder="Nota para el agente (opcional)…"
-              className="w-full border border-gray-200 rounded-xl p-3 text-sm resize-none h-28 focus:outline-none focus:border-brand-pink" />
+              className="w-full border border-gray-200 rounded-xl p-3 text-sm resize-none h-28 focus:outline-none" />
             <div className="flex justify-end gap-2 mt-4">
               <button onClick={() => setShowReject(false)} className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-full">Cancelar</button>
               <button onClick={() => { handle(() => onRejectPublish(note)); setShowReject(false) }} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-full">Rechazar</button>

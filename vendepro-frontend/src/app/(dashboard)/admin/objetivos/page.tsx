@@ -78,10 +78,10 @@ export default function ObjetivosPage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Objetivos</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold text-ink">Objetivos</h1>
           <p className="text-gray-500 text-sm">{objectives.length} objetivo{objectives.length !== 1 ? 's' : ''}</p>
         </div>
-        <button onClick={() => setShowCreate(true)} className="bg-brand-pink text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 flex items-center gap-2">
+        <button onClick={() => setShowCreate(true)} className="bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 flex items-center gap-2">
           <Plus className="w-4 h-4" /> Nuevo objetivo
         </button>
       </div>
@@ -106,7 +106,7 @@ export default function ObjetivosPage() {
             <div key={obj.id} className="bg-white border rounded-xl p-4">
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <p className="font-semibold text-gray-800">{obj.metricLabel}</p>
+                  <p className="font-semibold text-ink">{obj.metricLabel}</p>
                   {obj.agent_name && <p className="text-xs text-gray-400 mt-0.5">{obj.agent_name}</p>}
                 </div>
                 <div className="flex items-center gap-1">
@@ -117,7 +117,7 @@ export default function ObjetivosPage() {
                 </div>
               </div>
               <div className="flex items-end justify-between mb-2">
-                <p className="text-3xl font-bold text-gray-800">{obj.realized || 0}</p>
+                <p className="text-3xl font-bold text-ink">{obj.realized || 0}</p>
                 <p className="text-sm text-gray-400">/{obj.target}</p>
               </div>
               <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -138,7 +138,7 @@ export default function ObjetivosPage() {
       {showCreate && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowCreate(false)}>
           <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-5" onClick={e => e.stopPropagation()}>
-            <h3 className="font-semibold text-gray-800 mb-4">Nuevo objetivo</h3>
+            <h3 className="font-semibold text-ink mb-4">Nuevo objetivo</h3>
             <div className="space-y-3">
               <select value={form.agent_id} onChange={e => setForm(f => ({ ...f, agent_id: e.target.value }))} className="border rounded-lg px-3 py-2 text-sm w-full">
                 <option value="">Seleccionar agente *</option>
@@ -165,7 +165,7 @@ export default function ObjetivosPage() {
             <div className="flex gap-2 mt-4">
               <button onClick={() => setShowCreate(false)} className="flex-1 border rounded-lg py-2 text-sm">Cancelar</button>
               <button onClick={handleCreate} disabled={!form.agent_id || !form.target || saving}
-                className="flex-1 bg-brand-pink text-white rounded-lg py-2 text-sm font-medium disabled:opacity-50">
+                className="flex-1 bg-gradient-to-br from-brand-pink to-brand-orange text-white rounded-lg py-2 text-sm font-medium disabled:opacity-50">
                 {saving ? 'Creando...' : 'Crear objetivo'}
               </button>
             </div>

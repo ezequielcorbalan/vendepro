@@ -89,7 +89,7 @@ export default function EmailCampaignDetailPage() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <Link href="/marketing/emails" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 mb-6">
+      <Link href="/marketing/emails" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-ink mb-6">
         <ArrowLeft className="w-4 h-4" /> Volver a campañas
       </Link>
 
@@ -98,7 +98,7 @@ export default function EmailCampaignDetailPage() {
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl font-semibold text-gray-800 truncate">{campaign.name}</h1>
+              <h1 className="text-xl font-semibold text-ink truncate">{campaign.name}</h1>
               <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${st.cls}`}>{st.label}</span>
             </div>
             <p className="text-sm text-gray-500 mt-1">{campaign.subject || 'Sin asunto'}</p>
@@ -110,7 +110,7 @@ export default function EmailCampaignDetailPage() {
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {campaign.status === 'sending' && (
-              <button onClick={load} className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 px-3 py-1.5">
+              <button onClick={load} className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-ink px-3 py-1.5">
                 <RefreshCw className="w-4 h-4" /> Actualizar
               </button>
             )}

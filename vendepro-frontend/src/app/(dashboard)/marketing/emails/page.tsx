@@ -55,7 +55,7 @@ export default function EmailCampaignsPage() {
               <Mail className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-gray-800">Campañas de email</h1>
+              <h1 className="text-xl font-semibold text-ink">Campañas de email</h1>
               <p className="text-sm text-gray-500 mt-0.5">Creá y enviá emails a tus contactos y leads — con ayuda de la IA</p>
             </div>
           </div>
@@ -63,7 +63,7 @@ export default function EmailCampaignsPage() {
             <div className="flex items-center gap-2">
               <Link
                 href="/configuracion/marketing"
-                className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 px-3 py-2"
+                className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-ink px-3 py-2"
               >
                 <Settings className="w-4 h-4" /> Remitente
               </Link>
@@ -107,7 +107,7 @@ export default function EmailCampaignsPage() {
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-gray-800 truncate">{c.name}</span>
+                      <span className="font-medium text-ink truncate">{c.name}</span>
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${st.cls}`}>{st.label}</span>
                     </div>
                     <p className="text-sm text-gray-500 mt-0.5 truncate">

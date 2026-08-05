@@ -83,7 +83,7 @@ export function StepTemplate({ selectedId, onSelect }: Props) {
                 : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
             }`}
           >
-            <span className={`text-sm font-semibold ${selectedId === t.id ? 'text-brand-pink' : 'text-slate-800'}`}>
+            <span className={`text-sm font-semibold ${selectedId === t.id ? 'text-brand-pink' : 'text-ink'}`}>
               {t.name}
             </span>
             {t.description && (

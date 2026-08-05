@@ -100,7 +100,7 @@ export default function TasacionDetailPage() {
           <ArrowLeft className="w-5 h-5 text-gray-500" />
         </Link>
         <div className="flex-1 min-w-0">
-          <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 truncate">{a.property_address}</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold text-ink truncate">{a.property_address}</h1>
           <p className="text-gray-500 text-sm">{a.neighborhood}, {a.city}</p>
         </div>
         <div className="flex items-center gap-2">
@@ -115,7 +115,7 @@ export default function TasacionDetailPage() {
               href={`/t/${a.public_slug}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-brand-pink text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
+              className="inline-flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
             >
               <ExternalLink className="w-4 h-4" /> Ver landing
             </a>
@@ -135,7 +135,7 @@ export default function TasacionDetailPage() {
           {!linkedLead && a.contact_name && (
             <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl">
               <span className="text-xs font-medium text-gray-500">Contacto:</span>
-              <span className="text-sm text-gray-800">{a.contact_name}</span>
+              <span className="text-sm text-ink">{a.contact_name}</span>
               {a.contact_phone && <span className="text-xs text-gray-500">{a.contact_phone}</span>}
             </div>
           )}
@@ -150,7 +150,7 @@ export default function TasacionDetailPage() {
           >
             <Building2 className="w-4 h-4 text-brand-pink" />
             <span className="text-xs font-medium text-brand-pink">Propiedad:</span>
-            <span className="text-sm text-gray-800 font-semibold">{a.linked_property.address}</span>
+            <span className="text-sm text-ink font-semibold">{a.linked_property.address}</span>
             {a.linked_property.neighborhood && (
               <span className="text-xs text-gray-500">{a.linked_property.neighborhood}</span>
             )}
@@ -208,7 +208,7 @@ export default function TasacionDetailPage() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm p-5 sm:p-8">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+          <h2 className="text-lg sm:text-xl font-bold text-ink mb-4 flex items-center gap-2">
             <Ruler className="w-5 h-5 text-brand-pink" />
             Datos de la propiedad
           </h2>
@@ -216,15 +216,15 @@ export default function TasacionDetailPage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
             <div className="bg-gray-50 rounded-xl p-3 text-center">
               <p className="text-[10px] sm:text-xs text-gray-500">Tipología</p>
-              <p className="font-bold text-sm text-gray-800 capitalize">{a.property_type}</p>
+              <p className="font-bold text-sm text-ink capitalize">{a.property_type}</p>
             </div>
             <div className="bg-gray-50 rounded-xl p-3 text-center">
               <p className="text-[10px] sm:text-xs text-gray-500">Sup. cubierta</p>
-              <p className="font-bold text-sm text-gray-800">{a.covered_area || '-'} m²</p>
+              <p className="font-bold text-sm text-ink">{a.covered_area || '-'} m²</p>
             </div>
             <div className="bg-gray-50 rounded-xl p-3 text-center">
               <p className="text-[10px] sm:text-xs text-gray-500">Sup. total</p>
-              <p className="font-bold text-sm text-gray-800">{a.total_area || '-'} m²</p>
+              <p className="font-bold text-sm text-ink">{a.total_area || '-'} m²</p>
             </div>
             <div className="bg-brand-pink/5 border border-brand-pink/20 rounded-xl p-3 text-center">
               <p className="text-[10px] sm:text-xs text-gray-500">Ponderada</p>
@@ -277,7 +277,7 @@ export default function TasacionDetailPage() {
 
         {comparables.length > 0 && (
           <div className="bg-white rounded-2xl shadow-sm p-5 sm:p-8">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <h2 className="text-lg sm:text-xl font-bold text-ink mb-4 flex items-center gap-2">
               <Eye className="w-5 h-5 text-indigo-500" />
               Departamentos publicados en la zona
             </h2>
@@ -299,7 +299,7 @@ export default function TasacionDetailPage() {
                     <tr key={i} className="border-b border-gray-50 hover:bg-gray-50">
                       <td className="p-2">
                         <div className="min-w-0">
-                          <p className="font-medium text-gray-800 truncate max-w-[150px] sm:max-w-none">{c.address || 'Sin dirección'}</p>
+                          <p className="font-medium text-ink truncate max-w-[150px] sm:max-w-none">{c.address || 'Sin dirección'}</p>
                           {c.zonaprop_url && (
                             <a href={c.zonaprop_url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-indigo-500 hover:underline">
                               Ver aviso →
@@ -388,7 +388,7 @@ export default function TasacionDetailPage() {
 
         <div className="bg-white rounded-2xl shadow-sm p-5 sm:p-8 text-center">
           <img src="/brand/logo-horizontal.png" alt="Logo" className="h-8 sm:h-10 mx-auto mb-3" />
-          <p className="text-sm font-semibold text-gray-800">Marcela Genta · Operaciones Inmobiliarias</p>
+          <p className="text-sm font-semibold text-ink">Marcela Genta · Operaciones Inmobiliarias</p>
           <p className="text-xs text-gray-500 mt-1">{a.agent_name} · {a.agent_phone}</p>
           <p className="text-xs text-gray-400 mt-1">{a.agent_email}</p>
           <p className="text-[10px] text-gray-300 mt-3">

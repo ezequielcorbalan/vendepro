@@ -224,7 +224,7 @@ function FromTemplateBlocks({
                     ? <ChevronDown className="mt-1 h-4 w-4 shrink-0 text-slate-400" />
                     : <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-slate-400" />}
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-slate-800">{meta.label}</p>
+                    <p className="text-sm font-medium text-ink">{meta.label}</p>
                     <p className="text-xs text-slate-500">{meta.description}</p>
                   </div>
                 </button>
@@ -340,7 +340,7 @@ function FromScratchBlocks({
                   className="flex flex-1 items-start justify-between gap-2 text-left"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-slate-800">{meta.label}</p>
+                    <p className="text-sm font-medium text-ink">{meta.label}</p>
                     <p className="text-xs text-slate-500">{meta.description}</p>
                     {included && autoNote && (
                       <p className="mt-1 text-[11px] italic text-slate-400">{autoNote}</p>

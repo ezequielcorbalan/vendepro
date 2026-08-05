@@ -136,8 +136,8 @@ export function StepReview({ templateId, property, details, comparables, customB
       {/* Hint sobre las dos acciones del footer */}
       <div className="rounded-xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-600">
         Revisá la previsualización y elegí abajo:{' '}
-        <span className="font-medium text-slate-800">Guardar borrador</span> deja la tasación
-        privada (sólo accesible desde el editor); <span className="font-medium text-slate-800">Publicar</span>{' '}
+        <span className="font-medium text-ink">Guardar borrador</span> deja la tasación
+        privada (sólo accesible desde el editor); <span className="font-medium text-ink">Publicar</span>{' '}
         además genera un link público para compartir con el propietario.
       </div>
 

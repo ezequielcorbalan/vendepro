@@ -39,7 +39,7 @@ export function ComparablesListBlock({ data, ...attrs }: Props) {
         >
           Referencias de mercado
         </p>
-        <h2 className="mt-2 font-poppins text-3xl font-bold leading-tight text-slate-900 md:text-5xl">
+        <h2 className="mt-2 font-poppins text-3xl font-bold leading-tight text-ink md:text-5xl">
           {data.title ?? 'Propiedades comparables'}
         </h2>
         <p className="mt-3 max-w-2xl text-sm text-slate-600 md:text-base">
@@ -88,7 +88,7 @@ export function ComparablesListBlock({ data, ...attrs }: Props) {
                         {c.usd_per_m2} USD/m²
                       </p>
                     )}
-                    <p className="mt-1 font-poppins text-2xl font-bold text-slate-900 md:text-3xl">
+                    <p className="mt-1 font-poppins text-2xl font-bold text-ink md:text-3xl">
                       {money(headlinePrice ?? null)}
                     </p>
                     <p className="mt-2 text-sm text-slate-700">{c.address ?? 'Sin dirección'}</p>
@@ -105,13 +105,13 @@ export function ComparablesListBlock({ data, ...attrs }: Props) {
                       {c.total_area !== null && c.total_area !== undefined && (
                         <div>
                           <dt className="uppercase tracking-wide text-slate-400">Total</dt>
-                          <dd className="mt-0.5 font-medium text-slate-900">{c.total_area} m²</dd>
+                          <dd className="mt-0.5 font-medium text-ink">{c.total_area} m²</dd>
                         </div>
                       )}
                       {c.covered_area !== null && c.covered_area !== undefined && (
                         <div>
                           <dt className="uppercase tracking-wide text-slate-400">Cubierta</dt>
-                          <dd className="mt-0.5 font-medium text-slate-900">{c.covered_area} m²</dd>
+                          <dd className="mt-0.5 font-medium text-ink">{c.covered_area} m²</dd>
                         </div>
                       )}
                     </dl>

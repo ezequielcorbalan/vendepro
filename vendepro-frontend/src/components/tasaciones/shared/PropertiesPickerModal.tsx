@@ -131,7 +131,7 @@ export function PropertiesPickerModal({ open, onClose, onPick }: Props) {
         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
           <div className="flex items-center gap-2">
             <Building2 className="h-5 w-5 text-brand-pink" />
-            <h2 className="text-lg font-semibold text-slate-900">Elegir desde una propiedad cargada</h2>
+            <h2 className="text-lg font-semibold text-ink">Elegir desde una propiedad cargada</h2>
           </div>
           <button onClick={onClose} className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
             <X className="h-4 w-4" />
@@ -199,7 +199,7 @@ export function PropertiesPickerModal({ open, onClose, onPick }: Props) {
                     >
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="truncate text-sm font-semibold text-slate-800">{p.address}</span>
+                          <span className="truncate text-sm font-semibold text-ink">{p.address}</span>
                           {stageInfo && (
                             <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium whitespace-nowrap ${stageInfo.cls}`}>
                               {stageInfo.label}
@@ -219,7 +219,7 @@ export function PropertiesPickerModal({ open, onClose, onPick }: Props) {
                       </div>
                       <div className="text-right">
                         <p className="text-xs text-slate-400">{isVendida ? 'Cierre' : 'Listado'}</p>
-                        <p className="text-sm font-semibold text-slate-800">{formatPriceUsd(p.asking_price)}</p>
+                        <p className="text-sm font-semibold text-ink">{formatPriceUsd(p.asking_price)}</p>
                       </div>
                     </button>
                   </li>

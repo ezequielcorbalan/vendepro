@@ -19,11 +19,11 @@ export default function DashboardError({
       <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
         <AlertTriangle className="w-6 h-6 text-red-500" />
       </div>
-      <h2 className="text-lg font-semibold text-gray-800 mb-2">Algo salió mal</h2>
+      <h2 className="text-lg font-semibold text-ink mb-2">Algo salió mal</h2>
       <p className="text-sm text-gray-500 mb-4 max-w-sm">{error.message || 'Ocurrió un error inesperado.'}</p>
       <button
         onClick={reset}
-        className="bg-brand-pink text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
+        className="bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
       >
         Reintentar
       </button>

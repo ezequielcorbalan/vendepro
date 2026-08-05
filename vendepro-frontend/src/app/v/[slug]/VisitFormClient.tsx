@@ -153,7 +153,7 @@ export default function VisitFormClient({ slug, apiPublic, data }: Props) {
               <div className="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4">
                 <CheckCircle2 className="w-9 h-9 text-green-500" />
               </div>
-              <h1 className="text-2xl font-semibold text-gray-900 mb-2">¡Gracias!</h1>
+              <h1 className="text-2xl font-semibold text-ink mb-2">¡Gracias!</h1>
               <p className="text-gray-600">
                 Tu ficha de visita fue enviada correctamente. El agente la revisará para hacerte llegar
                 más información.
@@ -164,7 +164,7 @@ export default function VisitFormClient({ slug, apiPublic, data }: Props) {
                     <Home className="w-4 h-4" />
                     Propiedad visitada
                   </div>
-                  <div className="font-medium text-gray-900">{p.address}</div>
+                  <div className="font-medium text-ink">{p.address}</div>
                   {addressLine && <div className="text-sm text-gray-500 mt-0.5">{addressLine}</div>}
                 </div>
               )}
@@ -197,12 +197,12 @@ export default function VisitFormClient({ slug, apiPublic, data }: Props) {
           ) : (
             <div className="p-6">
               <div className="bg-brand-pink h-1 w-12 rounded-full mb-3" />
-              <h1 className="text-xl font-semibold text-gray-900">{p.address}</h1>
+              <h1 className="text-xl font-semibold text-ink">{p.address}</h1>
               {addressLine && <p className="text-sm text-gray-500 mt-1">{addressLine}</p>}
             </div>
           )}
           <div className="p-5 sm:p-6 border-t border-gray-100">
-            <h2 className="text-base font-semibold text-gray-900">Ficha de visita</h2>
+            <h2 className="text-base font-semibold text-ink">Ficha de visita</h2>
             <p className="text-sm text-gray-500 mt-1">
               Gracias por visitar esta propiedad. Tu opinión nos ayuda a ajustar la
               comercialización — te toma menos de 2 minutos.
@@ -329,7 +329,7 @@ export default function VisitFormClient({ slug, apiPublic, data }: Props) {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full bg-brand-pink hover:bg-[#e6006f] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm"
+            className="w-full bg-gradient-to-br from-brand-pink to-brand-orange hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm"
           >
             {submitting ? (
               <>
@@ -376,7 +376,7 @@ export default function VisitFormClient({ slug, apiPublic, data }: Props) {
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6 space-y-4">
-      <h2 className="text-base font-semibold text-gray-900">{title}</h2>
+      <h2 className="text-base font-semibold text-ink">{title}</h2>
       {children}
     </section>
   )

@@ -58,7 +58,7 @@ export default function NotificationBell() {
       {open && (
         <div className="absolute left-0 top-full mt-2 w-72 sm:w-80 bg-white rounded-xl shadow-xl border border-gray-200 z-50 overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-            <span className="text-sm font-semibold text-gray-800">Notificaciones</span>
+            <span className="text-sm font-semibold text-ink">Notificaciones</span>
             {active.length > 0 && (
               <button onClick={() => setDismissed(new Set(notifications.map(n => n.id)))} className="text-[10px] text-gray-400 hover:text-gray-600">
                 Limpiar

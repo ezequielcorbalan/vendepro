@@ -34,7 +34,7 @@ export default function LeadFormBlock({ data, mode, onSubmit }: Props) {
         {data.subtitle && <p className="opacity-90 mb-6">{data.subtitle}</p>}
 
         {success ? (
-          <div className="bg-white text-gray-900 rounded-2xl p-6 text-center">
+          <div className="bg-white text-ink rounded-2xl p-6 text-center">
             <p className="font-medium">{success}</p>
           </div>
         ) : (
@@ -50,7 +50,7 @@ export default function LeadFormBlock({ data, mode, onSubmit }: Props) {
                   onChange={(e) => setValues(v => ({ ...v, [field.key]: e.target.value }))}
                   required={field.required}
                   disabled={mode === 'editor'}
-                  className="w-full rounded-xl bg-white/95 text-gray-900 placeholder-gray-400 px-4 py-3 outline-none focus:ring-2 focus:ring-white"
+                  className="w-full rounded-xl bg-white/95 text-ink placeholder-gray-400 px-4 py-3 outline-none"
                 />
               </div>
             ))}
