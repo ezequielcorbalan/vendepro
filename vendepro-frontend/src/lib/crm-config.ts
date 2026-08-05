@@ -3,18 +3,22 @@
 // Fuente única de verdad para stages, tipos, colores, labels
 // ============================================================
 
+// Cada etapa define su tono canónico en 3 representaciones derivadas del MISMO
+// color: `color` (badge Tailwind), `dot` (hex del punto del timeline) y `border`
+// (borde izquierdo de la card). No definir estos colores en ningún otro archivo:
+// las pantallas leen de acá vía getStageConfig / getStageDot / getStageBorder.
 export const LEAD_STAGES = {
-  nuevo:       { label: 'Nuevo',        color: 'bg-blue-100 text-blue-800',       order: 1 },
-  asignado:    { label: 'Asignado',     color: 'bg-indigo-100 text-indigo-800',   order: 2 },
-  contactado:  { label: 'Contactado',   color: 'bg-cyan-100 text-cyan-800',       order: 3 },
-  calificado:  { label: 'Calificado',   color: 'bg-emerald-100 text-emerald-800', order: 4 },
-  en_tasacion: { label: 'En tasación',  color: 'bg-purple-100 text-purple-800',   order: 5 },
-  presentada:  { label: 'Presentada',   color: 'bg-pink-100 text-pink-800',       order: 6 },
-  seguimiento: { label: 'Seguimiento',  color: 'bg-yellow-100 text-yellow-800',   order: 7 },
-  captado:     { label: 'Captado',      color: 'bg-green-100 text-green-800',     order: 8 },
-  perdido:     { label: 'Perdido',      color: 'bg-red-100 text-red-800',         order: 9 },
-  invalido:    { label: 'Inválido',     color: 'bg-gray-100 text-gray-700',       order: 90 },
-  finalizado:  { label: 'Finalizado',   color: 'bg-emerald-100 text-emerald-700', order: 95 },
+  nuevo:       { label: 'Nuevo',        color: 'bg-blue-100 text-blue-800',       dot: '#3b82f6', border: 'border-l-blue-400',    order: 1 },
+  asignado:    { label: 'Asignado',     color: 'bg-indigo-100 text-indigo-800',   dot: '#6366f1', border: 'border-l-indigo-400',  order: 2 },
+  contactado:  { label: 'Contactado',   color: 'bg-cyan-100 text-cyan-800',       dot: '#06b6d4', border: 'border-l-cyan-400',    order: 3 },
+  calificado:  { label: 'Calificado',   color: 'bg-emerald-100 text-emerald-800', dot: '#10b981', border: 'border-l-emerald-400', order: 4 },
+  en_tasacion: { label: 'En tasación',  color: 'bg-purple-100 text-purple-800',   dot: '#a855f7', border: 'border-l-purple-400',  order: 5 },
+  presentada:  { label: 'Presentada',   color: 'bg-pink-100 text-pink-800',       dot: '#ec4899', border: 'border-l-pink-500',    order: 6 },
+  seguimiento: { label: 'Seguimiento',  color: 'bg-yellow-100 text-yellow-800',   dot: '#eab308', border: 'border-l-yellow-400',  order: 7 },
+  captado:     { label: 'Captado',      color: 'bg-green-100 text-green-800',     dot: '#22c55e', border: 'border-l-green-500',   order: 8 },
+  perdido:     { label: 'Perdido',      color: 'bg-red-100 text-red-800',         dot: '#ef4444', border: 'border-l-red-400',     order: 9 },
+  invalido:    { label: 'Inválido',     color: 'bg-gray-100 text-gray-700',       dot: '#6b7280', border: 'border-l-gray-300',    order: 90 },
+  finalizado:  { label: 'Finalizado',   color: 'bg-slate-100 text-slate-700',     dot: '#64748b', border: 'border-l-slate-400',   order: 95 },
 } as const
 
 export type LeadStage = keyof typeof LEAD_STAGES
@@ -28,15 +32,15 @@ export const LEAD_PIPELINE_STAGES = LEAD_STAGE_KEYS.filter(s => !LEAD_TERMINAL_S
 // Loop operativo: visito ↔ visita_agendada (un comprador visita varias propiedades);
 // oferta → visito (oferta caída que sigue buscando).
 export const BUYER_LEAD_STAGES = {
-  nuevo:           { label: 'Nuevo',           color: 'bg-blue-100 text-blue-800',       order: 1 },
-  contactado:      { label: 'Contactado',      color: 'bg-cyan-100 text-cyan-800',       order: 2 },
-  calificado:      { label: 'Calificado',      color: 'bg-emerald-100 text-emerald-800', order: 3 },
-  visita_agendada: { label: 'Visita agendada', color: 'bg-violet-100 text-violet-800',   order: 4 },
-  visito:          { label: 'Visitó',          color: 'bg-purple-100 text-purple-800',   order: 5 },
-  oferta:          { label: 'Oferta',          color: 'bg-amber-100 text-amber-800',     order: 6 },
-  cerrado:         { label: 'Cerrado',         color: 'bg-green-100 text-green-800',     order: 7 },
-  perdido:         { label: 'Perdido',         color: 'bg-red-100 text-red-800',         order: 9 },
-  invalido:        { label: 'Inválido',        color: 'bg-gray-100 text-gray-700',       order: 90 },
+  nuevo:           { label: 'Nuevo',           color: 'bg-blue-100 text-blue-800',       dot: '#3b82f6', border: 'border-l-blue-400',   order: 1 },
+  contactado:      { label: 'Contactado',      color: 'bg-cyan-100 text-cyan-800',       dot: '#06b6d4', border: 'border-l-cyan-400',   order: 2 },
+  calificado:      { label: 'Calificado',      color: 'bg-emerald-100 text-emerald-800', dot: '#10b981', border: 'border-l-emerald-400',order: 3 },
+  visita_agendada: { label: 'Visita agendada', color: 'bg-violet-100 text-violet-800',   dot: '#8b5cf6', border: 'border-l-violet-400', order: 4 },
+  visito:          { label: 'Visitó',          color: 'bg-purple-100 text-purple-800',   dot: '#a855f7', border: 'border-l-purple-400', order: 5 },
+  oferta:          { label: 'Oferta',          color: 'bg-amber-100 text-amber-800',     dot: '#f59e0b', border: 'border-l-amber-400',  order: 6 },
+  cerrado:         { label: 'Cerrado',         color: 'bg-green-100 text-green-800',     dot: '#22c55e', border: 'border-l-green-500',  order: 7 },
+  perdido:         { label: 'Perdido',         color: 'bg-red-100 text-red-800',         dot: '#ef4444', border: 'border-l-red-400',    order: 9 },
+  invalido:        { label: 'Inválido',        color: 'bg-gray-100 text-gray-700',       dot: '#6b7280', border: 'border-l-gray-300',   order: 90 },
 } as const
 
 export type BuyerLeadStage = keyof typeof BUYER_LEAD_STAGES
@@ -64,27 +68,53 @@ export const BUYER_LEAD_FORWARD_TRANSITIONS: Record<BuyerLeadStage, BuyerLeadSta
 export function getStagesForPipeline(pipeline: LeadPipelineKey) {
   if (pipeline === 'comprador') {
     return {
-      config: BUYER_LEAD_STAGES as Record<string, { label: string; color: string; order: number }>,
+      config: BUYER_LEAD_STAGES as Record<string, StageConfig>,
       keys: BUYER_LEAD_STAGE_KEYS as string[],
       pipelineStages: BUYER_LEAD_PIPELINE_STAGES as string[],
       terminalStages: BUYER_LEAD_TERMINAL_STAGES as string[],
     }
   }
   return {
-    config: LEAD_STAGES as Record<string, { label: string; color: string; order: number }>,
+    config: LEAD_STAGES as Record<string, StageConfig>,
     keys: LEAD_STAGE_KEYS as string[],
     pipelineStages: LEAD_PIPELINE_STAGES as string[],
     terminalStages: LEAD_TERMINAL_STAGES as string[],
   }
 }
 
+type StageConfig = { label: string; color: string; dot: string; border: string; order: number }
+const STAGE_FALLBACK: StageConfig = { label: '', color: 'bg-gray-100 text-gray-600', dot: '#9ca3af', border: 'border-l-gray-300', order: 0 }
+
 /** Config de un stage según el pipeline del lead (fallback gris si es desconocido). */
-export function getStageConfig(stage: string, pipeline?: string | null) {
+export function getStageConfig(stage: string, pipeline?: string | null): StageConfig {
   const cfg = pipeline === 'comprador'
-    ? (BUYER_LEAD_STAGES as Record<string, { label: string; color: string; order: number }>)[stage]
-    : (LEAD_STAGES as Record<string, { label: string; color: string; order: number }>)[stage]
-  return cfg ?? { label: stage, color: 'bg-gray-100 text-gray-600', order: 0 }
+    ? (BUYER_LEAD_STAGES as Record<string, StageConfig>)[stage]
+    : (LEAD_STAGES as Record<string, StageConfig>)[stage]
+  return cfg ?? { ...STAGE_FALLBACK, label: stage }
 }
+
+/** Config mergeada (vendedor ∪ comprador) para lookups sin contexto de pipeline,
+ * p. ej. el timeline de stage_history. Las claves compartidas tienen el mismo color. */
+function getMergedStageConfig(stage: string): StageConfig | undefined {
+  return (LEAD_STAGES as Record<string, StageConfig>)[stage]
+    ?? (BUYER_LEAD_STAGES as Record<string, StageConfig>)[stage]
+}
+
+/** Color hex del punto (dot) del timeline por etapa. Fuente única. */
+export function getStageDot(stage: string): string {
+  return getMergedStageConfig(stage)?.dot ?? STAGE_FALLBACK.dot
+}
+
+/** Clase del borde izquierdo de la card por etapa. Fuente única. */
+export function getStageBorder(stage: string): string {
+  return getMergedStageConfig(stage)?.border ?? STAGE_FALLBACK.border
+}
+
+// Paleta categórica única para gráficos (funnels, barras). Alineada a los tonos
+// del pipeline: cada color coincide con el dot de la etapa correspondiente
+// (nuevo → contactado → calificado → en_tasación → presentada → seguimiento →
+// captado), así el azul del gráfico es el mismo azul del badge "nuevo".
+export const CHART_PALETTE = ['#3b82f6', '#06b6d4', '#10b981', '#a855f7', '#ec4899', '#eab308', '#22c55e'] as const
 
 // ── LEAD PROPERTIES (propiedades de interés de un comprador) ──
 export const LEAD_PROPERTY_STATUSES = {
