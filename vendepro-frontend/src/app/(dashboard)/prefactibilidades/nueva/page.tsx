@@ -18,7 +18,7 @@ const steps = [
   { label: 'Conclusión', icon: FileText },
 ]
 
-const inputClass = 'w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-pink/30 focus:border-brand-pink outline-none bg-white'
+const inputClass = 'w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none bg-white'
 const labelClass = 'block text-xs font-medium text-gray-500 mb-1'
 
 interface UnitMix { type: string; count: string; avg_m2: string }
@@ -143,7 +143,7 @@ export default function NuevaPrefactibilidadPage() {
           <BarChart3 className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-gray-800">Estudio de Prefactibilidad</h1>
+          <h1 className="text-xl font-bold text-ink">Estudio de Prefactibilidad</h1>
           <p className="text-xs text-gray-400">Análisis de viabilidad para lotes e inversores · Paso {step + 1} de {steps.length}</p>
         </div>
       </div>
@@ -171,7 +171,7 @@ export default function NuevaPrefactibilidadPage() {
         {/* Step 0: Terreno */}
         {step === 0 && (
           <div className="space-y-4">
-            <h2 className="font-bold text-gray-800 mb-4">Datos del terreno</h2>
+            <h2 className="font-bold text-ink mb-4">Datos del terreno</h2>
             <div>
               <label className={labelClass}>Dirección *</label>
               <input className={inputClass} value={address} onChange={e => setAddress(e.target.value)} placeholder="Soler 3317" />
@@ -229,7 +229,7 @@ export default function NuevaPrefactibilidadPage() {
         {/* Step 1: Proyecto */}
         {step === 1 && (
           <div className="space-y-4">
-            <h2 className="font-bold text-gray-800 mb-4">Proyecto propuesto</h2>
+            <h2 className="font-bold text-ink mb-4">Proyecto propuesto</h2>
             <div>
               <label className={labelClass}>Nombre del proyecto</label>
               <input className={inputClass} value={projectName} onChange={e => setProjectName(e.target.value)} placeholder="Torre Soler" />
@@ -341,7 +341,7 @@ export default function NuevaPrefactibilidadPage() {
         {/* Step 2: Economía */}
         {step === 2 && (
           <div className="space-y-4">
-            <h2 className="font-bold text-gray-800 mb-4">Análisis económico</h2>
+            <h2 className="font-bold text-ink mb-4">Análisis económico</h2>
             <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-xs text-orange-700">
               Todos los valores en USD
             </div>
@@ -378,7 +378,7 @@ export default function NuevaPrefactibilidadPage() {
 
             <div className="bg-gray-50 rounded-xl p-4">
               <p className="text-xs text-gray-500 mb-1">Inversión total</p>
-              <p className="text-2xl font-black text-gray-800">USD {totalInvestment.toLocaleString('es-AR')}</p>
+              <p className="text-2xl font-black text-ink">USD {totalInvestment.toLocaleString('es-AR')}</p>
             </div>
 
             <h3 className="font-semibold text-gray-700 text-sm mt-6">Ingresos proyectados</h3>
@@ -414,7 +414,7 @@ export default function NuevaPrefactibilidadPage() {
         {/* Step 3: Comparables */}
         {step === 3 && (
           <div className="space-y-4">
-            <h2 className="font-bold text-gray-800 mb-4">Comparables de la zona</h2>
+            <h2 className="font-bold text-ink mb-4">Comparables de la zona</h2>
             {comparables.map((c, idx) => (
               <div key={idx} className="border border-gray-200 rounded-lg p-3 space-y-2">
                 <div className="flex justify-between items-center">
@@ -506,7 +506,7 @@ export default function NuevaPrefactibilidadPage() {
         {/* Step 4: Conclusión */}
         {step === 4 && (
           <div className="space-y-4">
-            <h2 className="font-bold text-gray-800 mb-4">Conclusión</h2>
+            <h2 className="font-bold text-ink mb-4">Conclusión</h2>
             <div>
               <label className={labelClass}>Resumen ejecutivo</label>
               <textarea
@@ -528,7 +528,7 @@ export default function NuevaPrefactibilidadPage() {
 
             {/* Summary */}
             <div className="bg-gradient-to-br from-pink-50 to-orange-50 rounded-xl p-5 border border-pink-100">
-              <h3 className="font-bold text-gray-800 mb-3">Resumen del estudio</h3>
+              <h3 className="font-bold text-ink mb-3">Resumen del estudio</h3>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div><span className="text-gray-500">Inversión total:</span> <strong>USD {totalInvestment.toLocaleString('es-AR')}</strong></div>
                 <div><span className="text-gray-500">Ingresos proyectados:</span> <strong>USD {projectedRevenue.toLocaleString('es-AR')}</strong></div>
@@ -552,7 +552,7 @@ export default function NuevaPrefactibilidadPage() {
         {step < steps.length - 1 ? (
           <button
             onClick={() => setStep(s => Math.min(steps.length - 1, s + 1))}
-            className="inline-flex items-center gap-2 bg-brand-pink text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:opacity-90"
+            className="inline-flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:opacity-90"
           >
             Siguiente <ArrowRight className="w-4 h-4" />
           </button>

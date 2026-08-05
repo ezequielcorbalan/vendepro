@@ -48,7 +48,7 @@ export default function AutomationsPage() {
               <Workflow className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-gray-800">Automatizaciones</h1>
+              <h1 className="text-xl font-semibold text-ink">Automatizaciones</h1>
               <p className="text-sm text-gray-500 mt-0.5">Secuencias de emails que se envían solas a lo largo del tiempo</p>
             </div>
           </div>
@@ -94,7 +94,7 @@ export default function AutomationsPage() {
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-gray-800 truncate">{a.name}</span>
+                      <span className="font-medium text-ink truncate">{a.name}</span>
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${st.cls}`}>{st.label}</span>
                     </div>
                     <div className="flex items-center gap-3 text-sm text-gray-500 mt-0.5">

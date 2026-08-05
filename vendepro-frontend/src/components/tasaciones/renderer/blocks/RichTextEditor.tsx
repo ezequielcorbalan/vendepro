@@ -75,7 +75,7 @@ function ToolbarButton({ title, onClick, children }: { title: string; onClick: (
       // preventDefault en mousedown para no robar el foco al área editable.
       onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
-      className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+      className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-ink"
     >
       {children}
     </button>

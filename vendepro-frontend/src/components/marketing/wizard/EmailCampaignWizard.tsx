@@ -129,7 +129,7 @@ export default function EmailCampaignWizard({ campaignId }: { campaignId?: strin
 
   return (
     <div className="max-w-3xl mx-auto">
-      <Link href="/marketing/emails" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 mb-6">
+      <Link href="/marketing/emails" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-ink mb-6">
         <ArrowLeft className="w-4 h-4" /> Volver a campañas
       </Link>
 
@@ -140,7 +140,7 @@ export default function EmailCampaignWizard({ campaignId }: { campaignId?: strin
             <Mail className="w-5 h-5 text-white" />
           </div>
           <input
-            className="flex-1 text-lg font-semibold text-gray-800 border-0 border-b border-transparent focus:border-brand-pink outline-none placeholder:text-gray-300"
+            className="flex-1 text-lg font-semibold text-ink border-0 border-b border-transparent outline-none placeholder:text-gray-300"
             placeholder="Nombre de la campaña (interno)"
             value={name}
             onChange={e => setName(e.target.value)}
@@ -154,7 +154,7 @@ export default function EmailCampaignWizard({ campaignId }: { campaignId?: strin
                 onClick={() => s.n < step && setStep(s.n)}
                 className={`flex items-center gap-1.5 text-sm ${
                   s.n === step ? 'text-brand-pink font-semibold'
-                  : s.n < step ? 'text-gray-600 hover:text-gray-800'
+                  : s.n < step ? 'text-gray-600 hover:text-ink'
                   : 'text-gray-300'
                 }`}
               >
@@ -194,7 +194,7 @@ export default function EmailCampaignWizard({ campaignId }: { campaignId?: strin
           <button
             onClick={() => saveDraft()}
             disabled={saving}
-            className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 disabled:opacity-50"
+            className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-ink disabled:opacity-50"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Guardar borrador

@@ -31,7 +31,7 @@ export default function UnsubscribeClient({
         {status === 'done' ? (
           <>
             <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-4" />
-            <h1 className="text-lg font-semibold text-gray-800 mb-2">Listo, te diste de baja</h1>
+            <h1 className="text-lg font-semibold text-ink mb-2">Listo, te diste de baja</h1>
             <p className="text-sm text-gray-500">
               <span className="font-medium text-gray-700">{email}</span> no va a recibir más emails
               de marketing. Podés cerrar esta página.
@@ -40,7 +40,7 @@ export default function UnsubscribeClient({
         ) : status === 'error' ? (
           <>
             <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <h1 className="text-lg font-semibold text-gray-800 mb-2">No pudimos procesar la baja</h1>
+            <h1 className="text-lg font-semibold text-ink mb-2">No pudimos procesar la baja</h1>
             <p className="text-sm text-gray-500 mb-4">Probá de nuevo en unos minutos.</p>
             <button
               onClick={confirm}
@@ -52,7 +52,7 @@ export default function UnsubscribeClient({
         ) : (
           <>
             <MailX className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h1 className="text-lg font-semibold text-gray-800 mb-2">Cancelar suscripción</h1>
+            <h1 className="text-lg font-semibold text-ink mb-2">Cancelar suscripción</h1>
             <p className="text-sm text-gray-500 mb-6">
               ¿Querés dejar de recibir emails de marketing en{' '}
               <span className="font-medium text-gray-700">{email}</span>?

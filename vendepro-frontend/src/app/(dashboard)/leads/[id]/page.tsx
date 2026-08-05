@@ -15,21 +15,12 @@ import { useToast } from '@/components/ui/Toast'
 import { useConfirm } from '@/components/ui/useConfirm'
 import {
   LEAD_SOURCES, OPERATION_TYPES,
-  formatWhatsApp, getStageConfig,
+  formatWhatsApp, getStageConfig, getStageDot,
   PROPERTY_STAGES, type PropertyStage,
 } from '@/lib/crm-config'
 import { formatDate } from '@/lib/utils'
 import { LeadStagePipeline } from '@/components/leads/LeadStagePipeline'
 import { LeadPropertiesSection } from '@/components/leads/LeadPropertiesSection'
-
-const STAGE_DOT_COLORS: Record<string, string> = {
-  nuevo: '#3b82f6', asignado: '#6366f1', contactado: '#06b6d4',
-  calificado: '#10b981', en_tasacion: '#8b5cf6', presentada: '#ec4899',
-  seguimiento: '#f59e0b', captado: '#22c55e', perdido: '#ef4444',
-  invalido: '#6b7280', finalizado: '#10b981',
-  // Pipeline comprador
-  visita_agendada: '#8b5cf6', visito: '#a855f7', oferta: '#f59e0b', cerrado: '#22c55e',
-}
 
 // Etapas en las que conviene tener una propiedad/tasación vinculada: si el lead
 // no tiene, ofrecemos crear/vincular antes de avanzar.
@@ -313,7 +304,7 @@ export default function LeadDetailPage() {
               <button onClick={() => { setEditing(false); setEditForm(lead) }} className="border px-3 py-1.5 rounded-lg text-sm text-gray-600">
                 <X className="w-4 h-4" />
               </button>
-              <button onClick={handleSave} disabled={saving} className="bg-brand-pink text-white px-3 py-1.5 rounded-lg text-sm flex items-center gap-1.5 disabled:opacity-50">
+              <button onClick={handleSave} disabled={saving} className="bg-gradient-to-br from-brand-pink to-brand-orange text-white px-3 py-1.5 rounded-lg text-sm flex items-center gap-1.5 disabled:opacity-50">
                 <Save className="w-3.5 h-3.5" /> Guardar
               </button>
             </>
@@ -428,7 +419,7 @@ export default function LeadDetailPage() {
             {/* Name + stage badge + contact type badge */}
             <div className="flex items-start justify-between gap-3 mb-2">
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-2xl font-bold text-gray-900">{lead.full_name}</h1>
+                <h1 className="text-2xl font-bold text-ink">{lead.full_name}</h1>
                 <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${stage.color}`}>{stage.label}</span>
                 {lead.contact_id && (
                   <Link
@@ -553,14 +544,14 @@ export default function LeadDetailPage() {
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-sm">
               <User className="w-4 h-4 text-white" />
             </div>
-            <h2 className="font-bold text-gray-900">Datos del lead</h2>
+            <h2 className="font-bold text-ink">Datos del lead</h2>
           </div>
           <div className="space-y-4">
             <div className="flex items-start gap-3">
               <User className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
               <div>
                 <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Nombre</p>
-                <p className="text-sm text-gray-800">{lead.full_name || '—'}</p>
+                <p className="text-sm text-ink">{lead.full_name || '—'}</p>
               </div>
             </div>
             {lead.phone && (
@@ -586,7 +577,7 @@ export default function LeadDetailPage() {
                 <Target className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
                 <div>
                   <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Fuente</p>
-                  <p className="text-sm text-gray-800">{LEAD_SOURCES[lead.source as keyof typeof LEAD_SOURCES]?.label || lead.source}</p>
+                  <p className="text-sm text-ink">{LEAD_SOURCES[lead.source as keyof typeof LEAD_SOURCES]?.label || lead.source}</p>
                 </div>
               </div>
             )}
@@ -595,7 +586,7 @@ export default function LeadDetailPage() {
                 <Building2 className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
                 <div>
                   <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Operación</p>
-                  <p className="text-sm text-gray-800 capitalize">{OPERATION_TYPES[lead.operation as keyof typeof OPERATION_TYPES]?.label || lead.operation}</p>
+                  <p className="text-sm text-ink capitalize">{OPERATION_TYPES[lead.operation as keyof typeof OPERATION_TYPES]?.label || lead.operation}</p>
                 </div>
               </div>
             )}
@@ -604,7 +595,7 @@ export default function LeadDetailPage() {
                 <DollarSign className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
                 <div>
                   <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Valor estimado</p>
-                  <p className="text-sm text-gray-800">USD {lead.estimated_value}</p>
+                  <p className="text-sm text-ink">USD {lead.estimated_value}</p>
                 </div>
               </div>
             )}
@@ -613,7 +604,7 @@ export default function LeadDetailPage() {
                 <MapPin className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
                 <div>
                   <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Propiedad</p>
-                  <p className="text-sm text-gray-800">{lead.property_address || lead.neighborhood}</p>
+                  <p className="text-sm text-ink">{lead.property_address || lead.neighborhood}</p>
                 </div>
               </div>
             )}
@@ -631,7 +622,7 @@ export default function LeadDetailPage() {
               <div>
                 <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Próximo paso</p>
                 {lead.next_step ? (
-                  <p className="text-sm text-gray-800">{lead.next_step}{lead.next_step_date && <span className="text-gray-400 text-xs ml-1">· {formatDate(lead.next_step_date)}</span>}</p>
+                  <p className="text-sm text-ink">{lead.next_step}{lead.next_step_date && <span className="text-gray-400 text-xs ml-1">· {formatDate(lead.next_step_date)}</span>}</p>
                 ) : (
                   <button onClick={() => setEditing(true)} className="text-sm text-gray-400 hover:text-brand-pink transition-colors">+ Definir próximo paso</button>
                 )}
@@ -647,7 +638,7 @@ export default function LeadDetailPage() {
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-sm">
                 <Activity className="w-4 h-4 text-white" />
               </div>
-              <h2 className="font-bold text-gray-900">Actividades</h2>
+              <h2 className="font-bold text-ink">Actividades</h2>
             </div>
             <Link
               href={`/actividades?lead_id=${leadId}`}
@@ -692,7 +683,7 @@ export default function LeadDetailPage() {
       {!isBuyer && (
       <div className="bg-white border rounded-xl p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-bold text-gray-900 flex items-center gap-2">
+          <h2 className="font-bold text-ink flex items-center gap-2">
             <FileText className="w-4 h-4 text-brand-pink" /> Fichas de tasación
           </h2>
           <button
@@ -720,7 +711,7 @@ export default function LeadDetailPage() {
                   <FileText className="w-4 h-4 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-800 truncate">{ficha.address || 'Sin dirección'}</p>
+                  <p className="text-sm font-medium text-ink truncate">{ficha.address || 'Sin dirección'}</p>
                   <p className="text-xs text-gray-400">
                     {ficha.inspection_date ? formatDate(ficha.inspection_date) : (ficha.created_at ? formatDate(ficha.created_at) : '—')}
                     {ficha.neighborhood ? ` · ${ficha.neighborhood}` : ''}
@@ -752,11 +743,11 @@ export default function LeadDetailPage() {
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-sm">
               <Calendar className="w-4 h-4 text-white" />
             </div>
-            <h2 className="font-bold text-gray-900">Historial de etapas</h2>
+            <h2 className="font-bold text-ink">Historial de etapas</h2>
           </div>
           <div className="space-y-3">
             {stageHistory.map((h: any) => {
-              const dotColor = STAGE_DOT_COLORS[h.to_stage] ?? '#9ca3af'
+              const dotColor = getStageDot(h.to_stage)
               return (
                 <div key={h.id ?? h.changed_at ?? h.created_at} className="flex items-start gap-3">
                   <span
@@ -764,7 +755,7 @@ export default function LeadDetailPage() {
                     style={{ background: dotColor }}
                   />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-800">
+                    <p className="text-sm font-medium text-ink">
                       {h.from_stage ? getStageConfig(h.from_stage, lead.pipeline).label : '—'} → {getStageConfig(h.to_stage, lead.pipeline).label}
                     </p>
                     <p className="text-xs text-gray-400">
@@ -782,7 +773,7 @@ export default function LeadDetailPage() {
       {propModal && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setPropModal(null)}>
           <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-5" onClick={e => e.stopPropagation()}>
-            <h3 className="font-semibold text-gray-800 mb-2">
+            <h3 className="font-semibold text-ink mb-2">
               {propModal.requireProperty
                 ? 'Necesitás una propiedad vinculada'
                 : `Vincular propiedad o tasación`}
@@ -798,7 +789,7 @@ export default function LeadDetailPage() {
               <button onClick={goCreateProperty} className="w-full px-4 py-3 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 flex items-center justify-center gap-2">
                 <Home className="w-4 h-4" /> Crear propiedad vinculada
               </button>
-              <button onClick={goCreateAppraisal} className="w-full px-4 py-3 bg-brand-pink text-white rounded-xl text-sm font-medium hover:opacity-90 flex items-center justify-center gap-2">
+              <button onClick={goCreateAppraisal} className="w-full px-4 py-3 bg-gradient-to-br from-brand-pink to-brand-orange text-white rounded-xl text-sm font-medium hover:opacity-90 flex items-center justify-center gap-2">
                 <FileText className="w-4 h-4" /> Crear tasación vinculada
               </button>
               {!propModal.requireProperty && (
@@ -816,7 +807,7 @@ export default function LeadDetailPage() {
       {showReservaModal && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowReservaModal(false)}>
           <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-5" onClick={e => e.stopPropagation()}>
-            <h3 className="font-semibold text-gray-800 mb-2">Cerrar comprador</h3>
+            <h3 className="font-semibold text-ink mb-2">Cerrar comprador</h3>
             <p className="text-sm text-gray-500 mb-4">
               La oferta de <strong>{lead.full_name}</strong> fue aceptada. ¿Querés crear la reserva para seguir el cierre en Operaciones?
             </p>

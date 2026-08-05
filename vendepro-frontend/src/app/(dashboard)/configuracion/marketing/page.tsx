@@ -263,12 +263,12 @@ export default function MarketingConfigPage() {
     setTestRunning(false)
   }
 
-  const inputCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-pink/20 focus:border-brand-pink outline-none'
+  const inputCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none'
   const labelCls = 'block text-sm font-medium text-gray-700 mb-1'
 
   return (
     <div>
-      <Link href="/configuracion" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 mb-6">
+      <Link href="/configuracion" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-ink mb-6">
         <ArrowLeft className="w-4 h-4" /> Volver a Configuración
       </Link>
 
@@ -281,7 +281,7 @@ export default function MarketingConfigPage() {
             <Megaphone className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-gray-800">Marketing</h1>
+            <h1 className="text-xl font-semibold text-ink">Marketing</h1>
             <p className="text-sm text-gray-500 mt-0.5">Tu Meta Pixel + Google Analytics 4 + GTM — la configuración es por agente</p>
           </div>
         </div>
@@ -304,7 +304,7 @@ export default function MarketingConfigPage() {
               className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${
                 tab === t.id
                   ? 'bg-white text-brand-pink shadow-sm'
-                  : 'text-gray-600 hover:text-gray-800'
+                  : 'text-gray-600 hover:text-ink'
               }`}
             >
               <Icon className="w-3.5 h-3.5" /> {t.label}
@@ -323,7 +323,7 @@ export default function MarketingConfigPage() {
               onChange={e => setIntegration({ ...integration, enabled: e.target.checked })}
               className="w-4 h-4 accent-brand-pink"
             />
-            <span className="text-sm font-medium text-gray-800">
+            <span className="text-sm font-medium text-ink">
               Activar Meta Conversion API
             </span>
           </label>
@@ -409,7 +409,7 @@ export default function MarketingConfigPage() {
                 onChange={e => setIntegration({ ...integration, ga4_enabled: e.target.checked })}
                 className="w-4 h-4 accent-brand-pink"
               />
-              <span className="text-sm font-medium text-gray-800">
+              <span className="text-sm font-medium text-ink">
                 Activar Google Analytics 4 (Measurement Protocol)
               </span>
             </label>
@@ -613,7 +613,7 @@ export default function MarketingConfigPage() {
                           {e.provider}
                         </span>
                       )}
-                      <span className="font-medium text-gray-800 whitespace-nowrap">{e.event_name}</span>
+                      <span className="font-medium text-ink whitespace-nowrap">{e.event_name}</span>
                       {e.entity_type && e.entity_id && (
                         <span className="text-gray-500 whitespace-nowrap">
                           {e.entity_type}:
@@ -652,7 +652,7 @@ export default function MarketingConfigPage() {
           <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="bg-gradient-to-r from-brand-pink to-brand-orange h-1.5" />
             <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Probar evento</h3>
+              <h3 className="text-lg font-semibold text-ink mb-4">Probar evento</h3>
               <label className={labelCls}>Evento a simular</label>
               <select value={testStage} onChange={e => setTestStage(e.target.value)} className={`${inputCls} mb-3`}>
                 {EVENT_KEY_GROUPS.map(g => (

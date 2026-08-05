@@ -79,7 +79,7 @@ export default function LoginPage() {
         <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-brand-pink to-brand-orange rounded-t-2xl" />
         <div className="text-center mb-6 sm:mb-8">
           <img src="/brand/logo-horizontal.png" alt="VendéPro" className="h-12 sm:h-16 mx-auto mb-3 sm:mb-4" />
-          <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">CRM Inmobiliario</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold text-ink">CRM Inmobiliario</h1>
           <p className="text-gray-500 text-sm mt-1">Ingresá con tu cuenta de agente</p>
         </div>
 
@@ -93,7 +93,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-pink/50 focus:border-brand-pink"
+              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none"
               placeholder="tu@email.com"
             />
           </div>
@@ -105,7 +105,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-pink/50 focus:border-brand-pink"
+              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none"
               placeholder="••••••••"
             />
           </div>

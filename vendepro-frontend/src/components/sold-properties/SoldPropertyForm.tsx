@@ -18,7 +18,7 @@ interface Props {
 }
 
 const inputCls =
-  'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-pink/20 focus:border-brand-pink outline-none'
+  'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none'
 const labelCls = 'block text-xs font-medium text-gray-700 mb-1'
 
 export default function SoldPropertyForm({ initial, onCancel, onSaved }: Props) {

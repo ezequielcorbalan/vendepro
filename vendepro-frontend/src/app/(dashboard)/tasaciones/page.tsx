@@ -60,7 +60,7 @@ export default function TasacionesPage() {
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Tasaciones</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold text-ink">Tasaciones</h1>
           <p className="text-gray-500 text-sm mt-1">Tasaciones profesionales para propietarios</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -73,7 +73,7 @@ export default function TasacionesPage() {
           <Link href="/prefactibilidades/nueva" className="border border-orange-300 bg-orange-50 text-orange-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-orange-100 flex items-center gap-2">
             <Plus className="w-4 h-4" /> Prefactibilidad
           </Link>
-          <Link href="/tasaciones/nueva" className="bg-brand-pink text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 flex items-center gap-2">
+          <Link href="/tasaciones/nueva" className="bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 flex items-center gap-2">
             <Plus className="w-4 h-4" /> Nueva tasación
           </Link>
         </div>
@@ -88,7 +88,7 @@ export default function TasacionesPage() {
           <ClipboardList className="w-12 h-12 text-gray-300 mx-auto mb-4" />
           <h2 className="text-lg font-medium text-gray-600 mb-2">Sin tasaciones</h2>
           <p className="text-gray-400 text-sm mb-6">Creá tu primera tasación</p>
-          <Link href="/tasaciones/nueva" className="inline-flex items-center gap-2 bg-brand-pink text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:opacity-90">
+          <Link href="/tasaciones/nueva" className="inline-flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:opacity-90">
             <Plus className="w-4 h-4" /> Crear tasación
           </Link>
         </div>
@@ -100,7 +100,7 @@ export default function TasacionesPage() {
               <div key={a.id} className="bg-white rounded-xl border p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <Link href={`/tasaciones/${a.id}`} className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="font-semibold text-gray-800 truncate">{a.property_address}</h3>
+                    <h3 className="font-semibold text-ink truncate">{a.property_address}</h3>
                     <span className={`text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-medium ${st.color}`}>{st.label}</span>
                   </div>
                   <div className="flex items-center gap-3 mt-1 text-xs sm:text-sm text-gray-500">

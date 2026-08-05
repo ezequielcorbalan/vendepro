@@ -29,7 +29,7 @@ export default function VendidasPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Vendidas</h1>
+        <h1 className="text-xl sm:text-2xl font-semibold text-ink">Vendidas</h1>
         <p className="text-gray-500 text-sm mt-1">{properties.length} propiedad{properties.length !== 1 ? 'es' : ''} vendida{properties.length !== 1 ? 's' : ''}</p>
       </div>
 
@@ -39,7 +39,7 @@ export default function VendidasPage() {
             <div className="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center mb-2">
               <TrendingUp className="w-4 h-4 text-green-600" />
             </div>
-            <p className="text-2xl font-bold text-gray-800">{properties.length}</p>
+            <p className="text-2xl font-bold text-ink">{properties.length}</p>
             <p className="text-xs text-gray-500 mt-0.5">Total vendidas</p>
           </div>
           {totalUSD > 0 && (
@@ -47,7 +47,7 @@ export default function VendidasPage() {
               <div className="w-8 h-8 bg-brand-pink/10 rounded-lg flex items-center justify-center mb-2">
                 <DollarSign className="w-4 h-4 text-brand-pink" />
               </div>
-              <p className="text-xl font-bold text-gray-800">USD {totalUSD.toLocaleString('es-AR')}</p>
+              <p className="text-xl font-bold text-ink">USD {totalUSD.toLocaleString('es-AR')}</p>
               <p className="text-xs text-gray-500 mt-0.5">Valuación total</p>
             </div>
           )}
@@ -61,7 +61,7 @@ export default function VendidasPage() {
       ) : properties.length === 0 ? (
         <div className="bg-white rounded-xl border p-8 sm:p-12 text-center">
           <DollarSign className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h2 className="text-lg font-medium text-gray-800 mb-2">Sin propiedades vendidas</h2>
+          <h2 className="text-lg font-medium text-ink mb-2">Sin propiedades vendidas</h2>
           <p className="text-gray-500">Aparecerán aquí las propiedades con etapa "Vendida"</p>
         </div>
       ) : (
@@ -71,7 +71,7 @@ export default function VendidasPage() {
               <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-5 hover:shadow-md hover:border-gray-300 transition-all">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-800 truncate mb-1">{p.address}</h3>
+                    <h3 className="font-semibold text-ink truncate mb-1">{p.address}</h3>
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
                       {p.neighborhood && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{p.neighborhood}</span>}
                       {p.property_type && <span className="flex items-center gap-1"><Building2 className="w-3 h-3" />{p.property_type}</span>}

@@ -161,7 +161,7 @@ export function LeadPropertiesSection({ leadId }: { leadId: string }) {
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder="Buscar por dirección o barrio..."
-              className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/30"
+              className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none"
             />
           </div>
           {searching && <p className="text-xs text-gray-400 mt-2">Buscando…</p>}
@@ -174,7 +174,7 @@ export function LeadPropertiesSection({ leadId }: { leadId: string }) {
                   disabled={busyId === 'link'}
                   className="w-full text-left px-3 py-2.5 text-sm hover:bg-pink-50 disabled:opacity-50"
                 >
-                  <span className="font-medium text-gray-800">{r.address}</span>
+                  <span className="font-medium text-ink">{r.address}</span>
                   {r.neighborhood && <span className="text-gray-400"> · {r.neighborhood}</span>}
                 </button>
               ))}
@@ -211,7 +211,7 @@ export function LeadPropertiesSection({ leadId }: { leadId: string }) {
                     <div className="flex items-center gap-2 flex-wrap">
                       <Link
                         href={`/propiedades/${item.property_id}`}
-                        className="text-sm font-semibold text-gray-800 hover:text-brand-pink truncate"
+                        className="text-sm font-semibold text-ink hover:text-brand-pink truncate"
                       >
                         {item.property_address}
                       </Link>

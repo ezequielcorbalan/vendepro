@@ -154,7 +154,7 @@ export default function RegisterPage() {
     router.refresh()
   }
 
-  const inputClass = 'w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/50 focus:border-brand-pink'
+  const inputClass = 'w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none'
 
   const STEPS = ['Tu inmobiliaria', 'Tu cuenta', 'Personalización']
 
@@ -164,7 +164,7 @@ export default function RegisterPage() {
         {/* Logo */}
         <div className="text-center mb-6">
           <img src="/brand/logo-horizontal.png" alt="VendéPro" className="h-12 mx-auto mb-3" />
-          <h1 className="text-xl font-semibold text-gray-800">Registrá tu inmobiliaria</h1>
+          <h1 className="text-xl font-semibold text-ink">Registrá tu inmobiliaria</h1>
         </div>
 
         {/* Progress bar */}
@@ -237,7 +237,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={slugStatus === 'taken' || slugStatus === 'checking' || !form.org_name}
-              className="w-full bg-brand-pink text-white font-medium py-2.5 rounded-lg hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-br from-brand-pink to-brand-orange text-white font-medium py-2.5 rounded-lg hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               Continuar <ChevronRight className="w-4 h-4" />
             </button>
@@ -292,7 +292,7 @@ export default function RegisterPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 bg-brand-pink text-white font-medium py-2.5 rounded-lg hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 bg-gradient-to-br from-brand-pink to-brand-orange text-white font-medium py-2.5 rounded-lg hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                 {loading ? 'Creando...' : 'Crear cuenta'}
@@ -332,7 +332,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-brand-pink text-white font-medium py-2.5 rounded-lg hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-br from-brand-pink to-brand-orange text-white font-medium py-2.5 rounded-lg hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               Guardar y entrar

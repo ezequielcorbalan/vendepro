@@ -25,7 +25,7 @@ export default function LandingMobileInfo({ landing }: { landing: Landing }) {
         <Link href="/landings" className="p-1.5 hover:bg-gray-100 rounded-lg" aria-label="Volver">
           <ArrowLeft className="w-5 h-5 text-gray-700" />
         </Link>
-        <h1 className="font-semibold text-gray-900 truncate flex-1">Detalle de landing</h1>
+        <h1 className="font-semibold text-ink truncate flex-1">Detalle de landing</h1>
       </header>
 
       <div className="p-4 space-y-4">
@@ -39,7 +39,7 @@ export default function LandingMobileInfo({ landing }: { landing: Landing }) {
           )}
           <div className="p-4 space-y-2">
             <div className="flex items-start justify-between gap-2">
-              <h2 className="font-semibold text-gray-900 text-lg leading-tight">
+              <h2 className="font-semibold text-ink text-lg leading-tight">
                 {landing.seo_title || landing.full_slug}
               </h2>
               <StatusBadge status={landing.status} />
@@ -57,13 +57,13 @@ export default function LandingMobileInfo({ landing }: { landing: Landing }) {
         <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-3">
           <div>
             <p className="text-xs uppercase tracking-wider font-semibold text-gray-500 mb-1">URL pública</p>
-            <p className="text-sm font-mono text-gray-900 break-all">{publicLandingHostPath(landing.full_slug)}</p>
+            <p className="text-sm font-mono text-ink break-all">{publicLandingHostPath(landing.full_slug)}</p>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={copyUrl}
-              className="inline-flex items-center justify-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium py-2.5 rounded-xl transition-colors"
+              className="inline-flex items-center justify-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-ink text-sm font-medium py-2.5 rounded-xl transition-colors"
             >
               {copied ? <><Check className="w-4 h-4" /> Copiado</> : <><Copy className="w-4 h-4" /> Copiar</>}
             </button>
@@ -72,7 +72,7 @@ export default function LandingMobileInfo({ landing }: { landing: Landing }) {
                 href={url}
                 target="_blank"
                 rel="noopener"
-                className="inline-flex items-center justify-center gap-1.5 bg-brand-pink hover:bg-[#e60070] text-white text-sm font-semibold py-2.5 rounded-xl"
+                className="inline-flex items-center justify-center gap-1.5 bg-gradient-to-br from-brand-pink to-brand-orange hover:opacity-90 text-white text-sm font-semibold py-2.5 rounded-xl"
               >
                 <ExternalLink className="w-4 h-4" /> Abrir
               </a>
@@ -101,7 +101,7 @@ export default function LandingMobileInfo({ landing }: { landing: Landing }) {
           <div className="w-12 h-12 rounded-2xl bg-brand-pink/10 text-brand-pink flex items-center justify-center mx-auto mb-3">
             <Monitor className="w-6 h-6" />
           </div>
-          <p className="font-semibold text-gray-900 mb-1">El editor solo está disponible en desktop</p>
+          <p className="font-semibold text-ink mb-1">El editor solo está disponible en desktop</p>
           <p className="text-sm text-gray-600">
             Abrí esta landing desde una computadora para editar los bloques, usar la IA y cambiar la
             configuración.

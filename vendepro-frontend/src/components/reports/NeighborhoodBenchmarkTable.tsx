@@ -60,7 +60,7 @@ export default function NeighborhoodBenchmarkTable({ data }: Props) {
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shadow-sm" aria-hidden="true">
             <Scale className="w-4 h-4 text-white" />
           </div>
-          <h2 className="font-semibold text-gray-800">Tus activos vs vendidos — resumen por barrio</h2>
+          <h2 className="font-semibold text-ink">Tus activos vs vendidos — resumen por barrio</h2>
         </div>
         <p className="text-xs text-gray-500 mt-1.5">
           ¿Cómo vienen tus avisos contra los que se vendieron? (promedio por barrio)
@@ -102,7 +102,7 @@ export default function NeighborhoodBenchmarkTable({ data }: Props) {
                       )}
                     </td>
                     <td className="py-2.5 px-2">
-                      <p className="font-medium text-gray-800">{row.neighborhood}</p>
+                      <p className="font-medium text-ink">{row.neighborhood}</p>
                       <p className="text-[10px] text-gray-400 mt-0.5">
                         {activePropCount > 0 && (
                           <>
@@ -120,7 +120,7 @@ export default function NeighborhoodBenchmarkTable({ data }: Props) {
                     <td className="py-2.5 px-2 text-right">
                       {row.active ? (
                         <>
-                          <span className="font-semibold text-gray-800">{row.active.avg_views_per_day}</span>
+                          <span className="font-semibold text-ink">{row.active.avg_views_per_day}</span>
                           <span className="text-[10px] text-gray-400 ml-0.5">vis/día</span>
                         </>
                       ) : '—'}
@@ -128,7 +128,7 @@ export default function NeighborhoodBenchmarkTable({ data }: Props) {
                     <td className="py-2.5 px-2 text-right">
                       {row.sold ? (
                         <>
-                          <span className="font-semibold text-gray-800">{row.sold.avg_views_per_day}</span>
+                          <span className="font-semibold text-ink">{row.sold.avg_views_per_day}</span>
                           <span className="text-[10px] text-gray-400 ml-0.5">vis/día</span>
                         </>
                       ) : '—'}

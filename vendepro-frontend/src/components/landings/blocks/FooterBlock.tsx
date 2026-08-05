@@ -5,7 +5,7 @@ export default function FooterBlock({ data }: { data: FooterData; mode?: 'public
   return (
     <footer className="bg-white border-t border-gray-200 py-10 px-6 text-center text-sm text-gray-600">
       <div className="max-w-4xl mx-auto space-y-3">
-        {data.agency_name && <p className="font-semibold text-gray-900">{data.agency_name}</p>}
+        {data.agency_name && <p className="font-semibold text-ink">{data.agency_name}</p>}
         {data.agency_registration && <p className="text-xs text-gray-500">{data.agency_registration}</p>}
         <div className="flex flex-wrap gap-4 justify-center text-gray-700">
           {data.phone && <a href={`tel:${data.phone}`} className="inline-flex items-center gap-1.5 hover:text-brand-pink"><Phone className="w-4 h-4" />{data.phone}</a>}

@@ -27,7 +27,7 @@ export default function ReviewStep({
           <div className="flex items-center gap-2 text-xs text-gray-400 uppercase tracking-wide mb-2">
             <Users className="w-3.5 h-3.5" /> Audiencia
           </div>
-          <p className="text-sm text-gray-800 font-medium">{describeSegment(segment)}</p>
+          <p className="text-sm text-ink font-medium">{describeSegment(segment)}</p>
           <p className="text-sm text-gray-500 mt-0.5">
             {preview ? `${preview.count} destinatarios` : 'Conteo al enviar'}
             <span className="text-gray-400"> · se excluyen bajas y rebotes</span>
@@ -37,7 +37,7 @@ export default function ReviewStep({
           <div className="flex items-center gap-2 text-xs text-gray-400 uppercase tracking-wide mb-2">
             <Mail className="w-3.5 h-3.5" /> Email
           </div>
-          <p className="text-sm text-gray-800 font-medium truncate">{content.subject || '— sin asunto —'}</p>
+          <p className="text-sm text-ink font-medium truncate">{content.subject || '— sin asunto —'}</p>
           <p className="text-sm text-gray-500 mt-0.5 truncate">{name}</p>
         </div>
       </div>
@@ -53,7 +53,7 @@ export default function ReviewStep({
               type="radio"
               checked={!scheduledAt}
               onChange={() => onScheduledAtChange('')}
-              className="text-brand-pink focus:ring-brand-pink/30"
+              className="text-brand-pink"
             />
             Ahora
           </label>
@@ -66,7 +66,7 @@ export default function ReviewStep({
                 d.setMinutes(0, 0, 0)
                 onScheduledAtChange(toLocalInput(d))
               }}
-              className="text-brand-pink focus:ring-brand-pink/30"
+              className="text-brand-pink"
             />
             Programar
           </label>
@@ -76,7 +76,7 @@ export default function ReviewStep({
               value={scheduledAt}
               min={toLocalInput(new Date())}
               onChange={e => onScheduledAtChange(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-brand-pink/20 focus:border-brand-pink outline-none"
+              className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm outline-none"
             />
           )}
         </div>

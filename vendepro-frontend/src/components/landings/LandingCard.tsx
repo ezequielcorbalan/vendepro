@@ -20,7 +20,7 @@ export default function LandingCard({ landing }: { landing: Landing }) {
         </div>
         <div className="p-4 space-y-2">
           <div className="flex items-start justify-between gap-2">
-            <h3 className="font-semibold text-gray-900 line-clamp-1">{landing.seo_title || landing.full_slug}</h3>
+            <h3 className="font-semibold text-ink line-clamp-1">{landing.seo_title || landing.full_slug}</h3>
             <StatusBadge status={landing.status} />
           </div>
           <p className="text-xs text-gray-500 truncate">{publicLandingHostPath(landing.full_slug)}</p>

@@ -109,7 +109,7 @@ export default async function PublicReportPage({
               </div>
             )}
             <div className="hidden sm:block">
-              <div className="text-sm font-semibold text-gray-900 truncate">{org?.name}</div>
+              <div className="text-sm font-semibold text-ink truncate">{org?.name}</div>
               <div className="text-xs text-gray-500">Operaciones Inmobiliarias</div>
             </div>
           </div>
@@ -136,7 +136,7 @@ export default async function PublicReportPage({
                   href={`/r/${r.slug}`}
                   className={`block px-2 py-1.5 rounded text-sm ${
                     r.is_current
-                      ? 'bg-gray-100 text-gray-900 font-medium'
+                      ? 'bg-gray-100 text-ink font-medium'
                       : 'text-gray-600 hover:bg-gray-50'
                   }`}
                 >
@@ -173,7 +173,7 @@ export default async function PublicReportPage({
           <div className="p-6">
             {!property.cover_photo && (
               <>
-                <h1 className="text-2xl font-bold text-gray-900">{property.address}</h1>
+                <h1 className="text-2xl font-bold text-ink">{property.address}</h1>
                 <p className="text-sm text-gray-500 mt-0.5">
                   {[property.neighborhood, property.city].filter(Boolean).join(' · ')}
                 </p>
@@ -277,7 +277,7 @@ export default async function PublicReportPage({
                   key={s.id}
                   className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6"
                 >
-                  <h2 className="font-semibold text-gray-900 mb-2">
+                  <h2 className="font-semibold text-ink mb-2">
                     {s.title || SECTION_TITLES[s.section as string] || 'Sección'}
                   </h2>
                   <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
@@ -291,7 +291,7 @@ export default async function PublicReportPage({
         {/* Competitors */}
         {competitors.length > 0 && (
           <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <h2 className="font-semibold text-gray-900 mb-1">
+            <h2 className="font-semibold text-ink mb-1">
               Propiedades comparables ({competitors.length})
             </h2>
             <p className="text-xs text-gray-500 mb-4">
@@ -308,7 +308,7 @@ export default async function PublicReportPage({
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 truncate">
+                      <p className="text-sm font-semibold text-ink truncate">
                         {c.address || 'Sin dirección'}
                       </p>
                       {c.notes && (
@@ -333,7 +333,7 @@ export default async function PublicReportPage({
         {/* Visit forms */}
         {visit_forms.length > 0 && (
           <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <h2 className="font-semibold text-gray-900 mb-1">
+            <h2 className="font-semibold text-ink mb-1">
               Fichas de visita ({visit_forms.length})
             </h2>
             <p className="text-xs text-gray-500 mb-4">
@@ -350,7 +350,7 @@ export default async function PublicReportPage({
         {/* Photos */}
         {photos.length > 0 && (
           <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <h2 className="font-semibold text-gray-900 mb-4">Fotos</h2>
+            <h2 className="font-semibold text-ink mb-4">Fotos</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {photos.map((photo: any) => (
                 <img
@@ -412,7 +412,7 @@ function ReportSelector({
             <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
-        <div className="text-sm font-medium text-gray-700 hover:text-gray-900">
+        <div className="text-sm font-medium text-gray-700 hover:text-ink">
           {current?.period_label}
         </div>
         <div className="text-xs text-gray-500">{periodFmt}</div>
@@ -431,7 +431,7 @@ function ReportSelector({
               }`}
             >
               <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-medium text-gray-800 truncate">
+                <span className="text-sm font-medium text-ink truncate">
                   {r.period_label}
                 </span>
                 {r.is_current && (
@@ -572,7 +572,7 @@ function VisitFormCard({ vf }: { vf: any }) {
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
           <User className="w-4 h-4 text-gray-400 flex-shrink-0" />
-          <h3 className="font-semibold text-gray-900 truncate">
+          <h3 className="font-semibold text-ink truncate">
             {vf.visitor_name || 'Visitante'}
           </h3>
           <span className="text-xs text-gray-500">{formatDate(vf.submitted_at)}</span>

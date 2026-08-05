@@ -10,8 +10,8 @@ interface Props {
 export function CalloutBlock({ data, edit, ...attrs }: Props) {
   const accent = (data.tone ?? 'accent') === 'accent'
   const wrapCls = accent
-    ? 'border-l-4 bg-rose-50/60 text-slate-900'
-    : 'border-l-4 border-slate-300 bg-slate-50 text-slate-800'
+    ? 'border-l-4 bg-rose-50/60 text-ink'
+    : 'border-l-4 border-slate-300 bg-slate-50 text-ink'
   const borderColor = accent ? 'var(--brand-color, #ff007c)' : undefined
 
   const textCls = 'text-lg font-medium leading-snug md:text-xl'

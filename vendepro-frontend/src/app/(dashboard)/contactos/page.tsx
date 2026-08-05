@@ -7,7 +7,7 @@ import { apiFetch } from '@/lib/api'
 import { applyScopeToParams, isAdminOrSupervisor } from '@/lib/agent-scope'
 import { useToast } from '@/components/ui/Toast'
 
-const inputClass = 'border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/50 w-full'
+const inputClass = 'border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none w-full'
 
 const typeLabels: Record<string, { label: string; color: string }> = {
   vendedor: { label: 'Vendedor', color: 'bg-blue-100 text-blue-700' },
@@ -242,10 +242,10 @@ export default function ContactosPage() {
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Contactos</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold text-ink">Contactos</h1>
           <p className="text-sm text-gray-500 mt-1">Base de datos de clientes</p>
         </div>
-        <button onClick={() => setShowForm(true)} className="inline-flex items-center gap-2 bg-brand-pink text-white px-4 py-2.5 rounded-lg text-sm font-medium shadow-sm shadow-brand-pink/30 hover:opacity-90 hover:shadow-md hover:shadow-brand-pink/30 transition-shadow self-start sm:self-auto">
+        <button onClick={() => setShowForm(true)} className="inline-flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2.5 rounded-lg text-sm font-medium shadow-sm shadow-brand-pink/30 hover:opacity-90 hover:shadow-md hover:shadow-brand-pink/30 transition-shadow self-start sm:self-auto">
           <Plus className="w-4 h-4" /> Nuevo contacto
         </button>
       </div>
@@ -256,7 +256,7 @@ export default function ContactosPage() {
           <div className="relative flex-1">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
-              className="w-full border border-gray-200 bg-gray-50 focus:bg-white rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/40"
+              className="w-full border border-gray-200 bg-gray-50 focus:bg-white rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none"
               placeholder="Buscar por nombre, teléfono o email..."
               value={search}
               onChange={e => setSearch(e.target.value)}
@@ -334,8 +334,8 @@ export default function ContactosPage() {
               onClick={() => setFilterType(tab.key)}
               className={`flex items-center gap-2 whitespace-nowrap px-3.5 py-2.5 text-sm border-b-2 -mb-px transition-colors ${
                 active
-                  ? 'border-brand-pink text-gray-900 font-semibold'
-                  : 'border-transparent text-gray-500 hover:text-gray-800'
+                  ? 'border-brand-pink text-ink font-semibold'
+                  : 'border-transparent text-gray-500 hover:text-ink'
               }`}
             >
               {tab.label}
@@ -351,7 +351,7 @@ export default function ContactosPage() {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowForm(false)}>
           <div className="bg-white rounded-2xl p-5 sm:p-6 w-full max-w-lg" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-800">Nuevo contacto</h2>
+              <h2 className="text-lg font-semibold text-ink">Nuevo contacto</h2>
               <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
             </div>
             <div className="space-y-3">
@@ -373,7 +373,7 @@ export default function ContactosPage() {
               <textarea className={`${inputClass} h-20`} placeholder="Notas..." value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
             </div>
             <div className="flex gap-2 mt-4">
-              <button onClick={handleSave} disabled={saving || !form.full_name} className="flex-1 bg-brand-pink text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50">
+              <button onClick={handleSave} disabled={saving || !form.full_name} className="flex-1 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50">
                 {saving ? 'Guardando...' : 'Guardar'}
               </button>
               <button onClick={() => setShowForm(false)} className="border border-gray-300 text-gray-700 px-4 py-2.5 rounded-lg text-sm hover:bg-gray-50">Cancelar</button>
@@ -418,7 +418,7 @@ export default function ContactosPage() {
                       <div className="flex items-center gap-3 min-w-0">
                         <Avatar name={c.full_name} />
                         <div className="min-w-0">
-                          <Link href={`/contactos/${c.id}`} className="font-semibold text-gray-800 hover:text-brand-pink block truncate">
+                          <Link href={`/contactos/${c.id}`} className="font-semibold text-ink hover:text-brand-pink block truncate">
                             {c.full_name}
                           </Link>
                           <div className="flex items-center gap-1.5 text-xs text-gray-500 truncate">
@@ -476,7 +476,7 @@ export default function ContactosPage() {
                   <Avatar name={c.full_name} />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <Link href={`/contactos/${c.id}`} className="font-semibold text-gray-800 hover:text-brand-pink truncate">
+                      <Link href={`/contactos/${c.id}`} className="font-semibold text-ink hover:text-brand-pink truncate">
                         {c.full_name}
                       </Link>
                       <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${t.color}`}>{t.label}</span>

@@ -7,7 +7,7 @@ interface Props {
 }
 
 const inputClass =
-  'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand-pink focus:outline-none focus:ring-2 focus:ring-brand-pink/30'
+  'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none'
 const labelClass = 'mb-1 block text-sm font-medium text-slate-700'
 
 export function StepDetails({ details, onPatchDetails }: Props) {
@@ -15,7 +15,7 @@ export function StepDetails({ details, onPatchDetails }: Props) {
     <div className="space-y-8">
       {/* SWOT */}
       <section className="space-y-4">
-        <h3 className="text-base font-semibold text-slate-800">Análisis FODA</h3>
+        <h3 className="text-base font-semibold text-ink">Análisis FODA</h3>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {(
             [
@@ -40,7 +40,7 @@ export function StepDetails({ details, onPatchDetails }: Props) {
 
       {/* Prices */}
       <section className="space-y-4">
-        <h3 className="text-base font-semibold text-slate-800">Valuación</h3>
+        <h3 className="text-base font-semibold text-ink">Valuación</h3>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
             <label className={labelClass}>Precio sugerido (USD)</label>

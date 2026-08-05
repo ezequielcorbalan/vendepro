@@ -90,7 +90,7 @@ function SortableBlockRow({ block, selected, onSelect, onRemove, onToggleVisibil
       <button {...attributes} {...listeners} className="text-gray-400 cursor-grab active:cursor-grabbing" aria-label="Reordenar" onClick={e => e.stopPropagation()}>
         <GripVertical className="w-3.5 h-3.5" />
       </button>
-      <span className={`flex-1 truncate ${block.visible ? 'text-gray-800' : 'text-gray-400'}`}>
+      <span className={`flex-1 truncate ${block.visible ? 'text-ink' : 'text-gray-400'}`}>
         {BLOCK_LABELS[block.type]}
         {block.is_variable && (
           <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded bg-gradient-to-br from-brand-pink to-brand-orange text-white" title="Variable por tasación">VAR</span>

@@ -58,7 +58,7 @@ function KPICard({ icon, label, value, sublabel, gradient, iconBg, iconColor }: 
       <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-2 shadow-sm ${iconBg}`} aria-hidden="true">
         <span className={iconColor}>{icon}</span>
       </div>
-      <p className="text-xl sm:text-2xl font-bold text-gray-800">{value}</p>
+      <p className="text-xl sm:text-2xl font-bold text-ink">{value}</p>
       <p className="text-xs text-gray-500 mt-0.5">{label}</p>
       {sublabel && <p className="text-[10px] text-gray-400 mt-0.5">{sublabel}</p>}
     </div>
@@ -148,7 +148,7 @@ export default function PerformancePage() {
           <select
             value={propertyType}
             onChange={e => setPropertyType(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-pink/30 focus:border-brand-pink"
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none"
           >
             {PROPERTY_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
@@ -158,14 +158,14 @@ export default function PerformancePage() {
             value={priceMin}
             onChange={e => setPriceMin(e.target.value)}
             placeholder="Desde"
-            className="w-24 border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-pink/30 focus:border-brand-pink"
+            className="w-24 border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none"
           />
           <input
             type="number"
             value={priceMax}
             onChange={e => setPriceMax(e.target.value)}
             placeholder="Hasta"
-            className="w-24 border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-pink/30 focus:border-brand-pink"
+            className="w-24 border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none"
           />
           {hasFilters && (
             <button
@@ -188,7 +188,7 @@ export default function PerformancePage() {
                 onClick={() => setPeriod(key)}
                 className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
                   period === key
-                    ? 'bg-white shadow-sm text-gray-800'
+                    ? 'bg-white shadow-sm text-ink'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >

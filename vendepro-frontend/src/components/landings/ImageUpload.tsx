@@ -47,14 +47,14 @@ export default function ImageUpload({ value, onChange, allowPropertyPicker }: Pr
         <button
           type="button"
           onClick={() => setMode('upload')}
-          className={`flex-1 text-xs py-1.5 rounded-md ${mode === 'upload' ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:bg-gray-50'}`}
+          className={`flex-1 text-xs py-1.5 rounded-md ${mode === 'upload' ? 'bg-gray-100 text-ink' : 'text-gray-500 hover:bg-gray-50'}`}
         >
           <Upload className="w-3.5 h-3.5 inline mr-1" /> Subir
         </button>
         <button
           type="button"
           onClick={() => setMode('url')}
-          className={`flex-1 text-xs py-1.5 rounded-md ${mode === 'url' ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:bg-gray-50'}`}
+          className={`flex-1 text-xs py-1.5 rounded-md ${mode === 'url' ? 'bg-gray-100 text-ink' : 'text-gray-500 hover:bg-gray-50'}`}
         >
           <LinkIcon className="w-3.5 h-3.5 inline mr-1" /> URL
         </button>
@@ -62,7 +62,7 @@ export default function ImageUpload({ value, onChange, allowPropertyPicker }: Pr
           <button
             type="button"
             onClick={() => setMode('property')}
-            className={`flex-1 text-xs py-1.5 rounded-md ${mode === 'property' ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:bg-gray-50'}`}
+            className={`flex-1 text-xs py-1.5 rounded-md ${mode === 'property' ? 'bg-gray-100 text-ink' : 'text-gray-500 hover:bg-gray-50'}`}
           >
             <Home className="w-3.5 h-3.5 inline mr-1" /> Propiedad
           </button>

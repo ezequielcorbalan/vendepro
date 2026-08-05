@@ -14,7 +14,7 @@ export default function Step2Pipeline() {
         <span className="text-3xl">🔄</span>
       </div>
       <div className="space-y-1">
-        <h2 className="text-2xl font-bold text-gray-800">El pipeline comercial</h2>
+        <h2 className="text-2xl font-bold text-ink">El pipeline comercial</h2>
         <p className="text-gray-500 text-sm max-w-sm">
           Todo el ciclo de vida de una operación, desde el primer lead hasta el cierre.
         </p>

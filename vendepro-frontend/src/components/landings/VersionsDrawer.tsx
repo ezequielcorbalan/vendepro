@@ -50,7 +50,7 @@ export default function VersionsDrawer({
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h2 className="font-semibold text-gray-900">Historial de versiones</h2>
+          <h2 className="font-semibold text-ink">Historial de versiones</h2>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
             <X className="w-4 h-4" />
           </button>
@@ -72,7 +72,7 @@ export default function VersionsDrawer({
                     <Icon className="w-4 h-4 text-gray-700" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-medium text-ink">
                       v{v.version_number} · {v.label}
                     </p>
                     <p className="text-xs text-gray-500">

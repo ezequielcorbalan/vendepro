@@ -88,7 +88,7 @@ export default function AutomationDetailPage() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <Link href="/marketing/automations" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 mb-6">
+      <Link href="/marketing/automations" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-ink mb-6">
         <ArrowLeft className="w-4 h-4" /> Volver a automatizaciones
       </Link>
 
@@ -97,7 +97,7 @@ export default function AutomationDetailPage() {
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl font-semibold text-gray-800 truncate">{automation.name}</h1>
+              <h1 className="text-xl font-semibold text-ink truncate">{automation.name}</h1>
               <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${st.cls}`}>{st.label}</span>
             </div>
             <p className="flex items-center gap-1.5 text-sm text-gray-500 mt-1">
@@ -147,7 +147,7 @@ export default function AutomationDetailPage() {
               <div key={i} className="flex items-center gap-3 p-2.5 rounded-lg bg-gray-50">
                 <span className="w-6 h-6 rounded-full bg-white border border-gray-200 text-gray-600 text-xs flex items-center justify-center shrink-0 font-medium">{i + 1}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-800 truncate">{s.subject || 'Sin asunto'}</p>
+                  <p className="text-sm text-ink truncate">{s.subject || 'Sin asunto'}</p>
                   <p className="inline-flex items-center gap-1 text-xs text-gray-400"><Clock className="w-3 h-3" /> {i === 0 ? 'Al inscribirse' : describeDelay(s.delay_hours)}</p>
                 </div>
               </div>
@@ -230,7 +230,7 @@ function EnrollModal({ automationId, onClose, onDone }: { automationId: string; 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6" onClick={e => e.stopPropagation()}>
-        <h3 className="text-lg font-semibold text-gray-800 mb-1">Inscribir un segmento</h3>
+        <h3 className="text-lg font-semibold text-ink mb-1">Inscribir un segmento</h3>
         <p className="text-sm text-gray-500 mb-4">Los que ya están en la secuencia no se reinician.</p>
         <AudienceStep segment={segment} onChange={setSegment} preview={preview} onPreview={setPreview} />
         <div className="flex justify-end gap-2 mt-5">

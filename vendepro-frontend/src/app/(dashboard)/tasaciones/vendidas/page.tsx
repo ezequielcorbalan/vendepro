@@ -82,7 +82,7 @@ export default function SoldPropertiesPage() {
     <div>
       <Link
         href="/tasaciones"
-        className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 mb-4"
+        className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-ink mb-4"
       >
         <ArrowLeft className="w-4 h-4" /> Volver a Tasaciones
       </Link>
@@ -96,7 +96,7 @@ export default function SoldPropertiesPage() {
               <Database className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-gray-800">Cierres reales</h1>
+              <h1 className="text-xl font-semibold text-ink">Cierres reales</h1>
               <p className="text-sm text-gray-500 mt-0.5">
                 Base de propiedades vendidas — usalas como comparables para tasar.
               </p>
@@ -104,7 +104,7 @@ export default function SoldPropertiesPage() {
           </div>
           <button
             onClick={() => setCreating(true)}
-            className="bg-brand-pink text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 inline-flex items-center gap-2"
+            className="bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 inline-flex items-center gap-2"
           >
             <Plus className="w-4 h-4" /> Cargar cierre
           </button>
@@ -116,19 +116,19 @@ export default function SoldPropertiesPage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
           <div className="bg-white rounded-xl border border-gray-100 p-3">
             <p className="text-[10px] uppercase tracking-wide text-gray-400">Cargados</p>
-            <p className="text-lg font-semibold text-gray-800 mt-1">{totals.count}</p>
+            <p className="text-lg font-semibold text-ink mt-1">{totals.count}</p>
           </div>
           <div className="bg-white rounded-xl border border-gray-100 p-3">
             <p className="text-[10px] uppercase tracking-wide text-gray-400">Cierre promedio</p>
-            <p className="text-lg font-semibold text-gray-800 mt-1">{formatPrice(totals.avgClose)}</p>
+            <p className="text-lg font-semibold text-ink mt-1">{formatPrice(totals.avgClose)}</p>
           </div>
           <div className="bg-white rounded-xl border border-gray-100 p-3">
             <p className="text-[10px] uppercase tracking-wide text-gray-400">USD/m² promedio</p>
-            <p className="text-lg font-semibold text-gray-800 mt-1">{totals.avgUsdM2 ? `USD ${totals.avgUsdM2.toLocaleString('es-AR')}` : '—'}</p>
+            <p className="text-lg font-semibold text-ink mt-1">{totals.avgUsdM2 ? `USD ${totals.avgUsdM2.toLocaleString('es-AR')}` : '—'}</p>
           </div>
           <div className="bg-white rounded-xl border border-gray-100 p-3">
             <p className="text-[10px] uppercase tracking-wide text-gray-400">Descuento medio</p>
-            <p className="text-lg font-semibold text-gray-800 mt-1">{totals.avgDiscount !== null ? `${totals.avgDiscount}%` : '—'}</p>
+            <p className="text-lg font-semibold text-ink mt-1">{totals.avgDiscount !== null ? `${totals.avgDiscount}%` : '—'}</p>
           </div>
         </div>
       )}
@@ -209,7 +209,7 @@ export default function SoldPropertiesPage() {
           </p>
           <button
             onClick={() => setCreating(true)}
-            className="inline-flex items-center gap-2 bg-brand-pink text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
+            className="inline-flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
           >
             <Plus className="w-4 h-4" /> Cargar el primero
           </button>
@@ -235,7 +235,7 @@ export default function SoldPropertiesPage() {
                 <div className="p-4">
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div className="min-w-0">
-                      <h3 className="text-sm font-semibold text-gray-800 truncate">
+                      <h3 className="text-sm font-semibold text-ink truncate">
                         {sp.address_approx || sp.neighborhood || sp.property_type}
                       </h3>
                       {sp.neighborhood && (
@@ -252,12 +252,12 @@ export default function SoldPropertiesPage() {
                   <div className="grid grid-cols-2 gap-2 text-xs mb-3">
                     <div>
                       <p className="text-gray-400 text-[10px]">Cierre</p>
-                      <p className="text-gray-900 font-semibold">{formatPrice(sp.closing_price_usd)}</p>
+                      <p className="text-ink font-semibold">{formatPrice(sp.closing_price_usd)}</p>
                     </div>
                     {sp.usd_per_m2 && (
                       <div>
                         <p className="text-gray-400 text-[10px]">USD/m²</p>
-                        <p className="text-gray-900 font-semibold">{sp.usd_per_m2.toLocaleString('es-AR')}</p>
+                        <p className="text-ink font-semibold">{sp.usd_per_m2.toLocaleString('es-AR')}</p>
                       </div>
                     )}
                   </div>
@@ -309,7 +309,7 @@ export default function SoldPropertiesPage() {
           <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full overflow-hidden my-8" onClick={e => e.stopPropagation()}>
             <div className="bg-gradient-to-r from-brand-pink to-brand-orange h-1.5" />
             <div className="p-6 max-h-[80vh] overflow-y-auto">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              <h2 className="text-lg font-semibold text-ink mb-4">
                 {editing ? 'Editar cierre real' : 'Cargar cierre real'}
               </h2>
               <SoldPropertyForm

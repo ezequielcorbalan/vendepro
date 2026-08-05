@@ -69,7 +69,7 @@ export default function SoldPropertyPicker({
         <div className="p-5 flex items-center justify-between border-b border-gray-100">
           <div className="flex items-center gap-2">
             <Database className="w-5 h-5 text-brand-pink" />
-            <h2 className="text-lg font-semibold text-gray-900">Cierres reales</h2>
+            <h2 className="text-lg font-semibold text-ink">Cierres reales</h2>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X className="w-5 h-5" />
@@ -158,7 +158,7 @@ export default function SoldPropertyPicker({
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-sm font-medium text-gray-800 truncate">
+                        <p className="text-sm font-medium text-ink truncate">
                           {sp.address_approx || sp.neighborhood || sp.property_type}
                         </p>
                         <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium uppercase ${origin.cls}`}>
@@ -177,7 +177,7 @@ export default function SoldPropertyPicker({
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <p className="text-sm font-semibold text-gray-900">
+                      <p className="text-sm font-semibold text-ink">
                         {sp.closing_price_usd ? `USD ${sp.closing_price_usd.toLocaleString('es-AR')}` : '—'}
                       </p>
                       {sp.usd_per_m2 && <p className="text-[10px] text-gray-500">{sp.usd_per_m2.toLocaleString('es-AR')}/m²</p>}

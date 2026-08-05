@@ -53,7 +53,7 @@ export default function PropertyReportsPage() {
     <div>
       <Link
         href={`/propiedades/${id}`}
-        className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 mb-6"
+        className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-ink mb-6"
       >
         <ArrowLeft className="w-4 h-4" /> Volver a la propiedad
       </Link>
@@ -66,7 +66,7 @@ export default function PropertyReportsPage() {
               <FileBarChart className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-gray-800">Reportes</h1>
+              <h1 className="text-xl font-semibold text-ink">Reportes</h1>
               <p className="text-sm text-gray-500 mt-0.5">{propertyAddress || 'Propiedad'} · {reports.length} {reports.length === 1 ? 'reporte' : 'reportes'}</p>
             </div>
           </div>
@@ -98,7 +98,7 @@ export default function PropertyReportsPage() {
               className="bg-white border border-gray-200 rounded-xl p-4 hover:border-brand-pink/30 hover:shadow-sm transition-all flex items-center justify-between"
             >
               <div>
-                <p className="font-medium text-gray-800">
+                <p className="font-medium text-ink">
                   {r.period_label || (r.period_start ? new Date(r.period_start).toLocaleDateString('es-AR') : 'Reporte')}
                 </p>
                 <p className="text-xs text-gray-500 mt-0.5">

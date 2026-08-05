@@ -29,11 +29,11 @@ export function MethodologyBlock({ data, edit, ...attrs }: Props) {
                 plaintext
                 value={data.title ?? ''}
                 placeholder="Nuestra metodología"
-                className="mt-2 font-poppins text-3xl font-bold leading-tight text-slate-900 md:text-5xl"
+                className="mt-2 font-poppins text-3xl font-bold leading-tight text-ink md:text-5xl"
                 onCommit={(title) => edit.onChange({ title })}
               />
             ) : (
-              <h2 className="mt-2 font-poppins text-3xl font-bold leading-tight text-slate-900 md:text-5xl">
+              <h2 className="mt-2 font-poppins text-3xl font-bold leading-tight text-ink md:text-5xl">
                 {data.title ?? 'Nuestra metodología'}
               </h2>
             )}
@@ -65,11 +65,11 @@ export function MethodologyBlock({ data, edit, ...attrs }: Props) {
                     plaintext
                     value={data.highlight_text ?? ''}
                     placeholder="Ej: 100% métricas en cada publicación."
-                    className="mt-2 text-lg font-semibold leading-snug text-slate-900 md:text-xl"
+                    className="mt-2 text-lg font-semibold leading-snug text-ink md:text-xl"
                     onCommit={(highlight_text) => edit.onChange({ highlight_text })}
                   />
                 ) : (
-                  <p className="mt-2 text-lg font-semibold leading-snug text-slate-900 md:text-xl">
+                  <p className="mt-2 text-lg font-semibold leading-snug text-ink md:text-xl">
                     {data.highlight_text}
                   </p>
                 )}

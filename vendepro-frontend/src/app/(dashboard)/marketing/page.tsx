@@ -5,10 +5,10 @@ import Link from 'next/link'
 import {
   Megaphone, Settings, TrendingUp, TrendingDown, Users, Target,
   CheckCircle2, XCircle, AlertCircle, ChevronRight, Sparkles,
-  BarChart2, ArrowUpRight, ExternalLink,
+  BarChart2, ArrowUpRight, ExternalLink, Lightbulb, type LucideIcon,
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
-import { LEAD_SOURCES } from '@/lib/crm-config'
+import { LEAD_SOURCES, getStageDot } from '@/lib/crm-config'
 
 type Period = 'month' | 'quarter' | 'year'
 const PERIOD_LABELS: Record<Period, string> = { month: 'Mes', quarter: 'Trimestre', year: 'Año' }
@@ -43,7 +43,7 @@ function KpiCard({ label, value, trendLabel, trend, sparkData, sparkColor }: {
         {sparkData && sparkData.some(v => v > 0) && <Sparkline data={sparkData} color={sparkColor ?? '#ff007c'} />}
       </div>
       <div>
-        <p className="text-2xl font-bold text-gray-800 mt-1">{value}</p>
+        <p className="text-2xl font-bold text-ink mt-1">{value}</p>
         {trendLabel && (
           <div className="flex items-center gap-1 mt-0.5">
             {trend === 'up' && <TrendingUp className="w-3 h-3 text-emerald-500" />}
@@ -134,12 +134,14 @@ export default function MarketingPage() {
   const captados = funnel.find(f => f.stage === 'captado')?.count ?? 0
   const calificados = funnel.find(f => f.stage === 'calificado')?.count ?? 0
   const contactados = funnel.find(f => f.stage === 'contactado')?.count ?? 0
+  // Color de cada paso = dot de su etapa del pipeline (fuente única en crm-config),
+  // así el funnel de marketing usa los mismos tonos que los badges de esas etapas.
   const funnelSteps = [
-    { label: 'Leads capturados', count: totalLeads, color: '#818CF8' },
-    { label: 'Contactados', count: contactados, color: '#C084FC' },
-    { label: 'Calificados', count: calificados, color: '#F472B6' },
-    { label: 'En tasación', count: funnel.find(f => f.stage === 'en_tasacion')?.count ?? 0, color: '#fb923c' },
-    { label: 'Captados', count: captados, color: '#10B981' },
+    { label: 'Leads capturados', count: totalLeads, color: getStageDot('nuevo') },
+    { label: 'Contactados', count: contactados, color: getStageDot('contactado') },
+    { label: 'Calificados', count: calificados, color: getStageDot('calificado') },
+    { label: 'En tasación', count: funnel.find(f => f.stage === 'en_tasacion')?.count ?? 0, color: getStageDot('en_tasacion') },
+    { label: 'Captados', count: captados, color: getStageDot('captado') },
   ]
   const maxFunnel = funnelSteps[0]?.count || 1
   const metaEventList = Object.entries(metaEvents).map(([name, v]) => ({ name, sent: v.sent, failed: v.failed, total: v.sent + v.failed })).sort((a, b) => b.total - a.total)
@@ -148,20 +150,20 @@ export default function MarketingPage() {
 
   const insights = [
     totalLeads > 0 && leadsBySource[0]
-      ? { icon: '📈', text: `${LEAD_SOURCES[leadsBySource[0].source as keyof typeof LEAD_SOURCES]?.label ?? leadsBySource[0].source} es tu principal fuente con ${leadsBySource[0].count} leads este período.` }
+      ? { icon: TrendingUp, text: `${LEAD_SOURCES[leadsBySource[0].source as keyof typeof LEAD_SOURCES]?.label ?? leadsBySource[0].source} es tu principal fuente con ${leadsBySource[0].count} leads este período.` }
       : null,
     conversionRate > 0
-      ? { icon: '🎯', text: `Tasa de conversión lead → captado: ${conversionRate.toFixed(1)}%. ${conversionRate >= 10 ? 'Por encima del promedio del sector (8%).' : 'Hay margen para mejorar el seguimiento.'}` }
+      ? { icon: Target, text: `Tasa de conversión lead → captado: ${conversionRate.toFixed(1)}%. ${conversionRate >= 10 ? 'Por encima del promedio del sector (8%).' : 'Hay margen para mejorar el seguimiento.'}` }
       : null,
     Object.values(metaEvents).some(e => e.failed > 0)
-      ? { icon: '⚠️', text: 'Hay eventos fallidos en Meta Conversion API. Verificá la configuración en Ajustes → Marketing.' }
+      ? { icon: AlertCircle, text: 'Hay eventos fallidos en Meta Conversion API. Verificá la configuración en Ajustes → Marketing.' }
       : integration.meta.enabled
-      ? { icon: '✅', text: `Meta Conversion API activa. ${totalEventsToMeta} eventos enviados este período.` }
-      : { icon: '💡', text: 'Conectá Meta Conversion API para trackear conversiones server-side y mejorar audiencias.' },
+      ? { icon: CheckCircle2, text: `Meta Conversion API activa. ${totalEventsToMeta} eventos enviados este período.` }
+      : { icon: Lightbulb, text: 'Conectá Meta Conversion API para trackear conversiones server-side y mejorar audiencias.' },
     !integration.ga4.enabled
-      ? { icon: '📊', text: 'GA4 no configurado. Activalo en Ajustes → Marketing para medir tráfico orgánico.' }
+      ? { icon: BarChart2, text: 'GA4 no configurado. Activalo en Ajustes → Marketing para medir tráfico orgánico.' }
       : null,
-  ].filter(Boolean) as { icon: string; text: string }[]
+  ].filter(Boolean) as { icon: LucideIcon; text: string }[]
 
   return (
     <div className="space-y-5">
@@ -173,7 +175,7 @@ export default function MarketingPage() {
             <Megaphone className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-gray-800">Marketing</h1>
+            <h1 className="text-xl font-semibold text-ink">Marketing</h1>
             <p className="text-sm text-gray-400">Atribución de leads, eventos y conversiones</p>
           </div>
         </div>
@@ -181,7 +183,7 @@ export default function MarketingPage() {
           <div className="flex bg-gray-100 rounded-lg p-0.5">
             {(Object.keys(PERIOD_LABELS) as Period[]).map(p => (
               <button key={p} onClick={() => setPeriod(p)}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${period === p ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${period === p ? 'bg-white text-ink shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
                 {PERIOD_LABELS[p]}
               </button>
             ))}
@@ -236,7 +238,7 @@ export default function MarketingPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-white rounded-xl border p-5">
           <div className="mb-4">
-            <p className="text-sm font-semibold text-gray-800 flex items-center gap-2"><Target className="w-4 h-4 text-brand-pink" /> Embudo del período</p>
+            <p className="text-sm font-semibold text-ink flex items-center gap-2"><Target className="w-4 h-4 text-brand-pink" /> Embudo del período</p>
             <p className="text-xs text-gray-400 mt-0.5">De lead capturado a captación</p>
           </div>
           {loading ? <div className="space-y-3">{[...Array(5)].map((_, i) => <div key={i} className="h-8 bg-gray-100 rounded animate-pulse" />)}</div>
@@ -263,7 +265,7 @@ export default function MarketingPage() {
 
         <div className="bg-white rounded-xl border p-5">
           <div className="mb-4">
-            <p className="text-sm font-semibold text-gray-800 flex items-center gap-2"><BarChart2 className="w-4 h-4 text-brand-pink" /> Leads por fuente</p>
+            <p className="text-sm font-semibold text-ink flex items-center gap-2"><BarChart2 className="w-4 h-4 text-brand-pink" /> Leads por fuente</p>
             <p className="text-xs text-gray-400 mt-0.5">Atribución del período</p>
           </div>
           {loading ? <div className="space-y-3">{[...Array(5)].map((_, i) => <div key={i} className="h-8 bg-gray-100 rounded animate-pulse" />)}</div>
@@ -297,7 +299,7 @@ export default function MarketingPage() {
       <div className="bg-white rounded-xl border p-5">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <p className="text-sm font-semibold text-gray-800 flex items-center gap-2"><Megaphone className="w-4 h-4 text-[#1877F2]" /> Campañas activas</p>
+            <p className="text-sm font-semibold text-ink flex items-center gap-2"><Megaphone className="w-4 h-4 text-[#1877F2]" /> Campañas activas</p>
             <p className="text-xs text-gray-400 mt-0.5">Performance por campaña con atribución completa</p>
           </div>
           <a href="https://adsmanager.facebook.com" target="_blank" rel="noopener noreferrer"
@@ -314,7 +316,7 @@ export default function MarketingPage() {
             <p className="text-sm font-medium text-gray-600 mb-1">Conectá Meta Conversion API para ver campañas</p>
             <p className="text-xs text-gray-400 mb-3">Gasto, leads, calificados, CPL y ROI por campaña</p>
             <Link href="/configuracion/marketing"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand-pink text-white text-xs font-medium hover:bg-[#e0006e] transition-colors">
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange text-white text-xs font-medium hover:opacity-90 transition-colors">
               <Settings className="w-3.5 h-3.5" /> Configurar ahora
             </Link>
           </div>
@@ -326,7 +328,7 @@ export default function MarketingPage() {
               Las campañas aparecen solas al guardarlo.
             </p>
             <Link href="/configuracion/marketing"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand-pink text-white text-xs font-medium hover:bg-[#e0006e] transition-colors">
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange text-white text-xs font-medium hover:opacity-90 transition-colors">
               <Settings className="w-3.5 h-3.5" /> Completar configuración
             </Link>
           </div>
@@ -373,7 +375,7 @@ export default function MarketingPage() {
                     <td className="py-2.5 px-3 text-right text-gray-700">{cp.crm_leads}</td>
                     <td className="py-2.5 px-3 text-right text-gray-700">{cp.crm_calificados}</td>
                     <td className="py-2.5 px-3 text-right font-semibold text-emerald-600">{cp.crm_captados}</td>
-                    <td className="py-2.5 pl-3 text-right font-semibold text-gray-800">{cp.cpl !== null ? fmtMoney(cp.cpl, cp.account_currency) : '—'}</td>
+                    <td className="py-2.5 pl-3 text-right font-semibold text-ink">{cp.cpl !== null ? fmtMoney(cp.cpl, cp.account_currency) : '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -389,7 +391,7 @@ export default function MarketingPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-white rounded-xl border p-5">
           <div className="mb-4">
-            <p className="text-sm font-semibold text-gray-800 flex items-center gap-2"><ArrowUpRight className="w-4 h-4 text-[#1877F2]" /> Eventos enviados a Meta</p>
+            <p className="text-sm font-semibold text-ink flex items-center gap-2"><ArrowUpRight className="w-4 h-4 text-[#1877F2]" /> Eventos enviados a Meta</p>
             <p className="text-xs text-gray-400 mt-0.5">Conversion API · stages del CRM</p>
           </div>
           {!integration.meta.enabled ? (
@@ -419,7 +421,7 @@ export default function MarketingPage() {
 
         <div className="bg-white rounded-xl border p-5">
           <div className="mb-4">
-            <p className="text-sm font-semibold text-gray-800 flex items-center gap-2"><Users className="w-4 h-4 text-brand-pink" /> Audiencias sugeridas</p>
+            <p className="text-sm font-semibold text-ink flex items-center gap-2"><Users className="w-4 h-4 text-brand-pink" /> Audiencias sugeridas</p>
             <p className="text-xs text-gray-400 mt-0.5">Listas para exportar a Meta Ads Manager</p>
           </div>
           <div className="space-y-2">
@@ -449,15 +451,18 @@ export default function MarketingPage() {
       {/* Insights */}
       {insights.length > 0 && (
         <div className="bg-gradient-to-r from-brand-pink/5 to-brand-orange/5 rounded-xl border border-brand-pink/20 p-5">
-          <p className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+          <p className="text-sm font-semibold text-ink mb-3 flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-brand-pink" /> Insights del período
           </p>
           <div className="space-y-2">
-            {insights.map((ins, i) => (
-              <p key={i} className="text-sm text-gray-600 flex items-start gap-2">
-                <span className="shrink-0">{ins.icon}</span><span>{ins.text}</span>
-              </p>
-            ))}
+            {insights.map((ins, i) => {
+              const Icon = ins.icon
+              return (
+                <p key={i} className="text-sm text-gray-600 flex items-start gap-2">
+                  <Icon className="w-4 h-4 shrink-0 text-gray-500 mt-0.5" /><span>{ins.text}</span>
+                </p>
+              )
+            })}
           </div>
         </div>
       )}

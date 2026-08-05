@@ -142,7 +142,7 @@ export function VisitFormsSection({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-base font-semibold text-gray-900">Fichas de visita</h2>
+              <h2 className="text-base font-semibold text-ink">Fichas de visita</h2>
               <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
                 {submitted.length}
               </span>
@@ -237,7 +237,7 @@ function SubmittedCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 mb-0.5">
             <User className="w-4 h-4 text-gray-400 flex-shrink-0" />
-            <h3 className="font-semibold text-gray-900 truncate">
+            <h3 className="font-semibold text-ink truncate">
               {item.visitor_name || 'Visitante'}
             </h3>
             {archived && (

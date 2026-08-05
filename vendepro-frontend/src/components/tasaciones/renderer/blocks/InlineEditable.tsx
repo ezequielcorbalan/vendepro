@@ -43,7 +43,7 @@ export function InlineEditable({ value, onCommit, as = 'div', className, placeho
       tabIndex={0}
       data-placeholder={placeholder}
       spellCheck={false}
-      className={`te-editable outline-none focus:ring-2 focus:ring-brand-pink/40 rounded ${className ?? ''}`}
+      className={`te-editable outline-none rounded ${className ?? ''}`}
       onBlur={(e: React.FocusEvent<HTMLElement>) => {
         const next = plaintext ? (e.currentTarget.textContent ?? '') : (e.currentTarget.innerHTML ?? '')
         if (next !== value) onCommit(next)

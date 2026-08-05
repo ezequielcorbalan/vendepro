@@ -45,15 +45,15 @@ export default function NuevoAgentePage() {
     setLoading(false)
   }
 
-  const inputClass = 'w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/50 focus:border-brand-pink'
+  const inputClass = 'w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none'
 
   return (
     <div>
-      <Link href="/admin/agentes" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 mb-6">
+      <Link href="/admin/agentes" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-ink mb-6">
         <ArrowLeft className="w-4 h-4" /> Volver
       </Link>
 
-      <h1 className="text-2xl font-semibold text-gray-800 mb-6">Nuevo agente</h1>
+      <h1 className="text-2xl font-semibold text-ink mb-6">Nuevo agente</h1>
 
       <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm p-6 space-y-4">
         {success && <div className="bg-green-50 text-green-700 text-sm p-3 rounded-lg">{success}</div>}
@@ -115,7 +115,7 @@ export default function NuevoAgentePage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-brand-pink text-white py-2.5 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
+          className="w-full bg-gradient-to-br from-brand-pink to-brand-orange text-white py-2.5 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
           {loading ? 'Creando...' : 'Crear agente'}

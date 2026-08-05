@@ -103,7 +103,7 @@ export function SoldPropertiesPickerModal({ open, onClose, onPick }: Props) {
         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
           <div className="flex items-center gap-2">
             <Database className="h-5 w-5 text-brand-pink" />
-            <h2 className="text-lg font-semibold text-slate-900">Elegir desde Cierres Reales</h2>
+            <h2 className="text-lg font-semibold text-ink">Elegir desde Cierres Reales</h2>
           </div>
           <button onClick={onClose} className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
             <X className="h-4 w-4" />
@@ -170,7 +170,7 @@ export function SoldPropertiesPickerModal({ open, onClose, onPick }: Props) {
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="truncate text-sm font-semibold text-slate-800">
+                        <span className="truncate text-sm font-semibold text-ink">
                           {sp.address_approx || sp.neighborhood || sp.property_type}
                         </span>
                         <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-600">
@@ -191,7 +191,7 @@ export function SoldPropertiesPickerModal({ open, onClose, onPick }: Props) {
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-slate-400">Cierre</p>
-                      <p className="text-sm font-semibold text-slate-800">{formatPriceUsd(sp.closing_price_usd)}</p>
+                      <p className="text-sm font-semibold text-ink">{formatPriceUsd(sp.closing_price_usd)}</p>
                     </div>
                   </button>
                 </li>

@@ -116,14 +116,14 @@ export default function AgentesPage() {
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Equipo</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold text-ink">Equipo</h1>
           <p className="text-gray-500 text-sm mt-1">{agents.length} agente{agents.length !== 1 ? 's' : ''}</p>
         </div>
         <div className="flex items-center gap-2">
           <Link href="/admin/objetivos" className="border border-gray-300 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50">
             Objetivos
           </Link>
-          <button onClick={() => setShowCreate(true)} className="bg-brand-pink text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 flex items-center gap-2">
+          <button onClick={() => setShowCreate(true)} className="bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 flex items-center gap-2">
             <Plus className="w-4 h-4" /> Nuevo agente
           </button>
         </div>
@@ -145,7 +145,7 @@ export default function AgentesPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-medium text-gray-800">{agent.full_name}</p>
+                  <p className="font-medium text-ink">{agent.full_name}</p>
                   {agent.id === currentUser?.id && (
                     <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">Tú</span>
                   )}
@@ -204,7 +204,7 @@ export default function AgentesPage() {
       {showCreate && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowCreate(false)}>
           <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-5" onClick={e => e.stopPropagation()}>
-            <h3 className="font-semibold text-gray-800 mb-4">Nuevo agente</h3>
+            <h3 className="font-semibold text-ink mb-4">Nuevo agente</h3>
             <div className="space-y-3">
               <input placeholder="Nombre completo *" value={form.full_name} onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))}
                 className="border rounded-lg px-3 py-2 text-sm w-full" />
@@ -223,7 +223,7 @@ export default function AgentesPage() {
             <div className="flex gap-2 mt-4">
               <button onClick={() => setShowCreate(false)} className="flex-1 border rounded-lg py-2 text-sm">Cancelar</button>
               <button onClick={handleCreate} disabled={!form.full_name || !form.email || !form.password || saving}
-                className="flex-1 bg-brand-pink text-white rounded-lg py-2 text-sm font-medium disabled:opacity-50">
+                className="flex-1 bg-gradient-to-br from-brand-pink to-brand-orange text-white rounded-lg py-2 text-sm font-medium disabled:opacity-50">
                 {saving ? 'Creando...' : 'Crear agente'}
               </button>
             </div>

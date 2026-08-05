@@ -161,7 +161,7 @@ export function WizardShell({ initialTemplateId, initialLeadId, existingAppraisa
     <div className="mx-auto max-w-5xl px-4 py-6 md:px-8 md:py-10">
       {/* Header */}
       <header className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">{isEditMode ? 'Editar tasación' : 'Nueva tasación'}</h1>
+        <h1 className="text-2xl font-bold text-ink">{isEditMode ? 'Editar tasación' : 'Nueva tasación'}</h1>
         <button
           onClick={() => isEditMode ? router.push(`/tasaciones/${existingAppraisalId}/editar`) : router.back()}
           className="text-sm text-slate-500 hover:text-slate-700"
@@ -183,7 +183,7 @@ export function WizardShell({ initialTemplateId, initialLeadId, existingAppraisa
               onClick={() => goToStep(n)}
               aria-current={active ? 'step' : undefined}
               title={`Ir a: ${label}`}
-              className={`flex-1 rounded px-3 py-2 text-center text-xs font-medium transition hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-brand-pink/40 ${
+              className={`flex-1 rounded px-3 py-2 text-center text-xs font-medium transition hover:brightness-95 focus:outline-none ${
                 active
                   ? 'bg-brand-pink text-white'
                   : done
@@ -273,7 +273,7 @@ export function WizardShell({ initialTemplateId, initialLeadId, existingAppraisa
           <button
             onClick={() => dispatch({ type: 'next' })}
             disabled={!canAdvance(state)}
-            className="flex items-center gap-2 rounded bg-brand-pink px-5 py-2 text-sm text-white disabled:opacity-40"
+            className="flex items-center gap-2 rounded bg-gradient-to-br from-brand-pink to-brand-orange px-5 py-2 text-sm text-white disabled:opacity-40"
           >
             Siguiente <ArrowRight className="h-4 w-4" />
           </button>
@@ -281,7 +281,7 @@ export function WizardShell({ initialTemplateId, initialLeadId, existingAppraisa
           <button
             onClick={handleSaveEdit}
             disabled={publishing}
-            className="flex items-center gap-2 rounded bg-brand-pink px-5 py-2 text-sm text-white disabled:opacity-40"
+            className="flex items-center gap-2 rounded bg-gradient-to-br from-brand-pink to-brand-orange px-5 py-2 text-sm text-white disabled:opacity-40"
           >
             {publishing && <Loader2 className="h-4 w-4 animate-spin" />}
             Guardar cambios
@@ -299,7 +299,7 @@ export function WizardShell({ initialTemplateId, initialLeadId, existingAppraisa
             <button
               onClick={() => handlePublish(true)}
               disabled={publishing}
-              className="flex items-center gap-2 rounded bg-brand-pink px-5 py-2 text-sm text-white disabled:opacity-40"
+              className="flex items-center gap-2 rounded bg-gradient-to-br from-brand-pink to-brand-orange px-5 py-2 text-sm text-white disabled:opacity-40"
             >
               {publishing && <Loader2 className="h-4 w-4 animate-spin" />}
               Publicar

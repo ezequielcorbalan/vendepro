@@ -96,7 +96,7 @@ export default function GlobalSearch() {
                       className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 transition-colors">
                       <User className="w-4 h-4 text-pink-500 shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-gray-800 truncate">{l.full_name}</p>
+                        <p className="text-sm text-ink truncate">{l.full_name}</p>
                         <p className="text-[10px] text-gray-400 truncate">{l.phone} · {l.operation} · {l.neighborhood}</p>
                       </div>
                       <span className={`text-[10px] px-2 py-0.5 rounded-full shrink-0 ${LEAD_STAGES[l.stage as LeadStage]?.color || 'bg-gray-100 text-gray-600'}`}>
@@ -115,7 +115,7 @@ export default function GlobalSearch() {
                       className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 transition-colors">
                       <Users className="w-4 h-4 text-blue-500 shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-gray-800 truncate">{c.full_name}</p>
+                        <p className="text-sm text-ink truncate">{c.full_name}</p>
                         <p className="text-[10px] text-gray-400">{c.phone} · {c.contact_type}</p>
                       </div>
                     </Link>
@@ -131,7 +131,7 @@ export default function GlobalSearch() {
                       className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 transition-colors">
                       <Building2 className="w-4 h-4 text-green-500 shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-gray-800 truncate">{p.address}</p>
+                        <p className="text-sm text-ink truncate">{p.address}</p>
                         <p className="text-[10px] text-gray-400">{p.neighborhood} · {p.property_type} · {p.owner_name}</p>
                       </div>
                     </Link>

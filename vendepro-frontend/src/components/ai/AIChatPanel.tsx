@@ -57,7 +57,7 @@ function Field({
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/20 focus:border-brand-pink/40 placeholder:text-gray-400"
+        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none placeholder:text-gray-400"
       />
     </div>
   )
@@ -203,7 +203,7 @@ export default function AIChatPanel(_props: {
               <Sparkles size={16} className="text-white" />
             </div>
             <div>
-              <p className="font-semibold text-gray-900 text-sm">Asistente IA</p>
+              <p className="font-semibold text-ink text-sm">Asistente IA</p>
               <p className="text-xs text-gray-500">Groq · {mode === 'image' ? 'llama-4-scout (visión)' : 'llama3-8b'}</p>
             </div>
           </div>
@@ -255,7 +255,7 @@ export default function AIChatPanel(_props: {
                   onChange={e => setText(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) extract() }}
                   placeholder={'Ej: "Hola, quiero vender mi depto en Palermo. Soy Marcos García, te dejo mi número: 11-5534-2210"'}
-                  className="w-full h-48 border border-gray-200 rounded-xl p-3.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand-pink/20 focus:border-brand-pink/40 placeholder:text-gray-400"
+                  className="w-full h-48 border border-gray-200 rounded-xl p-3.5 text-sm resize-none focus:outline-none placeholder:text-gray-400"
                 />
               </div>
               <div className="bg-gray-50 rounded-xl p-3.5 space-y-1.5">
@@ -340,7 +340,7 @@ export default function AIChatPanel(_props: {
                   <select
                     value={normalizeOperation(fields.operation)}
                     onChange={e => setFields(f => ({ ...f, operation: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/20 bg-white"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none bg-white"
                   >
                     <option value="venta">Venta</option>
                     <option value="alquiler">Alquiler</option>
@@ -357,7 +357,7 @@ export default function AIChatPanel(_props: {
                     value={fields.notes ?? ''}
                     onChange={e => setFields(f => ({ ...f, notes: e.target.value }))}
                     rows={3}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand-pink/20"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none"
                     placeholder="Información adicional..."
                   />
                 </div>
@@ -372,7 +372,7 @@ export default function AIChatPanel(_props: {
                 <CheckCircle size={32} className="text-green-600" />
               </div>
               <div>
-                <p className="font-semibold text-gray-900">Lead creado</p>
+                <p className="font-semibold text-ink">Lead creado</p>
                 <p className="text-sm text-gray-500 mt-1">
                   {fields.full_name} fue agregado al pipeline de leads.
                 </p>
@@ -393,7 +393,7 @@ export default function AIChatPanel(_props: {
             <button
               onClick={extract}
               disabled={!text.trim() || loading}
-              className="w-full bg-brand-pink text-white py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-40 hover:bg-[#e0006e] transition-colors"
+              className="w-full bg-gradient-to-br from-brand-pink to-brand-orange text-white py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-40 hover:opacity-90 transition-colors"
             >
               {loading
                 ? <><Loader2 size={16} className="animate-spin" /> Extrayendo datos...</>
@@ -405,7 +405,7 @@ export default function AIChatPanel(_props: {
             <button
               onClick={extractImage}
               disabled={!imageData || loading}
-              className="w-full bg-brand-pink text-white py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-40 hover:bg-[#e0006e] transition-colors"
+              className="w-full bg-gradient-to-br from-brand-pink to-brand-orange text-white py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-40 hover:opacity-90 transition-colors"
             >
               {loading
                 ? <><Loader2 size={16} className="animate-spin" /> Analizando imagen...</>
@@ -418,7 +418,7 @@ export default function AIChatPanel(_props: {
               <button
                 onClick={createLead}
                 disabled={creating || !fields.full_name?.trim()}
-                className="w-full bg-brand-pink text-white py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-40 hover:bg-[#e0006e] transition-colors"
+                className="w-full bg-gradient-to-br from-brand-pink to-brand-orange text-white py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-40 hover:opacity-90 transition-colors"
               >
                 {creating
                   ? <><Loader2 size={16} className="animate-spin" /> Creando lead...</>

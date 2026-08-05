@@ -175,7 +175,7 @@ export default function PipelinePage() {
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Pipeline comercial</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold text-ink">Pipeline comercial</h1>
           <p className="text-gray-500 text-sm mt-1">{activeCount} propiedades · arrastrá las tarjetas entre columnas</p>
         </div>
         <div className="flex gap-1 border rounded-lg p-1 shrink-0">
@@ -235,7 +235,7 @@ export default function PipelinePage() {
                       </span>
                     </td>
                     <td className="px-4 py-2.5 max-w-[200px]">
-                      <Link href={`/propiedades/${p.id}`} className="font-medium text-gray-800 hover:text-brand-pink truncate block">
+                      <Link href={`/propiedades/${p.id}`} className="font-medium text-ink hover:text-brand-pink truncate block">
                         {p.address}
                       </Link>
                       {isTerminal && age >= ARCHIVE_WARN_DAYS && (
@@ -304,7 +304,7 @@ function CardBody({ p, dragging }: { p: any; dragging?: boolean }) {
           <Link
             href={`/propiedades/${p.id}`}
             onClick={(e) => e.stopPropagation()}
-            className="text-sm font-medium text-gray-800 hover:text-brand-pink truncate block"
+            className="text-sm font-medium text-ink hover:text-brand-pink truncate block"
           >
             {p.address}
           </Link>

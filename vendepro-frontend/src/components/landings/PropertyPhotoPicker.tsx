@@ -82,7 +82,7 @@ export default function PropertyPhotoPicker({
               className={`w-full text-left px-3 py-2 text-sm ${
                 selectedId === p.id
                   ? 'bg-brand-pink/10 text-brand-pink'
-                  : 'hover:bg-gray-50 text-gray-800'
+                  : 'hover:bg-gray-50 text-ink'
               }`}
             >
               <p className="font-medium truncate">{p.address || 'Sin dirección'}</p>

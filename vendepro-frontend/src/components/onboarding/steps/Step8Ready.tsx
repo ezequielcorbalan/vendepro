@@ -15,7 +15,7 @@ export default function Step8Ready({ name, onClose }: Props) {
         <span className="text-4xl">🚀</span>
       </div>
       <div className="space-y-2">
-        <h2 className="text-2xl font-bold text-gray-800">
+        <h2 className="text-2xl font-bold text-ink">
           ¡Todo listo{name ? `, ${name.split(' ')[0]}` : ''}!
         </h2>
         <p className="text-gray-500 text-sm max-w-sm">

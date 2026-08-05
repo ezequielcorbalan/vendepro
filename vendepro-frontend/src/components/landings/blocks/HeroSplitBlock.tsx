@@ -1,8 +1,8 @@
 import type { HeroSplitData } from '@/lib/landings/types'
 
 const ACCENTS = {
-  pink:   'bg-brand-pink hover:bg-[#e60070] text-white',
-  orange: 'bg-brand-orange hover:bg-[#e6720f] text-white',
+  pink:   'bg-gradient-to-br from-brand-pink to-brand-orange hover:opacity-90 text-white',
+  orange: 'bg-brand-orange hover:bg-brand-orange-hover text-white',
   dark:   'bg-gray-900 hover:bg-black text-white',
 } as const
 
@@ -13,7 +13,7 @@ export default function HeroSplitBlock({ data }: { data: HeroSplitData; mode?: '
     <section className="grid md:grid-cols-2 bg-white">
       <div className={`${leftOrder} flex flex-col justify-center px-6 md:px-12 py-12 md:py-20`}>
         {data.eyebrow && <p className="text-xs uppercase tracking-widest font-semibold text-brand-pink mb-3">{data.eyebrow}</p>}
-        <h1 className="text-3xl md:text-4xl font-bold leading-tight text-gray-900 mb-4">{data.title}</h1>
+        <h1 className="text-3xl md:text-4xl font-bold leading-tight text-ink mb-4">{data.title}</h1>
         {data.subtitle && <p className="text-base text-gray-600 mb-6 max-w-lg">{data.subtitle}</p>}
         {data.cta && (
           <a href={data.cta.href} className={`inline-block rounded-full px-6 py-3 font-semibold self-start ${ACCENTS[data.accent_color]}`}>

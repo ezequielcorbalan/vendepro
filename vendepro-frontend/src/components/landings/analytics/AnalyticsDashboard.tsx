@@ -8,7 +8,7 @@ function KPI({ label, value, hint }: { label: string; value: string | number; hi
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4">
       <p className="text-xs uppercase tracking-wider font-semibold text-gray-500">{label}</p>
-      <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
+      <p className="text-2xl font-bold text-ink mt-1">{value}</p>
       {hint && <p className="text-xs text-gray-500 mt-0.5">{hint}</p>}
     </div>
   )
@@ -21,7 +21,7 @@ function FunnelRow({ label, count, pct }: { label: string; count: number; pct: n
       <div className="mx-3 h-2.5 bg-gray-100 rounded-full overflow-hidden">
         <div className="h-full bg-gradient-to-r from-brand-pink to-brand-orange rounded-full" style={{ width: `${Math.max(2, pct)}%` }} />
       </div>
-      <span className="text-right text-gray-900 font-medium">{count.toLocaleString('es-AR')}</span>
+      <span className="text-right text-ink font-medium">{count.toLocaleString('es-AR')}</span>
     </div>
   )
 }
@@ -88,7 +88,7 @@ export default function AnalyticsDashboard({ landingId }: { landingId: string })
           {data.top_utm_sources.map((s, i) => (
             <div key={i} className="flex items-center justify-between text-sm">
               <span className="text-gray-700">{s.source}</span>
-              <span className="text-gray-900 font-medium">{s.count.toLocaleString('es-AR')}</span>
+              <span className="text-ink font-medium">{s.count.toLocaleString('es-AR')}</span>
             </div>
           ))}
         </div>

@@ -46,7 +46,7 @@ export function MarketStatsBlock({ data, ...attrs }: Props) {
         >
           Indicadores de mercado
         </p>
-        <h2 className="mt-2 font-poppins text-3xl font-bold leading-tight text-slate-900 md:text-5xl">
+        <h2 className="mt-2 font-poppins text-3xl font-bold leading-tight text-ink md:text-5xl">
           {data.title ?? 'Datos del mercado'}
         </h2>
 

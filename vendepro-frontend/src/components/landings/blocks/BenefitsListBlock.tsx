@@ -5,7 +5,7 @@ export default function BenefitsListBlock({ data }: { data: BenefitsListData; mo
   return (
     <section className="bg-white py-14 px-6">
       <div className="max-w-3xl mx-auto">
-        {data.title && <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-8">{data.title}</h2>}
+        {data.title && <h2 className="text-2xl md:text-3xl font-bold text-ink mb-8">{data.title}</h2>}
         <div className="space-y-5">
           {data.items.map((item, i) => (
             <div key={i} className="flex gap-4">
@@ -13,7 +13,7 @@ export default function BenefitsListBlock({ data }: { data: BenefitsListData; mo
                 <Check className="w-5 h-5" strokeWidth={3} />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 mb-0.5">{item.title}</h3>
+                <h3 className="font-semibold text-ink mb-0.5">{item.title}</h3>
                 {item.description && <p className="text-sm text-gray-600 leading-relaxed">{item.description}</p>}
               </div>
             </div>

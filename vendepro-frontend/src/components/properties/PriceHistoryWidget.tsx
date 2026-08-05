@@ -81,7 +81,7 @@ export default function PriceHistoryWidget({
             <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-sm">
               <DollarSign className="w-4.5 h-4.5 text-white" />
             </div>
-            <h2 className="text-sm font-semibold text-gray-800">Historial de precio</h2>
+            <h2 className="text-sm font-semibold text-ink">Historial de precio</h2>
           </div>
           <button
             onClick={() => setShowModal(true)}
@@ -136,7 +136,7 @@ export default function PriceHistoryWidget({
             <div className="bg-gradient-to-r from-brand-pink to-brand-orange h-1.5" />
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Ajustar precio</h3>
+                <h3 className="text-lg font-semibold text-ink">Ajustar precio</h3>
                 <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-700">
                   <X className="w-5 h-5" />
                 </button>
@@ -150,7 +150,7 @@ export default function PriceHistoryWidget({
                     value={newPrice}
                     onChange={e => setNewPrice(e.target.value)}
                     placeholder="0"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-pink/20 focus:border-brand-pink outline-none"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none"
                   />
                   {(() => {
                     const parsed = parseFloat(newPrice)
@@ -172,7 +172,7 @@ export default function PriceHistoryWidget({
                     value={reason}
                     onChange={e => setReason(e.target.value)}
                     placeholder="Ej: Ajuste de mercado"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-pink/20 focus:border-brand-pink outline-none"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none"
                   />
                 </div>
               </div>

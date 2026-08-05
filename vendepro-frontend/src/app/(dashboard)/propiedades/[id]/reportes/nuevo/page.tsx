@@ -330,12 +330,12 @@ export default function NuevoReporte() {
     <div>
       <Link
         href={`/propiedades/${propertyId}`}
-        className="inline-flex items-center gap-2 text-sm text-brand-gray hover:text-gray-800 mb-6"
+        className="inline-flex items-center gap-2 text-sm text-brand-gray hover:text-ink mb-6"
       >
         <ArrowLeft className="w-4 h-4" /> Volver
       </Link>
 
-      <h1 className="text-2xl font-semibold text-gray-800 mb-6">{editId ? 'Editar reporte' : 'Nuevo reporte'}</h1>
+      <h1 className="text-2xl font-semibold text-ink mb-6">{editId ? 'Editar reporte' : 'Nuevo reporte'}</h1>
       {loadingExisting && (
         <div className="bg-blue-50 border border-blue-200 text-blue-700 text-sm rounded-xl p-3 mb-4 flex items-center gap-2">
           <Loader2 className="w-4 h-4 animate-spin" /> Cargando reporte existente...
@@ -358,7 +358,7 @@ export default function NuevoReporte() {
             >
               {s.id < step ? <Check className="w-4 h-4" /> : s.id}
             </button>
-            <span className={`text-sm ${s.id === step ? 'text-gray-800 font-medium' : 'text-brand-gray'}`}>
+            <span className={`text-sm ${s.id === step ? 'text-ink font-medium' : 'text-brand-gray'}`}>
               {s.title}
             </span>
             {s.id < steps.length && <div className="w-8 h-px bg-gray-300" />}
@@ -374,7 +374,7 @@ export default function NuevoReporte() {
         {/* Step 1: Period */}
         {step === 1 && (
           <div className="space-y-4">
-            <h2 className="text-lg font-medium text-gray-800">Período del reporte</h2>
+            <h2 className="text-lg font-medium text-ink">Período del reporte</h2>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del período *</label>
               <input
@@ -382,7 +382,7 @@ export default function NuevoReporte() {
                 value={periodLabel}
                 onChange={(e) => setPeriodLabel(e.target.value)}
                 placeholder="Ej: Marzo 2026 - 1era quincena"
-                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none"
               />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -392,7 +392,7 @@ export default function NuevoReporte() {
                   type="date"
                   value={periodStart}
                   onChange={(e) => setPeriodStart(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none"
                 />
               </div>
               <div>
@@ -401,7 +401,7 @@ export default function NuevoReporte() {
                   type="date"
                   value={periodEnd}
                   onChange={(e) => setPeriodEnd(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none"
                 />
               </div>
             </div>
@@ -412,7 +412,7 @@ export default function NuevoReporte() {
         {step === 2 && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-medium text-gray-800">Métricas por portal</h2>
+              <h2 className="text-lg font-medium text-ink">Métricas por portal</h2>
               <label className="inline-flex items-center gap-2 text-sm bg-brand-orange/10 text-brand-orange px-3 py-2 rounded-lg cursor-pointer hover:bg-brand-orange/20 transition-colors">
                 <FileText className="w-4 h-4" />
                 {extractingPdf ? 'Extrayendo PDF...' : 'Importar PDF KiteProp'}
@@ -438,7 +438,7 @@ export default function NuevoReporte() {
                   <select
                     value={metrics.source}
                     onChange={(e) => updateMetric(idx, 'source', e.target.value)}
-                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
+                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm font-medium focus:outline-none"
                   >
                     <option value="zonaprop">ZonaProp</option>
                     <option value="argenprop">Argenprop</option>
@@ -484,7 +484,7 @@ export default function NuevoReporte() {
                         type="number"
                         value={(metrics as any)[field.key]}
                         onChange={(e) => updateMetric(idx, field.key, e.target.value)}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none"
                         placeholder="0"
                       />
                     </div>
@@ -506,7 +506,7 @@ export default function NuevoReporte() {
         {/* Step 3: Content */}
         {step === 3 && (
           <div className="space-y-4">
-            <h2 className="text-lg font-medium text-gray-800">Contenido del reporte</h2>
+            <h2 className="text-lg font-medium text-ink">Contenido del reporte</h2>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Estrategia comercial</label>
@@ -515,7 +515,7 @@ export default function NuevoReporte() {
                 onChange={(e) => setStrategy(e.target.value)}
                 rows={3}
                 placeholder="Describí la estrategia comercial aplicada..."
-                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none"
               />
             </div>
 
@@ -526,7 +526,7 @@ export default function NuevoReporte() {
                 onChange={(e) => setMarketing(e.target.value)}
                 rows={3}
                 placeholder="Detallá las acciones de marketing realizadas..."
-                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none"
               />
             </div>
 
@@ -537,7 +537,7 @@ export default function NuevoReporte() {
                 onChange={(e) => setPriceReference(e.target.value)}
                 rows={2}
                 placeholder="Comentarios sobre el precio vs mercado..."
-                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none"
               />
             </div>
 
@@ -548,7 +548,7 @@ export default function NuevoReporte() {
                 onChange={(e) => setConclusion(e.target.value)}
                 rows={6}
                 placeholder="Análisis del desempeño y recomendaciones para el propietario..."
-                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none"
               />
             </div>
           </div>
@@ -557,7 +557,7 @@ export default function NuevoReporte() {
         {/* Step 4: Competitor links */}
         {step === 4 && (
           <div className="space-y-4">
-            <h2 className="text-lg font-medium text-gray-800">Links de competencia</h2>
+            <h2 className="text-lg font-medium text-ink">Links de competencia</h2>
             <p className="text-sm text-brand-gray">Agregá links de propiedades similares que son competencia directa en la zona.</p>
 
             {competitors.map((comp, idx) => (
@@ -613,7 +613,7 @@ export default function NuevoReporte() {
                     value={comp.url}
                     onChange={(e) => updateCompetitor(idx, 'url', e.target.value)}
                     placeholder="https://www.zonaprop.com.ar/propiedades/..."
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none"
                   />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -624,7 +624,7 @@ export default function NuevoReporte() {
                       value={comp.address}
                       onChange={(e) => updateCompetitor(idx, 'address', e.target.value)}
                       placeholder="Ej: Av. Rivadavia 5200"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none"
                     />
                   </div>
                   <div>
@@ -634,7 +634,7 @@ export default function NuevoReporte() {
                       value={comp.price}
                       onChange={(e) => updateCompetitor(idx, 'price', e.target.value)}
                       placeholder="85000"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none"
                     />
                   </div>
                 </div>
@@ -645,7 +645,7 @@ export default function NuevoReporte() {
                     value={comp.notes}
                     onChange={(e) => updateCompetitor(idx, 'notes', e.target.value)}
                     placeholder="Ej: Mismo barrio, peor estado, más barato"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none"
                   />
                 </div>
               </div>
@@ -664,7 +664,7 @@ export default function NuevoReporte() {
         {/* Step 5: Photos */}
         {step === 5 && (
           <div className="space-y-4">
-            <h2 className="text-lg font-medium text-gray-800">Fotos de fichas de visita</h2>
+            <h2 className="text-lg font-medium text-ink">Fotos de fichas de visita</h2>
             <p className="text-sm text-brand-gray">Subí las fotos de las fichas de visita que completaron los interesados.</p>
 
             <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl p-8 cursor-pointer hover:border-brand-pink/50 transition-colors">
@@ -708,7 +708,7 @@ export default function NuevoReporte() {
         {/* Step 6: Preview & Publish */}
         {step === 6 && (
           <div className="space-y-4">
-            <h2 className="text-lg font-medium text-gray-800">Revisá y publicá</h2>
+            <h2 className="text-lg font-medium text-ink">Revisá y publicá</h2>
             <div className="bg-brand-light rounded-lg p-4 space-y-3 text-sm">
               <p><strong>Período:</strong> {periodLabel} ({periodStart} a {periodEnd})</p>
               <p><strong>Portales:</strong> {metricsList.map(m => m.source).join(', ')}</p>
@@ -736,7 +736,7 @@ export default function NuevoReporte() {
               <button
                 onClick={() => handleSubmit(true)}
                 disabled={loading}
-                className="flex-1 bg-brand-pink text-white px-4 py-2.5 rounded-lg font-medium hover:opacity-90 disabled:opacity-50"
+                className="flex-1 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2.5 rounded-lg font-medium hover:opacity-90 disabled:opacity-50"
               >
                 {loading ? 'Publicando...' : 'Publicar reporte'}
               </button>
@@ -750,13 +750,13 @@ export default function NuevoReporte() {
             <button
               onClick={() => setStep((s) => Math.max(1, s - 1))}
               disabled={step === 1}
-              className="inline-flex items-center gap-2 text-sm text-brand-gray hover:text-gray-800 disabled:opacity-30"
+              className="inline-flex items-center gap-2 text-sm text-brand-gray hover:text-ink disabled:opacity-30"
             >
               <ArrowLeft className="w-4 h-4" /> Anterior
             </button>
             <button
               onClick={() => setStep((s) => Math.min(6, s + 1))}
-              className="inline-flex items-center gap-2 bg-brand-pink text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
+              className="inline-flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
             >
               Siguiente <ArrowRight className="w-4 h-4" />
             </button>

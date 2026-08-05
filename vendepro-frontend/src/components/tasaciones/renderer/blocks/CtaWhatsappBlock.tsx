@@ -52,7 +52,7 @@ export function CtaWhatsappBlock({ data, edit, ...attrs }: Props) {
                       defaultValue={data.phone ?? ''}
                       placeholder="5491158574005"
                       onBlur={(e) => edit.onChange({ phone: e.target.value.trim() })}
-                      className="rounded px-2 py-1 text-sm text-slate-900"
+                      className="rounded px-2 py-1 text-sm text-ink"
                     />
                   </label>
                   <label className="flex flex-col gap-1 text-xs text-white/85">
@@ -62,7 +62,7 @@ export function CtaWhatsappBlock({ data, edit, ...attrs }: Props) {
                       defaultValue={data.pre_filled_message ?? ''}
                       placeholder="Hola, me interesa la tasación de…"
                       onBlur={(e) => edit.onChange({ pre_filled_message: e.target.value })}
-                      className="rounded px-2 py-1 text-sm text-slate-900"
+                      className="rounded px-2 py-1 text-sm text-ink"
                     />
                   </label>
                 </div>

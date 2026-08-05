@@ -19,11 +19,11 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...props} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-pink" />
+  return <input {...props} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none" />
 }
 
 function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea {...props} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-pink min-h-[60px] resize-y" />
+  return <textarea {...props} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none min-h-[60px] resize-y" />
 }
 
 export default function InspectorPanel({ block, onChange, onBlockChange }: Props) {
@@ -32,7 +32,7 @@ export default function InspectorPanel({ block, onChange, onBlockChange }: Props
     <div className="p-4 space-y-4">
       <div>
         <p className="text-xs uppercase tracking-wider font-semibold text-brand-pink">Block · {block.type}</p>
-        <p className="text-sm text-gray-900 font-medium">{BLOCK_LABELS[block.type]}</p>
+        <p className="text-sm text-ink font-medium">{BLOCK_LABELS[block.type]}</p>
       </div>
 
       {onBlockChange && (
@@ -44,7 +44,7 @@ export default function InspectorPanel({ block, onChange, onBlockChange }: Props
             onChange={(e) => onBlockChange({ is_variable: e.target.checked })}
           />
           <span className="flex-1">
-            <span className="block text-sm font-medium text-gray-900">Variable por tasación</span>
+            <span className="block text-sm font-medium text-ink">Variable por tasación</span>
             <span className="block text-xs text-gray-500 mt-0.5">
               Este bloque se podrá editar al crear cada tasación. Si está desmarcado, el contenido es fijo y se hereda de esta plantilla.
             </span>

@@ -82,7 +82,7 @@ export function ComparablesSection<Key extends string | number>({
         <button
           type="button"
           onClick={() => onAdd(emptyPublicacion())}
-          className="flex items-center gap-1.5 rounded-lg bg-brand-pink px-3 py-2 text-sm font-medium text-white hover:opacity-90"
+          className="flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange px-3 py-2 text-sm font-medium text-white hover:opacity-90"
         >
           <Plus className="h-4 w-4" /> Agregar publicación
         </button>

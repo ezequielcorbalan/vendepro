@@ -17,7 +17,7 @@ export function ServicesGridBlock({ data, ...attrs }: Props) {
           Todo incluido
         </p>
         <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
-          <h2 className="font-poppins text-3xl font-bold leading-tight text-slate-900 md:text-5xl">
+          <h2 className="font-poppins text-3xl font-bold leading-tight text-ink md:text-5xl">
             {data.title ?? 'Nuestros servicios'}
           </h2>
           {data.badge_text && (
@@ -47,7 +47,7 @@ export function ServicesGridBlock({ data, ...attrs }: Props) {
                 >
                   <Check className="h-3.5 w-3.5" strokeWidth={3} />
                 </span>
-                <span className="text-sm font-medium text-slate-800 md:text-base">{s.label}</span>
+                <span className="text-sm font-medium text-ink md:text-base">{s.label}</span>
               </li>
             ))}
           </ul>

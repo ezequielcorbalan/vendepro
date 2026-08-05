@@ -17,7 +17,7 @@ const ALIGN: Record<string, string> = { left: 'text-left', center: 'text-center'
 export function HeadingBlock({ data, edit, ...attrs }: Props) {
   const level = data.level ?? 2
   const Tag = `h${level}` as 'h1' | 'h2' | 'h3'
-  const cls = `font-poppins font-bold leading-tight text-slate-900 ${SIZE[level]} ${ALIGN[data.align ?? 'left']}`
+  const cls = `font-poppins font-bold leading-tight text-ink ${SIZE[level]} ${ALIGN[data.align ?? 'left']}`
 
   return (
     <section {...attrs} className="px-6 py-4 md:px-12 md:py-6">

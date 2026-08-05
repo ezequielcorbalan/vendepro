@@ -160,7 +160,7 @@ export default function ConfiguracionPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 flex items-center gap-2">
+        <h1 className="text-xl sm:text-2xl font-semibold text-ink flex items-center gap-2">
           <Settings className="w-6 h-6 text-brand-pink" /> Configuración
         </h1>
         <p className="text-gray-500 text-sm mt-1">Ajustes de la inmobiliaria</p>
@@ -168,7 +168,7 @@ export default function ConfiguracionPage() {
 
       {/* Mi perfil */}
       <div className="bg-white rounded-xl border p-6">
-        <h2 className="font-semibold text-gray-800 mb-5 flex items-center gap-2">
+        <h2 className="font-semibold text-ink mb-5 flex items-center gap-2">
           <User className="w-4 h-4 text-brand-pink" /> Mi perfil
         </h2>
         {loadingProfile ? (
@@ -184,7 +184,7 @@ export default function ConfiguracionPage() {
                 </div>
               )}
               <div>
-                <p className="font-medium text-gray-800">{profile?.full_name || 'Usuario'}</p>
+                <p className="font-medium text-ink">{profile?.full_name || 'Usuario'}</p>
                 <p className="text-sm text-gray-500">Esta foto aparece en las tasaciones</p>
               </div>
             </div>
@@ -195,14 +195,14 @@ export default function ConfiguracionPage() {
                 value={photoUrl}
                 onChange={e => setPhotoUrl(e.target.value)}
                 placeholder="https://ejemplo.com/mi-foto.jpg"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/50 focus:border-brand-pink"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none"
               />
               <p className="text-xs text-gray-400 mt-1">Podés subir tu foto a un servicio como imgur.com y pegar el link</p>
             </div>
             <button
               onClick={handleSavePhoto}
               disabled={savingPhoto}
-              className="flex items-center gap-2 bg-brand-pink text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50"
+              className="flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50"
             >
               {savingPhoto ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               Guardar foto
@@ -220,7 +220,7 @@ export default function ConfiguracionPage() {
             className="bg-white rounded-xl border p-5 hover:shadow-sm hover:border-gray-300 transition-all"
           >
             <div className={`mb-2 ${card.iconColor}`}>{card.icon}</div>
-            <p className="font-semibold text-gray-800 text-sm">{card.title}</p>
+            <p className="font-semibold text-ink text-sm">{card.title}</p>
             <p className="text-xs text-gray-500 mt-0.5">{card.subtitle}</p>
           </Link>
         ))}
@@ -228,7 +228,7 @@ export default function ConfiguracionPage() {
 
       {/* Datos de la inmobiliaria — solo admin */}
       {isAdmin && <div className="bg-white rounded-xl border p-6">
-        <h2 className="font-semibold text-gray-800 mb-5 flex items-center gap-2">
+        <h2 className="font-semibold text-ink mb-5 flex items-center gap-2">
           <Building2 className="w-4 h-4 text-indigo-500" /> Datos de la inmobiliaria
         </h2>
         {loadingOrg ? (
@@ -252,7 +252,7 @@ export default function ConfiguracionPage() {
                   value={slug}
                   onChange={e => setSlug(e.target.value)}
                   placeholder="mi-inmobiliaria"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/50 focus:border-brand-pink pr-8"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none pr-8"
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
                   {slugStatus === 'checking' && <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />}
@@ -284,7 +284,7 @@ export default function ConfiguracionPage() {
                       value={brandColor}
                       onChange={e => setBrandColor(e.target.value)}
                       placeholder="#ff007c"
-                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
+                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none"
                     />
                   </div>
                 </div>
@@ -302,7 +302,7 @@ export default function ConfiguracionPage() {
                       value={brandAccentColor}
                       onChange={e => setBrandAccentColor(e.target.value)}
                       placeholder="#e17a2a"
-                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
+                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none"
                     />
                   </div>
                 </div>
@@ -323,7 +323,7 @@ export default function ConfiguracionPage() {
                   value={logoUrl}
                   onChange={e => setLogoUrl(e.target.value)}
                   placeholder="https://ejemplo.com/logo.png"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink/50 focus:border-brand-pink"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none"
                 />
                 {logoUrl && (
                   <div className="mt-2 inline-block rounded border border-gray-200 bg-gray-50 p-2">
@@ -350,7 +350,7 @@ export default function ConfiguracionPage() {
                       step={5}
                       value={Math.round(surfaceWeights.covered * 100)}
                       onChange={e => setWeight('covered', Number(e.target.value))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm pr-8 focus:outline-none"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
                   </div>
@@ -365,7 +365,7 @@ export default function ConfiguracionPage() {
                       step={5}
                       value={Math.round(surfaceWeights.semi * 100)}
                       onChange={e => setWeight('semi', Number(e.target.value))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm pr-8 focus:outline-none"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
                   </div>
@@ -380,7 +380,7 @@ export default function ConfiguracionPage() {
                       step={5}
                       value={Math.round(surfaceWeights.uncovered * 100)}
                       onChange={e => setWeight('uncovered', Number(e.target.value))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm pr-8 focus:outline-none"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
                   </div>
@@ -394,7 +394,7 @@ export default function ConfiguracionPage() {
             <button
               onClick={handleSaveOrg}
               disabled={savingOrg || slugStatus === 'taken'}
-              className="flex items-center gap-2 bg-brand-pink text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50"
+              className="flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50"
             >
               {savingOrg ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               Guardar
@@ -405,7 +405,7 @@ export default function ConfiguracionPage() {
 
       {/* Ayuda */}
       <div className="bg-white rounded-xl border p-6">
-        <h2 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+        <h2 className="font-semibold text-ink mb-3 flex items-center gap-2">
           <HelpCircle className="w-4 h-4 text-brand-pink" /> Ayuda
         </h2>
         <p className="text-sm text-gray-600 mb-4">
@@ -425,7 +425,7 @@ export default function ConfiguracionPage() {
 
       {/* Google Calendar */}
       <div className="bg-white rounded-xl border p-6">
-        <h2 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+        <h2 className="font-semibold text-ink mb-3 flex items-center gap-2">
           <Calendar className="w-4 h-4 text-blue-500" /> Google Calendar
         </h2>
         <p className="text-sm text-gray-600 mb-3">

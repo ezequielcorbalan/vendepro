@@ -94,7 +94,7 @@ export default function PropiedadDetailPage() {
   if (error || !property) {
     return (
       <div>
-        <Link href="/propiedades" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 mb-6">
+        <Link href="/propiedades" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-ink mb-6">
           <ArrowLeft className="w-4 h-4" /> Volver
         </Link>
         <div className="bg-red-50 text-red-600 rounded-xl p-6">
@@ -108,7 +108,7 @@ export default function PropiedadDetailPage() {
 
   return (
     <div>
-      <Link href="/propiedades" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 mb-6">
+      <Link href="/propiedades" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-ink mb-6">
         <ArrowLeft className="w-4 h-4" /> Volver a Propiedades
       </Link>
 
@@ -126,7 +126,7 @@ export default function PropiedadDetailPage() {
               <Building2 className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-gray-800">{property.address}</h1>
+              <h1 className="text-xl font-semibold text-ink">{property.address}</h1>
               <p className="text-sm text-gray-500 mt-0.5">
                 {[property.neighborhood, property.city].filter(Boolean).join(' · ')}
               </p>
@@ -142,7 +142,7 @@ export default function PropiedadDetailPage() {
               </span>
             )}
             <Link href={`/tasaciones/nueva?property_id=${id}`}
-              className="inline-flex items-center gap-1.5 bg-brand-pink text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:opacity-90">
+              className="inline-flex items-center gap-1.5 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:opacity-90">
               <Plus className="w-4 h-4" /> Nueva tasación
             </Link>
             <button
@@ -198,19 +198,19 @@ export default function PropiedadDetailPage() {
             {property.property_type && (
               <div className="flex justify-between text-sm">
                 <dt className="text-gray-500">Tipo</dt>
-                <dd className="font-medium text-gray-800 capitalize">{property.property_type}</dd>
+                <dd className="font-medium text-ink capitalize">{property.property_type}</dd>
               </div>
             )}
             {property.rooms && (
               <div className="flex justify-between text-sm">
                 <dt className="text-gray-500">Ambientes</dt>
-                <dd className="font-medium text-gray-800">{property.rooms}</dd>
+                <dd className="font-medium text-ink">{property.rooms}</dd>
               </div>
             )}
             {property.size_m2 && (
               <div className="flex justify-between text-sm">
                 <dt className="text-gray-500">Superficie</dt>
-                <dd className="font-medium text-gray-800">{property.size_m2} m²</dd>
+                <dd className="font-medium text-ink">{property.size_m2} m²</dd>
               </div>
             )}
             {property.asking_price && (
@@ -236,7 +236,7 @@ export default function PropiedadDetailPage() {
                     {property.owner_name}
                   </Link>
                 ) : (
-                  <span className="text-gray-800 font-medium">{property.owner_name}</span>
+                  <span className="text-ink font-medium">{property.owner_name}</span>
                 )}
               </div>
               {property.owner_phone && (
@@ -263,7 +263,7 @@ export default function PropiedadDetailPage() {
             <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">Agente</h2>
             <div className="flex items-center gap-2 text-sm">
               <User className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span className="text-gray-800 font-medium">{property.agent_name}</span>
+              <span className="text-ink font-medium">{property.agent_name}</span>
             </div>
           </div>
         )}
@@ -275,7 +275,7 @@ export default function PropiedadDetailPage() {
             {property.created_at && (
               <div className="flex justify-between text-sm">
                 <dt className="text-gray-500">Captada</dt>
-                <dd className="font-medium text-gray-800">
+                <dd className="font-medium text-ink">
                   {new Date(property.created_at).toLocaleDateString('es-AR')}
                 </dd>
               </div>
@@ -283,7 +283,7 @@ export default function PropiedadDetailPage() {
             {property.updated_at && (
               <div className="flex justify-between text-sm">
                 <dt className="text-gray-500">Última actualización</dt>
-                <dd className="font-medium text-gray-800">
+                <dd className="font-medium text-ink">
                   {new Date(property.updated_at).toLocaleDateString('es-AR')}
                 </dd>
               </div>
@@ -323,7 +323,7 @@ export default function PropiedadDetailPage() {
                 <Trash2 className="w-5 h-5 text-red-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">Eliminar propiedad</h3>
+                <h3 className="font-semibold text-ink">Eliminar propiedad</h3>
                 <p className="text-sm text-gray-500">Esta acción no se puede deshacer.</p>
               </div>
             </div>
@@ -436,7 +436,7 @@ function GenerateVisitFormModal({
       >
         <div className="bg-brand-orange h-1.5" />
         <div className="p-6">
-          <h3 className="text-lg font-semibold text-gray-900">Ficha de visita</h3>
+          <h3 className="text-lg font-semibold text-ink">Ficha de visita</h3>
           <p className="text-sm text-gray-500 mt-1">
             Compartí este link con la persona que visitó la propiedad. Se guardará la respuesta
             automáticamente.

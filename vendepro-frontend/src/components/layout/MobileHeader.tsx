@@ -109,7 +109,7 @@ export default function MobileHeader({ profile }: { profile: Profile }) {
                   {(profile.full_name || profile.email || '?').charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-800 truncate">{profile.full_name || profile.email}</p>
+                  <p className="text-sm font-medium text-ink truncate">{profile.full_name || profile.email}</p>
                   <p className="text-xs text-gray-500">{profile.role === 'admin' ? 'Administrador' : 'Agente'}</p>
                 </div>
               </div>

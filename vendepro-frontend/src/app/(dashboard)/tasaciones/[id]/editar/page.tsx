@@ -68,7 +68,7 @@ export default function EditarTasacionPage() {
         <p className="text-sm text-rose-600">{error ?? 'Tasación no encontrada'}</p>
         <button
           onClick={() => router.push('/tasaciones')}
-          className="mt-4 rounded bg-brand-pink px-4 py-2 text-sm text-white"
+          className="mt-4 rounded bg-gradient-to-br from-brand-pink to-brand-orange px-4 py-2 text-sm text-white"
         >
           Volver al listado
         </button>

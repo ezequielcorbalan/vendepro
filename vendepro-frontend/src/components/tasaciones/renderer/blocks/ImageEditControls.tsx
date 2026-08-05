@@ -46,10 +46,10 @@ export function ImageEditControls({ onUploaded, compact }: Props) {
   return (
     <div className="rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 p-6">
       <div className="mb-3 flex justify-center gap-1">
-        <button type="button" onClick={() => setMode('upload')} className={`rounded-md px-3 py-1 text-xs ${mode === 'upload' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}>
+        <button type="button" onClick={() => setMode('upload')} className={`rounded-md px-3 py-1 text-xs ${mode === 'upload' ? 'bg-white text-ink shadow-sm' : 'text-slate-500'}`}>
           <Upload className="mr-1 inline h-3 w-3" /> Subir
         </button>
-        <button type="button" onClick={() => setMode('url')} className={`rounded-md px-3 py-1 text-xs ${mode === 'url' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}>
+        <button type="button" onClick={() => setMode('url')} className={`rounded-md px-3 py-1 text-xs ${mode === 'url' ? 'bg-white text-ink shadow-sm' : 'text-slate-500'}`}>
           <LinkIcon className="mr-1 inline h-3 w-3" /> URL
         </button>
       </div>

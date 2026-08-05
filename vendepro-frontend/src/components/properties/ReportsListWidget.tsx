@@ -45,7 +45,7 @@ export default function ReportsListWidget({ propertyId }: Props) {
             <FileBarChart className="w-4.5 h-4.5 text-white" />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-gray-800">Reportes</h2>
+            <h2 className="text-sm font-semibold text-ink">Reportes</h2>
             <p className="text-xs text-gray-500">{reports.length} {reports.length === 1 ? 'reporte' : 'reportes'}</p>
           </div>
         </div>
@@ -77,7 +77,7 @@ export default function ReportsListWidget({ propertyId }: Props) {
               className="flex items-center justify-between border border-gray-100 rounded-xl px-3 py-2"
             >
               <div>
-                <p className="text-sm font-medium text-gray-800">
+                <p className="text-sm font-medium text-ink">
                   {r.period_label || (r.period_start ? new Date(r.period_start).toLocaleDateString('es-AR') : 'Reporte')}
                 </p>
                 <p className="text-xs text-gray-500">
