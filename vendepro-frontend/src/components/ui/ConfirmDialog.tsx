@@ -44,17 +44,17 @@ export function ConfirmDialog({
       aria-modal="true"
       aria-label={title}
     >
-      <div className="bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden" onClick={e => e.stopPropagation()}>
+      <div className="bg-white rounded-card w-full max-w-md shadow-pop overflow-hidden" onClick={e => e.stopPropagation()}>
         <div className="flex items-start justify-between px-6 pt-5 pb-3 border-b border-gray-100">
           <div className="flex items-center gap-3">
-            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-              isDanger ? 'bg-red-100' : 'bg-gradient-to-br from-brand-pink to-brand-orange'
+            <div className={`w-9 h-9 rounded-card flex items-center justify-center shrink-0 ${
+              isDanger ? 'bg-danger/10' : 'bg-gradient-to-br from-brand-pink to-brand-orange'
             }`}>
-              <AlertTriangle className={`w-4.5 h-4.5 ${isDanger ? 'text-red-600' : 'text-white'}`} />
+              <AlertTriangle className={`w-4.5 h-4.5 ${isDanger ? 'text-danger' : 'text-white'}`} />
             </div>
             <h2 className="text-lg font-semibold text-ink leading-tight">{title}</h2>
           </div>
-          <button onClick={onCancel} aria-label="Cerrar" className="p-1.5 hover:bg-gray-100 rounded-lg shrink-0">
+          <button onClick={onCancel} aria-label="Cerrar" className="p-1.5 hover:bg-gray-100 rounded-control shrink-0">
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
@@ -68,7 +68,7 @@ export function ConfirmDialog({
               value={reason}
               onChange={e => setReason(e.target.value)}
               placeholder={reasonPlaceholder}
-              className="mt-3 w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none"
+              className="mt-3 w-full border border-gray-200 rounded-card px-3 py-2 text-sm focus:outline-none"
             />
           )}
         </div>
@@ -83,7 +83,7 @@ export function ConfirmDialog({
           <button
             onClick={() => onConfirm(reason)}
             className={`px-5 py-2 rounded-full text-sm font-semibold text-white transition-colors ${
-              isDanger ? 'bg-red-600 hover:bg-red-700' : 'bg-brand-pink hover:bg-brand-pink-hover'
+              isDanger ? 'bg-danger hover:opacity-90' : 'bg-primary hover:bg-primary-hover'
             }`}
           >
             {confirmLabel}

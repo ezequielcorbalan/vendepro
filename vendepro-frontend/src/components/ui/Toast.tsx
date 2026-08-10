@@ -25,17 +25,17 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const dismiss = (id: number) => setToasts(prev => prev.filter(t => t.id !== id))
 
   const icons = {
-    success: <CheckCircle2 className="w-4 h-4 text-green-500" />,
-    error: <AlertTriangle className="w-4 h-4 text-red-500" />,
-    warning: <AlertTriangle className="w-4 h-4 text-yellow-500" />,
-    info: <Info className="w-4 h-4 text-blue-500" />,
+    success: <CheckCircle2 className="w-4 h-4 text-success" />,
+    error: <AlertTriangle className="w-4 h-4 text-danger" />,
+    warning: <AlertTriangle className="w-4 h-4 text-warning" />,
+    info: <Info className="w-4 h-4 text-info" />,
   }
 
   const colors = {
-    success: 'bg-green-50 border-green-200 text-green-800',
-    error: 'bg-red-50 border-red-200 text-red-800',
-    warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
-    info: 'bg-blue-50 border-blue-200 text-blue-800',
+    success: 'bg-success/10 border-success/20 text-success',
+    error: 'bg-danger/10 border-danger/20 text-danger',
+    warning: 'bg-warning/10 border-warning/20 text-warning',
+    info: 'bg-info/10 border-info/20 text-info',
   }
 
   return (
@@ -43,7 +43,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {children}
       <div className="fixed bottom-4 right-4 z-[100] space-y-2 max-w-sm">
         {toasts.map(t => (
-          <div key={t.id} className={`flex items-center gap-2 px-4 py-3 rounded-xl border shadow-lg animate-slide-up ${colors[t.type]}`}>
+          <div key={t.id} className={`flex items-center gap-2 px-4 py-3 rounded-card border shadow-pop animate-slide-up ${colors[t.type]}`}>
             {icons[t.type]}
             <span className="text-sm flex-1">{t.message}</span>
             <button onClick={() => dismiss(t.id)} className="p-0.5 hover:opacity-70">
