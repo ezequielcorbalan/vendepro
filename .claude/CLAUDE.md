@@ -26,5 +26,15 @@ Real estate CRM for managing the full commercial pipeline: leads → contacts �
 - Protect all API routes with getCurrentUser()
 - Filter by org_id on all queries
 
+## Design System (UI nueva) — OBLIGATORIO
+Al crear o modificar CUALQUIER pantalla/UI, usar el design system. No maquetar con clases sueltas.
+- **Componentes**: usar los de `src/components/ui` (Button, Badge, Card, Input/Field/Select/Textarea, Avatar, Heading, Text, Tabs, Modal, Drawer, Dropdown, Table, Tooltip, Timeline, Progress, EmptyState, StageBadge, EventChip, Kanban, PropertyCard, Charts…). No recrear con `<button>`/`<div>` + clases.
+- **Texto**: `Heading` (level 1–4) y `Text` (size/weight/tone). Nunca `<h1>`/`<p>` con clases sueltas. Default: títulos de sección (Heading 2) van en **semibold**.
+- **Color**: tokens — `primary`, `success/warning/danger/info/neutral`, o la paleta genérica. NUNCA color Tailwind suelto (`bg-emerald-100`, etc.) en UI nueva.
+- **Radio/sombra**: `rounded-control` (8px) / `rounded-card` (12px) / `rounded-full`; `shadow-card` / `shadow-pop`.
+- **Dominio** (etapas, eventos, colores de negocio): desde `src/lib/crm-config.ts`.
+- **Overrides**: `cn` usa `tailwind-merge`, así que un `className` puede pisar el estilo base sin problema.
+- Referencia viva: ruta `/design-system`. Plan y contrato: `doc/ds-plan.md`, `doc/ds-review.md`.
+
 ## Rules
 See `rules/` for detailed guidelines per domain.
