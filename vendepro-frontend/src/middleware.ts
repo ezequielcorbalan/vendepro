@@ -8,9 +8,11 @@ const PUBLIC_PATHS = [
   '/login',
   '/register',
   '/terminos',
+  '/design-system', // galería del design system (referencia interna, sin datos)
 ]
 
 const PUBLIC_PREFIXES = [
+  '/design-system', // galería + previews del design system (sin datos)
   '/r/',   // public property reports
   '/t/',   // public appraisal pages
   '/v/',   // public visit forms
