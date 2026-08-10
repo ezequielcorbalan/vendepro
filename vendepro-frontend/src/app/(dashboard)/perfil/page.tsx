@@ -2,6 +2,10 @@
 import { useState, useEffect } from 'react'
 import { User, Lock, Save, Loader2, CheckCircle2, Eye, EyeOff } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
+import { Button } from '@/components/ui/Button'
+import { Input, Field } from '@/components/ui/Input'
+import { Card } from '@/components/ui/Card'
+import { Heading, Text } from '@/components/ui/Typography'
 import { apiFetch } from '@/lib/api'
 import { getCurrentUser, setCurrentUser } from '@/lib/auth'
 
@@ -70,81 +74,76 @@ export default function PerfilPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl sm:text-2xl font-semibold text-ink">Mi Perfil</h1>
-        <p className="text-gray-500 text-sm mt-1">Información personal y configuración de seguridad</p>
+        <Heading level={2} as="h1">Mi Perfil</Heading>
+        <Text tone="muted" className="mt-1">Información personal y configuración de seguridad</Text>
       </div>
 
       {/* Profile section */}
-      <div className="bg-white rounded-xl border p-6">
-        <h2 className="font-semibold text-ink mb-4 flex items-center gap-2">
-          <User className="w-4 h-4 text-brand-pink" /> Información personal
-        </h2>
+      <Card padded={false} className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <User className="w-4 h-4 text-primary" />
+          <Heading level={4} as="h2">Información personal</Heading>
+        </div>
         <div className="space-y-4">
           {profile?.photo_url && (
             <div className="flex items-center gap-4">
               <img src={profile.photo_url} alt={fullName} className="w-16 h-16 rounded-full object-cover" />
             </div>
           )}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre completo</label>
-            <input type="text" value={fullName} onChange={e => setFullName(e.target.value)}
-              className="w-full border rounded-lg px-3 py-2 text-sm" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-            <input type="tel" value={phone} onChange={e => setPhone(e.target.value)}
-              className="w-full border rounded-lg px-3 py-2 text-sm" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input type="email" value={profile?.email || ''} disabled
-              className="w-full border rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-400" />
-          </div>
-          <button onClick={handleSaveProfile} disabled={savingProfile}
-            className="flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50">
-            {savingProfile ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          <Field label="Nombre completo" htmlFor="fullName">
+            <Input id="fullName" type="text" value={fullName} onChange={e => setFullName(e.target.value)} />
+          </Field>
+          <Field label="Teléfono" htmlFor="phone">
+            <Input id="phone" type="tel" value={phone} onChange={e => setPhone(e.target.value)} />
+          </Field>
+          <Field label="Email" htmlFor="email" hint="El email no se puede modificar">
+            <Input id="email" type="email" value={profile?.email || ''} disabled />
+          </Field>
+          <Button onClick={handleSaveProfile} loading={savingProfile} icon={<Save className="w-4 h-4" />}>
             Guardar cambios
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
 
       {/* Password section */}
-      <div className="bg-white rounded-xl border p-6">
-        <h2 className="font-semibold text-ink mb-4 flex items-center gap-2">
-          <Lock className="w-4 h-4 text-brand-pink" /> Cambiar contraseña
-        </h2>
+      <Card padded={false} className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Lock className="w-4 h-4 text-primary" />
+          <Heading level={4} as="h2">Cambiar contraseña</Heading>
+        </div>
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña actual</label>
-            <input type={showPw ? 'text' : 'password'} value={currentPw} onChange={e => setCurrentPw(e.target.value)}
-              className="w-full border rounded-lg px-3 py-2 text-sm" />
-          </div>
-          <div className="relative">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nueva contraseña</label>
-            <input type={showPw ? 'text' : 'password'} value={newPw} onChange={e => setNewPw(e.target.value)}
-              className="w-full border rounded-lg px-3 py-2 text-sm" />
-            <button onClick={() => setShowPw(!showPw)} className="absolute right-3 bottom-2 text-gray-400">
-              {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar contraseña</label>
-            <input type={showPw ? 'text' : 'password'} value={confirmPw} onChange={e => setConfirmPw(e.target.value)}
-              className="w-full border rounded-lg px-3 py-2 text-sm" />
-          </div>
+          <Field label="Contraseña actual" htmlFor="currentPw">
+            <Input id="currentPw" type={showPw ? 'text' : 'password'} value={currentPw} onChange={e => setCurrentPw(e.target.value)} />
+          </Field>
+          <Field label="Nueva contraseña" htmlFor="newPw">
+            <div className="relative">
+              <Input id="newPw" type={showPw ? 'text' : 'password'} value={newPw} onChange={e => setNewPw(e.target.value)} className="pr-10" />
+              <button type="button" onClick={() => setShowPw(!showPw)} aria-label={showPw ? 'Ocultar' : 'Mostrar'}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </Field>
+          <Field label="Confirmar contraseña" htmlFor="confirmPw">
+            <Input id="confirmPw" type={showPw ? 'text' : 'password'} value={confirmPw} onChange={e => setConfirmPw(e.target.value)} />
+          </Field>
           {newPw && confirmPw && (
-            <div className={`text-xs flex items-center gap-1 ${newPw === confirmPw ? 'text-green-600' : 'text-red-500'}`}>
+            <Text size="xs" tone={newPw === confirmPw ? 'success' : 'danger'} className="flex items-center gap-1">
               <CheckCircle2 className="w-3 h-3" />
               {newPw === confirmPw ? 'Contraseñas coinciden' : 'No coinciden'}
-            </div>
+            </Text>
           )}
-          <button onClick={handleChangePassword} disabled={savingPw || !currentPw || !newPw || newPw !== confirmPw}
-            className="flex items-center gap-2 bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-700 disabled:opacity-50">
-            {savingPw ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
+          <Button
+            variant="outline"
+            onClick={handleChangePassword}
+            loading={savingPw}
+            disabled={savingPw || !currentPw || !newPw || newPw !== confirmPw}
+            icon={<Lock className="w-4 h-4" />}
+          >
             Cambiar contraseña
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
     </div>
   )
 }
