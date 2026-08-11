@@ -17,9 +17,9 @@ import {
   HmacUnsubscribeTokenSigner,
   JwtAuthService, CryptoIdGenerator,
   encrypt, decrypt,
-  createMarketingSender, fireMarketingEvent, fireWebhookEvent,
+  createMarketingSender, fireMarketingEvent, fireWebhookEvent, resolveAssignedAgent,
 } from '@vendepro/infrastructure'
-import { Activity } from '@vendepro/core'
+import { Activity, propertyFromIncoming } from '@vendepro/core'
 import {
   GetLeadsUseCase, UpdateLeadUseCase, DeleteLeadUseCase, AdvanceLeadStageUseCase,
   LinkLeadPropertyUseCase, UpdateLeadPropertyStatusUseCase, UnlinkLeadPropertyUseCase,
@@ -136,6 +136,7 @@ app.post('/leads', async (c) => {
     actionSource: 'system_generated',
   })
   // Webhook saliente `lead.created` (n8n → Resend/OneTalk).
+  const createdAgent = await resolveAssignedAgent(c.env.DB, c.get('orgId'), body.assigned_to || c.get('userId'))
   await fireWebhookEvent(c.env, {
     orgId: c.get('orgId'),
     event: 'lead.created',
@@ -151,6 +152,8 @@ app.post('/leads', async (c) => {
         source_detail: body.source_detail ?? null,
         notes: body.notes ?? null,
         contact_id: result.contact_id ?? null,
+        assigned_agent: createdAgent,
+        property: propertyFromIncoming(body),
         tags: Array.isArray(body.tags) ? body.tags : [],
       },
     },
@@ -673,6 +676,32 @@ function buildKitepropSync(env: Env) {
     new D1LeadPropertyRepository(env.DB),
     new D1PropertyLinkRepository(env.DB),
     new D1PropertyRepository(env.DB),
+    // Webhook `lead.created` por cada lead comprador nuevo de KiteProp,
+    // con el agente asignado y la propiedad consultada (portal + aviso).
+    async (info) => {
+      const agent = await resolveAssignedAgent(env.DB, info.orgId, info.assignedTo)
+      await fireWebhookEvent(env, {
+        orgId: info.orgId,
+        event: 'lead.created',
+        payload: {
+          lead: {
+            id: info.leadId,
+            full_name: info.full_name,
+            email: info.email,
+            phone: info.phone,
+            operation: info.operation,
+            pipeline: 'comprador',
+            source: info.source,
+            source_detail: info.source_detail,
+            notes: null,
+            contact_id: info.contact_id,
+            assigned_agent: agent,
+            property: info.property,
+            tags: [],
+          },
+        },
+      })
+    },
   )
 }
 

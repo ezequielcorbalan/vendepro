@@ -123,9 +123,29 @@ CREATE TABLE webhooks (
 
 | Evento | Cuándo dispara | Payload clave |
 |--------|----------------|---------------|
-| `lead.created` | Alta de lead (API, web pública o manual) | lead completo + tags + contact |
+| `lead.created` | Alta de lead (API, web pública, manual o sync KiteProp) | lead completo + `assigned_agent` + `property` + tags + contact |
 | `lead.stage_changed` | Cambio de etapa (ya se registra en stage_history) | lead, from_stage, to_stage |
 | `appraisal.created` | Alta de tasación | appraisal + contact |
+
+#### Campos de `data.lead` en `lead.created`
+
+Además de los campos base (id, full_name, email, phone, operation, source, source_detail, notes, contact_id, tags):
+
+- **`assigned_agent`**: `{ "name": "...", "email": "..." }` del agente asignado, o `null`.
+  - Manual (api-crm): el agente que crea/recibe el lead.
+  - `/v1/leads` (import): **siempre `null`** (los leads entran a la cola sin asignar).
+  - `/public/leads` (legacy): el admin de la org.
+  - Sync KiteProp: el agente mapeado del portal, o el admin si no hay match.
+- **`property`**: datos estructurados de la propiedad consultada, o `null`.
+  ```json
+  { "external_id": "541048", "address": "Terrada 1887", "neighborhood": "Villa Santa Rita",
+    "operation": "venta", "portal": "zonaprop", "listing_url": "https://..." }
+  ```
+  - Se emite **solo si hay un aviso concreto** (`external_id` o `address`). Una tasación web
+    (sin aviso) va con `property: null` aunque traiga operación.
+  - En `/v1/leads` y `/public/leads` se toma de un objeto `property` **explícito** en el body
+    (no se infiere de `property_address`, que también usan las tasaciones).
+  - En KiteProp se arma solo desde la consulta del portal (external_id, dirección, barrio, `msg.source` como portal).
 
 ### Requisitos de entrega
 
@@ -169,9 +189,22 @@ Content-Type: application/json
   "tags": ["zonaprop", "consulta-propiedad"],
   "property_address": "Av. Cabildo 2345, 3ºB",
   "neighborhood": "Belgrano",
-  "notes": "Consultó por la publicación #12345678"
+  "notes": "Consultó por la publicación #12345678",
+  "property": {
+    "external_id": "12345678",
+    "address": "Av. Cabildo 2345, 3ºB",
+    "neighborhood": "Belgrano",
+    "operation": "venta",
+    "portal": "zonaprop",
+    "listing_url": "https://www.zonaprop.com.ar/propiedades/12345678.html"
+  }
 }
 ```
+
+> El objeto `property` (opcional) es lo que se emite en el webhook `lead.created`.
+> Mandalo cuando el lead es una consulta por un aviso concreto; omitilo para tasaciones.
+> Los campos planos `property_address`/`neighborhood` siguen persistiéndose en el lead
+> (no se usan para armar `property` en el webhook).
 
 Respuesta esperada:
 

@@ -38,6 +38,7 @@ import {
   SubmitLeadFromLandingUseCase,
   ImportLeadsUseCase,
   ProcessUnsubscribeUseCase,
+  propertyFromIncoming,
 } from '@vendepro/core'
 
 type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket }
@@ -295,6 +296,9 @@ app.post('/v1/leads', async (c) => {
               source_detail: lead.source_detail ?? null,
               notes: lead.notes ?? null,
               contact_id: (r as any).contact_id ?? null,
+              // Los leads de la API de integración entran sin asignar.
+              assigned_agent: null,
+              property: propertyFromIncoming(lead),
               deduped: (r as any).deduped ?? false,
               tags: Array.isArray(lead.tags) ? lead.tags : [],
             },
@@ -361,6 +365,9 @@ app.post('/public/leads', async (c) => {
   })
 
   // Webhook saliente `lead.created` (misma semántica que /v1/leads).
+  // El lead legacy se asigna al admin de la org (ver CreatePublicLeadUseCase).
+  const legacyAdmin = await new D1UserRepository(c.env.DB).findFirstAdminByOrg(result.org_id).catch(() => null)
+  const legacyAgent = legacyAdmin ? { name: legacyAdmin.name ?? null, email: legacyAdmin.email ?? null } : null
   await fireWebhookEvent(c.env, {
     orgId: result.org_id,
     event: 'lead.created',
@@ -374,6 +381,8 @@ app.post('/public/leads', async (c) => {
         source: 'public_api',
         source_detail: body.source_detail ?? null,
         notes: body.notes ?? null,
+        assigned_agent: legacyAgent,
+        property: propertyFromIncoming(body),
       },
     },
   })
