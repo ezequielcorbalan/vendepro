@@ -25,6 +25,7 @@ export function SegmentedControl({ options, value, onChange, className }: Segmen
         const active = opt.value === value
         return (
           <button
+            type="button"
             key={opt.value}
             role="tab"
             aria-selected={active}

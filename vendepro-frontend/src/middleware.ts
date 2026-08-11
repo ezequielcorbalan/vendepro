@@ -8,7 +8,6 @@ const PUBLIC_PATHS = [
   '/login',
   '/register',
   '/terminos',
-  '/design-system', // galería del design system (referencia interna, sin datos)
 ]
 
 const PUBLIC_PREFIXES = [

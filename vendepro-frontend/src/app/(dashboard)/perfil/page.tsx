@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Input, Field } from '@/components/ui/Input'
 import { Card } from '@/components/ui/Card'
 import { Heading, Text } from '@/components/ui/Typography'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { apiFetch } from '@/lib/api'
 import { getCurrentUser, setCurrentUser } from '@/lib/auth'
 
@@ -73,10 +74,7 @@ export default function PerfilPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <Heading level={2} as="h1">Mi Perfil</Heading>
-        <Text tone="muted" className="mt-1">Información personal y configuración de seguridad</Text>
-      </div>
+      <PageHeader title="Mi Perfil" subtitle="Información personal y configuración de seguridad" />
 
       {/* Profile section */}
       <Card padded={false} className="p-6">

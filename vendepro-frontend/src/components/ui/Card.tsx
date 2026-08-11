@@ -6,7 +6,8 @@ import { cn } from '@/lib/utils'
  * Radio unificado en `rounded-card`. Editá acá el estilo base de todas las cards.
  */
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
-  /** Aplica el padding interno estándar (p-4). Desactivalo para media/tablas a sangre. */
+  /** Aplica el padding interno estándar (p-5). Desactivalo para media/tablas a
+   *  sangre. Para otro padding, pasá className="p-6" (tailwind-merge lo pisa). */
   padded?: boolean
   /** Eleva la sombra en hover (para cards clickeables). */
   interactive?: boolean
@@ -17,7 +18,7 @@ export function Card({ padded = true, interactive = false, className, children, 
     <div
       className={cn(
         'bg-white border border-gray-200 rounded-card shadow-card',
-        padded && 'p-4',
+        padded && 'p-5',
         interactive && 'transition-shadow hover:shadow-md',
         className,
       )}

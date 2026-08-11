@@ -15,6 +15,7 @@ Disallow: /configuracion
 Disallow: /vendidas
 Disallow: /mi-performance
 Disallow: /prefactibilidades
+Disallow: /design-system
 Disallow: /r/
 Disallow: /t/
 Disallow: /v/

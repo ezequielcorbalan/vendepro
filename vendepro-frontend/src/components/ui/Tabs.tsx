@@ -28,6 +28,7 @@ export function Tabs({ items, value, onChange, className }: TabsProps) {
         const active = item.value === value
         return (
           <button
+            type="button"
             key={item.value}
             role="tab"
             aria-selected={active}
