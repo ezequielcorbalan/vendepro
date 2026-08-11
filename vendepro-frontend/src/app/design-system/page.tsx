@@ -26,6 +26,7 @@ import { Drawer } from '@/components/ui/Drawer'
 import { Timeline } from '@/components/ui/Timeline'
 import { ProgressBar, Steps } from '@/components/ui/Progress'
 import { Heading, Text } from '@/components/ui/Typography'
+import { CallButton, WhatsAppButton } from '@/components/ui/ContactButtons'
 import { NotificationBell, NotificationPanel } from '@/components/ui/Notifications'
 import { KanbanBoard, KanbanColumn, KanbanCard } from '@/components/ui/Kanban'
 import { PropertyCard } from '@/components/ui/PropertyCard'
@@ -269,6 +270,27 @@ export default function DesignSystemPage() {
               <Button size="lg">Large</Button>
               <Button loading>Guardando…</Button>
               <Button disabled>Deshabilitado</Button>
+            </Row>
+          </div>
+        </Section>
+
+        {/* Canales de contacto */}
+        <Section title="Canales de contacto" hint="La decisión de cada canal (color, ícono, link) vive en UN componente. Cambiás el componente y se actualiza en toda la app.">
+          <div className="space-y-4">
+            <Row>
+              <CallButton phone="+541155551234" />
+              <WhatsAppButton phone="+541155551234" />
+              <Text size="xs" tone="muted" className="ml-2">con teléfono</Text>
+            </Row>
+            <Row>
+              <CallButton phone={null} />
+              <WhatsAppButton phone={null} />
+              <Text size="xs" tone="muted" className="ml-2">sin teléfono (deshabilitado)</Text>
+            </Row>
+            <Row>
+              <CallButton phone="+541155551234" iconOnly />
+              <WhatsAppButton phone="+541155551234" iconOnly />
+              <Text size="xs" tone="muted" className="ml-2">iconOnly — la misma decisión, forma de ícono</Text>
             </Row>
           </div>
         </Section>

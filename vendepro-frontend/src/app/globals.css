@@ -49,6 +49,10 @@
   --color-info: #2563eb;     /* blue-600 */
   --color-neutral: var(--color-brand-gray);
 
+  /* ── Colores de canal (marca de terceros) ─────────────────────
+     El verde oficial de WhatsApp. Fuente única del color del canal. */
+  --color-whatsapp: #25d366;
+
   /* ── Radios ───────────────────────────────────────────────────
      Sólo los "ajustables". Los círculos/pills siguen con rounded-full.
      Generan rounded-control / rounded-card (al usarse como clase). */
