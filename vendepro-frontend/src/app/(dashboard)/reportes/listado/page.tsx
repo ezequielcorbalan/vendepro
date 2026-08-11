@@ -6,6 +6,12 @@ import { Filter, ChevronLeft, ChevronRight, FileBarChart, Eye } from 'lucide-rea
 import { apiFetch } from '@/lib/api'
 import HealthBadge from '@/components/reports/HealthBadge'
 import { type HealthStatus } from '@/lib/semaforo'
+import { Card } from '@/components/ui/Card'
+import { Input, Select } from '@/components/ui/Input'
+import { Button } from '@/components/ui/Button'
+import { Alert } from '@/components/ui/Alert'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { Text } from '@/components/ui/Typography'
 
 interface ReportItem {
   id: string
@@ -86,45 +92,41 @@ export default function ListadoPage() {
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="bg-white rounded-xl border p-3 sm:p-4">
+      <Card padded={false} className="p-3 sm:p-4">
         <div className="flex items-center gap-2 mb-3 text-sm font-medium text-gray-700">
           <Filter className="w-4 h-4" aria-hidden="true" />
           Filtros
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-          <input
+          <Input
             type="text"
             value={neighborhood}
             onChange={e => setNeighborhood(e.target.value)}
             placeholder="Barrio"
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none"
           />
-          <select
+          <Select
             value={status}
             onChange={e => setStatus(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none"
           >
             <option value="">Todos</option>
             <option value="published">Publicados</option>
             <option value="draft">Borradores</option>
-          </select>
-          <input
+          </Select>
+          <Input
             type="date"
             value={from}
             onChange={e => setFrom(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none"
           />
-          <input
+          <Input
             type="date"
             value={to}
             onChange={e => setTo(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none"
           />
         </div>
-      </div>
+      </Card>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border overflow-hidden">
+      <Card padded={false} className="overflow-hidden">
         {loading && (
           <div className="p-4 space-y-2 animate-pulse">
             {[...Array(5)].map((_, i) => <div key={i} className="h-10 bg-gray-100 rounded" />)}
@@ -132,19 +134,20 @@ export default function ListadoPage() {
         )}
 
         {!loading && error && (
-          <div className="p-6 text-center">
-            <p className="text-red-600 text-sm font-medium">Error al cargar los reportes</p>
-            <button onClick={() => setPage(p => p)} className="mt-2 text-xs text-red-500 underline">
-              Reintentar
-            </button>
+          <div className="p-4">
+            <Alert tone="danger" title="Error al cargar los reportes">
+              <Button variant="ghost" size="sm" onClick={() => setPage(p => p)} className="-ml-3 mt-1">
+                Reintentar
+              </Button>
+            </Alert>
           </div>
         )}
 
         {!loading && !error && data && data.results.length === 0 && (
-          <div className="p-8 text-center">
-            <FileBarChart className="w-10 h-10 text-gray-300 mx-auto mb-3" aria-hidden="true" />
-            <p className="text-gray-600 font-medium">No hay reportes que coincidan con los filtros</p>
-          </div>
+          <EmptyState
+            icon={<FileBarChart className="w-6 h-6" />}
+            title="No hay reportes que coincidan con los filtros"
+          />
         )}
 
         {!loading && !error && data && data.results.length > 0 && (
@@ -176,7 +179,7 @@ export default function ListadoPage() {
                     <td className="py-2 px-3">
                       <Link
                         href={`/propiedades/${r.property_id}/reportes`}
-                        className="text-brand-pink hover:underline font-medium"
+                        className="text-primary hover:underline font-medium"
                       >
                         {r.property_address}
                       </Link>
@@ -198,7 +201,7 @@ export default function ListadoPage() {
                           target="_blank"
                           rel="noopener noreferrer"
                           title="Ver reporte público"
-                          className="inline-flex items-center gap-1 text-brand-pink hover:underline text-xs font-medium"
+                          className="inline-flex items-center gap-1 text-primary hover:underline text-xs font-medium"
                         >
                           <Eye className="w-3.5 h-3.5" />
                           <span className="hidden sm:inline">Ver público</span>
@@ -211,29 +214,32 @@ export default function ListadoPage() {
             </table>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Pagination */}
       {data && data.total > PAGE_SIZE && (
-        <div className="flex items-center justify-between text-sm text-gray-600">
-          <span>
+        <div className="flex items-center justify-between">
+          <Text as="span" tone="muted">
             Página {page} de {totalPages} — {data.total} reportes
-          </span>
+          </Text>
           <div className="flex gap-1">
-            <button
+            <Button
+              variant="outline"
+              size="sm"
+              icon={<ChevronLeft className="w-4 h-4" />}
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page <= 1}
-              className="px-2 py-1 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
             >
-              <ChevronLeft className="w-4 h-4" /> Anterior
-            </button>
-            <button
+              Anterior
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
-              className="px-2 py-1 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
             >
               Siguiente <ChevronRight className="w-4 h-4" />
-            </button>
+            </Button>
           </div>
         </div>
       )}

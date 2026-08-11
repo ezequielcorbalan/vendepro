@@ -4,6 +4,11 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Save, Loader2, Video, FileText, Phone } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Card } from '@/components/ui/Card'
+import { Heading } from '@/components/ui/Typography'
+import { Input, Textarea } from '@/components/ui/Input'
+import { Button } from '@/components/ui/Button'
 import { apiFetch } from '@/lib/api'
 
 const settingFields = [
@@ -55,7 +60,7 @@ export default function MiConfigTasacionPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-brand-pink" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -66,18 +71,17 @@ export default function MiConfigTasacionPage() {
         <ArrowLeft className="w-4 h-4" /> Volver a mi perfil
       </Link>
 
-      <div className="mb-6">
-        <h1 className="text-xl sm:text-2xl font-semibold text-ink flex items-center gap-2">
-          <FileText className="w-6 h-6 text-brand-pink" /> Mi configuración de tasaciones
-        </h1>
-        <p className="text-sm text-gray-400 mt-1">Videos, textos, datos de mercado y CTAs que se usan en tus landings de tasación</p>
-      </div>
+      <PageHeader
+        title="Mi configuración de tasaciones"
+        subtitle="Videos, textos, datos de mercado y CTAs que se usan en tus landings de tasación"
+        className="mb-6"
+      />
 
       <div className="space-y-6">
         {groups.map(group => (
-          <div key={group} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+          <Card key={group} padded={false} className="overflow-hidden">
             <div className="px-5 py-3 bg-gray-50 border-b border-gray-100">
-              <h2 className="text-sm font-semibold text-gray-700">{group}</h2>
+              <Heading level={4}>{group}</Heading>
             </div>
             <div className="p-5 space-y-4">
               {settingFields.filter(f => f.group === group).map(field => {
@@ -88,37 +92,36 @@ export default function MiConfigTasacionPage() {
                       <Icon className="w-3.5 h-3.5 text-gray-400" /> {field.label}
                     </label>
                     {field.type === 'textarea' ? (
-                      <textarea
+                      <Textarea
                         value={settings[field.key] || ''}
                         onChange={e => setSettings(prev => ({ ...prev, [field.key]: e.target.value }))}
                         rows={3}
                         placeholder={field.placeholder}
-                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none"
                       />
                     ) : (
-                      <input
+                      <Input
                         type={field.type === 'number' ? 'number' : 'text'}
                         value={settings[field.key] || ''}
                         onChange={e => setSettings(prev => ({ ...prev, [field.key]: e.target.value }))}
                         placeholder={field.placeholder}
-                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
                       />
                     )}
                   </div>
                 )
               })}
             </div>
-          </div>
+          </Card>
         ))}
 
-        <button
+        <Button
           onClick={handleSave}
-          disabled={saving}
-          className="w-full bg-gradient-to-br from-brand-pink to-brand-orange text-white py-3 rounded-xl text-sm font-bold hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
+          loading={saving}
+          fullWidth
+          size="lg"
+          icon={<Save className="w-4 h-4" />}
         >
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Guardar configuración
-        </button>
+        </Button>
       </div>
     </div>
   )
