@@ -85,6 +85,13 @@ grep -rn "from-brand-pink to-brand-orange\|bg-brand-pink" src/app src/components
 4. `Card`
 5. El resto según aparezcan (Modal, Tabs, Table, Drawer, etc.)
 
+**Método: usar lo existente + marcar (no crear variantes sobre la marcha).**
+Cuando algo no encaja en un componente, hay 3 baldes:
+1. **Es equivalente a algo que ya existe** → usalo (la mayoría; mejora la consistencia).
+2. **Es una diferencia funcional real** (color de canal, acción con color propio) → migralo al componente existente MÁS cercano y **marcalo** con `{/* ds-todo: candidato a variante "X" — por ahora <variante-actual> */}`. NO crear la variante todavía.
+3. **Después de la pasada** → `grep -rn "ds-todo" src` y decidís, en una sola tanda, qué customs recurrentes se vuelven variante (la mínima cantidad, justificada por uso real).
+Regla: las variantes se crean con datos (cuántas veces se repite), no adivinando. El custom marcado que se repite ES la señal de qué variante hace falta.
+
 **Checklist por pantalla migrada:**
 - [ ] Reemplacé los usos inline por el componente
 - [ ] `npx tsc --noEmit` en verde
