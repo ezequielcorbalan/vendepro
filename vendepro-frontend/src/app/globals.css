@@ -43,10 +43,10 @@
      Apuntan a la paleta genérica: cambiás la hue y se actualiza el semántico.
      Uso sugerido: bg-{estado}/10 text-{estado} para chips, text-{estado} para
      texto, bg-{estado} para sólidos. */
-  --color-success: #059669;  /* emerald-600 — tono legible como texto y como acento */
-  --color-warning: #b45309;  /* amber-700 */
-  --color-danger: #dc2626;   /* red-600 — "alerta" / error */
-  --color-info: #2563eb;     /* blue-600 */
+  --color-success: #22c55e;  /* verde (paleta genérica) */
+  --color-warning: #eab308;  /* amarillo */
+  --color-danger: #ef4444;   /* rojo */
+  --color-info: #3b82f6;     /* azul */
   --color-neutral: var(--color-brand-gray);
 
   /* ── Colores de canal (marca de terceros) ─────────────────────

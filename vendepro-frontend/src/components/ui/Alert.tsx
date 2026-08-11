@@ -8,11 +8,20 @@ import { cn } from '@/lib/utils'
  */
 export type AlertTone = 'info' | 'success' | 'warning' | 'danger'
 
+// Sólo bg + stroke con el color del alerta. El texto va en color principal (ink).
 const TONES: Record<AlertTone, string> = {
-  info: 'bg-info/10 text-info',
-  success: 'bg-success/10 text-success',
-  warning: 'bg-warning/10 text-warning',
-  danger: 'bg-danger/10 text-danger',
+  info: 'bg-info/10 border-info/30',
+  success: 'bg-success/10 border-success/30',
+  warning: 'bg-warning/10 border-warning/30',
+  danger: 'bg-danger/10 border-danger/30',
+}
+
+// El ícono sí lleva el color del alerta.
+const ICON_TONE: Record<AlertTone, string> = {
+  info: 'text-info',
+  success: 'text-success',
+  warning: 'text-warning',
+  danger: 'text-danger',
 }
 
 const ICONS: Record<AlertTone, LucideIcon> = {
@@ -34,8 +43,8 @@ interface AlertProps {
 export function Alert({ tone = 'info', title, children, hideIcon = false, className }: AlertProps) {
   const Icon = ICONS[tone]
   return (
-    <div className={cn('flex gap-3 rounded-card p-4 text-sm', TONES[tone], className)} role="status">
-      {!hideIcon && <Icon className="w-5 h-5 shrink-0 mt-0.5" aria-hidden />}
+    <div className={cn('flex gap-3 rounded-card border p-4 text-sm text-ink', TONES[tone], className)} role="status">
+      {!hideIcon && <Icon className={cn('w-5 h-5 shrink-0 mt-0.5', ICON_TONE[tone])} aria-hidden />}
       <div className="min-w-0">
         {title && <p className="font-semibold">{title}</p>}
         {children && <div className={cn(title && 'mt-0.5')}>{children}</div>}

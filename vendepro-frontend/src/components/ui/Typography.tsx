@@ -29,8 +29,8 @@ const HEADING_SIZE: Record<HeadingLevel, string> = {
 }
 // Peso por defecto de cada nivel (overridable con la prop `weight`).
 const HEADING_WEIGHT: Record<HeadingLevel, FontWeight> = {
-  1: 'extrabold',
-  2: 'semibold',  // default más liviano (antes bold) — preferencia de marca
+  1: 'semibold',  // todos los títulos en semibold (preferencia de marca)
+  2: 'semibold',
   3: 'semibold',
   4: 'semibold',
 }

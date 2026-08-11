@@ -16,13 +16,15 @@ export type BadgeTone =
   | 'danger'
   | 'info'
 
+// Mismo patrón que StageBadge/EventChip (crm-config): fondo -100 + texto -800.
+// Los tokens (verde/amarillo/rojo/azul 500) se reservan para sólidos, dots e íconos.
 const TONES: Record<BadgeTone, string> = {
-  neutral: 'bg-neutral/10 text-neutral',
+  neutral: 'bg-gray-100 text-gray-700',
   primary: 'bg-primary/10 text-primary',
-  success: 'bg-success/10 text-success',
-  warning: 'bg-warning/10 text-warning',
-  danger: 'bg-danger/10 text-danger',
-  info: 'bg-info/10 text-info',
+  success: 'bg-green-100 text-green-800',
+  warning: 'bg-yellow-100 text-yellow-800',
+  danger: 'bg-red-100 text-red-800',
+  info: 'bg-blue-100 text-blue-800',
 }
 
 const DOT_TONES: Record<BadgeTone, string> = {

@@ -17,8 +17,8 @@ export type ButtonSize = 'sm' | 'md' | 'lg'
 const VARIANTS: Record<ButtonVariant, string> = {
   // CTA principal — color primario sólido (hoy brand-pink, vía token --color-primary).
   primary: 'bg-primary text-white hover:bg-primary-hover',
-  // Contorno — acción secundaria.
-  outline: 'bg-white border border-primary text-primary hover:bg-primary/5',
+  // Contorno — acción secundaria (gris: stroke claro + texto gris oscuro).
+  outline: 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50',
   // Fantasma — acción terciaria / cancelar.
   ghost: 'text-gray-700 hover:bg-gray-100',
   // Destructiva.
