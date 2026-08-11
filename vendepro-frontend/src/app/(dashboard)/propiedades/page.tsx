@@ -8,6 +8,10 @@ import { scopeQueryString } from '@/lib/agent-scope'
 import { fetchPropertyConfig } from '@/lib/property-config'
 import type { PropertyConfig } from '@/lib/property-config'
 import PropertyFilters from '@/components/properties/PropertyFilters'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Card } from '@/components/ui/Card'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { Alert } from '@/components/ui/Alert'
 
 export default function PropiedadesPage() {
   const [properties, setProperties] = useState<any[]>([])
@@ -43,39 +47,42 @@ export default function PropiedadesPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-semibold text-ink">Propiedades</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {loading ? 'Cargando...' : `${properties.length} propiedad${properties.length !== 1 ? 'es' : ''}`}
-          </p>
-        </div>
-        <Link href="/propiedades/nueva"
-          className="inline-flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90">
-          <Plus className="w-4 h-4" /> Nueva propiedad
-        </Link>
-      </div>
+      <PageHeader
+        className="mb-8"
+        title="Propiedades"
+        subtitle={loading ? 'Cargando...' : `${properties.length} propiedad${properties.length !== 1 ? 'es' : ''}`}
+        actions={
+          <Link href="/propiedades/nueva"
+            className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-control text-sm font-medium hover:bg-primary-hover">
+            <Plus className="w-4 h-4" /> Nueva propiedad
+          </Link>
+        }
+      />
 
       {loading && (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 animate-spin text-brand-pink" />
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
       )}
 
       {error && (
-        <div className="bg-red-50 text-red-600 rounded-xl p-6">Error cargando propiedades</div>
+        <Alert tone="danger">Error cargando propiedades</Alert>
       )}
 
       {!loading && !error && properties.length === 0 && (
-        <div className="bg-white rounded-xl p-12 text-center shadow-sm">
-          <Building2 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h2 className="text-lg font-medium text-ink mb-2">Sin propiedades</h2>
-          <p className="text-sm text-gray-500 mb-4">Creá tu primera propiedad captada</p>
-          <Link href="/propiedades/nueva"
-            className="inline-flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90">
-            <Plus className="w-4 h-4" /> Nueva propiedad
-          </Link>
-        </div>
+        <Card className="text-center">
+          <EmptyState
+            icon={<Building2 className="w-6 h-6" />}
+            title="Sin propiedades"
+            description="Creá tu primera propiedad captada"
+            action={
+              <Link href="/propiedades/nueva"
+                className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-control text-sm font-medium hover:bg-primary-hover">
+                <Plus className="w-4 h-4" /> Nueva propiedad
+              </Link>
+            }
+          />
+        </Card>
       )}
 
       {!loading && !error && properties.length > 0 && config && (
