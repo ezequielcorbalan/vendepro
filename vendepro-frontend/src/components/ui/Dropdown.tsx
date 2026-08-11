@@ -1,16 +1,18 @@
 'use client'
 
-import { useState, type ReactNode } from 'react'
+import { useState, useEffect, cloneElement, isValidElement, type ReactNode, type ReactElement, type MouseEvent } from 'react'
 import { cn } from '@/lib/utils'
+import { Z } from '@/lib/z'
 
 /**
- * Dropdown / menú contextual del design system. Maneja su propio estado abierto
- * y cierra al clickear afuera (backdrop invisible). Componé con DropdownItem /
- * DropdownSeparator.
+ * Dropdown / menú contextual del design system. Maneja su propio estado abierto,
+ * cierra al clickear afuera o con Esc. El trigger debe ser un elemento
+ * interactivo (ej. <Button>): se le inyecta onClick + aria-haspopup/expanded vía
+ * cloneElement, así queda accesible por teclado sin botones anidados.
  */
 interface DropdownProps {
-  /** El disparador (ej. un Button o un ícono). */
-  trigger: ReactNode
+  /** Disparador interactivo (ej. un Button). */
+  trigger: ReactElement<{ onClick?: (e: MouseEvent) => void }>
   children: ReactNode
   align?: 'left' | 'right'
   className?: string
@@ -18,13 +20,32 @@ interface DropdownProps {
 
 export function Dropdown({ trigger, children, align = 'left', className }: DropdownProps) {
   const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open])
+
+  const triggerEl = isValidElement(trigger)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ? cloneElement(trigger, {
+        onClick: (e: MouseEvent) => { trigger.props.onClick?.(e); setOpen(o => !o) },
+        'aria-haspopup': 'menu',
+        'aria-expanded': open,
+      } as any)
+    : trigger
+
   return (
     <div className="relative inline-flex">
-      <span onClick={() => setOpen(o => !o)}>{trigger}</span>
+      {triggerEl}
       {open && (
         <>
           <button
-            className="fixed inset-0 z-40 cursor-default"
+            type="button"
+            className="fixed inset-0 cursor-default"
+            style={{ zIndex: Z.dropdown - 1 }}
             aria-hidden
             tabIndex={-1}
             onClick={() => setOpen(false)}
@@ -32,8 +53,9 @@ export function Dropdown({ trigger, children, align = 'left', className }: Dropd
           <div
             role="menu"
             onClick={() => setOpen(false)}
+            style={{ zIndex: Z.dropdown }}
             className={cn(
-              'absolute top-full mt-2 z-50 min-w-[200px]',
+              'absolute top-full mt-2 min-w-[200px]',
               'bg-white border border-gray-200 rounded-card shadow-pop p-1.5',
               align === 'right' ? 'right-0' : 'left-0',
               className,
