@@ -27,11 +27,15 @@ import { Timeline } from '@/components/ui/Timeline'
 import { ProgressBar, Steps } from '@/components/ui/Progress'
 import { Heading, Text } from '@/components/ui/Typography'
 import { CallButton, WhatsAppButton } from '@/components/ui/ContactButtons'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { PropertyStageBadge } from '@/components/ui/PropertyStageBadge'
+import { OperationBadge } from '@/components/ui/OperationBadge'
+import { Alert } from '@/components/ui/Alert'
 import { NotificationBell, NotificationPanel } from '@/components/ui/Notifications'
 import { KanbanBoard, KanbanColumn, KanbanCard } from '@/components/ui/Kanban'
 import { PropertyCard } from '@/components/ui/PropertyCard'
 import { BarChart, DonutChart, Funnel } from '@/components/ui/Charts'
-import { LEAD_STAGE_KEYS, EVENT_TYPES, getStageDot, type EventType } from '@/lib/crm-config'
+import { LEAD_STAGE_KEYS, EVENT_TYPES, getStageDot, PROPERTY_STAGE_KEYS, OPERATION_TYPES, type EventType } from '@/lib/crm-config'
 
 /**
  * Galería viva del design system de VendéPro.
@@ -157,6 +161,25 @@ export default function DesignSystemPage() {
             cambio se refleja acá y en toda la app.
           </p>
         </header>
+
+        {/* Molde de página */}
+        <Section title="Molde de página · PageHeader" hint="El header estándar de TODA pantalla: título + subtítulo + acciones, con el mismo spacing en todos lados. Es la base de la consistencia.">
+          <div className="bg-brand-light rounded-card p-6 border border-gray-200">
+            <PageHeader
+              title="Propiedades"
+              subtitle="Gestioná tus captaciones y publicaciones"
+              actions={
+                <>
+                  <Button variant="outline" icon={<Plus className="w-4 h-4" />}>Importar</Button>
+                  <Button icon={<Plus className="w-4 h-4" />}>Nueva propiedad</Button>
+                </>
+              }
+            />
+          </div>
+          <Text size="xs" tone="muted" className="mt-3">
+            Debajo del PageHeader va el contenido (cards, tablas, etc.) con <code className="text-primary">space-y-6</code> entre bloques.
+          </Text>
+        </Section>
 
         {/* Foundations · color */}
         <Section title="Foundations · Color" hint="Tokens de marca (@theme en globals.css). Cambiar el hex acá cambia todo.">
@@ -323,6 +346,28 @@ export default function DesignSystemPage() {
               <EventChip key={t} type={t} />
             ))}
           </Row>
+        </Section>
+
+        {/* Badges de dominio: propiedad + operación */}
+        <Section title="Estado de propiedad & operación" hint="PropertyStageBadge y OperationBadge — leen color/label desde crm-config (PROPERTY_STAGES / OPERATION_TYPES).">
+          <h3 className="text-sm font-semibold text-ink mb-3">Estado de propiedad</h3>
+          <Row>
+            {PROPERTY_STAGE_KEYS.map(s => <PropertyStageBadge key={s} stage={s} />)}
+          </Row>
+          <h3 className="text-sm font-semibold text-ink mt-6 mb-3">Tipo de operación</h3>
+          <Row>
+            {(Object.keys(OPERATION_TYPES) as (keyof typeof OPERATION_TYPES)[]).map(o => <OperationBadge key={o} operation={o} />)}
+          </Row>
+        </Section>
+
+        {/* Alert */}
+        <Section title="Alert" hint="Callout de estado (info/success/warning/danger) con los tokens semánticos. Reemplaza los recuadros bg-red-50 sueltos.">
+          <div className="space-y-3 max-w-xl">
+            <Alert tone="info" title="Información">Este lead todavía no tiene actividad registrada.</Alert>
+            <Alert tone="success" title="Guardado">Los cambios se guardaron correctamente.</Alert>
+            <Alert tone="warning" title="Atención">La tasación vence en 2 días.</Alert>
+            <Alert tone="danger" title="Error al cargar">No se pudieron traer las propiedades. Reintentá.</Alert>
+          </div>
         </Section>
 
         {/* Cards */}

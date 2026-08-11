@@ -237,11 +237,12 @@ export const LEAD_SOURCES = {
 } as const
 
 export const OPERATION_TYPES = {
-  venta:     { label: 'Venta' },
-  alquiler:  { label: 'Alquiler' },
-  tasacion:  { label: 'Tasación' },
-  otro:      { label: 'Otro' },
+  venta:     { label: 'Venta',     color: 'bg-blue-100 text-blue-800' },
+  alquiler:  { label: 'Alquiler',  color: 'bg-cyan-100 text-cyan-800' },
+  tasacion:  { label: 'Tasación',  color: 'bg-pink-100 text-pink-800' },
+  otro:      { label: 'Otro',      color: 'bg-gray-100 text-gray-700' },
 } as const
+export type OperationType = keyof typeof OPERATION_TYPES
 
 export const OBJECTIVE_METRICS = {
   llamadas:           { label: 'Llamadas',               category: 'actividad',    activityTypes: ['llamada'] },
