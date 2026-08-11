@@ -6,6 +6,8 @@ import { cn } from '@/lib/utils'
  * Cada ítem lleva un punto de color (ej. el color de la etapa desde crm-config).
  */
 export interface TimelineItem {
+  /** Key estable (ej. id del registro). Si no, cae al índice. */
+  id?: string | number
   label: ReactNode
   meta?: ReactNode
   /** Color del punto (hex). Default = primario. */
@@ -23,7 +25,7 @@ export function Timeline({ items, className }: TimelineProps) {
       <span className="absolute left-[5px] top-1 bottom-1 w-0.5 bg-gray-200" aria-hidden />
       <ul className="flex flex-col gap-4">
         {items.map((item, i) => (
-          <li key={i} className="relative">
+          <li key={item.id ?? i} className="relative">
             <span
               className="absolute -left-6 top-0.5 w-3 h-3 rounded-full border-2 border-white ring-1 ring-gray-200"
               style={{ backgroundColor: item.color ?? 'var(--color-primary)' }}

@@ -50,6 +50,9 @@ export function Button({
   loading = false,
   icon,
   fullWidth = false,
+  // type='button' por default: si no, dentro de un <form> submitearía. Pasá
+  // type="submit" explícito cuando el botón deba enviar el formulario.
+  type = 'button',
   className,
   children,
   disabled,
@@ -57,6 +60,7 @@ export function Button({
 }: ButtonProps) {
   return (
     <button
+      type={type}
       className={cn(
         'inline-flex items-center justify-center font-medium transition-colors',
         'disabled:opacity-50 disabled:cursor-not-allowed',

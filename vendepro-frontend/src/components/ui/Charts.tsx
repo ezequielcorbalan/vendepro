@@ -46,12 +46,12 @@ interface DonutDatum { name: string; value: number }
 export function DonutChart({
   data,
   height = 180,
-  colors = CHART_PALETTE as unknown as string[],
+  colors = CHART_PALETTE,
   className,
 }: {
   data: DonutDatum[]
   height?: number
-  colors?: string[]
+  colors?: readonly string[]
   className?: string
 }) {
   return (

@@ -1,42 +1,61 @@
-import type { InputHTMLAttributes, TextareaHTMLAttributes, SelectHTMLAttributes, ReactNode } from 'react'
+'use client'
+
+import {
+  createContext, useContext, useId,
+  type InputHTMLAttributes, type TextareaHTMLAttributes, type SelectHTMLAttributes, type ReactNode,
+} from 'react'
 import { cn } from '@/lib/utils'
 
 /**
  * Controles de formulario del design system.
- * Base unificada: full-width, borde gray-300, rounded-control y foco gris accesible
- * (el anillo de foco por teclado lo aporta globals.css :focus-visible).
- * El chevron del <select> también viene de globals.css.
+ * `Field` genera el id (useId) y propaga el estado de error a su control vía
+ * contexto: `<Field label="Email" error="...">​<Input /></Field>` asocia el
+ * label y pinta el borde de error, sin cablear nada a mano.
+ * Foco: `focus:border-primary` en cualquier foco; el anillo de teclado lo aporta
+ * globals.css (:focus-visible).
  */
 const FIELD_BASE =
   'w-full border border-gray-300 rounded-control px-4 py-2.5 text-sm text-ink bg-white ' +
-  'placeholder:text-gray-400 focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed'
+  'placeholder:text-gray-400 focus:border-primary disabled:bg-gray-100 disabled:cursor-not-allowed'
 
-const ERROR_RING = 'border-danger'
+const ERROR_CLASS = 'border-danger'
 
-export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
-  return <input className={cn(FIELD_BASE, className)} {...props} />
+interface FieldCtx {
+  id?: string
+  hasError?: boolean
+}
+const FieldContext = createContext<FieldCtx>({})
+
+export function Input({ id, className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
+  const ctx = useContext(FieldContext)
+  return <input id={id ?? ctx.id} className={cn(FIELD_BASE, ctx.hasError && ERROR_CLASS, className)} {...props} />
 }
 
-export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea className={cn(FIELD_BASE, 'resize-y min-h-[88px]', className)} {...props} />
-}
-
-export function Select({ className, children, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
+export function Textarea({ id, className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  const ctx = useContext(FieldContext)
   return (
-    <select className={cn(FIELD_BASE, 'cursor-pointer', className)} {...props}>
+    <textarea
+      id={id ?? ctx.id}
+      className={cn(FIELD_BASE, 'resize-y min-h-[88px]', ctx.hasError && ERROR_CLASS, className)}
+      {...props}
+    />
+  )
+}
+
+export function Select({ id, className, children, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
+  const ctx = useContext(FieldContext)
+  return (
+    <select id={id ?? ctx.id} className={cn(FIELD_BASE, 'cursor-pointer', ctx.hasError && ERROR_CLASS, className)} {...props}>
       {children}
     </select>
   )
 }
 
-/**
- * Envuelve un control con su label, hint y/o error. Genera el htmlFor si le pasás
- * htmlFor, o usá <Field label="..."><Input .../></Field> directamente.
- */
 interface FieldProps {
   label?: string
   hint?: string
   error?: string
+  /** Forzar un id; si no, Field genera uno con useId. */
   htmlFor?: string
   required?: boolean
   className?: string
@@ -44,22 +63,26 @@ interface FieldProps {
 }
 
 export function Field({ label, hint, error, htmlFor, required, className, children }: FieldProps) {
+  const genId = useId()
+  const id = htmlFor ?? genId
   return (
-    <div className={cn('flex flex-col gap-1.5', className)}>
-      {label && (
-        <label htmlFor={htmlFor} className="text-sm font-medium text-gray-700">
-          {label}
-          {required && <span className="text-primary ml-0.5">*</span>}
-        </label>
-      )}
-      {children}
-      {error ? (
-        <p className="text-xs text-danger">{error}</p>
-      ) : hint ? (
-        <p className="text-xs text-gray-500">{hint}</p>
-      ) : null}
-    </div>
+    <FieldContext.Provider value={{ id, hasError: !!error }}>
+      <div className={cn('flex flex-col gap-1.5', className)}>
+        {label && (
+          <label htmlFor={id} className="text-sm font-medium text-gray-700">
+            {label}
+            {required && <span className="text-danger ml-0.5">*</span>}
+          </label>
+        )}
+        {children}
+        {error ? (
+          <p className="text-xs text-danger">{error}</p>
+        ) : hint ? (
+          <p className="text-xs text-gray-500">{hint}</p>
+        ) : null}
+      </div>
+    </FieldContext.Provider>
   )
 }
 
-export { ERROR_RING as INPUT_ERROR_CLASS }
+export { ERROR_CLASS as INPUT_ERROR_CLASS }

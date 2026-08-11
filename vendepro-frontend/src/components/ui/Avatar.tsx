@@ -1,3 +1,6 @@
+'use client'
+
+import { useState } from 'react'
 import { cn } from '@/lib/utils'
 
 /**
@@ -29,12 +32,14 @@ interface AvatarProps {
 }
 
 export function Avatar({ name, src, size = 'md', className }: AvatarProps) {
-  if (src) {
+  const [failed, setFailed] = useState(false)
+  if (src && !failed) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
         src={src}
         alt={name}
+        onError={() => setFailed(true)}
         className={cn('rounded-full object-cover shrink-0', SIZES[size], className)}
       />
     )

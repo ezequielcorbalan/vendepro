@@ -43,7 +43,10 @@ interface AlertProps {
 export function Alert({ tone = 'info', title, children, hideIcon = false, className }: AlertProps) {
   const Icon = ICONS[tone]
   return (
-    <div className={cn('flex gap-3 rounded-card border p-4 text-sm text-ink', TONES[tone], className)} role="status">
+    <div
+      className={cn('flex gap-3 rounded-card border p-4 text-sm text-ink', TONES[tone], className)}
+      role={tone === 'danger' ? 'alert' : 'status'}
+    >
       {!hideIcon && <Icon className={cn('w-5 h-5 shrink-0 mt-0.5', ICON_TONE[tone])} aria-hidden />}
       <div className="min-w-0">
         {title && <p className="font-semibold">{title}</p>}
