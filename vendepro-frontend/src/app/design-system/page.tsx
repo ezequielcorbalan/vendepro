@@ -29,6 +29,7 @@ import { Heading, Text } from '@/components/ui/Typography'
 import { CallButton, WhatsAppButton } from '@/components/ui/ContactButtons'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { PropertyStageBadge } from '@/components/ui/PropertyStageBadge'
+import { StatusBadge } from '@/components/ui/StatusBadge'
 import { OperationBadge } from '@/components/ui/OperationBadge'
 import { Alert } from '@/components/ui/Alert'
 import { NotificationBell, NotificationPanel } from '@/components/ui/Notifications'
@@ -357,6 +358,18 @@ export default function DesignSystemPage() {
           <h3 className="text-sm font-semibold text-ink mt-6 mb-3">Tipo de operación</h3>
           <Row>
             {(Object.keys(OPERATION_TYPES) as (keyof typeof OPERATION_TYPES)[]).map(o => <OperationBadge key={o} operation={o} />)}
+          </Row>
+        </Section>
+
+        {/* StatusBadge genérico */}
+        <Section title="StatusBadge (genérico)" hint="Para estados con mapa de dominio propio (tasación, campaña, automatización, reporte, rol). El color viene del mapa; el pill unifica la forma.">
+          <Row>
+            <StatusBadge label="Borrador" color="bg-gray-100 text-gray-700" />
+            <StatusBadge label="Generada" color="bg-blue-100 text-blue-700" />
+            <StatusBadge label="Enviada" color="bg-green-100 text-green-700" />
+            <StatusBadge label="Activa" color="bg-green-50 text-green-600" />
+            <StatusBadge label="Pausada" color="bg-amber-50 text-amber-600" />
+            <StatusBadge label="sin mapa (fallback)" />
           </Row>
         </Section>
 

@@ -37,3 +37,19 @@ describe('OperationBadge', () => {
     expect(screen.getByText('Venta')).toBeInTheDocument()
   })
 })
+
+describe('StatusBadge (genérico)', () => {
+  it('renderiza label con el color del mapa de dominio', async () => {
+    const { StatusBadge } = await import('../StatusBadge')
+    render(<StatusBadge label="Generada" color="bg-blue-100 text-blue-700" />)
+    const el = screen.getByText('Generada')
+    expect(el.className).toContain('bg-blue-100')
+    expect(el.className).toContain('rounded-full')
+  })
+
+  it('sin color cae al fallback gris', async () => {
+    const { StatusBadge } = await import('../StatusBadge')
+    render(<StatusBadge label="X" />)
+    expect(screen.getByText('X').className).toContain('bg-gray-100')
+  })
+})

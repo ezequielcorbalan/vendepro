@@ -34,6 +34,7 @@ Al crear o modificar CUALQUIER pantalla/UI, usar el design system. No maquetar c
 - **Radio/sombra**: `rounded-control` (8px) / `rounded-card` (12px) / `rounded-full`; `shadow-card` / `shadow-pop`.
 - **Dominio** (etapas, eventos, colores de negocio): desde `src/lib/crm-config.ts`.
 - **Canales de contacto**: WhatsApp/llamada → usar `WhatsAppButton`/`CallButton` de `ui/ContactButtons`. NUNCA armar el link `wa.me`/`tel:` a mano ni el botón verde suelto.
+- **Estados con mapa propio** (tasación, campaña, automatización, reporte, rol): renderizar con `StatusBadge label={cfg.label} color={cfg.color|cfg.cls}` de `ui/StatusBadge` — el mapa de dominio sigue siendo la fuente del color; el pill unifica la forma. No armar el `<span>` a mano.
 - **Al migrar/crear**: usar SOLO componentes/variantes que ya existen. Si algo no encaja, migralo a la variante más cercana y marcalo `{/* ds-todo: candidato a variante "X" */}` — NO crear variantes nuevas sobre la marcha. Las variantes se deciden después, en tanda, con `grep ds-todo`.
 - **Overrides**: `cn` usa `tailwind-merge`, así que un `className` puede pisar el estilo base sin problema.
 - Referencia viva: ruta `/design-system`. Plan y contrato: `doc/ds-plan.md`, `doc/ds-review.md`.
