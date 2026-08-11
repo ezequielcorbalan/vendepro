@@ -4,14 +4,19 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
-  ArrowLeft, Loader2, AlertCircle, Workflow, Zap, Hand, Pause, Play, Pencil, Trash2,
+  ArrowLeft, Loader2, AlertCircle, Zap, Hand, Pause, Play, Pencil, Trash2,
   Users, CheckCircle2, XCircle, Layers, UserPlus, Clock,
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
+import { Card } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { Heading, Text } from '@/components/ui/Typography'
+import { Modal } from '@/components/ui/Modal'
+import { EmptyState } from '@/components/ui/EmptyState'
 import {
   type AutomationDetail, type Enrollment, type AutomationStep,
-  AUTOMATION_STATUS, ENROLLMENT_STATUS, triggerLabel, parseSteps, describeDelay, fmtDateTime,
+  AUTOMATION_STATUS, ENROLLMENT_STATUS, triggerLabel, parseSteps, describeDelay,
 } from '@/lib/email-automations'
 import type { CampaignSegment } from '@/lib/email-campaigns'
 import AudienceStep, { type AudiencePreview } from '@/components/marketing/wizard/AudienceStep'
@@ -70,13 +75,15 @@ export default function AutomationDetailPage() {
     }
   }
 
-  if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-brand-pink" /></div>
+  if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
   if (error || !automation) {
     return (
-      <div className="max-w-2xl mx-auto py-12 text-center">
-        <AlertCircle className="w-10 h-10 text-red-400 mx-auto mb-3" />
-        <p className="text-gray-700 font-medium">Automatización no encontrada</p>
-        <Link href="/marketing/automations" className="text-sm text-brand-pink hover:underline mt-2 inline-block">Volver</Link>
+      <div className="max-w-2xl mx-auto py-12">
+        <EmptyState
+          icon={<AlertCircle className="w-6 h-6" />}
+          title="Automatización no encontrada"
+          action={<Link href="/marketing/automations" className="text-sm text-primary hover:underline">Volver</Link>}
+        />
       </div>
     )
   }
@@ -93,32 +100,32 @@ export default function AutomationDetailPage() {
       </Link>
 
       {/* Header */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-5">
+      <Card className="p-6 mb-5">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl font-semibold text-ink truncate">{automation.name}</h1>
+              <Heading level={3} as="h1" className="truncate">{automation.name}</Heading>
               <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${st.cls}`}>{st.label}</span>
             </div>
-            <p className="flex items-center gap-1.5 text-sm text-gray-500 mt-1">
+            <Text tone="muted" className="flex items-center gap-1.5 mt-1">
               {isManual ? <Hand className="w-4 h-4" /> : <Zap className="w-4 h-4 text-brand-orange" />}
               {triggerLabel(automation.trigger_event)}
               <span className="text-gray-300">·</span>
               <Layers className="w-4 h-4" /> {steps.length} paso{steps.length === 1 ? '' : 's'}
-            </p>
+            </Text>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <button onClick={() => setShowEnroll(true)} className="inline-flex items-center gap-1.5 text-sm border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg hover:border-gray-300">
-              <UserPlus className="w-3.5 h-3.5" /> Inscribir
-            </button>
+            <Button variant="outline" size="sm" icon={<UserPlus className="w-3.5 h-3.5" />} onClick={() => setShowEnroll(true)}>
+              Inscribir
+            </Button>
             {automation.status === 'active' ? (
-              <button onClick={() => setStatus('paused')} disabled={working} className="inline-flex items-center gap-1.5 text-sm border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg hover:border-gray-300 disabled:opacity-50">
-                <Pause className="w-3.5 h-3.5" /> Pausar
-              </button>
+              <Button variant="outline" size="sm" icon={<Pause className="w-3.5 h-3.5" />} onClick={() => setStatus('paused')} disabled={working}>
+                Pausar
+              </Button>
             ) : (
-              <button onClick={() => setStatus('active')} disabled={working} className="inline-flex items-center gap-1.5 bg-gradient-to-br from-brand-pink to-brand-orange text-white text-sm font-medium px-3.5 py-1.5 rounded-lg hover:opacity-90 disabled:opacity-50">
-                <Play className="w-3.5 h-3.5" /> Activar
-              </button>
+              <Button size="sm" icon={<Play className="w-3.5 h-3.5" />} onClick={() => setStatus('active')} disabled={working}>
+                Activar
+              </Button>
             )}
             <Link href={`/marketing/automations/nueva?id=${automation.id}`} className="p-2 text-gray-400 hover:text-gray-700" title="Editar">
               <Pencil className="w-4 h-4" />
@@ -136,34 +143,34 @@ export default function AutomationDetailPage() {
           <Stat icon={<CheckCircle2 className="w-4 h-4" />} label="Emails enviados" value={automation.sends?.sent ?? 0} cls="text-gray-700" />
           <Stat icon={<XCircle className="w-4 h-4" />} label="Bajas" value={counts.unsubscribed ?? 0} cls="text-red-500" />
         </div>
-      </div>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Secuencia */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-          <h2 className="text-sm font-semibold text-gray-700 mb-3">Secuencia</h2>
+        <Card>
+          <Heading level={4} className="mb-3">Secuencia</Heading>
           <div className="space-y-2">
             {steps.map((s: AutomationStep, i: number) => (
-              <div key={i} className="flex items-center gap-3 p-2.5 rounded-lg bg-gray-50">
+              <div key={i} className="flex items-center gap-3 p-2.5 rounded-control bg-gray-50">
                 <span className="w-6 h-6 rounded-full bg-white border border-gray-200 text-gray-600 text-xs flex items-center justify-center shrink-0 font-medium">{i + 1}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-ink truncate">{s.subject || 'Sin asunto'}</p>
-                  <p className="inline-flex items-center gap-1 text-xs text-gray-400"><Clock className="w-3 h-3" /> {i === 0 ? 'Al inscribirse' : describeDelay(s.delay_hours)}</p>
+                  <Text className="truncate">{s.subject || 'Sin asunto'}</Text>
+                  <Text size="xs" tone="muted" className="inline-flex items-center gap-1"><Clock className="w-3 h-3" /> {i === 0 ? 'Al inscribirse' : describeDelay(s.delay_hours)}</Text>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </Card>
 
         {/* Inscriptos */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-          <h2 className="text-sm font-semibold text-gray-700 mb-3">
+        <Card>
+          <Heading level={4} className="mb-3">
             Inscriptos {enrollments.length > 0 && <span className="text-gray-400 font-normal">({enrollments.length})</span>}
-          </h2>
+          </Heading>
           {enrollments.length === 0 ? (
-            <p className="text-sm text-gray-400 py-8 text-center">
+            <Text tone="muted" className="py-8 text-center">
               {isManual ? 'Inscribí un segmento con el botón “Inscribir”.' : 'Todavía no entró nadie a la secuencia.'}
-            </p>
+            </Text>
           ) : (
             <div className="overflow-y-auto max-h-[360px]">
               <table className="w-full text-sm">
@@ -182,7 +189,7 @@ export default function AutomationDetailPage() {
               </table>
             </div>
           )}
-        </div>
+        </Card>
       </div>
 
       {showEnroll && (
@@ -198,9 +205,9 @@ export default function AutomationDetailPage() {
 
 function Stat({ icon, label, value, cls }: { icon: React.ReactNode; label: string; value: number; cls: string }) {
   return (
-    <div className="bg-gray-50 rounded-xl p-3">
+    <div className="bg-gray-50 rounded-card p-3">
       <div className={`flex items-center gap-1.5 ${cls}`}>{icon}<span className="text-lg font-semibold">{value}</span></div>
-      <p className="text-xs text-gray-500 mt-0.5">{label}</p>
+      <Text size="xs" tone="muted" className="mt-0.5">{label}</Text>
     </div>
   )
 }
@@ -228,23 +235,27 @@ function EnrollModal({ automationId, onClose, onDone }: { automationId: string; 
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6" onClick={e => e.stopPropagation()}>
-        <h3 className="text-lg font-semibold text-ink mb-1">Inscribir un segmento</h3>
-        <p className="text-sm text-gray-500 mb-4">Los que ya están en la secuencia no se reinician.</p>
-        <AudienceStep segment={segment} onChange={setSegment} preview={preview} onPreview={setPreview} />
-        <div className="flex justify-end gap-2 mt-5">
-          <button onClick={onClose} className="text-sm text-gray-600 px-4 py-2 rounded-lg border border-gray-200 hover:border-gray-300">Cancelar</button>
-          <button
+    <Modal
+      open
+      onClose={onClose}
+      title="Inscribir un segmento"
+      className="max-w-lg"
+      footer={
+        <>
+          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button
             onClick={enroll}
-            disabled={enrolling || (preview?.count ?? 0) === 0}
-            className="inline-flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white text-sm font-medium px-4 py-2 rounded-lg hover:opacity-90 disabled:opacity-50"
+            loading={enrolling}
+            disabled={(preview?.count ?? 0) === 0}
+            icon={<UserPlus className="w-4 h-4" />}
           >
-            {enrolling ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
             Inscribir {preview ? `(${preview.count})` : ''}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </>
+      }
+    >
+      <Text tone="muted" className="mb-4">Los que ya están en la secuencia no se reinician.</Text>
+      <AudienceStep segment={segment} onChange={setSegment} preview={preview} onPreview={setPreview} />
+    </Modal>
   )
 }

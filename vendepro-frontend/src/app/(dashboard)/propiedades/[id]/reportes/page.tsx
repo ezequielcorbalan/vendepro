@@ -5,6 +5,9 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, FileBarChart, Plus, Loader2, Eye, Pencil } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
+import { Card } from '@/components/ui/Card'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { Text } from '@/components/ui/Typography'
 
 interface Report {
   id: string
@@ -44,7 +47,7 @@ export default function PropertyReportsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-brand-pink" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -72,7 +75,7 @@ export default function PropertyReportsPage() {
           </div>
           <Link
             href={`/propiedades/${id}/reportes/nuevo`}
-            className="inline-flex items-center gap-1.5 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 shadow-sm"
+            className="inline-flex items-center gap-1.5 bg-primary text-white px-4 py-2 rounded-control text-sm font-medium hover:bg-primary-hover shadow-sm"
           >
             <Plus className="w-4 h-4" /> Nuevo reporte
           </Link>
@@ -80,33 +83,37 @@ export default function PropertyReportsPage() {
       </div>
 
       {reports.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-dashed border-gray-300 p-10 text-center">
-          <FileBarChart className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500 mb-4">No hay reportes para esta propiedad</p>
-          <Link
-            href={`/propiedades/${id}/reportes/nuevo`}
-            className="inline-flex items-center gap-1.5 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
-          >
-            <Plus className="w-4 h-4" /> Crear el primer reporte
-          </Link>
-        </div>
+        <Card padded={false} className="border-dashed border-gray-300 shadow-none">
+          <EmptyState
+            icon={<FileBarChart className="w-6 h-6" />}
+            title="No hay reportes para esta propiedad"
+            action={
+              <Link
+                href={`/propiedades/${id}/reportes/nuevo`}
+                className="inline-flex items-center gap-1.5 bg-primary text-white px-4 py-2 rounded-control text-sm font-medium hover:bg-primary-hover"
+              >
+                <Plus className="w-4 h-4" /> Crear el primer reporte
+              </Link>
+            }
+          />
+        </Card>
       ) : (
         <div className="space-y-2">
           {reports.map(r => (
-            <div
+            <Card
               key={r.id}
-              className="bg-white border border-gray-200 rounded-xl p-4 hover:border-brand-pink/30 hover:shadow-sm transition-all flex items-center justify-between"
+              className="p-4 shadow-none hover:border-primary/30 hover:shadow-sm transition-all flex items-center justify-between"
             >
               <div>
-                <p className="font-medium text-ink">
+                <Text size="base" weight="medium">
                   {r.period_label || (r.period_start ? new Date(r.period_start).toLocaleDateString('es-AR') : 'Reporte')}
-                </p>
-                <p className="text-xs text-gray-500 mt-0.5">
+                </Text>
+                <Text size="xs" tone="muted" className="mt-0.5">
                   {r.impressions != null && `${r.impressions} imp · `}
                   {r.portal_visits != null && `${r.portal_visits} vistas portal · `}
                   {r.in_person_visits != null && `${r.in_person_visits} visitas presenciales · `}
                   {r.offers != null && `${r.offers} ofertas`}
-                </p>
+                </Text>
                 {r.published_at && (
                   <p className="text-[10px] text-gray-400 mt-0.5">
                     Publicado {new Date(r.published_at).toLocaleDateString('es-AR')}
@@ -123,7 +130,7 @@ export default function PropertyReportsPage() {
                 </span>
                 <Link
                   href={`/propiedades/${id}/reportes/nuevo?edit=${r.id}`}
-                  className="inline-flex items-center gap-1 text-sm text-gray-600 font-medium hover:text-brand-pink"
+                  className="inline-flex items-center gap-1 text-sm text-gray-600 font-medium hover:text-primary"
                 >
                   <Pencil className="w-3.5 h-3.5" /> Editar
                 </Link>
@@ -132,13 +139,13 @@ export default function PropertyReportsPage() {
                     href={`/r/${(r as any).public_slug}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-sm text-brand-pink font-medium hover:underline"
+                    className="inline-flex items-center gap-1 text-sm text-primary font-medium hover:underline"
                   >
                     <Eye className="w-3.5 h-3.5" /> Ver público
                   </a>
                 )}
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}

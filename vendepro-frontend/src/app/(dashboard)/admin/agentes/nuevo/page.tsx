@@ -3,9 +3,14 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Card } from '@/components/ui/Card'
+import { Alert } from '@/components/ui/Alert'
+import { Button } from '@/components/ui/Button'
+import { Field, Input, Select } from '@/components/ui/Input'
 
 export default function NuevoAgentePage() {
   const router = useRouter()
@@ -45,82 +50,68 @@ export default function NuevoAgentePage() {
     setLoading(false)
   }
 
-  const inputClass = 'w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none'
-
   return (
     <div>
       <Link href="/admin/agentes" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-ink mb-6">
         <ArrowLeft className="w-4 h-4" /> Volver
       </Link>
 
-      <h1 className="text-2xl font-semibold text-ink mb-6">Nuevo agente</h1>
+      <PageHeader title="Nuevo agente" className="mb-6" />
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm p-6 space-y-4">
-        {success && <div className="bg-green-50 text-green-700 text-sm p-3 rounded-lg">{success}</div>}
+      <Card className="p-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {success && <Alert tone="success">{success}</Alert>}
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Nombre completo *</label>
-          <input
-            type="text"
-            value={form.full_name}
-            onChange={e => update('full_name', e.target.value)}
-            required
-            className={inputClass}
-          />
-        </div>
+          <Field label="Nombre completo" required>
+            <Input
+              type="text"
+              value={form.full_name}
+              onChange={e => update('full_name', e.target.value)}
+              required
+            />
+          </Field>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-          <input
-            type="email"
-            value={form.email}
-            onChange={e => update('email', e.target.value)}
-            required
-            className={inputClass}
-          />
-        </div>
+          <Field label="Email" required>
+            <Input
+              type="email"
+              value={form.email}
+              onChange={e => update('email', e.target.value)}
+              required
+            />
+          </Field>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-          <input
-            type="tel"
-            value={form.phone}
-            onChange={e => update('phone', e.target.value)}
-            className={inputClass}
-          />
-        </div>
+          <Field label="Teléfono">
+            <Input
+              type="tel"
+              value={form.phone}
+              onChange={e => update('phone', e.target.value)}
+            />
+          </Field>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña inicial *</label>
-          <input
-            type="text"
-            value={form.password}
-            onChange={e => update('password', e.target.value)}
-            required
-            minLength={6}
-            placeholder="Mínimo 6 caracteres"
-            className={inputClass}
-          />
-        </div>
+          <Field label="Contraseña inicial" required>
+            <Input
+              type="text"
+              value={form.password}
+              onChange={e => update('password', e.target.value)}
+              required
+              minLength={6}
+              placeholder="Mínimo 6 caracteres"
+            />
+          </Field>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Rol</label>
-          <select value={form.role} onChange={e => update('role', e.target.value)} className={inputClass}>
-            <option value="agent">Agente</option>
-            <option value="supervisor">Supervisor</option>
-            <option value="admin">Administrador</option>
-          </select>
-        </div>
+          <Field label="Rol">
+            <Select value={form.role} onChange={e => update('role', e.target.value)}>
+              <option value="agent">Agente</option>
+              <option value="supervisor">Supervisor</option>
+              <option value="admin">Administrador</option>
+            </Select>
+          </Field>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-gradient-to-br from-brand-pink to-brand-orange text-white py-2.5 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
-        >
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-          {loading ? 'Creando...' : 'Crear agente'}
-        </button>
-      </form>
+          <Button type="submit" loading={loading} fullWidth>
+            {loading ? 'Creando...' : 'Crear agente'}
+          </Button>
+        </form>
+      </Card>
     </div>
   )
 }
