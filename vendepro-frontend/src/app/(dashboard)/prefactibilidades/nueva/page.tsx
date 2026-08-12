@@ -4,11 +4,17 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
-  ArrowLeft, ArrowRight, Save, Loader2, MapPin, Building2,
+  ArrowLeft, ArrowRight, Save, MapPin, Building2,
   Calculator, BarChart3, FileText, Plus, X
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
+import { Card } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { Field, Input, Textarea } from '@/components/ui/Input'
+import { Heading, Text } from '@/components/ui/Typography'
+import { Alert } from '@/components/ui/Alert'
+import { Tag } from '@/components/ui/Tag'
 
 const steps = [
   { label: 'Terreno', icon: MapPin },
@@ -17,9 +23,6 @@ const steps = [
   { label: 'Comparables', icon: BarChart3 },
   { label: 'Conclusión', icon: FileText },
 ]
-
-const inputClass = 'w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none bg-white'
-const labelClass = 'block text-xs font-medium text-gray-500 mb-1'
 
 interface UnitMix { type: string; count: string; avg_m2: string }
 interface Comparable { project: string; price_per_m2: string; notes: string }
@@ -149,6 +152,7 @@ export default function NuevaPrefactibilidadPage() {
       </div>
 
       {/* Steps nav */}
+      {/* ds-todo: candidato a variante "Stepper" (pills de pasos con ícono; SegmentedControl no soporta íconos) */}
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
         {steps.map((s, i) => {
           const Icon = s.icon
@@ -156,8 +160,8 @@ export default function NuevaPrefactibilidadPage() {
             <button
               key={i}
               onClick={() => setStep(i)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap ${
-                step === i ? 'bg-brand-pink text-white' : 'bg-white text-gray-500 border border-gray-200'
+              className={`flex items-center gap-2 px-3 py-2 rounded-control text-xs font-medium whitespace-nowrap ${
+                step === i ? 'bg-primary text-white' : 'bg-white text-gray-500 border border-gray-200'
               }`}
             >
               <Icon className="w-3.5 h-3.5" /> {s.label}
@@ -166,99 +170,82 @@ export default function NuevaPrefactibilidadPage() {
         })}
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm p-5 sm:p-6">
+      <Card className="p-5 sm:p-6">
 
         {/* Step 0: Terreno */}
         {step === 0 && (
           <div className="space-y-4">
-            <h2 className="font-bold text-ink mb-4">Datos del terreno</h2>
-            <div>
-              <label className={labelClass}>Dirección *</label>
-              <input className={inputClass} value={address} onChange={e => setAddress(e.target.value)} placeholder="Soler 3317" />
-            </div>
+            <Heading level={4} className="mb-4">Datos del terreno</Heading>
+            <Field label="Dirección" required>
+              <Input value={address} onChange={e => setAddress(e.target.value)} placeholder="Soler 3317" />
+            </Field>
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={labelClass}>Barrio</label>
-                <input className={inputClass} value={neighborhood} onChange={e => setNeighborhood(e.target.value)} placeholder="Palermo" />
-              </div>
-              <div>
-                <label className={labelClass}>Zonificación</label>
-                <input className={inputClass} value={zoning} onChange={e => setZoning(e.target.value)} placeholder="R2bII" />
-              </div>
+              <Field label="Barrio">
+                <Input value={neighborhood} onChange={e => setNeighborhood(e.target.value)} placeholder="Palermo" />
+              </Field>
+              <Field label="Zonificación">
+                <Input value={zoning} onChange={e => setZoning(e.target.value)} placeholder="R2bII" />
+              </Field>
             </div>
             <div className="grid grid-cols-3 gap-3">
-              <div>
-                <label className={labelClass}>Superficie (m²)</label>
-                <input className={inputClass} type="number" value={lotArea} onChange={e => setLotArea(e.target.value)} />
-              </div>
-              <div>
-                <label className={labelClass}>Frente (m)</label>
-                <input className={inputClass} type="number" value={lotFrontage} onChange={e => setLotFrontage(e.target.value)} />
-              </div>
-              <div>
-                <label className={labelClass}>Fondo (m)</label>
-                <input className={inputClass} type="number" value={lotDepth} onChange={e => setLotDepth(e.target.value)} />
-              </div>
+              <Field label="Superficie (m²)">
+                <Input type="number" value={lotArea} onChange={e => setLotArea(e.target.value)} />
+              </Field>
+              <Field label="Frente (m)">
+                <Input type="number" value={lotFrontage} onChange={e => setLotFrontage(e.target.value)} />
+              </Field>
+              <Field label="Fondo (m)">
+                <Input type="number" value={lotDepth} onChange={e => setLotDepth(e.target.value)} />
+              </Field>
             </div>
             <div className="grid grid-cols-3 gap-3">
-              <div>
-                <label className={labelClass}>FOT</label>
-                <input className={inputClass} type="number" step="0.1" value={fot} onChange={e => setFot(e.target.value)} placeholder="1.2" />
-              </div>
-              <div>
-                <label className={labelClass}>FOS</label>
-                <input className={inputClass} type="number" step="0.1" value={fos} onChange={e => setFos(e.target.value)} placeholder="0.6" />
-              </div>
-              <div>
-                <label className={labelClass}>Altura máx.</label>
-                <input className={inputClass} value={maxHeight} onChange={e => setMaxHeight(e.target.value)} placeholder="15m / 5 pisos" />
-              </div>
+              <Field label="FOT">
+                <Input type="number" step="0.1" value={fot} onChange={e => setFot(e.target.value)} placeholder="1.2" />
+              </Field>
+              <Field label="FOS">
+                <Input type="number" step="0.1" value={fos} onChange={e => setFos(e.target.value)} placeholder="0.6" />
+              </Field>
+              <Field label="Altura máx.">
+                <Input value={maxHeight} onChange={e => setMaxHeight(e.target.value)} placeholder="15m / 5 pisos" />
+              </Field>
             </div>
-            <div>
-              <label className={labelClass}>Precio del terreno (USD)</label>
-              <input className={inputClass} type="number" value={lotPrice} onChange={e => setLotPrice(e.target.value)} placeholder="500000" />
-              {lotPricePerM2 > 0 && <p className="text-xs text-gray-400 mt-1">USD {lotPricePerM2.toFixed(0)} / m²</p>}
-            </div>
-            <div>
-              <label className={labelClass}>Descripción del terreno</label>
-              <textarea className={`${inputClass} h-20`} value={lotDescription} onChange={e => setLotDescription(e.target.value)} placeholder="Lote rectangular, ubicación estratégica..." />
-            </div>
+            <Field label="Precio del terreno (USD)" hint={lotPricePerM2 > 0 ? `USD ${lotPricePerM2.toFixed(0)} / m²` : undefined}>
+              <Input type="number" value={lotPrice} onChange={e => setLotPrice(e.target.value)} placeholder="500000" />
+            </Field>
+            <Field label="Descripción del terreno">
+              <Textarea className="h-20" value={lotDescription} onChange={e => setLotDescription(e.target.value)} placeholder="Lote rectangular, ubicación estratégica..." />
+            </Field>
           </div>
         )}
 
         {/* Step 1: Proyecto */}
         {step === 1 && (
           <div className="space-y-4">
-            <h2 className="font-bold text-ink mb-4">Proyecto propuesto</h2>
-            <div>
-              <label className={labelClass}>Nombre del proyecto</label>
-              <input className={inputClass} value={projectName} onChange={e => setProjectName(e.target.value)} placeholder="Torre Soler" />
-            </div>
-            <div>
-              <label className={labelClass}>Descripción</label>
-              <textarea className={`${inputClass} h-20`} value={projectDescription} onChange={e => setProjectDescription(e.target.value)} placeholder="Edificio residencial de categoría con amenities..." />
-            </div>
+            <Heading level={4} className="mb-4">Proyecto propuesto</Heading>
+            <Field label="Nombre del proyecto">
+              <Input value={projectName} onChange={e => setProjectName(e.target.value)} placeholder="Torre Soler" />
+            </Field>
+            <Field label="Descripción">
+              <Textarea className="h-20" value={projectDescription} onChange={e => setProjectDescription(e.target.value)} placeholder="Edificio residencial de categoría con amenities..." />
+            </Field>
             <div className="grid grid-cols-3 gap-3">
-              <div>
-                <label className={labelClass}>M² construibles</label>
-                <input className={inputClass} type="number" value={buildableArea} onChange={e => setBuildableArea(e.target.value)} />
-              </div>
-              <div>
-                <label className={labelClass}>Total unidades</label>
-                <input className={inputClass} type="number" value={totalUnits} onChange={e => setTotalUnits(e.target.value)} />
-              </div>
-              <div>
-                <label className={labelClass}>Cocheras</label>
-                <input className={inputClass} type="number" value={parkingSpots} onChange={e => setParkingSpots(e.target.value)} />
-              </div>
+              <Field label="M² construibles">
+                <Input type="number" value={buildableArea} onChange={e => setBuildableArea(e.target.value)} />
+              </Field>
+              <Field label="Total unidades">
+                <Input type="number" value={totalUnits} onChange={e => setTotalUnits(e.target.value)} />
+              </Field>
+              <Field label="Cocheras">
+                <Input type="number" value={parkingSpots} onChange={e => setParkingSpots(e.target.value)} />
+              </Field>
             </div>
 
             <div>
-              <label className={labelClass}>Mix de tipologías</label>
+              <Text as="span" size="sm" weight="medium" className="block text-gray-700 mb-1.5">Mix de tipologías</Text>
               {unitsMix.map((unit, idx) => (
                 <div key={idx} className="flex gap-2 mb-2">
-                  <input
-                    className={`${inputClass} flex-1`}
+                  <Input
+                    className="flex-1"
                     value={unit.type}
                     placeholder="Tipo"
                     onChange={e => {
@@ -267,8 +254,8 @@ export default function NuevaPrefactibilidadPage() {
                       setUnitsMix(newMix)
                     }}
                   />
-                  <input
-                    className={`${inputClass} w-20`}
+                  <Input
+                    className="w-20"
                     type="number"
                     placeholder="Cant"
                     value={unit.count}
@@ -278,8 +265,8 @@ export default function NuevaPrefactibilidadPage() {
                       setUnitsMix(newMix)
                     }}
                   />
-                  <input
-                    className={`${inputClass} w-24`}
+                  <Input
+                    className="w-24"
                     type="number"
                     placeholder="m² prom"
                     value={unit.avg_m2}
@@ -289,34 +276,31 @@ export default function NuevaPrefactibilidadPage() {
                       setUnitsMix(newMix)
                     }}
                   />
-                  <button onClick={() => setUnitsMix(unitsMix.filter((_, i) => i !== idx))} className="text-red-400 p-2">
+                  {/* ds-todo: candidato a variante "IconButton" (botón de quitar fila, sólo ícono) */}
+                  <button onClick={() => setUnitsMix(unitsMix.filter((_, i) => i !== idx))} className="text-danger p-2">
                     <X className="w-4 h-4" />
                   </button>
                 </div>
               ))}
               <button
                 onClick={() => setUnitsMix([...unitsMix, { type: '', count: '', avg_m2: '' }])}
-                className="text-xs text-brand-pink flex items-center gap-1"
+                className="text-sm font-medium text-primary flex items-center gap-1"
               >
                 <Plus className="w-3 h-3" /> Agregar tipología
               </button>
             </div>
 
             <div>
-              <label className={labelClass}>Amenities</label>
+              <Text as="span" size="sm" weight="medium" className="block text-gray-700 mb-1.5">Amenities</Text>
               <div className="flex flex-wrap gap-2 mb-2">
                 {amenities.map((a, i) => (
-                  <span key={i} className="inline-flex items-center gap-1 bg-pink-50 text-brand-pink px-3 py-1 rounded-full text-xs">
+                  <Tag key={i} variant="soft" onRemove={() => setAmenities(amenities.filter((_, x) => x !== i))}>
                     {a}
-                    <button onClick={() => setAmenities(amenities.filter((_, x) => x !== i))}>
-                      <X className="w-3 h-3" />
-                    </button>
-                  </span>
+                  </Tag>
                 ))}
               </div>
               <div className="flex gap-2">
-                <input
-                  className={inputClass}
+                <Input
                   value={newAmenity}
                   onChange={e => setNewAmenity(e.target.value)}
                   placeholder="Ej: Piscina, SUM, Gym..."
@@ -327,12 +311,12 @@ export default function NuevaPrefactibilidadPage() {
                     }
                   }}
                 />
-                <button
+                <Button
+                  variant="outline"
                   onClick={() => { if (newAmenity.trim()) { setAmenities([...amenities, newAmenity.trim()]); setNewAmenity('') } }}
-                  className="bg-gray-100 px-4 rounded-lg text-sm"
                 >
                   Agregar
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -341,69 +325,61 @@ export default function NuevaPrefactibilidadPage() {
         {/* Step 2: Economía */}
         {step === 2 && (
           <div className="space-y-4">
-            <h2 className="font-bold text-ink mb-4">Análisis económico</h2>
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-xs text-orange-700">
-              Todos los valores en USD
-            </div>
+            <Heading level={4} className="mb-4">Análisis económico</Heading>
+            <Alert tone="warning">Todos los valores en USD</Alert>
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={labelClass}>Costo construcción USD/m²</label>
-                <input className={inputClass} type="number" value={constructionCostPerM2} onChange={e => setConstructionCostPerM2(e.target.value)} placeholder="1200" />
-              </div>
-              <div>
-                <label className={labelClass}>Total construcción (calc)</label>
-                <div className="bg-gray-50 rounded-lg px-3 py-2.5 text-sm font-semibold text-gray-700">
+              <Field label="Costo construcción USD/m²">
+                <Input type="number" value={constructionCostPerM2} onChange={e => setConstructionCostPerM2(e.target.value)} placeholder="1200" />
+              </Field>
+              <Field label="Total construcción (calc)">
+                <div className="bg-gray-50 rounded-control px-3 py-2.5 text-sm font-semibold text-gray-700">
                   USD {totalConstructionCost.toLocaleString('es-AR')}
                 </div>
-              </div>
+              </Field>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={labelClass}>Honorarios profesionales</label>
-                <input className={inputClass} type="number" value={professionalFees} onChange={e => setProfessionalFees(e.target.value)} />
-              </div>
-              <div>
-                <label className={labelClass}>Permisos y factibilidad</label>
-                <input className={inputClass} type="number" value={permitsCost} onChange={e => setPermitsCost(e.target.value)} />
-              </div>
-              <div>
-                <label className={labelClass}>Comercialización</label>
-                <input className={inputClass} type="number" value={commercializationCost} onChange={e => setCommercializationCost(e.target.value)} />
-              </div>
-              <div>
-                <label className={labelClass}>Otros costos</label>
-                <input className={inputClass} type="number" value={otherCosts} onChange={e => setOtherCosts(e.target.value)} />
-              </div>
+              <Field label="Honorarios profesionales">
+                <Input type="number" value={professionalFees} onChange={e => setProfessionalFees(e.target.value)} />
+              </Field>
+              <Field label="Permisos y factibilidad">
+                <Input type="number" value={permitsCost} onChange={e => setPermitsCost(e.target.value)} />
+              </Field>
+              <Field label="Comercialización">
+                <Input type="number" value={commercializationCost} onChange={e => setCommercializationCost(e.target.value)} />
+              </Field>
+              <Field label="Otros costos">
+                <Input type="number" value={otherCosts} onChange={e => setOtherCosts(e.target.value)} />
+              </Field>
             </div>
 
-            <div className="bg-gray-50 rounded-xl p-4">
-              <p className="text-xs text-gray-500 mb-1">Inversión total</p>
+            {/* ds-todo: candidato a variante "StatTile" (tile de KPI con label + valor grande) */}
+            <div className="bg-gray-50 rounded-card p-4">
+              <Text size="xs" tone="muted" className="mb-1">Inversión total</Text>
               <p className="text-2xl font-black text-ink">USD {totalInvestment.toLocaleString('es-AR')}</p>
             </div>
 
-            <h3 className="font-semibold text-gray-700 text-sm mt-6">Ingresos proyectados</h3>
+            <Heading level={4} className="mt-6">Ingresos proyectados</Heading>
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={labelClass}>Precio venta USD/m²</label>
-                <input className={inputClass} type="number" value={avgSalePricePerM2} onChange={e => setAvgSalePricePerM2(e.target.value)} placeholder="2800" />
-              </div>
-              <div>
-                <label className={labelClass}>M² vendibles</label>
-                <input className={inputClass} type="number" value={totalSellableArea} onChange={e => setTotalSellableArea(e.target.value)} />
-              </div>
+              <Field label="Precio venta USD/m²">
+                <Input type="number" value={avgSalePricePerM2} onChange={e => setAvgSalePricePerM2(e.target.value)} placeholder="2800" />
+              </Field>
+              <Field label="M² vendibles">
+                <Input type="number" value={totalSellableArea} onChange={e => setTotalSellableArea(e.target.value)} />
+              </Field>
             </div>
 
+            {/* ds-todo: candidato a variante "StatTile" (tiles de resultado con tono semántico) */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-green-50 rounded-xl p-4">
-                <p className="text-xs text-green-600 mb-1">Ingresos proyectados</p>
-                <p className="text-xl font-black text-green-700">USD {projectedRevenue.toLocaleString('es-AR')}</p>
+              <div className="bg-success/10 rounded-card p-4">
+                <p className="text-xs text-success mb-1">Ingresos proyectados</p>
+                <p className="text-xl font-black text-success">USD {projectedRevenue.toLocaleString('es-AR')}</p>
               </div>
-              <div className={`rounded-xl p-4 ${grossMargin > 0 ? 'bg-pink-50' : 'bg-red-50'}`}>
-                <p className={`text-xs mb-1 ${grossMargin > 0 ? 'text-brand-pink' : 'text-red-600'}`}>Margen bruto</p>
-                <p className={`text-xl font-black ${grossMargin > 0 ? 'text-brand-pink' : 'text-red-700'}`}>
+              <div className={`rounded-card p-4 ${grossMargin > 0 ? 'bg-primary/10' : 'bg-danger/10'}`}>
+                <p className={`text-xs mb-1 ${grossMargin > 0 ? 'text-primary' : 'text-danger'}`}>Margen bruto</p>
+                <p className={`text-xl font-black ${grossMargin > 0 ? 'text-primary' : 'text-danger'}`}>
                   USD {grossMargin.toLocaleString('es-AR')}
                 </p>
-                <p className={`text-xs mt-1 ${grossMargin > 0 ? 'text-brand-pink' : 'text-red-600'}`}>
+                <p className={`text-xs mt-1 ${grossMargin > 0 ? 'text-primary' : 'text-danger'}`}>
                   {marginPct.toFixed(1)}% ROI
                 </p>
               </div>
@@ -414,17 +390,16 @@ export default function NuevaPrefactibilidadPage() {
         {/* Step 3: Comparables */}
         {step === 3 && (
           <div className="space-y-4">
-            <h2 className="font-bold text-ink mb-4">Comparables de la zona</h2>
+            <Heading level={4} className="mb-4">Comparables de la zona</Heading>
             {comparables.map((c, idx) => (
-              <div key={idx} className="border border-gray-200 rounded-lg p-3 space-y-2">
+              <div key={idx} className="border border-gray-200 rounded-card p-3 space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs font-semibold text-gray-500">Comparable #{idx + 1}</span>
-                  <button onClick={() => setComparables(comparables.filter((_, i) => i !== idx))} className="text-red-400">
+                  <Text as="span" size="xs" weight="semibold" tone="muted">Comparable #{idx + 1}</Text>
+                  <button onClick={() => setComparables(comparables.filter((_, i) => i !== idx))} className="text-danger">
                     <X className="w-4 h-4" />
                   </button>
                 </div>
-                <input
-                  className={inputClass}
+                <Input
                   placeholder="Nombre del proyecto/dirección"
                   value={c.project}
                   onChange={e => {
@@ -434,8 +409,7 @@ export default function NuevaPrefactibilidadPage() {
                   }}
                 />
                 <div className="grid grid-cols-2 gap-2">
-                  <input
-                    className={inputClass}
+                  <Input
                     type="number"
                     placeholder="USD/m²"
                     value={c.price_per_m2}
@@ -445,8 +419,7 @@ export default function NuevaPrefactibilidadPage() {
                       setComparables(nc)
                     }}
                   />
-                  <input
-                    className={inputClass}
+                  <Input
                     placeholder="Notas"
                     value={c.notes}
                     onChange={e => {
@@ -460,16 +433,16 @@ export default function NuevaPrefactibilidadPage() {
             ))}
             <button
               onClick={() => setComparables([...comparables, { project: '', price_per_m2: '', notes: '' }])}
-              className="text-xs text-brand-pink flex items-center gap-1"
+              className="text-sm font-medium text-primary flex items-center gap-1"
             >
               <Plus className="w-3 h-3" /> Agregar comparable
             </button>
 
-            <h3 className="font-semibold text-gray-700 text-sm mt-6">Cronograma del proyecto</h3>
+            <Heading level={4} className="mt-6">Cronograma del proyecto</Heading>
             {timeline.map((t, idx) => (
               <div key={idx} className="flex gap-2">
-                <input
-                  className={`${inputClass} flex-1`}
+                <Input
+                  className="flex-1"
                   placeholder="Fase"
                   value={t.phase}
                   onChange={e => {
@@ -478,8 +451,8 @@ export default function NuevaPrefactibilidadPage() {
                     setTimeline(nt)
                   }}
                 />
-                <input
-                  className={`${inputClass} w-24`}
+                <Input
+                  className="w-24"
                   type="number"
                   placeholder="meses"
                   value={t.months}
@@ -489,14 +462,14 @@ export default function NuevaPrefactibilidadPage() {
                     setTimeline(nt)
                   }}
                 />
-                <button onClick={() => setTimeline(timeline.filter((_, i) => i !== idx))} className="text-red-400 p-2">
+                <button onClick={() => setTimeline(timeline.filter((_, i) => i !== idx))} className="text-danger p-2">
                   <X className="w-4 h-4" />
                 </button>
               </div>
             ))}
             <button
               onClick={() => setTimeline([...timeline, { phase: '', months: '' }])}
-              className="text-xs text-brand-pink flex items-center gap-1"
+              className="text-sm font-medium text-primary flex items-center gap-1"
             >
               <Plus className="w-3 h-3" /> Agregar fase
             </button>
@@ -506,29 +479,27 @@ export default function NuevaPrefactibilidadPage() {
         {/* Step 4: Conclusión */}
         {step === 4 && (
           <div className="space-y-4">
-            <h2 className="font-bold text-ink mb-4">Conclusión</h2>
-            <div>
-              <label className={labelClass}>Resumen ejecutivo</label>
-              <textarea
-                className={`${inputClass} h-32`}
+            <Heading level={4} className="mb-4">Conclusión</Heading>
+            <Field label="Resumen ejecutivo">
+              <Textarea
+                className="h-32"
                 value={executiveSummary}
                 onChange={e => setExecutiveSummary(e.target.value)}
                 placeholder="El proyecto contempla el desarrollo de un edificio residencial..."
               />
-            </div>
-            <div>
-              <label className={labelClass}>Recomendación</label>
-              <textarea
-                className={`${inputClass} h-24`}
+            </Field>
+            <Field label="Recomendación">
+              <Textarea
+                className="h-24"
                 value={recommendation}
                 onChange={e => setRecommendation(e.target.value)}
                 placeholder="Se recomienda avanzar con la operación dado que..."
               />
-            </div>
+            </Field>
 
             {/* Summary */}
-            <div className="bg-gradient-to-br from-pink-50 to-orange-50 rounded-xl p-5 border border-pink-100">
-              <h3 className="font-bold text-ink mb-3">Resumen del estudio</h3>
+            <div className="bg-gradient-to-br from-primary/5 to-brand-orange/10 rounded-card p-5 border border-primary/10">
+              <Heading level={4} className="mb-3">Resumen del estudio</Heading>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div><span className="text-gray-500">Inversión total:</span> <strong>USD {totalInvestment.toLocaleString('es-AR')}</strong></div>
                 <div><span className="text-gray-500">Ingresos proyectados:</span> <strong>USD {projectedRevenue.toLocaleString('es-AR')}</strong></div>
@@ -538,33 +509,35 @@ export default function NuevaPrefactibilidadPage() {
             </div>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Nav footer */}
       <div className="flex justify-between mt-4">
-        <button
+        <Button
+          variant="ghost"
           onClick={() => setStep(s => Math.max(0, s - 1))}
           disabled={step === 0}
-          className="inline-flex items-center gap-2 px-4 py-2 text-gray-500 disabled:opacity-30 text-sm"
+          icon={<ArrowLeft className="w-4 h-4" />}
         >
-          <ArrowLeft className="w-4 h-4" /> Anterior
-        </button>
+          Anterior
+        </Button>
         {step < steps.length - 1 ? (
-          <button
+          <Button
+            size="lg"
             onClick={() => setStep(s => Math.min(steps.length - 1, s + 1))}
-            className="inline-flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:opacity-90"
           >
             Siguiente <ArrowRight className="w-4 h-4" />
-          </button>
+          </Button>
         ) : (
-          <button
+          <Button
+            size="lg"
             onClick={() => handleSave(true)}
-            disabled={saving || !address.trim()}
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-brand-pink to-brand-orange text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50"
+            disabled={!address.trim()}
+            loading={saving}
+            icon={<Save className="w-4 h-4" />}
           >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Guardar y publicar
-          </button>
+          </Button>
         )}
       </div>
     </div>
