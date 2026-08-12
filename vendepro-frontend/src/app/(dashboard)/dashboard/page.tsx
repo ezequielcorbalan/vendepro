@@ -2,14 +2,19 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
-  Users, Phone, CalendarDays, Target, TrendingUp, AlertTriangle,
-  Clock, ArrowRight, CheckCircle2, BarChart3, ChevronRight,
+  Users, Phone, CalendarDays, Target, TrendingUp,
+  Clock, CheckCircle2, BarChart3, ChevronRight,
   Home, Calculator, Activity, MessageCircle
 } from 'lucide-react'
 import { LEAD_STAGES, EVENT_TYPES, getStageDot } from '@/lib/crm-config'
 import { apiFetch } from '@/lib/api'
 import { getCurrentUser, isOnboardingDone, markOnboardingDone } from '@/lib/auth'
 import OnboardingModal from '@/components/onboarding/OnboardingModal'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Card } from '@/components/ui/Card'
+import { Heading, Text } from '@/components/ui/Typography'
+import { Alert } from '@/components/ui/Alert'
+import { Select } from '@/components/ui/Input'
 
 function FunnelChart({ data }: { data: { stage: string; count: number }[] }) {
   const max = Math.max(...data.map(d => d.count), 1)
@@ -67,22 +72,23 @@ function KPICard({ icon, label, value, color, href }: { icon: React.ReactNode; l
     cyan: 'bg-cyan-50 text-cyan-600',
     purple: 'bg-purple-50 text-purple-600',
     green: 'bg-green-50 text-green-600',
-    pink: 'bg-pink-50 text-brand-pink',
+    pink: 'bg-primary/10 text-primary',
     amber: 'bg-amber-50 text-amber-600',
   }
   const inner = (
     <>
-      <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-2 ${colorMap[color]}`}>
+      <div className={`w-9 h-9 rounded-control flex items-center justify-center mb-2 ${colorMap[color]}`}>
         {icon}
       </div>
       <p className="text-xl sm:text-2xl font-bold text-ink">{value}</p>
-      <p className="text-xs text-gray-500 mt-0.5">{label}</p>
+      <Text size="xs" tone="muted" className="mt-0.5">{label}</Text>
     </>
   )
-  const baseClass = 'bg-white rounded-2xl border p-3 sm:p-4 relative overflow-hidden'
+  // ds-todo: candidato a variante "KPICard" del DS (Card no rinde <a>).
+  const baseClass = 'bg-white rounded-card border border-gray-200 shadow-card p-3 sm:p-4 relative overflow-hidden'
   if (href) {
     return (
-      <a href={href} className={`${baseClass} transition-all block`}>
+      <a href={href} className={`${baseClass} transition-shadow hover:shadow-md block`}>
         {inner}
       </a>
     )
@@ -126,11 +132,11 @@ export default function DashboardCRM() {
       <div className="space-y-4 animate-pulse">
         <div className="h-8 bg-gray-200 rounded w-48" />
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          {[...Array(6)].map((_, i) => <div key={i} className="h-24 bg-gray-200 rounded-xl" />)}
+          {[...Array(6)].map((_, i) => <div key={i} className="h-24 bg-gray-200 rounded-card" />)}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="h-64 bg-gray-200 rounded-xl" />
-          <div className="h-64 bg-gray-200 rounded-xl" />
+          <div className="h-64 bg-gray-200 rounded-card" />
+          <div className="h-64 bg-gray-200 rounded-card" />
         </div>
       </div>
     )
@@ -139,10 +145,8 @@ export default function DashboardCRM() {
   if (!data || data.error) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-ink">Dashboard</h1>
-        </div>
-        <div className="text-center py-12 text-gray-500">Error al cargar el dashboard</div>
+        <PageHeader title="Dashboard" />
+        <Alert tone="danger" title="Error al cargar el dashboard" />
       </div>
     )
   }
@@ -175,17 +179,15 @@ export default function DashboardCRM() {
 
   return (
     <div className="space-y-5 sm:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-ink">Dashboard CRM</h1>
-          <p className="text-gray-500 text-sm">Resumen ejecutivo del negocio</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Link href="/leads" className="bg-gradient-to-br from-brand-pink to-brand-orange text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:opacity-90 flex items-center gap-1">
+      <PageHeader
+        title="Dashboard CRM"
+        subtitle="Resumen ejecutivo del negocio"
+        actions={
+          <Link href="/leads" className="bg-primary text-white px-3 py-1.5 rounded-control text-xs font-medium hover:bg-primary-hover inline-flex items-center gap-1.5">
             <Users className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Ver leads</span>
           </Link>
-        </div>
-      </div>
+        }
+      />
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <KPICard icon={<Users className="w-5 h-5" />} label="Leads activos" value={activeLeads} color="blue" href="/leads" />
@@ -199,47 +201,39 @@ export default function DashboardCRM() {
       {(overdueLeads > 0 || (todayEvents && todayEvents.length > 0)) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {overdueLeads > 0 && (
-            <Link href="/leads?sort=urgency" className="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100 transition-colors">
-              <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-red-700">{overdueLeads} lead{overdueLeads > 1 ? 's' : ''} vencido{overdueLeads > 1 ? 's' : ''}</p>
-                <p className="text-xs text-red-500">Sin contactar o sin actividad</p>
-              </div>
-              <ArrowRight className="w-4 h-4 text-red-400 ml-auto shrink-0" />
+            <Link href="/leads?sort=urgency" className="block">
+              <Alert tone="danger" title={`${overdueLeads} lead${overdueLeads > 1 ? 's' : ''} vencido${overdueLeads > 1 ? 's' : ''}`} className="h-full p-3 transition-opacity hover:opacity-85">
+                Sin contactar o sin actividad
+              </Alert>
             </Link>
           )}
           {pendingFollowups && pendingFollowups.length > 0 && (
-            <Link href="/leads?sort=urgency" className="flex items-center gap-3 p-3 bg-yellow-50 border border-yellow-200 rounded-xl hover:bg-yellow-100 transition-colors">
-              <Clock className="w-5 h-5 text-yellow-600 shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-yellow-700">{pendingFollowups.length} seguimiento{pendingFollowups.length > 1 ? 's' : ''} pendiente{pendingFollowups.length > 1 ? 's' : ''}</p>
-                <p className="text-xs text-yellow-500">Próximas acciones definidas</p>
-              </div>
-              <ArrowRight className="w-4 h-4 text-yellow-400 ml-auto shrink-0" />
+            <Link href="/leads?sort=urgency" className="block">
+              <Alert tone="warning" title={`${pendingFollowups.length} seguimiento${pendingFollowups.length > 1 ? 's' : ''} pendiente${pendingFollowups.length > 1 ? 's' : ''}`} className="h-full p-3 transition-opacity hover:opacity-85">
+                Próximas acciones definidas
+              </Alert>
             </Link>
           )}
           {todayEvents && todayEvents.length > 0 && (
-            <Link href="/calendario" className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 transition-colors">
-              <CalendarDays className="w-5 h-5 text-blue-500 shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-blue-700">{todayEvents.length} evento{todayEvents.length > 1 ? 's' : ''} hoy</p>
-                <p className="text-xs text-blue-500">Calendario del día</p>
-              </div>
+            <Link href="/calendario" className="block">
+              <Alert tone="info" title={`${todayEvents.length} evento${todayEvents.length > 1 ? 's' : ''} hoy`} className="h-full p-3 transition-opacity hover:opacity-85">
+                Calendario del día
+              </Alert>
             </Link>
           )}
         </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
-        <div className="bg-white rounded-xl border p-4 sm:p-5">
+        <Card className="p-4 sm:p-5">
           <div className="flex items-center justify-between mb-4 gap-2">
-            <h2 className="font-semibold text-ink flex items-center gap-2">
+            <Heading level={4} as="h2" className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-gray-600" /> Funnel de conversión
-            </h2>
-            <select
+            </Heading>
+            <Select
               value={period}
               onChange={e => setPeriod(e.target.value)}
-              className="border border-gray-200 bg-gray-50 rounded-lg px-2.5 py-1.5 text-xs text-gray-600 focus:outline-none"
+              className="w-auto px-2.5 py-1.5 text-xs text-gray-600"
             >
               <option value="all">Todo el historial</option>
               <optgroup label="Período calendario">
@@ -253,16 +247,16 @@ export default function DashboardCRM() {
                 <option value="quarter">Últimos 90 días</option>
                 <option value="year">Último año</option>
               </optgroup>
-            </select>
+            </Select>
           </div>
           <FunnelChart data={funnel || []} />
-        </div>
+        </Card>
 
-        <div className="bg-white rounded-xl border p-4 sm:p-5">
+        <Card className="p-4 sm:p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-ink flex items-center gap-2">
+            <Heading level={4} as="h2" className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4 text-gray-600" /> Actividad semanal
-            </h2>
+            </Heading>
             <div className="flex gap-3 text-xs text-gray-500">
               <span className="flex items-center gap-1"><Phone className="w-3.5 h-3.5" /> {activity?.llamadas || 0}</span>
               <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" /> {activity?.reuniones || 0}</span>
@@ -272,25 +266,25 @@ export default function DashboardCRM() {
           {weekData.some(d => d.count > 0) ? (
             <WeeklyChart data={weekData} />
           ) : (
-            <div className="flex items-center justify-center h-32 text-gray-400 text-sm">
-              Sin actividad registrada esta semana
+            <div className="flex items-center justify-center h-32">
+              <Text tone="muted">Sin actividad registrada esta semana</Text>
             </div>
           )}
-        </div>
+        </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
-        <div className="bg-white rounded-xl border p-4 sm:p-5">
-          <h2 className="font-semibold text-ink mb-3 flex items-center gap-2">
+        <Card className="p-4 sm:p-5">
+          <Heading level={4} as="h2" className="mb-3 flex items-center gap-2">
             <CalendarDays className="w-4 h-4 text-gray-600" /> Hoy
-          </h2>
+          </Heading>
           {todayEvents && todayEvents.length > 0 ? (
             <div className="space-y-2">
               {todayEvents.slice(0, 5).map((ev: any) => {
                 const cfg = EVENT_TYPES[ev.event_type as keyof typeof EVENT_TYPES] || EVENT_TYPES.otro
                 const time = ev.start_at ? new Date(ev.start_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : ''
                 return (
-                  <div key={ev.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50">
+                  <div key={ev.id} className="flex items-center gap-2 p-2 rounded-control hover:bg-gray-50">
                     <span className={`text-xs px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.color}`}>{time}</span>
                     <span className="text-sm text-gray-700 truncate flex-1">{ev.title}</span>
                     {ev.completed === 1 && <CheckCircle2 className="w-4 h-4 text-green-500" />}
@@ -298,24 +292,24 @@ export default function DashboardCRM() {
                 )
               })}
               {todayEvents.length > 5 && (
-                <Link href="/calendario" className="text-xs text-brand-pink hover:underline">
+                <Link href="/calendario" className="text-xs text-primary hover:underline">
                   +{todayEvents.length - 5} más
                 </Link>
               )}
             </div>
           ) : (
-            <p className="text-sm text-gray-400">Sin eventos programados</p>
+            <Text tone="muted">Sin eventos programados</Text>
           )}
-        </div>
+        </Card>
 
-        <div className="bg-white rounded-xl border p-4 sm:p-5">
-          <h2 className="font-semibold text-ink mb-3 flex items-center gap-2">
+        <Card className="p-4 sm:p-5">
+          <Heading level={4} as="h2" className="mb-3 flex items-center gap-2">
             <Clock className="w-4 h-4 text-gray-600" /> Seguimientos
-          </h2>
+          </Heading>
           {pendingFollowups && pendingFollowups.length > 0 ? (
             <div className="space-y-2">
               {pendingFollowups.slice(0, 5).map((f: any) => (
-                <Link key={f.id} href={`/leads/${f.id}`} className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 group">
+                <Link key={f.id} href={`/leads/${f.id}`} className="flex items-center gap-2 p-2 rounded-control hover:bg-gray-50 group">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-gray-700 truncate">{f.full_name}</p>
                     <p className="text-xs text-gray-400 truncate">{f.next_step}</p>
@@ -325,19 +319,19 @@ export default function DashboardCRM() {
                       {new Date(f.next_step_date).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}
                     </span>
                   )}
-                  <ChevronRight className="w-3 h-3 text-gray-300 group-hover:text-pink-500" />
+                  <ChevronRight className="w-3 h-3 text-gray-300 group-hover:text-primary" />
                 </Link>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-400">Sin seguimientos definidos</p>
+            <Text tone="muted">Sin seguimientos definidos</Text>
           )}
-        </div>
+        </Card>
 
-        <div className="bg-white rounded-xl border p-4 sm:p-5">
-          <h2 className="font-semibold text-ink mb-3 flex items-center gap-2">
+        <Card className="p-4 sm:p-5">
+          <Heading level={4} as="h2" className="mb-3 flex items-center gap-2">
             <Users className="w-4 h-4 text-gray-600" /> Equipo
-          </h2>
+          </Heading>
           {agentPerformance && agentPerformance.length > 0 ? (
             <div className="space-y-3">
               {agentPerformance.map((agent: any) => {
@@ -371,29 +365,29 @@ export default function DashboardCRM() {
             </div>
           ) : (
             <div className="space-y-3">
-              <p className="text-sm text-gray-400">Pipeline personal</p>
+              <Text tone="muted">Pipeline personal</Text>
               <div className="grid grid-cols-2 gap-2 text-center">
-                <div className="bg-blue-50 rounded-lg p-2">
+                <div className="bg-blue-50 rounded-control p-2">
                   <p className="text-lg font-semibold text-blue-700">{leads?.total || 0}</p>
                   <p className="text-[10px] text-blue-500">Mis leads</p>
                 </div>
-                <div className="bg-green-50 rounded-lg p-2">
+                <div className="bg-green-50 rounded-control p-2">
                   <p className="text-lg font-semibold text-green-700">{leads?.captados || 0}</p>
                   <p className="text-[10px] text-green-500">Captados</p>
                 </div>
               </div>
             </div>
           )}
-        </div>
+        </Card>
       </div>
 
       {recentActivities && recentActivities.length > 0 && (
-        <div className="bg-white rounded-xl border p-4 sm:p-5">
+        <Card className="p-4 sm:p-5">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-ink flex items-center gap-2">
+            <Heading level={4} as="h2" className="flex items-center gap-2">
               <Activity className="w-4 h-4 text-gray-600" /> Actividad reciente
-            </h2>
-            <Link href="/actividades" className="text-xs text-brand-pink hover:underline">Ver todo →</Link>
+            </Heading>
+            <Link href="/actividades" className="text-xs text-primary hover:underline">Ver todo →</Link>
           </div>
           <div className="space-y-1.5">
             {recentActivities.slice(0, 6).map((a: any) => {
@@ -401,7 +395,7 @@ export default function DashboardCRM() {
               const mins = Math.floor((Date.now() - new Date(a.created_at).getTime()) / 60000)
               const timeAgo = mins < 60 ? `${mins}m` : mins < 1440 ? `${Math.floor(mins / 60)}h` : `${Math.floor(mins / 1440)}d`
               return (
-                <div key={a.id} className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-gray-50">
+                <div key={a.id} className="flex items-center gap-2 py-1.5 px-2 rounded-control hover:bg-gray-50">
                   <TypeIcon className="w-4 h-4 text-gray-500 shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-gray-700 truncate">{a.description || a.activity_type}</p>
@@ -412,24 +406,25 @@ export default function DashboardCRM() {
               )
             })}
           </div>
-        </div>
+        </Card>
       )}
 
-      <div className="bg-white rounded-xl border p-4 sm:p-5">
-        <h2 className="font-semibold text-ink mb-3 flex items-center gap-2">
+      <Card className="p-4 sm:p-5">
+        <Heading level={4} as="h2" className="mb-3 flex items-center gap-2">
           <Target className="w-4 h-4 text-gray-600" /> Pipeline de leads
-        </h2>
+        </Heading>
         <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-11 gap-2">
           {Object.entries(LEAD_STAGES).map(([key, cfg]) => {
             return (
-              <Link key={key} href={`/leads?stage=${key}`} className="text-center p-2 rounded-lg hover:bg-gray-50 transition-colors">
+              <Link key={key} href={`/leads?stage=${key}`} className="text-center p-2 rounded-control hover:bg-gray-50 transition-colors">
                 <p className="text-lg sm:text-xl font-semibold text-ink">{sb[key] || 0}</p>
+                {/* ds-todo: candidato a StageBadge compacto — el pill full-width de la grilla no entra en el StageBadge actual */}
                 <p className={`text-[10px] sm:text-xs px-1 py-0.5 rounded-full ${cfg.color} mt-1`}>{cfg.label}</p>
               </Link>
             )
           })}
         </div>
-      </div>
+      </Card>
 
       {showOnboarding && <OnboardingModal userName={onboardingUser} onClose={handleCloseOnboarding} />}
     </div>
