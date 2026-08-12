@@ -23,7 +23,7 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { Field, Input, Select, Textarea } from '@/components/ui/Input'
+import { Input, Select, Textarea } from '@/components/ui/Input'
 import { Heading, Text } from '@/components/ui/Typography'
 import { CallButton, WhatsAppButton } from '@/components/ui/ContactButtons'
 import AIChatPanel from '@/components/ai/AIChatPanel'
@@ -396,12 +396,6 @@ export default function LeadsPage() {
         subtitle={`${leads.length} lead${leads.length !== 1 ? 's' : ''} en el pipeline ${pipeline === 'comprador' ? 'de compradores' : 'de captación'}`}
         actions={
           <>
-            <SegmentedControl
-              className="hidden sm:inline-flex"
-              options={[{ value: 'list', label: 'Lista' }, { value: 'kanban', label: 'Kanban' }]}
-              value={view}
-              onChange={v => setView(v as 'list' | 'kanban')}
-            />
             <Button
               variant="outline"
               icon={<Download className="w-4 h-4" />}
@@ -438,68 +432,63 @@ export default function LeadsPage() {
       />
 
       {/* Pestañas de pipeline: Vendedores | Compradores */}
-      <div className="flex items-center gap-1 border-b border-gray-200">
-        {([
-          { key: 'vendedor' as const, label: 'Vendedores' },
-          { key: 'comprador' as const, label: 'Compradores' },
-        ]).map(t => (
-          <button
-            key={t.key}
-            onClick={() => switchPipeline(t.key)}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
-              pipeline === t.key
-                ? 'border-primary text-primary'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
+      <div className="flex items-center justify-between border-b border-gray-200">
+        <div className="flex items-center gap-1">
+          {([
+            { key: 'vendedor' as const, label: 'Vendedores' },
+            { key: 'comprador' as const, label: 'Compradores' },
+          ]).map(t => (
+            <button
+              key={t.key}
+              onClick={() => switchPipeline(t.key)}
+              className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                pipeline === t.key
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <SegmentedControl
+          className="hidden sm:inline-flex mb-1"
+          options={[{ value: 'list', label: 'Lista' }, { value: 'kanban', label: 'Kanban' }]}
+          value={view}
+          onChange={v => setView(v as 'list' | 'kanban')}
+        />
       </div>
 
-      {/* Search + Filters */}
-      <div className="flex flex-col sm:flex-row gap-2">
-        <div className="relative flex-1">
+      {/* Búsqueda + filtros: una sola fila compacta (sin labels ni card propio) */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[180px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <Input type="text" placeholder="Buscar nombre, teléfono, dirección..." value={search} onChange={e => setSearch(e.target.value)}
             className="pl-10" />
         </div>
-        <Select value={sortBy} onChange={e => setSortBy(e.target.value as any)} className="sm:w-auto">
+        <Select aria-label="Ordenar" value={sortBy} onChange={e => setSortBy(e.target.value as any)} className="w-auto">
           <option value="recent">Recientes</option>
           <option value="urgency">Urgencia</option>
           <option value="name">Nombre A-Z</option>
         </Select>
+        <Select aria-label="Etapa" value={filterStage} onChange={e => setFilterStage(e.target.value)} className="w-auto">
+          <option value="">Etapa: todas</option>
+          {stages.keys.map(s => <option key={s} value={s}>{stages.config[s].label}</option>)}
+        </Select>
+        <Select aria-label="Origen" value={filterSource} onChange={e => setFilterSource(e.target.value)} className="w-auto">
+          <option value="">Origen: todos</option>
+          {Object.entries(LEAD_SOURCES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+        </Select>
+        <Select aria-label="Operación" value={filterOperation} onChange={e => setFilterOperation(e.target.value)} className="w-auto">
+          <option value="">Operación: todas</option>
+          {Object.entries(OPERATION_TYPES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+        </Select>
+        <Select aria-label="Agente" value={filterAgent} onChange={e => setFilterAgent(e.target.value)} className="w-auto">
+          <option value="">Agente: todos</option>
+          {agents.map(a => <option key={a.id} value={a.id}>{a.full_name}</option>)}
+        </Select>
+        <button onClick={() => { setFilterStage(''); setFilterSource(''); setFilterOperation(''); setFilterAgent('') }} className="text-xs text-gray-500 hover:text-primary shrink-0">Limpiar</button>
       </div>
-
-      <div className="bg-gray-50 border rounded-card p-3 sm:p-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <Field label="Etapa">
-            <Select value={filterStage} onChange={e => setFilterStage(e.target.value)}>
-              <option value="">Todas</option>
-              {stages.keys.map(s => <option key={s} value={s}>{stages.config[s].label}</option>)}
-            </Select>
-          </Field>
-          <Field label="Origen">
-            <Select value={filterSource} onChange={e => setFilterSource(e.target.value)}>
-              <option value="">Todos</option>
-              {Object.entries(LEAD_SOURCES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-            </Select>
-          </Field>
-          <Field label="Operación">
-            <Select value={filterOperation} onChange={e => setFilterOperation(e.target.value)}>
-              <option value="">Todas</option>
-              {Object.entries(OPERATION_TYPES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-            </Select>
-          </Field>
-          <Field label="Agente">
-            <Select value={filterAgent} onChange={e => setFilterAgent(e.target.value)}>
-              <option value="">Todos</option>
-              {agents.map(a => <option key={a.id} value={a.id}>{a.full_name}</option>)}
-            </Select>
-          </Field>
-          <div className="flex items-end">
-            <button onClick={() => { setFilterStage(''); setFilterSource(''); setFilterOperation(''); setFilterAgent('') }} className="text-xs text-gray-500 hover:text-primary">Limpiar filtros</button>
-          </div>
-        </div>
 
       {/* Content */}
       {loading ? (
@@ -535,17 +524,20 @@ export default function LeadsPage() {
       ) : (
         <DndContext sensors={sensors} onDragStart={e => setActiveDragId(e.active.id as string)} onDragEnd={handleDragEnd} onDragCancel={() => setActiveDragId(null)}>
         <div className="overflow-x-auto pb-4 -mx-2 px-2">
-          <div className="flex gap-3" style={{ minWidth: `${stages.pipelineStages.length * 260}px` }}>
+          <div className="flex gap-3" style={{ minWidth: `${stages.pipelineStages.length * 300}px` }}>
             {stages.pipelineStages.map(stage => {
               const stageLeads = filtered.filter(l => l.stage === stage)
               const hasOverdue = stageLeads.some(l => getLeadUrgency(l) === 'danger')
               return (
                 <DroppableColumn key={stage} id={stage}>
-                  <div className={`flex items-center justify-between mb-2 px-2 py-1.5 rounded-control ${stages.config[stage].color}`}>
-                    <span className="text-xs font-semibold">{stages.config[stage].label}</span>
-                    <div className="flex items-center gap-1">
+                  <div className="flex items-center justify-between mb-2 px-3 py-2 rounded-control bg-white">
+                    <span className="flex items-center gap-2 text-sm font-medium text-ink">
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: stages.config[stage].dot }} aria-hidden />
+                      {stages.config[stage].label}
+                    </span>
+                    <div className="flex items-center gap-1.5">
                       {hasOverdue && <AlertTriangle className="w-3 h-3 text-red-500" />}
-                      <span className="text-xs font-bold">{stageLeads.length}</span>
+                      <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${stages.config[stage].color}`}>{stageLeads.length}</span>
                     </div>
                   </div>
                   <div className="space-y-2 max-h-[60vh] overflow-y-auto">
@@ -817,7 +809,6 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
   const urg = urgencyText(lead)
   // Sin borde de color por urgencia: la señal va como badge (urg), no en el
   // contorno de la card. Sólo danger conserva un borde rojo suave.
-  const outerBorder = urgency === 'danger' ? 'border-red-200' : 'border-gray-200'
 
   const [showTagPicker, setShowTagPicker] = useState(false)
   const [orgTags, setOrgTags] = useState<any[]>([])
@@ -854,7 +845,7 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
   const availableTags = orgTags.filter(t => !lead.tags?.some((lt: any) => lt.id === t.id))
 
   return (
-    <div className={`relative bg-white border ${outerBorder} rounded-card shadow-card overflow-hidden flex flex-col transition-shadow hover:shadow-md`}>
+    <div className="relative bg-white border border-gray-200 rounded-card shadow-card overflow-hidden flex flex-col transition-shadow hover:shadow-md">
       {/* Tag picker dropdown */}
       {showTagPicker && (
         <>
@@ -997,10 +988,10 @@ function KanbanCard({ lead, onAdvance, onMoveTo }: { lead: any; onAdvance: () =>
   const [showMove, setShowMove] = useState(false)
 
   return (
-    <div className={`bg-white border rounded-card shadow-card p-3 hover:shadow-md transition-all relative ${urgency === 'danger' ? 'border-red-200 bg-red-50/30' : ''}`}>
+    <div className="bg-white border border-gray-200 rounded-card shadow-card p-3 hover:shadow-md transition-all relative">
       <Link href={`/leads/${lead.id}`}>
         <div className="flex items-center justify-between mb-1">
-          <h4 className="text-sm font-medium text-ink truncate">{lead.full_name}</h4>
+          <h4 className="text-sm font-medium text-ink truncate pl-4">{lead.full_name}</h4>
           {/* ds-todo: StatusBadge compacto (densidad kanban) */}
           {badge && <StatusBadge label={badge.text} color={badge.class} className="shrink-0 text-[10px] px-1.5 py-0.5" />}
         </div>
@@ -1059,7 +1050,7 @@ function KanbanCard({ lead, onAdvance, onMoveTo }: { lead: any; onAdvance: () =>
 function DroppableColumn({ id, children }: { id: string; children: React.ReactNode }) {
   const { setNodeRef, isOver: dropping } = useDroppable({ id })
   return (
-    <div ref={setNodeRef} className={`w-64 shrink-0 transition-colors rounded-card ${dropping ? 'bg-primary/5 ring-2 ring-primary/30' : ''}`}>
+    <div ref={setNodeRef} className={`w-72 shrink-0 transition-colors rounded-card p-2 ${dropping ? 'bg-primary/5 ring-2 ring-primary/30' : ''}`}>
       {children}
     </div>
   )
