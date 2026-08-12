@@ -3,8 +3,15 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Building2, Loader2, Phone, Mail, User, MapPin, DollarSign, Calendar, Plus, Pencil, Send, Trash2 } from 'lucide-react'
+import { ArrowLeft, Building2, Loader2, Phone, Mail, User, Plus, Pencil, Send, Trash2 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
+import { Card } from '@/components/ui/Card'
+import { Heading, Text } from '@/components/ui/Typography'
+import { Button } from '@/components/ui/Button'
+import { StatusBadge } from '@/components/ui/StatusBadge'
+import { Alert } from '@/components/ui/Alert'
+import { Modal } from '@/components/ui/Modal'
+import { Field, Input } from '@/components/ui/Input'
 import { PhotoGallery } from '@/components/ui/PhotoGallery'
 import { VisitFormsSection } from '@/components/properties/VisitFormsSection'
 import { InterestedLeadsSection } from '@/components/properties/InterestedLeadsSection'
@@ -13,6 +20,9 @@ import PriceHistoryWidget from '@/components/properties/PriceHistoryWidget'
 import DocChecklistWidget from '@/components/properties/DocChecklistWidget'
 import ReportsListWidget from '@/components/properties/ReportsListWidget'
 
+// ds-todo: PROPERTY_STAGES (crm-config) no incluye "captacion" ni "con_ofertas",
+// así que no se puede usar PropertyStageBadge todavía; el mapa local sigue siendo
+// la fuente y se renderiza con StatusBadge para unificar la forma del pill.
 const stageLabel: Record<string, string> = {
   propuesta: 'Propuesta',
   captacion: 'Captación',
@@ -86,7 +96,7 @@ export default function PropiedadDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-brand-pink" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -97,9 +107,7 @@ export default function PropiedadDetailPage() {
         <Link href="/propiedades" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-ink mb-6">
           <ArrowLeft className="w-4 h-4" /> Volver
         </Link>
-        <div className="bg-red-50 text-red-600 rounded-xl p-6">
-          Error cargando la propiedad
-        </div>
+        <Alert tone="danger">Error cargando la propiedad</Alert>
       </div>
     )
   }
@@ -112,8 +120,8 @@ export default function PropiedadDetailPage() {
         <ArrowLeft className="w-4 h-4" /> Volver a Propiedades
       </Link>
 
-      {/* Header */}
-      <div className="bg-white rounded-2xl shadow-sm p-6 mb-6 relative overflow-hidden border border-gray-200">
+      {/* Header (hero propio de pantalla de detalle) */}
+      <Card className="p-6 mb-6 relative overflow-hidden">
         <img
           src="/brand/GV-27.png"
           alt=""
@@ -122,48 +130,54 @@ export default function PropiedadDetailPage() {
         />
         <div className="relative flex items-start justify-between gap-4 flex-wrap">
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center flex-shrink-0 shadow-sm">
+            <div className="w-12 h-12 rounded-card bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center flex-shrink-0 shadow-card">
               <Building2 className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-ink">{property.address}</h1>
-              <p className="text-sm text-gray-500 mt-0.5">
+              <Heading level={3} as="h1">{property.address}</Heading>
+              <Text tone="muted" className="mt-0.5">
                 {[property.neighborhood, property.city].filter(Boolean).join(' · ')}
-              </p>
+              </Text>
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <span className={`text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap ${stageColor[stage] || 'bg-gray-100 text-gray-600'}`}>
-              {stageLabel[stage] || stage}
-            </span>
+            <StatusBadge
+              label={stageLabel[stage] || stage}
+              color={stageColor[stage]}
+              className="whitespace-nowrap"
+            />
             {(property as any).source === 'kiteprop' && (
-              <span className="text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap bg-indigo-50 text-indigo-600 border border-indigo-100">
-                Importada de KiteProp
-              </span>
+              // ds-todo: candidato a badge de origen/integración (color fuera de tokens)
+              <StatusBadge
+                label="Importada de KiteProp"
+                color="bg-indigo-50 text-indigo-600 border border-indigo-100"
+                className="whitespace-nowrap"
+              />
             )}
             <Link href={`/tasaciones/nueva?property_id=${id}`}
-              className="inline-flex items-center gap-1.5 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:opacity-90">
+              className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-control text-sm font-medium hover:bg-primary-hover">
               <Plus className="w-4 h-4" /> Nueva tasación
             </Link>
-            <button
-              onClick={() => setShowGenerate(true)}
-              className="inline-flex items-center gap-1.5 bg-brand-orange text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:opacity-90"
-            >
-              <Send className="w-4 h-4" /> Enviar ficha de visita
-            </button>
+            {/* ds-todo: era bg-brand-orange sólido; mapeado a primary */}
+            <Button onClick={() => setShowGenerate(true)} icon={<Send className="w-4 h-4" />}>
+              Enviar ficha de visita
+            </Button>
             <Link href={`/propiedades/${id}/editar`}
-              className="inline-flex items-center gap-1.5 border border-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-gray-50">
+              className="inline-flex items-center gap-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-control text-sm font-medium hover:bg-gray-50">
               <Pencil className="w-4 h-4" /> Editar
             </Link>
-            <button
+            {/* ds-todo: candidato a variante "outline-danger" */}
+            <Button
+              variant="outline"
               onClick={() => setShowDeleteConfirm(true)}
-              className="inline-flex items-center gap-1.5 border border-red-200 text-red-600 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-red-50"
+              icon={<Trash2 className="w-4 h-4" />}
+              className="text-danger border-danger/30 hover:bg-danger/10"
             >
-              <Trash2 className="w-4 h-4" /> Eliminar
-            </button>
+              Eliminar
+            </Button>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Widgets operativos: autorización + precio + docs */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -192,112 +206,112 @@ export default function PropiedadDetailPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Datos del inmueble */}
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">Inmueble</h2>
+        <Card className="p-6">
+          <Heading level={4} className="mb-4">Inmueble</Heading>
           <dl className="space-y-3">
             {property.property_type && (
-              <div className="flex justify-between text-sm">
-                <dt className="text-gray-500">Tipo</dt>
-                <dd className="font-medium text-ink capitalize">{property.property_type}</dd>
+              <div className="flex justify-between gap-2">
+                <Text as="dt" tone="muted">Tipo</Text>
+                <Text as="dd" weight="medium" className="capitalize">{property.property_type}</Text>
               </div>
             )}
             {property.rooms && (
-              <div className="flex justify-between text-sm">
-                <dt className="text-gray-500">Ambientes</dt>
-                <dd className="font-medium text-ink">{property.rooms}</dd>
+              <div className="flex justify-between gap-2">
+                <Text as="dt" tone="muted">Ambientes</Text>
+                <Text as="dd" weight="medium">{property.rooms}</Text>
               </div>
             )}
             {property.size_m2 && (
-              <div className="flex justify-between text-sm">
-                <dt className="text-gray-500">Superficie</dt>
-                <dd className="font-medium text-ink">{property.size_m2} m²</dd>
+              <div className="flex justify-between gap-2">
+                <Text as="dt" tone="muted">Superficie</Text>
+                <Text as="dd" weight="medium">{property.size_m2} m²</Text>
               </div>
             )}
             {property.asking_price && (
-              <div className="flex justify-between text-sm">
-                <dt className="text-gray-500">Precio</dt>
-                <dd className="font-medium text-brand-pink">
+              <div className="flex justify-between gap-2">
+                <Text as="dt" tone="muted">Precio</Text>
+                <Text as="dd" weight="medium" tone="primary">
                   {property.currency} {Number(property.asking_price).toLocaleString('es-AR')}
-                </dd>
+                </Text>
               </div>
             )}
           </dl>
-        </div>
+        </Card>
 
         {/* Propietario */}
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">Propietario</h2>
+        <Card className="p-6">
+          <Heading level={4} className="mb-4">Propietario</Heading>
           {property.owner_name && property.owner_name !== 'Sin propietario' ? (
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-sm">
                 <User className="w-4 h-4 text-gray-400 flex-shrink-0" />
                 {property.contact_id ? (
-                  <Link href={`/contactos/${property.contact_id}`} className="text-brand-pink hover:underline font-medium">
+                  <Link href={`/contactos/${property.contact_id}`} className="text-primary hover:underline font-medium">
                     {property.owner_name}
                   </Link>
                 ) : (
-                  <span className="text-ink font-medium">{property.owner_name}</span>
+                  <Text as="span" weight="medium">{property.owner_name}</Text>
                 )}
               </div>
               {property.owner_phone && (
                 <div className="flex items-center gap-2 text-sm">
                   <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                  <a href={`tel:${property.owner_phone}`} className="text-brand-pink hover:underline">{property.owner_phone}</a>
+                  <a href={`tel:${property.owner_phone}`} className="text-primary hover:underline">{property.owner_phone}</a>
                 </div>
               )}
               {property.owner_email && (
                 <div className="flex items-center gap-2 text-sm">
                   <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                  <a href={`mailto:${property.owner_email}`} className="text-brand-pink hover:underline">{property.owner_email}</a>
+                  <a href={`mailto:${property.owner_email}`} className="text-primary hover:underline">{property.owner_email}</a>
                 </div>
               )}
             </div>
           ) : (
-            <p className="text-sm text-gray-400">Sin datos del propietario</p>
+            <Text tone="muted">Sin datos del propietario</Text>
           )}
-        </div>
+        </Card>
 
         {/* Agente */}
         {property.agent_name && (
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">Agente</h2>
+          <Card className="p-6">
+            <Heading level={4} className="mb-4">Agente</Heading>
             <div className="flex items-center gap-2 text-sm">
               <User className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span className="text-ink font-medium">{property.agent_name}</span>
+              <Text as="span" weight="medium">{property.agent_name}</Text>
             </div>
-          </div>
+          </Card>
         )}
 
         {/* Fechas */}
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">Historial</h2>
+        <Card className="p-6">
+          <Heading level={4} className="mb-4">Historial</Heading>
           <dl className="space-y-3">
             {property.created_at && (
-              <div className="flex justify-between text-sm">
-                <dt className="text-gray-500">Captada</dt>
-                <dd className="font-medium text-ink">
+              <div className="flex justify-between gap-2">
+                <Text as="dt" tone="muted">Captada</Text>
+                <Text as="dd" weight="medium">
                   {new Date(property.created_at).toLocaleDateString('es-AR')}
-                </dd>
+                </Text>
               </div>
             )}
             {property.updated_at && (
-              <div className="flex justify-between text-sm">
-                <dt className="text-gray-500">Última actualización</dt>
-                <dd className="font-medium text-ink">
+              <div className="flex justify-between gap-2">
+                <Text as="dt" tone="muted">Última actualización</Text>
+                <Text as="dd" weight="medium">
                   {new Date(property.updated_at).toLocaleDateString('es-AR')}
-                </dd>
+                </Text>
               </div>
             )}
           </dl>
-        </div>
+        </Card>
       </div>
 
       {/* Galería de fotos */}
       {photos.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm p-6 mt-6">
-          <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">Fotos</h2>
+        <Card className="p-6 mt-6">
+          <Heading level={4} className="mb-4">Fotos</Heading>
           <PhotoGallery photos={photos} propertyId={id} editable={false} />
-        </div>
+        </Card>
       )}
 
       {/* Fichas de visita */}
@@ -315,40 +329,28 @@ export default function PropiedadDetailPage() {
         />
       )}
 
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowDeleteConfirm(false)}>
-          <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-                <Trash2 className="w-5 h-5 text-red-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-ink">Eliminar propiedad</h3>
-                <p className="text-sm text-gray-500">Esta acción no se puede deshacer.</p>
-              </div>
-            </div>
-            <p className="text-sm text-gray-600 mb-6">
-              ¿Estás segura de que querés eliminar <span className="font-medium">{property?.address}</span>? Se eliminarán también sus fotos y datos asociados.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                className="flex-1 border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-60 flex items-center justify-center gap-2"
-              >
-                {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                Eliminar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal
+        open={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        title="Eliminar propiedad"
+        icon={<Trash2 className="w-5 h-5" />}
+        danger
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
+              Cancelar
+            </Button>
+            <Button variant="danger" loading={deleting} icon={<Trash2 className="w-4 h-4" />} onClick={handleDelete}>
+              Eliminar
+            </Button>
+          </>
+        }
+      >
+        <p className="font-medium">Esta acción no se puede deshacer.</p>
+        <p className="mt-2">
+          ¿Estás segura de que querés eliminar <span className="font-medium text-ink">{property?.address}</span>? Se eliminarán también sus fotos y datos asociados.
+        </p>
+      </Modal>
     </div>
   )
 }
@@ -426,73 +428,61 @@ function GenerateVisitFormModal({
   }
 
   return (
-    <div
-      className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
-      onClick={onClose}
+    <Modal
+      open
+      onClose={onClose}
+      title="Ficha de visita"
+      icon={<Send className="w-5 h-5" />}
+      footer={
+        <Button variant="outline" onClick={onClose}>
+          Cerrar
+        </Button>
+      }
     >
-      <div
-        className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="bg-brand-orange h-1.5" />
-        <div className="p-6">
-          <h3 className="text-lg font-semibold text-ink">Ficha de visita</h3>
-          <p className="text-sm text-gray-500 mt-1">
-            Compartí este link con la persona que visitó la propiedad. Se guardará la respuesta
-            automáticamente.
-          </p>
+      <p>
+        Compartí este link con la persona que visitó la propiedad. Se guardará la respuesta
+        automáticamente.
+      </p>
 
-          {loading && (
-            <div className="py-10 flex items-center justify-center">
-              <Loader2 className="w-6 h-6 animate-spin text-brand-pink" />
-            </div>
-          )}
-
-          {error && (
-            <div className="mt-4 bg-red-50 border border-red-100 text-red-700 text-sm rounded-lg px-3 py-2">
-              {error}
-            </div>
-          )}
-
-          {!loading && !error && slug && (
-            <>
-              <div className="mt-5">
-                <label className="block text-xs text-gray-500 mb-1">Link público</label>
-                <div className="flex items-stretch gap-2">
-                  <input
-                    readOnly
-                    value={publicUrl}
-                    onFocus={(e) => e.currentTarget.select()}
-                    className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-700"
-                  />
-                  <button
-                    onClick={copyLink}
-                    className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium px-3 rounded-lg whitespace-nowrap"
-                  >
-                    {copied ? '¡Copiado!' : 'Copiar'}
-                  </button>
-                </div>
-              </div>
-
-              <a
-                href={`https://wa.me/?text=${whatsappText}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-3 w-full inline-flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1ebe5b] text-white font-medium py-2.5 rounded-lg"
-              >
-                Abrir WhatsApp
-              </a>
-            </>
-          )}
-
-          <button
-            onClick={onClose}
-            className="mt-5 w-full border border-gray-200 text-gray-700 text-sm font-medium py-2 rounded-lg hover:bg-gray-50"
-          >
-            Cerrar
-          </button>
+      {loading && (
+        <div className="py-10 flex items-center justify-center">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
         </div>
-      </div>
-    </div>
+      )}
+
+      {error && (
+        <Alert tone="danger" className="mt-4">
+          {error}
+        </Alert>
+      )}
+
+      {!loading && !error && slug && (
+        <>
+          <Field label="Link público" className="mt-5">
+            <div className="flex items-stretch gap-2">
+              <Input
+                readOnly
+                value={publicUrl}
+                onFocus={(e) => e.currentTarget.select()}
+                className="flex-1 bg-gray-50"
+              />
+              <Button variant="outline" onClick={copyLink} className="whitespace-nowrap">
+                {copied ? '¡Copiado!' : 'Copiar'}
+              </Button>
+            </div>
+          </Field>
+
+          {/* ds-todo: WhatsAppButton requiere número; acá es wa.me sólo con texto (compartir) */}
+          <a
+            href={`https://wa.me/?text=${whatsappText}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 w-full inline-flex items-center justify-center gap-2 bg-whatsapp hover:opacity-90 text-white text-sm font-medium py-2.5 rounded-control"
+          >
+            Abrir WhatsApp
+          </a>
+        </>
+      )}
+    </Modal>
   )
 }

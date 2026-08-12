@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
   KeyRound, Plus, Trash2, Loader2, ArrowLeft, Copy, Check,
-  AlertCircle, ShieldAlert, ShieldOff, Terminal, CheckCircle2, Radio, Play, RotateCcw,
+  AlertCircle, ShieldAlert, ShieldOff, Radio, Play, RotateCcw,
   Webhook as WebhookIcon,
 } from 'lucide-react'
 import { apiFetch, getApiBase } from '@/lib/api'
@@ -12,6 +12,15 @@ import { useToast } from '@/components/ui/Toast'
 import { getCurrentUser } from '@/lib/auth'
 import { API_SCOPES } from '@/lib/crm-config'
 import WebhooksSection from '@/components/configuracion/WebhooksSection'
+import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Card'
+import { Heading, Text } from '@/components/ui/Typography'
+import { Alert } from '@/components/ui/Alert'
+import { Badge } from '@/components/ui/Badge'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { Tabs } from '@/components/ui/Tabs'
+import { Modal } from '@/components/ui/Modal'
+import { Field, Input, Textarea } from '@/components/ui/Input'
 import type { ApiToken } from '@/lib/types'
 
 const IMPORT_ENDPOINT = `${getApiBase('public')}/v1/leads`
@@ -194,20 +203,24 @@ export default function ConfiguracionApiPage() {
 
   if (!isAdmin) {
     return (
-      <div className="max-w-2xl mx-auto text-center py-16">
-        <ShieldAlert className="w-10 h-10 text-amber-500 mx-auto mb-3" />
-        <p className="text-ink font-medium">Acceso restringido</p>
-        <p className="text-sm text-gray-500 mt-1">Sólo administradores pueden gestionar tokens de API.</p>
-        <Link href="/configuracion" className="inline-flex items-center gap-2 text-sm text-brand-pink mt-4">
-          <ArrowLeft className="w-4 h-4" /> Volver a Configuración
-        </Link>
+      <div className="max-w-2xl mx-auto py-16">
+        <EmptyState
+          icon={<ShieldAlert className="w-7 h-7" />}
+          title="Acceso restringido"
+          description="Sólo administradores pueden gestionar tokens de API."
+          action={
+            <Link href="/configuracion" className="inline-flex items-center gap-2 text-sm text-primary">
+              <ArrowLeft className="w-4 h-4" /> Volver a Configuración
+            </Link>
+          }
+        />
       </div>
     )
   }
 
   return (
     <div className="max-w-4xl mx-auto space-y-5">
-      {/* Header */}
+      {/* Header propio (pantalla con back-nav) */}
       <div>
         <Link href="/configuracion" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-ink mb-4">
           <ArrowLeft className="w-4 h-4" /> Volver a Configuración
@@ -215,81 +228,56 @@ export default function ConfiguracionApiPage() {
         <div className="flex items-center justify-between gap-4">
           <div>
             <h1 className="text-xl sm:text-2xl font-semibold text-ink flex items-center gap-2">
-              <KeyRound className="w-6 h-6 text-brand-pink" /> Configuración de API
+              <KeyRound className="w-6 h-6 text-primary" /> Configuración de API
             </h1>
-            <p className="text-gray-500 text-sm mt-1">Tokens para importar leads y webhooks para avisar a tus sistemas cuando pasa algo en el CRM.</p>
+            <Text tone="muted" className="mt-1">Tokens para importar leads y webhooks para avisar a tus sistemas cuando pasa algo en el CRM.</Text>
           </div>
-          <button
+          <Button
             onClick={() => setShowCreate(true)}
-            className="shrink-0 flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90"
+            icon={<Plus className="w-4 h-4" />}
+            className="shrink-0"
           >
-            <Plus className="w-4 h-4" /> Nuevo token
-          </button>
+            Nuevo token
+          </Button>
         </div>
       </div>
 
       {/* Token recién creado — visible una sola vez, por encima de las tabs */}
       {newToken && (
-        <div className="bg-amber-50 border border-amber-300 rounded-xl p-5">
-          <p className="font-semibold text-amber-900 flex items-center gap-2">
-            <KeyRound className="w-4 h-4" /> Token “{newToken.name}” creado
-          </p>
-          <p className="text-sm text-amber-800 mt-1">
+        <Alert tone="warning" title={`Token “${newToken.name}” creado`} className="[&>div]:flex-1">
+          <p>
             Copialo ahora: por seguridad <strong>no vas a poder verlo de nuevo</strong>. Ya lo dejamos cargado en <em>Prueba en vivo</em>.
           </p>
           <div className="mt-3 flex items-stretch gap-2">
-            <code className="flex-1 bg-white border border-amber-200 rounded-lg px-3 py-2 text-xs font-mono text-gray-700 break-all">
+            <code className="flex-1 bg-white border border-gray-200 rounded-control px-3 py-2 text-xs font-mono text-gray-700 break-all">
               {newToken.token}
             </code>
-            <button
+            {/* ds-todo: era botón sólido amber-600 (acción dentro de callout warning); mapeado a primary */}
+            <Button
               onClick={() => copyText(newToken.token, 'token')}
               aria-label="Copiar token al portapapeles"
-              className="shrink-0 flex items-center gap-1.5 bg-amber-600 text-white px-3 rounded-lg text-sm font-medium hover:bg-amber-700"
+              icon={copiedKey === 'token' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              className="shrink-0"
             >
-              {copiedKey === 'token' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
               {copiedKey === 'token' ? 'Copiado' : 'Copiar'}
-            </button>
+            </Button>
           </div>
-          <button
-            onClick={() => setNewToken(null)}
-            className="text-xs text-amber-700 underline mt-3"
-          >
+          <Button variant="ghost" size="sm" onClick={() => setNewToken(null)} className="mt-2 -ml-3">
             Ya lo guardé, ocultar
-          </button>
-        </div>
+          </Button>
+        </Alert>
       )}
 
       {/* Tabs */}
-      <div role="tablist" aria-label="Secciones de API" className="flex gap-1 border-b border-gray-200">
-        {([
-          { key: 'tokens' as Tab, label: 'Tokens', icon: KeyRound, badge: activeCount || null },
-          { key: 'webhooks' as Tab, label: 'Webhooks', icon: WebhookIcon, badge: webhookCount || null },
-          { key: 'test' as Tab, label: 'Prueba en vivo', icon: Radio, badge: null },
-        ]).map(t => {
-          const active = tab === t.key
-          const Icon = t.icon
-          return (
-            <button
-              key={t.key}
-              role="tab"
-              aria-selected={active}
-              onClick={() => setTab(t.key)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                active
-                  ? 'border-brand-pink text-brand-pink'
-                  : 'border-transparent text-gray-500 hover:text-ink'
-              }`}
-            >
-              <Icon className="w-4 h-4" /> {t.label}
-              {t.badge != null && (
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${active ? 'bg-pink-100 text-brand-pink' : 'bg-gray-100 text-gray-500'}`}>
-                  {t.badge}
-                </span>
-              )}
-            </button>
-          )
-        })}
-      </div>
+      <Tabs
+        items={[
+          { value: 'tokens', label: 'Tokens', icon: <KeyRound className="w-4 h-4" />, count: activeCount || undefined },
+          { value: 'webhooks', label: 'Webhooks', icon: <WebhookIcon className="w-4 h-4" />, count: webhookCount || undefined },
+          { value: 'test', label: 'Prueba en vivo', icon: <Radio className="w-4 h-4" /> },
+        ]}
+        value={tab}
+        onChange={v => setTab(v as Tab)}
+      />
 
       {/* ── TAB: TOKENS (grilla) ─────────────────────────────── */}
       {tab === 'tokens' && (
@@ -297,81 +285,85 @@ export default function ConfiguracionApiPage() {
           {loading ? (
             <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
           ) : error ? (
-            <div className="bg-white rounded-xl border p-8 text-center">
-              <AlertCircle className="w-10 h-10 text-red-400 mx-auto mb-3" />
-              <p className="text-gray-600 text-sm">No se pudieron cargar los tokens.</p>
-              <button onClick={loadTokens} className="text-sm text-brand-pink mt-2">Reintentar</button>
-            </div>
+            <Card padded={false}>
+              <EmptyState
+                icon={<AlertCircle className="w-7 h-7" />}
+                title="No se pudieron cargar los tokens"
+                action={<Button variant="outline" onClick={loadTokens}>Reintentar</Button>}
+              />
+            </Card>
           ) : tokens.length === 0 ? (
-            <div className="bg-white rounded-xl border p-10 text-center">
-              <KeyRound className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-600 font-medium">Todavía no hay tokens</p>
-              <p className="text-sm text-gray-500 mt-1 mb-4">Creá un token para conectar una integración que importe leads.</p>
-              <button
-                onClick={() => setShowCreate(true)}
-                className="inline-flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
-              >
-                <Plus className="w-4 h-4" /> Nuevo token
-              </button>
-            </div>
+            <Card padded={false}>
+              <EmptyState
+                icon={<KeyRound className="w-7 h-7" />}
+                title="Todavía no hay tokens"
+                description="Creá un token para conectar una integración que importe leads."
+                action={
+                  <Button onClick={() => setShowCreate(true)} icon={<Plus className="w-4 h-4" />}>
+                    Nuevo token
+                  </Button>
+                }
+              />
+            </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {tokens.map(token => (
-                <div
+                <Card
                   key={token.id}
-                  className={`bg-white border rounded-xl p-4 flex flex-col gap-3 ${token.is_active ? '' : 'opacity-70'}`}
+                  className={`p-4 flex flex-col gap-3 ${token.is_active ? '' : 'opacity-70'}`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      <div className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center ${token.is_active ? 'bg-pink-50 text-brand-pink' : 'bg-gray-100 text-gray-400'}`}>
+                      <div className={`shrink-0 w-9 h-9 rounded-control flex items-center justify-center ${token.is_active ? 'bg-primary/10 text-primary' : 'bg-gray-100 text-gray-400'}`}>
                         <KeyRound className="w-4 h-4" />
                       </div>
-                      <p className="font-medium text-ink truncate">{token.name}</p>
+                      <Text size="base" weight="medium" className="truncate">{token.name}</Text>
                     </div>
-                    <span className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                      token.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-                    }`}>
+                    <Badge tone={token.is_active ? 'success' : 'neutral'} className="shrink-0">
                       {token.is_active ? 'Activo' : 'Revocado'}
-                    </span>
+                    </Badge>
                   </div>
 
                   <div className="flex flex-wrap gap-1.5">
                     {token.scopes?.map(s => (
-                      <span key={s} className="text-[10px] px-2 py-0.5 rounded-full bg-pink-50 text-brand-pink">
+                      <Badge key={s} tone="primary">
                         {API_SCOPES[s as keyof typeof API_SCOPES]?.label ?? s}
-                      </span>
+                      </Badge>
                     ))}
                   </div>
 
-                  <p className="text-xs text-gray-500 font-mono truncate">{token.prefix}</p>
+                  <Text size="xs" tone="muted" className="font-mono truncate">{token.prefix}</Text>
 
                   <div className="flex items-end justify-between gap-2 mt-auto pt-1 border-t border-gray-100">
-                    <p className="text-xs text-gray-500 tabular-nums leading-relaxed">
+                    <Text size="xs" tone="muted" className="tabular-nums leading-relaxed">
                       Creado {fmtDate(token.created_at)}<br />
                       Último uso {fmtDate(token.last_used_at)}
-                    </p>
+                    </Text>
+                    {/* ds-todo: candidato a variante icon-button (ghost 44px con hover warning/danger) */}
                     <div className="shrink-0 flex items-center -mr-1 -mb-1">
                       {token.is_active && (
-                        <button
+                        <Button
+                          variant="ghost"
                           onClick={() => handleRevoke(token.id, token.name)}
                           title="Revocar token (queda en la lista, deja de funcionar)"
                           aria-label={`Revocar token ${token.name}`}
-                          className="flex items-center justify-center w-11 h-11 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-50"
+                          className="w-11 h-11 p-0 text-gray-400 hover:text-warning hover:bg-warning/10"
                         >
                           <ShieldOff className="w-4 h-4" />
-                        </button>
+                        </Button>
                       )}
-                      <button
+                      <Button
+                        variant="ghost"
                         onClick={() => handleDelete(token)}
                         title="Eliminar token definitivamente"
                         aria-label={`Eliminar token ${token.name}`}
-                        className="flex items-center justify-center w-11 h-11 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50"
+                        className="w-11 h-11 p-0 text-gray-400 hover:text-danger hover:bg-danger/10"
                       >
                         <Trash2 className="w-4 h-4" />
-                      </button>
+                      </Button>
                     </div>
                   </div>
-                </div>
+                </Card>
               ))}
             </div>
           )}
@@ -389,163 +381,152 @@ export default function ConfiguracionApiPage() {
       {tab === 'test' && (
         <div role="tabpanel" className="space-y-5">
           {/* Paso 1: token */}
-          <div className="bg-white rounded-xl border p-5">
-            <p className="font-semibold text-ink flex items-center gap-2 mb-1">
-              <span className="w-5 h-5 rounded-full bg-brand-pink text-white text-xs flex items-center justify-center">1</span>
+          <Card>
+            <Heading level={4} className="flex items-center gap-2 mb-1">
+              <span className="w-5 h-5 rounded-full bg-primary text-white text-xs flex items-center justify-center">1</span>
               Tu token
-            </p>
-            <p className="text-sm text-gray-500 mb-3">
+            </Heading>
+            <Text tone="muted" className="mb-3">
               Pegá el token de integración que querés probar. Si acabás de crear uno, ya está cargado.
-            </p>
-            <textarea
+            </Text>
+            <Textarea
               value={testToken}
               onChange={e => { setTestToken(e.target.value); setTestStatus('idle') }}
               placeholder="eyJhbGciOi..."
               rows={2}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-xs font-mono resize-none focus:outline-none"
+              className="text-xs font-mono resize-none min-h-0 px-3 py-2.5"
             />
-          </div>
+          </Card>
 
           {/* Paso 2: request de ejemplo */}
-          <div className="bg-white rounded-xl border p-5">
+          <Card>
             <div className="flex items-center justify-between gap-2 mb-1">
-              <p className="font-semibold text-ink flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-brand-pink text-white text-xs flex items-center justify-center">2</span>
+              <Heading level={4} className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-primary text-white text-xs flex items-center justify-center">2</span>
                 Hacé el request
-              </p>
+              </Heading>
               <button
                 onClick={() => copyText(buildCurl(testToken.trim() || undefined), 'curl')}
                 aria-label="Copiar comando de ejemplo"
-                className="flex items-center gap-1.5 text-xs font-medium text-brand-pink hover:opacity-80"
+                className="flex items-center gap-1.5 text-xs font-medium text-primary hover:opacity-80"
               >
                 {copiedKey === 'curl' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                 {copiedKey === 'curl' ? 'Copiado' : 'Copiar comando'}
               </button>
             </div>
-            <p className="text-sm text-gray-500 mb-3">
+            <Text tone="muted" className="mb-3">
               Acepta un lead o varios (<code className="text-xs bg-gray-100 px-1 py-0.5 rounded">{'{ "leads": [...] }'}</code>, hasta 100).
               Entran sin asignar, en estado <strong>Nuevo</strong>.
-            </p>
+            </Text>
             <div className="overflow-x-auto">
-              <pre className="bg-gray-900 text-gray-100 rounded-lg p-4 text-xs leading-relaxed">{buildCurl(testToken.trim() || undefined)}</pre>
+              <pre className="bg-gray-900 text-gray-100 rounded-control p-4 text-xs leading-relaxed">{buildCurl(testToken.trim() || undefined)}</pre>
             </div>
-            <p className="text-xs text-gray-500 mt-2">
+            <Text size="xs" tone="muted" className="mt-2">
               Campos: <code className="font-mono">full_name</code> (requerido), <code className="font-mono">phone</code>,{' '}
               <code className="font-mono">email</code>, <code className="font-mono">operation</code>,{' '}
               <code className="font-mono">source_detail</code>, <code className="font-mono">notes</code>.
-            </p>
-          </div>
+            </Text>
+          </Card>
 
           {/* Paso 3: escuchar en vivo */}
-          <div className="bg-white rounded-xl border p-5">
-            <p className="font-semibold text-ink flex items-center gap-2 mb-1">
-              <span className="w-5 h-5 rounded-full bg-brand-pink text-white text-xs flex items-center justify-center">3</span>
+          <Card>
+            <Heading level={4} className="flex items-center gap-2 mb-1">
+              <span className="w-5 h-5 rounded-full bg-primary text-white text-xs flex items-center justify-center">3</span>
               Prueba en vivo
-            </p>
-            <p className="text-sm text-gray-500 mb-3">
+            </Heading>
+            <Text tone="muted" className="mb-3">
               Iniciá la escucha y ejecutá el comando. Vamos a detectar el primer request que llegue con este token.
-            </p>
+            </Text>
 
             <div aria-live="polite">
               {testStatus === 'idle' && (
-                <button
+                // ds-todo: era botón sólido oscuro (gray-900); mapeado a primary
+                <Button
                   onClick={startTest}
                   disabled={!testToken.trim()}
-                  className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 disabled:opacity-40"
+                  icon={<Play className="w-4 h-4" />}
                 >
-                  <Play className="w-4 h-4" /> Empezar prueba
-                </button>
+                  Empezar prueba
+                </Button>
               )}
 
               {testStatus === 'waiting' && (
-                <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
-                  <span className="relative flex h-2.5 w-2.5 shrink-0">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
-                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-amber-500" />
-                  </span>
-                  <p className="text-sm text-amber-800 flex-1">
-                    Escuchando… ejecutá el comando de arriba para enviar tu lead de prueba.
-                  </p>
-                  <Loader2 className="w-4 h-4 animate-spin text-amber-500 shrink-0" />
-                  <button
-                    onClick={() => setTestStatus('idle')}
-                    className="text-xs text-amber-700 underline shrink-0"
-                  >
-                    Cancelar
-                  </button>
-                </div>
+                <Alert tone="warning" hideIcon className="px-4 py-3 [&>div]:flex-1">
+                  <div className="flex items-center gap-3">
+                    <span className="relative flex h-2.5 w-2.5 shrink-0">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-warning opacity-75" />
+                      <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-warning" />
+                    </span>
+                    <p className="flex-1">
+                      Escuchando… ejecutá el comando de arriba para enviar tu lead de prueba.
+                    </p>
+                    <Loader2 className="w-4 h-4 animate-spin text-warning shrink-0" />
+                    <button
+                      onClick={() => setTestStatus('idle')}
+                      className="text-xs text-gray-600 underline shrink-0"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </Alert>
               )}
 
               {testStatus === 'done' && (
-                <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-lg px-4 py-3">
-                  <CheckCircle2 className="w-6 h-6 text-green-600 shrink-0" />
-                  <p className="text-sm text-green-800 flex-1">
-                    <strong>¡Recibimos tu lead de prueba!</strong> La integración está funcionando. Aparece en <strong>Leads</strong>, sin asignar.
-                  </p>
-                  <button
-                    onClick={() => { setTestBaseline(null); setTestStatus('idle') }}
-                    className="flex items-center gap-1.5 text-xs font-medium text-green-700 hover:opacity-80 shrink-0"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" /> Probar de nuevo
-                  </button>
-                </div>
+                <Alert tone="success" className="px-4 py-3 [&>div]:flex-1">
+                  <div className="flex items-center gap-3">
+                    <p className="flex-1">
+                      <strong>¡Recibimos tu lead de prueba!</strong> La integración está funcionando. Aparece en <strong>Leads</strong>, sin asignar.
+                    </p>
+                    <button
+                      onClick={() => { setTestBaseline(null); setTestStatus('idle') }}
+                      className="flex items-center gap-1.5 text-xs font-medium text-success hover:opacity-80 shrink-0"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" /> Probar de nuevo
+                    </button>
+                  </div>
+                </Alert>
               )}
             </div>
-          </div>
+          </Card>
         </div>
       )}
 
       {/* Modal crear */}
-      {showCreate && (
-        <div
-          className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
-          onClick={() => setShowCreate(false)}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="new-token-title"
-            className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-5"
-            onClick={e => e.stopPropagation()}
-            onKeyDown={e => { if (e.key === 'Escape') setShowCreate(false) }}
-          >
-            <h3 id="new-token-title" className="font-semibold text-ink mb-1">Nuevo token de API</h3>
-            <p className="text-sm text-gray-500 mb-4">Poné un nombre que te ayude a reconocer la integración.</p>
-            <label htmlFor="token-name" className="block text-sm font-medium text-gray-700 mb-1">
-              Nombre <span className="text-brand-pink">*</span>
-            </label>
-            <input
-              id="token-name"
-              autoFocus
-              placeholder="Ej: Zapier, Landing propia, Portal X"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') handleCreate() }}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none"
-            />
-            <div className="flex items-center gap-2 mt-3 text-xs text-gray-500">
-              <span className="px-2 py-0.5 rounded-full bg-pink-50 text-brand-pink">Importar leads</span>
-              <span>Permiso incluido</span>
-            </div>
-            <div className="flex gap-2 mt-5">
-              <button
-                onClick={() => setShowCreate(false)}
-                className="flex-1 border rounded-lg py-2 text-sm text-gray-600 hover:bg-gray-50"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleCreate}
-                disabled={name.trim().length < 2 || saving}
-                className="flex-1 bg-gradient-to-br from-brand-pink to-brand-orange text-white rounded-lg py-2 text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                {saving ? 'Creando...' : 'Crear token'}
-              </button>
-            </div>
-          </div>
+      <Modal
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+        title="Nuevo token de API"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setShowCreate(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleCreate}
+              disabled={name.trim().length < 2 || saving}
+              loading={saving}
+              icon={<Plus className="w-4 h-4" />}
+            >
+              {saving ? 'Creando...' : 'Crear token'}
+            </Button>
+          </>
+        }
+      >
+        <Text tone="muted" className="mb-4">Poné un nombre que te ayude a reconocer la integración.</Text>
+        <Field label="Nombre" required>
+          <Input
+            autoFocus
+            placeholder="Ej: Zapier, Landing propia, Portal X"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') handleCreate() }}
+          />
+        </Field>
+        <div className="flex items-center gap-2 mt-3 text-xs text-gray-500">
+          <Badge tone="primary">Importar leads</Badge>
+          <span>Permiso incluido</span>
         </div>
-      )}
+      </Modal>
     </div>
   )
 }

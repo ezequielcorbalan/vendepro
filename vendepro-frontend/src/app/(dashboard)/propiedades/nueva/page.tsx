@@ -9,6 +9,11 @@ import { useToast } from '@/components/ui/Toast'
 import { fetchPropertyConfig, stagesForType, statusesForType } from '@/lib/property-config'
 import type { PropertyConfig } from '@/lib/property-config'
 import type { Contact } from '@/lib/types'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Card } from '@/components/ui/Card'
+import { Heading, Text } from '@/components/ui/Typography'
+import { Button } from '@/components/ui/Button'
+import { Field, Input, Select } from '@/components/ui/Input'
 
 const PROPERTY_TYPES = [
   { value: 'departamento', label: 'Departamento' },
@@ -240,8 +245,6 @@ export default function NuevaPropiedadPage() {
     setLoading(false)
   }
 
-  const inputClass = 'w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none'
-
   if (initializing) {
     return (
       <div className="flex items-center justify-center py-16">
@@ -256,197 +259,183 @@ export default function NuevaPropiedadPage() {
         <ArrowLeft className="w-4 h-4" /> Volver a propiedades
       </Link>
 
-      <h1 className="text-2xl font-semibold text-ink mb-4">Nueva propiedad</h1>
+      <PageHeader title="Nueva propiedad" className="mb-4" />
 
       {linkedLeadName && (
-        <div className="mb-6 flex items-center gap-2 bg-pink-50 border border-pink-100 rounded-xl px-3 py-2.5 text-sm max-w-md">
-          <Link2 className="w-4 h-4 text-brand-pink shrink-0" />
-          <span className="text-gray-500">Propiedad vinculada al lead:</span>
-          <span className="font-semibold text-ink truncate">{linkedLeadName}</span>
+        // ds-todo: candidato a Alert con tono de marca (Alert no tiene tone "primary")
+        <div className="mb-6 flex items-center gap-2 bg-primary/5 border border-primary/20 rounded-card px-3 py-2.5 text-sm max-w-md">
+          <Link2 className="w-4 h-4 text-primary shrink-0" />
+          <Text as="span" tone="muted">Propiedad vinculada al lead:</Text>
+          <Text as="span" weight="semibold" className="truncate">{linkedLeadName}</Text>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm p-4 sm:p-6 space-y-5 sm:space-y-6">
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Dirección *</label>
-            <input type="text" value={form.address} onChange={e => update('address', e.target.value)} required placeholder="Ej: Cervantes 3124" className={inputClass} />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Barrio *</label>
-            <input type="text" value={form.neighborhood} onChange={e => update('neighborhood', e.target.value)} required placeholder="Ej: Villa Devoto" className={inputClass} />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Ciudad</label>
-            <input type="text" value={form.city} onChange={e => update('city', e.target.value)} className={inputClass} />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
-            <select value={form.property_type} onChange={e => update('property_type', e.target.value)} className={inputClass}>
-              {PROPERTY_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Operación</label>
-            <select value={form.operation_type_id}
-              onChange={e => setForm(f => ({ ...f, operation_type_id: Number(e.target.value), commercial_stage_id: null }))}
-              className={inputClass}>
-              {(config?.operation_types ?? []).map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Etapa comercial</label>
-            <select value={form.commercial_stage_id ?? ''}
-              onChange={e => setForm(f => ({ ...f, commercial_stage_id: e.target.value ? Number(e.target.value) : null }))}
-              className={inputClass}>
-              <option value="">Sin etapa</option>
-              {stagesForType(config ?? { operation_types: [], commercial_stages: [], property_statuses: [] }, form.operation_type_id)
-                .map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-            <select value={form.status_id}
-              onChange={e => setForm(f => ({ ...f, status_id: Number(e.target.value) }))}
-              className={inputClass}>
-              {statusesForType(config ?? { operation_types: [], commercial_stages: [], property_statuses: [] }, form.operation_type_id)
-                .map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Ambientes</label>
-            <input type="number" value={form.rooms} onChange={e => update('rooms', e.target.value)} placeholder="Ej: 3" className={inputClass} />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Superficie (m²)</label>
-            <input type="number" value={form.size_m2} onChange={e => update('size_m2', e.target.value)} placeholder="Ej: 65" className={inputClass} />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Moneda</label>
-            <select value={form.currency} onChange={e => update('currency', e.target.value)} className={inputClass}>
-              <option value="USD">USD</option>
-              <option value="ARS">ARS</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Precio</label>
-            <input type="number" value={form.asking_price} onChange={e => update('asking_price', e.target.value)} placeholder="Ej: 85000" className={inputClass} />
-          </div>
-        </div>
-
-        <hr className="border-gray-200" />
-
-        <div>
-          <h2 className="text-lg font-medium text-ink mb-3">Datos del propietario</h2>
-
-          {/* Contact selector */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Vincular a contacto del CRM</label>
-            {selectedContact ? (
-              <div className="flex items-center justify-between bg-pink-50 border border-pink-200 rounded-lg px-4 py-2.5">
-                <div>
-                  <p className="text-sm font-medium text-ink">{selectedContact.full_name}</p>
-                  <p className="text-xs text-gray-500">{selectedContact.contact_type}{selectedContact.phone ? ` · ${selectedContact.phone}` : ''}</p>
-                </div>
-                <button type="button" onClick={clearContact} className="text-gray-400 hover:text-gray-600">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            ) : (
-              <div className="relative">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="text"
-                    value={contactSearch}
-                    onChange={e => { setContactSearch(e.target.value); setShowNewContactForm(false) }}
-                    placeholder="Buscar por nombre o teléfono..."
-                    className="w-full border border-gray-300 rounded-lg pl-9 pr-4 py-2.5 text-sm focus:outline-none"
-                  />
-                </div>
-                {contactResults.length > 0 && (
-                  <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg">
-                    {contactResults.map(c => (
-                      <button
-                        key={c.id}
-                        type="button"
-                        onClick={() => selectContact(c)}
-                        className="w-full text-left px-4 py-2.5 hover:bg-gray-50 flex items-center justify-between"
-                      >
-                        <div>
-                          <p className="text-sm font-medium text-ink">{c.full_name}</p>
-                          <p className="text-xs text-gray-500">{c.contact_type}{c.phone ? ` · ${c.phone}` : ''}</p>
-                        </div>
-                      </button>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={() => { setShowNewContactForm(true); setContactResults([]) }}
-                      className="w-full text-left px-4 py-2.5 hover:bg-gray-50 flex items-center gap-2 text-brand-pink border-t border-gray-100"
-                    >
-                      <UserPlus className="w-4 h-4" />
-                      <span className="text-sm">Crear nuevo contacto</span>
-                    </button>
-                  </div>
-                )}
-                {contactSearch.trim() && contactResults.length === 0 && !showNewContactForm && (
-                  <button
-                    type="button"
-                    onClick={() => setShowNewContactForm(true)}
-                    className="mt-1 flex items-center gap-2 text-sm text-brand-pink hover:underline"
-                  >
-                    <UserPlus className="w-4 h-4" />
-                    No encontrado — crear nuevo contacto
-                  </button>
-                )}
-              </div>
-            )}
-
-            {showNewContactForm && !selectedContact && (
-              <div className="mt-3 p-4 border border-gray-200 rounded-lg bg-gray-50 space-y-3">
-                <p className="text-sm font-medium text-gray-700">Nuevo contacto</p>
-                <input type="text" placeholder="Nombre *" value={newContact.full_name} onChange={e => setNewContact(p => ({ ...p, full_name: e.target.value }))} className={inputClass} />
-                <input type="tel" placeholder="Teléfono" value={newContact.phone} onChange={e => setNewContact(p => ({ ...p, phone: e.target.value }))} className={inputClass} />
-                <input type="email" placeholder="Email" value={newContact.email} onChange={e => setNewContact(p => ({ ...p, email: e.target.value }))} className={inputClass} />
-                <select value={newContact.contact_type} onChange={e => setNewContact(p => ({ ...p, contact_type: e.target.value }))} className={inputClass}>
-                  {CONTACT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                </select>
-                <div className="flex gap-2">
-                  <button type="button" onClick={handleCreateContact} disabled={creatingContact} className="flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50">
-                    {creatingContact ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                    Crear y vincular
-                  </button>
-                  <button type="button" onClick={() => { setShowNewContactForm(false); setContactSearch('') }} className="px-4 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100">
-                    Cancelar
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+      <form onSubmit={handleSubmit}>
+        <Card className="p-4 sm:p-6 space-y-5 sm:space-y-6">
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
-              <input type="text" value={form.owner_name} onChange={e => update('owner_name', e.target.value)} required placeholder="Nombre del propietario" className={inputClass} />
+            <Field label="Dirección" required className="col-span-2">
+              <Input type="text" value={form.address} onChange={e => update('address', e.target.value)} required placeholder="Ej: Cervantes 3124" />
+            </Field>
+            <Field label="Barrio" required>
+              <Input type="text" value={form.neighborhood} onChange={e => update('neighborhood', e.target.value)} required placeholder="Ej: Villa Devoto" />
+            </Field>
+            <Field label="Ciudad">
+              <Input type="text" value={form.city} onChange={e => update('city', e.target.value)} />
+            </Field>
+            <Field label="Tipo">
+              <Select value={form.property_type} onChange={e => update('property_type', e.target.value)}>
+                {PROPERTY_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+              </Select>
+            </Field>
+            <Field label="Operación">
+              <Select value={form.operation_type_id}
+                onChange={e => setForm(f => ({ ...f, operation_type_id: Number(e.target.value), commercial_stage_id: null }))}>
+                {(config?.operation_types ?? []).map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+              </Select>
+            </Field>
+            <Field label="Etapa comercial">
+              <Select value={form.commercial_stage_id ?? ''}
+                onChange={e => setForm(f => ({ ...f, commercial_stage_id: e.target.value ? Number(e.target.value) : null }))}>
+                <option value="">Sin etapa</option>
+                {stagesForType(config ?? { operation_types: [], commercial_stages: [], property_statuses: [] }, form.operation_type_id)
+                  .map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+              </Select>
+            </Field>
+            <Field label="Estado">
+              <Select value={form.status_id}
+                onChange={e => setForm(f => ({ ...f, status_id: Number(e.target.value) }))}>
+                {statusesForType(config ?? { operation_types: [], commercial_stages: [], property_statuses: [] }, form.operation_type_id)
+                  .map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+              </Select>
+            </Field>
+            <Field label="Ambientes">
+              <Input type="number" value={form.rooms} onChange={e => update('rooms', e.target.value)} placeholder="Ej: 3" />
+            </Field>
+            <Field label="Superficie (m²)">
+              <Input type="number" value={form.size_m2} onChange={e => update('size_m2', e.target.value)} placeholder="Ej: 65" />
+            </Field>
+            <Field label="Moneda">
+              <Select value={form.currency} onChange={e => update('currency', e.target.value)}>
+                <option value="USD">USD</option>
+                <option value="ARS">ARS</option>
+              </Select>
+            </Field>
+            <Field label="Precio">
+              <Input type="number" value={form.asking_price} onChange={e => update('asking_price', e.target.value)} placeholder="Ej: 85000" />
+            </Field>
+          </div>
+
+          <hr className="border-gray-200" />
+
+          <div>
+            <Heading level={4} className="mb-3">Datos del propietario</Heading>
+
+            {/* Contact selector */}
+            {/* ds-todo: candidato a converger con ui/ContactSelector (difiere: acá hay creación inline de contacto y sincroniza los campos del propietario) */}
+            <div className="mb-4">
+              <Field label="Vincular a contacto del CRM">
+                {selectedContact ? (
+                  <div className="flex items-center justify-between bg-primary/5 border border-primary/20 rounded-control px-4 py-2.5">
+                    <div>
+                      <Text weight="medium">{selectedContact.full_name}</Text>
+                      <Text size="xs" tone="muted">{selectedContact.contact_type}{selectedContact.phone ? ` · ${selectedContact.phone}` : ''}</Text>
+                    </div>
+                    <button type="button" onClick={clearContact} className="text-gray-400 hover:text-gray-600">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                      <Input
+                        type="text"
+                        value={contactSearch}
+                        onChange={e => { setContactSearch(e.target.value); setShowNewContactForm(false) }}
+                        placeholder="Buscar por nombre o teléfono..."
+                        className="pl-9"
+                      />
+                    </div>
+                    {contactResults.length > 0 && (
+                      <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-control shadow-pop">
+                        {contactResults.map(c => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => selectContact(c)}
+                            className="w-full text-left px-4 py-2.5 hover:bg-gray-50 flex items-center justify-between"
+                          >
+                            <div>
+                              <Text weight="medium">{c.full_name}</Text>
+                              <Text size="xs" tone="muted">{c.contact_type}{c.phone ? ` · ${c.phone}` : ''}</Text>
+                            </div>
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => { setShowNewContactForm(true); setContactResults([]) }}
+                          className="w-full text-left px-4 py-2.5 hover:bg-gray-50 flex items-center gap-2 text-primary border-t border-gray-100"
+                        >
+                          <UserPlus className="w-4 h-4" />
+                          <span className="text-sm">Crear nuevo contacto</span>
+                        </button>
+                      </div>
+                    )}
+                    {contactSearch.trim() && contactResults.length === 0 && !showNewContactForm && (
+                      <button
+                        type="button"
+                        onClick={() => setShowNewContactForm(true)}
+                        className="mt-1 flex items-center gap-2 text-sm text-primary hover:underline"
+                      >
+                        <UserPlus className="w-4 h-4" />
+                        No encontrado — crear nuevo contacto
+                      </button>
+                    )}
+                  </div>
+                )}
+              </Field>
+
+              {showNewContactForm && !selectedContact && (
+                <div className="mt-3 p-4 border border-gray-200 rounded-control bg-gray-50 space-y-3">
+                  <Text weight="medium" className="text-gray-700">Nuevo contacto</Text>
+                  <Input type="text" placeholder="Nombre *" value={newContact.full_name} onChange={e => setNewContact(p => ({ ...p, full_name: e.target.value }))} />
+                  <Input type="tel" placeholder="Teléfono" value={newContact.phone} onChange={e => setNewContact(p => ({ ...p, phone: e.target.value }))} />
+                  <Input type="email" placeholder="Email" value={newContact.email} onChange={e => setNewContact(p => ({ ...p, email: e.target.value }))} />
+                  <Select value={newContact.contact_type} onChange={e => setNewContact(p => ({ ...p, contact_type: e.target.value }))}>
+                    {CONTACT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  </Select>
+                  <div className="flex gap-2">
+                    <Button onClick={handleCreateContact} loading={creatingContact}>
+                      Crear y vincular
+                    </Button>
+                    <Button variant="ghost" onClick={() => { setShowNewContactForm(false); setContactSearch('') }}>
+                      Cancelar
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-              <input type="tel" value={form.owner_phone} onChange={e => update('owner_phone', e.target.value)} placeholder="Ej: +54 11 5890-5594" className={inputClass} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input type="email" value={form.owner_email} onChange={e => update('owner_email', e.target.value)} placeholder="propietario@email.com" className={inputClass} />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="Nombre" required className="col-span-2">
+                <Input type="text" value={form.owner_name} onChange={e => update('owner_name', e.target.value)} required placeholder="Nombre del propietario" />
+              </Field>
+              <Field label="Teléfono">
+                <Input type="tel" value={form.owner_phone} onChange={e => update('owner_phone', e.target.value)} placeholder="Ej: +54 11 5890-5594" />
+              </Field>
+              <Field label="Email">
+                <Input type="email" value={form.owner_email} onChange={e => update('owner_email', e.target.value)} placeholder="propietario@email.com" />
+              </Field>
             </div>
           </div>
-        </div>
 
-        <div className="flex justify-end">
-          <button type="submit" disabled={loading} className="flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-6 py-2.5 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-            {loading ? 'Guardando...' : 'Crear propiedad'}
-          </button>
-        </div>
+          <div className="flex justify-end">
+            <Button type="submit" size="lg" loading={loading}>
+              {loading ? 'Guardando...' : 'Crear propiedad'}
+            </Button>
+          </div>
+        </Card>
       </form>
     </div>
   )
