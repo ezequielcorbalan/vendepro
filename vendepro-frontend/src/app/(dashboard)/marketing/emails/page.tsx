@@ -13,6 +13,7 @@ import {
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { StatusBadge } from '@/components/ui/StatusBadge'
 
 export default function EmailCampaignsPage() {
   const profile = getCurrentUser()
@@ -101,7 +102,7 @@ export default function EmailCampaignsPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium text-ink truncate">{c.name}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${st.cls}`}>{st.label}</span>
+                      <StatusBadge label={st.label} color={st.cls} />
                     </div>
                     <p className="text-sm text-gray-500 mt-0.5 truncate">
                       {c.subject || 'Sin asunto'} · {describeSegment(parseSegment(c.segment_json))}

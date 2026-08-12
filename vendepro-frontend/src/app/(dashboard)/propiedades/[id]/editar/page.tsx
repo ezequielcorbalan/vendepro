@@ -9,6 +9,11 @@ import { useToast } from '@/components/ui/Toast'
 import { getCurrentUser } from '@/lib/auth'
 import { ContactSelector } from '@/components/ui/ContactSelector'
 import { PhotoGallery } from '@/components/ui/PhotoGallery'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Card } from '@/components/ui/Card'
+import { Heading } from '@/components/ui/Typography'
+import { Button } from '@/components/ui/Button'
+import { Field, Input, Select } from '@/components/ui/Input'
 import { fetchPropertyConfig, stagesForType, statusesForType } from '@/lib/property-config'
 import type { PropertyConfig } from '@/lib/property-config'
 
@@ -145,13 +150,12 @@ export default function EditarPropiedadPage() {
     setSaving(false)
   }
 
-  const inputClass = 'w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none'
   const emptyConfig = { operation_types: [], commercial_stages: [], property_statuses: [] }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-brand-pink" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -164,132 +168,110 @@ export default function EditarPropiedadPage() {
         </Link>
       </div>
 
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl sm:text-2xl font-semibold text-ink">Editar propiedad</h1>
-        <button onClick={handleSave} disabled={saving}
-          className="flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50">
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          Guardar
-        </button>
-      </div>
+      <PageHeader
+        title="Editar propiedad"
+        actions={
+          <Button onClick={handleSave} loading={saving} icon={<Save className="w-4 h-4" />}>
+            Guardar
+          </Button>
+        }
+      />
 
-      <div className="bg-white rounded-xl border p-6 space-y-4">
-        <h2 className="font-semibold text-ink">Datos del inmueble</h2>
+      <Card className="p-6 space-y-4">
+        <Heading level={4}>Datos del inmueble</Heading>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Dirección *</label>
-            <input type="text" value={form.address} onChange={e => update('address', e.target.value)} className={inputClass} />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Barrio</label>
-            <input type="text" value={form.neighborhood} onChange={e => update('neighborhood', e.target.value)} className={inputClass} />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Ciudad</label>
-            <input type="text" value={form.city} onChange={e => update('city', e.target.value)} className={inputClass} />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de inmueble</label>
-            <select value={form.property_type} onChange={e => update('property_type', e.target.value)} className={inputClass}>
+          <Field label="Dirección" required className="col-span-2">
+            <Input type="text" value={form.address} onChange={e => update('address', e.target.value)} />
+          </Field>
+          <Field label="Barrio">
+            <Input type="text" value={form.neighborhood} onChange={e => update('neighborhood', e.target.value)} />
+          </Field>
+          <Field label="Ciudad">
+            <Input type="text" value={form.city} onChange={e => update('city', e.target.value)} />
+          </Field>
+          <Field label="Tipo de inmueble">
+            <Select value={form.property_type} onChange={e => update('property_type', e.target.value)}>
               {PROPERTY_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Operación</label>
-            <select value={form.operation_type_id}
-              onChange={e => setForm(f => ({ ...f, operation_type_id: Number(e.target.value), commercial_stage_id: null }))}
-              className={inputClass}>
+            </Select>
+          </Field>
+          <Field label="Operación">
+            <Select value={form.operation_type_id}
+              onChange={e => setForm(f => ({ ...f, operation_type_id: Number(e.target.value), commercial_stage_id: null }))}>
               {(config?.operation_types ?? []).map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Etapa comercial</label>
-            <select value={form.commercial_stage_id ?? ''}
-              onChange={e => update('commercial_stage_id', e.target.value ? Number(e.target.value) : null)}
-              className={inputClass}>
+            </Select>
+          </Field>
+          <Field label="Etapa comercial">
+            <Select value={form.commercial_stage_id ?? ''}
+              onChange={e => update('commercial_stage_id', e.target.value ? Number(e.target.value) : null)}>
               <option value="">Sin etapa</option>
               {stagesForType(config ?? emptyConfig, form.operation_type_id).map(s => (
                 <option key={s.id} value={s.id}>{s.label}</option>
               ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-            <select value={form.status_id}
-              onChange={e => update('status_id', Number(e.target.value))}
-              className={inputClass}>
+            </Select>
+          </Field>
+          <Field label="Estado">
+            <Select value={form.status_id}
+              onChange={e => update('status_id', Number(e.target.value))}>
               {statusesForType(config ?? emptyConfig, form.operation_type_id).map(s => (
                 <option key={s.id} value={s.id}>{s.label}</option>
               ))}
-            </select>
-          </div>
+            </Select>
+          </Field>
           {isAdmin && agents.length > 0 && (
-            <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Agente responsable</label>
-              <select value={form.agent_id} onChange={e => update('agent_id', e.target.value)} className={inputClass}>
+            <Field label="Agente responsable" className="col-span-2">
+              <Select value={form.agent_id} onChange={e => update('agent_id', e.target.value)}>
                 <option value="">Sin asignar</option>
                 {agents.map(a => (
                   <option key={a.id} value={a.id}>{a.full_name}</option>
                 ))}
-              </select>
-            </div>
+              </Select>
+            </Field>
           )}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Ambientes</label>
-            <input type="number" value={form.rooms} onChange={e => update('rooms', e.target.value)} className={inputClass} />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Superficie (m²)</label>
-            <input type="number" value={form.size_m2} onChange={e => update('size_m2', e.target.value)} className={inputClass} />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Moneda</label>
-            <select value={form.currency} onChange={e => update('currency', e.target.value)} className={inputClass}>
+          <Field label="Ambientes">
+            <Input type="number" value={form.rooms} onChange={e => update('rooms', e.target.value)} />
+          </Field>
+          <Field label="Superficie (m²)">
+            <Input type="number" value={form.size_m2} onChange={e => update('size_m2', e.target.value)} />
+          </Field>
+          <Field label="Moneda">
+            <Select value={form.currency} onChange={e => update('currency', e.target.value)}>
               <option value="USD">USD</option>
               <option value="ARS">ARS</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Precio</label>
-            <input type="number" value={form.asking_price} onChange={e => update('asking_price', e.target.value)} className={inputClass} />
-          </div>
+            </Select>
+          </Field>
+          <Field label="Precio">
+            <Input type="number" value={form.asking_price} onChange={e => update('asking_price', e.target.value)} />
+          </Field>
         </div>
-      </div>
+      </Card>
 
-      <div className="bg-white rounded-xl border p-6 space-y-4">
-        <h2 className="font-semibold text-ink">Propietario</h2>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Vincular contacto (opcional)</label>
+      <Card className="p-6 space-y-4">
+        <Heading level={4}>Propietario</Heading>
+        <Field label="Vincular contacto (opcional)" hint="Seleccioná un contacto para auto-completar">
           <ContactSelector value={ownerContact} onChange={handleContactSelect} />
-          <p className="text-xs text-gray-400 mt-1">Seleccioná un contacto para auto-completar</p>
-        </div>
+        </Field>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
-            <input type="text" value={form.owner_name} onChange={e => update('owner_name', e.target.value)} className={inputClass} />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-            <input type="tel" value={form.owner_phone} onChange={e => update('owner_phone', e.target.value)} className={inputClass} />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input type="email" value={form.owner_email} onChange={e => update('owner_email', e.target.value)} className={inputClass} />
-          </div>
+          <Field label="Nombre" className="col-span-2">
+            <Input type="text" value={form.owner_name} onChange={e => update('owner_name', e.target.value)} />
+          </Field>
+          <Field label="Teléfono">
+            <Input type="tel" value={form.owner_phone} onChange={e => update('owner_phone', e.target.value)} />
+          </Field>
+          <Field label="Email">
+            <Input type="email" value={form.owner_email} onChange={e => update('owner_email', e.target.value)} />
+          </Field>
         </div>
-      </div>
+      </Card>
 
-      <div className="bg-white rounded-xl border p-6 space-y-4">
-        <h2 className="font-semibold text-ink">Fotos</h2>
+      <Card className="p-6 space-y-4">
+        <Heading level={4}>Fotos</Heading>
         <PhotoGallery photos={photos} propertyId={id} editable />
-      </div>
+      </Card>
 
       <div className="flex justify-end pb-8">
-        <button onClick={handleSave} disabled={saving}
-          className="flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-6 py-3 rounded-xl text-sm font-medium hover:opacity-90 disabled:opacity-50">
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+        <Button size="lg" onClick={handleSave} loading={saving} icon={<Save className="w-4 h-4" />}>
           Guardar cambios
-        </button>
+        </Button>
       </div>
     </div>
   )

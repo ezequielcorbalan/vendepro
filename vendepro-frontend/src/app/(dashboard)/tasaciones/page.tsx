@@ -12,6 +12,7 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Heading, Text } from '@/components/ui/Typography'
+import { StatusBadge } from '@/components/ui/StatusBadge'
 
 const statusLabels: Record<string, { label: string; color: string }> = {
   draft: { label: 'Borrador', color: 'bg-gray-100 text-gray-700' },
@@ -111,7 +112,7 @@ export default function TasacionesPage() {
                 <Link href={`/tasaciones/${a.id}`} className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <Heading level={4} className="truncate">{a.property_address}</Heading>
-                    <span className={`text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-medium ${st.color}`}>{st.label}</span>
+                    <StatusBadge label={st.label} color={st.color} />
                   </div>
                   <div className="flex items-center gap-3 mt-1 text-xs sm:text-sm text-gray-500">
                     <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {a.neighborhood}</span>

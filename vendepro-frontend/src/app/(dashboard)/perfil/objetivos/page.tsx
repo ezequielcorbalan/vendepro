@@ -4,7 +4,14 @@ import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Target, Plus, Trash2, Loader2, Save, Zap, SlidersHorizontal, DollarSign, ChevronRight } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
-import { OBJECTIVE_METRICS, OBJECTIVE_TEMPLATES, PERIOD_TYPES, scaleMetrics, type ObjectiveMetric, type ObjectiveTemplate } from '@/lib/crm-config'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Card, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { Field, Input, Select } from '@/components/ui/Input'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { Text } from '@/components/ui/Typography'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { OBJECTIVE_METRICS, OBJECTIVE_TEMPLATES, PERIOD_TYPES, scaleMetrics, type ObjectiveTemplate } from '@/lib/crm-config'
 import { apiFetch } from '@/lib/api'
 
 type Mode = null | 'method' | 'custom'
@@ -133,7 +140,7 @@ export default function MisObjetivosPage() {
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
-      <Loader2 className="w-8 h-8 animate-spin text-brand-pink" />
+      <Loader2 className="w-8 h-8 animate-spin text-primary" />
     </div>
   )
 
@@ -143,74 +150,72 @@ export default function MisObjetivosPage() {
         <ArrowLeft className="w-4 h-4" /> Volver a mi perfil
       </Link>
 
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-ink flex items-center gap-2">
-            <Target className="w-6 h-6 text-orange-500" /> Mis objetivos
-          </h1>
-          <p className="text-sm text-gray-400 mt-1">
-            {objectives.length} objetivo{objectives.length !== 1 ? 's' : ''} activo{objectives.length !== 1 ? 's' : ''}
-          </p>
-        </div>
-        {mode === null && (
-          <button
-            onClick={() => setMode('method')}
-            className="inline-flex items-center gap-1.5 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
-          >
-            <Plus className="w-4 h-4" /> Nuevo
-          </button>
-        )}
-      </div>
+      <PageHeader
+        title="Mis objetivos"
+        subtitle={`${objectives.length} objetivo${objectives.length !== 1 ? 's' : ''} activo${objectives.length !== 1 ? 's' : ''}`}
+        actions={mode === null ? (
+          <Button icon={<Plus className="w-4 h-4" />} onClick={() => setMode('method')}>
+            Nuevo
+          </Button>
+        ) : undefined}
+        className="mb-6"
+      />
 
       {/* Selector de modo */}
       {mode === null && objectives.length === 0 && (
-        <div className="bg-white rounded-xl border border-gray-100 p-8 text-center">
-          <Target className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-600 font-medium mb-1">¿Cómo querés cargar tus objetivos?</p>
-          <p className="text-sm text-gray-400 mb-6">Podés adoptar un método probado o definir los tuyos</p>
-          <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-            <button
-              onClick={() => setMode('method')}
-              className="flex-1 flex items-center gap-3 px-4 py-3 bg-pink-50 border border-pink-200 rounded-xl text-left hover:border-brand-pink transition-colors group"
-            >
-              <Zap className="w-5 h-5 text-brand-pink shrink-0" />
-              <div>
-                <div className="text-sm font-semibold text-ink">Método probado</div>
-                <div className="text-xs text-gray-400">Keller, Magnin, Agenda</div>
+        <Card padded={false}>
+          <EmptyState
+            icon={<Target className="w-6 h-6" />}
+            title="¿Cómo querés cargar tus objetivos?"
+            description="Podés adoptar un método probado o definir los tuyos"
+            action={
+              <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+                {/* ds-todo: candidato a componente "OptionCard" (tarjeta seleccionable con ícono + título + descripción) */}
+                <button
+                  onClick={() => setMode('method')}
+                  className="flex-1 flex items-center gap-3 px-4 py-3 bg-primary/5 border border-primary/30 rounded-card text-left hover:border-primary transition-colors group"
+                >
+                  <Zap className="w-5 h-5 text-primary shrink-0" />
+                  <div>
+                    <div className="text-sm font-semibold text-ink">Método probado</div>
+                    <div className="text-xs text-gray-400">Keller, Magnin, Agenda</div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-gray-300 ml-auto group-hover:text-primary" />
+                </button>
+                <button
+                  onClick={() => setMode('custom')}
+                  className="flex-1 flex items-center gap-3 px-4 py-3 bg-gray-50 border border-gray-200 rounded-card text-left hover:border-gray-400 transition-colors group"
+                >
+                  <SlidersHorizontal className="w-5 h-5 text-gray-500 shrink-0" />
+                  <div>
+                    <div className="text-sm font-semibold text-ink">Personalizado</div>
+                    <div className="text-xs text-gray-400">Métrica a métrica</div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-gray-300 ml-auto group-hover:text-gray-500" />
+                </button>
               </div>
-              <ChevronRight className="w-4 h-4 text-gray-300 ml-auto group-hover:text-brand-pink" />
-            </button>
-            <button
-              onClick={() => setMode('custom')}
-              className="flex-1 flex items-center gap-3 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-left hover:border-gray-400 transition-colors group"
-            >
-              <SlidersHorizontal className="w-5 h-5 text-gray-500 shrink-0" />
-              <div>
-                <div className="text-sm font-semibold text-ink">Personalizado</div>
-                <div className="text-xs text-gray-400">Métrica a métrica</div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-gray-300 ml-auto group-hover:text-gray-500" />
-            </button>
-          </div>
-        </div>
+            }
+          />
+        </Card>
       )}
 
       {/* Formulario método */}
       {mode === 'method' && (
-        <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6 space-y-5">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-ink flex items-center gap-2"><Zap className="w-4 h-4 text-brand-pink" /> Elegí tu método</h2>
-            <button onClick={cancel} className="text-xs text-gray-400 hover:text-gray-600">Cancelar</button>
-          </div>
+        <Card className="mb-6 space-y-5">
+          <CardHeader className="mb-0">
+            <CardTitle className="flex items-center gap-2"><Zap className="w-4 h-4 text-primary" /> Elegí tu método</CardTitle>
+            <Button variant="ghost" size="sm" onClick={cancel}>Cancelar</Button>
+          </CardHeader>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {/* ds-todo: candidato a componente "OptionCard" (tarjeta seleccionable de template) */}
             {(Object.entries(OBJECTIVE_TEMPLATES) as [ObjectiveTemplate, typeof OBJECTIVE_TEMPLATES[ObjectiveTemplate]][]).map(([key, tpl]) => (
               <button
                 key={key}
                 onClick={() => setSelectedTemplate(key)}
-                className={`text-left px-3 py-3 rounded-xl border text-xs transition-all ${
+                className={`text-left px-3 py-3 rounded-card border text-xs transition-all ${
                   selectedTemplate === key
-                    ? 'border-brand-pink bg-pink-50 text-brand-pink'
+                    ? 'border-primary bg-primary/5 text-primary'
                     : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
                 }`}
               >
@@ -224,20 +229,14 @@ export default function MisObjetivosPage() {
             <>
               <div>
                 <label className="text-xs text-gray-500 mb-1.5 block">Período</label>
-                <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5 w-fit">
-                  {Object.entries(PERIOD_TYPES).map(([k, v]) => (
-                    <button
-                      key={k}
-                      onClick={() => setMethodPeriod(k)}
-                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${methodPeriod === k ? 'bg-white shadow text-ink' : 'text-gray-500'}`}
-                    >
-                      {v.label}
-                    </button>
-                  ))}
-                </div>
+                <SegmentedControl
+                  options={Object.entries(PERIOD_TYPES).map(([k, v]) => ({ value: k, label: v.label }))}
+                  value={methodPeriod}
+                  onChange={setMethodPeriod}
+                />
               </div>
 
-              <div className="bg-gray-50 rounded-lg p-3">
+              <div className="bg-gray-50 rounded-control p-3">
                 <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Métricas incluidas ({PERIOD_TYPES[methodPeriod as keyof typeof PERIOD_TYPES]?.label})</p>
                 <div className="flex flex-wrap gap-x-4 gap-y-1">
                   {tplMetrics && Object.entries(tplMetrics).map(([m, v]) => (
@@ -248,40 +247,36 @@ export default function MisObjetivosPage() {
                 </div>
               </div>
 
-              <div className="border border-orange-200 bg-orange-50 rounded-xl p-4 space-y-3">
-                <p className="text-xs font-semibold text-orange-700 flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5" /> Proyección económica (opcional)</p>
+              <div className="border border-brand-orange/30 bg-brand-orange/5 rounded-card p-4 space-y-3">
+                <p className="text-xs font-semibold text-brand-orange flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5" /> Proyección económica (opcional)</p>
                 <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Ticket promedio (USD)</label>
-                    <input
+                  <Field label="Ticket promedio (USD)">
+                    <Input
                       type="number" min="0" step="1000"
                       value={ticketPromedio || ''}
                       onChange={e => setTicketPromedio(parseInt(e.target.value) || 0)}
                       placeholder="ej. 150.000"
-                      className="w-full border rounded-lg px-3 py-2 text-sm"
                     />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Comisión promedio (%)</label>
-                    <input
+                  </Field>
+                  <Field label="Comisión promedio (%)">
+                    <Input
                       type="number" min="0" max="10" step="0.1"
                       value={comisionPct || ''}
                       onChange={e => setComisionPct(parseFloat(e.target.value) || 0)}
                       placeholder="ej. 3"
-                      className="w-full border rounded-lg px-3 py-2 text-sm"
                     />
-                  </div>
+                  </Field>
                 </div>
                 {facturacionMensual > 0 && (
                   <div className="grid grid-cols-2 gap-3 pt-1">
-                    <div className="bg-white rounded-lg p-3 text-center border border-orange-100">
+                    <div className="bg-white rounded-control p-3 text-center border border-brand-orange/20">
                       <div className="text-[10px] text-gray-400 mb-0.5">Facturación mensual</div>
                       <div className="text-lg font-bold text-brand-orange">USD {facturacionMensual.toLocaleString()}</div>
                     </div>
-                    <div className="bg-white rounded-lg p-3 text-center border border-orange-100">
+                    <div className="bg-white rounded-control p-3 text-center border border-brand-orange/20">
                       <div className="text-[10px] text-gray-400 mb-0.5">Facturación anual</div>
-                      <div className="text-lg font-bold text-brand-pink">USD {facturacionAnual.toLocaleString()}</div>
-                      <div className={`text-[10px] mt-0.5 ${facturacionAnual >= 40000 ? 'text-green-600' : 'text-amber-600'}`}>
+                      <div className="text-lg font-bold text-primary">USD {facturacionAnual.toLocaleString()}</div>
+                      <div className={`text-[10px] mt-0.5 ${facturacionAnual >= 40000 ? 'text-success' : 'text-warning'}`}>
                         {facturacionAnual >= 40000 ? 'Supera el mínimo recomendado' : 'Por debajo del mínimo (USD 40.000/año)'}
                       </div>
                     </div>
@@ -291,120 +286,105 @@ export default function MisObjetivosPage() {
             </>
           )}
 
-          <button
+          <Button
+            fullWidth
+            size="lg"
+            loading={saving}
+            disabled={!selectedTemplate}
+            icon={<Save className="w-4 h-4" />}
             onClick={saveMethod}
-            disabled={saving || !selectedTemplate}
-            className="w-full bg-gradient-to-br from-brand-pink to-brand-orange text-white py-2.5 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-2"
           >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {saving ? 'Guardando...' : 'Adoptar este método'}
-          </button>
-        </div>
+          </Button>
+        </Card>
       )}
 
       {/* Formulario personalizado */}
       {mode === 'custom' && (
-        <div className="bg-white rounded-xl border border-gray-100 p-5 mb-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-ink flex items-center gap-2"><SlidersHorizontal className="w-4 h-4 text-gray-500" /> Objetivo personalizado</h2>
-            <button onClick={cancel} className="text-xs text-gray-400 hover:text-gray-600">Cancelar</button>
-          </div>
+        <Card className="mb-6 space-y-4">
+          <CardHeader className="mb-0">
+            <CardTitle className="flex items-center gap-2"><SlidersHorizontal className="w-4 h-4 text-gray-500" /> Objetivo personalizado</CardTitle>
+            <Button variant="ghost" size="sm" onClick={cancel}>Cancelar</Button>
+          </CardHeader>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Métrica</label>
-              <select
-                value={metric}
-                onChange={e => setMetric(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white"
-              >
+            <Field label="Métrica">
+              <Select value={metric} onChange={e => setMetric(e.target.value)}>
                 {Object.entries(OBJECTIVE_METRICS).map(([key, cfg]) => (
                   <option key={key} value={key}>{cfg.label}</option>
                 ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Período</label>
-              <select
-                value={periodType}
-                onChange={e => setPeriodType(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white"
-              >
+              </Select>
+            </Field>
+            <Field label="Período">
+              <Select value={periodType} onChange={e => setPeriodType(e.target.value)}>
                 {Object.entries(PERIOD_TYPES).map(([key, cfg]) => (
                   <option key={key} value={key}>{cfg.label}</option>
                 ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Objetivo</label>
-              <input
+              </Select>
+            </Field>
+            <Field label="Objetivo">
+              <Input
                 type="number"
                 value={target}
                 onChange={e => setTarget(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
                 placeholder="10"
                 min="1"
               />
-            </div>
+            </Field>
           </div>
           <div className="flex gap-2">
-            <button
+            <Button
+              className="flex-1"
+              loading={saving}
+              icon={<Save className="w-4 h-4" />}
               onClick={saveCustom}
-              disabled={saving}
-              className="flex-1 bg-gradient-to-br from-brand-pink to-brand-orange text-white py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Crear
-            </button>
-            <button onClick={cancel} className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700">Cancelar</button>
+              Crear
+            </Button>
+            <Button variant="ghost" onClick={cancel}>Cancelar</Button>
           </div>
           <button
             onClick={() => setMode('method')}
-            className="text-xs text-brand-pink hover:underline flex items-center gap-1"
+            className="text-xs text-primary hover:underline flex items-center gap-1"
           >
             <Zap className="w-3 h-3" /> Prefiero adoptar un método
           </button>
-        </div>
+        </Card>
       )}
 
       {/* Lista de objetivos */}
       {objectives.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-100">
+        <Card padded={false} className="divide-y divide-gray-100">
           {objectives.map(obj => {
             const metricCfg = (OBJECTIVE_METRICS as any)[obj.metric]
             const periodCfg = (PERIOD_TYPES as any)[obj.period_type]
             return (
               <div key={obj.id} className="p-4 flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-ink">{metricCfg?.label || obj.metric}</p>
+                  <Text weight="medium">{metricCfg?.label || obj.metric}</Text>
                   <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                     <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{periodCfg?.label || obj.period_type}</span>
-                    <span className="text-xs text-gray-400">Objetivo: <strong className="text-gray-700">{obj.target}</strong></span>
-                    <span className="text-xs text-gray-400">{obj.period_start} → {obj.period_end}</span>
+                    <Text as="span" size="xs" tone="muted">Objetivo: <strong className="text-gray-700">{obj.target}</strong></Text>
+                    <Text as="span" size="xs" tone="muted">{obj.period_start} → {obj.period_end}</Text>
                   </div>
                 </div>
-                <button onClick={() => handleDelete(obj.id)} className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg">
+                <button onClick={() => handleDelete(obj.id)} className="p-2 text-gray-300 hover:text-danger hover:bg-danger/10 rounded-control">
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             )
           })}
-        </div>
+        </Card>
       )}
 
       {/* Botones modo si ya hay objetivos */}
       {mode === null && objectives.length > 0 && (
         <div className="mt-4 flex gap-2">
-          <button
-            onClick={() => setMode('method')}
-            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-brand-pink border border-gray-200 px-3 py-1.5 rounded-lg hover:border-brand-pink transition-colors"
-          >
-            <Zap className="w-3.5 h-3.5" /> Adoptar un método
-          </button>
-          <button
-            onClick={() => setMode('custom')}
-            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-ink border border-gray-200 px-3 py-1.5 rounded-lg hover:border-gray-400 transition-colors"
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5" /> Agregar personalizado
-          </button>
+          <Button variant="outline" size="sm" icon={<Zap className="w-3.5 h-3.5" />} onClick={() => setMode('method')}>
+            Adoptar un método
+          </Button>
+          <Button variant="outline" size="sm" icon={<SlidersHorizontal className="w-3.5 h-3.5" />} onClick={() => setMode('custom')}>
+            Agregar personalizado
+          </Button>
         </div>
       )}
     </div>

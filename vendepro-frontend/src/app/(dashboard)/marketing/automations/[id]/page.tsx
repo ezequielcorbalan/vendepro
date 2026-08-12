@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/Button'
 import { Heading, Text } from '@/components/ui/Typography'
 import { Modal } from '@/components/ui/Modal'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { StatusBadge } from '@/components/ui/StatusBadge'
 import {
   type AutomationDetail, type Enrollment, type AutomationStep,
   AUTOMATION_STATUS, ENROLLMENT_STATUS, triggerLabel, parseSteps, describeDelay,
@@ -105,7 +106,7 @@ export default function AutomationDetailPage() {
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <Heading level={3} as="h1" className="truncate">{automation.name}</Heading>
-              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${st.cls}`}>{st.label}</span>
+              <StatusBadge label={st.label} color={st.cls} />
             </div>
             <Text tone="muted" className="flex items-center gap-1.5 mt-1">
               {isManual ? <Hand className="w-4 h-4" /> : <Zap className="w-4 h-4 text-brand-orange" />}

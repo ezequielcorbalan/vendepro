@@ -4,6 +4,13 @@ import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { Target, Plus, Trash2, Save, Users, ChevronDown, ChevronUp, Loader2, Zap, DollarSign, ArrowLeft } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Card } from '@/components/ui/Card'
+import { Heading } from '@/components/ui/Typography'
+import { Button } from '@/components/ui/Button'
+import { Field, Input } from '@/components/ui/Input'
+import { Alert } from '@/components/ui/Alert'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { OBJECTIVE_METRICS, OBJECTIVE_TEMPLATES, scaleMetrics, type ObjectiveMetric, type ObjectiveTemplate } from '@/lib/crm-config'
 import { apiFetch } from '@/lib/api'
 
@@ -63,7 +70,7 @@ type Objective = { id: string; agent_id: string; agent_name: string; metric: str
 function AgentCard({ agent, objectives, onDelete }: { agent: Agent; objectives: Objective[]; onDelete: (id: string) => void }) {
   const [open, setOpen] = useState(true)
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <Card padded={false} className="overflow-hidden">
       <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between p-4 hover:bg-gray-50">
         <div className="flex items-center gap-2">
           <Users className="w-4 h-4 text-gray-400" />
@@ -93,7 +100,7 @@ function AgentCard({ agent, objectives, onDelete }: { agent: Agent; objectives: 
           })}
         </div>
       )}
-    </div>
+    </Card>
   )
 }
 
@@ -204,7 +211,7 @@ export default function ObjetivosConfigPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-brand-pink" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -217,24 +224,19 @@ export default function ObjetivosConfigPage() {
       >
         <ArrowLeft className="w-4 h-4" /> Volver a Configuración
       </Link>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-ink flex items-center gap-2">
-            <Target className="w-6 h-6 text-brand-pink" /> Objetivos por agente
-          </h1>
-          <p className="text-sm text-gray-500 mt-0.5">{objectives.length} objetivos activos</p>
-        </div>
-        <button
-          onClick={() => setShowBatch(!showBatch)}
-          className="bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 flex items-center gap-1.5"
-        >
-          <Plus className="w-4 h-4" /> Crear en batch
-        </button>
-      </div>
+      <PageHeader
+        title="Objetivos por agente"
+        subtitle={`${objectives.length} objetivos activos`}
+        actions={
+          <Button onClick={() => setShowBatch(!showBatch)} icon={<Plus className="w-4 h-4" />}>
+            Crear en batch
+          </Button>
+        }
+      />
 
       {showBatch && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-6 space-y-4">
-          <h2 className="font-semibold text-ink">Crear objetivos en batch</h2>
+        <Card className="p-4 sm:p-6 space-y-4">
+          <Heading level={4} as="h2">Crear objetivos en batch</Heading>
 
           {/* Plantillas de método */}
           <div>
@@ -244,9 +246,9 @@ export default function ObjetivosConfigPage() {
                 <button
                   key={key}
                   onClick={() => applyTemplate(key)}
-                  className={`text-left px-3 py-2.5 rounded-lg border text-xs transition-all ${
+                  className={`text-left px-3 py-2.5 rounded-control border text-xs transition-all ${
                     selectedTemplate === key
-                      ? 'border-brand-pink bg-pink-50 text-brand-pink'
+                      ? 'border-primary bg-primary/10 text-primary'
                       : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
                   }`}
                 >
@@ -289,7 +291,7 @@ export default function ObjetivosConfigPage() {
                   key={a.id}
                   onClick={() => setBatchAgents(prev => prev.includes(a.id) ? prev.filter(x => x !== a.id) : [...prev, a.id])}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                    batchAgents.includes(a.id) ? 'bg-brand-pink text-white border-brand-pink' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
+                    batchAgents.includes(a.id) ? 'bg-primary text-white border-primary' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
                   }`}
                 >
                   {a.full_name}
@@ -305,14 +307,14 @@ export default function ObjetivosConfigPage() {
                 {cat.metrics.map(metric => (
                   <div key={metric} className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
                     <label className="text-xs text-gray-600 flex-1 truncate">{OBJECTIVE_METRICS[metric].label}</label>
-                    <input
+                    <Input
                       type="number"
                       min="0"
                       step="1"
                       value={batchTargets[metric] || ''}
                       onChange={e => setBatchTargets(prev => ({ ...prev, [metric]: parseInt(e.target.value) || 0 }))}
                       placeholder="0"
-                      className="w-16 text-right border rounded px-2 py-1 text-sm"
+                      className="w-16 text-right px-2 py-1"
                     />
                   </div>
                 ))}
@@ -324,26 +326,22 @@ export default function ObjetivosConfigPage() {
           <div className="border border-orange-200 bg-orange-50 rounded-xl p-4 space-y-3">
             <p className="text-xs font-semibold text-orange-700 flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5" /> Proyección económica</p>
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs text-gray-500 mb-1 block">Ticket promedio (USD)</label>
-                <input
+              <Field label="Ticket promedio (USD)">
+                <Input
                   type="number" min="0" step="1000"
                   value={ticketPromedio || ''}
                   onChange={e => setTicketPromedio(parseInt(e.target.value) || 0)}
                   placeholder="ej. 150000"
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
                 />
-              </div>
-              <div>
-                <label className="text-xs text-gray-500 mb-1 block">Comisión promedio (%)</label>
-                <input
+              </Field>
+              <Field label="Comisión promedio (%)">
+                <Input
                   type="number" min="0" max="10" step="0.1"
                   value={comisionPct || ''}
                   onChange={e => setComisionPct(parseFloat(e.target.value) || 0)}
                   placeholder="ej. 3"
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
                 />
-              </div>
+              </Field>
             </div>
             {facturacionMensual > 0 && (
               <div className="grid grid-cols-2 gap-3 pt-1">
@@ -353,7 +351,7 @@ export default function ObjetivosConfigPage() {
                 </div>
                 <div className="bg-white rounded-lg p-3 text-center border border-orange-100">
                   <div className="text-[10px] text-gray-400 mb-0.5">Facturación anual</div>
-                  <div className="text-lg font-bold text-brand-pink">USD {facturacionAnual.toLocaleString()}</div>
+                  <div className="text-lg font-bold text-primary">USD {facturacionAnual.toLocaleString()}</div>
                   {facturacionAnual < 40000 && (
                     <div className="text-[10px] text-amber-600 mt-0.5">Por debajo del mínimo recomendado (USD 40.000/año)</div>
                   )}
@@ -369,26 +367,21 @@ export default function ObjetivosConfigPage() {
           </div>
 
           {batchAgents.length > 0 && Object.values(batchTargets).some(v => v > 0) && (
-            <div className="bg-pink-50 border border-pink-200 rounded-lg p-3 text-xs text-pink-700">
+            <Alert tone="info">
               Se crearán <strong>{batchAgents.length * (Object.values(batchTargets).filter(v => v > 0).length + (ticketPromedio > 0 ? 1 : 0) + (facturacionMensual > 0 ? 1 : 0))}</strong> objetivos
               ({Object.values(batchTargets).filter(v => v > 0).length} métricas{ticketPromedio > 0 ? ' + ticket' : ''}{facturacionMensual > 0 ? ' + facturación' : ''} × {batchAgents.length} agente{batchAgents.length > 1 ? 's' : ''})
-            </div>
+            </Alert>
           )}
 
           <div className="flex gap-2">
-            <button
-              onClick={saveBatch}
-              disabled={saving}
-              className="bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 flex items-center gap-1.5"
-            >
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            <Button onClick={saveBatch} loading={saving} icon={<Save className="w-4 h-4" />}>
               {saving ? 'Guardando...' : 'Guardar objetivos'}
-            </button>
-            <button onClick={() => { setShowBatch(false); setSelectedTemplate(null); setTicketPromedio(0); setBatchTargets({}); setBatchAgents([]) }} className="text-gray-500 text-sm hover:text-gray-700 px-3">
+            </Button>
+            <Button variant="ghost" onClick={() => { setShowBatch(false); setSelectedTemplate(null); setTicketPromedio(0); setBatchTargets({}); setBatchAgents([]) }}>
               Cancelar
-            </button>
+            </Button>
           </div>
-        </div>
+        </Card>
       )}
 
       {agents.map(agent => {
@@ -398,11 +391,13 @@ export default function ObjetivosConfigPage() {
       })}
 
       {objectives.length === 0 && !showBatch && (
-        <div className="bg-white rounded-xl border p-12 text-center">
-          <Target className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500 font-medium">Sin objetivos cargados</p>
-          <p className="text-sm text-gray-400 mt-1">Usá "Crear en batch" para cargar objetivos para tus agentes</p>
-        </div>
+        <Card>
+          <EmptyState
+            icon={<Target className="w-6 h-6" />}
+            title="Sin objetivos cargados"
+            description={'Usá "Crear en batch" para cargar objetivos para tus agentes'}
+          />
+        </Card>
       )}
     </div>
   )

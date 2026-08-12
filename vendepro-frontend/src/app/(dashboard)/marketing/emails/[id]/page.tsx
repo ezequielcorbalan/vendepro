@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Heading, Text } from '@/components/ui/Typography'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { StatusBadge } from '@/components/ui/StatusBadge'
 import {
   type EmailCampaign, type CampaignSend, CAMPAIGN_STATUS,
   describeSegment, parseSegment, fmtDateTime,
@@ -105,7 +106,7 @@ export default function EmailCampaignDetailPage() {
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <Heading level={3} as="h1" className="truncate">{campaign.name}</Heading>
-              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${st.cls}`}>{st.label}</span>
+              <StatusBadge label={st.label} color={st.cls} />
             </div>
             <Text tone="muted" className="mt-1">{campaign.subject || 'Sin asunto'}</Text>
             <Text size="xs" tone="muted" className="mt-1">

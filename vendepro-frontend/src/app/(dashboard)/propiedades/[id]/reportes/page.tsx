@@ -7,6 +7,7 @@ import { ArrowLeft, FileBarChart, Plus, Loader2, Eye, Pencil } from 'lucide-reac
 import { apiFetch } from '@/lib/api'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { StatusBadge } from '@/components/ui/StatusBadge'
 import { Text } from '@/components/ui/Typography'
 
 interface Report {
@@ -121,13 +122,14 @@ export default function PropertyReportsPage() {
                 )}
               </div>
               <div className="flex items-center gap-3">
-                <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                  r.status === 'published' ? 'bg-green-100 text-green-700' :
-                  r.status === 'draft' ? 'bg-gray-100 text-gray-600' :
-                  'bg-amber-100 text-amber-700'
-                }`}>
-                  {r.status === 'published' ? 'Publicado' : r.status === 'draft' ? 'Borrador' : (r.status || '—')}
-                </span>
+                <StatusBadge
+                  label={r.status === 'published' ? 'Publicado' : r.status === 'draft' ? 'Borrador' : (r.status || '—')}
+                  color={
+                    r.status === 'published' ? 'bg-green-100 text-green-700' :
+                    r.status === 'draft' ? 'bg-gray-100 text-gray-600' :
+                    'bg-amber-100 text-amber-700'
+                  }
+                />
                 <Link
                   href={`/propiedades/${id}/reportes/nuevo?edit=${r.id}`}
                   className="inline-flex items-center gap-1 text-sm text-gray-600 font-medium hover:text-primary"

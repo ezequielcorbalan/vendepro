@@ -14,6 +14,7 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Alert } from '@/components/ui/Alert'
 import { Card } from '@/components/ui/Card'
+import { StatusBadge } from '@/components/ui/StatusBadge'
 
 export default function AutomationsPage() {
   const profile = getCurrentUser()
@@ -90,7 +91,7 @@ export default function AutomationsPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium text-ink truncate">{a.name}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${st.cls}`}>{st.label}</span>
+                      <StatusBadge label={st.label} color={st.cls} />
                     </div>
                     <div className="flex items-center gap-3 text-sm text-gray-500 mt-0.5">
                       <span className="inline-flex items-center gap-1">
