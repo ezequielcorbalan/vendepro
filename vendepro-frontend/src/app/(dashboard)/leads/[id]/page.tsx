@@ -270,12 +270,9 @@ export default function LeadDetailPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="h-8 w-48 bg-gray-200 rounded animate-pulse" />
-          <button
-            onClick={() => router.push(`/fichas/nueva?lead_id=${leadId}`)}
-            className="flex items-center gap-1.5 border border-brand-orange text-brand-orange px-3 py-1.5 rounded-lg text-sm hover:bg-orange-50 font-medium"
-          >
-            <FileText className="w-3.5 h-3.5" /> Ficha de tasación
-          </button>
+          <Button variant="outline" icon={<FileText className="w-3.5 h-3.5" />} onClick={() => router.push(`/fichas/nueva?lead_id=${leadId}`)}>
+            Ficha de tasación
+          </Button>
         </div>
         <div className="h-32 bg-gray-200 rounded-xl animate-pulse" />
         <div className="h-48 bg-gray-200 rounded-xl animate-pulse" />

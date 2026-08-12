@@ -75,8 +75,7 @@ export default function TasacionesPage() {
             <Link href="/tasaciones/vendidas" className="border border-gray-300 text-gray-700 px-4 py-2.5 rounded-control text-sm font-medium hover:bg-gray-50 flex items-center gap-2">
               <Database className="w-4 h-4" /> Cierres reales
             </Link>
-            {/* ds-todo: candidato a variante "naranja/prefactibilidad" — por ahora Link con color funcional */}
-            <Link href="/prefactibilidades/nueva" className="border border-orange-300 bg-orange-50 text-orange-700 px-4 py-2.5 rounded-control text-sm font-medium hover:bg-orange-100 flex items-center gap-2">
+            <Link href="/prefactibilidades/nueva" className="border border-gray-300 text-gray-700 px-4 py-2.5 rounded-control text-sm font-medium hover:bg-gray-50 flex items-center gap-2">
               <Plus className="w-4 h-4" /> Prefactibilidad
             </Link>
             <Link href="/tasaciones/nueva" className="bg-primary text-white px-4 py-2.5 rounded-control text-sm font-medium hover:bg-primary-hover flex items-center gap-2">

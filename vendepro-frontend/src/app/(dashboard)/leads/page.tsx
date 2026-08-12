@@ -17,6 +17,7 @@ import {
 import type { Lead, Contact } from '@/lib/types'
 import { useToast } from '@/components/ui/Toast'
 import { useConfirm } from '@/components/ui/useConfirm'
+import { StatusBadge } from '@/components/ui/StatusBadge'
 import AIChatPanel from '@/components/ai/AIChatPanel'
 import { apiFetch } from '@/lib/api'
 import { scopeQueryString } from '@/lib/agent-scope'
@@ -800,9 +801,10 @@ function urgencyText(lead: any): { text: string; cls: string } | null {
   if (isAgentFinalStage(lead)) return null
   const diffH = (Date.now() - new Date(lead.updated_at || lead.created_at).getTime()) / 3600000
   const days = Math.floor(diffH / 24)
-  if (lead.stage === 'nuevo' && diffH > 24) return { text: 'Sin asignar +24h', cls: 'text-red-500' }
-  if (diffH > 168) return { text: `Sin contacto ${days}d`, cls: 'text-red-500' }
-  if (diffH > 72) return { text: `Sin contacto ${days}d`, cls: 'text-amber-500' }
+  // cls = colores de badge (StatusBadge), no de texto suelto.
+  if (lead.stage === 'nuevo' && diffH > 24) return { text: 'Sin asignar +24h', cls: 'bg-red-50 text-red-600' }
+  if (diffH > 168) return { text: `Sin contacto ${days}d`, cls: 'bg-red-50 text-red-600' }
+  if (diffH > 72) return { text: `Sin contacto ${days}d`, cls: 'bg-amber-50 text-amber-600' }
   return null
 }
 
@@ -813,7 +815,9 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
   const lastActivity = lead.last_activity_at ? timeAgo(lead.last_activity_at) : null
   const hasAppraisal = lead.appraisal_count > 0
   const urg = urgencyText(lead)
-  const outerBorder = urgency === 'danger' ? 'border-red-200' : urgency === 'warning' ? 'border-yellow-200' : 'border-gray-200'
+  // Sin borde de color por urgencia: la señal va como badge (urg), no en el
+  // contorno de la card. Sólo danger conserva un borde rojo suave.
+  const outerBorder = urgency === 'danger' ? 'border-red-200' : 'border-gray-200'
 
   const [showTagPicker, setShowTagPicker] = useState(false)
   const [orgTags, setOrgTags] = useState<any[]>([])
@@ -914,7 +918,7 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
           <div className="flex items-center gap-2 text-[11px] text-gray-500 flex-wrap">
             {lead.assigned_name && <span>{lead.assigned_name}</span>}
             {lastActivity && <><span className="text-gray-200">·</span><span>Últ: {lastActivity}</span></>}
-            {urg && <><span className="text-gray-200">·</span><span className={`font-medium ${urg.cls}`}>{urg.text}</span></>}
+            {urg && <StatusBadge label={urg.text} color={urg.cls} />}
           </div>
 
           {/* Next step band */}
