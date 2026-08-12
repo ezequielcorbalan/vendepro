@@ -12,6 +12,12 @@ import { useToast } from '@/components/ui/Toast'
 import { getCurrentUser, resetOnboarding } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
 import { DEFAULT_SURFACE_WEIGHTS, isValidWeights, type SurfaceWeights } from '@/lib/surface-weights'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Card } from '@/components/ui/Card'
+import { Heading, Text } from '@/components/ui/Typography'
+import { Button } from '@/components/ui/Button'
+import { Field, Input } from '@/components/ui/Input'
+import { Avatar } from '@/components/ui/Avatar'
 
 export default function ConfiguracionPage() {
   const { toast } = useToast()
@@ -112,46 +118,44 @@ export default function ConfiguracionPage() {
     setSurfaceWeights(w => ({ ...w, [k]: Math.max(0, Math.min(150, pct)) / 100 }))
   }
 
-  const initial = profile?.full_name?.charAt(0)?.toUpperCase() || 'U'
-
   const navCards = [
     {
       href: '/configuracion/tasacion',
       icon: <ClipboardList className="w-5 h-5" />,
-      iconColor: 'text-brand-pink',
+      iconColor: 'text-primary',
       title: 'Tasaciones',
       subtitle: 'Bloques, marca y datos de mercado',
     },
     {
       href: '/perfil',
       icon: <FileText className="w-5 h-5" />,
-      iconColor: 'text-purple-500',
+      iconColor: 'text-purple-500', // ds-todo: color de ícono sin token (purple-500)
       title: 'Mi Performance',
       subtitle: 'Métricas y rendimiento personal',
     },
     {
       href: '/configuracion/objetivos',
       icon: <Settings className="w-5 h-5" />,
-      iconColor: 'text-orange-500',
+      iconColor: 'text-orange-500', // ds-todo: color de ícono sin token (orange-500)
       title: 'Mis Objetivos',
       subtitle: 'Metas y seguimiento',
     },
     ...(isAdmin ? [{
       href: '/configuracion/marketing',
       icon: <Megaphone className="w-5 h-5" />,
-      iconColor: 'text-pink-600',
+      iconColor: 'text-primary',
       title: 'Marketing',
       subtitle: 'Meta Pixel + GTM + tracking de leads',
     }, {
       href: '/configuracion/api',
       icon: <KeyRound className="w-5 h-5" />,
-      iconColor: 'text-purple-500',
+      iconColor: 'text-purple-500', // ds-todo: color de ícono sin token (purple-500)
       title: 'Configuración de API',
       subtitle: 'Tokens para importar leads',
     }, {
       href: '/configuracion/conexiones',
       icon: <Plug className="w-5 h-5" />,
-      iconColor: 'text-amber-500',
+      iconColor: 'text-amber-500', // ds-todo: color de ícono sin token (amber-500)
       title: 'Integraciones',
       subtitle: 'Importación automática de contactos',
     }] : []),
@@ -159,174 +163,146 @@ export default function ConfiguracionPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl sm:text-2xl font-semibold text-ink flex items-center gap-2">
-          <Settings className="w-6 h-6 text-brand-pink" /> Configuración
-        </h1>
-        <p className="text-gray-500 text-sm mt-1">Ajustes de la inmobiliaria</p>
-      </div>
+      <PageHeader title="Configuración" subtitle="Ajustes de la inmobiliaria" />
 
       {/* Mi perfil */}
-      <div className="bg-white rounded-xl border p-6">
-        <h2 className="font-semibold text-ink mb-5 flex items-center gap-2">
-          <User className="w-4 h-4 text-brand-pink" /> Mi perfil
-        </h2>
+      <Card className="p-6">
+        <Heading level={4} className="mb-5 flex items-center gap-2">
+          <User className="w-4 h-4 text-primary" /> Mi perfil
+        </Heading>
         {loadingProfile ? (
           <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>
         ) : (
           <div className="space-y-4">
             <div className="flex items-center gap-4">
-              {profile?.photo_url ? (
-                <img src={profile.photo_url} alt={profile.full_name} className="w-14 h-14 rounded-full object-cover" />
-              ) : (
-                <div className="w-14 h-14 rounded-full bg-pink-100 flex items-center justify-center text-xl font-semibold text-brand-pink">
-                  {initial}
-                </div>
-              )}
+              <Avatar name={profile?.full_name || 'Usuario'} src={profile?.photo_url} size="lg" className="w-14 h-14 text-xl" />
               <div>
-                <p className="font-medium text-ink">{profile?.full_name || 'Usuario'}</p>
-                <p className="text-sm text-gray-500">Esta foto aparece en las tasaciones</p>
+                <Text weight="medium">{profile?.full_name || 'Usuario'}</Text>
+                <Text tone="muted">Esta foto aparece en las tasaciones</Text>
               </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">URL de foto de perfil</label>
-              <input
+            <Field
+              label="URL de foto de perfil"
+              hint="Podés subir tu foto a un servicio como imgur.com y pegar el link"
+            >
+              <Input
                 type="url"
                 value={photoUrl}
                 onChange={e => setPhotoUrl(e.target.value)}
                 placeholder="https://ejemplo.com/mi-foto.jpg"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none"
               />
-              <p className="text-xs text-gray-400 mt-1">Podés subir tu foto a un servicio como imgur.com y pegar el link</p>
-            </div>
-            <button
-              onClick={handleSavePhoto}
-              disabled={savingPhoto}
-              className="flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50"
-            >
-              {savingPhoto ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            </Field>
+            <Button onClick={handleSavePhoto} loading={savingPhoto} icon={<Save className="w-4 h-4" />}>
               Guardar foto
-            </button>
+            </Button>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Nav cards 2x2 */}
       <div className="grid grid-cols-2 gap-4">
         {navCards.map(card => (
-          <Link
-            key={card.href}
-            href={card.href}
-            className="bg-white rounded-xl border p-5 hover:shadow-sm hover:border-gray-300 transition-all"
-          >
-            <div className={`mb-2 ${card.iconColor}`}>{card.icon}</div>
-            <p className="font-semibold text-ink text-sm">{card.title}</p>
-            <p className="text-xs text-gray-500 mt-0.5">{card.subtitle}</p>
+          <Link key={card.href} href={card.href}>
+            <Card interactive className="h-full hover:border-gray-300 transition-all">
+              <div className={`mb-2 ${card.iconColor}`}>{card.icon}</div>
+              <Text weight="semibold">{card.title}</Text>
+              <Text size="xs" tone="muted" className="mt-0.5">{card.subtitle}</Text>
+            </Card>
           </Link>
         ))}
       </div>
 
       {/* Datos de la inmobiliaria — solo admin */}
-      {isAdmin && <div className="bg-white rounded-xl border p-6">
-        <h2 className="font-semibold text-ink mb-5 flex items-center gap-2">
-          <Building2 className="w-4 h-4 text-indigo-500" /> Datos de la inmobiliaria
-        </h2>
+      {isAdmin && <Card className="p-6">
+        <Heading level={4} className="mb-5 flex items-center gap-2">
+          <Building2 className="w-4 h-4 text-indigo-500" /> Datos de la inmobiliaria {/* ds-todo: color de ícono sin token (indigo-500) */}
+        </Heading>
         {loadingOrg ? (
           <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>
         ) : (
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
-              <input
-                type="text"
-                value={orgName}
-                disabled
-                className="w-full border rounded-lg px-3 py-2.5 text-sm bg-gray-50 text-gray-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Slug</label>
+            <Field label="Nombre">
+              <Input type="text" value={orgName} disabled />
+            </Field>
+            <Field label="Slug" error={slugStatus === 'taken' ? 'Ya está en uso' : undefined}>
               <div className="relative">
-                <input
+                <Input
                   type="text"
                   value={slug}
                   onChange={e => setSlug(e.target.value)}
                   placeholder="mi-inmobiliaria"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none pr-8"
+                  className="pr-8"
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
                   {slugStatus === 'checking' && <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />}
-                  {slugStatus === 'available' && <CheckCircle className="w-4 h-4 text-green-500" />}
-                  {slugStatus === 'taken' && <XCircle className="w-4 h-4 text-red-500" />}
+                  {slugStatus === 'available' && <CheckCircle className="w-4 h-4 text-success" />}
+                  {slugStatus === 'taken' && <XCircle className="w-4 h-4 text-danger" />}
                 </div>
               </div>
-              {slugStatus === 'taken' && <p className="text-xs text-red-600 mt-1">Ya está en uso</p>}
-            </div>
+            </Field>
 
             <div className="border-t pt-4">
-              <h3 className="text-sm font-semibold text-gray-700 mb-1">Marca</h3>
-              <p className="text-xs text-gray-500 mb-3">
+              <Text as="h3" weight="semibold" className="mb-1">Marca</Text>
+              <Text size="xs" tone="muted" className="mb-3">
                 Estos colores y el logo se usan en las tasaciones que ven tus clientes.
-              </p>
+              </Text>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Color principal</label>
+                <Field label="Color principal">
                   <div className="flex items-center gap-2">
                     <input
                       type="color"
                       value={brandColor}
                       onChange={e => setBrandColor(e.target.value)}
-                      className="h-10 w-12 cursor-pointer rounded border border-gray-300"
+                      className="h-10 w-12 cursor-pointer rounded-control border border-gray-300"
                     />
-                    <input
+                    <Input
                       type="text"
                       value={brandColor}
                       onChange={e => setBrandColor(e.target.value)}
                       placeholder="#ff007c"
-                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none"
+                      className="flex-1 font-mono"
                     />
                   </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Color secundario</label>
+                </Field>
+                <Field label="Color secundario">
                   <div className="flex items-center gap-2">
                     <input
                       type="color"
                       value={brandAccentColor}
                       onChange={e => setBrandAccentColor(e.target.value)}
-                      className="h-10 w-12 cursor-pointer rounded border border-gray-300"
+                      className="h-10 w-12 cursor-pointer rounded-control border border-gray-300"
                     />
-                    <input
+                    <Input
                       type="text"
                       value={brandAccentColor}
                       onChange={e => setBrandAccentColor(e.target.value)}
                       placeholder="#e17a2a"
-                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none"
+                      className="flex-1 font-mono"
                     />
                   </div>
-                </div>
+                </Field>
               </div>
 
               <div className="mt-3">
-                <p className="text-xs text-gray-500 mb-1">Vista previa del gradient:</p>
+                <Text size="xs" tone="muted" className="mb-1">Vista previa del gradient:</Text>
                 <div
-                  className="h-10 rounded-lg"
+                  className="h-10 rounded-control"
                   style={{ background: `linear-gradient(180deg, ${brandColor} 0%, ${brandAccentColor} 100%)` }}
                 />
               </div>
 
               <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Logo (URL)</label>
-                <input
-                  type="url"
-                  value={logoUrl}
-                  onChange={e => setLogoUrl(e.target.value)}
-                  placeholder="https://ejemplo.com/logo.png"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none"
-                />
+                <Field label="Logo (URL)">
+                  <Input
+                    type="url"
+                    value={logoUrl}
+                    onChange={e => setLogoUrl(e.target.value)}
+                    placeholder="https://ejemplo.com/logo.png"
+                  />
+                </Field>
                 {logoUrl && (
-                  <div className="mt-2 inline-block rounded border border-gray-200 bg-gray-50 p-2">
+                  <div className="mt-2 inline-block rounded-control border border-gray-200 bg-gray-50 p-2">
                     <img src={logoUrl} alt="Logo" className="h-10 max-w-[200px] object-contain" />
                   </div>
                 )}
@@ -334,107 +310,103 @@ export default function ConfiguracionPage() {
             </div>
 
             <div className="border-t pt-4">
-              <h3 className="text-sm font-semibold text-gray-700 mb-1">Ponderación de superficies</h3>
-              <p className="text-xs text-gray-500 mb-3">
+              <Text as="h3" weight="semibold" className="mb-1">Ponderación de superficies</Text>
+              <Text size="xs" tone="muted" className="mb-3">
                 Pesos que se usan para calcular la <strong>superficie ponderada</strong> en cada tasación.
                 Fórmula: <span className="font-mono text-[11px]">cubierta × % + semicubierta × % + descubierta × %</span>.
-              </p>
+              </Text>
               <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Cubierta</label>
+                <Field label="Cubierta">
                   <div className="relative">
-                    <input
+                    <Input
                       type="number"
                       min={0}
                       max={150}
                       step={5}
                       value={Math.round(surfaceWeights.covered * 100)}
                       onChange={e => setWeight('covered', Number(e.target.value))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm pr-8 focus:outline-none"
+                      className="pr-8"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
                   </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Semicubierta</label>
+                </Field>
+                <Field label="Semicubierta">
                   <div className="relative">
-                    <input
+                    <Input
                       type="number"
                       min={0}
                       max={150}
                       step={5}
                       value={Math.round(surfaceWeights.semi * 100)}
                       onChange={e => setWeight('semi', Number(e.target.value))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm pr-8 focus:outline-none"
+                      className="pr-8"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
                   </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Descubierta</label>
+                </Field>
+                <Field label="Descubierta">
                   <div className="relative">
-                    <input
+                    <Input
                       type="number"
                       min={0}
                       max={150}
                       step={5}
                       value={Math.round(surfaceWeights.uncovered * 100)}
                       onChange={e => setWeight('uncovered', Number(e.target.value))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm pr-8 focus:outline-none"
+                      className="pr-8"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
                   </div>
-                </div>
+                </Field>
               </div>
-              <p className="mt-2 text-xs text-gray-500">
+              <Text size="xs" tone="muted" className="mt-2">
                 Estándar argentino: 100 / 75 / 25. Cambialo si tu inmobiliaria usa otra ponderación.
-              </p>
+              </Text>
             </div>
 
-            <button
+            <Button
               onClick={handleSaveOrg}
-              disabled={savingOrg || slugStatus === 'taken'}
-              className="flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50"
+              loading={savingOrg}
+              disabled={slugStatus === 'taken'}
+              icon={<Save className="w-4 h-4" />}
             >
-              {savingOrg ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               Guardar
-            </button>
+            </Button>
           </div>
         )}
-      </div>}
+      </Card>}
 
       {/* Ayuda */}
-      <div className="bg-white rounded-xl border p-6">
-        <h2 className="font-semibold text-ink mb-3 flex items-center gap-2">
-          <HelpCircle className="w-4 h-4 text-brand-pink" /> Ayuda
-        </h2>
-        <p className="text-sm text-gray-600 mb-4">
+      <Card className="p-6">
+        <Heading level={4} className="mb-3 flex items-center gap-2">
+          <HelpCircle className="w-4 h-4 text-primary" /> Ayuda
+        </Heading>
+        <Text tone="muted" className="mb-4">
           Volvé a ver el tutorial de bienvenida para repasar cómo funciona el sistema.
-        </p>
-        <button
+        </Text>
+        <Button
           onClick={() => {
             const user = getCurrentUser()
             if (user) { resetOnboarding(user.id); router.push('/dashboard') }
           }}
-          className="flex items-center gap-2 bg-gradient-to-r from-brand-pink to-brand-orange text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+          icon={<PlayCircle className="w-4 h-4" />}
         >
-          <PlayCircle className="w-4 h-4" />
           Ver tutorial de nuevo
-        </button>
-      </div>
+        </Button>
+      </Card>
 
       {/* Google Calendar */}
-      <div className="bg-white rounded-xl border p-6">
-        <h2 className="font-semibold text-ink mb-3 flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-blue-500" /> Google Calendar
-        </h2>
-        <p className="text-sm text-gray-600 mb-3">
+      <Card className="p-6">
+        <Heading level={4} className="mb-3 flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-blue-500" /> Google Calendar {/* ds-todo: color de ícono sin token (blue-500, Google) */}
+        </Heading>
+        <Text tone="muted" className="mb-3">
           Conectá tu Google Calendar para ver tus eventos en el CRM y sincronizar automáticamente.
-        </p>
+        </Text>
         <div className="mb-4">
-          <p className="text-xs text-gray-400 mb-2">
+          <Text size="xs" tone="muted" className="mb-2">
             El CRM clasifica automáticamente tus eventos según palabras clave:
-          </p>
+          </Text>
           <div className="flex flex-wrap gap-2">
             {[
               ['"llamada"', 'Llamada'],
@@ -449,18 +421,18 @@ export default function ConfiguracionPage() {
               </span>
             ))}
           </div>
-          <p className="text-xs text-gray-400 mt-2">
+          <Text size="xs" tone="muted" className="mt-2">
             También vincula eventos a leads/contactos si mencionás su nombre en el título.
-          </p>
+          </Text>
         </div>
-        <button
+        {/* ds-todo: botón era bg-blue-600 (color Google) — mapeado a primary */}
+        <Button
           onClick={() => toast('Integración con Google Calendar próximamente')}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700"
+          icon={<Calendar className="w-4 h-4" />}
         >
-          <Calendar className="w-4 h-4" />
           Conectar Google Calendar
-        </button>
-      </div>
+        </Button>
+      </Card>
     </div>
   )
 }
