@@ -117,7 +117,7 @@ export default function EmailCampaignDetailPage() {
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {campaign.status === 'sending' && (
-              <Button variant="ghost" size="sm" onClick={load} icon={<RefreshCw className="w-4 h-4" />}>
+              <Button variant="ghost" onClick={load} icon={<RefreshCw className="w-4 h-4" />}>
                 Actualizar
               </Button>
             )}
@@ -137,7 +137,6 @@ export default function EmailCampaignDetailPage() {
                 </Link>
                 <Button
                   variant="ghost"
-                  size="sm"
                   onClick={deleteCampaign}
                   disabled={working}
                   className="px-2 text-gray-400 hover:text-danger"
@@ -149,7 +148,6 @@ export default function EmailCampaignDetailPage() {
             {campaign.status === 'scheduled' && (
               <Button
                 variant="outline"
-                size="sm"
                 onClick={cancelCampaign}
                 disabled={working}
                 icon={<Ban className="w-3.5 h-3.5" />}

@@ -279,7 +279,6 @@ export default function SoldPropertiesPage() {
                   <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">
                     <Button
                       variant="ghost"
-                      size="sm"
                       icon={<Pencil className="w-3 h-3" />}
                       onClick={() => setEditing(sp)}
                       className="flex-1 text-gray-600 hover:text-primary"
@@ -288,7 +287,6 @@ export default function SoldPropertiesPage() {
                     </Button>
                     <Button
                       variant="ghost"
-                      size="sm"
                       icon={<Trash2 className="w-3 h-3" />}
                       onClick={() => handleDelete(sp.id, sp.address_approx ?? sp.neighborhood ?? 'este cierre')}
                       className="flex-1 text-gray-600 hover:text-danger"

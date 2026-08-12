@@ -139,7 +139,7 @@ export default function PerformancePage() {
   if (error || !data) {
     return (
       <Alert tone="danger" title="Error al cargar los datos">
-        <Button variant="ghost" size="sm" onClick={() => setPeriod(p => p)} className="mt-2">
+        <Button variant="ghost" onClick={() => setPeriod(p => p)} className="mt-2">
           Reintentar
         </Button>
       </Alert>
@@ -178,7 +178,7 @@ export default function PerformancePage() {
             className="w-24"
           />
           {hasFilters && (
-            <Button variant="ghost" size="sm" onClick={clearFilters}>
+            <Button variant="ghost" onClick={clearFilters}>
               Limpiar filtros
             </Button>
           )}

@@ -262,7 +262,7 @@ export default function ConfiguracionApiPage() {
               {copiedKey === 'token' ? 'Copiado' : 'Copiar'}
             </Button>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => setNewToken(null)} className="mt-2 -ml-3">
+          <Button variant="ghost" onClick={() => setNewToken(null)} className="mt-2 -ml-3">
             Ya lo guardé, ocultar
           </Button>
         </Alert>

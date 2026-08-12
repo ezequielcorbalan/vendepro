@@ -204,7 +204,7 @@ export default function MisObjetivosPage() {
         <Card className="mb-6 space-y-5">
           <CardHeader className="mb-0">
             <CardTitle className="flex items-center gap-2"><Zap className="w-4 h-4 text-primary" /> Elegí tu método</CardTitle>
-            <Button variant="ghost" size="sm" onClick={cancel}>Cancelar</Button>
+            <Button variant="ghost" onClick={cancel}>Cancelar</Button>
           </CardHeader>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -304,7 +304,7 @@ export default function MisObjetivosPage() {
         <Card className="mb-6 space-y-4">
           <CardHeader className="mb-0">
             <CardTitle className="flex items-center gap-2"><SlidersHorizontal className="w-4 h-4 text-gray-500" /> Objetivo personalizado</CardTitle>
-            <Button variant="ghost" size="sm" onClick={cancel}>Cancelar</Button>
+            <Button variant="ghost" onClick={cancel}>Cancelar</Button>
           </CardHeader>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <Field label="Métrica">
@@ -379,10 +379,10 @@ export default function MisObjetivosPage() {
       {/* Botones modo si ya hay objetivos */}
       {mode === null && objectives.length > 0 && (
         <div className="mt-4 flex gap-2">
-          <Button variant="outline" size="sm" icon={<Zap className="w-3.5 h-3.5" />} onClick={() => setMode('method')}>
+          <Button variant="outline" icon={<Zap className="w-3.5 h-3.5" />} onClick={() => setMode('method')}>
             Adoptar un método
           </Button>
-          <Button variant="outline" size="sm" icon={<SlidersHorizontal className="w-3.5 h-3.5" />} onClick={() => setMode('custom')}>
+          <Button variant="outline" icon={<SlidersHorizontal className="w-3.5 h-3.5" />} onClick={() => setMode('custom')}>
             Agregar personalizado
           </Button>
         </div>

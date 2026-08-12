@@ -438,7 +438,7 @@ export default function MarketingPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   {a.count !== null && <span className="text-sm font-bold text-gray-600">{a.count}</span>}
-                  <Button variant="outline" size="sm">Exportar →</Button>
+                  <Button variant="outline">Exportar →</Button>
                 </div>
               </div>
             ))}

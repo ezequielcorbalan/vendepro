@@ -329,13 +329,12 @@ export default function FichaDetailPage() {
         <div className="flex items-center gap-2">
           {/* ds-todo: era botón verde (acción "crear"); no hay variante success → primary */}
           <Button
-            size="sm"
             onClick={() => router.push(`/propiedades/nueva?ficha_id=${fichaId}${leadId ? `&lead_id=${leadId}` : ''}`)}
             icon={<Home className="w-3.5 h-3.5" />}
           >
             Crear propiedad
           </Button>
-          <Button variant="outline" size="sm" onClick={handleDelete} aria-label="Eliminar ficha" icon={<Trash2 className="w-4 h-4" />} />
+          <Button variant="outline" onClick={handleDelete} aria-label="Eliminar ficha" icon={<Trash2 className="w-4 h-4" />} />
         </div>
       </div>
 

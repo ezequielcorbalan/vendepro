@@ -140,7 +140,6 @@ export default function AuditoriaPage() {
               <div className="flex gap-1">
                 <Button
                   variant="outline"
-                  size="sm"
                   onClick={() => setPage(p => Math.max(0, p - 1))}
                   disabled={page === 0}
                   icon={<ChevronLeft className="w-4 h-4" />}
@@ -148,7 +147,6 @@ export default function AuditoriaPage() {
                 />
                 <Button
                   variant="outline"
-                  size="sm"
                   onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
                   disabled={page >= totalPages - 1}
                   icon={<ChevronRight className="w-4 h-4" />}

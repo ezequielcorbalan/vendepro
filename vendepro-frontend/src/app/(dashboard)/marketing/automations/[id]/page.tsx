@@ -116,15 +116,15 @@ export default function AutomationDetailPage() {
             </Text>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <Button variant="outline" size="sm" icon={<UserPlus className="w-3.5 h-3.5" />} onClick={() => setShowEnroll(true)}>
+            <Button variant="outline" icon={<UserPlus className="w-3.5 h-3.5" />} onClick={() => setShowEnroll(true)}>
               Inscribir
             </Button>
             {automation.status === 'active' ? (
-              <Button variant="outline" size="sm" icon={<Pause className="w-3.5 h-3.5" />} onClick={() => setStatus('paused')} disabled={working}>
+              <Button variant="outline" icon={<Pause className="w-3.5 h-3.5" />} onClick={() => setStatus('paused')} disabled={working}>
                 Pausar
               </Button>
             ) : (
-              <Button size="sm" icon={<Play className="w-3.5 h-3.5" />} onClick={() => setStatus('active')} disabled={working}>
+              <Button icon={<Play className="w-3.5 h-3.5" />} onClick={() => setStatus('active')} disabled={working}>
                 Activar
               </Button>
             )}

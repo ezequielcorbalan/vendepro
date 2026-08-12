@@ -136,7 +136,7 @@ export default function ListadoPage() {
         {!loading && error && (
           <div className="p-4">
             <Alert tone="danger" title="Error al cargar los reportes">
-              <Button variant="ghost" size="sm" onClick={() => setPage(p => p)} className="-ml-3 mt-1">
+              <Button variant="ghost" onClick={() => setPage(p => p)} className="-ml-3 mt-1">
                 Reintentar
               </Button>
             </Alert>
@@ -225,7 +225,6 @@ export default function ListadoPage() {
           <div className="flex gap-1">
             <Button
               variant="outline"
-              size="sm"
               icon={<ChevronLeft className="w-4 h-4" />}
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page <= 1}
@@ -234,7 +233,6 @@ export default function ListadoPage() {
             </Button>
             <Button
               variant="outline"
-              size="sm"
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
             >

@@ -548,7 +548,7 @@ export default function MarketingConfigPage() {
         <Card>
           <div className="flex items-center justify-between mb-4">
             <Text weight="semibold" tone="muted">Últimos 50 eventos</Text>
-            <Button size="sm" onClick={() => setShowTestModal(true)} icon={<Send className="w-3 h-3" />}>
+            <Button onClick={() => setShowTestModal(true)} icon={<Send className="w-3 h-3" />}>
               Probar evento
             </Button>
           </div>

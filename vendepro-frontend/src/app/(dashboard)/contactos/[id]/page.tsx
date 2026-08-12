@@ -148,7 +148,7 @@ export default function ContactDetailPage() {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={openEdit} icon={<Edit3 className="w-3.5 h-3.5" />}>
+            <Button variant="outline" onClick={openEdit} icon={<Edit3 className="w-3.5 h-3.5" />}>
               Editar
             </Button>
             {contact.phone && (
@@ -269,7 +269,7 @@ export default function ContactDetailPage() {
           <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="sticky top-0 bg-white border-b px-4 py-3 flex items-center justify-between rounded-t-2xl">
               <Heading level={4}>Editar contacto</Heading>
-              <Button variant="ghost" size="sm" onClick={() => setShowEdit(false)} aria-label="Cerrar" icon={<X className="w-5 h-5" />} className="!px-2" />
+              <Button variant="ghost" onClick={() => setShowEdit(false)} aria-label="Cerrar" icon={<X className="w-5 h-5" />} className="!px-2" />
             </div>
             <div className="p-4 space-y-3">
               <Field label="Nombre completo" htmlFor="edit-full_name" required>

@@ -135,7 +135,7 @@ export default function LandingEditorPage() {
               onChange={(v) => setViewport(v as 'mobile' | 'desktop')}
             />
             <span className="mx-2 w-px self-stretch bg-gray-200" />
-            <Button variant="ghost" size="sm" onClick={manualSave} disabled={!dirty || saving}>Guardar</Button>
+            <Button variant="ghost" onClick={manualSave} disabled={!dirty || saving}>Guardar</Button>
           </div>
           <div className="flex-1 overflow-auto py-6 px-4">
             <div className={`mx-auto bg-white rounded-2xl shadow-md overflow-hidden ${viewportClass}`}>

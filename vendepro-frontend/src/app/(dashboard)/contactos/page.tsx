@@ -303,7 +303,6 @@ export default function ContactosPage() {
           {activeFilterCount > 0 && (
             <Button
               variant="ghost"
-              size="sm"
               icon={<X className="w-3.5 h-3.5" />}
               onClick={clearFilters}
               className="flex-shrink-0 self-start sm:self-auto text-gray-500"
@@ -508,7 +507,6 @@ export default function ContactosPage() {
             <div className="flex items-center gap-1">
               <Button
                 variant="outline"
-                size="sm"
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={currentPage <= 1}
                 icon={<ChevronLeft className="w-4 h-4" />}
@@ -518,7 +516,6 @@ export default function ContactosPage() {
               <span className="px-2 text-gray-500 whitespace-nowrap">{currentPage} / {totalPages}</span>
               <Button
                 variant="outline"
-                size="sm"
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage >= totalPages}
               >
