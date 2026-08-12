@@ -6,7 +6,7 @@ import {
   Clock, CheckCircle2, BarChart3, ChevronRight,
   Home, Calculator, Activity, MessageCircle
 } from 'lucide-react'
-import { LEAD_STAGES, EVENT_TYPES, getStageDot } from '@/lib/crm-config'
+import { LEAD_STAGES, LEAD_PIPELINE_STAGES, EVENT_TYPES, getStageConfig } from '@/lib/crm-config'
 import { apiFetch } from '@/lib/api'
 import { getCurrentUser, isOnboardingDone, markOnboardingDone } from '@/lib/auth'
 import OnboardingModal from '@/components/onboarding/OnboardingModal'
@@ -22,15 +22,16 @@ function FunnelChart({ data }: { data: { stage: string; count: number }[] }) {
     <div className="space-y-2">
       {data.map((item) => {
         const pct = Math.max((item.count / max) * 100, 8)
+        const cfg = getStageConfig(item.stage)
         return (
           <div key={item.stage} className="flex items-center gap-2 sm:gap-3">
             <div className="w-20 sm:w-28 text-[10px] sm:text-xs text-gray-600 text-right truncate">{item.stage}</div>
             <div className="flex-1 h-7 bg-gray-50 rounded overflow-hidden">
               <div
-                className="h-full rounded flex items-center px-2 transition-all duration-500"
-                style={{ width: `${pct}%`, backgroundColor: getStageDot(item.stage), filter: 'saturate(0.6)' }}
+                className={`h-full rounded flex items-center px-2 transition-all duration-500 ${cfg.color}`}
+                style={{ width: `${pct}%` }}
               >
-                <span className="text-white text-xs font-semibold">{item.count}</span>
+                <span className="text-xs font-semibold">{item.count}</span>
               </div>
             </div>
           </div>
@@ -367,13 +368,13 @@ export default function DashboardCRM() {
             <div className="space-y-3">
               <Text tone="muted">Pipeline personal</Text>
               <div className="grid grid-cols-2 gap-2 text-center">
-                <div className="bg-blue-50 rounded-control p-2">
-                  <p className="text-lg font-semibold text-blue-700">{leads?.total || 0}</p>
-                  <p className="text-[10px] text-blue-500">Mis leads</p>
+                <div className="bg-blue-100 text-blue-800 rounded-control p-2">
+                  <p className="text-xl font-bold">{leads?.total || 0}</p>
+                  <p className="text-xs font-normal">Mis leads</p>
                 </div>
-                <div className="bg-green-50 rounded-control p-2">
-                  <p className="text-lg font-semibold text-green-700">{leads?.captados || 0}</p>
-                  <p className="text-[10px] text-green-500">Captados</p>
+                <div className={`rounded-control p-2 ${LEAD_STAGES.captado.color}`}>
+                  <p className="text-xl font-bold">{leads?.captados || 0}</p>
+                  <p className="text-xs font-normal">Captados</p>
                 </div>
               </div>
             </div>
@@ -413,13 +414,19 @@ export default function DashboardCRM() {
         <Heading level={4} as="h2" className="mb-3 flex items-center gap-2">
           <Target className="w-4 h-4 text-gray-600" /> Pipeline de leads
         </Heading>
-        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-11 gap-2">
-          {Object.entries(LEAD_STAGES).map(([key, cfg]) => {
+        {/* Sólo las etapas activas (LEAD_PIPELINE_STAGES excluye perdido/inválido/finalizado:
+            son resultados de cierre, no "pipeline" — se ven en el funnel de conversión). */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+          {LEAD_PIPELINE_STAGES.map(key => {
+            const cfg = LEAD_STAGES[key]
             return (
-              <Link key={key} href={`/leads?stage=${key}`} className="text-center p-2 rounded-control hover:bg-gray-50 transition-colors">
-                <p className="text-lg sm:text-xl font-semibold text-ink">{sb[key] || 0}</p>
-                {/* ds-todo: candidato a StageBadge compacto — el pill full-width de la grilla no entra en el StageBadge actual */}
-                <p className={`text-[10px] sm:text-xs px-1 py-0.5 rounded-full ${cfg.color} mt-1`}>{cfg.label}</p>
+              <Link
+                key={key}
+                href={`/leads?stage=${key}`}
+                className={`flex flex-col items-center justify-center gap-1 rounded-card p-3 text-center transition-opacity hover:opacity-80 ${cfg.color}`}
+              >
+                <p className="text-xl font-bold">{sb[key] || 0}</p>
+                <p className="text-xs font-normal">{cfg.label}</p>
               </Link>
             )
           })}
