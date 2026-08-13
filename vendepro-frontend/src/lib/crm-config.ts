@@ -386,13 +386,23 @@ export function formatWhatsApp(phone: string): string {
   return digits
 }
 
-export function getUrgencyBadge(urgency: 'ok' | 'warning' | 'danger' | 'lost') {
-  switch (urgency) {
-    case 'danger':  return { text: 'URGENTE', class: 'bg-red-100 text-red-700' }
-    case 'warning': return { text: 'Atención', class: 'bg-yellow-100 text-yellow-700' }
-    case 'lost':    return { text: 'Perdido', class: 'bg-gray-100 text-gray-500' }
-    default:        return null
-  }
+/**
+ * Badge de urgencia del lead — fuente única (antes duplicada entre la vista de
+ * lista y el kanban, con textos y tonos de color distintos). Texto contextual
+ * ("Sin contacto 5d") en vez de genérico ("URGENTE"): más útil para priorizar.
+ * Color en el mismo patrón -100/-800 que Badge/StageBadge/EventChip.
+ */
+export function getUrgencyBadge(lead: any): { text: string; color: string } | null {
+  const pipeline = lead?.pipeline === 'comprador' ? 'comprador' : 'vendedor'
+  const finalStages: readonly string[] = pipeline === 'comprador' ? BUYER_LEAD_TERMINAL_STAGES : LEAD_AGENT_FINAL_STAGES
+  if (finalStages.includes(lead.stage)) return null
+
+  const diffH = (Date.now() - new Date(lead.updated_at || lead.created_at).getTime()) / 3600000
+  const days = Math.floor(diffH / 24)
+  if (lead.stage === 'nuevo' && diffH > 24) return { text: 'Sin asignar +24h', color: 'bg-red-100 text-red-800' }
+  if (diffH > 168) return { text: `Sin contacto ${days}d`, color: 'bg-red-100 text-red-800' }
+  if (diffH > 72) return { text: `Sin contacto ${days}d`, color: 'bg-yellow-100 text-yellow-800' }
+  return null
 }
 
 export const USER_ROLES = {

@@ -790,23 +790,12 @@ export default function LeadsPage() {
 }
 
 // ── helpers LeadCard ──
-function urgencyText(lead: any): { text: string; cls: string } | null {
-  if (isAgentFinalStage(lead)) return null
-  const diffH = (Date.now() - new Date(lead.updated_at || lead.created_at).getTime()) / 3600000
-  const days = Math.floor(diffH / 24)
-  // cls = colores de badge (StatusBadge), no de texto suelto.
-  if (lead.stage === 'nuevo' && diffH > 24) return { text: 'Sin asignar +24h', cls: 'bg-red-50 text-red-600' }
-  if (diffH > 168) return { text: `Sin contacto ${days}d`, cls: 'bg-red-50 text-red-600' }
-  if (diffH > 72) return { text: `Sin contacto ${days}d`, cls: 'bg-amber-50 text-amber-600' }
-  return null
-}
-
 // ── LeadCard (List view) ──
 function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any; onAdvance: () => void; onLost: () => void; onDelete: () => void; onRefresh: () => void }) {
   const urgency = getLeadUrgency(lead)
   const lastActivity = lead.last_activity_at ? timeAgo(lead.last_activity_at) : null
   const hasAppraisal = lead.appraisal_count > 0
-  const urg = urgencyText(lead)
+  const urg = getUrgencyBadge(lead)
   // Sin borde de color por urgencia: la señal va como badge (urg), no en el
   // contorno de la card. Sólo danger conserva un borde rojo suave.
 
@@ -911,7 +900,7 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
           <div className="flex items-center gap-2 text-[11px] text-gray-500 flex-wrap">
             {lead.assigned_name && <span>{lead.assigned_name}</span>}
             {lastActivity && <><span className="text-gray-200">·</span><span>Últ: {lastActivity}</span></>}
-            {urg && <StatusBadge label={urg.text} color={urg.cls} />}
+            {urg && <StatusBadge label={urg.text} color={urg.color} />}
           </div>
 
           {/* Next step band */}
@@ -982,18 +971,17 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
 
 // ── KanbanCard ──
 function KanbanCard({ lead, onAdvance, onMoveTo }: { lead: any; onAdvance: () => void; onMoveTo: (stage: string) => void }) {
-  const urgency = getLeadUrgency(lead)
-  const badge = getUrgencyBadge(urgency)
+  const badge = getUrgencyBadge(lead)
   const checklist = getLeadChecklist(lead)
   const [showMove, setShowMove] = useState(false)
 
   return (
-    <div className="bg-white border border-gray-200 rounded-card shadow-card p-3 hover:shadow-md transition-all relative">
+    <div className="bg-white border border-gray-200 rounded-card shadow-card pt-3 pr-3 pb-3 pl-7 hover:shadow-md transition-all relative">
       <Link href={`/leads/${lead.id}`}>
         <div className="flex items-center justify-between mb-1">
-          <h4 className="text-sm font-medium text-ink truncate pl-4">{lead.full_name}</h4>
+          <h4 className="text-sm font-medium text-ink truncate">{lead.full_name}</h4>
           {/* ds-todo: StatusBadge compacto (densidad kanban) */}
-          {badge && <StatusBadge label={badge.text} color={badge.class} className="shrink-0 text-[10px] px-1.5 py-0.5" />}
+          {badge && <StatusBadge label={badge.text} color={badge.color} className="shrink-0 text-[10px] px-1.5 py-0.5" />}
         </div>
         {lead.tags?.length > 0 && (
           <div className="flex gap-1 mb-1">
