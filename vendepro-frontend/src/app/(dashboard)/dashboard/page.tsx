@@ -151,7 +151,7 @@ export default function DashboardCRM() {
         title="Dashboard CRM"
         subtitle="Resumen ejecutivo del negocio"
         actions={
-          <Link href="/leads" className="bg-primary text-white px-3 py-1.5 rounded-control text-xs font-medium hover:bg-primary-hover inline-flex items-center gap-1.5">
+          <Link href="/leads" className="bg-primary text-white px-4 py-2 rounded-control text-sm font-medium hover:bg-primary-hover inline-flex items-center gap-2">
             <Users className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Ver leads</span>
           </Link>
         }

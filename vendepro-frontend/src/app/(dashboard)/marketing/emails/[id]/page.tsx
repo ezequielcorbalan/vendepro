@@ -125,15 +125,15 @@ export default function EmailCampaignDetailPage() {
               <>
                 <Link
                   href={`/marketing/emails/nueva?id=${campaign.id}`}
-                  className="inline-flex items-center gap-1.5 text-sm font-medium border border-gray-300 text-gray-700 px-3 py-1.5 rounded-control hover:bg-gray-50"
+                  className="inline-flex items-center gap-2 text-sm font-medium border border-gray-300 text-gray-700 px-4 py-2 rounded-control hover:bg-gray-50"
                 >
-                  <Pencil className="w-3.5 h-3.5" /> Editar
+                  <Pencil className="w-4 h-4" /> Editar
                 </Link>
                 <Link
                   href={`/marketing/emails/nueva?id=${campaign.id}`}
-                  className="inline-flex items-center gap-1.5 bg-primary text-white text-sm font-medium px-3.5 py-1.5 rounded-control hover:bg-primary-hover"
+                  className="inline-flex items-center gap-2 bg-primary text-white text-sm font-medium px-4 py-2 rounded-control hover:bg-primary-hover"
                 >
-                  <Send className="w-3.5 h-3.5" /> Continuar y enviar
+                  <Send className="w-4 h-4" /> Continuar y enviar
                 </Link>
                 <Button
                   variant="ghost"

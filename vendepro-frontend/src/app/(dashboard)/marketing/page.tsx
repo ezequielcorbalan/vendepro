@@ -188,8 +188,8 @@ export default function MarketingPage() {
               onChange={v => setPeriod(v as Period)}
             />
             <Link href="/configuracion/marketing"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-control border border-gray-300 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-              <Settings className="w-3.5 h-3.5" /> Configurar
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-control border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+              <Settings className="w-4 h-4" /> Configurar
             </Link>
           </>
         }
@@ -204,8 +204,8 @@ export default function MarketingPage() {
             detail={integration.ga4.enabled ? `Measurement ID: ${integration.ga4.measurementId}` : 'No configurado — activá GA4'} />
           {(!integration.meta.enabled || !integration.ga4.enabled) && (
             <Link href="/configuracion/marketing"
-              className="flex items-center gap-1 px-3 py-2 rounded-control border border-dashed text-xs font-medium text-primary border-primary/30 hover:bg-primary/5 transition-colors whitespace-nowrap">
-              <ChevronRight className="w-3.5 h-3.5" /> Completar config
+              className="flex items-center gap-1.5 px-3 py-2 rounded-control border border-dashed text-sm font-medium text-primary border-primary/30 hover:bg-primary/5 transition-colors whitespace-nowrap">
+              <ChevronRight className="w-4 h-4" /> Completar config
             </Link>
           )}
         </div>
@@ -318,8 +318,8 @@ export default function MarketingPage() {
             description="Gasto, leads, calificados, CPL y ROI por campaña"
             action={
               <Link href="/configuracion/marketing"
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-control bg-primary text-white text-xs font-medium hover:bg-primary-hover transition-colors">
-                <Settings className="w-3.5 h-3.5" /> Configurar ahora
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-control bg-primary text-white text-sm font-medium hover:bg-primary-hover transition-colors">
+                <Settings className="w-4 h-4" /> Configurar ahora
               </Link>
             }
           />
@@ -330,8 +330,8 @@ export default function MarketingPage() {
               Las campañas aparecen solas al guardarlo.
             </p>
             <Link href="/configuracion/marketing"
-              className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-control bg-primary text-white text-xs font-medium hover:bg-primary-hover transition-colors">
-              <Settings className="w-3.5 h-3.5" /> Completar configuración
+              className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-control bg-primary text-white text-sm font-medium hover:bg-primary-hover transition-colors">
+              <Settings className="w-4 h-4" /> Completar configuración
             </Link>
           </Alert>
         ) : campaignsData.status !== 'ok' ? (
@@ -424,7 +424,6 @@ export default function MarketingPage() {
             <Text size="xs" tone="muted" className="mt-0.5">Listas para exportar a Meta Ads Manager</Text>
           </div>
           <div className="space-y-2">
-            {/* ds-todo: chips de audiencia con color por categoría (bg-orange-50, bg-purple-50, …) — sin token/componente del DS para esta codificación */}
             {[
               { label: 'Leads calidad alta sin cerrar', sub: 'Retargeting WhatsApp', color: 'bg-orange-50 border-orange-200', count: calificados },
               { label: 'Visitantes landing sin lead', sub: 'Retargeting landing', color: 'bg-purple-50 border-purple-200', count: null },
