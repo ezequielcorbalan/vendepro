@@ -252,7 +252,6 @@ export default function ConfiguracionApiPage() {
             <code className="flex-1 bg-white border border-gray-200 rounded-control px-3 py-2 text-xs font-mono text-gray-700 break-all">
               {newToken.token}
             </code>
-            {/* ds-todo: era botón sólido amber-600 (acción dentro de callout warning); mapeado a primary */}
             <Button
               onClick={() => copyText(newToken.token, 'token')}
               aria-label="Copiar token al portapapeles"
@@ -441,7 +440,6 @@ export default function ConfiguracionApiPage() {
 
             <div aria-live="polite">
               {testStatus === 'idle' && (
-                // ds-todo: era botón sólido oscuro (gray-900); mapeado a primary
                 <Button
                   onClick={startTest}
                   disabled={!testToken.trim()}

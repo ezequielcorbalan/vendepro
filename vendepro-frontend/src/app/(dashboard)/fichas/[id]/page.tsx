@@ -307,7 +307,6 @@ export default function FichaDetailPage() {
           <ArrowLeft className="w-4 h-4" /> Volver
         </Link>
         <div className="flex items-center gap-2">
-          {/* ds-todo: era botón verde (acción "crear"); no hay variante success → primary */}
           <Button
             onClick={() => router.push(`/propiedades/nueva?ficha_id=${fichaId}${leadId ? `&lead_id=${leadId}` : ''}`)}
             icon={<Home className="w-3.5 h-3.5" />}

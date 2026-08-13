@@ -154,7 +154,6 @@ export default function ActividadesPage() {
             <Select value={period} onChange={e => setPeriod(e.target.value)} className="w-auto">
               {PERIOD_OPTIONS.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
             </Select>
-            {/* ds-todo: candidato a variante "outline-primary" (outline rosa de marca) */}
             <Button variant="outline" icon={<Sparkles className="w-4 h-4" />}>
               con IA
             </Button>

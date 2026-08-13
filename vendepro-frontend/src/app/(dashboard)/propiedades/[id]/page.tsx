@@ -158,7 +158,6 @@ export default function PropiedadDetailPage() {
               className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-control text-sm font-medium hover:bg-primary-hover">
               <Plus className="w-4 h-4" /> Nueva tasación
             </Link>
-            {/* ds-todo: era bg-brand-orange sólido; mapeado a primary */}
             <Button onClick={() => setShowGenerate(true)} icon={<Send className="w-4 h-4" />}>
               Enviar ficha de visita
             </Button>
@@ -166,7 +165,6 @@ export default function PropiedadDetailPage() {
               className="inline-flex items-center gap-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-control text-sm font-medium hover:bg-gray-50">
               <Pencil className="w-4 h-4" /> Editar
             </Link>
-            {/* ds-todo: candidato a variante "outline-danger" */}
             <Button
               variant="outline"
               onClick={() => setShowDeleteConfirm(true)}

@@ -129,14 +129,14 @@ export default function ConfiguracionPage() {
     {
       href: '/perfil',
       icon: <FileText className="w-5 h-5" />,
-      iconColor: 'text-purple-500', // ds-todo: color de ícono sin token (purple-500)
+      iconColor: 'text-purple-500',
       title: 'Mi Performance',
       subtitle: 'Métricas y rendimiento personal',
     },
     {
       href: '/configuracion/objetivos',
       icon: <Settings className="w-5 h-5" />,
-      iconColor: 'text-orange-500', // ds-todo: color de ícono sin token (orange-500)
+      iconColor: 'text-orange-500',
       title: 'Mis Objetivos',
       subtitle: 'Metas y seguimiento',
     },
@@ -149,13 +149,13 @@ export default function ConfiguracionPage() {
     }, {
       href: '/configuracion/api',
       icon: <KeyRound className="w-5 h-5" />,
-      iconColor: 'text-purple-500', // ds-todo: color de ícono sin token (purple-500)
+      iconColor: 'text-purple-500',
       title: 'Configuración de API',
       subtitle: 'Tokens para importar leads',
     }, {
       href: '/configuracion/conexiones',
       icon: <Plug className="w-5 h-5" />,
-      iconColor: 'text-amber-500', // ds-todo: color de ícono sin token (amber-500)
+      iconColor: 'text-amber-500',
       title: 'Integraciones',
       subtitle: 'Importación automática de contactos',
     }] : []),
@@ -215,7 +215,7 @@ export default function ConfiguracionPage() {
       {/* Datos de la inmobiliaria — solo admin */}
       {isAdmin && <Card className="p-6">
         <Heading level={4} className="mb-5 flex items-center gap-2">
-          <Building2 className="w-4 h-4 text-indigo-500" /> Datos de la inmobiliaria {/* ds-todo: color de ícono sin token (indigo-500) */}
+          <Building2 className="w-4 h-4 text-indigo-500" /> Datos de la inmobiliaria
         </Heading>
         {loadingOrg ? (
           <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>
@@ -398,7 +398,7 @@ export default function ConfiguracionPage() {
       {/* Google Calendar */}
       <Card className="p-6">
         <Heading level={4} className="mb-3 flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-blue-500" /> Google Calendar {/* ds-todo: color de ícono sin token (blue-500, Google) */}
+          <Calendar className="w-4 h-4 text-blue-500" /> Google Calendar
         </Heading>
         <Text tone="muted" className="mb-3">
           Conectá tu Google Calendar para ver tus eventos en el CRM y sincronizar automáticamente.
@@ -424,9 +424,7 @@ export default function ConfiguracionPage() {
           <Text size="xs" tone="muted" className="mt-2">
             También vincula eventos a leads/contactos si mencionás su nombre en el título.
           </Text>
-        </div>
-        {/* ds-todo: botón era bg-blue-600 (color Google) — mapeado a primary */}
-        <Button
+        </div>        <Button
           onClick={() => toast('Integración con Google Calendar próximamente')}
           icon={<Calendar className="w-4 h-4" />}
         >
