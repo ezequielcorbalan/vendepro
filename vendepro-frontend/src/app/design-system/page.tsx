@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import {
   Plus, Trash2, Search, Car, Sun, Waves, Inbox, AlertTriangle,
-  MoreVertical, Pencil, Copy, RefreshCw, HelpCircle, Settings, Building2,
+  MoreVertical, Pencil, Copy, RefreshCw, HelpCircle, Settings, Building2, Target, Home,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -32,6 +32,8 @@ import { PropertyStageBadge } from '@/components/ui/PropertyStageBadge'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { OperationBadge } from '@/components/ui/OperationBadge'
 import { Alert } from '@/components/ui/Alert'
+import { StatTile } from '@/components/ui/StatTile'
+import { PillRadioGroup, PillCheckGroup } from '@/components/ui/ChoicePills'
 import { NotificationBell, NotificationPanel } from '@/components/ui/Notifications'
 import { KanbanBoard, KanbanColumn, KanbanCard } from '@/components/ui/Kanban'
 import { PropertyCard } from '@/components/ui/PropertyCard'
@@ -58,8 +60,8 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
   )
 }
 
-function Row({ children }: { children: React.ReactNode }) {
-  return <div className="flex flex-wrap items-center gap-3">{children}</div>
+function Row({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <div className={`flex flex-wrap items-center gap-3 ${className ?? ''}`}>{children}</div>
 }
 
 const SWATCHES = [
@@ -136,6 +138,8 @@ export default function DesignSystemPage() {
   const [tab, setTab] = useState('actividad')
   const [view, setView] = useState('mes')
   const [wsp, setWsp] = useState(true)
+  const [pillRadio, setPillRadio] = useState('frente')
+  const [pillCheck, setPillCheck] = useState<string[]>(['pileta'])
   const [auto, setAuto] = useState(false)
   const [email, setEmail] = useState(true)
   const [op, setOp] = useState('venta')
@@ -295,6 +299,11 @@ export default function DesignSystemPage() {
               <Button loading>Guardando…</Button>
               <Button disabled>Deshabilitado</Button>
             </Row>
+            <Row>
+              <Button variant="ghost" size="icon" aria-label="Eliminar"><Trash2 className="w-4 h-4" /></Button>
+              <Button variant="outline" size="icon" aria-label="Eliminar"><Trash2 className="w-4 h-4" /></Button>
+              <Text size="xs" tone="muted" className="ml-2">size="icon" — sólo ícono, sin texto</Text>
+            </Row>
           </div>
         </Section>
 
@@ -332,11 +341,17 @@ export default function DesignSystemPage() {
         </Section>
 
         {/* Dominio · etapas */}
-        <Section title="Etapas del lead" hint="StageBadge lee los colores desde crm-config (LEAD_STAGES).">
+        <Section title="Etapas del lead" hint="StageBadge lee los colores desde crm-config (LEAD_STAGES). size=&quot;sm&quot; para contextos densos (kanban, tablas).">
           <Row>
             {LEAD_STAGE_KEYS.map(stage => (
               <StageBadge key={stage} stage={stage} dot />
             ))}
+          </Row>
+          <Row className="mt-3">
+            {LEAD_STAGE_KEYS.slice(0, 4).map(stage => (
+              <StageBadge key={stage} stage={stage} size="sm" />
+            ))}
+            <Text size="xs" tone="muted" className="ml-2">size="sm"</Text>
           </Row>
         </Section>
 
@@ -371,6 +386,40 @@ export default function DesignSystemPage() {
             <StatusBadge label="Pausada" color="bg-amber-50 text-amber-600" />
             <StatusBadge label="sin mapa (fallback)" />
           </Row>
+          <Row className="mt-3">
+            <StatusBadge label="Generada" color="bg-blue-100 text-blue-700" size="sm" />
+            <StatusBadge label="Enviada" color="bg-green-100 text-green-700" size="sm" />
+            <Text size="xs" tone="muted" className="ml-2">size="sm"</Text>
+          </Row>
+        </Section>
+
+        {/* StatTile */}
+        <Section title="StatTile" hint="Tile de estadística. Con ícono: tile blanca, el tono colorea sólo la caja (KPI del dashboard). Sin ícono + tone: tiñe toda la tile (resultado semántico). Sin ícono ni tone: neutra.">
+          <Row>
+            <StatTile icon={<Target className="w-5 h-5" />} label="Leads activos" value={128} tone="primary" href="#" className="w-40" />
+            <StatTile icon={<Home className="w-5 h-5" />} label="Captaciones" value={24} tone="bg-cyan-50 text-cyan-600" href="#" className="w-40" />
+            <StatTile label="Inversión total" value="USD 850.000" className="w-40" />
+            <StatTile tone="success" label="Ingresos proyectados" value="USD 1.200.000" className="w-40" />
+            <StatTile tone="danger" label="Margen bruto" value="USD -30.000" caption="-2.4% ROI" className="w-40" />
+          </Row>
+        </Section>
+
+        {/* Choice pills */}
+        <Section title="Choice pills" hint="Chips seleccionables en fila — single o multi-select. Distinto de RadioGroup/Checkbox (círculos verticales) y de SegmentedControl (cambio de vista).">
+          <div className="space-y-4 max-w-md">
+            <PillRadioGroup
+              label="Disposición"
+              value={pillRadio}
+              onChange={setPillRadio}
+              options={[{ value: 'frente', label: 'Frente' }, { value: 'contrafrente', label: 'Contrafrente' }, { value: 'lateral', label: 'Lateral' }]}
+            />
+            <PillCheckGroup
+              label="Amenities"
+              value={pillCheck}
+              onChange={setPillCheck}
+              options={[{ value: 'pileta', label: 'Pileta' }, { value: 'sum', label: 'SUM' }, { value: 'gimnasio', label: 'Gimnasio' }]}
+            />
+          </div>
         </Section>
 
         {/* Alert */}

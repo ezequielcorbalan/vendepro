@@ -12,20 +12,30 @@ import { cn } from '@/lib/utils'
  *
  * Si el estado no existe en el mapa, pasá sólo label y cae al gris.
  */
+export type StatusBadgeSize = 'sm' | 'md'
+
 interface StatusBadgeProps {
   label: string
   /** Clases de color del mapa de dominio (ej. 'bg-blue-100 text-blue-700'). */
   color?: string
+  /** 'sm' para contextos densos (kanban, tablas). Default 'md'. */
+  size?: StatusBadgeSize
   className?: string
 }
 
 const FALLBACK = 'bg-gray-100 text-gray-600'
 
-export function StatusBadge({ label, color, className }: StatusBadgeProps) {
+const SIZE: Record<StatusBadgeSize, string> = {
+  sm: 'text-[10px] px-1.5 py-0.5',
+  md: 'text-xs px-2.5 py-1',
+}
+
+export function StatusBadge({ label, color, size = 'md', className }: StatusBadgeProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full',
+        'inline-flex items-center font-medium rounded-full',
+        SIZE[size],
         color ?? FALLBACK,
         className,
       )}

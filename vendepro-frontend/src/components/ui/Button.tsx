@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils'
  * (globals.css → @theme): brand-pink / brand-orange y el gradiente de marca.
  */
 export type ButtonVariant = 'primary' | 'outline' | 'ghost' | 'danger'
-export type ButtonSize = 'sm' | 'md' | 'lg'
+export type ButtonSize = 'sm' | 'md' | 'lg' | 'icon'
 
 const VARIANTS: Record<ButtonVariant, string> = {
   // CTA principal — color primario sólido (hoy brand-pink, vía token --color-primary).
@@ -31,6 +31,8 @@ const SIZES: Record<ButtonSize, string> = {
   sm: 'text-xs px-3 py-1.5 gap-1.5 rounded-control',
   md: 'text-sm px-4 py-2 gap-2 rounded-control',
   lg: 'text-sm px-5 py-2.5 gap-2 rounded-control',
+  // Sólo ícono (sin texto): cuadrado, sin gap. Ej. <Button variant="ghost" size="icon" aria-label="Eliminar"><Trash2 .../></Button>
+  icon: 'p-2 rounded-control',
 }
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
