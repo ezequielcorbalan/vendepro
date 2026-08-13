@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
-import { Plus, Search, Trash2, Loader2, BookUser, Phone, Mail, MapPin, X, ChevronRight, ChevronLeft, SlidersHorizontal } from 'lucide-react'
+import { Plus, Search, Trash2, Loader2, BookUser, Phone, Mail, MapPin, ChevronRight, ChevronLeft } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { applyScopeToParams, isAdminOrSupervisor } from '@/lib/agent-scope'
 import { useToast } from '@/components/ui/Toast'
@@ -96,7 +96,6 @@ export default function ContactosPage() {
   const [filterTag, setFilterTag] = useState('')
   const [tags, setTags] = useState<any[]>([])
   const [sortBy, setSortBy] = useState('recent')
-  const [showFilters, setShowFilters] = useState(false)
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 25
   const [showForm, setShowForm] = useState(false)
@@ -235,83 +234,44 @@ export default function ContactosPage() {
         }
       />
 
-      {/* Barra de filtros */}
-      <Card className="p-3 sm:p-4 mb-4">
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-            <Input
-              className="pl-9"
-              placeholder="Buscar por nombre, teléfono o email..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-          </div>
-          {/* Toggle de filtros en mobile */}
-          <Button
-            variant="outline"
-            onClick={() => setShowFilters(s => !s)}
-            icon={<SlidersHorizontal className="w-4 h-4" />}
-            className={`sm:hidden flex-shrink-0 ${activeFilterCount > 0 ? 'border-primary text-primary bg-primary/5 hover:bg-primary/10' : ''}`}
-          >
-            Filtros
-            {activeFilterCount > 0 && (
-              <span className="bg-primary text-white text-[10px] font-semibold rounded-full w-4 h-4 flex items-center justify-center">{activeFilterCount}</span>
-            )}
-          </Button>
+      {/* Búsqueda + filtros: una sola fila compacta (sin labels ni card propio) */}
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <div className="relative flex-1 min-w-[180px]">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          <Input
+            className="pl-9"
+            placeholder="Buscar por nombre, teléfono o email..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
         </div>
-        <div className={`${showFilters ? 'flex' : 'hidden'} sm:flex flex-col sm:flex-row gap-2 sm:gap-3 mt-2 sm:mt-3`}>
-          {isAdmin && agents.length > 0 && (
-            <Select
-              className="sm:flex-1"
-              value={filterAgent}
-              onChange={e => setFilterAgent(e.target.value)}
-            >
-              <option value="">Usuario asignado</option>
-              {agents.map(a => <option key={a.id} value={a.id}>{a.full_name}</option>)}
-            </Select>
-          )}
-          <Select
-            className="sm:flex-1"
-            value={filterSource}
-            onChange={e => setFilterSource(e.target.value)}
-          >
-            <option value="">Origen</option>
-            {sourceOptions.map(s => (
-              <option key={s} value={s}>{sourceLabels[s] || s.charAt(0).toUpperCase() + s.slice(1)}</option>
-            ))}
+        {isAdmin && agents.length > 0 && (
+          <Select aria-label="Usuario asignado" className="w-auto" value={filterAgent} onChange={e => setFilterAgent(e.target.value)}>
+            <option value="">Usuario: todos</option>
+            {agents.map(a => <option key={a.id} value={a.id}>{a.full_name}</option>)}
           </Select>
-          {tags.length > 0 && (
-            <Select
-              className="sm:flex-1"
-              value={filterTag}
-              onChange={e => setFilterTag(e.target.value)}
-            >
-              <option value="">Tag</option>
-              {tags.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </Select>
-          )}
-          <Select
-            className="sm:flex-1"
-            value={sortBy}
-            onChange={e => setSortBy(e.target.value)}
-          >
-            <option value="recent">Alta: más recientes</option>
-            <option value="oldest">Alta: más antiguos</option>
-            <option value="name">Nombre: A → Z</option>
+        )}
+        <Select aria-label="Origen" className="w-auto" value={filterSource} onChange={e => setFilterSource(e.target.value)}>
+          <option value="">Origen: todos</option>
+          {sourceOptions.map(s => (
+            <option key={s} value={s}>{sourceLabels[s] || s.charAt(0).toUpperCase() + s.slice(1)}</option>
+          ))}
+        </Select>
+        {tags.length > 0 && (
+          <Select aria-label="Tag" className="w-auto" value={filterTag} onChange={e => setFilterTag(e.target.value)}>
+            <option value="">Tag: todos</option>
+            {tags.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
           </Select>
-          {activeFilterCount > 0 && (
-            <Button
-              variant="ghost"
-              icon={<X className="w-3.5 h-3.5" />}
-              onClick={clearFilters}
-              className="flex-shrink-0 self-start sm:self-auto text-gray-500"
-            >
-              Limpiar
-            </Button>
-          )}
-        </div>
-      </Card>
+        )}
+        <Select aria-label="Ordenar" className="w-auto" value={sortBy} onChange={e => setSortBy(e.target.value)}>
+          <option value="recent">Alta: más recientes</option>
+          <option value="oldest">Alta: más antiguos</option>
+          <option value="name">Nombre: A → Z</option>
+        </Select>
+        {activeFilterCount > 0 && (
+          <button onClick={clearFilters} className="text-xs text-gray-500 hover:text-primary shrink-0">Limpiar</button>
+        )}
+      </div>
 
       {/* Tabs por tipo */}
       <Tabs
