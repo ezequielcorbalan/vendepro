@@ -862,13 +862,12 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
       <div className="flex flex-1 min-w-0">
         {/* Main content — clickable */}
         <Link href={`/leads/${lead.id}`} className="flex-1 min-w-0 px-5 py-4 flex flex-col gap-1.5">
-          {/* Row 1: name + stage + tags */}
-          <div className="flex items-center gap-2.5 min-w-0">
+          {/* Row 1: name + stage + tags (izq.) · urgencia (der., como en el kanban) */}
+          <div className="flex items-start justify-between gap-2 min-w-0">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="font-semibold text-sm text-ink truncate">{lead.full_name}</span>
-                {/* ds-todo: StageBadge compacto */}
-                <StageBadge stage={lead.stage} pipeline={lead.pipeline} className="shrink-0 text-[10px] px-2 py-0.5 font-semibold" />
+                <StageBadge stage={lead.stage} pipeline={lead.pipeline} size="sm" className="shrink-0 px-2 font-semibold" />
                 {lead.tags?.map((tag: any) => (
                   <button key={tag.id} onClick={(e) => removeTag(tag.id, e)}
                     className="group inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0 bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">
@@ -886,6 +885,7 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
                 {lead.operation && <span className="capitalize">{lead.operation}</span>}
               </p>
             </div>
+            {urg && <StatusBadge label={urg.text} color={urg.color} className="shrink-0" />}
           </div>
 
           {/* Dirección de la propiedad — visible de un vistazo */}
@@ -896,11 +896,10 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
             </div>
           )}
 
-          {/* Row 2: agent + activity + urgency */}
+          {/* Row 2: agent + activity */}
           <div className="flex items-center gap-2 text-[11px] text-gray-500 flex-wrap">
             {lead.assigned_name && <span>{lead.assigned_name}</span>}
             {lastActivity && <><span className="text-gray-200">·</span><span>Últ: {lastActivity}</span></>}
-            {urg && <StatusBadge label={urg.text} color={urg.color} />}
           </div>
 
           {/* Next step band */}
@@ -980,8 +979,7 @@ function KanbanCard({ lead, onAdvance, onMoveTo }: { lead: any; onAdvance: () =>
       <Link href={`/leads/${lead.id}`}>
         <div className="flex items-center justify-between mb-1">
           <h4 className="text-sm font-medium text-ink truncate">{lead.full_name}</h4>
-          {/* ds-todo: StatusBadge compacto (densidad kanban) */}
-          {badge && <StatusBadge label={badge.text} color={badge.color} className="shrink-0 text-[10px] px-1.5 py-0.5" />}
+          {badge && <StatusBadge label={badge.text} color={badge.color} size="sm" className="shrink-0" />}
         </div>
         {lead.tags?.length > 0 && (
           <div className="flex gap-1 mb-1">

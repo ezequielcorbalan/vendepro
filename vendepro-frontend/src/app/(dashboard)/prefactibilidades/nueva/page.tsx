@@ -10,6 +10,7 @@ import {
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
 import { Card } from '@/components/ui/Card'
+import { StatTile } from '@/components/ui/StatTile'
 import { Button } from '@/components/ui/Button'
 import { Field, Input, Textarea } from '@/components/ui/Input'
 import { Heading, Text } from '@/components/ui/Typography'
@@ -276,10 +277,9 @@ export default function NuevaPrefactibilidadPage() {
                       setUnitsMix(newMix)
                     }}
                   />
-                  {/* ds-todo: candidato a variante "IconButton" (botón de quitar fila, sólo ícono) */}
-                  <button onClick={() => setUnitsMix(unitsMix.filter((_, i) => i !== idx))} className="text-danger p-2">
+                  <Button variant="ghost" size="icon" aria-label="Quitar fila" onClick={() => setUnitsMix(unitsMix.filter((_, i) => i !== idx))} className="text-danger hover:bg-danger/10">
                     <X className="w-4 h-4" />
-                  </button>
+                  </Button>
                 </div>
               ))}
               <button
@@ -352,11 +352,7 @@ export default function NuevaPrefactibilidadPage() {
               </Field>
             </div>
 
-            {/* ds-todo: candidato a variante "StatTile" (tile de KPI con label + valor grande) */}
-            <div className="bg-gray-50 rounded-card p-4">
-              <Text size="xs" tone="muted" className="mb-1">Inversión total</Text>
-              <p className="text-2xl font-black text-ink">USD {totalInvestment.toLocaleString('es-AR')}</p>
-            </div>
+            <StatTile label="Inversión total" value={`USD ${totalInvestment.toLocaleString('es-AR')}`} />
 
             <Heading level={4} className="mt-6">Ingresos proyectados</Heading>
             <div className="grid grid-cols-2 gap-3">
@@ -368,21 +364,14 @@ export default function NuevaPrefactibilidadPage() {
               </Field>
             </div>
 
-            {/* ds-todo: candidato a variante "StatTile" (tiles de resultado con tono semántico) */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-success/10 rounded-card p-4">
-                <p className="text-xs text-success mb-1">Ingresos proyectados</p>
-                <p className="text-xl font-black text-success">USD {projectedRevenue.toLocaleString('es-AR')}</p>
-              </div>
-              <div className={`rounded-card p-4 ${grossMargin > 0 ? 'bg-primary/10' : 'bg-danger/10'}`}>
-                <p className={`text-xs mb-1 ${grossMargin > 0 ? 'text-primary' : 'text-danger'}`}>Margen bruto</p>
-                <p className={`text-xl font-black ${grossMargin > 0 ? 'text-primary' : 'text-danger'}`}>
-                  USD {grossMargin.toLocaleString('es-AR')}
-                </p>
-                <p className={`text-xs mt-1 ${grossMargin > 0 ? 'text-primary' : 'text-danger'}`}>
-                  {marginPct.toFixed(1)}% ROI
-                </p>
-              </div>
+              <StatTile tone="success" label="Ingresos proyectados" value={`USD ${projectedRevenue.toLocaleString('es-AR')}`} />
+              <StatTile
+                tone={grossMargin > 0 ? 'primary' : 'danger'}
+                label="Margen bruto"
+                value={`USD ${grossMargin.toLocaleString('es-AR')}`}
+                caption={`${marginPct.toFixed(1)}% ROI`}
+              />
             </div>
           </div>
         )}

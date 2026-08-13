@@ -335,8 +335,7 @@ export default function LeadDetailPage() {
               </Button>
             </>
           )}
-          {/* ds-todo: candidato a variante destructiva (icono) — por ahora outline */}
-          <Button variant="outline" aria-label="Eliminar" onClick={handleDelete}>
+          <Button variant="outline" size="icon" aria-label="Eliminar" onClick={handleDelete}>
             <Trash2 className="w-4 h-4" />
           </Button>
         </div>

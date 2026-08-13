@@ -12,6 +12,7 @@ import { getCurrentUser, isOnboardingDone, markOnboardingDone } from '@/lib/auth
 import OnboardingModal from '@/components/onboarding/OnboardingModal'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
+import { StatTile } from '@/components/ui/StatTile'
 import { Heading, Text } from '@/components/ui/Typography'
 import { Alert } from '@/components/ui/Alert'
 import { Select } from '@/components/ui/Input'
@@ -63,40 +64,6 @@ function WeeklyChart({ data }: { data: { day: string; count: number }[] }) {
           </div>
         )
       })}
-    </div>
-  )
-}
-
-function KPICard({ icon, label, value, color, href }: { icon: React.ReactNode; label: string; value: number | string; color: string; href?: string }) {
-  const colorMap: Record<string, string> = {
-    blue: 'bg-blue-50 text-blue-600',
-    cyan: 'bg-cyan-50 text-cyan-600',
-    purple: 'bg-purple-50 text-purple-600',
-    green: 'bg-green-50 text-green-600',
-    pink: 'bg-primary/10 text-primary',
-    amber: 'bg-amber-50 text-amber-600',
-  }
-  const inner = (
-    <>
-      <div className={`w-9 h-9 rounded-control flex items-center justify-center mb-2 ${colorMap[color]}`}>
-        {icon}
-      </div>
-      <p className="text-xl sm:text-2xl font-bold text-ink">{value}</p>
-      <Text size="xs" tone="muted" className="mt-0.5">{label}</Text>
-    </>
-  )
-  // ds-todo: candidato a variante "KPICard" del DS (Card no rinde <a>).
-  const baseClass = 'bg-white rounded-card border border-gray-200 shadow-card p-3 sm:p-4 relative overflow-hidden'
-  if (href) {
-    return (
-      <a href={href} className={`${baseClass} transition-shadow hover:shadow-md block`}>
-        {inner}
-      </a>
-    )
-  }
-  return (
-    <div className={baseClass}>
-      {inner}
     </div>
   )
 }
@@ -191,12 +158,12 @@ export default function DashboardCRM() {
       />
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <KPICard icon={<Users className="w-5 h-5" />} label="Leads activos" value={activeLeads} color="blue" href="/leads" />
-        <KPICard icon={<Phone className="w-5 h-5" />} label="Contactados" value={sb['contactado'] || 0} color="cyan" href="/leads?stage=contactado" />
-        <KPICard icon={<Calculator className="w-5 h-5" />} label="Tasaciones" value={tasaciones?.total || 0} color="purple" href="/tasaciones" />
-        <KPICard icon={<Home className="w-5 h-5" />} label="Captaciones" value={captaciones} color="green" href="/propiedades/pipeline" />
-        <KPICard icon={<Activity className="w-5 h-5" />} label="Actividad (30d)" value={activity?.total || 0} color="pink" href="/actividades" />
-        <KPICard icon={<Target className="w-5 h-5" />} label="Conversión" value={`${conversionRate || 0}%`} color="amber" href="/mi-performance" />
+        <StatTile icon={<Users className="w-5 h-5" />} label="Leads activos" value={activeLeads} tone="bg-blue-50 text-blue-600" href="/leads" />
+        <StatTile icon={<Phone className="w-5 h-5" />} label="Contactados" value={sb['contactado'] || 0} tone="bg-cyan-50 text-cyan-600" href="/leads?stage=contactado" />
+        <StatTile icon={<Calculator className="w-5 h-5" />} label="Tasaciones" value={tasaciones?.total || 0} tone="bg-purple-50 text-purple-600" href="/tasaciones" />
+        <StatTile icon={<Home className="w-5 h-5" />} label="Captaciones" value={captaciones} tone="bg-green-50 text-green-600" href="/propiedades/pipeline" />
+        <StatTile icon={<Activity className="w-5 h-5" />} label="Actividad (30d)" value={activity?.total || 0} tone="primary" href="/actividades" />
+        <StatTile icon={<Target className="w-5 h-5" />} label="Conversión" value={`${conversionRate || 0}%`} tone="bg-amber-50 text-amber-600" href="/mi-performance" />
       </div>
 
       {(overdueLeads > 0 || (todayEvents && todayEvents.length > 0)) && (

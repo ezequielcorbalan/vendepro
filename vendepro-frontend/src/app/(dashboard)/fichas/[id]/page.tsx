@@ -14,6 +14,7 @@ import { Card, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Field, Input, Textarea } from '@/components/ui/Input'
 import { Checkbox } from '@/components/ui/Choice'
+import { PillRadioGroup as RadioGroup, PillCheckGroup } from '@/components/ui/ChoicePills'
 import { EmptyState } from '@/components/ui/EmptyState'
 
 // ── Collapsible section ─────────────────────────────────────
@@ -33,26 +34,8 @@ function Section({ title, icon: Icon, children, defaultOpen = false }: { title: 
   )
 }
 
-// Label de grupo (radio pills / grillas de inputs) — mismo estilo que el label de Field.
+// Label de grupo (grillas de inputs) — mismo estilo que el label de Field.
 const groupLabelClass = 'block text-sm font-medium text-gray-700 mb-1.5'
-
-/* ds-todo: candidato a variante "choice pills" del DS (single-select tipo chip);
-   SegmentedControl es para cambio de vista y RadioGroup del DS es vertical. */
-function RadioGroup({ label, options, value, onChange }: { label: string; options: { value: string; label: string }[]; value: string; onChange: (v: string) => void }) {
-  return (
-    <div>
-      <p className={groupLabelClass}>{label}</p>
-      <div className="flex flex-wrap gap-2">
-        {options.map(o => (
-          <button key={o.value} type="button" onClick={() => onChange(o.value)}
-            className={`text-sm px-3 py-2 rounded-control border transition-colors ${value === o.value ? 'bg-primary text-white border-primary' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}>
-            {o.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
 
 const toNum = (v: string): number | null => {
   if (v === '' || v === null || v === undefined) return null
@@ -317,9 +300,6 @@ export default function FichaDetailPage() {
     )
   }
 
-  const toggleAmenity = (v: string) =>
-    setF(prev => ({ ...prev, amenities_list: prev.amenities_list.includes(v) ? prev.amenities_list.filter(x => x !== v) : [...prev.amenities_list, v] }))
-
   return (
     <div className="max-w-lg mx-auto pb-24">
       <div className="flex items-center justify-between mb-4">
@@ -427,23 +407,17 @@ export default function FichaDetailPage() {
           </Field>
           <RadioGroup label="Ruidos" value={f.noise_level} onChange={v => u('noise_level', v)}
             options={[{ value: 'silencioso', label: 'Silencioso' }, { value: 'promedio', label: 'Promedio' }, { value: 'ruidoso', label: 'Ruidoso' }]} />
-          <div>
-            <p className={groupLabelClass}>Servicios y amenities</p>
-            {/* ds-todo: candidato a variante "choice pills" multi-select del DS */}
-            <div className="flex flex-wrap gap-2">
-              {[
-                { value: 'pileta', label: 'Pileta' }, { value: 'laundry', label: 'Laundry' },
-                { value: 'sum', label: 'SUM' }, { value: 'vigilancia', label: 'Vigilancia 24hs' },
-                { value: 'gimnasio', label: 'Gimnasio' }, { value: 'solarium', label: 'Solarium' },
-                { value: 'parrilla', label: 'Parrilla' }, { value: 'bicicletero', label: 'Bicicletero' },
-              ].map(o => (
-                <button key={o.value} type="button" onClick={() => toggleAmenity(o.value)}
-                  className={`text-sm px-3 py-2 rounded-control border transition-colors ${f.amenities_list.includes(o.value) ? 'bg-primary text-white border-primary' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}>
-                  {o.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          <PillCheckGroup
+            label="Servicios y amenities"
+            value={f.amenities_list}
+            onChange={next => setF(prev => ({ ...prev, amenities_list: next }))}
+            options={[
+              { value: 'pileta', label: 'Pileta' }, { value: 'laundry', label: 'Laundry' },
+              { value: 'sum', label: 'SUM' }, { value: 'vigilancia', label: 'Vigilancia 24hs' },
+              { value: 'gimnasio', label: 'Gimnasio' }, { value: 'solarium', label: 'Solarium' },
+              { value: 'parrilla', label: 'Parrilla' }, { value: 'bicicletero', label: 'Bicicletero' },
+            ]}
+          />
           <Field label="Otro amenity">
             <Input value={f.amenities_other} onChange={e => u('amenities_other', e.target.value)} />
           </Field>

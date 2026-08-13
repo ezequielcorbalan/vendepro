@@ -339,11 +339,11 @@ export default function ConfiguracionApiPage() {
                       Creado {fmtDate(token.created_at)}<br />
                       Último uso {fmtDate(token.last_used_at)}
                     </Text>
-                    {/* ds-todo: candidato a variante icon-button (ghost 44px con hover warning/danger) */}
                     <div className="shrink-0 flex items-center -mr-1 -mb-1">
                       {token.is_active && (
                         <Button
                           variant="ghost"
+                          size="icon"
                           onClick={() => handleRevoke(token.id, token.name)}
                           title="Revocar token (queda en la lista, deja de funcionar)"
                           aria-label={`Revocar token ${token.name}`}
@@ -354,6 +354,7 @@ export default function ConfiguracionApiPage() {
                       )}
                       <Button
                         variant="ghost"
+                        size="icon"
                         onClick={() => handleDelete(token)}
                         title="Eliminar token definitivamente"
                         aria-label={`Eliminar token ${token.name}`}

@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/Button'
 import { Text } from '@/components/ui/Typography'
 import { Field, Input, Textarea } from '@/components/ui/Input'
 import { Checkbox } from '@/components/ui/Choice'
+import { PillRadioGroup as RadioGroup, PillCheckGroup as CheckGroup } from '@/components/ui/ChoicePills'
 
 // ── Collapsible section ─────────────────────────────────────
 function Section({ title, icon: Icon, children, defaultOpen = false }: { title: string; icon: any; children: React.ReactNode; defaultOpen?: boolean }) {
@@ -30,44 +31,6 @@ function Section({ title, icon: Icon, children, defaultOpen = false }: { title: 
       </button>
       {open && <div className="px-4 pb-4 space-y-3 border-t border-gray-50">{children}</div>}
     </Card>
-  )
-}
-
-// ── Reusable inputs ─────────────────────────────────────────
-const groupLabelClass = 'block text-sm font-medium text-gray-700 mb-1.5'
-
-// ds-todo: candidato a variante "chip seleccionable" (RadioGroup horizontal de pills)
-function RadioGroup({ label, options, value, onChange }: { label: string; options: { value: string; label: string }[]; value: string; onChange: (v: string) => void }) {
-  return (
-    <div>
-      <p className={groupLabelClass}>{label}</p>
-      <div className="flex flex-wrap gap-2">
-        {options.map(o => (
-          <button key={o.value} type="button" onClick={() => onChange(o.value)}
-            className={`text-xs px-3 py-2 rounded-control border transition-colors ${value === o.value ? 'bg-primary text-white border-primary' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}>
-            {o.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-// ds-todo: candidato a variante "chip seleccionable" múltiple (CheckGroup de pills)
-function CheckGroup({ label, options, value, onChange }: { label: string; options: { value: string; label: string }[]; value: string[]; onChange: (v: string[]) => void }) {
-  const toggle = (v: string) => onChange(value.includes(v) ? value.filter(x => x !== v) : [...value, v])
-  return (
-    <div>
-      <p className={groupLabelClass}>{label}</p>
-      <div className="flex flex-wrap gap-2">
-        {options.map(o => (
-          <button key={o.value} type="button" onClick={() => toggle(o.value)}
-            className={`text-xs px-3 py-2 rounded-control border transition-colors ${value.includes(o.value) ? 'bg-primary text-white border-primary' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}>
-            {o.label}
-          </button>
-        ))}
-      </div>
-    </div>
   )
 }
 
@@ -335,7 +298,7 @@ export default function NuevaFichaPage() {
           <RadioGroup label="Disposición" value={f.disposition} onChange={v => u('disposition', v)}
             options={[{ value: 'frente', label: 'Frente' }, { value: 'contrafrente', label: 'Contrafrente' }, { value: 'lateral_interno', label: 'Lateral/Interno' }]} />
           <div>
-            <p className={groupLabelClass}>Orientación / Luminosidad</p>
+            <p className="block text-sm font-medium text-gray-700 mb-1.5">Orientación / Luminosidad</p>
             <div className="grid grid-cols-2 gap-2">
               <Input placeholder="Norte" value={f.orientation.norte} onChange={e => setF(p => ({ ...p, orientation: { ...p.orientation, norte: e.target.value } }))} />
               <Input placeholder="Sur" value={f.orientation.sur} onChange={e => setF(p => ({ ...p, orientation: { ...p.orientation, sur: e.target.value } }))} />
