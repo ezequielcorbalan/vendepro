@@ -14,6 +14,7 @@ import { Select, Textarea } from '@/components/ui/Input'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Modal } from '@/components/ui/Modal'
+import { StatTile } from '@/components/ui/StatTile'
 import {
   ACTIVITY_TYPES, ACTIVITY_TYPE_KEYS, OBJECTIVE_METRICS,
   getObjectiveSemaforo, getPeriodProgressPct, type ActivityType, type ObjectiveMetric
@@ -170,13 +171,7 @@ export default function ActividadesPage() {
           const cfg = ACTIVITY_TYPES[k]
           const Ico = ICON_MAP[cfg.icon] || Phone
           return (
-            <Card key={k} className="p-4 flex flex-col items-center">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${cfg.color} mb-2`}>
-                <Ico className="w-5 h-5" />
-              </div>
-              <Text weight="bold" className="text-2xl">{metrics[k]}</Text>
-              <Text size="xs" tone="muted" className="text-center mt-0.5">{cfg.label}</Text>
-            </Card>
+            <StatTile key={k} icon={<Ico className="w-5 h-5" />} tone={cfg.color} value={metrics[k]} label={cfg.label} />
           )
         })}
       </div>
