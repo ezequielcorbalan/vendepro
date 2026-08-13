@@ -184,7 +184,7 @@ export default function ActividadesPage() {
       {/* Objectives */}
       <Card>
         <Heading level={4} className="mb-4 flex items-center gap-2">
-          <Target className="w-4 h-4 text-primary" /> Objetivos del período
+          <Target className="w-4 h-4 text-gray-600" /> Objetivos del período
         </Heading>
         {objectivesWithProgress.length === 0 ? (
           <EmptyState
@@ -227,7 +227,7 @@ export default function ActividadesPage() {
         {/* Últimos 30 días chart */}
         <Card>
           <Heading level={4} className="mb-4 flex items-center gap-2">
-            <BarChart3 className="w-4 h-4 text-primary" /> Últimos 30 días
+            <BarChart3 className="w-4 h-4 text-gray-600" /> Últimos 30 días
           </Heading>
           <ResponsiveContainer width="100%" height={110}>
             <BarChart data={chartData} barSize={7} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>

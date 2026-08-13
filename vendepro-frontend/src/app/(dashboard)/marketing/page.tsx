@@ -238,7 +238,7 @@ export default function MarketingPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card>
           <div className="mb-4">
-            <Heading level={4} className="flex items-center gap-2"><Target className="w-4 h-4 text-primary" /> Embudo del período</Heading>
+            <Heading level={4} className="flex items-center gap-2"><Target className="w-4 h-4 text-gray-600" /> Embudo del período</Heading>
             <Text size="xs" tone="muted" className="mt-0.5">De lead capturado a captación</Text>
           </div>
           {loading ? <div className="space-y-3">{[...Array(5)].map((_, i) => <div key={i} className="h-8 bg-gray-100 rounded animate-pulse" />)}</div>
@@ -265,7 +265,7 @@ export default function MarketingPage() {
 
         <Card>
           <div className="mb-4">
-            <Heading level={4} className="flex items-center gap-2"><BarChart2 className="w-4 h-4 text-primary" /> Leads por fuente</Heading>
+            <Heading level={4} className="flex items-center gap-2"><BarChart2 className="w-4 h-4 text-gray-600" /> Leads por fuente</Heading>
             <Text size="xs" tone="muted" className="mt-0.5">Atribución del período</Text>
           </div>
           {loading ? <div className="space-y-3">{[...Array(5)].map((_, i) => <div key={i} className="h-8 bg-gray-100 rounded animate-pulse" />)}</div>
@@ -420,7 +420,7 @@ export default function MarketingPage() {
 
         <Card>
           <div className="mb-4">
-            <Heading level={4} className="flex items-center gap-2"><Users className="w-4 h-4 text-primary" /> Audiencias sugeridas</Heading>
+            <Heading level={4} className="flex items-center gap-2"><Users className="w-4 h-4 text-gray-600" /> Audiencias sugeridas</Heading>
             <Text size="xs" tone="muted" className="mt-0.5">Listas para exportar a Meta Ads Manager</Text>
           </div>
           <div className="space-y-2">
@@ -449,7 +449,7 @@ export default function MarketingPage() {
       {insights.length > 0 && (
         <Card className="bg-gradient-to-r from-primary/5 to-brand-orange/5 border-primary/20">
           <Heading level={4} className="mb-3 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-primary" /> Insights del período
+            <Sparkles className="w-4 h-4 text-gray-600" /> Insights del período
           </Heading>
           <div className="space-y-2">
             {insights.map((ins, i) => {

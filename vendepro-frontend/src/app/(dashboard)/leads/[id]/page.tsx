@@ -635,7 +635,7 @@ export default function LeadDetailPage() {
       <Card padded={false} className="p-5">
         <div className="flex items-center justify-between mb-4">
           <Heading level={4} className="flex items-center gap-2">
-            <FileText className="w-4 h-4 text-primary" /> Fichas de tasación
+            <FileText className="w-4 h-4 text-gray-600" /> Fichas de tasación
           </Heading>
           <button
             onClick={() => {

@@ -168,7 +168,7 @@ export default function ConfiguracionPage() {
       {/* Mi perfil */}
       <Card className="p-6">
         <Heading level={4} className="mb-5 flex items-center gap-2">
-          <User className="w-4 h-4 text-primary" /> Mi perfil
+          <User className="w-4 h-4 text-gray-600" /> Mi perfil
         </Heading>
         {loadingProfile ? (
           <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>
@@ -379,7 +379,7 @@ export default function ConfiguracionPage() {
       {/* Ayuda */}
       <Card className="p-6">
         <Heading level={4} className="mb-3 flex items-center gap-2">
-          <HelpCircle className="w-4 h-4 text-primary" /> Ayuda
+          <HelpCircle className="w-4 h-4 text-gray-600" /> Ayuda
         </Heading>
         <Text tone="muted" className="mb-4">
           Volvé a ver el tutorial de bienvenida para repasar cómo funciona el sistema.

@@ -119,7 +119,7 @@ export default function MiPerformancePage() {
       {/* Conversion Funnel */}
       <Card>
         <Heading level={4} as="h2" className="mb-4 flex items-center gap-2">
-          <TrendingUp className="w-4 h-4 text-primary" /> Tasas de conversión
+          <TrendingUp className="w-4 h-4 text-gray-600" /> Tasas de conversión
         </Heading>
         <div className="flex flex-col sm:flex-row gap-3">
           <ConvCard label="Lead → Tasación" pct={data.conversions?.leadTasacion || 0} />
@@ -132,7 +132,7 @@ export default function MiPerformancePage() {
         {/* Activity Breakdown */}
         <Card>
           <Heading level={4} as="h2" className="mb-4 flex items-center gap-2">
-            <BarChart3 className="w-4 h-4 text-primary" /> Actividad por tipo · {periodLabel}
+            <BarChart3 className="w-4 h-4 text-gray-600" /> Actividad por tipo · {periodLabel}
           </Heading>
           <div className="space-y-2">
             {Object.entries(ACTIVITY_TYPES).map(([key, cfg]) => {
@@ -166,7 +166,7 @@ export default function MiPerformancePage() {
         {/* Objectives */}
         <Card>
           <Heading level={4} as="h2" className="mb-4 flex items-center gap-2">
-            <Target className="w-4 h-4 text-primary" /> Objetivos activos
+            <Target className="w-4 h-4 text-gray-600" /> Objetivos activos
           </Heading>
           {!data.objectives?.length ? (
             <EmptyState icon={<Target className="w-6 h-6" />} title="Sin objetivos cargados" />
@@ -218,7 +218,7 @@ export default function MiPerformancePage() {
         {/* Pipeline comercial */}
         <Card>
           <Heading level={4} as="h2" className="mb-4 flex items-center gap-2">
-            <Briefcase className="w-4 h-4 text-primary" /> Pipeline comercial
+            <Briefcase className="w-4 h-4 text-gray-600" /> Pipeline comercial
           </Heading>
           <div className="space-y-2">
             {Object.keys(PROPERTY_STAGES).map(key => {
@@ -238,7 +238,7 @@ export default function MiPerformancePage() {
         {/* Top barrios */}
         <Card>
           <Heading level={4} as="h2" className="mb-4 flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-primary" /> Barrios más trabajados
+            <MapPin className="w-4 h-4 text-gray-600" /> Barrios más trabajados
           </Heading>
           {!data.topBarrios?.length ? (
             <EmptyState icon={<MapPin className="w-6 h-6" />} title="Sin datos de barrios" />
@@ -260,7 +260,7 @@ export default function MiPerformancePage() {
       {data.quarterComparison && (
         <Card>
           <Heading level={4} as="h2" className="mb-4 flex items-center gap-2">
-            <BarChart3 className="w-4 h-4 text-primary" /> Comparación trimestral
+            <BarChart3 className="w-4 h-4 text-gray-600" /> Comparación trimestral
           </Heading>
           <div className="grid grid-cols-3 gap-3 mb-4">
             <div className="text-center">
@@ -306,7 +306,7 @@ export default function MiPerformancePage() {
       {data.weeklyTrend?.length > 0 && (
         <Card>
           <Heading level={4} as="h2" className="mb-4 flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-primary" /> Evolución semanal
+            <TrendingUp className="w-4 h-4 text-gray-600" /> Evolución semanal
           </Heading>
           <div className="flex items-end gap-2 h-24">
             {data.weeklyTrend.map((w: any, i: number) => {

@@ -250,7 +250,7 @@ export default function TasacionDetailPage() {
 
         <Card className="p-5 sm:p-8">
           <Heading level={3} className="text-lg sm:text-xl mb-4 flex items-center gap-2">
-            <Ruler className="w-5 h-5 text-primary" />
+            <Ruler className="w-5 h-5 text-gray-600" />
             Datos de la propiedad
           </Heading>
 
