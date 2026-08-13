@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ArrowLeft, Loader2, Search, X, UserPlus, Link2 } from 'lucide-react'
+import { ArrowLeft, Loader2, Search, X, UserPlus } from 'lucide-react'
 import Link from 'next/link'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
@@ -13,6 +13,7 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
 import { Heading, Text } from '@/components/ui/Typography'
 import { Button } from '@/components/ui/Button'
+import { Alert } from '@/components/ui/Alert'
 import { Field, Input, Select } from '@/components/ui/Input'
 
 const PROPERTY_TYPES = [
@@ -262,12 +263,10 @@ export default function NuevaPropiedadPage() {
       <PageHeader title="Nueva propiedad" className="mb-4" />
 
       {linkedLeadName && (
-        // ds-todo: candidato a Alert con tono de marca (Alert no tiene tone "primary")
-        <div className="mb-6 flex items-center gap-2 bg-primary/5 border border-primary/20 rounded-card px-3 py-2.5 text-sm max-w-md">
-          <Link2 className="w-4 h-4 text-primary shrink-0" />
-          <Text as="span" tone="muted">Propiedad vinculada al lead:</Text>
+        <Alert tone="brand" className="mb-6 p-2.5 max-w-md">
+          <Text as="span" tone="muted">Propiedad vinculada al lead:</Text>{' '}
           <Text as="span" weight="semibold" className="truncate">{linkedLeadName}</Text>
-        </div>
+        </Alert>
       )}
 
       <form onSubmit={handleSubmit}>

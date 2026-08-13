@@ -22,6 +22,7 @@ import { StageBadge } from '@/components/ui/StageBadge'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Button } from '@/components/ui/Button'
+import { Alert } from '@/components/ui/Alert'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Input, Select, Textarea } from '@/components/ui/Input'
 import { Heading, Text } from '@/components/ui/Typography'
@@ -420,7 +421,6 @@ export default function LeadsPage() {
             >
               CSV
             </Button>
-            {/* ds-todo: candidato a variante "outline primaria" (acción con IA) */}
             <Button variant="outline" icon={<Sparkles className="w-4 h-4" />} onClick={() => setShowAI(true)} className="border-primary/30 text-primary hover:bg-primary/5">
               <span className="hidden sm:inline">con IA</span>
             </Button>
@@ -586,7 +586,6 @@ export default function LeadsPage() {
             className="bg-white w-full sm:max-w-lg sm:rounded-card rounded-t-card max-h-[90vh] overflow-y-auto"
             onClick={e => e.stopPropagation()}
           >
-            {/* ds-todo: bottom-sheet mobile — no mapea al Modal del DS */}
             {/* Header */}
             <div className="sticky top-0 bg-white border-b px-4 py-3 flex items-center justify-between rounded-t-card z-10">
               <div>
@@ -602,18 +601,16 @@ export default function LeadsPage() {
             {createStep === 1 && (
               <div className="p-4 space-y-3">
                 {selectedContact ? (
-                  /* ds-todo: candidato a Alert success con acción de deseleccionar */
-                  <div className="flex items-center justify-between bg-success/10 border border-success/30 rounded-control px-3 py-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Check className="w-4 h-4 text-success shrink-0" />
-                      <span className="font-medium text-ink">{selectedContact.full_name}</span>
-                      <span className="text-gray-500">·</span>
-                      <span className="text-gray-500 capitalize">{selectedContact.contact_type}</span>
-                    </div>
-                    <button onClick={() => { setSelectedContact(null); setContactSearch('') }} className="text-gray-400 hover:text-gray-600">
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
+                  <Alert
+                    tone="success"
+                    className="p-3"
+                    onDismiss={() => { setSelectedContact(null); setContactSearch('') }}
+                    dismissLabel="Quitar contacto seleccionado"
+                  >
+                    <span className="font-medium text-ink">{selectedContact.full_name}</span>
+                    <span className="text-gray-500"> · </span>
+                    <span className="text-gray-500 capitalize">{selectedContact.contact_type}</span>
+                  </Alert>
                 ) : (
                   <>
                     <div className="relative">
@@ -761,7 +758,6 @@ export default function LeadsPage() {
       {showConvertModal && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowConvertModal(null)}>
           <div className="bg-white w-full sm:max-w-md sm:rounded-card rounded-t-card p-5" onClick={e => e.stopPropagation()}>
-            {/* ds-todo: bottom-sheet mobile — no mapea al Modal del DS */}
             <Heading level={4} as="h3" className="mb-2">Avanzar a tasación</Heading>
             <Text tone="muted" className="mb-4">
               <strong>{showConvertModal.full_name}</strong> pasará a &ldquo;En tasación&rdquo;. ¿Querés crear una tasación vinculada?
