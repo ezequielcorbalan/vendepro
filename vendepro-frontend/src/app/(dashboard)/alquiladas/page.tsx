@@ -9,6 +9,7 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
 import { Heading, Text } from '@/components/ui/Typography'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { StatTile } from '@/components/ui/StatTile'
 
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
@@ -38,30 +39,12 @@ export default function AlquiladasPage() {
 
       {properties.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <Card>
-            <div className="w-8 h-8 bg-cyan-50 rounded-control flex items-center justify-center mb-2">
-              <TrendingUp className="w-4 h-4 text-cyan-600" />
-            </div>
-            <p className="text-2xl font-bold text-ink">{properties.length}</p>
-            <Text size="xs" tone="muted" className="mt-0.5">Total alquiladas</Text>
-          </Card>
+          <StatTile icon={<TrendingUp className="w-5 h-5" />} tone="bg-cyan-50 text-cyan-600" value={properties.length} label="Total alquiladas" />
           {totalUSD > 0 && (
-            <Card>
-              <div className="w-8 h-8 bg-primary/10 rounded-control flex items-center justify-center mb-2">
-                <DollarSign className="w-4 h-4 text-primary" />
-              </div>
-              <p className="text-xl font-bold text-ink">USD {totalUSD.toLocaleString('es-AR')}</p>
-              <Text size="xs" tone="muted" className="mt-0.5">Alquileres USD</Text>
-            </Card>
+            <StatTile icon={<DollarSign className="w-5 h-5" />} tone="primary" value={`USD ${totalUSD.toLocaleString('es-AR')}`} label="Alquileres USD" />
           )}
           {totalARS > 0 && (
-            <Card>
-              <div className="w-8 h-8 bg-brand-orange/10 rounded-control flex items-center justify-center mb-2">
-                <DollarSign className="w-4 h-4 text-brand-orange" />
-              </div>
-              <p className="text-xl font-bold text-ink">$ {totalARS.toLocaleString('es-AR')}</p>
-              <Text size="xs" tone="muted" className="mt-0.5">Alquileres ARS</Text>
-            </Card>
+            <StatTile icon={<DollarSign className="w-5 h-5" />} tone="bg-brand-orange/10 text-brand-orange" value={`$ ${totalARS.toLocaleString('es-AR')}`} label="Alquileres ARS" />
           )}
         </div>
       )}

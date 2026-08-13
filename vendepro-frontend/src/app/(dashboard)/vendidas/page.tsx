@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/Card'
 import { Heading, Text } from '@/components/ui/Typography'
 import { PropertyStageBadge } from '@/components/ui/PropertyStageBadge'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { StatTile } from '@/components/ui/StatTile'
 
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
@@ -40,21 +41,9 @@ export default function VendidasPage() {
 
       {properties.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <Card>
-            <div className="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center mb-2">
-              <TrendingUp className="w-4 h-4 text-green-600" />
-            </div>
-            <p className="text-2xl font-bold text-ink">{properties.length}</p>
-            <Text size="xs" tone="muted" className="mt-0.5">Total vendidas</Text>
-          </Card>
+          <StatTile icon={<TrendingUp className="w-5 h-5" />} tone="bg-green-50 text-green-600" value={properties.length} label="Total vendidas" />
           {totalUSD > 0 && (
-            <Card>
-              <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center mb-2">
-                <DollarSign className="w-4 h-4 text-primary" />
-              </div>
-              <p className="text-xl font-bold text-ink">USD {totalUSD.toLocaleString('es-AR')}</p>
-              <Text size="xs" tone="muted" className="mt-0.5">Valuación total</Text>
-            </Card>
+            <StatTile icon={<DollarSign className="w-5 h-5" />} tone="primary" value={`USD ${totalUSD.toLocaleString('es-AR')}`} label="Valuación total" />
           )}
         </div>
       )}

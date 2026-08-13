@@ -13,6 +13,7 @@ import { Input, Select } from '@/components/ui/Input'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Alert } from '@/components/ui/Alert'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { StatTile } from '@/components/ui/StatTile'
 import { Text } from '@/components/ui/Typography'
 
 type Period = 'week' | 'month' | 'quarter' | 'year'
@@ -47,29 +48,6 @@ interface PerformanceData {
 function formatNumber(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k`
   return String(n)
-}
-
-interface KPICardProps {
-  icon: React.ReactNode
-  label: string
-  value: string
-  sublabel?: string
-  gradient: string
-  iconBg: string
-  iconColor: string
-}
-
-function KPICard({ icon, label, value, sublabel, gradient, iconBg, iconColor }: KPICardProps) {
-  return (
-    <Card className={`p-3 sm:p-4 bg-gradient-to-br ${gradient}`}>
-      <div className={`w-9 h-9 rounded-control flex items-center justify-center mb-2 shadow-card ${iconBg}`} aria-hidden="true">
-        <span className={iconColor}>{icon}</span>
-      </div>
-      <Text weight="bold" className="text-xl sm:text-2xl">{value}</Text>
-      <Text size="xs" tone="muted" className="mt-0.5">{label}</Text>
-      {sublabel && <Text size="xs" className="text-[10px] text-gray-400 mt-0.5">{sublabel}</Text>}
-    </Card>
-  )
 }
 
 const PROPERTY_TYPES = [
@@ -219,31 +197,25 @@ export default function PerformancePage() {
               </div>
             </Card>
 
-            <KPICard
+            <StatTile
               icon={<FileBarChart className="w-5 h-5" />}
               label="Reportes publicados"
               value={String(k.reports_published)}
-              gradient="from-white to-pink-50"
-              iconBg="bg-pink-100"
-              iconColor="text-pink-600"
+              tone="bg-pink-50 text-pink-600"
             />
-            <KPICard
+            <StatTile
               icon={<TrendingUp className="w-5 h-5" />}
               label="Visitas al portal ∅"
               value={String(k.avg_portal_visits_per_report)}
-              sublabel={`${formatNumber(k.total_portal_visits)} total`}
-              gradient="from-white to-blue-50"
-              iconBg="bg-blue-100"
-              iconColor="text-blue-600"
+              caption={`${formatNumber(k.total_portal_visits)} total`}
+              tone="bg-blue-50 text-blue-600"
             />
-            <KPICard
+            <StatTile
               icon={<Handshake className="w-5 h-5" />}
               label="Ofertas"
               value={String(k.total_offers)}
-              sublabel={`${k.avg_offers_per_report} por aviso`}
-              gradient="from-white to-green-50"
-              iconBg="bg-green-100"
-              iconColor="text-green-600"
+              caption={`${k.avg_offers_per_report} por aviso`}
+              tone="bg-green-50 text-green-600"
             />
           </div>
 

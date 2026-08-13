@@ -16,6 +16,7 @@ import { Card } from '@/components/ui/Card'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Heading, Text } from '@/components/ui/Typography'
 import { Alert } from '@/components/ui/Alert'
+import { StatTile } from '@/components/ui/StatTile'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { PropertyStageBadge } from '@/components/ui/PropertyStageBadge'
@@ -24,19 +25,6 @@ import { EmptyState } from '@/components/ui/EmptyState'
 const ICON_MAP: Record<string, any> = {
   Phone, MessageCircle, Users, Home, Eye, Calculator, Clock, FileText,
   Settings, CheckCircle2, Presentation: BarChart3
-}
-
-function KPI({ label, value, sub, icon, color }: { label: string; value: number; sub?: string; icon: React.ReactNode; color: string }) {
-  return (
-    <Card className="p-4">
-      <div className="flex items-center gap-2 mb-2">
-        <div className={`w-7 h-7 rounded-control flex items-center justify-center ${color}`}>{icon}</div>
-        <Text as="span" size="xs" className="text-[10px] text-gray-400 uppercase tracking-wider">{label}</Text>
-      </div>
-      <Text className="text-2xl font-black">{value}</Text>
-      {sub && <Text size="xs" className="text-[10px] text-gray-400 mt-0.5">{sub}</Text>}
-    </Card>
-  )
 }
 
 function ConvCard({ label, pct }: { label: string; pct: number }) {
@@ -110,10 +98,10 @@ export default function MiPerformancePage() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <KPI label="Leads totales" value={data.leadStats?.total || 0} icon={<Users className="w-4 h-4" />} color="text-blue-600 bg-blue-50" />
-        <KPI label="Captados" value={data.leadStats?.captados || 0} icon={<CheckCircle2 className="w-4 h-4" />} color="text-green-600 bg-green-50" />
-        <KPI label="Tasaciones" value={data.tasacionStats?.total || 0} icon={<Calculator className="w-4 h-4" />} color="text-pink-600 bg-pink-50" />
-        <KPI label="Actividad" value={totalAct} sub={periodLabel} icon={<BarChart3 className="w-4 h-4" />} color="text-purple-600 bg-purple-50" />
+        <StatTile label="Leads totales" value={data.leadStats?.total || 0} icon={<Users className="w-5 h-5" />} tone="bg-blue-50 text-blue-600" />
+        <StatTile label="Captados" value={data.leadStats?.captados || 0} icon={<CheckCircle2 className="w-5 h-5" />} tone="bg-green-50 text-green-600" />
+        <StatTile label="Tasaciones" value={data.tasacionStats?.total || 0} icon={<Calculator className="w-5 h-5" />} tone="bg-pink-50 text-pink-600" />
+        <StatTile label="Actividad" value={totalAct} caption={periodLabel} icon={<BarChart3 className="w-5 h-5" />} tone="bg-purple-50 text-purple-600" />
       </div>
 
       {/* Conversion Funnel */}
