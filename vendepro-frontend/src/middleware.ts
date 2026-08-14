@@ -11,6 +11,7 @@ const PUBLIC_PATHS = [
 ]
 
 const PUBLIC_PREFIXES = [
+  '/design-system', // galería + previews del design system (sin datos)
   '/r/',   // public property reports
   '/t/',   // public appraisal pages
   '/v/',   // public visit forms

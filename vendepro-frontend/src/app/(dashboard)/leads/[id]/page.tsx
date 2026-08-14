@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
-  ArrowLeft, Phone, MessageCircle, Edit3, Save, X, Trash2,
+  ArrowLeft, Phone, Edit3, Save, X, Trash2,
   User, ChevronRight, Plus, Loader2, Calendar, Activity,
   Home, FileText, MapPin, Target, StickyNote, Building2,
-  CheckCircle2, Circle, Mail, DollarSign
+  CheckCircle2, Mail, DollarSign
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { pushFromApiResponse } from '@/components/marketing/dataLayer'
@@ -15,10 +15,18 @@ import { useToast } from '@/components/ui/Toast'
 import { useConfirm } from '@/components/ui/useConfirm'
 import {
   LEAD_SOURCES, OPERATION_TYPES,
-  formatWhatsApp, getStageConfig, getStageDot,
+  getStageConfig, getStageDot,
   PROPERTY_STAGES, type PropertyStage,
 } from '@/lib/crm-config'
 import { formatDate } from '@/lib/utils'
+import { CallButton, WhatsAppButton } from '@/components/ui/ContactButtons'
+import { Card } from '@/components/ui/Card'
+import { Heading } from '@/components/ui/Typography'
+import { StageBadge } from '@/components/ui/StageBadge'
+import { Button } from '@/components/ui/Button'
+import { Field, Input, Select, Textarea } from '@/components/ui/Input'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { Timeline } from '@/components/ui/Timeline'
 import { LeadStagePipeline } from '@/components/leads/LeadStagePipeline'
 import { LeadPropertiesSection } from '@/components/leads/LeadPropertiesSection'
 
@@ -262,12 +270,9 @@ export default function LeadDetailPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="h-8 w-48 bg-gray-200 rounded animate-pulse" />
-          <button
-            onClick={() => router.push(`/fichas/nueva?lead_id=${leadId}`)}
-            className="flex items-center gap-1.5 border border-brand-orange text-brand-orange px-3 py-1.5 rounded-lg text-sm hover:bg-orange-50 font-medium"
-          >
-            <FileText className="w-3.5 h-3.5" /> Ficha de tasación
-          </button>
+          <Button variant="outline" icon={<FileText className="w-3.5 h-3.5" />} onClick={() => router.push(`/fichas/nueva?lead_id=${leadId}`)}>
+            Ficha de tasación
+          </Button>
         </div>
         <div className="h-32 bg-gray-200 rounded-xl animate-pulse" />
         <div className="h-48 bg-gray-200 rounded-xl animate-pulse" />
@@ -284,8 +289,6 @@ export default function LeadDetailPage() {
     )
   }
 
-  const stage = getStageConfig(lead.stage, lead.pipeline)
-
   return (
     <div className="space-y-4">
       {confirmDialog}
@@ -296,53 +299,50 @@ export default function LeadDetailPage() {
         </Link>
         <div className="flex items-center gap-2 flex-wrap">
           {!editing ? (
-            <button onClick={() => setEditing(true)} className="flex items-center gap-1.5 border border-gray-300 px-3 py-1.5 rounded-lg text-sm hover:bg-gray-50 text-gray-700">
-              <Edit3 className="w-3.5 h-3.5" /> Editar
-            </button>
+            <Button variant="outline" icon={<Edit3 className="w-3.5 h-3.5" />} onClick={() => setEditing(true)}>Editar</Button>
           ) : (
             <>
-              <button onClick={() => { setEditing(false); setEditForm(lead) }} className="border px-3 py-1.5 rounded-lg text-sm text-gray-600">
+              <Button variant="outline" aria-label="Cancelar" onClick={() => { setEditing(false); setEditForm(lead) }}>
                 <X className="w-4 h-4" />
-              </button>
-              <button onClick={handleSave} disabled={saving} className="bg-gradient-to-br from-brand-pink to-brand-orange text-white px-3 py-1.5 rounded-lg text-sm flex items-center gap-1.5 disabled:opacity-50">
-                <Save className="w-3.5 h-3.5" /> Guardar
-              </button>
+              </Button>
+              <Button loading={saving} icon={<Save className="w-3.5 h-3.5" />} onClick={handleSave}>Guardar</Button>
             </>
           )}
           {!isBuyer && (
             <>
-              <button
+              {/* ds-todo: candidato a variante "accent" (naranja de marca) — por ahora outline */}
+              <Button
+                variant="outline"                icon={<FileText className="w-3.5 h-3.5" />}
+                disabled={editing}
                 onClick={() => {
                   const qs = new URLSearchParams({ lead_id: leadId })
                   if (lead?.property_address) qs.set('address', lead.property_address)
                   if (lead?.neighborhood) qs.set('neighborhood', lead.neighborhood)
                   router.push(`/fichas/nueva?${qs.toString()}`)
                 }}
-                disabled={editing}
-                className="flex items-center gap-1.5 border border-brand-orange text-brand-orange px-3 py-1.5 rounded-lg text-sm hover:bg-orange-50 font-medium disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                <FileText className="w-3.5 h-3.5" /> Ficha de tasación
-              </button>
-              <button
+                Ficha de tasación
+              </Button>
+              {/* ds-todo: candidato a variante "success" (verde crear) — por ahora primary */}
+              <Button                icon={<Home className="w-3.5 h-3.5" />}
                 onClick={() => {
                   const qs = new URLSearchParams({ lead_id: leadId })
                   if (fichas.length > 0) qs.set('ficha_id', fichas[0].id)
                   router.push(`/propiedades/nueva?${qs.toString()}`)
                 }}
-                className="flex items-center gap-1.5 bg-green-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-green-700 font-medium"
               >
-                <Home className="w-3.5 h-3.5" /> Crear propiedad
-              </button>
+                Crear propiedad
+              </Button>
             </>
           )}
-          <button onClick={handleDelete} className="p-1.5 border rounded-lg text-gray-400 hover:text-red-500 hover:border-red-200">
+          <Button variant="outline" size="icon" aria-label="Eliminar" onClick={handleDelete}>
             <Trash2 className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Header card */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-5 relative overflow-hidden shadow-sm">
+      <Card padded={false} className="p-5 relative overflow-hidden">
         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-pink to-brand-orange" />
         <img
           src="/brand/GV-27.png"
@@ -353,74 +353,52 @@ export default function LeadDetailPage() {
         {editing ? (
           <div className="space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs text-gray-500 mb-1 block">Nombre *</label>
-                <input value={editForm.full_name || ''} onChange={e => setEditForm((f: any) => ({ ...f, full_name: e.target.value }))}
-                  className="border rounded-lg px-3 py-2 text-sm w-full" />
-              </div>
-              <div>
-                <label className="text-xs text-gray-500 mb-1 block">Teléfono</label>
-                <input value={editForm.phone || ''} onChange={e => setEditForm((f: any) => ({ ...f, phone: e.target.value }))}
-                  className="border rounded-lg px-3 py-2 text-sm w-full" />
-              </div>
-              <div>
-                <label className="text-xs text-gray-500 mb-1 block">Email</label>
-                <input value={editForm.email || ''} onChange={e => setEditForm((f: any) => ({ ...f, email: e.target.value }))}
-                  className="border rounded-lg px-3 py-2 text-sm w-full" />
-              </div>
-              <div>
-                <label className="text-xs text-gray-500 mb-1 block">Origen</label>
-                <select value={editForm.source || 'manual'} onChange={e => setEditForm((f: any) => ({ ...f, source: e.target.value }))}
-                  className="border rounded-lg px-3 py-2 text-sm w-full">
+              <Field label="Nombre" htmlFor="lf-name" required>
+                <Input id="lf-name" value={editForm.full_name || ''} onChange={e => setEditForm((f: any) => ({ ...f, full_name: e.target.value }))} />
+              </Field>
+              <Field label="Teléfono" htmlFor="lf-phone">
+                <Input id="lf-phone" value={editForm.phone || ''} onChange={e => setEditForm((f: any) => ({ ...f, phone: e.target.value }))} />
+              </Field>
+              <Field label="Email" htmlFor="lf-email">
+                <Input id="lf-email" value={editForm.email || ''} onChange={e => setEditForm((f: any) => ({ ...f, email: e.target.value }))} />
+              </Field>
+              <Field label="Origen" htmlFor="lf-source">
+                <Select id="lf-source" value={editForm.source || 'manual'} onChange={e => setEditForm((f: any) => ({ ...f, source: e.target.value }))}>
                   {Object.entries(LEAD_SOURCES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs text-gray-500 mb-1 block">Operación</label>
-                <select value={editForm.operation || 'venta'} onChange={e => setEditForm((f: any) => ({ ...f, operation: e.target.value }))}
-                  className="border rounded-lg px-3 py-2 text-sm w-full">
+                </Select>
+              </Field>
+              <Field label="Operación" htmlFor="lf-op">
+                <Select id="lf-op" value={editForm.operation || 'venta'} onChange={e => setEditForm((f: any) => ({ ...f, operation: e.target.value }))}>
                   {Object.entries(OPERATION_TYPES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs text-gray-500 mb-1 block">Barrio</label>
-                <input value={editForm.neighborhood || ''} onChange={e => setEditForm((f: any) => ({ ...f, neighborhood: e.target.value }))}
-                  className="border rounded-lg px-3 py-2 text-sm w-full" />
-              </div>
-              <div className="sm:col-span-2">
-                <label className="text-xs text-gray-500 mb-1 block">Dirección propiedad</label>
-                <input value={editForm.property_address || ''} onChange={e => setEditForm((f: any) => ({ ...f, property_address: e.target.value }))}
-                  className="border rounded-lg px-3 py-2 text-sm w-full" />
-              </div>
-              <div>
-                <label className="text-xs text-gray-500 mb-1 block">Valor estimado (USD)</label>
-                <input type="number" value={editForm.estimated_value || ''} onChange={e => setEditForm((f: any) => ({ ...f, estimated_value: e.target.value }))}
-                  className="border rounded-lg px-3 py-2 text-sm w-full" />
-              </div>
+                </Select>
+              </Field>
+              <Field label="Barrio" htmlFor="lf-hood">
+                <Input id="lf-hood" value={editForm.neighborhood || ''} onChange={e => setEditForm((f: any) => ({ ...f, neighborhood: e.target.value }))} />
+              </Field>
+              <Field label="Dirección propiedad" htmlFor="lf-addr" className="sm:col-span-2">
+                <Input id="lf-addr" value={editForm.property_address || ''} onChange={e => setEditForm((f: any) => ({ ...f, property_address: e.target.value }))} />
+              </Field>
+              <Field label="Valor estimado (USD)" htmlFor="lf-val">
+                <Input id="lf-val" type="number" value={editForm.estimated_value || ''} onChange={e => setEditForm((f: any) => ({ ...f, estimated_value: e.target.value }))} />
+              </Field>
             </div>
-            <div>
-              <label className="text-xs text-gray-500 mb-1 block">Próxima acción</label>
-              <input value={editForm.next_step || ''} onChange={e => setEditForm((f: any) => ({ ...f, next_step: e.target.value }))}
-                className="border rounded-lg px-3 py-2 text-sm w-full" />
-            </div>
-            <div>
-              <label className="text-xs text-gray-500 mb-1 block">Fecha próxima acción</label>
-              <input type="date" value={editForm.next_step_date || ''} onChange={e => setEditForm((f: any) => ({ ...f, next_step_date: e.target.value }))}
-                className="border rounded-lg px-3 py-2 text-sm w-full" />
-            </div>
-            <div>
-              <label className="text-xs text-gray-500 mb-1 block">Notas</label>
-              <textarea rows={3} value={editForm.notes || ''} onChange={e => setEditForm((f: any) => ({ ...f, notes: e.target.value }))}
-                className="border rounded-lg px-3 py-2 text-sm w-full" />
-            </div>
+            <Field label="Próxima acción" htmlFor="lf-next">
+              <Input id="lf-next" value={editForm.next_step || ''} onChange={e => setEditForm((f: any) => ({ ...f, next_step: e.target.value }))} />
+            </Field>
+            <Field label="Fecha próxima acción" htmlFor="lf-nextdate">
+              <Input id="lf-nextdate" type="date" value={editForm.next_step_date || ''} onChange={e => setEditForm((f: any) => ({ ...f, next_step_date: e.target.value }))} />
+            </Field>
+            <Field label="Notas" htmlFor="lf-notes">
+              <Textarea id="lf-notes" rows={3} value={editForm.notes || ''} onChange={e => setEditForm((f: any) => ({ ...f, notes: e.target.value }))} />
+            </Field>
           </div>
         ) : (
           <>
             {/* Name + stage badge + contact type badge */}
             <div className="flex items-start justify-between gap-3 mb-2">
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-2xl font-bold text-ink">{lead.full_name}</h1>
-                <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${stage.color}`}>{stage.label}</span>
+                <Heading level={2} as="h1">{lead.full_name}</Heading>
+                <StageBadge stage={lead.stage} pipeline={lead.pipeline} />
                 {lead.contact_id && (
                   <Link
                     href="/contactos"
@@ -495,43 +473,18 @@ export default function LeadDetailPage() {
 
             {/* Action buttons */}
             <div className="flex gap-2 flex-wrap">
-              {lead.phone ? (
-                <a
-                  href={`tel:${lead.phone}`}
-                  onClick={() => handleQuickActivity('llamada')}
-                  className="flex items-center gap-1.5 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2 rounded-xl text-sm font-medium hover:opacity-90 transition-opacity shadow-sm"
-                >
-                  <Phone className="w-4 h-4" /> Llamar
-                </a>
-              ) : (
-                <button disabled className="flex items-center gap-1.5 bg-brand-pink/40 text-white px-4 py-2 rounded-xl text-sm font-medium cursor-not-allowed">
-                  <Phone className="w-4 h-4" /> Llamar
-                </button>
-              )}
-              {lead.phone ? (
-                <a
-                  href={`https://wa.me/${formatWhatsApp(lead.phone)}`}
-                  target="_blank" rel="noreferrer"
-                  onClick={() => handleQuickActivity('whatsapp')}
-                  className="flex items-center gap-1.5 bg-green-500 text-white px-4 py-2 rounded-xl text-sm font-medium hover:opacity-90 transition-opacity"
-                >
-                  <MessageCircle className="w-4 h-4" /> WhatsApp
-                </a>
-              ) : (
-                <button disabled className="flex items-center gap-1.5 bg-green-500/40 text-white px-4 py-2 rounded-xl text-sm font-medium cursor-not-allowed">
-                  <MessageCircle className="w-4 h-4" /> WhatsApp
-                </button>
-              )}
+              <CallButton phone={lead.phone} onClick={() => handleQuickActivity('llamada')} />
+              <WhatsAppButton phone={lead.phone} onClick={() => handleQuickActivity('whatsapp')} />
               <Link
                 href={`/calendario?lead_id=${leadId}`}
-                className="flex items-center gap-1.5 border border-gray-300 text-gray-700 px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
+                className="inline-flex items-center gap-1.5 border border-gray-300 text-gray-700 px-4 py-2 rounded-control text-sm font-medium hover:bg-gray-50 transition-colors"
               >
                 <Calendar className="w-4 h-4" /> Agendar
               </Link>
             </div>
           </>
         )}
-      </div>
+      </Card>
 
       {/* Pipeline */}
       <LeadStagePipeline currentStage={lead.stage} pipeline={isBuyer ? 'comprador' : 'vendedor'} onSelect={handleStageChange} disabled={editing} />
@@ -539,12 +492,12 @@ export default function LeadDetailPage() {
       {/* Two-column: Datos + Actividades */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
         {/* Datos del lead */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+        <Card padded={false} className="p-5">
           <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-sm">
+            <div className="w-8 h-8 rounded-control bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-card">
               <User className="w-4 h-4 text-white" />
             </div>
-            <h2 className="font-bold text-ink">Datos del lead</h2>
+            <Heading level={4}>Datos del lead</Heading>
           </div>
           <div className="space-y-4">
             <div className="flex items-start gap-3">
@@ -629,16 +582,16 @@ export default function LeadDetailPage() {
               </div>
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Actividades */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+        <Card padded={false} className="p-5">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-sm">
+              <div className="w-8 h-8 rounded-control bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-card">
                 <Activity className="w-4 h-4 text-white" />
               </div>
-              <h2 className="font-bold text-ink">Actividades</h2>
+              <Heading level={4}>Actividades</Heading>
             </div>
             <Link
               href={`/actividades?lead_id=${leadId}`}
@@ -648,13 +601,11 @@ export default function LeadDetailPage() {
             </Link>
           </div>
           {activities.length === 0 ? (
-            <div className="flex flex-col items-center py-10 text-center">
-              <Activity className="w-10 h-10 text-gray-200 mb-3" />
-              <p className="text-sm text-gray-400 mb-1">Sin actividades registradas</p>
-              <Link href={`/actividades?lead_id=${leadId}`} className="text-sm text-brand-pink hover:underline">
-                Registrar primera actividad
-              </Link>
-            </div>
+            <EmptyState
+              icon={<Activity className="w-6 h-6" />}
+              title="Sin actividades registradas"
+              action={<Link href={`/actividades?lead_id=${leadId}`} className="text-sm text-primary hover:underline">Registrar primera actividad</Link>}
+            />
           ) : (
             <div className="space-y-2">
               {activities.slice(0, 10).map(a => {
@@ -673,7 +624,7 @@ export default function LeadDetailPage() {
               })}
             </div>
           )}
-        </div>
+        </Card>
       </div>
 
       {/* Comprador: propiedades de interés. Vendedor: fichas de tasación. */}
@@ -681,11 +632,11 @@ export default function LeadDetailPage() {
 
       {/* Fichas de tasación */}
       {!isBuyer && (
-      <div className="bg-white border rounded-xl p-5">
+      <Card padded={false} className="p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-bold text-ink flex items-center gap-2">
-            <FileText className="w-4 h-4 text-brand-pink" /> Fichas de tasación
-          </h2>
+          <Heading level={4} className="flex items-center gap-2">
+            <FileText className="w-4 h-4 text-gray-600" /> Fichas de tasación
+          </Heading>
           <button
             onClick={() => {
               const qs = new URLSearchParams({ lead_id: leadId })
@@ -699,10 +650,7 @@ export default function LeadDetailPage() {
           </button>
         </div>
         {fichas.length === 0 ? (
-          <div className="flex flex-col items-center py-8 text-center">
-            <FileText className="w-10 h-10 text-gray-200 mb-3" />
-            <p className="text-sm text-gray-400">Sin fichas registradas</p>
-          </div>
+          <EmptyState icon={<FileText className="w-6 h-6" />} title="Sin fichas registradas" />
         ) : (
           <div className="space-y-2">
             {fichas.map((ficha: any) => (
@@ -733,40 +681,26 @@ export default function LeadDetailPage() {
             ))}
           </div>
         )}
-      </div>
+      </Card>
       )}
 
       {/* Historial de etapas */}
       {stageHistory.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+        <Card padded={false} className="p-5">
           <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-sm">
+            <div className="w-8 h-8 rounded-control bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-card">
               <Calendar className="w-4 h-4 text-white" />
             </div>
-            <h2 className="font-bold text-ink">Historial de etapas</h2>
+            <Heading level={4}>Historial de etapas</Heading>
           </div>
-          <div className="space-y-3">
-            {stageHistory.map((h: any) => {
-              const dotColor = getStageDot(h.to_stage)
-              return (
-                <div key={h.id ?? h.changed_at ?? h.created_at} className="flex items-start gap-3">
-                  <span
-                    className="w-3 h-3 rounded-full mt-0.5 shrink-0"
-                    style={{ background: dotColor }}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-ink">
-                      {h.from_stage ? getStageConfig(h.from_stage, lead.pipeline).label : '—'} → {getStageConfig(h.to_stage, lead.pipeline).label}
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      {h.changed_by_name ?? 'Sistema'} · {h.created_at ? formatDate(h.created_at) : ''}
-                    </p>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
+          <Timeline
+            items={stageHistory.map((h: any) => ({
+              label: `${h.from_stage ? getStageConfig(h.from_stage, lead.pipeline).label : '—'} → ${getStageConfig(h.to_stage, lead.pipeline).label}`,
+              meta: `${h.changed_by_name ?? 'Sistema'} · ${h.created_at ? formatDate(h.created_at) : ''}`,
+              color: getStageDot(h.to_stage),
+            }))}
+          />
+        </Card>
       )}
 
       {/* Vincular propiedad / tasación al cambiar de etapa */}

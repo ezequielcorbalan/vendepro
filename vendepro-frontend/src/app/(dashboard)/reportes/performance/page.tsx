@@ -7,6 +7,14 @@ import HealthBadge from '@/components/reports/HealthBadge'
 import NeighborhoodBenchmarkTable, { type NeighborhoodComparison } from '@/components/reports/NeighborhoodBenchmarkTable'
 import ActiveListingsTable, { type ActiveListingWithBenchmark } from '@/components/reports/ActiveListingsTable'
 import { HEALTH_COLORS, type HealthStatus } from '@/lib/semaforo'
+import { Card } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { Input, Select } from '@/components/ui/Input'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { Alert } from '@/components/ui/Alert'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { StatTile } from '@/components/ui/StatTile'
+import { Text } from '@/components/ui/Typography'
 
 type Period = 'week' | 'month' | 'quarter' | 'year'
 
@@ -42,29 +50,6 @@ function formatNumber(n: number): string {
   return String(n)
 }
 
-interface KPICardProps {
-  icon: React.ReactNode
-  label: string
-  value: string
-  sublabel?: string
-  gradient: string
-  iconBg: string
-  iconColor: string
-}
-
-function KPICard({ icon, label, value, sublabel, gradient, iconBg, iconColor }: KPICardProps) {
-  return (
-    <div className={`rounded-xl border border-gray-200 p-3 sm:p-4 shadow-sm bg-gradient-to-br ${gradient}`}>
-      <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-2 shadow-sm ${iconBg}`} aria-hidden="true">
-        <span className={iconColor}>{icon}</span>
-      </div>
-      <p className="text-xl sm:text-2xl font-bold text-ink">{value}</p>
-      <p className="text-xs text-gray-500 mt-0.5">{label}</p>
-      {sublabel && <p className="text-[10px] text-gray-400 mt-0.5">{sublabel}</p>}
-    </div>
-  )
-}
-
 const PROPERTY_TYPES = [
   { value: '', label: 'Todos los tipos' },
   { value: 'departamento', label: 'Departamento' },
@@ -74,6 +59,13 @@ const PROPERTY_TYPES = [
   { value: 'terreno', label: 'Terreno' },
   { value: 'oficina', label: 'Oficina' },
 ] as const
+
+const PERIOD_OPTIONS = [
+  { value: 'week', label: 'Sem' },
+  { value: 'month', label: 'Mes' },
+  { value: 'quarter', label: 'Trim' },
+  { value: 'year', label: 'Año' },
+]
 
 export default function PerformancePage() {
   const [data, setData] = useState<PerformanceData | null>(null)
@@ -114,25 +106,21 @@ export default function PerformancePage() {
     return (
       <div className="space-y-4 animate-pulse">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[...Array(4)].map((_, i) => <div key={i} className="h-24 bg-gray-200 rounded-xl" />)}
+          {[...Array(4)].map((_, i) => <div key={i} className="h-24 bg-gray-200 rounded-card" />)}
         </div>
-        <div className="h-64 bg-gray-200 rounded-2xl" />
-        <div className="h-64 bg-gray-200 rounded-2xl" />
+        <div className="h-64 bg-gray-200 rounded-card" />
+        <div className="h-64 bg-gray-200 rounded-card" />
       </div>
     )
   }
 
   if (error || !data) {
     return (
-      <div className="bg-gradient-to-br from-red-50 to-orange-50 border border-red-200 rounded-xl p-6 text-center shadow-sm">
-        <p className="text-red-700 font-medium">Error al cargar los datos</p>
-        <button
-          onClick={() => setPeriod(p => p)}
-          className="mt-3 text-sm text-red-600 underline hover:text-red-700"
-        >
+      <Alert tone="danger" title="Error al cargar los datos">
+        <Button variant="ghost" onClick={() => setPeriod(p => p)} className="mt-2">
           Reintentar
-        </button>
-      </div>
+        </Button>
+      </Alert>
     )
   }
 
@@ -143,70 +131,52 @@ export default function PerformancePage() {
   return (
     <div className="space-y-4 sm:space-y-5">
       {/* Filters bar */}
-      <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-white to-gray-50/50 p-3 sm:p-4 shadow-sm">
+      <Card className="p-3 sm:p-4 bg-gradient-to-br from-white to-gray-50/50">
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <select
+          <Select
             value={propertyType}
             onChange={e => setPropertyType(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none"
+            className="w-auto"
           >
             {PROPERTY_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-          </select>
+          </Select>
           <div className="flex items-center gap-1 text-sm text-gray-500">USD</div>
-          <input
+          <Input
             type="number"
             value={priceMin}
             onChange={e => setPriceMin(e.target.value)}
             placeholder="Desde"
-            className="w-24 border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none"
+            className="w-24"
           />
-          <input
+          <Input
             type="number"
             value={priceMax}
             onChange={e => setPriceMax(e.target.value)}
             placeholder="Hasta"
-            className="w-24 border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none"
+            className="w-24"
           />
           {hasFilters && (
-            <button
-              onClick={clearFilters}
-              className="text-xs text-gray-500 hover:text-brand-pink underline"
-            >
+            <Button variant="ghost" onClick={clearFilters}>
               Limpiar filtros
-            </button>
+            </Button>
           )}
           <div className="flex-1" />
-          <div className="flex gap-0.5 bg-gray-100 rounded-lg p-0.5 shadow-inner">
-            {([
-              ['week', 'Sem'],
-              ['month', 'Mes'],
-              ['quarter', 'Trim'],
-              ['year', 'Año'],
-            ] as const).map(([key, label]) => (
-              <button
-                key={key}
-                onClick={() => setPeriod(key)}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
-                  period === key
-                    ? 'bg-white shadow-sm text-ink'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl
+            options={PERIOD_OPTIONS}
+            value={period}
+            onChange={v => setPeriod(v as Period)}
+          />
         </div>
-      </div>
+      </Card>
 
       {!hasData && (
-        <div className="rounded-2xl border border-gray-200 p-8 text-center bg-gradient-to-br from-gray-50 to-white shadow-sm">
-          <FileBarChart className="w-10 h-10 text-gray-300 mx-auto mb-3" aria-hidden="true" />
-          <p className="text-gray-600 font-medium">Todavía no hay reportes publicados en este período</p>
-          <p className="text-gray-500 text-sm mt-1">
-            Probá un rango más amplio, o publicá el primer reporte desde una propiedad.
-          </p>
-        </div>
+        <Card padded={false}>
+          <EmptyState
+            icon={<FileBarChart className="w-6 h-6" />}
+            title="Todavía no hay reportes publicados en este período"
+            description="Probá un rango más amplio, o publicá el primer reporte desde una propiedad."
+          />
+        </Card>
       )}
 
       {hasData && (
@@ -214,48 +184,42 @@ export default function PerformancePage() {
           {/* KPIs globales */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {/* KPI destacado: visualizaciones/día con color del semáforo */}
-            <div className={`rounded-xl border-2 p-3 sm:p-4 shadow-sm bg-gradient-to-br ${overallCfg.border} ${overallCfg.bg}`}>
-              <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-2 bg-white/70 border ${overallCfg.border} shadow-sm`} aria-hidden="true">
+            <Card className={`border-2 p-3 sm:p-4 bg-gradient-to-br ${overallCfg.border} ${overallCfg.bg}`}>
+              <div className={`w-9 h-9 rounded-control flex items-center justify-center mb-2 bg-white/70 border ${overallCfg.border} shadow-card`} aria-hidden="true">
                 <Eye className={`w-5 h-5 ${overallCfg.text}`} />
               </div>
-              <p className={`text-xl sm:text-2xl font-bold ${overallCfg.text}`}>
+              <Text weight="bold" className={`text-xl sm:text-2xl ${overallCfg.text}`}>
                 {k.avg_views_per_day}
-              </p>
-              <p className="text-xs text-gray-600 mt-0.5">Visualizaciones/día ∅</p>
+              </Text>
+              <Text size="xs" className="text-gray-600 mt-0.5">Visualizaciones/día ∅</Text>
               <div className="mt-1">
                 <HealthBadge status={k.overall_health_status} size="sm" withLabel />
               </div>
-            </div>
+            </Card>
 
-            <KPICard
+            <StatTile
               icon={<FileBarChart className="w-5 h-5" />}
               label="Reportes publicados"
               value={String(k.reports_published)}
-              gradient="from-white to-pink-50"
-              iconBg="bg-pink-100"
-              iconColor="text-pink-600"
+              tone="bg-pink-50 text-pink-600"
             />
-            <KPICard
+            <StatTile
               icon={<TrendingUp className="w-5 h-5" />}
               label="Visitas al portal ∅"
               value={String(k.avg_portal_visits_per_report)}
-              sublabel={`${formatNumber(k.total_portal_visits)} total`}
-              gradient="from-white to-blue-50"
-              iconBg="bg-blue-100"
-              iconColor="text-blue-600"
+              caption={`${formatNumber(k.total_portal_visits)} total`}
+              tone="bg-blue-50 text-blue-600"
             />
-            <KPICard
+            <StatTile
               icon={<Handshake className="w-5 h-5" />}
               label="Ofertas"
               value={String(k.total_offers)}
-              sublabel={`${k.avg_offers_per_report} por aviso`}
-              gradient="from-white to-green-50"
-              iconBg="bg-green-100"
-              iconColor="text-green-600"
+              caption={`${k.avg_offers_per_report} por aviso`}
+              tone="bg-green-50 text-green-600"
             />
           </div>
 
-          <div className="rounded-xl border border-gray-200 p-3 sm:p-4 text-xs text-gray-500 flex flex-wrap gap-x-4 gap-y-1 bg-gradient-to-r from-white via-white to-gray-50/50 shadow-sm">
+          <Card className="p-3 sm:p-4 text-xs text-gray-500 flex flex-wrap gap-x-4 gap-y-1 bg-gradient-to-r from-white via-white to-gray-50/50">
             <span className="inline-flex items-center gap-1">
               <Home className="w-3 h-3" aria-hidden="true" />
               Visitas presenciales:{' '}
@@ -267,7 +231,7 @@ export default function PerformancePage() {
               Impresiones totales (exposición):{' '}
               <strong className="text-gray-700">{formatNumber(k.total_impressions)}</strong>
             </span>
-          </div>
+          </Card>
         </>
       )}
 
@@ -282,7 +246,7 @@ export default function PerformancePage() {
       )}
 
       {/* Leyenda del semáforo — referencia MG */}
-      <div className="rounded-xl border border-gray-200 p-3 sm:p-4 text-xs sm:text-sm bg-gradient-to-br from-gray-50 to-white shadow-sm">
+      <Card className="p-3 sm:p-4 text-xs sm:text-sm bg-gradient-to-br from-gray-50 to-white">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2">
           <span className="font-medium text-gray-700">Referencia MG — visualizaciones/día:</span>
           <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-sm" /> 0–9</span>
@@ -291,12 +255,12 @@ export default function PerformancePage() {
           <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-lime-500 shadow-sm" /> 23–27</span>
           <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-sm" /> +28</span>
         </div>
-        <p className="text-gray-500 leading-snug">
+        <Text tone="muted" className="text-xs sm:text-sm leading-snug">
           <strong>Mínimo para vender en 4 meses:</strong>{' '}
           CABA <strong>14 vis/día</strong> + 1.5 visitas pres./sem ·{' '}
           GBA <strong>8 vis/día</strong> + 1 visita pres./sem.
-        </p>
-      </div>
+        </Text>
+      </Card>
     </div>
   )
 }

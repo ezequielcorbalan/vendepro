@@ -4,60 +4,38 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
-  ArrowLeft, Save, Loader2, ChevronDown, ChevronUp,
+  ArrowLeft, Save, ChevronDown, ChevronUp,
   Home, Ruler, DoorOpen, Thermometer, DollarSign,
-  CheckCircle, ClipboardList, Trash2,
+  ClipboardList, Trash2,
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
+import { Card, CardTitle } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { Field, Input, Textarea } from '@/components/ui/Input'
+import { Checkbox } from '@/components/ui/Choice'
+import { PillRadioGroup as RadioGroup, PillCheckGroup } from '@/components/ui/ChoicePills'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 // ── Collapsible section ─────────────────────────────────────
 function Section({ title, icon: Icon, children, defaultOpen = false }: { title: string; icon: any; children: React.ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen)
   return (
-    <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+    <Card padded={false} className="overflow-hidden">
       <button type="button" onClick={() => setOpen(!open)} className="w-full flex items-center justify-between px-4 py-3.5 text-left">
         <div className="flex items-center gap-2.5">
-          <Icon className="w-4 h-4 text-brand-pink" />
-          <span className="text-sm font-semibold text-ink">{title}</span>
+          <Icon className="w-4 h-4 text-primary" />
+          <CardTitle>{title}</CardTitle>
         </div>
         {open ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
       </button>
       {open && <div className="px-4 pb-4 space-y-3 border-t border-gray-50">{children}</div>}
-    </div>
+    </Card>
   )
 }
 
-const inputClass = 'w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none bg-white'
-const labelClass = 'block text-xs font-medium text-gray-500 mb-1'
-
-function RadioGroup({ label, options, value, onChange }: { label: string; options: { value: string; label: string }[]; value: string; onChange: (v: string) => void }) {
-  return (
-    <div>
-      <p className={labelClass}>{label}</p>
-      <div className="flex flex-wrap gap-2">
-        {options.map(o => (
-          <button key={o.value} type="button" onClick={() => onChange(o.value)}
-            className={`text-xs px-3 py-2 rounded-lg border transition-colors ${value === o.value ? 'bg-brand-pink text-white border-brand-pink' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}>
-            {o.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function BoolToggle({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <button type="button" onClick={() => onChange(!value)}
-      className={`flex items-center gap-2 text-xs px-3 py-2.5 rounded-lg border w-full transition-colors ${value ? 'bg-green-50 text-green-700 border-green-200' : 'bg-white text-gray-500 border-gray-200'}`}>
-      <div className={`w-4 h-4 rounded border flex items-center justify-center ${value ? 'bg-green-500 border-green-500' : 'border-gray-300'}`}>
-        {value && <CheckCircle className="w-3 h-3 text-white" />}
-      </div>
-      {label}
-    </button>
-  )
-}
+// Label de grupo (grillas de inputs) — mismo estilo que el label de Field.
+const groupLabelClass = 'block text-sm font-medium text-gray-700 mb-1.5'
 
 const toNum = (v: string): number | null => {
   if (v === '' || v === null || v === undefined) return null
@@ -312,15 +290,15 @@ export default function FichaDetailPage() {
 
   if (notFound) {
     return (
-      <div className="max-w-lg mx-auto text-center py-12">
-        <p className="text-gray-500">Ficha no encontrada</p>
-        <Link href="/tasaciones" className="text-brand-pink hover:underline text-sm mt-2 inline-block">Volver a Tasaciones</Link>
+      <div className="max-w-lg mx-auto py-12">
+        <EmptyState
+          icon={<ClipboardList className="w-6 h-6" />}
+          title="Ficha no encontrada"
+          action={<Link href="/tasaciones" className="text-sm text-primary hover:underline">Volver a Tasaciones</Link>}
+        />
       </div>
     )
   }
-
-  const toggleAmenity = (v: string) =>
-    setF(prev => ({ ...prev, amenities_list: prev.amenities_list.includes(v) ? prev.amenities_list.filter(x => x !== v) : [...prev.amenities_list, v] }))
 
   return (
     <div className="max-w-lg mx-auto pb-24">
@@ -329,15 +307,13 @@ export default function FichaDetailPage() {
           <ArrowLeft className="w-4 h-4" /> Volver
         </Link>
         <div className="flex items-center gap-2">
-          <button
+          <Button
             onClick={() => router.push(`/propiedades/nueva?ficha_id=${fichaId}${leadId ? `&lead_id=${leadId}` : ''}`)}
-            className="flex items-center gap-1.5 bg-green-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-green-700 font-medium"
+            icon={<Home className="w-3.5 h-3.5" />}
           >
-            <Home className="w-3.5 h-3.5" /> Crear propiedad
-          </button>
-          <button onClick={handleDelete} className="p-1.5 border rounded-lg text-gray-400 hover:text-red-500 hover:border-red-200">
-            <Trash2 className="w-4 h-4" />
-          </button>
+            Crear propiedad
+          </Button>
+          <Button variant="outline" onClick={handleDelete} aria-label="Eliminar ficha" icon={<Trash2 className="w-4 h-4" />} />
         </div>
       </div>
 
@@ -353,26 +329,22 @@ export default function FichaDetailPage() {
 
       <div className="space-y-3">
         <Section title="Datos generales" icon={Home} defaultOpen={true}>
-          <div>
-            <label className={labelClass}>Fecha de inspección</label>
-            <input type="date" className={inputClass} value={f.inspection_date} onChange={e => u('inspection_date', e.target.value)} />
-          </div>
-          <div>
-            <label className={labelClass}>Dirección *</label>
-            <input className={inputClass} value={f.address} onChange={e => u('address', e.target.value)} />
-          </div>
-          <div>
-            <label className={labelClass}>Barrio</label>
-            <input className={inputClass} value={f.neighborhood} onChange={e => u('neighborhood', e.target.value)} />
-          </div>
-          <div>
-            <label className={labelClass}>Tipología</label>
-            <input className={inputClass} value={f.property_type} onChange={e => u('property_type', e.target.value)} />
-          </div>
+          <Field label="Fecha de inspección">
+            <Input type="date" value={f.inspection_date} onChange={e => u('inspection_date', e.target.value)} />
+          </Field>
+          <Field label="Dirección" required>
+            <Input value={f.address} onChange={e => u('address', e.target.value)} />
+          </Field>
+          <Field label="Barrio">
+            <Input value={f.neighborhood} onChange={e => u('neighborhood', e.target.value)} />
+          </Field>
+          <Field label="Tipología">
+            <Input value={f.property_type} onChange={e => u('property_type', e.target.value)} />
+          </Field>
           <div className="grid grid-cols-3 gap-2">
-            <div><label className={labelClass}>Piso</label><input className={inputClass} value={f.floor_number} onChange={e => u('floor_number', e.target.value)} /></div>
-            <div><label className={labelClass}>Ascensores</label><input className={inputClass} value={f.elevators} onChange={e => u('elevators', e.target.value)} /></div>
-            <div><label className={labelClass}>Antigüedad</label><input className={inputClass} value={f.age} onChange={e => u('age', e.target.value)} /></div>
+            <Field label="Piso"><Input value={f.floor_number} onChange={e => u('floor_number', e.target.value)} /></Field>
+            <Field label="Ascensores"><Input value={f.elevators} onChange={e => u('elevators', e.target.value)} /></Field>
+            <Field label="Antigüedad"><Input value={f.age} onChange={e => u('age', e.target.value)} /></Field>
           </div>
           <RadioGroup label="Categoría del edificio" value={f.building_category} onChange={v => u('building_category', v)}
             options={[{ value: 'excelente', label: 'Excelente' }, { value: 'bueno', label: 'Bueno' }, { value: 'regular', label: 'Regular' }]} />
@@ -382,112 +354,105 @@ export default function FichaDetailPage() {
 
         <Section title="Superficies y valores" icon={Ruler}>
           <div className="grid grid-cols-3 gap-2">
-            <div><label className={labelClass}>Cubierta m²</label><input className={inputClass} type="number" value={f.covered_area} onChange={e => u('covered_area', e.target.value)} /></div>
-            <div><label className={labelClass}>Semi m²</label><input className={inputClass} type="number" value={f.semi_area} onChange={e => u('semi_area', e.target.value)} /></div>
-            <div><label className={labelClass}>Desc. m²</label><input className={inputClass} type="number" value={f.uncovered_area} onChange={e => u('uncovered_area', e.target.value)} /></div>
+            <Field label="Cubierta m²"><Input type="number" value={f.covered_area} onChange={e => u('covered_area', e.target.value)} /></Field>
+            <Field label="Semi m²"><Input type="number" value={f.semi_area} onChange={e => u('semi_area', e.target.value)} /></Field>
+            <Field label="Desc. m²"><Input type="number" value={f.uncovered_area} onChange={e => u('uncovered_area', e.target.value)} /></Field>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <div><label className={labelClass}>USD/m² barrio</label><input className={inputClass} type="number" value={f.m2_value_neighborhood} onChange={e => u('m2_value_neighborhood', e.target.value)} /></div>
-            <div><label className={labelClass}>USD/m² zona</label><input className={inputClass} type="number" value={f.m2_value_zone} onChange={e => u('m2_value_zone', e.target.value)} /></div>
+            <Field label="USD/m² barrio"><Input type="number" value={f.m2_value_neighborhood} onChange={e => u('m2_value_neighborhood', e.target.value)} /></Field>
+            <Field label="USD/m² zona"><Input type="number" value={f.m2_value_zone} onChange={e => u('m2_value_zone', e.target.value)} /></Field>
           </div>
         </Section>
 
         <Section title="Ambientes" icon={DoorOpen}>
           <div className="grid grid-cols-2 gap-2">
-            <div><label className={labelClass}>Dormitorios</label><input className={inputClass} type="number" value={f.bedrooms} onChange={e => u('bedrooms', e.target.value)} /></div>
-            <div><label className={labelClass}>Baños</label><input className={inputClass} type="number" value={f.bathrooms} onChange={e => u('bathrooms', e.target.value)} /></div>
-            <div><label className={labelClass}>Bauleras</label><input className={inputClass} type="number" value={f.storage_rooms} onChange={e => u('storage_rooms', e.target.value)} /></div>
-            <div><label className={labelClass}>Cocheras</label><input className={inputClass} type="number" value={f.parking_spots} onChange={e => u('parking_spots', e.target.value)} /></div>
-            <div><label className={labelClass}>Aires acond.</label><input className={inputClass} type="number" value={f.air_conditioning} onChange={e => u('air_conditioning', e.target.value)} /></div>
+            <Field label="Dormitorios"><Input type="number" value={f.bedrooms} onChange={e => u('bedrooms', e.target.value)} /></Field>
+            <Field label="Baños"><Input type="number" value={f.bathrooms} onChange={e => u('bathrooms', e.target.value)} /></Field>
+            <Field label="Bauleras"><Input type="number" value={f.storage_rooms} onChange={e => u('storage_rooms', e.target.value)} /></Field>
+            <Field label="Cocheras"><Input type="number" value={f.parking_spots} onChange={e => u('parking_spots', e.target.value)} /></Field>
+            <Field label="Aires acond."><Input type="number" value={f.air_conditioning} onChange={e => u('air_conditioning', e.target.value)} /></Field>
           </div>
-          <div><label className={labelClass}>Medidas dormitorios</label><input className={inputClass} value={f.bedroom_dimensions} onChange={e => u('bedroom_dimensions', e.target.value)} /></div>
+          <Field label="Medidas dormitorios"><Input value={f.bedroom_dimensions} onChange={e => u('bedroom_dimensions', e.target.value)} /></Field>
           <div className="grid grid-cols-3 gap-2">
-            <div><label className={labelClass}>Living</label><input className={inputClass} value={f.living_dimensions} onChange={e => u('living_dimensions', e.target.value)} /></div>
-            <div><label className={labelClass}>Cocina</label><input className={inputClass} value={f.kitchen_dimensions} onChange={e => u('kitchen_dimensions', e.target.value)} /></div>
-            <div><label className={labelClass}>Baños</label><input className={inputClass} value={f.bathroom_dimensions} onChange={e => u('bathroom_dimensions', e.target.value)} /></div>
+            <Field label="Living"><Input value={f.living_dimensions} onChange={e => u('living_dimensions', e.target.value)} /></Field>
+            <Field label="Cocina"><Input value={f.kitchen_dimensions} onChange={e => u('kitchen_dimensions', e.target.value)} /></Field>
+            <Field label="Baños"><Input value={f.bathroom_dimensions} onChange={e => u('bathroom_dimensions', e.target.value)} /></Field>
           </div>
         </Section>
 
         <Section title="Características" icon={Home}>
-          <div>
-            <label className={labelClass}>Pisos</label>
-            <input className={inputClass} value={f.floor_type} onChange={e => u('floor_type', e.target.value)} />
-          </div>
+          <Field label="Pisos">
+            <Input value={f.floor_type} onChange={e => u('floor_type', e.target.value)} />
+          </Field>
           <RadioGroup label="Disposición" value={f.disposition} onChange={v => u('disposition', v)}
             options={[{ value: 'frente', label: 'Frente' }, { value: 'contrafrente', label: 'Contrafrente' }, { value: 'lateral_interno', label: 'Lateral/Interno' }]} />
           <div>
-            <p className={labelClass}>Orientación / Luminosidad</p>
+            <p className={groupLabelClass}>Orientación / Luminosidad</p>
             <div className="grid grid-cols-2 gap-2">
-              <input className={inputClass} placeholder="Norte" value={f.orientation.norte} onChange={e => setF(p => ({ ...p, orientation: { ...p.orientation, norte: e.target.value } }))} />
-              <input className={inputClass} placeholder="Sur" value={f.orientation.sur} onChange={e => setF(p => ({ ...p, orientation: { ...p.orientation, sur: e.target.value } }))} />
-              <input className={inputClass} placeholder="Este" value={f.orientation.este} onChange={e => setF(p => ({ ...p, orientation: { ...p.orientation, este: e.target.value } }))} />
-              <input className={inputClass} placeholder="Oeste" value={f.orientation.oeste} onChange={e => setF(p => ({ ...p, orientation: { ...p.orientation, oeste: e.target.value } }))} />
+              <Input placeholder="Norte" value={f.orientation.norte} onChange={e => setF(p => ({ ...p, orientation: { ...p.orientation, norte: e.target.value } }))} />
+              <Input placeholder="Sur" value={f.orientation.sur} onChange={e => setF(p => ({ ...p, orientation: { ...p.orientation, sur: e.target.value } }))} />
+              <Input placeholder="Este" value={f.orientation.este} onChange={e => setF(p => ({ ...p, orientation: { ...p.orientation, este: e.target.value } }))} />
+              <Input placeholder="Oeste" value={f.orientation.oeste} onChange={e => setF(p => ({ ...p, orientation: { ...p.orientation, oeste: e.target.value } }))} />
             </div>
           </div>
-          <div>
-            <label className={labelClass}>Tipo de balcón</label>
-            <input className={inputClass} value={f.balcony_type} onChange={e => u('balcony_type', e.target.value)} />
-          </div>
+          <Field label="Tipo de balcón">
+            <Input value={f.balcony_type} onChange={e => u('balcony_type', e.target.value)} />
+          </Field>
         </Section>
 
         <Section title="Instalaciones y entorno" icon={Thermometer}>
-          <div>
-            <label className={labelClass}>Calefacción</label>
-            <input className={inputClass} value={f.heating_type} onChange={e => u('heating_type', e.target.value)} />
-          </div>
+          <Field label="Calefacción">
+            <Input value={f.heating_type} onChange={e => u('heating_type', e.target.value)} />
+          </Field>
           <RadioGroup label="Ruidos" value={f.noise_level} onChange={v => u('noise_level', v)}
             options={[{ value: 'silencioso', label: 'Silencioso' }, { value: 'promedio', label: 'Promedio' }, { value: 'ruidoso', label: 'Ruidoso' }]} />
-          <div>
-            <p className={labelClass}>Servicios y amenities</p>
-            <div className="flex flex-wrap gap-2">
-              {[
-                { value: 'pileta', label: 'Pileta' }, { value: 'laundry', label: 'Laundry' },
-                { value: 'sum', label: 'SUM' }, { value: 'vigilancia', label: 'Vigilancia 24hs' },
-                { value: 'gimnasio', label: 'Gimnasio' }, { value: 'solarium', label: 'Solarium' },
-                { value: 'parrilla', label: 'Parrilla' }, { value: 'bicicletero', label: 'Bicicletero' },
-              ].map(o => (
-                <button key={o.value} type="button" onClick={() => toggleAmenity(o.value)}
-                  className={`text-xs px-3 py-2 rounded-lg border transition-colors ${f.amenities_list.includes(o.value) ? 'bg-brand-pink text-white border-brand-pink' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}>
-                  {o.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label className={labelClass}>Otro amenity</label>
-            <input className={inputClass} value={f.amenities_other} onChange={e => u('amenities_other', e.target.value)} />
-          </div>
+          <PillCheckGroup
+            label="Servicios y amenities"
+            value={f.amenities_list}
+            onChange={next => setF(prev => ({ ...prev, amenities_list: next }))}
+            options={[
+              { value: 'pileta', label: 'Pileta' }, { value: 'laundry', label: 'Laundry' },
+              { value: 'sum', label: 'SUM' }, { value: 'vigilancia', label: 'Vigilancia 24hs' },
+              { value: 'gimnasio', label: 'Gimnasio' }, { value: 'solarium', label: 'Solarium' },
+              { value: 'parrilla', label: 'Parrilla' }, { value: 'bicicletero', label: 'Bicicletero' },
+            ]}
+          />
+          <Field label="Otro amenity">
+            <Input value={f.amenities_other} onChange={e => u('amenities_other', e.target.value)} />
+          </Field>
         </Section>
 
         <Section title="Situación" icon={DollarSign}>
           <div className="grid grid-cols-2 gap-2">
-            <BoolToggle label="Apto profesional" value={f.is_professional} onChange={v => u('is_professional', v)} />
-            <BoolToggle label="Propiedad ocupada" value={f.is_occupied} onChange={v => u('is_occupied', v)} />
-            <BoolToggle label="Apto crédito" value={f.is_credit_eligible} onChange={v => u('is_credit_eligible', v)} />
-            <BoolToggle label="Vende para comprar" value={f.sells_to_buy} onChange={v => u('sells_to_buy', v)} />
+            <Checkbox label="Apto profesional" checked={f.is_professional} onChange={v => u('is_professional', v)} />
+            <Checkbox label="Propiedad ocupada" checked={f.is_occupied} onChange={v => u('is_occupied', v)} />
+            <Checkbox label="Apto crédito" checked={f.is_credit_eligible} onChange={v => u('is_credit_eligible', v)} />
+            <Checkbox label="Vende para comprar" checked={f.sells_to_buy} onChange={v => u('sells_to_buy', v)} />
           </div>
           <div className="grid grid-cols-3 gap-2">
-            <div><label className={labelClass}>Expensas $</label><input className={inputClass} type="number" value={f.expenses} onChange={e => u('expenses', e.target.value)} /></div>
-            <div><label className={labelClass}>ABL $</label><input className={inputClass} type="number" value={f.abl} onChange={e => u('abl', e.target.value)} /></div>
-            <div><label className={labelClass}>AySA $</label><input className={inputClass} type="number" value={f.aysa} onChange={e => u('aysa', e.target.value)} /></div>
+            <Field label="Expensas $"><Input type="number" value={f.expenses} onChange={e => u('expenses', e.target.value)} /></Field>
+            <Field label="ABL $"><Input type="number" value={f.abl} onChange={e => u('abl', e.target.value)} /></Field>
+            <Field label="AySA $"><Input type="number" value={f.aysa} onChange={e => u('aysa', e.target.value)} /></Field>
           </div>
         </Section>
 
         <Section title="Notas" icon={ClipboardList}>
-          <textarea className={`${inputClass} h-24`} value={f.notes} onChange={e => u('notes', e.target.value)} />
+          <Textarea className="h-24" value={f.notes} onChange={e => u('notes', e.target.value)} />
         </Section>
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 z-40">
         <div className="max-w-lg mx-auto">
-          <button
+          <Button
+            size="lg"
+            fullWidth
             onClick={handleSave}
             disabled={saving || !f.address.trim()}
-            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-brand-pink to-brand-orange text-white py-3.5 rounded-xl font-semibold text-sm hover:opacity-90 disabled:opacity-50 shadow-lg shadow-pink-200"
+            loading={saving}
+            icon={<Save className="w-4 h-4" />}
           >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {saving ? 'Guardando...' : 'Guardar cambios'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

@@ -5,6 +5,8 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { TemplatesHome } from '@/components/tasaciones/admin/TemplatesHome'
 import { StaticBlocksHome } from '@/components/tasaciones/admin/StaticBlocksHome'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Text } from '@/components/ui/Typography'
 import { getCurrentUser } from '@/lib/auth'
 
 const ALL_TABS = [
@@ -31,9 +33,7 @@ function ConfigTasacionInner() {
       >
         <ArrowLeft className="w-4 h-4" /> Volver a Configuración
       </Link>
-      <h1 className="text-2xl font-bold">
-        {isAdmin ? 'Configuración · Tasaciones' : 'Mis plantillas de tasación'}
-      </h1>
+      <PageHeader title={isAdmin ? 'Configuración · Tasaciones' : 'Mis plantillas de tasación'} />
       {visibleTabs.length > 1 && (
         <nav className="mt-6 border-b border-slate-200">
           {visibleTabs.map(t => (
@@ -42,7 +42,7 @@ function ConfigTasacionInner() {
               onClick={() => router.push(`/configuracion/tasacion?tab=${t.key}`)}
               className={`border-b-2 px-4 py-2 text-sm ${
                 active === t.key
-                  ? 'border-brand-pink text-brand-pink'
+                  ? 'border-primary text-primary'
                   : 'border-transparent text-slate-500 hover:text-slate-700'
               }`}
             >
@@ -61,7 +61,7 @@ function ConfigTasacionInner() {
 
 export default function ConfigTasacionPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center py-24 text-slate-400">Cargando...</div>}>
+    <Suspense fallback={<div className="flex items-center justify-center py-24"><Text tone="muted">Cargando...</Text></div>}>
       <ConfigTasacionInner />
     </Suspense>
   )

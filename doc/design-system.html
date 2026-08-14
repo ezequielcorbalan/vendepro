@@ -1,0 +1,1439 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Muestrario de foundations y componentes del design system de VendéPro.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<title>VendéPro · Design System</title>
+<style>
+  /* ============================================================
+     VendéPro — Muestrario / Design System
+     Tokens tomados de vendepro-frontend/src/app/globals.css
+     ============================================================ */
+  :root {
+    /* Marca — fuente única de verdad (globals.css @theme) */
+    --brand-pink: #ff007c;
+    --brand-pink-hover: #e0006e;
+    --brand-orange: #ff8017;
+    --brand-orange-hover: #e6720f;
+    --brand-light: #f9fafb;
+    --brand-gray: #6b7280;
+    --ink: #27272a;
+
+    /* Neutros con leve sesgo cálido hacia el rosa/naranja de marca */
+    --paper: #ffffff;
+    --surface: #faf7f8;
+    --surface-2: #f3eef0;
+    --line: #e9e3e5;
+    --line-strong: #d8cfd2;
+    --muted: #6b7280;
+    --muted-2: #9ca3af;
+    --text: #27272a;
+    --heading: #1c1c1f;
+
+    /* Doc chrome */
+    --nav-w: 248px;
+    --radius-card: 16px;
+    --shadow-card: 0 1px 2px rgba(24,20,22,.06), 0 8px 24px -16px rgba(24,20,22,.18);
+    --shadow-pop: 0 12px 40px -12px rgba(24,20,22,.28);
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: "Poppins", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #171418;
+      --surface: #1e1a1f;
+      --surface-2: #262029;
+      --line: #322b33;
+      --line-strong: #423a44;
+      --muted: #a79faa;
+      --muted-2: #837b86;
+      --text: #ece7ee;
+      --heading: #ffffff;
+      --shadow-card: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px -18px rgba(0,0,0,.7);
+      --shadow-pop: 0 16px 50px -14px rgba(0,0,0,.7);
+    }
+  }
+  :root[data-theme="light"] {
+    --paper:#ffffff; --surface:#faf7f8; --surface-2:#f3eef0; --line:#e9e3e5; --line-strong:#d8cfd2;
+    --muted:#6b7280; --muted-2:#9ca3af; --text:#27272a; --heading:#1c1c1f;
+    --shadow-card:0 1px 2px rgba(24,20,22,.06),0 8px 24px -16px rgba(24,20,22,.18);
+    --shadow-pop:0 12px 40px -12px rgba(24,20,22,.28);
+  }
+  :root[data-theme="dark"] {
+    --paper:#171418; --surface:#1e1a1f; --surface-2:#262029; --line:#322b33; --line-strong:#423a44;
+    --muted:#a79faa; --muted-2:#837b86; --text:#ece7ee; --heading:#ffffff;
+    --shadow-card:0 1px 2px rgba(0,0,0,.4),0 10px 30px -18px rgba(0,0,0,.7);
+    --shadow-pop:0 16px 50px -14px rgba(0,0,0,.7);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *{ transition:none!important; animation:none!important; } }
+
+  body {
+    margin: 0;
+    font-family: var(--sans);
+    color: var(--text);
+    background: var(--surface);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+  }
+
+  .gradient { background-image: linear-gradient(135deg, var(--brand-pink), var(--brand-orange)); }
+  .gradient-text {
+    background-image: linear-gradient(115deg, var(--brand-pink), var(--brand-orange));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+
+  /* ---------- Layout shell ---------- */
+  .layout { display: grid; grid-template-columns: var(--nav-w) 1fr; min-height: 100vh; }
+
+  nav.side {
+    position: sticky; top: 0; align-self: start; height: 100vh; overflow-y: auto;
+    background: var(--paper); border-right: 1px solid var(--line);
+    padding: 26px 18px 40px; display: flex; flex-direction: column; gap: 4px;
+  }
+  .brand { display: flex; align-items: center; gap: 11px; margin-bottom: 22px; padding: 0 6px; }
+  .brand-mark {
+    width: 34px; height: 34px; border-radius: 11px; flex: none;
+    display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 16px;
+    box-shadow: 0 6px 16px -6px rgba(255,0,124,.6);
+  }
+  .brand-name { font-weight: 700; font-size: 15px; letter-spacing: -.01em; color: var(--heading); line-height: 1.1; }
+  .brand-sub { font-size: 11px; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+
+  .nav-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted-2); font-weight: 600; margin: 18px 8px 6px; }
+  nav.side a {
+    text-decoration: none; color: var(--muted); font-size: 13.5px; font-weight: 500;
+    padding: 7px 10px; border-radius: 9px; display: flex; align-items: center; gap: 9px;
+    transition: background .15s, color .15s;
+  }
+  nav.side a:hover { background: var(--surface-2); color: var(--text); }
+  nav.side a .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+
+  .theme-toggle {
+    margin-top: auto; display: flex; gap: 6px; padding: 5px; background: var(--surface-2);
+    border-radius: 11px; border: 1px solid var(--line);
+  }
+  .theme-toggle button {
+    flex: 1; border: 0; background: transparent; color: var(--muted); font-family: inherit;
+    font-size: 12px; font-weight: 600; padding: 7px; border-radius: 8px; cursor: pointer;
+  }
+  .theme-toggle button[aria-pressed="true"] { background: var(--paper); color: var(--text); box-shadow: var(--shadow-card); }
+
+  main { padding: 0; max-width: 100%; overflow-x: hidden; }
+  .wrap { max-width: 940px; margin: 0 auto; padding: 0 40px; }
+
+  /* ---------- Hero ---------- */
+  header.hero { padding: 68px 0 40px; border-bottom: 1px solid var(--line); background: var(--paper); }
+  .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--brand-pink); margin: 0 0 16px; }
+  h1.title { font-size: clamp(34px, 5vw, 52px); line-height: 1.02; font-weight: 800; letter-spacing: -.03em; margin: 0 0 18px; color: var(--heading); text-wrap: balance; }
+  .lede { font-size: 17px; color: var(--muted); max-width: 60ch; margin: 0; line-height: 1.6; }
+  .hero-meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+  .chip { font-size: 12px; font-weight: 500; color: var(--text); background: var(--surface-2); border: 1px solid var(--line); padding: 6px 12px; border-radius: 999px; display: inline-flex; align-items: center; gap: 7px; }
+  .chip code { font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+
+  /* ---------- Sections ---------- */
+  section { padding: 56px 0; border-bottom: 1px solid var(--line); }
+  section:last-of-type { border-bottom: 0; }
+  .sec-head { margin-bottom: 30px; }
+  .sec-kicker { font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted-2); margin: 0 0 8px; }
+  h2 { font-size: 27px; font-weight: 700; letter-spacing: -.02em; margin: 0 0 10px; color: var(--heading); }
+  .sec-desc { font-size: 15px; color: var(--muted); max-width: 62ch; margin: 0; }
+  h3 { font-size: 14px; font-weight: 600; letter-spacing: -.01em; color: var(--heading); margin: 30px 0 14px; text-transform: none; }
+  h3 .sub { font-weight: 400; color: var(--muted-2); font-size: 12.5px; margin-left: 6px; }
+
+  /* ---------- Color ---------- */
+  .swatch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+  .swatch { border-radius: 13px; overflow: hidden; border: 1px solid var(--line); background: var(--paper); box-shadow: var(--shadow-card); }
+  .swatch .fill { height: 78px; display: flex; align-items: flex-end; padding: 10px; }
+  .swatch .meta { padding: 11px 12px 13px; }
+  .swatch .nm { font-size: 12.5px; font-weight: 600; color: var(--heading); }
+  .swatch .hex { font-family: var(--mono); font-size: 11.5px; color: var(--muted); margin-top: 3px; text-transform: uppercase; }
+  .swatch .tok { font-family: var(--mono); font-size: 10.5px; color: var(--muted-2); margin-top: 5px; }
+  .on-dark { color: #fff; } .on-light { color: var(--ink); }
+
+  .gradient-band { border-radius: 15px; height: 96px; display: flex; align-items: center; padding: 0 24px; color: #fff; box-shadow: var(--shadow-card); margin-bottom: 20px; }
+  .gradient-band b { font-weight: 700; font-size: 15px; }
+  .gradient-band code { font-family: var(--mono); font-size: 12px; opacity: .92; }
+
+  /* ---------- Type ---------- */
+  .type-row { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .type-row:last-child { border-bottom: 0; }
+  .type-spec { font-family: var(--mono); font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+  .weights { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+  .weight-card { flex: 1 1 120px; border: 1px solid var(--line); border-radius: 11px; padding: 14px 16px; background: var(--paper); }
+  .weight-card .big { font-size: 26px; color: var(--heading); line-height: 1; }
+  .weight-card .lbl { font-size: 11.5px; color: var(--muted); margin-top: 9px; font-family: var(--mono); }
+
+  /* ---------- Preview panels ---------- */
+  .demo {
+    border: 1px solid var(--line); border-radius: var(--radius-card); overflow: hidden;
+    background: var(--paper); box-shadow: var(--shadow-card); margin-bottom: 18px;
+  }
+  .demo .stage {
+    /* Lienzo del producto: VendéPro es light-only, así que el preview se muestra
+       siempre sobre el fondo real de la app (brand-light). */
+    background: var(--brand-light); color: var(--ink);
+    padding: 30px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center;
+  }
+  .demo .stage.col { flex-direction: column; align-items: stretch; }
+  .demo .stage.center { justify-content: center; }
+  .demo .code {
+    border-top: 1px solid var(--line); background: var(--surface);
+    padding: 13px 16px; font-family: var(--mono); font-size: 11.5px; color: var(--muted);
+    overflow-x: auto; white-space: pre; line-height: 1.6;
+  }
+  .demo .code .cls { color: var(--brand-pink); }
+  .stage-note { font-size: 11px; color: #9ca3af; width: 100%; margin-bottom: -2px; }
+
+  /* ============================================================
+     COMPONENTES REALES (clases espejo del repo Tailwind)
+     Escritas en CSS puro para el muestrario, calcadas 1:1.
+     ============================================================ */
+  .vp-btn { font-family: var(--sans); font-size: 14px; font-weight: 500; border: 0; cursor: pointer;
+            display: inline-flex; align-items: center; gap: 8px; border-radius: 8px; padding: 8px 16px;
+            transition: opacity .15s, background .15s; }
+  .vp-btn-primary { background-image: linear-gradient(135deg, var(--brand-pink), var(--brand-orange)); color: #fff; }
+  .vp-btn-primary:hover { opacity: .9; }
+  .vp-btn-solid { background: var(--brand-pink); color: #fff; }
+  .vp-btn-solid:hover { background: var(--brand-pink-hover); }
+  .vp-btn-outline { background: #fff; border: 1px solid var(--brand-pink); color: var(--brand-pink);
+                    font-weight: 600; border-radius: 999px; padding: 10px 16px; }
+  .vp-btn-outline:hover { background: rgba(255,0,124,.05); }
+  .vp-btn-ghost { background: transparent; color: #374151; }
+  .vp-btn-ghost:hover { background: #f3f4f6; }
+  .vp-btn-danger { background: #dc2626; color:#fff; }
+  .vp-btn:disabled, .vp-btn.is-disabled { opacity: .5; cursor: not-allowed; }
+
+  .vp-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 500;
+              padding: 4px 10px; border-radius: 999px; font-family: var(--sans); }
+  .b-draft { background:#f3f4f6; color:#374151; }
+  .b-review { background:#fef3c7; color:#92400e; }
+  .b-pub { background:#d1fae5; color:#065f46; }
+  .b-arch { background:#e5e7eb; color:#6b7280; }
+
+  .vp-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .sem { display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:500; }
+  .sem-red    { color:#b91c1c; } .sem-red .vp-dot{ background:#ef4444; }
+  .sem-orange { color:#c2410c; } .sem-orange .vp-dot{ background:#f97316; }
+  .sem-yellow { color:#a16207; } .sem-yellow .vp-dot{ background:#facc15; }
+  .sem-lgreen { color:#4d7c0f; } .sem-lgreen .vp-dot{ background:#84cc16; }
+  .sem-green  { color:#15803d; } .sem-green .vp-dot{ background:#22c55e; }
+
+  .vp-input { font-family: var(--sans); font-size: 14px; color: var(--ink); background:#fff;
+              width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: 10px 16px; }
+  .vp-input::placeholder { color: #9ca3af; }
+  .vp-input:focus { outline: 2px solid #9ca3af; outline-offset: 2px; }
+  .vp-label { display:block; font-size: 13px; font-weight: 500; color:#374151; margin-bottom: 6px; }
+  .vp-field { max-width: 340px; }
+  .vp-select { position: relative; }
+  .vp-select select { appearance:none; -webkit-appearance:none; font-family: var(--sans); font-size:14px;
+     color:var(--ink); background:#fff; width:100%; border:1px solid #d1d5db; border-radius:8px;
+     padding:10px 36px 10px 16px; cursor:pointer;
+     background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+     background-repeat:no-repeat; background-position:right 12px center; background-size:16px; }
+
+  .vp-card { background:#fff; border:1px solid #e5e7eb; border-radius: 16px; box-shadow: 0 1px 2px rgba(0,0,0,.05); padding: 18px; }
+  .vp-kpi { min-width: 190px; }
+  .vp-kpi .ico { width: 40px; height:40px; border-radius: 12px; display:grid; place-items:center;
+                 background: rgba(255,0,124,.1); color: var(--brand-pink); margin-bottom: 12px; }
+  .vp-kpi .val { font-size: 28px; font-weight: 700; color: var(--ink); letter-spacing: -.02em; line-height: 1; }
+  .vp-kpi .cap { font-size: 13px; color: #6b7280; margin-top: 6px; }
+  .vp-kpi .trend { font-size: 12px; font-weight:600; color:#15803d; margin-top:10px; display:inline-flex; align-items:center; gap:4px; }
+
+  .vp-avatar { width: 40px; height: 40px; border-radius: 50%; display:grid; place-items:center;
+               background: rgba(255,0,124,.2); color: var(--brand-pink); font-weight: 600; font-size: 15px; }
+  .vp-avatar.sm { width: 32px; height:32px; font-size: 13px; }
+  .vp-avatar.img { background-size: cover; background-position: center; }
+
+  .vp-alert { display:flex; gap:12px; align-items:flex-start; background: rgba(255,0,124,.05);
+              border:1px solid rgba(255,0,124,.30); border-radius: 12px; padding: 14px 16px; max-width: 460px; }
+  .vp-alert .ai { width: 34px; height:34px; border-radius:10px; flex:none; display:grid; place-items:center;
+                  background: rgba(255,0,124,.10); color: var(--brand-pink); }
+  .vp-alert .at { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+  .vp-alert .ad { font-size: 13px; color: #6b7280; margin-top: 3px; }
+
+  .vp-toast { display:flex; align-items:center; gap:10px; background:#111827; color:#fff;
+              padding: 11px 16px; border-radius: 12px; font-size: 13.5px; box-shadow: var(--shadow-pop); }
+  .vp-toast .ok { color: #34d399; }
+
+  /* ---------- Tabs ---------- */
+  .vp-tabs { display:flex; gap:4px; border-bottom:1px solid #e5e7eb; width:100%; }
+  .vp-tab { font-family:var(--sans); font-size:14px; font-weight:500; color:#6b7280; background:transparent; border:0;
+            border-bottom:2px solid transparent; margin-bottom:-1px; padding:10px 16px; cursor:pointer;
+            display:inline-flex; align-items:center; gap:8px; transition:color .15s, border-color .15s; }
+  .vp-tab:hover { color:var(--ink); border-color:#d1d5db; }
+  .vp-tab.active { color:var(--brand-pink); border-color:var(--brand-pink); }
+  .vp-tab .count { font-size:11px; background:#f3f4f6; color:#6b7280; padding:1px 7px; border-radius:999px; }
+  .vp-tab.active .count { background:rgba(255,0,124,.12); color:var(--brand-pink); }
+
+  /* ---------- Modal ---------- */
+  .vp-modal { width:100%; max-width:420px; background:#fff; border-radius:16px; overflow:hidden;
+              box-shadow:0 25px 50px -12px rgba(0,0,0,.35); }
+  .vp-modal .mh { display:flex; align-items:flex-start; justify-content:space-between; padding:20px 24px 14px; border-bottom:1px solid #f3f4f6; }
+  .vp-modal .mh .l { display:flex; align-items:center; gap:12px; }
+  .vp-modal .mi { width:36px; height:36px; border-radius:11px; flex:none; display:grid; place-items:center; color:#fff;
+                  background:linear-gradient(135deg,var(--brand-pink),var(--brand-orange)); }
+  .vp-modal .mi.danger { background:#fee2e2; color:#dc2626; }
+  .vp-modal .mt { font-size:17px; font-weight:600; color:var(--ink); }
+  .vp-modal .mx { background:transparent; border:0; color:#6b7280; cursor:pointer; padding:6px; border-radius:8px; font-size:16px; line-height:1; }
+  .vp-modal .mx:hover { background:#f3f4f6; }
+  .vp-modal .mb { padding:16px 24px; font-size:14px; color:#4b5563; }
+  .vp-modal .mf { display:flex; justify-content:flex-end; gap:8px; padding:16px 24px; background:#f9fafb; border-top:1px solid #f3f4f6; }
+
+  /* ---------- Tabla ---------- */
+  .vp-table-wrap { width:100%; overflow-x:auto; border:1px solid #e5e7eb; border-radius:14px; background:#fff; }
+  table.vp-table { width:100%; border-collapse:collapse; font-size:13.5px; min-width:460px; }
+  table.vp-table thead th { text-align:left; font-size:11.5px; font-weight:600; color:#6b7280; text-transform:uppercase;
+                            letter-spacing:.03em; background:#f9fafb; padding:10px 16px; border-bottom:1px solid #f3f4f6; }
+  table.vp-table tbody td { padding:12px 16px; border-bottom:1px solid #f3f4f6; color:var(--ink); }
+  table.vp-table tbody tr:last-child td { border-bottom:0; }
+  table.vp-table tbody tr:hover { background:#faf7f8; }
+  table.vp-table .num { text-align:right; font-variant-numeric:tabular-nums; }
+
+  /* ---------- Nav lateral (producto) ---------- */
+  .vp-nav { width:230px; background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:8px; }
+  .vp-nav a { display:flex; align-items:center; gap:11px; padding:9px 12px; border-radius:10px; text-decoration:none;
+              font-size:13.5px; font-weight:500; color:#4b5563; }
+  .vp-nav a .ni { width:18px; height:18px; flex:none; opacity:.8; }
+  .vp-nav a:hover { background:#f3f4f6; }
+  .vp-nav a.active { background:rgba(255,0,124,.10); color:var(--brand-pink); font-weight:600; }
+  .vp-nav a .badge-n { margin-left:auto; font-size:11px; font-weight:600; background:var(--brand-pink); color:#fff; border-radius:999px; padding:1px 7px; }
+
+  /* ---------- Pasos & progreso ---------- */
+  .vp-steps { display:flex; align-items:center; gap:8px; }
+  .vp-steps .s { height:8px; border-radius:999px; background:#e5e7eb; transition:width .3s; }
+  .vp-steps .s.done { width:8px; background:var(--brand-pink); }
+  .vp-steps .s.active { width:24px; background:linear-gradient(90deg,var(--brand-pink),var(--brand-orange)); }
+  .vp-steps .s.todo { width:8px; }
+  .vp-steps .lbl { font-size:12px; color:#9ca3af; margin-left:4px; }
+  .vp-progress { width:100%; max-width:340px; height:6px; background:#f3f4f6; border-radius:999px; overflow:hidden; }
+  .vp-progress .fill { height:100%; border-radius:999px; background:linear-gradient(90deg,var(--brand-pink),var(--brand-orange)); }
+
+  /* ---------- Dropdown ---------- */
+  .vp-dd { background:#fff; border:1px solid #e5e7eb; border-radius:12px; box-shadow:0 12px 30px -8px rgba(0,0,0,.22);
+           padding:6px; min-width:210px; }
+  .vp-dd .item { display:flex; align-items:center; gap:10px; padding:9px 11px; border-radius:8px; font-size:13.5px; color:#374151; cursor:pointer; }
+  .vp-dd .item:hover { background:#f3f4f6; }
+  .vp-dd .item.danger { color:#dc2626; }
+  .vp-dd .item.danger:hover { background:#fef2f2; }
+  .vp-dd .sep { height:1px; background:#f3f4f6; margin:5px 4px; }
+
+  /* ---------- Tooltip ---------- */
+  .vp-tip { position:relative; display:inline-flex; }
+  .vp-tip .bubble { background:#111827; color:#fff; font-size:12px; font-weight:500; padding:6px 11px; border-radius:8px;
+                    box-shadow:var(--shadow-pop); position:relative; }
+  .vp-tip .bubble::after { content:""; position:absolute; bottom:-5px; left:50%; transform:translateX(-50%);
+                    border:5px solid transparent; border-top-color:#111827; border-bottom:0; }
+
+  /* ---------- Empty state ---------- */
+  .vp-empty { text-align:center; padding:34px 20px; }
+  .vp-empty .box { width:56px; height:56px; border-radius:18px; background:rgba(255,0,124,.08); color:var(--brand-pink);
+                   display:grid; place-items:center; margin:0 auto 14px; font-size:24px; }
+  .vp-empty .t { font-size:15px; font-weight:600; color:var(--ink); }
+  .vp-empty .d { font-size:13px; color:#6b7280; margin-top:5px; max-width:34ch; margin-left:auto; margin-right:auto; }
+
+  /* ---------- Switch ---------- */
+  .vp-switch { position:relative; width:40px; height:22px; border-radius:999px; background:#d1d5db; cursor:pointer; transition:background .2s; }
+  .vp-switch.on { background:linear-gradient(135deg,var(--brand-pink),var(--brand-orange)); }
+  .vp-switch .knob { position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:#fff;
+                     box-shadow:0 1px 3px rgba(0,0,0,.3); transition:left .2s; }
+  .vp-switch.on .knob { left:20px; }
+  .switch-row { display:flex; align-items:center; gap:12px; font-size:14px; color:var(--ink); }
+
+  /* ---------- Stage / event chips (colores de dominio) ---------- */
+  .chip-pill { display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:500;
+               padding:4px 10px; border-radius:999px; font-family:var(--sans); }
+  .chip-pill .cd { width:7px; height:7px; border-radius:50%; }
+  .chips-flow { display:flex; flex-wrap:wrap; gap:8px; }
+
+  /* ---------- Kanban / pipeline ---------- */
+  .vp-kanban { display:flex; gap:14px; overflow-x:auto; width:100%; padding-bottom:6px; }
+  .kcol { flex:0 0 220px; background:#f3eef0; border-radius:16px; padding:10px; }
+  .kcol .kh { display:flex; align-items:center; justify-content:space-between; padding:4px 6px 10px; }
+  .kcol .kh .kt { font-size:12.5px; font-weight:600; color:var(--ink); display:flex; align-items:center; gap:7px; }
+  .kcol .kh .kn { font-size:11px; font-weight:600; color:#6b7280; background:#fff; border-radius:999px; padding:1px 8px; }
+  .kcard { background:#fff; border:1px solid #e5e7eb; border-left-width:3px; border-radius:11px; padding:11px 12px;
+           box-shadow:0 1px 2px rgba(0,0,0,.04); margin-bottom:9px; }
+  .kcard .knm { font-size:13px; font-weight:600; color:var(--ink); }
+  .kcard .kmeta { font-size:12px; color:#6b7280; margin-top:3px; display:flex; align-items:center; gap:6px; }
+
+  /* ---------- Card de propiedad ---------- */
+  .prop-card { width:270px; background:#fff; border:1px solid #e5e7eb; border-radius:16px; overflow:hidden;
+               box-shadow:var(--shadow-card); }
+  .prop-card .ph { height:150px; position:relative; background:linear-gradient(135deg,#ff007c,#ff8017); }
+  .prop-card .ph .ov { position:absolute; inset:0; background:linear-gradient(180deg,transparent 45%,rgba(0,0,0,.45)); }
+  .prop-card .ph .badge-top { position:absolute; top:10px; left:10px; }
+  .prop-card .ph .fav { position:absolute; top:10px; right:10px; width:30px; height:30px; border-radius:50%;
+                        background:rgba(255,255,255,.9); display:grid; place-items:center; font-size:14px; }
+  .prop-card .ph .price { position:absolute; bottom:10px; left:12px; color:#fff; font-weight:700; font-size:17px; }
+  .prop-card .pb { padding:13px 15px 15px; }
+  .prop-card .pt { font-size:14px; font-weight:600; color:var(--ink); }
+  .prop-card .pl { font-size:12.5px; color:#6b7280; margin-top:2px; }
+  .prop-card .pf { display:flex; gap:14px; margin-top:11px; padding-top:11px; border-top:1px solid #f3f4f6; font-size:12px; color:#6b7280; }
+  .prop-card .pf span { display:inline-flex; align-items:center; gap:4px; }
+
+  /* ---------- Gráficos ---------- */
+  .chart-card { background:#fff; border:1px solid #e5e7eb; border-radius:16px; padding:18px; box-shadow:var(--shadow-card); }
+  .chart-card .ct { font-size:13px; font-weight:600; color:var(--ink); margin-bottom:16px; }
+  .bars { display:flex; align-items:flex-end; gap:12px; height:130px; }
+  .bars .bcol { flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end; }
+  .bars .bar2 { width:100%; max-width:34px; border-radius:6px 6px 0 0; background:linear-gradient(180deg,var(--brand-pink),var(--brand-orange)); }
+  .bars .bl { font-size:10.5px; color:#9ca3af; }
+  .funnel { display:flex; flex-direction:column; gap:6px; align-items:center; }
+  .fstep { color:#fff; border-radius:8px; padding:8px 12px; font-size:12px; font-weight:500; display:flex; justify-content:space-between; align-items:center; }
+  .donut { width:120px; height:120px; border-radius:50%; display:grid; place-items:center;
+           background:conic-gradient(var(--brand-pink) 0 62%, var(--brand-orange) 62% 84%, #e5e7eb 84% 100%); }
+  .donut .hole { width:74px; height:74px; border-radius:50%; background:#fff; display:grid; place-items:center; text-align:center; }
+  .donut .hole b { font-size:20px; color:var(--ink); font-weight:700; }
+  .donut .hole small { font-size:10px; color:#6b7280; }
+  .legend { display:flex; flex-direction:column; gap:8px; font-size:12.5px; color:var(--ink); }
+  .legend i { width:10px; height:10px; border-radius:3px; display:inline-block; margin-right:7px; }
+
+  /* ---------- Segmented / filtros ---------- */
+  .vp-seg { display:inline-flex; gap:2px; background:#f3f4f6; border-radius:10px; padding:3px; }
+  .vp-seg button { border:0; background:transparent; font-family:var(--sans); font-size:13px; font-weight:500;
+                   color:#6b7280; padding:6px 14px; border-radius:8px; cursor:pointer; }
+  .vp-seg button.on { background:#fff; color:var(--ink); box-shadow:0 1px 2px rgba(0,0,0,.08); }
+  .vp-filter { display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:500; color:#374151;
+               background:#f9fafb; border:1px solid #e5e7eb; padding:7px 12px; border-radius:9px; cursor:pointer; }
+  .vp-filter:hover { background:#f3f4f6; }
+  .vp-filter .x { color:#9ca3af; }
+
+  /* ---------- Chips / tags ---------- */
+  .vp-tag { display:inline-flex; align-items:center; gap:8px; background:#fff; border:1px solid #e5e7eb;
+            border-radius:999px; padding:8px 16px; font-size:13px; color:var(--ink); font-weight:500; box-shadow:0 1px 2px rgba(0,0,0,.04); }
+  .vp-tag-sm { display:inline-flex; align-items:center; gap:6px; background:rgba(255,0,124,.08); color:var(--brand-pink);
+               border-radius:999px; padding:4px 11px; font-size:12px; font-weight:500; }
+  .vp-tag-sm .rm { opacity:.7; cursor:pointer; }
+
+  /* ---------- Checkbox / radio ---------- */
+  .cbrow { display:flex; align-items:center; gap:10px; font-size:14px; color:var(--ink); }
+  .vp-check { width:18px; height:18px; border-radius:5px; border:1.5px solid #d1d5db; display:grid; place-items:center; flex:none; }
+  .vp-check.on { background:var(--brand-pink); border-color:var(--brand-pink); color:#fff; font-size:12px; }
+  .vp-radio { width:18px; height:18px; border-radius:50%; border:1.5px solid #d1d5db; display:grid; place-items:center; flex:none; }
+  .vp-radio.on { border-color:var(--brand-pink); }
+  .vp-radio.on::after { content:""; width:9px; height:9px; border-radius:50%; background:var(--brand-pink); }
+
+  /* ---------- Drawer ---------- */
+  .drawer-frame { position:relative; width:100%; height:280px; background:#e9e3e5; border-radius:14px; overflow:hidden; display:flex; }
+  .drawer-frame .scrim { position:absolute; inset:0; background:rgba(0,0,0,.35); }
+  .vp-drawer { position:absolute; top:0; right:0; height:100%; width:300px; background:#fff; box-shadow:-8px 0 30px -10px rgba(0,0,0,.3);
+               display:flex; flex-direction:column; }
+  .vp-drawer .dh { display:flex; align-items:center; justify-content:space-between; padding:16px 18px; border-bottom:1px solid #f3f4f6; }
+  .vp-drawer .dh .dt { font-size:15px; font-weight:600; color:var(--ink); }
+  .vp-drawer .db { padding:16px 18px; font-size:13px; color:#6b7280; display:flex; flex-direction:column; gap:12px; overflow:auto; }
+  .vp-drawer .df { margin-top:auto; padding:14px 18px; border-top:1px solid #f3f4f6; }
+
+  /* ---------- Notificaciones ---------- */
+  .vp-bell { position:relative; width:40px; height:40px; border-radius:10px; background:#fff; border:1px solid #e5e7eb;
+             display:grid; place-items:center; font-size:17px; }
+  .vp-bell .ndot { position:absolute; top:8px; right:8px; width:8px; height:8px; border-radius:50%; background:#ef4444; border:2px solid #fff; }
+  .vp-notif { width:300px; background:#fff; border:1px solid #e5e7eb; border-radius:14px; box-shadow:var(--shadow-pop); overflow:hidden; }
+  .vp-notif .nh { padding:12px 15px; font-size:13px; font-weight:600; color:var(--ink); border-bottom:1px solid #f3f4f6; display:flex; justify-content:space-between; }
+  .vp-notif .ni2 { padding:12px 15px; display:flex; gap:11px; border-bottom:1px solid #f7f7f8; }
+  .vp-notif .ni2.unread { background:rgba(255,0,124,.03); }
+  .vp-notif .nd { width:8px; height:8px; border-radius:50%; background:var(--brand-pink); margin-top:5px; flex:none; }
+  .vp-notif .nd.read { background:transparent; }
+  .vp-notif .ntx { font-size:13px; color:var(--ink); }
+  .vp-notif .nti { font-size:11.5px; color:#9ca3af; margin-top:2px; }
+
+  /* ---------- Timeline ---------- */
+  .vp-timeline { position:relative; padding-left:22px; }
+  .vp-timeline::before { content:""; position:absolute; left:5px; top:4px; bottom:4px; width:2px; background:#e5e7eb; }
+  .tl-item { position:relative; padding-bottom:18px; }
+  .tl-item:last-child { padding-bottom:0; }
+  .tl-item .tdot { position:absolute; left:-22px; top:2px; width:12px; height:12px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 1px #e5e7eb; }
+  .tl-item .tlab { font-size:13px; font-weight:600; color:var(--ink); }
+  .tl-item .ttime { font-size:12px; color:#9ca3af; margin-top:1px; }
+
+  /* ---------- Radius / shadow / spacing samples ---------- */
+  .tile-row { display:flex; flex-wrap:wrap; gap: 16px; }
+  .r-tile { text-align:center; }
+  .r-box { width: 84px; height: 64px; background: var(--surface-2); border: 1px solid var(--line-strong); }
+  .r-tile .rl { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 8px; }
+  .r-tile .rl b { color: var(--heading); font-weight: 600; }
+  .s-box { width: 120px; height: 78px; background: var(--paper); border-radius: 14px; border:1px solid var(--line); }
+  .space-scale { display:flex; align-items:flex-end; gap: 12px; flex-wrap: wrap; }
+  .sp { text-align:center; }
+  .sp .bar { background: linear-gradient(180deg, var(--brand-pink), var(--brand-orange)); border-radius: 4px 4px 0 0; width: 30px; }
+  .sp .lb { font-family: var(--mono); font-size: 10.5px; color: var(--muted); margin-top: 6px; }
+
+  /* ---------- Standardization / drift ---------- */
+  .rules { display: grid; gap: 12px; }
+  .rule { display:flex; gap: 13px; align-items:flex-start; background: var(--paper); border:1px solid var(--line);
+          border-radius: 13px; padding: 15px 17px; box-shadow: var(--shadow-card); }
+  .rule .tag { font-size: 10.5px; font-weight: 700; letter-spacing:.05em; text-transform:uppercase;
+               padding: 4px 9px; border-radius: 7px; flex:none; margin-top: 1px; }
+  .tag.do  { background: rgba(34,197,94,.14); color:#15803d; }
+  .tag.dont{ background: rgba(239,68,68,.14); color:#b91c1c; }
+  .tag.drift{ background: rgba(255,128,23,.16); color:#c2410c; }
+  .rule .rt { font-size: 14px; color: var(--text); }
+  .rule .rt b { color: var(--heading); }
+  .rule .rt code { font-family: var(--mono); font-size: 12px; background: var(--surface-2); padding: 1px 6px; border-radius: 5px; color: var(--brand-pink); }
+  @media (prefers-color-scheme: dark) { .rule .rt code { color: #ff5aa3; } }
+  :root[data-theme="dark"] .rule .rt code { color:#ff5aa3; }
+
+  footer { padding: 40px 0 60px; color: var(--muted); font-size: 12.5px; }
+  footer code { font-family: var(--mono); color: var(--text); }
+
+  /* ---------- Responsive ---------- */
+  .menu-btn { display: none; }
+  @media (max-width: 860px) {
+    .layout { grid-template-columns: 1fr; }
+    nav.side { display: none; position: fixed; z-index: 40; width: 260px; }
+    nav.side.open { display: flex; box-shadow: var(--shadow-pop); }
+    .menu-btn { display: inline-flex; position: fixed; top: 14px; right: 14px; z-index: 50;
+      background: var(--paper); border: 1px solid var(--line); border-radius: 10px; width: 42px; height: 42px;
+      align-items:center; justify-content:center; box-shadow: var(--shadow-card); cursor:pointer; color: var(--text); }
+    .wrap { padding: 0 22px; }
+    header.hero { padding: 54px 0 34px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <button class="menu-btn" id="menuBtn" aria-label="Menú">☰</button>
+  <nav class="side" id="side">
+    <div class="brand">
+      <div class="brand-mark gradient">V</div>
+      <div>
+        <div class="brand-name">VendéPro</div>
+        <div class="brand-sub">Design System</div>
+      </div>
+    </div>
+
+    <div class="nav-label">Foundations</div>
+    <a href="#marca"><span class="dot gradient"></span>Marca &amp; gradiente</a>
+    <a href="#color"><span class="dot" style="background:var(--brand-pink)"></span>Color</a>
+    <a href="#tipografia"><span class="dot" style="background:var(--ink)"></span>Tipografía</a>
+    <a href="#radios"><span class="dot" style="background:var(--brand-orange)"></span>Radios &amp; sombras</a>
+    <a href="#espaciado"><span class="dot" style="background:var(--brand-gray)"></span>Espaciado</a>
+
+    <div class="nav-label">Componentes</div>
+    <a href="#botones"><span class="dot gradient"></span>Botones</a>
+    <a href="#estados"><span class="dot" style="background:#22c55e"></span>Badges &amp; estados</a>
+    <a href="#semaforo"><span class="dot" style="background:#f97316"></span>Semáforo</a>
+    <a href="#forms"><span class="dot" style="background:#6b7280"></span>Inputs &amp; selects</a>
+    <a href="#cards"><span class="dot" style="background:var(--brand-pink)"></span>Cards &amp; KPI</a>
+    <a href="#avatares"><span class="dot" style="background:var(--brand-pink)"></span>Avatares</a>
+    <a href="#feedback"><span class="dot" style="background:var(--brand-orange)"></span>Alertas &amp; toasts</a>
+    <a href="#tabs"><span class="dot" style="background:var(--brand-pink)"></span>Tabs</a>
+    <a href="#modal"><span class="dot gradient"></span>Modal &amp; dialog</a>
+    <a href="#tabla"><span class="dot" style="background:var(--ink)"></span>Tablas</a>
+    <a href="#navlateral"><span class="dot" style="background:var(--brand-pink)"></span>Navegación</a>
+    <a href="#pasos"><span class="dot gradient"></span>Pasos &amp; progreso</a>
+    <a href="#dropdown"><span class="dot" style="background:var(--brand-gray)"></span>Dropdown</a>
+    <a href="#tooltip"><span class="dot" style="background:var(--ink)"></span>Tooltip</a>
+    <a href="#empty"><span class="dot" style="background:var(--brand-orange)"></span>Empty state</a>
+    <a href="#switch"><span class="dot gradient"></span>Switch</a>
+    <a href="#segmented"><span class="dot" style="background:var(--brand-gray)"></span>Filtros &amp; segmented</a>
+    <a href="#chips"><span class="dot" style="background:var(--brand-pink)"></span>Chips &amp; tags</a>
+    <a href="#checks"><span class="dot" style="background:var(--brand-pink)"></span>Checkbox &amp; radio</a>
+    <a href="#drawer"><span class="dot" style="background:var(--ink)"></span>Drawer</a>
+    <a href="#notif"><span class="dot" style="background:#ef4444"></span>Notificaciones</a>
+
+    <div class="nav-label">Dominio · CRM</div>
+    <a href="#stages"><span class="dot" style="background:#6366f1"></span>Etapas del lead</a>
+    <a href="#kanban"><span class="dot" style="background:#06b6d4"></span>Pipeline / Kanban</a>
+    <a href="#eventos"><span class="dot" style="background:#c2410c"></span>Tipos de evento</a>
+    <a href="#propcard"><span class="dot gradient"></span>Card de propiedad</a>
+    <a href="#timeline"><span class="dot" style="background:#22c55e"></span>Timeline de etapas</a>
+    <a href="#graficos"><span class="dot" style="background:var(--brand-pink)"></span>Gráficos</a>
+
+    <div class="nav-label">Sistema</div>
+    <a href="#reglas"><span class="dot" style="background:#c2410c"></span>Estandarización</a>
+
+    <div class="theme-toggle" role="group" aria-label="Tema">
+      <button data-theme-set="light" aria-pressed="false">Claro</button>
+      <button data-theme-set="dark" aria-pressed="false">Oscuro</button>
+    </div>
+  </nav>
+
+  <main>
+    <header class="hero">
+      <div class="wrap">
+        <p class="eyebrow">Muestrario de componentes</p>
+        <h1 class="title">El sistema visual de <span class="gradient-text">VendéPro</span></h1>
+        <p class="lede">Foundations y componentes estandarizados del CRM inmobiliario. Cada token y cada clase de este documento está tomada del código real (<code>globals.css</code> + patrones de <code>src/components</code>) para que diseño y desarrollo hablen el mismo idioma.</p>
+        <div class="hero-meta">
+          <span class="chip">Next.js 15 · Tailwind v4</span>
+          <span class="chip">Tipografía <code>Poppins</code></span>
+          <span class="chip"><span class="vp-dot" style="background:var(--brand-pink)"></span><code>#ff007c</code></span>
+          <span class="chip"><span class="vp-dot" style="background:var(--brand-orange)"></span><code>#ff8017</code></span>
+        </div>
+      </div>
+    </header>
+
+    <!-- ================= MARCA ================= -->
+    <section id="marca"><div class="wrap">
+      <div class="sec-head">
+        <p class="sec-kicker">Foundations</p>
+        <h2>Marca &amp; gradiente</h2>
+        <p class="sec-desc">La firma visual de VendéPro es el gradiente rosa → naranja. Aparece 180+ veces en el producto: en el botón primario, marcas, íconos destacados y acentos de IA. Es el recurso de marca #1 — usalo con intención, no como relleno.</p>
+      </div>
+      <div class="gradient-band gradient">
+        <div>
+          <b>bg-gradient-to-br from-brand-pink to-brand-orange</b><br>
+          <code>linear-gradient(135deg, #ff007c → #ff8017)</code>
+        </div>
+      </div>
+      <div class="swatch-grid">
+        <div class="swatch">
+          <div class="fill" style="background:var(--brand-pink)"><span class="on-dark" style="font-size:12px;font-weight:600">Aa</span></div>
+          <div class="meta"><div class="nm">Brand Pink</div><div class="hex">#ff007c</div><div class="tok">--color-brand-pink</div></div>
+        </div>
+        <div class="swatch">
+          <div class="fill" style="background:var(--brand-orange)"><span class="on-dark" style="font-size:12px;font-weight:600">Aa</span></div>
+          <div class="meta"><div class="nm">Brand Orange</div><div class="hex">#ff8017</div><div class="tok">--color-brand-orange</div></div>
+        </div>
+      </div>
+    </div></section>
+
+    <!-- ================= COLOR ================= -->
+    <section id="color"><div class="wrap">
+      <div class="sec-head">
+        <p class="sec-kicker">Foundations</p>
+        <h2>Color</h2>
+        <p class="sec-desc">Paleta de marca, sus estados de hover y los neutros base. El texto nunca usa negro pleno: la base tipográfica es <code>ink #27272a</code>.</p>
+      </div>
+
+      <h3>Marca <span class="sub">tokens de @theme</span></h3>
+      <div class="swatch-grid">
+        <div class="swatch"><div class="fill" style="background:#ff007c"></div><div class="meta"><div class="nm">Pink</div><div class="hex">#ff007c</div><div class="tok">brand-pink</div></div></div>
+        <div class="swatch"><div class="fill" style="background:#e0006e"></div><div class="meta"><div class="nm">Pink · hover</div><div class="hex">#e0006e</div><div class="tok">brand-pink-hover</div></div></div>
+        <div class="swatch"><div class="fill" style="background:#ff8017"></div><div class="meta"><div class="nm">Orange</div><div class="hex">#ff8017</div><div class="tok">brand-orange</div></div></div>
+        <div class="swatch"><div class="fill" style="background:#e6720f"></div><div class="meta"><div class="nm">Orange · hover</div><div class="hex">#e6720f</div><div class="tok">brand-orange-hover</div></div></div>
+      </div>
+
+      <h3>Neutros <span class="sub">texto, superficies y bordes</span></h3>
+      <div class="swatch-grid">
+        <div class="swatch"><div class="fill" style="background:#27272a"><span class="on-dark" style="font-size:11px">texto base</span></div><div class="meta"><div class="nm">Ink</div><div class="hex">#27272a</div><div class="tok">--color-ink · text-ink</div></div></div>
+        <div class="swatch"><div class="fill" style="background:#6b7280"><span class="on-dark" style="font-size:11px">secundario</span></div><div class="meta"><div class="nm">Gray</div><div class="hex">#6b7280</div><div class="tok">brand-gray · gray-500</div></div></div>
+        <div class="swatch"><div class="fill" style="background:#e5e7eb"><span class="on-light" style="font-size:11px">bordes</span></div><div class="meta"><div class="nm">Border</div><div class="hex">#e5e7eb</div><div class="tok">gray-200 (default)</div></div></div>
+        <div class="swatch"><div class="fill" style="background:#f9fafb;border-bottom:1px solid #eee"><span class="on-light" style="font-size:11px">fondo app</span></div><div class="meta"><div class="nm">Light</div><div class="hex">#f9fafb</div><div class="tok">brand-light · body bg</div></div></div>
+      </div>
+
+      <h3>Semánticos <span class="sub">estados de UI (Tailwind base)</span></h3>
+      <div class="swatch-grid">
+        <div class="swatch"><div class="fill" style="background:#10b981"><span class="on-dark" style="font-size:11px">éxito</span></div><div class="meta"><div class="nm">Success</div><div class="hex">emerald-500</div><div class="tok">bg-100 / text-800</div></div></div>
+        <div class="swatch"><div class="fill" style="background:#f59e0b"><span class="on-dark" style="font-size:11px">atención</span></div><div class="meta"><div class="nm">Warning</div><div class="hex">amber-500</div><div class="tok">bg-100 / text-800</div></div></div>
+        <div class="swatch"><div class="fill" style="background:#ef4444"><span class="on-dark" style="font-size:11px">error</span></div><div class="meta"><div class="nm">Danger</div><div class="hex">red-500</div><div class="tok">bg-50 / text-700</div></div></div>
+        <div class="swatch"><div class="fill" style="background:#3b82f6"><span class="on-dark" style="font-size:11px">info</span></div><div class="meta"><div class="nm">Info</div><div class="hex">blue-500</div><div class="tok">bg-50 / text-700</div></div></div>
+      </div>
+    </div></section>
+
+    <!-- ================= TIPOGRAFIA ================= -->
+    <section id="tipografia"><div class="wrap">
+      <div class="sec-head">
+        <p class="sec-kicker">Foundations</p>
+        <h2>Tipografía</h2>
+        <p class="sec-desc"><b>Poppins</b> en todo el producto (pesos 400 a 800). El texto de trabajo vive en <code>text-sm (14px)</code>; los títulos escalan desde <code>text-lg</code> hasta <code>text-3xl</code>.</p>
+      </div>
+
+      <div class="type-row"><div style="font-size:36px;font-weight:800;letter-spacing:-.03em;color:var(--heading)">Aa · Vendé más</div><div class="type-spec">text-3xl / 800 · 30px</div></div>
+      <div class="type-row"><div style="font-size:26px;font-weight:700;letter-spacing:-.02em;color:var(--heading)">Título de sección</div><div class="type-spec">text-2xl / 700 · 24px</div></div>
+      <div class="type-row"><div style="font-size:20px;font-weight:600;color:var(--heading)">Encabezado de card</div><div class="type-spec">text-xl / 600 · 20px</div></div>
+      <div class="type-row"><div style="font-size:16px;font-weight:600;color:var(--heading)">Subtítulo</div><div class="type-spec">text-base / 600 · 16px</div></div>
+      <div class="type-row"><div style="font-size:14px;font-weight:400;color:var(--text)">Texto de trabajo — el cuerpo por defecto del CRM.</div><div class="type-spec">text-sm / 400 · 14px</div></div>
+      <div class="type-row"><div style="font-size:12px;font-weight:500;color:var(--muted)">Metadato / label secundario</div><div class="type-spec">text-xs / 500 · 12px</div></div>
+
+      <h3>Pesos <span class="sub">Poppins 400–800</span></h3>
+      <div class="weights">
+        <div class="weight-card"><div class="big" style="font-weight:400">Ag</div><div class="lbl">400 · normal</div></div>
+        <div class="weight-card"><div class="big" style="font-weight:500">Ag</div><div class="lbl">500 · medium ★</div></div>
+        <div class="weight-card"><div class="big" style="font-weight:600">Ag</div><div class="lbl">600 · semibold ★</div></div>
+        <div class="weight-card"><div class="big" style="font-weight:700">Ag</div><div class="lbl">700 · bold</div></div>
+        <div class="weight-card"><div class="big" style="font-weight:800">Ag</div><div class="lbl">800 · extrabold</div></div>
+      </div>
+      <p class="sec-desc" style="margin-top:14px;font-size:13px">★ <b>medium</b> y <b>semibold</b> son los pesos de trabajo (botones, labels, valores). Reservá 700/800 para títulos y KPIs.</p>
+    </div></section>
+
+    <!-- ================= RADIOS Y SOMBRAS ================= -->
+    <section id="radios"><div class="wrap">
+      <div class="sec-head">
+        <p class="sec-kicker">Foundations</p>
+        <h2>Radios &amp; sombras</h2>
+        <p class="sec-desc">Escala de esquinas y elevación. <code>rounded-lg (8px)</code> es el radio base; <code>rounded-xl / 2xl</code> para cards; <code>rounded-full</code> para chips, avatares y botones tipo pill.</p>
+      </div>
+
+      <h3>Radios</h3>
+      <div class="tile-row">
+        <div class="r-tile"><div class="r-box" style="border-radius:6px"></div><div class="rl"><b>md</b> · 6px</div></div>
+        <div class="r-tile"><div class="r-box" style="border-radius:8px"></div><div class="rl"><b>lg</b> · 8px ★</div></div>
+        <div class="r-tile"><div class="r-box" style="border-radius:12px"></div><div class="rl"><b>xl</b> · 12px</div></div>
+        <div class="r-tile"><div class="r-box" style="border-radius:16px"></div><div class="rl"><b>2xl</b> · 16px</div></div>
+        <div class="r-tile"><div class="r-box" style="border-radius:999px"></div><div class="rl"><b>full</b></div></div>
+      </div>
+
+      <h3>Sombras</h3>
+      <div class="tile-row" style="gap:24px">
+        <div class="r-tile"><div class="s-box" style="box-shadow:0 1px 2px rgba(0,0,0,.05)"></div><div class="rl"><b>sm</b> · base ★</div></div>
+        <div class="r-tile"><div class="s-box" style="box-shadow:0 4px 6px -1px rgba(0,0,0,.1)"></div><div class="rl"><b>md</b></div></div>
+        <div class="r-tile"><div class="s-box" style="box-shadow:0 10px 15px -3px rgba(0,0,0,.1)"></div><div class="rl"><b>lg</b> · popovers</div></div>
+        <div class="r-tile"><div class="s-box" style="box-shadow:0 8px 24px -6px rgba(255,0,124,.4)"></div><div class="rl"><b>pink</b> · CTA</div></div>
+      </div>
+    </div></section>
+
+    <!-- ================= ESPACIADO ================= -->
+    <section id="espaciado"><div class="wrap">
+      <div class="sec-head">
+        <p class="sec-kicker">Foundations</p>
+        <h2>Espaciado</h2>
+        <p class="sec-desc">Escala base-4 de Tailwind. Los valores de trabajo son <code>2 (8px)</code>, <code>3 (12px)</code>, <code>4 (16px)</code> y <code>6 (24px)</code> para gaps y paddings de card.</p>
+      </div>
+      <div class="space-scale">
+        <div class="sp"><div class="bar" style="height:8px"></div><div class="lb">1 · 4</div></div>
+        <div class="sp"><div class="bar" style="height:16px"></div><div class="lb">2 · 8</div></div>
+        <div class="sp"><div class="bar" style="height:24px"></div><div class="lb">3 · 12</div></div>
+        <div class="sp"><div class="bar" style="height:32px"></div><div class="lb">4 · 16</div></div>
+        <div class="sp"><div class="bar" style="height:48px"></div><div class="lb">6 · 24</div></div>
+        <div class="sp"><div class="bar" style="height:64px"></div><div class="lb">8 · 32</div></div>
+        <div class="sp"><div class="bar" style="height:96px"></div><div class="lb">12 · 48</div></div>
+      </div>
+    </div></section>
+
+    <!-- ================= BOTONES ================= -->
+    <section id="botones"><div class="wrap">
+      <div class="sec-head">
+        <p class="sec-kicker">Componentes</p>
+        <h2>Botones</h2>
+        <p class="sec-desc">El <b>primario con gradiente</b> es el CTA principal (una acción primaria por vista). El resto de las jerarquías desciende hasta el ghost.</p>
+      </div>
+
+      <div class="demo">
+        <div class="stage">
+          <button class="vp-btn vp-btn-primary">＋ Nueva propiedad</button>
+          <button class="vp-btn vp-btn-outline">Ver detalle</button>
+          <button class="vp-btn vp-btn-ghost">Cancelar</button>
+          <button class="vp-btn vp-btn-danger">Eliminar</button>
+          <button class="vp-btn vp-btn-primary is-disabled" disabled>Guardando…</button>
+        </div>
+        <div class="code"><span class="cls">Primario</span>  bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50</div>
+      </div>
+
+      <h3>Secundario / outline <span class="sub">acción alternativa</span></h3>
+      <div class="demo">
+        <div class="stage">
+          <button class="vp-btn vp-btn-outline">Descartar cambios</button>
+          <button class="vp-btn vp-btn-solid">Pink sólido</button>
+        </div>
+        <div class="code"><span class="cls">Outline</span>  bg-white border border-brand-pink text-brand-pink hover:bg-brand-pink/5 font-semibold px-4 py-2.5 rounded-full text-sm
+<span class="cls">Sólido </span>  bg-brand-pink hover:bg-brand-pink-hover text-white px-4 py-2 rounded-lg text-sm font-medium</div>
+      </div>
+    </div></section>
+
+    <!-- ================= ESTADOS / BADGES ================= -->
+    <section id="estados"><div class="wrap">
+      <div class="sec-head">
+        <p class="sec-kicker">Componentes</p>
+        <h2>Badges &amp; estados</h2>
+        <p class="sec-desc">Pill de <code>text-xs font-medium</code> con fondo <code>-100</code> y texto <code>-800</code>. Un color por estado, consistente en toda la app.</p>
+      </div>
+      <div class="demo">
+        <div class="stage">
+          <span class="vp-badge b-draft">Borrador</span>
+          <span class="vp-badge b-review">En revisión</span>
+          <span class="vp-badge b-pub">Publicada</span>
+          <span class="vp-badge b-arch">Archivada</span>
+        </div>
+        <div class="code"><span class="cls">Badge</span>  inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full  ·  bg-{estado}-100 text-{estado}-800</div>
+      </div>
+    </div></section>
+
+    <!-- ================= SEMAFORO ================= -->
+    <section id="semaforo"><div class="wrap">
+      <div class="sec-head">
+        <p class="sec-kicker">Componentes · patrón de dominio</p>
+        <h2>Semáforo de performance</h2>
+        <p class="sec-desc">Escala cualitativa de 5 pasos para la salud de un aviso (visualizaciones/día). Definida en <code>lib/semaforo.ts</code> — <b>no reinventes estos colores</b>, importá <code>HEALTH_COLORS</code>.</p>
+      </div>
+      <div class="demo">
+        <div class="stage">
+          <span class="sem sem-red"><span class="vp-dot"></span>Crítico</span>
+          <span class="sem sem-orange"><span class="vp-dot"></span>Bajo</span>
+          <span class="sem sem-yellow"><span class="vp-dot"></span>Aceptable</span>
+          <span class="sem sem-lgreen"><span class="vp-dot"></span>Bueno</span>
+          <span class="sem sem-green"><span class="vp-dot"></span>Óptimo</span>
+        </div>
+        <div class="code"><span class="cls">HealthBadge</span>  red → orange → yellow → light_green → green   ·   dot bg-{c}-500 + text-{c}-700</div>
+      </div>
+    </div></section>
+
+    <!-- ================= FORMS ================= -->
+    <section id="forms"><div class="wrap">
+      <div class="sec-head">
+        <p class="sec-kicker">Componentes</p>
+        <h2>Inputs &amp; selects</h2>
+        <p class="sec-desc">Campos full-width con borde <code>gray-300</code>, radio <code>lg</code> y foco gris tenue accesible. Los selects usan un chevron propio (definido en <code>globals.css</code>), nunca el nativo del SO.</p>
+      </div>
+      <div class="demo">
+        <div class="stage col">
+          <div class="vp-field">
+            <label class="vp-label">Nombre del contacto</label>
+            <input class="vp-input" placeholder="Ej: Marcela Genta" />
+          </div>
+          <div class="vp-field vp-select">
+            <label class="vp-label">Etapa del lead</label>
+            <select><option>Nuevo</option><option>Contactado</option><option>En seguimiento</option><option>Ganado</option></select>
+          </div>
+        </div>
+        <div class="code"><span class="cls">Input </span>  w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none
+<span class="cls">Foco  </span>  outline: 2px solid #9ca3af (:focus-visible, sólo teclado)</div>
+      </div>
+    </div></section>
+
+    <!-- ================= CARDS ================= -->
+    <section id="cards"><div class="wrap">
+      <div class="sec-head">
+        <p class="sec-kicker">Componentes</p>
+        <h2>Cards &amp; KPI</h2>
+        <p class="sec-desc">Superficie blanca, borde <code>gray-200</code>, radio <code>xl/2xl</code> y <code>shadow-sm</code>. La KPI card lleva ícono en caja rosa translúcida, valor grande y tendencia.</p>
+      </div>
+      <div class="demo">
+        <div class="stage">
+          <div class="vp-card vp-kpi">
+            <div class="ico">🏠</div>
+            <div class="val">128</div>
+            <div class="cap">Propiedades activas</div>
+            <div class="trend">▲ 12% vs. mes anterior</div>
+          </div>
+          <div class="vp-card vp-kpi">
+            <div class="ico" style="background:rgba(255,128,23,.12);color:var(--brand-orange)">📈</div>
+            <div class="val">$ 4.2M</div>
+            <div class="cap">Volumen en cierre</div>
+            <div class="trend">▲ 8% vs. mes anterior</div>
+          </div>
+          <div class="vp-card" style="max-width:280px">
+            <div style="display:flex;gap:12px;align-items:center">
+              <div class="vp-avatar img" style="background-image:linear-gradient(135deg,#ff007c,#ff8017)"></div>
+              <div>
+                <div style="font-size:14px;font-weight:600;color:var(--ink)">Depto 2 amb · Palermo</div>
+                <div style="font-size:13px;color:#6b7280">USD 145.000</div>
+              </div>
+              <span class="vp-badge b-pub" style="margin-left:auto">Publicada</span>
+            </div>
+          </div>
+        </div>
+        <div class="code"><span class="cls">Card  </span>  bg-white border border-gray-200 rounded-xl shadow-sm p-4
+<span class="cls">KPI ico</span>  w-10 h-10 rounded-xl bg-brand-pink/10 text-brand-pink</div>
+      </div>
+    </div></section>
+
+    <!-- ================= AVATARES ================= -->
+    <section id="avatares"><div class="wrap">
+      <div class="sec-head">
+        <p class="sec-kicker">Componentes</p>
+        <h2>Avatares</h2>
+        <p class="sec-desc">Iniciales sobre rosa translúcido <code>brand-pink/20</code> cuando no hay foto. Circular, peso semibold.</p>
+      </div>
+      <div class="demo">
+        <div class="stage">
+          <div class="vp-avatar">MG</div>
+          <div class="vp-avatar sm">PB</div>
+          <div class="vp-avatar img" style="background-image:linear-gradient(135deg,#ff007c,#ff8017)"></div>
+          <div style="display:flex;align-items:center;margin-left:8px">
+            <div class="vp-avatar sm" style="border:2px solid #fff">A</div>
+            <div class="vp-avatar sm" style="border:2px solid #fff;margin-left:-10px;background:rgba(255,128,23,.2);color:var(--brand-orange)">B</div>
+            <div class="vp-avatar sm" style="border:2px solid #fff;margin-left:-10px;background:#e5e7eb;color:#6b7280">+3</div>
+          </div>
+        </div>
+        <div class="code"><span class="cls">Avatar</span>  w-8 h-8 rounded-full bg-brand-pink/20 text-brand-pink font-semibold text-sm flex items-center justify-center</div>
+      </div>
+    </div></section>
+
+    <!-- ================= FEEDBACK ================= -->
+    <section id="feedback"><div class="wrap">
+      <div class="sec-head">
+        <p class="sec-kicker">Componentes</p>
+        <h2>Alertas &amp; toasts</h2>
+        <p class="sec-desc">La caja de acento rosa (<code>brand-pink/5</code> + borde <code>/30</code>) se usa para sugerencias de IA y destacados. El toast oscuro confirma acciones (slide-up 0.2s).</p>
+      </div>
+      <div class="demo">
+        <div class="stage col">
+          <div class="vp-alert">
+            <div class="ai">✨</div>
+            <div>
+              <div class="at">Sugerencia de VendéPro IA</div>
+              <div class="ad">Este aviso tiene pocas visualizaciones. Probá actualizar la foto de portada y bajar el precio un 3%.</div>
+            </div>
+          </div>
+          <div style="display:flex"><div class="vp-toast"><span class="ok">✓</span> Propiedad guardada correctamente</div></div>
+        </div>
+        <div class="code"><span class="cls">Alert IA</span>  bg-brand-pink/5 border border-brand-pink/30 rounded-xl p-4
+<span class="cls">Toast   </span>  bg-gray-900 text-white rounded-xl shadow-lg  ·  animate-slide-up</div>
+      </div>
+    </div></section>
+
+    <!-- ================= TABS ================= -->
+    <section id="tabs"><div class="wrap">
+      <div class="sec-head">
+        <p class="sec-kicker">Componentes</p>
+        <h2>Tabs</h2>
+        <p class="sec-desc">Navegación por secciones dentro de una vista. Subrayado inferior de 2px; la tab activa toma <code>brand-pink</code>. Opcionalmente lleva contador.</p>
+      </div>
+      <div class="demo">
+        <div class="stage col" style="padding:0">
+          <div class="vp-tabs" style="padding:0 20px">
+            <button class="vp-tab active">Actividad <span class="count">8</span></button>
+            <button class="vp-tab">Propiedades <span class="count">3</span></button>
+            <button class="vp-tab">Documentos</button>
+            <button class="vp-tab">Historial</button>
+          </div>
+          <div style="padding:22px;font-size:13.5px;color:#6b7280">Contenido de la tab activa…</div>
+        </div>
+        <div class="code"><span class="cls">Tab activa </span>  px-4 py-2.5 text-sm font-medium border-b-2 border-brand-pink text-brand-pink -mb-px
+<span class="cls">Tab inactiva</span>  border-transparent text-gray-500 hover:text-ink hover:border-gray-300</div>
+      </div>
+    </div></section>
+
+    <!-- ================= MODAL ================= -->
+    <section id="modal"><div class="wrap">
+      <div class="sec-head">
+        <p class="sec-kicker">Componentes</p>
+        <h2>Modal &amp; dialog</h2>
+        <p class="sec-desc">Overlay <code>bg-black/50</code> + card <code>rounded-2xl</code>. Cabecera con ícono en caja (gradiente por defecto, rojo si es destructivo), cuerpo, y footer <code>gray-50</code> con las acciones a la derecha. Cierra con Esc o click afuera.</p>
+      </div>
+      <div class="demo">
+        <div class="stage center" style="background:#e9e3e5;padding:40px">
+          <div class="vp-modal">
+            <div class="mh">
+              <div class="l"><div class="mi">⚠</div><div class="mt">Publicar propiedad</div></div>
+              <button class="mx" aria-label="Cerrar">✕</button>
+            </div>
+            <div class="mb">Vas a publicar “Depto 2 amb · Palermo” en todos los portales conectados. Podés despublicarla cuando quieras.</div>
+            <div class="mf">
+              <button class="vp-btn vp-btn-ghost">Cancelar</button>
+              <button class="vp-btn vp-btn-primary">Publicar</button>
+            </div>
+          </div>
+        </div>
+        <div class="code"><span class="cls">Overlay</span>  fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4
+<span class="cls">Card   </span>  bg-white rounded-2xl w-full max-w-md shadow-xl  ·  footer: bg-gray-50 border-t
+<span class="cls">Ícono  </span>  w-9 h-9 rounded-xl · default bg-gradient-to-br from-brand-pink to-brand-orange · danger bg-red-100</div>
+      </div>
+    </div></section>
+
+    <!-- ================= TABLA ================= -->
+    <section id="tabla"><div class="wrap">
+      <div class="sec-head">
+        <p class="sec-kicker">Componentes</p>
+        <h2>Tablas</h2>
+        <p class="sec-desc">Para vistas de escritorio (reportes, listados). Header <code>gray-50</code> en <code>text-xs</code> mayúsculas; filas con divisor <code>gray-100</code> y hover tenue. Números alineados a la derecha con <code>tabular-nums</code>.</p>
+      </div>
+      <div class="demo">
+        <div class="stage" style="padding:24px">
+          <div class="vp-table-wrap">
+            <table class="vp-table">
+              <thead><tr><th>Propiedad</th><th>Estado</th><th class="num">Vistas/día</th><th>Salud</th></tr></thead>
+              <tbody>
+                <tr><td>Depto 2 amb · Palermo</td><td><span class="vp-badge b-pub">Publicada</span></td><td class="num">42</td><td><span class="sem sem-green"><span class="vp-dot"></span>Óptimo</span></td></tr>
+                <tr><td>Casa · Tigre</td><td><span class="vp-badge b-review">En revisión</span></td><td class="num">11</td><td><span class="sem sem-yellow"><span class="vp-dot"></span>Aceptable</span></td></tr>
+                <tr><td>PH · Villa Crespo</td><td><span class="vp-badge b-pub">Publicada</span></td><td class="num">4</td><td><span class="sem sem-red"><span class="vp-dot"></span>Crítico</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="code"><span class="cls">Header</span>  text-left text-xs font-medium text-gray-500 uppercase bg-gray-50 border-b border-gray-100
+<span class="cls">Fila  </span>  border-b border-gray-100 hover:bg-brand-pink/[0.02]  ·  números: text-right tabular-nums</div>
+      </div>
+    </div></section>
+
+    <!-- ================= NAV LATERAL ================= -->
+    <section id="navlateral"><div class="wrap">
+      <div class="sec-head">
+        <p class="sec-kicker">Componentes</p>
+        <h2>Navegación lateral</h2>
+        <p class="sec-desc">Ítems del sidebar del CRM. El activo se marca con fondo rosa translúcido <code>brand-pink/10</code> y texto <code>brand-pink</code>. Contador opcional para pendientes.</p>
+      </div>
+      <div class="demo">
+        <div class="stage" style="padding:24px">
+          <div class="vp-nav">
+            <a href="#navlateral" class="active" onclick="return false"><span class="ni">🏠</span>Dashboard</a>
+            <a href="#navlateral" onclick="return false"><span class="ni">👥</span>Leads<span class="badge-n">5</span></a>
+            <a href="#navlateral" onclick="return false"><span class="ni">📋</span>Propiedades</a>
+            <a href="#navlateral" onclick="return false"><span class="ni">📅</span>Calendario</a>
+            <a href="#navlateral" onclick="return false"><span class="ni">📊</span>Reportes</a>
+          </div>
+        </div>
+        <div class="code"><span class="cls">Activo  </span>  bg-brand-pink/10 text-brand-pink font-semibold rounded-lg px-3 py-2
+<span class="cls">Inactivo</span>  text-gray-600 hover:bg-gray-100</div>
+      </div>
+    </div></section>
+
+    <!-- ================= PASOS Y PROGRESO ================= -->
+    <section id="pasos"><div class="wrap">
+      <div class="sec-head">
+        <p class="sec-kicker">Componentes</p>
+        <h2>Pasos &amp; progreso</h2>
+        <p class="sec-desc">Indicador de pasos para wizards (onboarding, tasación): el paso activo se estira a una píldora con gradiente. La barra de progreso usa el mismo gradiente sobre track <code>gray-100</code>.</p>
+      </div>
+      <div class="demo">
+        <div class="stage col">
+          <div class="vp-steps">
+            <span class="s done"></span><span class="s done"></span><span class="s active"></span><span class="s todo"></span><span class="s todo"></span>
+            <span class="lbl">3/5</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;max-width:340px">
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:#6b7280"><span>Perfil completo</span><span>70%</span></div>
+            <div class="vp-progress"><div class="fill" style="width:70%"></div></div>
+          </div>
+        </div>
+        <div class="code"><span class="cls">Paso activo</span>  w-6 h-2 rounded-full bg-gradient-to-r from-brand-pink to-brand-orange
+<span class="cls">Hecho / por hacer</span>  w-2 h-2 bg-brand-pink  /  w-2 h-2 bg-gray-200
+<span class="cls">Barra </span>  bg-gray-100 → fill bg-gradient-to-r from-brand-pink to-brand-orange h-1.5</div>
+      </div>
+    </div></section>
+
+    <!-- ================= DROPDOWN ================= -->
+    <section id="dropdown"><div class="wrap">
+      <div class="sec-head">
+        <p class="sec-kicker">Componentes</p>
+        <h2>Dropdown &amp; menú contextual</h2>
+        <p class="sec-desc">Menú flotante <code>rounded-xl</code> con <code>shadow-lg</code> y borde. Ítems con hover gris; el destructivo va en rojo, separado por un divisor.</p>
+      </div>
+      <div class="demo">
+        <div class="stage center" style="padding:40px">
+          <div class="vp-dd">
+            <div class="item">✏️ Editar</div>
+            <div class="item">📄 Duplicar</div>
+            <div class="item">🔗 Copiar link</div>
+            <div class="sep"></div>
+            <div class="item danger">🗑 Eliminar</div>
+          </div>
+        </div>
+        <div class="code"><span class="cls">Menú</span>  absolute bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[160px] z-10
+<span class="cls">Ítem</span>  px-3 py-2 rounded-lg text-sm hover:bg-gray-100  ·  destructivo: text-red-600 hover:bg-red-50</div>
+      </div>
+    </div></section>
+
+    <!-- ================= TOOLTIP ================= -->
+    <section id="tooltip"><div class="wrap">
+      <div class="sec-head">
+        <p class="sec-kicker">Componentes</p>
+        <h2>Tooltip</h2>
+        <p class="sec-desc">Etiqueta oscura breve al hacer hover sobre un control. Fondo <code>gray-900</code>, texto blanco, <code>text-xs</code>.</p>
+      </div>
+      <div class="demo">
+        <div class="stage center" style="padding:48px 40px">
+          <div class="vp-tip"><div class="bubble">Reasignar a otro agente</div></div>
+        </div>
+        <div class="code"><span class="cls">Tooltip</span>  bg-gray-900 text-white text-xs font-medium px-3 py-1.5 rounded-lg shadow-lg</div>
+      </div>
+    </div></section>
+
+    <!-- ================= EMPTY STATE ================= -->
+    <section id="empty"><div class="wrap">
+      <div class="sec-head">
+        <p class="sec-kicker">Componentes</p>
+        <h2>Empty state</h2>
+        <p class="sec-desc">Estado vacío operativo: ícono en caja rosa translúcida, título, descripción corta y —si aplica— un CTA para crear el primer registro. Nunca dejar una lista vacía sin guía.</p>
+      </div>
+      <div class="demo">
+        <div class="stage center" style="padding:20px">
+          <div class="vp-empty">
+            <div class="box">📭</div>
+            <div class="t">Todavía no hay leads</div>
+            <div class="d">Cuando entre un prospecto lo vas a ver acá para asignarlo y contactarlo.</div>
+            <div style="margin-top:16px"><button class="vp-btn vp-btn-primary">＋ Cargar lead</button></div>
+          </div>
+        </div>
+        <div class="code"><span class="cls">Caja ícono</span>  w-14 h-14 rounded-2xl bg-brand-pink/10 text-brand-pink
+<span class="cls">Textos </span>  título text-ink font-semibold  ·  descripción text-sm text-gray-500 text-center</div>
+      </div>
+    </div></section>
+
+    <!-- ================= SWITCH ================= -->
+    <section id="switch"><div class="wrap">
+      <div class="sec-head">
+        <p class="sec-kicker">Componentes</p>
+        <h2>Switch</h2>
+        <p class="sec-desc">Encendido/apagado inmediato (no requiere guardar). El estado activo usa el gradiente de marca; el inactivo, <code>gray-300</code>.</p>
+      </div>
+      <div class="demo">
+        <div class="stage col">
+          <div class="switch-row"><span class="vp-switch on" role="switch" aria-checked="true" tabindex="0"><span class="knob"></span></span> Notificar por WhatsApp</div>
+          <div class="switch-row"><span class="vp-switch" role="switch" aria-checked="false" tabindex="0"><span class="knob"></span></span> Publicar automáticamente</div>
+        </div>
+        <div class="code"><span class="cls">On </span>  track bg-gradient-to-br from-brand-pink to-brand-orange · knob translate-x-full
+<span class="cls">Off</span>  track bg-gray-300</div>
+      </div>
+    </div></section>
+
+    <!-- ================= SEGMENTED / FILTROS ================= -->
+    <section id="segmented"><div class="wrap">
+      <div class="sec-head">
+        <p class="sec-kicker">Componentes</p>
+        <h2>Filtros &amp; segmented control</h2>
+        <p class="sec-desc">El segmented cambia de vista sin recargar (track <code>gray-100</code>, opción activa en blanco). Los filtros son botones sueltos con borde; el activo puede llevar una “x” para quitarlo.</p>
+      </div>
+      <div class="demo">
+        <div class="stage">
+          <div class="vp-seg">
+            <button class="on">Mes</button><button>Semana</button><button>Día</button><button>Agenda</button>
+          </div>
+          <div class="vp-filter">Estado: Publicada <span class="x">✕</span></div>
+          <div class="vp-filter">＋ Agregar filtro</div>
+          <button class="vp-btn vp-btn-ghost" style="background:#f3f4f6">↕ Ordenar</button>
+        </div>
+        <div class="code"><span class="cls">Segmented</span>  flex gap-1 bg-gray-100 rounded-lg p-0.5  ·  activo: bg-white shadow-sm
+<span class="cls">Filtro   </span>  bg-gray-50 border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-100</div>
+      </div>
+    </div></section>
+
+    <!-- ================= CHIPS / TAGS ================= -->
+    <section id="chips"><div class="wrap">
+      <div class="sec-head">
+        <p class="sec-kicker">Componentes</p>
+        <h2>Chips &amp; tags</h2>
+        <p class="sec-desc">Chip de selección (amenities, características): pill blanco con borde. La tag chica rosa se usa para etiquetas removibles.</p>
+      </div>
+      <div class="demo">
+        <div class="stage">
+          <span class="vp-tag">🚗 Cochera</span>
+          <span class="vp-tag">☀️ Balcón</span>
+          <span class="vp-tag">🏊 Pileta</span>
+          <span class="vp-tag-sm">Apto crédito <span class="rm">✕</span></span>
+          <span class="vp-tag-sm">Amoblado <span class="rm">✕</span></span>
+        </div>
+        <div class="code"><span class="cls">Chip </span>  bg-white border border-gray-200 rounded-full px-5 py-2.5 shadow-sm text-sm text-ink font-medium
+<span class="cls">Tag  </span>  bg-brand-pink/8 text-brand-pink rounded-full px-3 py-1 text-xs</div>
+      </div>
+    </div></section>
+
+    <!-- ================= CHECKBOX / RADIO ================= -->
+    <section id="checks"><div class="wrap">
+      <div class="sec-head">
+        <p class="sec-kicker">Componentes</p>
+        <h2>Checkbox &amp; radio</h2>
+        <p class="sec-desc">Selección múltiple y única. Estado marcado en <code>brand-pink</code> (en el producto, vía <code>accent-brand-pink</code> sobre el control nativo).</p>
+      </div>
+      <div class="demo">
+        <div class="stage col">
+          <label class="cbrow"><span class="vp-check on">✓</span> Enviar por email</label>
+          <label class="cbrow"><span class="vp-check on">✓</span> Enviar por WhatsApp</label>
+          <label class="cbrow"><span class="vp-check"></span> Publicar en redes</label>
+          <div style="height:8px"></div>
+          <label class="cbrow"><span class="vp-radio on"></span> Venta</label>
+          <label class="cbrow"><span class="vp-radio"></span> Alquiler</label>
+          <label class="cbrow"><span class="vp-radio"></span> Alquiler temporario</label>
+        </div>
+        <div class="code"><span class="cls">Control</span>  accent-brand-pink (checkbox/radio nativos)  ·  marcado = brand-pink</div>
+      </div>
+    </div></section>
+
+    <!-- ================= DRAWER ================= -->
+    <section id="drawer"><div class="wrap">
+      <div class="sec-head">
+        <p class="sec-kicker">Componentes</p>
+        <h2>Drawer / panel lateral</h2>
+        <p class="sec-desc">Panel que entra desde la derecha para configuración o detalle sin perder el contexto de la lista. Ancho fijo (<code>~380px</code>), <code>shadow-xl</code>, con header, cuerpo scrolleable y footer de acciones.</p>
+      </div>
+      <div class="demo">
+        <div class="stage" style="padding:20px">
+          <div class="drawer-frame">
+            <div class="scrim"></div>
+            <div class="vp-drawer">
+              <div class="dh"><span class="dt">Configurar landing</span><button class="mx" style="border:0;background:transparent;cursor:pointer;color:#6b7280">✕</button></div>
+              <div class="db">
+                <div><label class="vp-label">Título</label><input class="vp-input" value="Depto en Palermo" /></div>
+                <div class="switch-row"><span class="vp-switch on"><span class="knob"></span></span> Mostrar precio</div>
+                <div class="switch-row"><span class="vp-switch"><span class="knob"></span></span> Formulario de contacto</div>
+              </div>
+              <div class="df"><button class="vp-btn vp-btn-primary" style="width:100%;justify-content:center">Guardar cambios</button></div>
+            </div>
+          </div>
+        </div>
+        <div class="code"><span class="cls">Drawer</span>  fixed right-0 top-0 h-full w-[380px] bg-white shadow-xl flex flex-col  ·  scrim: bg-black/35</div>
+      </div>
+    </div></section>
+
+    <!-- ================= NOTIFICACIONES ================= -->
+    <section id="notif"><div class="wrap">
+      <div class="sec-head">
+        <p class="sec-kicker">Componentes</p>
+        <h2>Notificaciones</h2>
+        <p class="sec-desc">Campana con punto rojo cuando hay sin leer, y panel desplegable con la lista. Los ítems no leídos tienen fondo rosa muy tenue y un punto de marca.</p>
+      </div>
+      <div class="demo">
+        <div class="stage" style="align-items:flex-start">
+          <div class="vp-bell">🔔<span class="ndot"></span></div>
+          <div class="vp-notif">
+            <div class="nh"><span>Notificaciones</span><span style="font-weight:500;color:var(--brand-pink);font-size:12px;cursor:pointer">Marcar leídas</span></div>
+            <div class="ni2 unread"><span class="nd"></span><div><div class="ntx">Nuevo lead asignado: <b>Juan Pérez</b></div><div class="nti">Hace 5 min</div></div></div>
+            <div class="ni2 unread"><span class="nd"></span><div><div class="ntx">Tasación de Tigre vence hoy</div><div class="nti">Hace 1 h</div></div></div>
+            <div class="ni2"><span class="nd read"></span><div><div class="ntx">Propiedad publicada en portales</div><div class="nti">Ayer</div></div></div>
+          </div>
+        </div>
+        <div class="code"><span class="cls">Punto </span>  absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white
+<span class="cls">Panel </span>  bg-white border border-gray-200 rounded-xl shadow-xl  ·  no leído: bg-brand-pink/[0.03]</div>
+      </div>
+    </div></section>
+
+    <!-- ================= ETAPAS DEL LEAD ================= -->
+    <section id="stages"><div class="wrap">
+      <div class="sec-head">
+        <p class="sec-kicker">Dominio · CRM</p>
+        <h2>Etapas del lead</h2>
+        <p class="sec-desc">Los estados del pipeline viven en <code>lib/crm-config.ts</code> (<code>LEAD_STAGES</code>) — cada uno con su color de badge, punto de timeline y borde. <b>Importalos siempre desde ahí</b>, un color por etapa en toda la app.</p>
+      </div>
+      <div class="demo">
+        <div class="stage" style="align-items:flex-start">
+          <div class="chips-flow">
+            <span class="chip-pill" style="background:#dbeafe;color:#1e40af"><span class="cd" style="background:#3b82f6"></span>Nuevo</span>
+            <span class="chip-pill" style="background:#e0e7ff;color:#3730a3"><span class="cd" style="background:#6366f1"></span>Asignado</span>
+            <span class="chip-pill" style="background:#cffafe;color:#155e75"><span class="cd" style="background:#06b6d4"></span>Contactado</span>
+            <span class="chip-pill" style="background:#d1fae5;color:#065f46"><span class="cd" style="background:#10b981"></span>Calificado</span>
+            <span class="chip-pill" style="background:#f3e8ff;color:#6b21a8"><span class="cd" style="background:#a855f7"></span>En tasación</span>
+            <span class="chip-pill" style="background:#fce7f3;color:#9d174d"><span class="cd" style="background:#ec4899"></span>Presentada</span>
+            <span class="chip-pill" style="background:#fef9c3;color:#854d0e"><span class="cd" style="background:#eab308"></span>Seguimiento</span>
+            <span class="chip-pill" style="background:#dcfce7;color:#166534"><span class="cd" style="background:#22c55e"></span>Captado</span>
+            <span class="chip-pill" style="background:#fee2e2;color:#991b1b"><span class="cd" style="background:#ef4444"></span>Perdido</span>
+          </div>
+        </div>
+        <div class="code"><span class="cls">LEAD_STAGES</span>  { label, color: 'bg-{c}-100 text-{c}-800', dot: '#hex', border: 'border-l-{c}-400', order }</div>
+      </div>
+    </div></section>
+
+    <!-- ================= KANBAN ================= -->
+    <section id="kanban"><div class="wrap">
+      <div class="sec-head">
+        <p class="sec-kicker">Dominio · CRM</p>
+        <h2>Pipeline / Kanban</h2>
+        <p class="sec-desc">Columnas por etapa con las cards de lead arrastrables (<code>@dnd-kit</code>). Cada card lleva borde izquierdo con el color de su etapa, nombre, y meta operativa (agente, urgencia).</p>
+      </div>
+      <div class="demo">
+        <div class="stage" style="padding:20px 20px 14px">
+          <div class="vp-kanban">
+            <div class="kcol">
+              <div class="kh"><span class="kt"><span class="cd" style="width:8px;height:8px;border-radius:50%;background:#3b82f6"></span>Nuevo</span><span class="kn">2</span></div>
+              <div class="kcard" style="border-left-color:#3b82f6"><div class="knm">Juan Pérez</div><div class="kmeta">🏠 Depto Palermo · hoy</div></div>
+              <div class="kcard" style="border-left-color:#3b82f6"><div class="knm">Ana Gómez</div><div class="kmeta">📞 Sin contactar</div></div>
+            </div>
+            <div class="kcol">
+              <div class="kh"><span class="kt"><span class="cd" style="width:8px;height:8px;border-radius:50%;background:#06b6d4"></span>Contactado</span><span class="kn">1</span></div>
+              <div class="kcard" style="border-left-color:#06b6d4"><div class="knm">Luis Torres</div><div class="kmeta">⏰ Seguir en 2 días</div></div>
+            </div>
+            <div class="kcol">
+              <div class="kh"><span class="kt"><span class="cd" style="width:8px;height:8px;border-radius:50%;background:#a855f7"></span>En tasación</span><span class="kn">1</span></div>
+              <div class="kcard" style="border-left-color:#a855f7"><div class="knm">María López</div><div class="kmeta">📋 Visita agendada</div></div>
+            </div>
+            <div class="kcol">
+              <div class="kh"><span class="kt"><span class="cd" style="width:8px;height:8px;border-radius:50%;background:#22c55e"></span>Captado</span><span class="kn">0</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="code"><span class="cls">Columna</span>  bg-gray-100 rounded-2xl p-2.5  ·  header: label + contador
+<span class="cls">Card   </span>  bg-white border border-gray-200 border-l-[3px] border-l-{etapa} rounded-xl p-3 shadow-sm</div>
+      </div>
+    </div></section>
+
+    <!-- ================= TIPOS DE EVENTO ================= -->
+    <section id="eventos"><div class="wrap">
+      <div class="sec-head">
+        <p class="sec-kicker">Dominio · CRM</p>
+        <h2>Tipos de evento (calendario)</h2>
+        <p class="sec-desc">9 tipos definidos en <code>EVENT_TYPES</code>, cada uno con color, ícono y label. Se usan como chips en el calendario y en el detalle de la actividad.</p>
+      </div>
+      <div class="demo">
+        <div class="stage" style="align-items:flex-start">
+          <div class="chips-flow">
+            <span class="chip-pill" style="background:#dbeafe;color:#1d4ed8">📞 Llamada</span>
+            <span class="chip-pill" style="background:#f3e8ff;color:#7c3aed">👥 Reunión</span>
+            <span class="chip-pill" style="background:#ffedd5;color:#c2410c">🏠 Visita captación</span>
+            <span class="chip-pill" style="background:#ccfbf1;color:#0f766e">👁 Visita comprador</span>
+            <span class="chip-pill" style="background:#fce7f3;color:#be185d">📋 Tasación</span>
+            <span class="chip-pill" style="background:#fef9c3;color:#a16207">🔁 Seguimiento</span>
+            <span class="chip-pill" style="background:#f3f4f6;color:#374151">📄 Administrativa</span>
+            <span class="chip-pill" style="background:#d1fae5;color:#047857">✍️ Firma</span>
+            <span class="chip-pill" style="background:#f1f5f9;color:#475569">📅 Otro</span>
+          </div>
+        </div>
+        <div class="code"><span class="cls">EVENT_TYPES</span>  { label, color: 'text-{c}-700', bg: 'bg-{c}-100', icon: '<lucide>', border: '#hex' }</div>
+      </div>
+    </div></section>
+
+    <!-- ================= CARD DE PROPIEDAD ================= -->
+    <section id="propcard"><div class="wrap">
+      <div class="sec-head">
+        <p class="sec-kicker">Dominio · CRM</p>
+        <h2>Card de propiedad</h2>
+        <p class="sec-desc">Card visual con foto <code>object-cover</code>, badge de estado, precio sobre degradado, y una fila de atributos (ambientes, m², baños). Hover eleva la sombra.</p>
+      </div>
+      <div class="demo">
+        <div class="stage">
+          <div class="prop-card">
+            <div class="ph">
+              <div class="ov"></div>
+              <div class="badge-top"><span class="vp-badge b-pub">Publicada</span></div>
+              <div class="fav">🤍</div>
+              <div class="price">USD 145.000</div>
+            </div>
+            <div class="pb">
+              <div class="pt">Depto 2 ambientes</div>
+              <div class="pl">Palermo, CABA</div>
+              <div class="pf"><span>🛏 2 amb</span><span>📐 58 m²</span><span>🛁 1 baño</span></div>
+            </div>
+          </div>
+          <div class="prop-card">
+            <div class="ph" style="background:linear-gradient(135deg,#6366f1,#06b6d4)">
+              <div class="ov"></div>
+              <div class="badge-top"><span class="vp-badge b-review">En revisión</span></div>
+              <div class="fav">❤️</div>
+              <div class="price">USD 320.000</div>
+            </div>
+            <div class="pb">
+              <div class="pt">Casa con jardín</div>
+              <div class="pl">Tigre, GBA Norte</div>
+              <div class="pf"><span>🛏 4 amb</span><span>📐 180 m²</span><span>🛁 3 baños</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="code"><span class="cls">Card </span>  bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow
+<span class="cls">Foto </span>  w-full h-full object-cover  ·  overlay + precio en text-white</div>
+      </div>
+    </div></section>
+
+    <!-- ================= TIMELINE ================= -->
+    <section id="timeline"><div class="wrap">
+      <div class="sec-head">
+        <p class="sec-kicker">Dominio · CRM</p>
+        <h2>Timeline de etapas</h2>
+        <p class="sec-desc">Historial de transiciones (<code>stage_history</code>): línea vertical con un punto del color de cada etapa. Registra cada cambio de estado del lead o la propiedad.</p>
+      </div>
+      <div class="demo">
+        <div class="stage" style="justify-content:flex-start">
+          <div class="vp-timeline" style="max-width:320px">
+            <div class="tl-item"><span class="tdot" style="background:#22c55e"></span><div class="tlab">Captado</div><div class="ttime">Hoy · 14:30 · Marcela G.</div></div>
+            <div class="tl-item"><span class="tdot" style="background:#a855f7"></span><div class="tlab">En tasación</div><div class="ttime">Ayer · 11:00</div></div>
+            <div class="tl-item"><span class="tdot" style="background:#06b6d4"></span><div class="tlab">Contactado</div><div class="ttime">Lun · 09:15</div></div>
+            <div class="tl-item"><span class="tdot" style="background:#3b82f6"></span><div class="tlab">Nuevo</div><div class="ttime">Vie · 18:40</div></div>
+          </div>
+        </div>
+        <div class="code"><span class="cls">Punto</span>  w-3 h-3 rounded-full border-2 border-white ring-1 ring-gray-200  ·  color = LEAD_STAGES[etapa].dot</div>
+      </div>
+    </div></section>
+
+    <!-- ================= GRAFICOS ================= -->
+    <section id="graficos"><div class="wrap">
+      <div class="sec-head">
+        <p class="sec-kicker">Dominio · CRM</p>
+        <h2>Gráficos</h2>
+        <p class="sec-desc">Dashboards con <b>Recharts</b>. El color de datos primario es <code>brand-pink #ff007c</code>; el gradiente rosa→naranja para series destacadas. Grilla y ejes en gris tenue.</p>
+      </div>
+      <div class="demo">
+        <div class="stage" style="align-items:stretch;gap:18px">
+          <div class="chart-card" style="flex:1;min-width:230px">
+            <div class="ct">Captaciones por mes</div>
+            <div class="bars">
+              <div class="bcol"><div class="bar2" style="height:45%"></div><div class="bl">Ene</div></div>
+              <div class="bcol"><div class="bar2" style="height:62%"></div><div class="bl">Feb</div></div>
+              <div class="bcol"><div class="bar2" style="height:50%"></div><div class="bl">Mar</div></div>
+              <div class="bcol"><div class="bar2" style="height:80%"></div><div class="bl">Abr</div></div>
+              <div class="bcol"><div class="bar2" style="height:70%"></div><div class="bl">May</div></div>
+              <div class="bcol"><div class="bar2" style="height:100%"></div><div class="bl">Jun</div></div>
+            </div>
+          </div>
+          <div class="chart-card" style="min-width:230px">
+            <div class="ct">Origen de leads</div>
+            <div style="display:flex;align-items:center;gap:20px">
+              <div class="donut"><div class="hole"><b>62%</b><small>Portales</small></div></div>
+              <div class="legend">
+                <span><i style="background:#ff007c"></i>Portales · 62%</span>
+                <span><i style="background:#ff8017"></i>Referidos · 22%</span>
+                <span><i style="background:#e5e7eb"></i>Otros · 16%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="stage" style="margin-top:0">
+          <div class="chart-card" style="flex:1">
+            <div class="ct">Embudo de conversión</div>
+            <div class="funnel">
+              <div class="fstep" style="width:100%;background:#ff007c">Leads <b>240</b></div>
+              <div class="fstep" style="width:82%;background:#ff3d7f">Contactados <b>197</b></div>
+              <div class="fstep" style="width:60%;background:#ff5a52">Tasaciones <b>144</b></div>
+              <div class="fstep" style="width:38%;background:#ff6a2f">Captadas <b>91</b></div>
+              <div class="fstep" style="width:20%;background:#ff8017">Vendidas <b>48</b></div>
+            </div>
+          </div>
+        </div>
+        <div class="code"><span class="cls">Recharts</span>  fill="#ff007c"  ·  &lt;CartesianGrid stroke="#f3f4f6" /&gt;  ·  ejes text-gray-400
+<span class="cls">Embudo  </span>  SVG propio con anchos decrecientes en gradiente pink→orange</div>
+      </div>
+    </div></section>
+
+    <!-- ================= REGLAS ================= -->
+    <section id="reglas"><div class="wrap">
+      <div class="sec-head">
+        <p class="sec-kicker">Sistema</p>
+        <h2>Reglas de estandarización</h2>
+        <p class="sec-desc">Cómo mantener la consistencia — y el <em>drift</em> real que detecté en el código y conviene unificar al formalizar el sistema.</p>
+      </div>
+      <div class="rules">
+        <div class="rule"><span class="tag do">Hacé</span><div class="rt">Una sola <b>acción primaria por vista</b> con el botón gradiente. Todo lo demás baja a outline o ghost.</div></div>
+        <div class="rule"><span class="tag do">Hacé</span><div class="rt">Importá los colores de estado desde su fuente (<code>HEALTH_COLORS</code>, <code>STATUS_STYLES</code>, <code>EVENT_TYPES</code>) en vez de escribir <code>bg-green-100</code> a mano.</div></div>
+        <div class="rule"><span class="tag do">Hacé</span><div class="rt">Texto de trabajo en <code>text-sm (14px)</code>; peso <code>medium/semibold</code>. Reservá <code>bold/extrabold</code> para KPIs y títulos.</div></div>
+        <div class="rule"><span class="tag drift">Drift</span><div class="rt"><b>Radio del botón inconsistente:</b> el primario usa <code>rounded-lg</code> y el outline <code>rounded-full</code>. Elegí uno para el sistema (recomiendo <code>rounded-lg</code> para todos, <code>full</code> sólo para chips).</div></div>
+        <div class="rule"><span class="tag drift">Drift</span><div class="rt"><b>Padding vertical mezclado:</b> conviven <code>py-2</code>, <code>py-2.5</code> y <code>py-3</code> en botones equivalentes. Fijá <code>px-4 py-2</code> como tamaño default.</div></div>
+        <div class="rule"><span class="tag drift">Drift</span><div class="rt"><b>Hover doble criterio:</b> unos botones usan <code>hover:opacity-90</code> (gradiente) y otros <code>hover:bg-brand-pink-hover</code> (sólido). Está OK, pero documentá cuál va con cuál.</div></div>
+        <div class="rule"><span class="tag dont">Evitá</span><div class="rt">Abusar del gradiente como fondo de bloques grandes: pierde fuerza como CTA. Usalo en acentos, no en superficies.</div></div>
+        <div class="rule"><span class="tag dont">Evitá</span><div class="rt">Nuevos hex fuera de los tokens. Si un color se repite, promoverlo a <code>@theme</code> en <code>globals.css</code> antes de usarlo.</div></div>
+        <div class="rule"><span class="tag dont">Evitá</span><div class="rt">Negro pleno en texto. La base es <code>ink #27272a</code>; para secundarios, <code>gray-500</code>.</div></div>
+      </div>
+    </div></section>
+
+    <footer><div class="wrap">
+      Muestrario generado desde <code>vendepro-frontend</code> · tokens de <code>src/app/globals.css</code> · patrones de <code>src/components</code>. &nbsp;Poppins vía Google Fonts en producción.
+    </div></footer>
+  </main>
+</div>
+
+<script>
+  // Theme toggle
+  const root = document.documentElement;
+  const btns = document.querySelectorAll('[data-theme-set]');
+  function sync() {
+    const t = root.getAttribute('data-theme')
+      || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    btns.forEach(b => b.setAttribute('aria-pressed', b.dataset.themeSet === t ? 'true' : 'false'));
+  }
+  btns.forEach(b => b.addEventListener('click', () => { root.setAttribute('data-theme', b.dataset.themeSet); sync(); }));
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', sync);
+  sync();
+
+  // Switch demo
+  document.querySelectorAll('.vp-switch').forEach(sw => {
+    const toggle = () => {
+      const on = sw.classList.toggle('on');
+      sw.setAttribute('aria-checked', on ? 'true' : 'false');
+    };
+    sw.addEventListener('click', toggle);
+    sw.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggle(); } });
+  });
+
+  // Tabs demo
+  document.querySelectorAll('.vp-tabs').forEach(group => {
+    group.querySelectorAll('.vp-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        group.querySelectorAll('.vp-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+      });
+    });
+  });
+
+  // Mobile nav
+  const side = document.getElementById('side');
+  document.getElementById('menuBtn').addEventListener('click', () => side.classList.toggle('open'));
+  side.querySelectorAll('a').forEach(a => a.addEventListener('click', () => side.classList.remove('open')));
+</script>
+
+</body>
+</html>

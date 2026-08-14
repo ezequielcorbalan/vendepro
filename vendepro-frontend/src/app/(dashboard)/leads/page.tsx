@@ -3,20 +3,30 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import {
-  Plus, Search, Phone, MessageCircle, X, LayoutList, Columns3,
-  AlertTriangle, Clock, User, MapPin, DollarSign, ArrowRight, ChevronDown, Download, Sparkles, Trash2, GripVertical,
+  Plus, Search, Phone, X,
+  AlertTriangle, User, MapPin, ArrowRight, ChevronDown, Download, Sparkles, Trash2, GripVertical,
   ChevronRight, Check, Tag, Loader2
 } from 'lucide-react'
 import {
-  LEAD_STAGES, LEAD_SOURCES,
+  LEAD_SOURCES,
   LEAD_AGENT_FINAL_STAGES, BUYER_LEAD_TERMINAL_STAGES,
-  OPERATION_TYPES, getLeadChecklist, getLeadChecklistScore,
-  getLeadUrgency, getUrgencyBadge, formatWhatsApp,
-  getStagesForPipeline, getStageConfig, type LeadStage, type LeadPipelineKey
+  OPERATION_TYPES, getLeadChecklist,
+  getLeadUrgency, getUrgencyBadge,
+  getStagesForPipeline, getStageConfig, type LeadPipelineKey
 } from '@/lib/crm-config'
-import type { Lead, Contact } from '@/lib/types'
+import type { Contact } from '@/lib/types'
 import { useToast } from '@/components/ui/Toast'
 import { useConfirm } from '@/components/ui/useConfirm'
+import { StatusBadge } from '@/components/ui/StatusBadge'
+import { StageBadge } from '@/components/ui/StageBadge'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { Button } from '@/components/ui/Button'
+import { Alert } from '@/components/ui/Alert'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { Input, Select, Textarea } from '@/components/ui/Input'
+import { Heading, Text } from '@/components/ui/Typography'
+import { CallButton, WhatsAppButton } from '@/components/ui/ContactButtons'
 import AIChatPanel from '@/components/ai/AIChatPanel'
 import { apiFetch } from '@/lib/api'
 import { scopeQueryString } from '@/lib/agent-scope'
@@ -382,125 +392,108 @@ export default function LeadsPage() {
     <div className="space-y-4 min-w-0 overflow-hidden">
       {confirmDialog}
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-ink">Leads</h1>
-          <p className="text-gray-500 text-sm">
-            {leads.length} lead{leads.length !== 1 ? 's' : ''} en el pipeline {pipeline === 'comprador' ? 'de compradores' : 'de captación'}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="hidden sm:flex bg-gray-100 rounded-lg p-0.5">
-            <button onClick={() => setView('list')} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${view === 'list' ? 'bg-white shadow text-ink' : 'text-gray-500'}`}>
-              <LayoutList className="w-4 h-4" />
-            </button>
-            <button onClick={() => setView('kanban')} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${view === 'kanban' ? 'bg-white shadow text-ink' : 'text-gray-500'}`}>
-              <Columns3 className="w-4 h-4" />
-            </button>
-          </div>
-          <button
-            onClick={() => {
-              const rows = [
-                ['Nombre', 'Teléfono', 'Email', 'Operación', 'Etapa', 'Barrio', 'Valor USD', 'Agente', 'Próximo paso', 'Creado'],
-                ...filtered.map(l => [
-                  l.full_name, l.phone || '', l.email || '', l.operation || '',
-                  getStageConfig(l.stage, l.pipeline).label,
-                  l.neighborhood || '', l.estimated_value || '', l.assigned_name || '',
-                  l.next_step || '', new Date(l.created_at).toLocaleDateString('es-AR')
-                ])
-              ]
-              const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
-              const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-              const url = URL.createObjectURL(blob)
-              const a = document.createElement('a'); a.href = url; a.download = 'leads.csv'
-              document.body.appendChild(a); a.click(); document.body.removeChild(a)
-              URL.revokeObjectURL(url)
-            }}
-            className="hidden sm:flex items-center gap-1 text-xs text-gray-500 border border-gray-200 px-2.5 py-2 rounded-lg hover:border-gray-400"
-          >
-            <Download className="w-3.5 h-3.5" /> CSV
-          </button>
-          <button onClick={() => setShowAI(true)} className="border border-brand-pink/30 text-brand-pink px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:bg-brand-pink/5">
-            <Sparkles className="w-4 h-4" /> <span className="hidden sm:inline">con IA</span>
-          </button>
-          <button onClick={() => setShowCreate(true)} className="bg-pink-600 text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:bg-pink-700">
-            <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Nuevo lead</span><span className="sm:hidden">Nuevo</span>
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Leads"
+        subtitle={`${leads.length} lead${leads.length !== 1 ? 's' : ''} en el pipeline ${pipeline === 'comprador' ? 'de compradores' : 'de captación'}`}
+        actions={
+          <>
+            <Button
+              variant="outline"
+              icon={<Download className="w-4 h-4" />}
+              className="hidden sm:inline-flex"
+              onClick={() => {
+                const rows = [
+                  ['Nombre', 'Teléfono', 'Email', 'Operación', 'Etapa', 'Barrio', 'Valor USD', 'Agente', 'Próximo paso', 'Creado'],
+                  ...filtered.map(l => [
+                    l.full_name, l.phone || '', l.email || '', l.operation || '',
+                    getStageConfig(l.stage, l.pipeline).label,
+                    l.neighborhood || '', l.estimated_value || '', l.assigned_name || '',
+                    l.next_step || '', new Date(l.created_at).toLocaleDateString('es-AR')
+                  ])
+                ]
+                const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement('a'); a.href = url; a.download = 'leads.csv'
+                document.body.appendChild(a); a.click(); document.body.removeChild(a)
+                URL.revokeObjectURL(url)
+              }}
+            >
+              CSV
+            </Button>
+            <Button variant="outline" icon={<Sparkles className="w-4 h-4" />} onClick={() => setShowAI(true)} className="border-primary/30 text-primary hover:bg-primary/5">
+              <span className="hidden sm:inline">con IA</span>
+            </Button>
+            <Button icon={<Plus className="w-4 h-4" />} onClick={() => setShowCreate(true)}>
+              <span className="hidden sm:inline">Nuevo lead</span><span className="sm:hidden">Nuevo</span>
+            </Button>
+          </>
+        }
+      />
 
       {/* Pestañas de pipeline: Vendedores | Compradores */}
-      <div className="flex items-center gap-1 border-b border-gray-200">
-        {([
-          { key: 'vendedor' as const, label: 'Vendedores' },
-          { key: 'comprador' as const, label: 'Compradores' },
-        ]).map(t => (
-          <button
-            key={t.key}
-            onClick={() => switchPipeline(t.key)}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
-              pipeline === t.key
-                ? 'border-brand-pink text-brand-pink'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
+      <div className="flex items-center justify-between border-b border-gray-200">
+        <div className="flex items-center gap-1">
+          {([
+            { key: 'vendedor' as const, label: 'Vendedores' },
+            { key: 'comprador' as const, label: 'Compradores' },
+          ]).map(t => (
+            <button
+              key={t.key}
+              onClick={() => switchPipeline(t.key)}
+              className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                pipeline === t.key
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <SegmentedControl
+          className="hidden sm:inline-flex mb-1"
+          options={[{ value: 'list', label: 'Lista' }, { value: 'kanban', label: 'Kanban' }]}
+          value={view}
+          onChange={v => setView(v as 'list' | 'kanban')}
+        />
       </div>
 
-      {/* Search + Filters */}
-      <div className="flex flex-col sm:flex-row gap-2">
-        <div className="relative flex-1">
+      {/* Búsqueda + filtros: una sola fila compacta (sin labels ni card propio) */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[180px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input type="text" placeholder="Buscar nombre, teléfono, dirección..." value={search} onChange={e => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm" />
+          <Input type="text" placeholder="Buscar nombre, teléfono, dirección..." value={search} onChange={e => setSearch(e.target.value)}
+            className="pl-10" />
         </div>
-        <select value={sortBy} onChange={e => setSortBy(e.target.value as any)} className="border rounded-lg px-2 py-2 text-sm text-gray-600">
+        <Select aria-label="Ordenar" value={sortBy} onChange={e => setSortBy(e.target.value as any)} className="w-auto">
           <option value="recent">Recientes</option>
           <option value="urgency">Urgencia</option>
           <option value="name">Nombre A-Z</option>
-        </select>
+        </Select>
+        <Select aria-label="Etapa" value={filterStage} onChange={e => setFilterStage(e.target.value)} className="w-auto">
+          <option value="">Etapa: todas</option>
+          {stages.keys.map(s => <option key={s} value={s}>{stages.config[s].label}</option>)}
+        </Select>
+        <Select aria-label="Origen" value={filterSource} onChange={e => setFilterSource(e.target.value)} className="w-auto">
+          <option value="">Origen: todos</option>
+          {Object.entries(LEAD_SOURCES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+        </Select>
+        <Select aria-label="Operación" value={filterOperation} onChange={e => setFilterOperation(e.target.value)} className="w-auto">
+          <option value="">Operación: todas</option>
+          {Object.entries(OPERATION_TYPES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+        </Select>
+        <Select aria-label="Agente" value={filterAgent} onChange={e => setFilterAgent(e.target.value)} className="w-auto">
+          <option value="">Agente: todos</option>
+          {agents.map(a => <option key={a.id} value={a.id}>{a.full_name}</option>)}
+        </Select>
+        <button onClick={() => { setFilterStage(''); setFilterSource(''); setFilterOperation(''); setFilterAgent('') }} className="text-xs text-gray-500 hover:text-primary shrink-0">Limpiar</button>
       </div>
-
-      <div className="bg-gray-50 border rounded-xl p-3 sm:p-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div>
-            <label className="text-xs text-gray-500 mb-1 block">Etapa</label>
-            <select value={filterStage} onChange={e => setFilterStage(e.target.value)} className="w-full border rounded-lg px-2 py-1.5 text-sm">
-              <option value="">Todas</option>
-              {stages.keys.map(s => <option key={s} value={s}>{stages.config[s].label}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="text-xs text-gray-500 mb-1 block">Origen</label>
-            <select value={filterSource} onChange={e => setFilterSource(e.target.value)} className="w-full border rounded-lg px-2 py-1.5 text-sm">
-              <option value="">Todos</option>
-              {Object.entries(LEAD_SOURCES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="text-xs text-gray-500 mb-1 block">Operación</label>
-            <select value={filterOperation} onChange={e => setFilterOperation(e.target.value)} className="w-full border rounded-lg px-2 py-1.5 text-sm">
-              <option value="">Todas</option>
-              {Object.entries(OPERATION_TYPES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="text-[10px] text-gray-500 font-medium mb-1 block">Agente</label>
-            <select value={filterAgent} onChange={e => setFilterAgent(e.target.value)} className="w-full border rounded-lg px-2 py-1.5 text-sm">
-              <option value="">Todos</option>
-              {agents.map(a => <option key={a.id} value={a.id}>{a.full_name}</option>)}
-            </select>
-          </div>
-          <div className="flex items-end">
-            <button onClick={() => { setFilterStage(''); setFilterSource(''); setFilterOperation(''); setFilterAgent('') }} className="text-xs text-gray-500 hover:text-pink-600">Limpiar filtros</button>
-          </div>
-        </div>
 
       {/* Content */}
       {loading ? (
         <div className="space-y-3 animate-pulse">{[...Array(5)].map((_, i) => (
-          <div key={i} className="bg-white rounded-xl border border-gray-100 p-4">
+          <div key={i} className="bg-white rounded-card border border-gray-100 p-4">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <div className="h-5 w-28 bg-gray-200 rounded" />
@@ -519,30 +512,32 @@ export default function LeadsPage() {
       ) : view === 'list' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {filtered.length === 0 ? (
-            <div className="col-span-2 text-center py-12 text-gray-400">
-              <User className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-              <p className="font-medium">Sin leads</p>
-              <p className="text-sm mt-1">Creá tu primer lead para comenzar</p>
-              <button onClick={() => setShowCreate(true)} className="mt-3 px-4 py-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white rounded-lg text-sm font-medium hover:opacity-90">
-                Crear primer lead
-              </button>
-            </div>
+            <EmptyState
+              className="col-span-2"
+              icon={<User className="w-7 h-7" />}
+              title="Sin leads"
+              description="Creá tu primer lead para comenzar"
+              action={<Button onClick={() => setShowCreate(true)}>Crear primer lead</Button>}
+            />
           ) : filtered.map(lead => <LeadCard key={lead.id} lead={lead} onAdvance={() => advanceStage(lead)} onLost={() => markLost(lead.id)} onDelete={() => deleteLead(lead.id, lead.full_name)} onRefresh={loadLeads} />)}
         </div>
       ) : (
         <DndContext sensors={sensors} onDragStart={e => setActiveDragId(e.active.id as string)} onDragEnd={handleDragEnd} onDragCancel={() => setActiveDragId(null)}>
         <div className="overflow-x-auto pb-4 -mx-2 px-2">
-          <div className="flex gap-3" style={{ minWidth: `${stages.pipelineStages.length * 260}px` }}>
+          <div className="flex gap-3" style={{ minWidth: `${stages.pipelineStages.length * 300}px` }}>
             {stages.pipelineStages.map(stage => {
               const stageLeads = filtered.filter(l => l.stage === stage)
               const hasOverdue = stageLeads.some(l => getLeadUrgency(l) === 'danger')
               return (
                 <DroppableColumn key={stage} id={stage}>
-                  <div className={`flex items-center justify-between mb-2 px-2 py-1.5 rounded-lg ${stages.config[stage].color}`}>
-                    <span className="text-xs font-semibold">{stages.config[stage].label}</span>
-                    <div className="flex items-center gap-1">
+                  <div className="flex items-center justify-between mb-2 px-3 py-2 rounded-control bg-white">
+                    <span className="flex items-center gap-2 text-sm font-medium text-ink">
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: stages.config[stage].dot }} aria-hidden />
+                      {stages.config[stage].label}
+                    </span>
+                    <div className="flex items-center gap-1.5">
                       {hasOverdue && <AlertTriangle className="w-3 h-3 text-red-500" />}
-                      <span className="text-xs font-bold">{stageLeads.length}</span>
+                      <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${stages.config[stage].color}`}>{stageLeads.length}</span>
                     </div>
                   </div>
                   <div className="space-y-2 max-h-[60vh] overflow-y-auto">
@@ -563,8 +558,8 @@ export default function LeadsPage() {
             if (invalidos) parts.push(`Inválidos: ${invalidos}`)
             if (finalizados) parts.push(`Finalizados: ${finalizados}`)
             return (
-              <div className="mt-4 p-3 bg-gray-50 rounded-xl">
-                <p className="text-xs text-gray-500 font-medium">{parts.join(' · ')}</p>
+              <div className="mt-4 p-3 bg-gray-50 rounded-card">
+                <Text size="xs" tone="muted" weight="medium">{parts.join(' · ')}</Text>
               </div>
             )
           })()}
@@ -572,7 +567,7 @@ export default function LeadsPage() {
         <DragOverlay>
           {activeDragId ? (() => {
             const lead = leads.find(l => l.id === activeDragId)
-            return lead ? <div className="bg-white rounded-lg shadow-xl border-2 border-brand-pink p-3 w-60 opacity-90">
+            return lead ? <div className="bg-white rounded-card shadow-pop border-2 border-primary p-3 w-60 opacity-90">
               <p className="text-sm font-medium text-ink truncate">{lead.full_name}</p>
               <p className="text-[10px] text-gray-400 truncate">{lead.operation}{lead.property_address ? ` · ${lead.property_address}` : lead.neighborhood ? ` · ${lead.neighborhood}` : ''}</p>
             </div> : null
@@ -588,51 +583,50 @@ export default function LeadsPage() {
           onClick={closeCreateModal}
         >
           <div
-            className="bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl max-h-[90vh] overflow-y-auto"
+            className="bg-white w-full sm:max-w-lg sm:rounded-card rounded-t-card max-h-[90vh] overflow-y-auto"
             onClick={e => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="sticky top-0 bg-white border-b px-4 py-3 flex items-center justify-between rounded-t-2xl z-10">
+            <div className="sticky top-0 bg-white border-b px-4 py-3 flex items-center justify-between rounded-t-card z-10">
               <div>
-                <h3 className="font-semibold text-ink">Nuevo lead</h3>
+                <Heading level={4} as="h3">Nuevo lead</Heading>
                 <p className="text-xs text-gray-400">
                   {createStep === 1 ? 'Paso 1 de 2 — Contacto' : 'Paso 2 de 2 — Pipeline'}
                 </p>
               </div>
-              <button onClick={closeCreateModal} className="p-1 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
+              <button onClick={closeCreateModal} className="p-1 hover:bg-gray-100 rounded-control"><X className="w-5 h-5" /></button>
             </div>
 
             {/* PASO 1: Contacto */}
             {createStep === 1 && (
               <div className="p-4 space-y-3">
                 {selectedContact ? (
-                  <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Check className="w-4 h-4 text-green-600 shrink-0" />
-                      <span className="font-medium text-ink">{selectedContact.full_name}</span>
-                      <span className="text-gray-500">·</span>
-                      <span className="text-gray-500 capitalize">{selectedContact.contact_type}</span>
-                    </div>
-                    <button onClick={() => { setSelectedContact(null); setContactSearch('') }} className="text-gray-400 hover:text-gray-600">
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
+                  <Alert
+                    tone="success"
+                    className="p-3"
+                    onDismiss={() => { setSelectedContact(null); setContactSearch('') }}
+                    dismissLabel="Quitar contacto seleccionado"
+                  >
+                    <span className="font-medium text-ink">{selectedContact.full_name}</span>
+                    <span className="text-gray-500"> · </span>
+                    <span className="text-gray-500 capitalize">{selectedContact.contact_type}</span>
+                  </Alert>
                 ) : (
                   <>
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <input
+                      <Input
                         type="text"
                         placeholder="Buscar por nombre, teléfono o email..."
                         value={contactSearch}
                         onChange={e => { setContactSearch(e.target.value); setShowNewContactForm(false) }}
-                        className="w-full border rounded-lg pl-9 pr-3 py-2 text-sm"
+                        className="pl-9"
                         autoFocus
                       />
                     </div>
 
                     {contactResults.length > 0 && !showNewContactForm && (
-                      <div className="border rounded-lg overflow-hidden">
+                      <div className="border rounded-control overflow-hidden">
                         {contactResults.map(ct => (
                           <button
                             key={ct.id}
@@ -650,46 +644,42 @@ export default function LeadsPage() {
                     )}
 
                     {showNewContactForm ? (
-                      <div className="border rounded-lg p-3 space-y-2 bg-gray-50">
+                      <div className="border rounded-card p-3 space-y-2 bg-gray-50">
                         <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Nuevo contacto</p>
-                        <input
+                        <Input
                           placeholder="Nombre completo *"
                           value={contactForm.full_name}
                           onChange={e => setContactForm({ ...contactForm, full_name: e.target.value })}
-                          className="w-full border rounded-lg px-3 py-2 text-sm"
                           autoFocus
                         />
                         <div className="grid grid-cols-2 gap-2">
-                          <input
+                          <Input
                             placeholder="Teléfono"
                             value={contactForm.phone}
                             onChange={e => setContactForm({ ...contactForm, phone: e.target.value })}
-                            className="border rounded-lg px-3 py-2 text-sm"
                           />
-                          <input
+                          <Input
                             placeholder="Email"
                             type="email"
                             value={contactForm.email}
                             onChange={e => setContactForm({ ...contactForm, email: e.target.value })}
-                            className="border rounded-lg px-3 py-2 text-sm"
                           />
                         </div>
-                        <select
+                        <Select
                           value={contactForm.contact_type}
                           onChange={e => setContactForm({ ...contactForm, contact_type: e.target.value })}
-                          className="w-full border rounded-lg px-3 py-2 text-sm"
                         >
                           <option value="propietario">Propietario</option>
                           <option value="comprador">Comprador</option>
                           <option value="inversor">Inversor</option>
                           <option value="inquilino">Inquilino</option>
                           <option value="otro">Otro</option>
-                        </select>
+                        </Select>
                       </div>
                     ) : (
                       <button
                         onClick={() => { setShowNewContactForm(true); setContactSearch(''); setContactResults([]) }}
-                        className="w-full text-sm text-brand-pink hover:underline text-left px-1"
+                        className="w-full text-sm text-primary hover:underline text-left px-1"
                       >
                         + Crear contacto nuevo
                       </button>
@@ -703,34 +693,34 @@ export default function LeadsPage() {
             {createStep === 2 && (
               <div className="p-4 space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <select value={form.source} onChange={e => setForm({ ...form, source: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full">
+                  <Select value={form.source} onChange={e => setForm({ ...form, source: e.target.value })}>
                     {Object.entries(LEAD_SOURCES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-                  </select>
-                  <select value={form.operation} onChange={e => setForm({ ...form, operation: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full">
+                  </Select>
+                  <Select value={form.operation} onChange={e => setForm({ ...form, operation: e.target.value })}>
                     {Object.entries(OPERATION_TYPES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-                  </select>
+                  </Select>
                   {pipeline === 'comprador' ? (
                     <>
-                      <input placeholder="Zona de interés" value={form.neighborhood} onChange={e => setForm({ ...form, neighborhood: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
-                      <input placeholder="Presupuesto (ej: hasta 150.000 USD)" value={form.budget} onChange={e => setForm({ ...form, budget: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
+                      <Input placeholder="Zona de interés" value={form.neighborhood} onChange={e => setForm({ ...form, neighborhood: e.target.value })} />
+                      <Input placeholder="Presupuesto (ej: hasta 150.000 USD)" value={form.budget} onChange={e => setForm({ ...form, budget: e.target.value })} />
                     </>
                   ) : (
                     <>
-                      <input placeholder="Barrio/Zona" value={form.neighborhood} onChange={e => setForm({ ...form, neighborhood: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
-                      <input placeholder="Dirección propiedad" value={form.property_address} onChange={e => setForm({ ...form, property_address: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
-                      <input placeholder="Valor estimado (USD)" type="number" value={form.estimated_value} onChange={e => setForm({ ...form, estimated_value: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
+                      <Input placeholder="Barrio/Zona" value={form.neighborhood} onChange={e => setForm({ ...form, neighborhood: e.target.value })} />
+                      <Input placeholder="Dirección propiedad" value={form.property_address} onChange={e => setForm({ ...form, property_address: e.target.value })} />
+                      <Input placeholder="Valor estimado (USD)" type="number" value={form.estimated_value} onChange={e => setForm({ ...form, estimated_value: e.target.value })} />
                     </>
                   )}
                   {agents.length > 0 && (
-                    <select value={form.assigned_to} onChange={e => setForm({ ...form, assigned_to: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full">
+                    <Select value={form.assigned_to} onChange={e => setForm({ ...form, assigned_to: e.target.value })}>
                       <option value="">Asignar agente...</option>
                       {agents.map((a: any) => <option key={a.id} value={a.id}>{a.full_name}</option>)}
-                    </select>
+                    </Select>
                   )}
                 </div>
-                <input placeholder="Próxima acción" value={form.next_step} onChange={e => setForm({ ...form, next_step: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
-                <input type="date" value={form.next_step_date} onChange={e => setForm({ ...form, next_step_date: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
-                <textarea placeholder="Notas" rows={2} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} className="border rounded-lg px-3 py-2 text-sm w-full" />
+                <Input placeholder="Próxima acción" value={form.next_step} onChange={e => setForm({ ...form, next_step: e.target.value })} />
+                <Input type="date" value={form.next_step_date} onChange={e => setForm({ ...form, next_step_date: e.target.value })} />
+                <Textarea placeholder="Notas" rows={2} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} className="min-h-0" />
               </div>
             )}
 
@@ -738,25 +728,25 @@ export default function LeadsPage() {
             <div className="sticky bottom-0 bg-white border-t px-4 py-3 flex gap-2">
               {createStep === 1 ? (
                 <>
-                  <button onClick={closeCreateModal} className="flex-1 px-4 py-2 border rounded-lg text-sm">Cancelar</button>
-                  <button
+                  <Button variant="outline" className="flex-1" onClick={closeCreateModal}>Cancelar</Button>
+                  <Button
+                    className="flex-1"
                     onClick={() => setCreateStep(2)}
                     disabled={!canProceedStep1}
-                    className="flex-1 px-4 py-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white rounded-lg text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-1"
                   >
                     Siguiente <ChevronRight className="w-4 h-4" />
-                  </button>
+                  </Button>
                 </>
               ) : (
                 <>
-                  <button onClick={() => setCreateStep(1)} className="flex-1 px-4 py-2 border rounded-lg text-sm">← Atrás</button>
-                  <button
+                  <Button variant="outline" className="flex-1" onClick={() => setCreateStep(1)}>← Atrás</Button>
+                  <Button
+                    className="flex-1"
                     onClick={handleCreate}
-                    disabled={saving}
-                    className="flex-1 px-4 py-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white rounded-lg text-sm font-medium disabled:opacity-50"
+                    loading={saving}
                   >
                     {saving ? 'Guardando...' : 'Crear lead'}
-                  </button>
+                  </Button>
                 </>
               )}
             </div>
@@ -767,19 +757,19 @@ export default function LeadsPage() {
       {/* CONVERT TO APPRAISAL MODAL */}
       {showConvertModal && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowConvertModal(null)}>
-          <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-5" onClick={e => e.stopPropagation()}>
-            <h3 className="font-semibold text-ink mb-2">Avanzar a tasación</h3>
-            <p className="text-sm text-gray-500 mb-4">
+          <div className="bg-white w-full sm:max-w-md sm:rounded-card rounded-t-card p-5" onClick={e => e.stopPropagation()}>
+            <Heading level={4} as="h3" className="mb-2">Avanzar a tasación</Heading>
+            <Text tone="muted" className="mb-4">
               <strong>{showConvertModal.full_name}</strong> pasará a &ldquo;En tasación&rdquo;. ¿Querés crear una tasación vinculada?
-            </p>
+            </Text>
             <div className="space-y-2">
-              <button onClick={() => handleConvertToAppraisal(showConvertModal, true)} className="w-full px-4 py-3 bg-pink-600 text-white rounded-xl text-sm font-medium hover:bg-pink-700">
+              <Button size="lg" fullWidth onClick={() => handleConvertToAppraisal(showConvertModal, true)}>
                 Sí, crear tasación vinculada
-              </button>
-              <button onClick={() => handleConvertToAppraisal(showConvertModal, false)} className="w-full px-4 py-3 border rounded-xl text-sm text-gray-600 hover:bg-gray-50">
+              </Button>
+              <Button size="lg" variant="outline" fullWidth onClick={() => handleConvertToAppraisal(showConvertModal, false)}>
                 Solo avanzar etapa
-              </button>
-              <button onClick={() => setShowConvertModal(null)} className="w-full px-4 py-2 text-sm text-gray-400">Cancelar</button>
+              </Button>
+              <Button variant="ghost" fullWidth className="text-gray-400" onClick={() => setShowConvertModal(null)}>Cancelar</Button>
             </div>
           </div>
         </div>
@@ -796,24 +786,14 @@ export default function LeadsPage() {
 }
 
 // ── helpers LeadCard ──
-function urgencyText(lead: any): { text: string; cls: string } | null {
-  if (isAgentFinalStage(lead)) return null
-  const diffH = (Date.now() - new Date(lead.updated_at || lead.created_at).getTime()) / 3600000
-  const days = Math.floor(diffH / 24)
-  if (lead.stage === 'nuevo' && diffH > 24) return { text: 'Sin asignar +24h', cls: 'text-red-500' }
-  if (diffH > 168) return { text: `Sin contacto ${days}d`, cls: 'text-red-500' }
-  if (diffH > 72) return { text: `Sin contacto ${days}d`, cls: 'text-amber-500' }
-  return null
-}
-
 // ── LeadCard (List view) ──
 function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any; onAdvance: () => void; onLost: () => void; onDelete: () => void; onRefresh: () => void }) {
-  const stage = getStageConfig(lead.stage, lead.pipeline)
   const urgency = getLeadUrgency(lead)
   const lastActivity = lead.last_activity_at ? timeAgo(lead.last_activity_at) : null
   const hasAppraisal = lead.appraisal_count > 0
-  const urg = urgencyText(lead)
-  const outerBorder = urgency === 'danger' ? 'border-red-200' : urgency === 'warning' ? 'border-yellow-200' : 'border-gray-200'
+  const urg = getUrgencyBadge(lead)
+  // Sin borde de color por urgencia: la señal va como badge (urg), no en el
+  // contorno de la card. Sólo danger conserva un borde rojo suave.
 
   const [showTagPicker, setShowTagPicker] = useState(false)
   const [orgTags, setOrgTags] = useState<any[]>([])
@@ -850,12 +830,12 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
   const availableTags = orgTags.filter(t => !lead.tags?.some((lt: any) => lt.id === t.id))
 
   return (
-    <div className={`relative bg-white border ${outerBorder} rounded-xl overflow-hidden flex flex-col transition-shadow hover:shadow-md`}>
+    <div className="relative bg-white border border-gray-200 rounded-card shadow-card overflow-hidden flex flex-col transition-shadow hover:shadow-md">
       {/* Tag picker dropdown */}
       {showTagPicker && (
         <>
           <div className="fixed inset-0 z-[9]" onClick={() => setShowTagPicker(false)} />
-          <div className="absolute bottom-12 sm:bottom-10 left-2 right-2 z-10 bg-white border border-gray-200 rounded-xl shadow-xl p-2">
+          <div className="absolute bottom-12 sm:bottom-10 left-2 right-2 z-10 bg-white border border-gray-200 rounded-card shadow-pop p-2">
             {tagsLoading ? (
               <div className="flex items-center gap-2 px-2 py-2 text-xs text-gray-400">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" /> Cargando...
@@ -865,7 +845,7 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
             ) : (
               availableTags.map(tag => (
                 <button key={tag.id} onClick={() => addTag(tag.id)}
-                  className="w-full text-left flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-gray-50 text-sm text-gray-700">
+                  className="w-full text-left flex items-center gap-2.5 px-2 py-1.5 rounded-control hover:bg-gray-50 text-sm text-gray-700">
                   <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: tag.color }} />
                   {tag.name}
                 </button>
@@ -878,12 +858,12 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
       <div className="flex flex-1 min-w-0">
         {/* Main content — clickable */}
         <Link href={`/leads/${lead.id}`} className="flex-1 min-w-0 px-5 py-4 flex flex-col gap-1.5">
-          {/* Row 1: name + stage + tags */}
-          <div className="flex items-center gap-2.5 min-w-0">
+          {/* Row 1: name + stage + tags (izq.) · urgencia (der., como en el kanban) */}
+          <div className="flex items-start justify-between gap-2 min-w-0">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="font-semibold text-sm text-ink truncate">{lead.full_name}</span>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0 ${stage.color}`}>{stage.label}</span>
+                <StageBadge stage={lead.stage} pipeline={lead.pipeline} size="sm" className="shrink-0 px-2 font-semibold" />
                 {lead.tags?.map((tag: any) => (
                   <button key={tag.id} onClick={(e) => removeTag(tag.id, e)}
                     className="group inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0 bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">
@@ -892,6 +872,7 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
                     <X className="w-2 h-2 opacity-0 group-hover:opacity-60 transition-opacity" />
                   </button>
                 ))}
+                {/* ds-todo: StatusBadge con ícono (pill Tasación) */}
                 {hasAppraisal && <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium shrink-0"><Check className="w-2.5 h-2.5" /> Tasación</span>}
               </div>
               <p className="text-xs text-gray-500 truncate mt-0.5">
@@ -900,6 +881,7 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
                 {lead.operation && <span className="capitalize">{lead.operation}</span>}
               </p>
             </div>
+            {urg && <StatusBadge label={urg.text} color={urg.color} className="shrink-0" />}
           </div>
 
           {/* Dirección de la propiedad — visible de un vistazo */}
@@ -910,16 +892,15 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
             </div>
           )}
 
-          {/* Row 2: agent + activity + urgency */}
+          {/* Row 2: agent + activity */}
           <div className="flex items-center gap-2 text-[11px] text-gray-500 flex-wrap">
             {lead.assigned_name && <span>{lead.assigned_name}</span>}
             {lastActivity && <><span className="text-gray-200">·</span><span>Últ: {lastActivity}</span></>}
-            {urg && <><span className="text-gray-200">·</span><span className={`font-medium ${urg.cls}`}>{urg.text}</span></>}
           </div>
 
           {/* Next step band */}
           {lead.next_step && (
-            <div className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded-lg mt-0.5 ${urgency === 'danger' ? 'bg-red-50 text-red-600' : urgency === 'warning' ? 'bg-amber-50 text-amber-600' : 'bg-pink-50 text-brand-pink'}`}>
+            <div className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded-control mt-0.5 ${urgency === 'danger' ? 'bg-red-50 text-red-600' : urgency === 'warning' ? 'bg-amber-50 text-amber-600' : 'bg-primary/5 text-primary'}`}>
               <ArrowRight className="w-3 h-3 shrink-0" />
               <span className="truncate">{lead.next_step}</span>
               {lead.next_step_date && <span className="shrink-0 text-[10px] opacity-70">· {lead.next_step_date}</span>}
@@ -931,13 +912,10 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
         <div className="flex sm:hidden flex-col border-l border-gray-100 shrink-0" onClick={e => e.stopPropagation()}>
           {lead.phone ? (
             <>
-              <a href={`tel:${lead.phone}`} className="flex-1 w-12 flex items-center justify-center text-gray-500 hover:bg-gray-50 active:bg-gray-100 transition-colors">
-                <Phone className="w-5 h-5" />
-              </a>
-              <a href={`https://wa.me/${formatWhatsApp(lead.phone)}`} target="_blank" rel="noreferrer"
-                className="flex-1 w-12 flex items-center justify-center text-gray-500 hover:bg-gray-50 active:bg-gray-100 border-t border-gray-100 transition-colors">
-                <MessageCircle className="w-5 h-5" />
-              </a>
+              <CallButton phone={lead.phone} iconOnly
+                className="flex-1 w-12 h-auto rounded-none bg-transparent text-gray-500 hover:bg-gray-50 active:bg-gray-100 hover:opacity-100 transition-colors" />
+              <WhatsAppButton phone={lead.phone} iconOnly
+                className="flex-1 w-12 h-auto rounded-none bg-transparent text-gray-500 hover:bg-gray-50 active:bg-gray-100 border-t border-gray-100 hover:opacity-100 transition-colors" />
             </>
           ) : (
             <div className="flex-1 w-12 flex items-center justify-center text-gray-200">
@@ -952,7 +930,7 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
           <button onClick={openTagPicker} className="flex-1 w-12 flex items-center justify-center text-gray-400 hover:bg-gray-50 border-t border-gray-100 transition-colors">
             <Tag className="w-4 h-4" />
           </button>
-          <button onClick={onDelete} className="flex-1 w-12 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 border-t border-gray-100 transition-colors">
+          <button onClick={onDelete} className="flex-1 w-12 flex items-center justify-center text-gray-300 hover:text-danger hover:bg-danger/10 border-t border-gray-100 transition-colors">
             <Trash2 className="w-4 h-4" />
           </button>
         </div>
@@ -962,13 +940,10 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
       <div className="hidden sm:flex border-t border-gray-100 divide-x divide-gray-100" onClick={e => e.stopPropagation()}>
         {lead.phone ? (
           <>
-            <a href={`tel:${lead.phone}`} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">
-              <Phone className="w-3.5 h-3.5" /> Llamar
-            </a>
-            <a href={`https://wa.me/${formatWhatsApp(lead.phone)}`} target="_blank" rel="noreferrer"
-              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">
-              <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
-            </a>
+            <CallButton phone={lead.phone}
+              className="flex-1 rounded-none bg-transparent text-gray-600 text-xs px-0 py-2.5 hover:bg-gray-50 hover:opacity-100 transition-colors" />
+            <WhatsAppButton phone={lead.phone}
+              className="flex-1 rounded-none bg-transparent text-gray-600 text-xs px-0 py-2.5 hover:bg-gray-50 hover:opacity-100 transition-colors" />
           </>
         ) : (
           <span className="flex-1 flex items-center justify-center py-2.5 text-xs text-gray-300">Sin teléfono</span>
@@ -981,7 +956,7 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
         <button onClick={openTagPicker} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">
           <Tag className="w-3.5 h-3.5" /> Etiquetar
         </button>
-        <button onClick={onDelete} className="px-4 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors">
+        <button onClick={onDelete} className="px-4 flex items-center justify-center text-gray-300 hover:text-danger hover:bg-danger/10 transition-colors">
           <Trash2 className="w-3.5 h-3.5" />
         </button>
       </div>
@@ -991,17 +966,16 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
 
 // ── KanbanCard ──
 function KanbanCard({ lead, onAdvance, onMoveTo }: { lead: any; onAdvance: () => void; onMoveTo: (stage: string) => void }) {
-  const urgency = getLeadUrgency(lead)
-  const badge = getUrgencyBadge(urgency)
+  const badge = getUrgencyBadge(lead)
   const checklist = getLeadChecklist(lead)
   const [showMove, setShowMove] = useState(false)
 
   return (
-    <div className={`bg-white border rounded-xl p-3 hover:shadow-md transition-all relative ${urgency === 'danger' ? 'border-red-200 bg-red-50/30' : ''}`}>
+    <div className="bg-white border border-gray-200 rounded-card shadow-card pt-3 pr-3 pb-3 pl-7 hover:shadow-md transition-all relative">
       <Link href={`/leads/${lead.id}`}>
         <div className="flex items-center justify-between mb-1">
           <h4 className="text-sm font-medium text-ink truncate">{lead.full_name}</h4>
-          {badge && <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${badge.class}`}>{badge.text}</span>}
+          {badge && <StatusBadge label={badge.text} color={badge.color} size="sm" className="shrink-0" />}
         </div>
         {lead.tags?.length > 0 && (
           <div className="flex gap-1 mb-1">
@@ -1012,7 +986,7 @@ function KanbanCard({ lead, onAdvance, onMoveTo }: { lead: any; onAdvance: () =>
         )}
         <div className="space-y-1 text-xs text-gray-500">
           {(lead.property_address || lead.neighborhood) && (
-            <p className="flex items-center gap-1 font-medium text-gray-700 min-w-0"><MapPin className="w-3 h-3 text-brand-pink shrink-0" /><span className="truncate">{lead.property_address || lead.neighborhood}</span></p>
+            <p className="flex items-center gap-1 font-medium text-gray-700 min-w-0"><MapPin className="w-3 h-3 text-primary shrink-0" /><span className="truncate">{lead.property_address || lead.neighborhood}</span></p>
           )}
           {lead.phone && <p className="flex items-center gap-1"><Phone className="w-3 h-3" />{lead.phone}</p>}
           {lead.operation && <p className="capitalize">{lead.operation}</p>}
@@ -1023,19 +997,20 @@ function KanbanCard({ lead, onAdvance, onMoveTo }: { lead: any; onAdvance: () =>
         <div className="flex gap-0.5">{Object.entries(checklist).map(([k, v]) => <div key={k} className={`w-1.5 h-1.5 rounded-full ${v ? 'bg-green-500' : 'bg-gray-200'}`} />)}</div>
         <div className="flex gap-1">
           {lead.phone && (
-            <a href={`https://wa.me/${formatWhatsApp(lead.phone)}`} target="_blank" className="p-1 rounded hover:bg-green-50 text-green-500"><MessageCircle className="w-3.5 h-3.5" /></a>
+            <WhatsAppButton phone={lead.phone} iconOnly
+              className="w-7 h-7 rounded-control bg-transparent text-whatsapp hover:bg-success/10 hover:opacity-100" />
           )}
-          <button onClick={() => setShowMove(!showMove)} className="p-1 rounded hover:bg-gray-100 text-gray-400" title="Mover a...">
+          <button onClick={() => setShowMove(!showMove)} className="p-1 rounded-control hover:bg-gray-100 text-gray-400" title="Mover a...">
             <ChevronDown className="w-3.5 h-3.5" />
           </button>
-          <button onClick={onAdvance} className="p-1 rounded hover:bg-pink-50 text-pink-500" title="Avanzar"><ArrowRight className="w-3.5 h-3.5" /></button>
+          <button onClick={onAdvance} className="p-1 rounded-control hover:bg-primary/10 text-primary" title="Avanzar"><ArrowRight className="w-3.5 h-3.5" /></button>
         </div>
       </div>
       {/* Move to dropdown */}
       {showMove && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setShowMove(false)} />
-          <div className="absolute right-2 top-full mt-1 z-20 bg-white border rounded-lg shadow-lg py-1 min-w-[140px] max-h-60 overflow-y-auto">
+          <div className="absolute right-2 top-full mt-1 z-20 bg-white border rounded-control shadow-pop py-1 min-w-[140px] max-h-60 overflow-y-auto">
             {(() => {
               const leadStages = getStagesForPipeline(lead.pipeline === 'comprador' ? 'comprador' : 'vendedor')
               return leadStages.keys.filter(s => s !== lead.stage).map(s => (
@@ -1057,7 +1032,7 @@ function KanbanCard({ lead, onAdvance, onMoveTo }: { lead: any; onAdvance: () =>
 function DroppableColumn({ id, children }: { id: string; children: React.ReactNode }) {
   const { setNodeRef, isOver: dropping } = useDroppable({ id })
   return (
-    <div ref={setNodeRef} className={`w-64 shrink-0 transition-colors rounded-xl ${dropping ? 'bg-brand-pink/5 ring-2 ring-brand-pink/30' : ''}`}>
+    <div ref={setNodeRef} className={`w-72 shrink-0 transition-colors rounded-card p-2 ${dropping ? 'bg-primary/5 ring-2 ring-primary/30' : ''}`}>
       {children}
     </div>
   )

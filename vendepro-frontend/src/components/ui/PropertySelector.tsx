@@ -64,7 +64,7 @@ export function PropertySelector({ value, onChange }: PropertySelectorProps) {
   return (
     <div className="relative">
       {value ? (
-        <div className="flex items-center gap-3 bg-brand-pink/5 border border-brand-pink/30 rounded-lg px-3 py-2">
+        <div className="flex items-center gap-3 bg-brand-pink/5 border border-brand-pink/30 rounded-control px-3 py-2">
           <Building2 className="w-4 h-4 text-brand-pink flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-ink truncate">{value.address}</p>
@@ -82,13 +82,13 @@ export function PropertySelector({ value, onChange }: PropertySelectorProps) {
             onFocus={() => { if (query) setOpen(true) }}
             onBlur={() => setTimeout(() => setOpen(false), 150)}
             placeholder="Buscar propiedad por dirección o barrio..."
-            className="w-full border rounded-lg pl-9 pr-3 py-2 text-sm"
+            className="w-full border rounded-control pl-9 pr-3 py-2 text-sm"
           />
         </div>
       )}
 
       {open && !value && (
-        <div className="absolute z-50 w-full mt-1 bg-white border rounded-xl shadow-lg overflow-hidden">
+        <div className="absolute z-50 w-full mt-1 bg-white border rounded-card shadow-pop overflow-hidden">
           {loading ? (
             <p className="text-sm text-gray-400 text-center py-3">Buscando...</p>
           ) : results.length === 0 ? (

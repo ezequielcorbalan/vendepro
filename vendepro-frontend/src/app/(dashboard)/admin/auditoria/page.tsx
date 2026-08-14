@@ -5,6 +5,11 @@ import Link from 'next/link'
 import { FileText, ArrowRight, User, Building2, Filter, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { LEAD_STAGES, PROPERTY_STAGES } from '@/lib/crm-config'
 import { apiFetch } from '@/lib/api'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Card } from '@/components/ui/Card'
+import { Select } from '@/components/ui/Input'
+import { Button } from '@/components/ui/Button'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 const ENTITY_LABELS: Record<string, { label: string; icon: any; color: string }> = {
   lead: { label: 'Lead', icon: User, color: 'bg-blue-50 text-blue-700' },
@@ -48,39 +53,37 @@ export default function AuditoriaPage() {
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-ink flex items-center gap-2">
-            <FileText className="w-6 h-6 text-brand-pink" /> Auditoría
-          </h1>
-          <p className="text-sm text-gray-400 mt-0.5">{total} cambios de estado registrados</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-gray-400" />
-          <select
-            value={filterType}
-            onChange={e => { setFilterType(e.target.value); setPage(0) }}
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white"
-          >
-            <option value="">Todos</option>
-            <option value="lead">Leads</option>
-            <option value="property">Propiedades</option>
-          </select>
-        </div>
-      </div>
+      <PageHeader
+        title="Auditoría"
+        subtitle={`${total} cambios de estado registrados`}
+        className="mb-6"
+        actions={
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-gray-400" />
+            <Select
+              value={filterType}
+              onChange={e => { setFilterType(e.target.value); setPage(0) }}
+              className="w-auto"
+            >
+              <option value="">Todos</option>
+              <option value="lead">Leads</option>
+              <option value="property">Propiedades</option>
+            </Select>
+          </div>
+        }
+      />
 
       {loading ? (
         <div className="flex items-center justify-center h-40">
-          <Loader2 className="w-8 h-8 animate-spin text-brand-pink" />
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
       ) : results.length === 0 ? (
-        <div className="bg-white rounded-xl p-12 text-center">
-          <FileText className="w-14 h-14 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500">No hay registros de auditoría</p>
-        </div>
+        <Card>
+          <EmptyState icon={<FileText className="w-6 h-6" />} title="No hay registros de auditoría" />
+        </Card>
       ) : (
         <>
-          <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+          <Card padded={false} className="overflow-hidden">
             <div className="divide-y divide-gray-50">
               {results.map((r: any) => {
                 const cfg = ENTITY_LABELS[r.entity_type] || ENTITY_LABELS.lead
@@ -101,7 +104,7 @@ export default function AuditoriaPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <Link href={entityLink} className="text-sm font-medium text-ink hover:text-brand-pink truncate">
+                        <Link href={entityLink} className="text-sm font-medium text-ink hover:text-primary truncate">
                           {r.entity_name || r.entity_id?.slice(0, 8)}
                         </Link>
                         <span className="text-[10px] text-gray-400">{cfg.label}</span>
@@ -129,26 +132,26 @@ export default function AuditoriaPage() {
                 )
               })}
             </div>
-          </div>
+          </Card>
 
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-4">
               <p className="text-xs text-gray-400">Página {page + 1} de {totalPages}</p>
               <div className="flex gap-1">
-                <button
+                <Button
+                  variant="outline"
                   onClick={() => setPage(p => Math.max(0, p - 1))}
                   disabled={page === 0}
-                  className="p-1.5 rounded-lg border border-gray-200 disabled:opacity-30 hover:bg-gray-50"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button
+                  icon={<ChevronLeft className="w-4 h-4" />}
+                  aria-label="Página anterior"
+                />
+                <Button
+                  variant="outline"
                   onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
                   disabled={page >= totalPages - 1}
-                  className="p-1.5 rounded-lg border border-gray-200 disabled:opacity-30 hover:bg-gray-50"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
+                  icon={<ChevronRight className="w-4 h-4" />}
+                  aria-label="Página siguiente"
+                />
               </div>
             </div>
           )}

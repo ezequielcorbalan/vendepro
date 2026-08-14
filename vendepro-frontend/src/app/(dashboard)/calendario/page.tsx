@@ -4,9 +4,18 @@ import { useState, useEffect, useMemo } from 'react'
 import {
   Plus, X, ChevronLeft, ChevronRight, Calendar, Phone, Users, Home, Eye,
   ClipboardList, RefreshCw, FileText, FileSignature, CheckCircle2, Trash2,
-  MessageCircle, Link2
+  Link2
 } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { Card, CardTitle } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { StatusBadge } from '@/components/ui/StatusBadge'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { Heading, Text } from '@/components/ui/Typography'
+import { Field, Input, Select, Textarea } from '@/components/ui/Input'
+import { CallButton, WhatsAppButton } from '@/components/ui/ContactButtons'
 import { EVENT_TYPES } from '@/lib/crm-config'
 import { apiFetch } from '@/lib/api'
 import { getScopedAgentId } from '@/lib/agent-scope'
@@ -202,33 +211,30 @@ export default function CalendarioPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-ink">Calendario</h1>
-          <p className="text-sm text-gray-500">{events.length} evento{events.length !== 1 ? 's' : ''} este mes</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex gap-0.5 bg-gray-100 rounded-lg p-0.5">
-            {(['month', 'agenda'] as const).map(v => (
-              <button key={v} onClick={() => setView(v)}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium capitalize transition-colors ${view === v ? 'bg-white shadow text-ink' : 'text-gray-500'}`}>
-                {v === 'month' ? 'Mes' : 'Agenda'}
-              </button>
-            ))}
-          </div>
-          <button onClick={() => setShowCreate(true)} className="bg-gradient-to-br from-brand-pink to-brand-orange text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:opacity-90">
-            <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Nuevo evento</span>
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Calendario"
+        subtitle={`${events.length} evento${events.length !== 1 ? 's' : ''} este mes`}
+        actions={
+          <>
+            <SegmentedControl
+              options={[{ value: 'month', label: 'Mes' }, { value: 'agenda', label: 'Agenda' }]}
+              value={view}
+              onChange={v => setView(v as 'month' | 'agenda')}
+            />
+            <Button icon={<Plus className="w-4 h-4" />} onClick={() => setShowCreate(true)}>
+              <span className="hidden sm:inline">Nuevo evento</span>
+            </Button>
+          </>
+        }
+      />
 
       {view === 'month' ? (
-        <div className="bg-white rounded-xl border overflow-hidden">
+        <Card padded={false} className="overflow-hidden">
           {/* Nav */}
-          <div className="flex items-center justify-between px-4 py-3 border-b">
-            <button onClick={handlePrev} className="p-2 hover:bg-gray-100 rounded-lg"><ChevronLeft className="w-5 h-5" /></button>
-            <h2 className="font-semibold text-ink">{MONTH_NAMES[month]} {year}</h2>
-            <button onClick={handleNext} className="p-2 hover:bg-gray-100 rounded-lg"><ChevronRight className="w-5 h-5" /></button>
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+            <button onClick={handlePrev} aria-label="Mes anterior" className="p-2 hover:bg-gray-100 rounded-control"><ChevronLeft className="w-5 h-5" /></button>
+            <Heading level={4} as="h2">{MONTH_NAMES[month]} {year}</Heading>
+            <button onClick={handleNext} aria-label="Mes siguiente" className="p-2 hover:bg-gray-100 rounded-control"><ChevronRight className="w-5 h-5" /></button>
           </div>
 
           {/* Day headers */}
@@ -253,7 +259,7 @@ export default function CalendarioPage() {
                 >
                   {day && (
                     <>
-                      <div className={`w-7 h-7 flex items-center justify-center rounded-full text-sm font-medium mb-1 ${isToday ? 'bg-brand-pink text-white' : 'text-gray-700'}`}>
+                      <div className={`w-7 h-7 flex items-center justify-center rounded-full text-sm font-medium mb-1 ${isToday ? 'bg-primary text-white' : 'text-gray-700'}`}>
                         {day}
                       </div>
                       <div className="space-y-0.5">
@@ -275,19 +281,25 @@ export default function CalendarioPage() {
               )
             })}
           </div>
-        </div>
+        </Card>
       ) : (
         // Agenda view
         <div className="space-y-3">
           {loading ? (
             <div className="animate-pulse space-y-3">
-              {[...Array(5)].map((_, i) => <div key={i} className="h-16 bg-gray-200 rounded-xl" />)}
+              {[...Array(5)].map((_, i) => <div key={i} className="h-16 bg-gray-200 rounded-card" />)}
             </div>
           ) : events.length === 0 ? (
-            <div className="text-center py-12 text-gray-400">
-              <Calendar className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-              <p>Sin eventos este mes</p>
-            </div>
+            <EmptyState
+              icon={<Calendar className="w-7 h-7" />}
+              title="Sin eventos este mes"
+              description="Creá un evento para organizar tu agenda."
+              action={
+                <Button icon={<Plus className="w-4 h-4" />} onClick={() => setShowCreate(true)}>
+                  Nuevo evento
+                </Button>
+              }
+            />
           ) : (
             events
               .sort((a, b) => (a.start_at || '').localeCompare(b.start_at || ''))
@@ -296,15 +308,15 @@ export default function CalendarioPage() {
                 const Ico = ICON_MAP[cfg.icon] || Calendar
                 const isOverdue = !ev.completed && ev.start_at && new Date(ev.start_at) < now
                 return (
-                  <div key={ev.id} className={`bg-white border rounded-xl p-4 flex items-start gap-3 ${isOverdue ? 'border-red-200 bg-red-50/30' : ''} ${ev.completed ? 'opacity-60' : ''}`}>
-                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${cfg.bg} ${cfg.color}`}>
+                  <Card key={ev.id} padded={false} className={`p-4 flex items-start gap-3 ${ev.completed ? 'opacity-60' : ''}`}>
+                    <div className={`w-9 h-9 rounded-control flex items-center justify-center shrink-0 ${cfg.bg} ${cfg.color}`}>
                       <Ico className="w-4 h-4" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className={`text-sm font-medium ${ev.completed ? 'line-through text-gray-400' : 'text-ink'}`}>{ev.title}</p>
-                        {isOverdue && <span className="text-[10px] px-1.5 py-0.5 bg-red-100 text-red-600 rounded-full font-medium">VENCIDO</span>}
-                        {ev.completed === 1 && <CheckCircle2 className="w-4 h-4 text-green-500" />}
+                        <Text weight="medium" className={ev.completed ? 'line-through text-gray-400' : undefined}>{ev.title}</Text>
+                        {isOverdue && <StatusBadge label="VENCIDO" color="bg-danger/10 text-danger" />}
+                        {ev.completed === 1 && <CheckCircle2 className="w-4 h-4 text-success" />}
                       </div>
                       <div className="flex items-center gap-2 mt-1 text-xs text-gray-400">
                         <span>{ev.start_at ? new Date(ev.start_at).toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' }) : ''}</span>
@@ -314,33 +326,34 @@ export default function CalendarioPage() {
                       </div>
                       {ev.notes && <p className="text-xs text-gray-400 mt-1 truncate">{ev.notes}</p>}
                     </div>
-                    <div className="flex gap-1 shrink-0">
+                    <div className="flex items-center gap-1 shrink-0">
                       {ev.lead_phone && (
                         <>
-                          <a href={`tel:${ev.lead_phone}`} className="p-1.5 rounded hover:bg-blue-50 text-blue-500"><Phone className="w-3.5 h-3.5" /></a>
-                          <a
-                            href={`https://wa.me/${ev.lead_phone.replace(/\D/g,'')}${ev.start_at ? `?text=${encodeURIComponent(clientInviteMessage(ev))}` : ''}`}
-                            target="_blank" rel="noreferrer" title="WhatsApp con la cita y el link para agendar"
-                            className="p-1.5 rounded hover:bg-green-50 text-green-500"
-                          ><MessageCircle className="w-3.5 h-3.5" /></a>
+                          <CallButton phone={ev.lead_phone} iconOnly className="w-8 h-8" />
+                          <WhatsAppButton
+                            phone={ev.lead_phone} iconOnly className="w-8 h-8"
+                            message={ev.start_at ? clientInviteMessage(ev) : undefined}
+                          />
                         </>
                       )}
                       {ev.start_at && (
                         <button onClick={() => copyClientLink(ev)} title="Copiar link para que el cliente lo agende"
-                          className="p-1.5 rounded hover:bg-purple-50 text-gray-400 hover:text-purple-500">
+                          className="p-1.5 rounded-control hover:bg-gray-100 text-gray-400 hover:text-primary">
                           <Link2 className="w-3.5 h-3.5" />
                         </button>
                       )}
                       {!ev.completed && (
-                        <button onClick={() => completeEvent(ev.id)} className="p-1.5 rounded hover:bg-green-50 text-gray-400 hover:text-green-500">
+                        <button onClick={() => completeEvent(ev.id)} title="Marcar como completado"
+                          className="p-1.5 rounded-control hover:bg-gray-100 text-gray-400 hover:text-success">
                           <CheckCircle2 className="w-3.5 h-3.5" />
                         </button>
                       )}
-                      <button onClick={() => deleteEvent(ev.id)} className="p-1.5 rounded hover:bg-red-50 text-gray-300 hover:text-red-500">
+                      <button onClick={() => deleteEvent(ev.id)} title="Eliminar evento"
+                        className="p-1.5 rounded-control hover:bg-gray-100 text-gray-400 hover:text-danger">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
-                  </div>
+                  </Card>
                 )
               })
           )}
@@ -349,18 +362,18 @@ export default function CalendarioPage() {
 
       {/* Selected day events panel */}
       {selectedDate && selectedEvents.length > 0 && (
-        <div className="bg-white rounded-xl border p-4">
+        <Card padded={false} className="p-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-ink text-sm">
+            <CardTitle>
               {new Date(selectedDate + 'T12:00:00').toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}
-            </h3>
-            <button onClick={() => setSelectedDate(null)} className="p-1 hover:bg-gray-100 rounded"><X className="w-4 h-4 text-gray-400" /></button>
+            </CardTitle>
+            <button onClick={() => setSelectedDate(null)} aria-label="Cerrar" className="p-1 hover:bg-gray-100 rounded-control"><X className="w-4 h-4 text-gray-400" /></button>
           </div>
           <div className="space-y-2">
             {selectedEvents.map(ev => {
               const cfg = getET(ev.event_type)
               return (
-                <div key={ev.id} className={`flex items-center gap-3 p-2 rounded-lg ${cfg.bg}`}>
+                <div key={ev.id} className={`flex items-center gap-3 p-2 rounded-control ${cfg.bg}`}>
                   <ETIcon type={ev.event_type} className={`w-4 h-4 ${cfg.color}`} />
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm font-medium ${cfg.color} truncate`}>{ev.title}</p>
@@ -368,13 +381,14 @@ export default function CalendarioPage() {
                   </div>
                   {ev.start_at && (
                     <button onClick={() => copyClientLink(ev)} title="Copiar link para que el cliente lo agende"
-                      className="text-gray-400 hover:text-purple-500">
+                      className="text-gray-400 hover:text-primary">
                       <Link2 className="w-4 h-4" />
                     </button>
                   )}
-                  {ev.completed === 1 && <CheckCircle2 className="w-4 h-4 text-green-500" />}
+                  {ev.completed === 1 && <CheckCircle2 className="w-4 h-4 text-success" />}
                   {!ev.completed && (
-                    <button onClick={() => completeEvent(ev.id)} className="text-gray-400 hover:text-green-500">
+                    <button onClick={() => completeEvent(ev.id)} title="Marcar como completado"
+                      className="text-gray-400 hover:text-success">
                       <CheckCircle2 className="w-4 h-4" />
                     </button>
                   )}
@@ -382,44 +396,43 @@ export default function CalendarioPage() {
               )
             })}
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Create modal */}
       {showCreate && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowCreate(false)}>
-          <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-5" onClick={e => e.stopPropagation()}>
+          <div className="bg-white w-full sm:max-w-md sm:rounded-card rounded-t-2xl p-5" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-ink">Nuevo evento</h3>
-              <button onClick={() => setShowCreate(false)}><X className="w-5 h-5 text-gray-400" /></button>
+              <Heading level={4} as="h3">Nuevo evento</Heading>
+              <button onClick={() => setShowCreate(false)} aria-label="Cerrar" className="p-1 hover:bg-gray-100 rounded-control"><X className="w-5 h-5 text-gray-400" /></button>
             </div>
             <div className="space-y-3">
-              <input placeholder="Título del evento *" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                className="border rounded-lg px-3 py-2 text-sm w-full" />
-              <select value={form.event_type} onChange={e => setForm(f => ({ ...f, event_type: e.target.value }))} className="border rounded-lg px-3 py-2 text-sm w-full">
-                {Object.entries(EVENT_TYPES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-              </select>
+              <Field label="Título" required>
+                <Input placeholder="Título del evento" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
+              </Field>
+              <Field label="Tipo de evento">
+                <Select value={form.event_type} onChange={e => setForm(f => ({ ...f, event_type: e.target.value }))}>
+                  {Object.entries(EVENT_TYPES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                </Select>
+              </Field>
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Inicio *</label>
-                  <input type="datetime-local" value={form.start_at} onChange={e => setForm(f => ({ ...f, start_at: e.target.value }))}
-                    className="border rounded-lg px-3 py-2 text-sm w-full" />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Fin</label>
-                  <input type="datetime-local" value={form.end_at} onChange={e => setForm(f => ({ ...f, end_at: e.target.value }))}
-                    className="border rounded-lg px-3 py-2 text-sm w-full" />
-                </div>
+                <Field label="Inicio" required>
+                  <Input type="datetime-local" value={form.start_at} onChange={e => setForm(f => ({ ...f, start_at: e.target.value }))} />
+                </Field>
+                <Field label="Fin">
+                  <Input type="datetime-local" value={form.end_at} onChange={e => setForm(f => ({ ...f, end_at: e.target.value }))} />
+                </Field>
               </div>
-              <textarea placeholder="Notas..." value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-                rows={2} className="border rounded-lg px-3 py-2 text-sm w-full" />
+              <Field label="Notas">
+                <Textarea placeholder="Notas..." value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2} className="min-h-0" />
+              </Field>
             </div>
             <div className="flex gap-2 mt-4">
-              <button onClick={() => setShowCreate(false)} className="flex-1 border rounded-lg py-2 text-sm">Cancelar</button>
-              <button onClick={handleCreate} disabled={!form.title || !form.start_at || saving}
-                className="flex-1 bg-gradient-to-br from-brand-pink to-brand-orange text-white rounded-lg py-2 text-sm font-medium disabled:opacity-50">
-                {saving ? 'Guardando...' : 'Crear'}
-              </button>
+              <Button variant="outline" className="flex-1" onClick={() => setShowCreate(false)}>Cancelar</Button>
+              <Button className="flex-1" onClick={handleCreate} disabled={!form.title || !form.start_at} loading={saving}>
+                Crear
+              </Button>
             </div>
           </div>
         </div>

@@ -24,7 +24,7 @@ function SortablePhoto({ photo, onDelete }: { photo: Photo; onDelete: (id: strin
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }
 
   return (
-    <div ref={setNodeRef} style={style} className="relative group aspect-square rounded-xl overflow-hidden bg-gray-100">
+    <div ref={setNodeRef} style={style} className="relative group aspect-square rounded-card overflow-hidden bg-gray-100">
       <img src={photo.url} alt="" className="w-full h-full object-cover" />
       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors">
         <button {...attributes} {...listeners}
@@ -32,8 +32,8 @@ function SortablePhoto({ photo, onDelete }: { photo: Photo; onDelete: (id: strin
           <GripVertical className="w-3 h-3 text-gray-600" />
         </button>
         <button type="button" onClick={() => onDelete(photo.id)}
-          className="absolute top-2 right-2 bg-white/90 rounded-full p-1 opacity-0 group-hover:opacity-100 hover:bg-red-50">
-          <X className="w-3 h-3 text-gray-600 hover:text-red-500" />
+          className="absolute top-2 right-2 bg-white/90 rounded-full p-1 opacity-0 group-hover:opacity-100 hover:bg-danger/10">
+          <X className="w-3 h-3 text-gray-600 hover:text-danger" />
         </button>
       </div>
     </div>
@@ -94,7 +94,7 @@ export function PhotoGallery({ photos: initialPhotos, propertyId, editable = fal
     return (
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
         {photos.map(p => (
-          <div key={p.id} className="aspect-square rounded-xl overflow-hidden bg-gray-100">
+          <div key={p.id} className="aspect-square rounded-card overflow-hidden bg-gray-100">
             <img src={p.url} alt="" className="w-full h-full object-cover" />
           </div>
         ))}
@@ -115,7 +115,7 @@ export function PhotoGallery({ photos: initialPhotos, propertyId, editable = fal
           </SortableContext>
         </DndContext>
       )}
-      <label className={`flex items-center gap-2 border-2 border-dashed rounded-xl p-4 cursor-pointer transition-colors ${uploading ? 'border-gray-200 opacity-60' : 'border-gray-300 hover:border-brand-pink/50'}`}>
+      <label className={`flex items-center gap-2 border-2 border-dashed rounded-card p-4 cursor-pointer transition-colors ${uploading ? 'border-gray-200 opacity-60' : 'border-gray-300 hover:border-brand-pink/50'}`}>
         {uploading
           ? <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
           : <Upload className="w-4 h-4 text-gray-400" />}

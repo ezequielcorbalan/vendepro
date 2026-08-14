@@ -5,6 +5,10 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Building2, ExternalLink, Ruler, Eye, TrendingUp, Shield, Pencil, Loader2 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
+import { Card } from '@/components/ui/Card'
+import { Heading, Text } from '@/components/ui/Typography'
+import { Alert } from '@/components/ui/Alert'
+import { Table, type Column } from '@/components/ui/Table'
 import { TemplateRenderer } from '@/components/tasaciones/renderer/TemplateRenderer'
 import type {
   AppraisalContext, TemplateBlock, BlockOverrides,
@@ -47,6 +51,43 @@ function buildCtx(a: any): AppraisalContext {
   }
 }
 
+// Columnas de la tabla de comparables (presentación pura).
+const comparableColumns: Column<any>[] = [
+  {
+    key: 'address',
+    header: 'Dirección',
+    render: (c: any) => (
+      <div className="min-w-0">
+        <p className="font-medium text-ink truncate max-w-[150px] sm:max-w-none">{c.address || 'Sin dirección'}</p>
+        {c.zonaprop_url && (
+          <a href={c.zonaprop_url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-indigo-500 hover:underline">
+            Ver aviso →
+          </a>
+        )}
+      </div>
+    ),
+  },
+  { key: 'total_area', header: 'm²', align: 'center', render: (c: any) => c.total_area || '-' },
+  {
+    key: 'price',
+    header: 'Precio',
+    align: 'center',
+    render: (c: any) => (
+      <span className="font-semibold text-primary">
+        {c.price ? `$${Number(c.price).toLocaleString('es-AR')}` : '-'}
+      </span>
+    ),
+  },
+  {
+    key: 'usd_per_m2',
+    header: 'USD/m²',
+    align: 'center',
+    render: (c: any) => (c.usd_per_m2 ? Number(c.usd_per_m2).toLocaleString('es-AR') : '-'),
+  },
+  { key: 'days_on_market', header: 'Días', align: 'center', render: (c: any) => c.days_on_market || '-' },
+  { key: 'views_per_day', header: 'Vistas/d', align: 'center', render: (c: any) => c.views_per_day || '-' },
+]
+
 export default function TasacionDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -81,7 +122,7 @@ export default function TasacionDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-brand-pink" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -106,7 +147,7 @@ export default function TasacionDetailPage() {
         <div className="flex items-center gap-2">
           <Link
             href={`/tasaciones/${id}/editar`}
-            className="inline-flex items-center gap-2 border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50"
+            className="inline-flex items-center gap-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-control text-sm font-medium hover:bg-gray-50"
           >
             <Pencil className="w-4 h-4" /> Editar
           </Link>
@@ -115,7 +156,7 @@ export default function TasacionDetailPage() {
               href={`/t/${a.public_slug}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
+              className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-control text-sm font-medium hover:bg-primary-hover"
             >
               <ExternalLink className="w-4 h-4" /> Ver landing
             </a>
@@ -126,14 +167,14 @@ export default function TasacionDetailPage() {
       {(linkedLead || a.contact_name) && (
         <div className="flex flex-wrap items-center gap-3 mb-4">
           {linkedLead && (
-            <Link href={`/leads/${linkedLead.id}`} className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 transition-colors">
+            <Link href={`/leads/${linkedLead.id}`} className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-card hover:bg-blue-100 transition-colors">
               <span className="text-xs font-medium text-blue-700">Lead origen:</span>
               <span className="text-sm text-blue-800 font-semibold">{linkedLead.full_name}</span>
               {linkedLead.phone && <span className="text-xs text-blue-500">{linkedLead.phone}</span>}
             </Link>
           )}
           {!linkedLead && a.contact_name && (
-            <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl">
+            <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-card">
               <span className="text-xs font-medium text-gray-500">Contacto:</span>
               <span className="text-sm text-ink">{a.contact_name}</span>
               {a.contact_phone && <span className="text-xs text-gray-500">{a.contact_phone}</span>}
@@ -146,10 +187,10 @@ export default function TasacionDetailPage() {
         <div className="flex flex-wrap items-center gap-3 mb-4">
           <Link
             href={`/propiedades/${a.linked_property.id}`}
-            className="flex items-center gap-2 px-3 py-2 bg-brand-pink/5 border border-brand-pink/20 rounded-xl hover:bg-brand-pink/10 transition-colors"
+            className="flex items-center gap-2 px-3 py-2 bg-primary/5 border border-primary/20 rounded-card hover:bg-primary/10 transition-colors"
           >
-            <Building2 className="w-4 h-4 text-brand-pink" />
-            <span className="text-xs font-medium text-brand-pink">Propiedad:</span>
+            <Building2 className="w-4 h-4 text-primary" />
+            <span className="text-xs font-medium text-primary">Propiedad:</span>
             <span className="text-sm text-ink font-semibold">{a.linked_property.address}</span>
             {a.linked_property.neighborhood && (
               <span className="text-xs text-gray-500">{a.linked_property.neighborhood}</span>
@@ -166,14 +207,14 @@ export default function TasacionDetailPage() {
     return (
       <div>
         {header}
-        <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+        <Card padded={false} className="overflow-hidden">
           <TemplateRenderer
             snapshot={snapshot}
             overrides={overrides}
             appraisal={ctx}
             mode="web"
           />
-        </div>
+        </Card>
       </div>
     )
   }
@@ -207,124 +248,88 @@ export default function TasacionDetailPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm p-5 sm:p-8">
-          <h2 className="text-lg sm:text-xl font-bold text-ink mb-4 flex items-center gap-2">
-            <Ruler className="w-5 h-5 text-brand-pink" />
+        <Card className="p-5 sm:p-8">
+          <Heading level={3} className="text-lg sm:text-xl mb-4 flex items-center gap-2">
+            <Ruler className="w-5 h-5 text-gray-600" />
             Datos de la propiedad
-          </h2>
+          </Heading>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-            <div className="bg-gray-50 rounded-xl p-3 text-center">
+            <div className="bg-gray-50 rounded-card p-3 text-center">
               <p className="text-[10px] sm:text-xs text-gray-500">Tipología</p>
               <p className="font-bold text-sm text-ink capitalize">{a.property_type}</p>
             </div>
-            <div className="bg-gray-50 rounded-xl p-3 text-center">
+            <div className="bg-gray-50 rounded-card p-3 text-center">
               <p className="text-[10px] sm:text-xs text-gray-500">Sup. cubierta</p>
               <p className="font-bold text-sm text-ink">{a.covered_area || '-'} m²</p>
             </div>
-            <div className="bg-gray-50 rounded-xl p-3 text-center">
+            <div className="bg-gray-50 rounded-card p-3 text-center">
               <p className="text-[10px] sm:text-xs text-gray-500">Sup. total</p>
               <p className="font-bold text-sm text-ink">{a.total_area || '-'} m²</p>
             </div>
-            <div className="bg-brand-pink/5 border border-brand-pink/20 rounded-xl p-3 text-center">
+            <div className="bg-primary/5 border border-primary/20 rounded-card p-3 text-center">
               <p className="text-[10px] sm:text-xs text-gray-500">Ponderada</p>
-              <p className="font-bold text-sm text-brand-pink">{weighted.toFixed(1)} m²</p>
+              <p className="font-bold text-sm text-primary">{weighted.toFixed(1)} m²</p>
             </div>
           </div>
 
           {(a.strengths || a.weaknesses || a.opportunities || a.threats) && (
             <div>
-              <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+              <Heading level={4} className="text-sm text-gray-700 mb-3 flex items-center gap-2">
                 <Shield className="w-4 h-4 text-indigo-500" />
                 Análisis FODA
-              </h3>
+              </Heading>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {a.strengths && (
-                  <div className="bg-green-50 border border-green-200 rounded-xl p-3">
-                    <p className="text-xs font-semibold text-green-700 mb-1">Fortalezas</p>
-                    <p className="text-xs text-green-800 whitespace-pre-wrap">{a.strengths}</p>
-                  </div>
+                  <Alert tone="success" title="Fortalezas" hideIcon className="p-3">
+                    <p className="whitespace-pre-wrap">{a.strengths}</p>
+                  </Alert>
                 )}
                 {a.weaknesses && (
-                  <div className="bg-red-50 border border-red-200 rounded-xl p-3">
-                    <p className="text-xs font-semibold text-red-700 mb-1">Debilidades</p>
-                    <p className="text-xs text-red-800 whitespace-pre-wrap">{a.weaknesses}</p>
-                  </div>
+                  <Alert tone="danger" title="Debilidades" hideIcon className="p-3">
+                    <p className="whitespace-pre-wrap">{a.weaknesses}</p>
+                  </Alert>
                 )}
                 {a.opportunities && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
-                    <p className="text-xs font-semibold text-blue-700 mb-1">Oportunidades</p>
-                    <p className="text-xs text-blue-800 whitespace-pre-wrap">{a.opportunities}</p>
-                  </div>
+                  <Alert tone="info" title="Oportunidades" hideIcon className="p-3">
+                    <p className="whitespace-pre-wrap">{a.opportunities}</p>
+                  </Alert>
                 )}
                 {a.threats && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3">
-                    <p className="text-xs font-semibold text-yellow-700 mb-1">Amenazas</p>
-                    <p className="text-xs text-yellow-800 whitespace-pre-wrap">{a.threats}</p>
-                  </div>
+                  <Alert tone="warning" title="Amenazas" hideIcon className="p-3">
+                    <p className="whitespace-pre-wrap">{a.threats}</p>
+                  </Alert>
                 )}
               </div>
             </div>
           )}
 
           {a.publication_analysis && (
-            <div className="mt-4 bg-orange-50 border border-orange-200 rounded-xl p-4">
-              <p className="text-xs font-semibold text-orange-700 mb-1">Análisis de publicación actual</p>
-              <p className="text-xs text-orange-800 whitespace-pre-wrap">{a.publication_analysis}</p>
-            </div>
+            <Alert tone="warning" title="Análisis de publicación actual" className="mt-4">
+              <p className="whitespace-pre-wrap">{a.publication_analysis}</p>
+            </Alert>
           )}
-        </div>
+        </Card>
 
         {comparables.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm p-5 sm:p-8">
-            <h2 className="text-lg sm:text-xl font-bold text-ink mb-4 flex items-center gap-2">
+          <Card className="p-5 sm:p-8">
+            <Heading level={3} className="text-lg sm:text-xl mb-4 flex items-center gap-2">
               <Eye className="w-5 h-5 text-indigo-500" />
               Departamentos publicados en la zona
-            </h2>
+            </Heading>
 
-            <div className="overflow-x-auto -mx-2">
-              <table className="w-full text-xs sm:text-sm">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left p-2 font-medium text-gray-500">Dirección</th>
-                    <th className="text-center p-2 font-medium text-gray-500">m²</th>
-                    <th className="text-center p-2 font-medium text-gray-500">Precio</th>
-                    <th className="text-center p-2 font-medium text-gray-500">USD/m²</th>
-                    <th className="text-center p-2 font-medium text-gray-500">Días</th>
-                    <th className="text-center p-2 font-medium text-gray-500">Vistas/d</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {comparables.map((c: any, i: number) => (
-                    <tr key={i} className="border-b border-gray-50 hover:bg-gray-50">
-                      <td className="p-2">
-                        <div className="min-w-0">
-                          <p className="font-medium text-ink truncate max-w-[150px] sm:max-w-none">{c.address || 'Sin dirección'}</p>
-                          {c.zonaprop_url && (
-                            <a href={c.zonaprop_url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-indigo-500 hover:underline">
-                              Ver aviso →
-                            </a>
-                          )}
-                        </div>
-                      </td>
-                      <td className="text-center p-2">{c.total_area || '-'}</td>
-                      <td className="text-center p-2 font-semibold text-brand-pink">
-                        {c.price ? `$${Number(c.price).toLocaleString('es-AR')}` : '-'}
-                      </td>
-                      <td className="text-center p-2">{c.usd_per_m2 ? Number(c.usd_per_m2).toLocaleString('es-AR') : '-'}</td>
-                      <td className="text-center p-2">{c.days_on_market || '-'}</td>
-                      <td className="text-center p-2">{c.views_per_day || '-'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+            <Table
+              columns={comparableColumns}
+              data={comparables}
+              rowKey={(_, i) => String(i)}
+            />
+          </Card>
         )}
 
-        <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-5 sm:p-8 text-white shadow-lg">
+        {/* ds-todo: candidato a variante "Card oscura/destacada" — superficie dark sin mapeo en el DS */}
+        <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-card p-5 sm:p-8 text-white shadow-card">
           <h2 className="text-lg sm:text-xl font-bold mb-6 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-brand-pink" />
+            <TrendingUp className="w-5 h-5 text-primary" />
             Tasación proyectada
           </h2>
 
@@ -353,12 +358,12 @@ export default function TasacionDetailPage() {
             )}
 
             {a.suggested_price && (
-              <div className="bg-brand-pink/20 border border-brand-pink/30 rounded-xl p-4 flex items-center justify-between">
+              <div className="bg-primary/20 border border-primary/30 rounded-xl p-4 flex items-center justify-between">
                 <div>
                   <p className="text-xs text-white/80 font-semibold">Valor sugerido</p>
                   <p className="text-xs text-white/40">Valor de mercado</p>
                 </div>
-                <p className="text-2xl sm:text-3xl font-bold text-brand-pink">
+                <p className="text-2xl sm:text-3xl font-bold text-primary">
                   USD {Number(a.suggested_price).toLocaleString('es-AR')}
                 </p>
               </div>
@@ -386,16 +391,16 @@ export default function TasacionDetailPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm p-5 sm:p-8 text-center">
+        <Card className="p-5 sm:p-8 text-center">
           <img src="/brand/logo-horizontal.png" alt="Logo" className="h-8 sm:h-10 mx-auto mb-3" />
-          <p className="text-sm font-semibold text-ink">Marcela Genta · Operaciones Inmobiliarias</p>
-          <p className="text-xs text-gray-500 mt-1">{a.agent_name} · {a.agent_phone}</p>
-          <p className="text-xs text-gray-400 mt-1">{a.agent_email}</p>
-          <p className="text-[10px] text-gray-300 mt-3">
+          <Text weight="semibold">Marcela Genta · Operaciones Inmobiliarias</Text>
+          <Text size="xs" tone="muted" className="mt-1">{a.agent_name} · {a.agent_phone}</Text>
+          <Text size="xs" className="text-gray-400 mt-1">{a.agent_email}</Text>
+          <Text size="xs" className="text-[10px] text-gray-300 mt-3">
             Todas las operaciones inmobiliarias son objeto de intermediación y conclusión por parte de Marcela Genta,
             Colegio Profesional Inmobiliario Matrícula N°3906
-          </p>
-        </div>
+          </Text>
+        </Card>
       </div>
     </div>
   )

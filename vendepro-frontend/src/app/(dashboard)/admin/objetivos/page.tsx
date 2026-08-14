@@ -4,6 +4,12 @@ import { useState, useEffect } from 'react'
 import { Target, Plus, Trash2, Loader2 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Card } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { Heading } from '@/components/ui/Typography'
+import { Field, Input, Select } from '@/components/ui/Input'
+import { EmptyState } from '@/components/ui/EmptyState'
 import {
   OBJECTIVE_METRICS, getObjectiveSemaforo, getPeriodProgressPct,
   type ObjectiveMetric
@@ -76,37 +82,34 @@ export default function ObjetivosPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-ink">Objetivos</h1>
-          <p className="text-gray-500 text-sm">{objectives.length} objetivo{objectives.length !== 1 ? 's' : ''}</p>
-        </div>
-        <button onClick={() => setShowCreate(true)} className="bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 flex items-center gap-2">
-          <Plus className="w-4 h-4" /> Nuevo objetivo
-        </button>
-      </div>
+      <PageHeader
+        title="Objetivos"
+        subtitle={`${objectives.length} objetivo${objectives.length !== 1 ? 's' : ''}`}
+        actions={
+          <Button icon={<Plus className="w-4 h-4" />} onClick={() => setShowCreate(true)}>
+            Nuevo objetivo
+          </Button>
+        }
+      />
 
       {agents.length > 0 && (
-        <select value={filterAgent} onChange={e => setFilterAgent(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
+        <Select value={filterAgent} onChange={e => setFilterAgent(e.target.value)} className="sm:w-auto">
           <option value="">Todos los agentes</option>
           {agents.map(a => <option key={a.id} value={a.id}>{a.full_name}</option>)}
-        </select>
+        </Select>
       )}
 
       {loading ? (
         <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
       ) : objectives.length === 0 ? (
-        <div className="bg-white rounded-xl border p-8 text-center">
-          <Target className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500">Sin objetivos definidos</p>
-        </div>
+        <EmptyState icon={<Target className="w-6 h-6" />} title="Sin objetivos definidos" />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {objectivesWithProgress.map(obj => (
-            <div key={obj.id} className="bg-white border rounded-xl p-4">
+            <Card key={obj.id}>
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <p className="font-semibold text-ink">{obj.metricLabel}</p>
+                  <Heading level={4}>{obj.metricLabel}</Heading>
                   {obj.agent_name && <p className="text-xs text-gray-400 mt-0.5">{obj.agent_name}</p>}
                 </div>
                 <div className="flex items-center gap-1">
@@ -130,7 +133,7 @@ export default function ObjetivosPage() {
                 <span>{new Date(obj.period_start).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}</span>
                 <span>{new Date(obj.period_end).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}</span>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}
@@ -138,36 +141,30 @@ export default function ObjetivosPage() {
       {showCreate && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowCreate(false)}>
           <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-5" onClick={e => e.stopPropagation()}>
-            <h3 className="font-semibold text-ink mb-4">Nuevo objetivo</h3>
+            <Heading level={4} className="mb-4">Nuevo objetivo</Heading>
             <div className="space-y-3">
-              <select value={form.agent_id} onChange={e => setForm(f => ({ ...f, agent_id: e.target.value }))} className="border rounded-lg px-3 py-2 text-sm w-full">
+              <Select value={form.agent_id} onChange={e => setForm(f => ({ ...f, agent_id: e.target.value }))}>
                 <option value="">Seleccionar agente *</option>
                 {agents.map(a => <option key={a.id} value={a.id}>{a.full_name}</option>)}
-              </select>
-              <select value={form.metric} onChange={e => setForm(f => ({ ...f, metric: e.target.value as ObjectiveMetric }))} className="border rounded-lg px-3 py-2 text-sm w-full">
+              </Select>
+              <Select value={form.metric} onChange={e => setForm(f => ({ ...f, metric: e.target.value as ObjectiveMetric }))}>
                 {Object.entries(OBJECTIVE_METRICS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-              </select>
-              <input type="number" placeholder="Target (número) *" value={form.target} onChange={e => setForm(f => ({ ...f, target: e.target.value }))}
-                className="border rounded-lg px-3 py-2 text-sm w-full" />
+              </Select>
+              <Input type="number" placeholder="Target (número) *" value={form.target} onChange={e => setForm(f => ({ ...f, target: e.target.value }))} />
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Inicio</label>
-                  <input type="date" value={form.period_start} onChange={e => setForm(f => ({ ...f, period_start: e.target.value }))}
-                    className="border rounded-lg px-3 py-2 text-sm w-full" />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Fin</label>
-                  <input type="date" value={form.period_end} onChange={e => setForm(f => ({ ...f, period_end: e.target.value }))}
-                    className="border rounded-lg px-3 py-2 text-sm w-full" />
-                </div>
+                <Field label="Inicio" htmlFor="period_start">
+                  <Input id="period_start" type="date" value={form.period_start} onChange={e => setForm(f => ({ ...f, period_start: e.target.value }))} />
+                </Field>
+                <Field label="Fin" htmlFor="period_end">
+                  <Input id="period_end" type="date" value={form.period_end} onChange={e => setForm(f => ({ ...f, period_end: e.target.value }))} />
+                </Field>
               </div>
             </div>
             <div className="flex gap-2 mt-4">
-              <button onClick={() => setShowCreate(false)} className="flex-1 border rounded-lg py-2 text-sm">Cancelar</button>
-              <button onClick={handleCreate} disabled={!form.agent_id || !form.target || saving}
-                className="flex-1 bg-gradient-to-br from-brand-pink to-brand-orange text-white rounded-lg py-2 text-sm font-medium disabled:opacity-50">
+              <Button variant="outline" fullWidth onClick={() => setShowCreate(false)}>Cancelar</Button>
+              <Button fullWidth onClick={handleCreate} disabled={!form.agent_id || !form.target || saving}>
                 {saving ? 'Creando...' : 'Crear objetivo'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

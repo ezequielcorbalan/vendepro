@@ -4,11 +4,16 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import {
   ArrowLeft, Phone, Mail, MapPin, User, Home, Loader2,
-  ExternalLink, MessageCircle, Building2, UserPlus, Edit3, X
+  ExternalLink, Building2, UserPlus, Edit3, X
 } from 'lucide-react'
 import Link from 'next/link'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
+import { Card } from '@/components/ui/Card'
+import { Heading, Text } from '@/components/ui/Typography'
+import { Button } from '@/components/ui/Button'
+import { Field, Input, Select, Textarea } from '@/components/ui/Input'
+import { CallButton, WhatsAppButton } from '@/components/ui/ContactButtons'
 import type { Contact } from '@/lib/types'
 
 const CONTACT_TYPES = ['propietario', 'comprador', 'inversor', 'inquilino', 'vendedor', 'otro']
@@ -111,9 +116,9 @@ export default function ContactDetailPage() {
       <Link href="/contactos" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-ink mb-6">
         <ArrowLeft className="w-4 h-4" /> Volver a contactos
       </Link>
-      <div className="bg-white rounded-xl shadow-sm p-8 text-center">
-        <p className="text-gray-500">Contacto no encontrado.</p>
-      </div>
+      <Card padded={false} className="p-8 text-center">
+        <Text tone="muted">Contacto no encontrado.</Text>
+      </Card>
     </div>
   )
 
@@ -129,37 +134,33 @@ export default function ContactDetailPage() {
       </Link>
 
       {/* Header */}
-      <div className="bg-white rounded-xl shadow-sm p-5 sm:p-6">
+      <Card padded={false} className="p-5 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-full bg-pink-100 flex items-center justify-center flex-shrink-0">
               <User className="w-6 h-6 text-brand-pink" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-ink">{contact.full_name}</h1>
+              <Heading level={3}>{contact.full_name}</Heading>
               <span className="inline-block mt-0.5 text-xs font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
                 {contactTypeLabel[contact.contact_type] ?? contact.contact_type}
               </span>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button onClick={openEdit} className="flex items-center gap-1.5 text-sm border border-gray-300 hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-lg transition-colors">
-              <Edit3 className="w-3.5 h-3.5" /> Editar
-            </button>
+            <Button variant="outline" onClick={openEdit} icon={<Edit3 className="w-3.5 h-3.5" />}>
+              Editar
+            </Button>
             {contact.phone && (
-              <a href={`tel:${contact.phone}`} className="flex items-center gap-1.5 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg transition-colors">
-                <Phone className="w-3.5 h-3.5" /> Llamar
-              </a>
+              <CallButton phone={contact.phone} />
             )}
             {contact.phone && (
-              <a href={`https://wa.me/${contact.phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm bg-green-50 hover:bg-green-100 text-green-700 px-3 py-2 rounded-lg transition-colors">
-                <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
-              </a>
+              <WhatsAppButton phone={contact.phone} />
             )}
-            <Link href={`/leads?new=1&contact_id=${contact.id}`} className="flex items-center gap-1.5 text-sm bg-gray-800 hover:bg-gray-700 text-white px-3 py-2 rounded-lg transition-colors">
+            <Link href={`/leads?new=1&contact_id=${contact.id}`} className="flex items-center gap-1.5 text-sm bg-gray-800 hover:bg-gray-700 text-white px-3 py-2 rounded-control transition-colors">
               <UserPlus className="w-3.5 h-3.5" /> Nuevo lead
             </Link>
-            <Link href={`/propiedades/nueva?contact_id=${contact.id}`} className="flex items-center gap-1.5 text-sm bg-gradient-to-br from-brand-pink to-brand-orange hover:opacity-90 text-white px-3 py-2 rounded-lg transition-opacity">
+            <Link href={`/propiedades/nueva?contact_id=${contact.id}`} className="flex items-center gap-1.5 text-sm bg-primary hover:bg-primary-hover text-white px-3 py-2 rounded-control transition-colors">
               <Home className="w-3.5 h-3.5" /> Crear propiedad
             </Link>
           </div>
@@ -205,19 +206,19 @@ export default function ContactDetailPage() {
             </div>
           )}
         </div>
-      </div>
+      </Card>
 
       {/* Leads vinculados */}
-      <div className="bg-white rounded-xl shadow-sm p-5 sm:p-6">
-        <h2 className="text-base font-semibold text-ink mb-4 flex items-center gap-2">
+      <Card padded={false} className="p-5 sm:p-6">
+        <Heading level={4} className="mb-4 flex items-center gap-2">
           <User className="w-4 h-4 text-gray-400" />
           Leads vinculados
           {contact.leads && contact.leads.length > 0 && (
             <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{contact.leads.length}</span>
           )}
-        </h2>
+        </Heading>
         {!contact.leads || contact.leads.length === 0 ? (
-          <p className="text-sm text-gray-400">Sin leads vinculados.</p>
+          <Text tone="muted">Sin leads vinculados.</Text>
         ) : (
           <div className="space-y-2">
             {contact.leads.map(lead => (
@@ -231,19 +232,19 @@ export default function ContactDetailPage() {
             ))}
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Propiedades vinculadas */}
-      <div className="bg-white rounded-xl shadow-sm p-5 sm:p-6">
-        <h2 className="text-base font-semibold text-ink mb-4 flex items-center gap-2">
+      <Card padded={false} className="p-5 sm:p-6">
+        <Heading level={4} className="mb-4 flex items-center gap-2">
           <Building2 className="w-4 h-4 text-gray-400" />
           Propiedades vinculadas
           {contact.properties && contact.properties.length > 0 && (
             <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{contact.properties.length}</span>
           )}
-        </h2>
+        </Heading>
         {!contact.properties || contact.properties.length === 0 ? (
-          <p className="text-sm text-gray-400">Sin propiedades vinculadas.</p>
+          <Text tone="muted">Sin propiedades vinculadas.</Text>
         ) : (
           <div className="space-y-2">
             {contact.properties.map(prop => (
@@ -260,58 +261,45 @@ export default function ContactDetailPage() {
             ))}
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Modal editar contacto */}
       {showEdit && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowEdit(false)}>
           <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="sticky top-0 bg-white border-b px-4 py-3 flex items-center justify-between rounded-t-2xl">
-              <h3 className="font-semibold text-ink">Editar contacto</h3>
-              <button onClick={() => setShowEdit(false)} aria-label="Cerrar" className="p-1 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
+              <Heading level={4}>Editar contacto</Heading>
+              <Button variant="ghost" onClick={() => setShowEdit(false)} aria-label="Cerrar" icon={<X className="w-5 h-5" />} className="!px-2" />
             </div>
             <div className="p-4 space-y-3">
-              <div>
-                <label className="text-xs text-gray-500 mb-1 block">Nombre completo *</label>
-                <input value={editForm.full_name} onChange={e => setEditForm((f: any) => ({ ...f, full_name: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2 text-sm" autoFocus />
-              </div>
-              <div>
-                <label className="text-xs text-gray-500 mb-1 block">Tipo</label>
-                <select value={editForm.contact_type} onChange={e => setEditForm((f: any) => ({ ...f, contact_type: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2 text-sm capitalize">
+              <Field label="Nombre completo" htmlFor="edit-full_name" required>
+                <Input id="edit-full_name" value={editForm.full_name} onChange={e => setEditForm((f: any) => ({ ...f, full_name: e.target.value }))} autoFocus />
+              </Field>
+              <Field label="Tipo" htmlFor="edit-contact_type">
+                <Select id="edit-contact_type" value={editForm.contact_type} onChange={e => setEditForm((f: any) => ({ ...f, contact_type: e.target.value }))} className="capitalize">
                   {CONTACT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
-              </div>
+                </Select>
+              </Field>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Teléfono</label>
-                  <input value={editForm.phone} onChange={e => setEditForm((f: any) => ({ ...f, phone: e.target.value }))}
-                    className="w-full border rounded-lg px-3 py-2 text-sm" />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Email</label>
-                  <input type="email" value={editForm.email} onChange={e => setEditForm((f: any) => ({ ...f, email: e.target.value }))}
-                    className="w-full border rounded-lg px-3 py-2 text-sm" />
-                </div>
+                <Field label="Teléfono" htmlFor="edit-phone">
+                  <Input id="edit-phone" value={editForm.phone} onChange={e => setEditForm((f: any) => ({ ...f, phone: e.target.value }))} />
+                </Field>
+                <Field label="Email" htmlFor="edit-email">
+                  <Input id="edit-email" type="email" value={editForm.email} onChange={e => setEditForm((f: any) => ({ ...f, email: e.target.value }))} />
+                </Field>
               </div>
-              <div>
-                <label className="text-xs text-gray-500 mb-1 block">Barrio/Zona</label>
-                <input value={editForm.neighborhood} onChange={e => setEditForm((f: any) => ({ ...f, neighborhood: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2 text-sm" />
-              </div>
-              <div>
-                <label className="text-xs text-gray-500 mb-1 block">Notas</label>
-                <textarea rows={3} value={editForm.notes} onChange={e => setEditForm((f: any) => ({ ...f, notes: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2 text-sm" />
-              </div>
+              <Field label="Barrio/Zona" htmlFor="edit-neighborhood">
+                <Input id="edit-neighborhood" value={editForm.neighborhood} onChange={e => setEditForm((f: any) => ({ ...f, neighborhood: e.target.value }))} />
+              </Field>
+              <Field label="Notas" htmlFor="edit-notes">
+                <Textarea id="edit-notes" rows={3} value={editForm.notes} onChange={e => setEditForm((f: any) => ({ ...f, notes: e.target.value }))} />
+              </Field>
             </div>
             <div className="sticky bottom-0 bg-white border-t px-4 py-3 flex gap-2">
-              <button onClick={() => setShowEdit(false)} className="flex-1 px-4 py-2 border rounded-lg text-sm">Cancelar</button>
-              <button onClick={handleSaveEdit} disabled={saving}
-                className="flex-1 px-4 py-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white rounded-lg text-sm font-medium disabled:opacity-50">
+              <Button variant="outline" onClick={() => setShowEdit(false)} className="flex-1">Cancelar</Button>
+              <Button onClick={handleSaveEdit} loading={saving} disabled={saving} className="flex-1">
                 {saving ? 'Guardando...' : 'Guardar'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

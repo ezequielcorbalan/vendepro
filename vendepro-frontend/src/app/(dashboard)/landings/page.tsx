@@ -7,6 +7,9 @@ import type { Landing } from '@/lib/landings/types'
 import LandingCard from '@/components/landings/LandingCard'
 import NewLandingModal from '@/components/landings/NewLandingModal'
 import { getCurrentUser } from '@/lib/auth'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Button } from '@/components/ui/Button'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 type Tab = 'mine' | 'org' | 'pending_review'
 type TypeTab = 'all' | 'marketing' | 'tasacion'
@@ -54,26 +57,28 @@ export default function LandingsPage() {
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-ink">Landings</h1>
-          <p className="text-sm text-gray-500 mt-1">Creá landings con IA a partir de templates curados.</p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={() => { setCreateAsTasacionTemplate(true); setShowCreate(true) }}
-            className="inline-flex items-center gap-2 bg-white border border-brand-pink text-brand-pink hover:bg-brand-pink/5 font-semibold px-4 py-2.5 rounded-full text-sm"
-          >
-            <Plus className="w-4 h-4" /> Nueva plantilla de tasación
-          </button>
-          <button
-            onClick={() => { setCreateAsTasacionTemplate(false); setShowCreate(true) }}
-            className="inline-flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange hover:opacity-90 text-white font-semibold px-5 py-2.5 rounded-full"
-          >
-            <Plus className="w-4 h-4" /> Nueva landing
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        className="mb-6"
+        title="Landings"
+        subtitle="Creá landings con IA a partir de templates curados."
+        actions={
+          <>
+            <Button
+              variant="outline"
+              icon={<Plus className="w-4 h-4" />}
+              onClick={() => { setCreateAsTasacionTemplate(true); setShowCreate(true) }}
+            >
+              Nueva plantilla de tasación
+            </Button>
+            <Button
+              icon={<Plus className="w-4 h-4" />}
+              onClick={() => { setCreateAsTasacionTemplate(false); setShowCreate(true) }}
+            >
+              Nueva landing
+            </Button>
+          </>
+        }
+      />
 
       <div className="flex items-center gap-4 border-b border-gray-200 mb-4">
         <button onClick={() => setTab('mine')} className={`pb-3 px-1 text-sm font-medium ${tab === 'mine' ? 'border-b-2 border-brand-pink text-ink' : 'text-gray-500 hover:text-gray-700'}`}>
@@ -126,10 +131,13 @@ export default function LandingsPage() {
           {Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-64 bg-gray-100 rounded-2xl animate-pulse" />)}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-gray-200">
-          <p className="text-gray-500">Todavía no hay landings acá.</p>
-          <button onClick={() => setShowCreate(true)} className="mt-4 text-brand-pink font-medium">Crear la primera</button>
-        </div>
+        <EmptyState
+          className="bg-white rounded-card border border-dashed border-gray-200"
+          title="Todavía no hay landings acá."
+          action={
+            <Button variant="ghost" onClick={() => setShowCreate(true)}>Crear la primera</Button>
+          }
+        />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map(l => <LandingCard key={l.id} landing={l} />)}

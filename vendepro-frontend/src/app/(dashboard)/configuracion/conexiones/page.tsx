@@ -8,6 +8,15 @@ import {
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Card } from '@/components/ui/Card'
+import { Heading, Text } from '@/components/ui/Typography'
+import { Button } from '@/components/ui/Button'
+import { Field, Input, Select } from '@/components/ui/Input'
+import { Switch } from '@/components/ui/Switch'
+import { Checkbox } from '@/components/ui/Choice'
+import { Alert } from '@/components/ui/Alert'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { getCurrentUser } from '@/lib/auth'
 import type { CrmIntegration, GoogleIntegration, IntegrationSyncLogEntry } from '@/lib/types'
 
@@ -15,9 +24,6 @@ type KpAgent = { external_id: string; full_name: string; email: string | null }
 type VpUser = { id: string; full_name?: string; email?: string; role?: string }
 
 const KEY_PLACEHOLDER = '********'
-
-const inputCls = 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none'
-const labelCls = 'block text-sm font-medium text-gray-700 mb-1'
 
 const KIND_LABELS: Record<string, string> = {
   auto: 'Automático', manual: 'Manual', backfill: 'Histórico', test: 'Prueba',
@@ -313,296 +319,285 @@ export default function ConexionesPage() {
         <Link href="/configuracion" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-ink mb-4">
           <ArrowLeft className="w-4 h-4" /> Volver a Configuración
         </Link>
-        <h1 className="text-xl sm:text-2xl font-semibold text-ink flex items-center gap-2">
-          <Plug className="w-6 h-6 text-brand-pink" /> Integraciones
-        </h1>
-        <p className="text-gray-500 text-sm mt-1">
-          Conectá tu Google Calendar personal y gestioná la importación automática de contactos al CRM.
-        </p>
+        <PageHeader
+          title="Integraciones"
+          subtitle="Conectá tu Google Calendar personal y gestioná la importación automática de contactos al CRM."
+        />
       </div>
 
       {/* Google Calendar (personal del usuario) */}
-      <div className="bg-white rounded-xl border p-5 space-y-4">
+      <Card className="space-y-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-red-50 text-red-500 flex items-center justify-center">
+            {/* Identidad de tercero (Google): tile rojo intencional */}
+            <div className="w-10 h-10 rounded-control bg-red-50 text-red-500 flex items-center justify-center">
               <Calendar className="w-5 h-5" />
             </div>
             <div>
-              <p className="font-semibold text-ink">Google Calendar</p>
-              <p className="text-xs text-gray-500">
+              <Text weight="semibold">Google Calendar</Text>
+              <Text size="xs" tone="muted">
                 {google?.connected
                   ? <>Conectado{google.email ? <> como <span className="font-medium">{google.email}</span></> : ''} · tus eventos del CRM se copian a tu calendar</>
                   : 'Copiá automáticamente tus eventos del CRM (visitas, reuniones, tasaciones) a tu calendar personal'}
-              </p>
+              </Text>
             </div>
           </div>
           {google?.connected && (
-            <label className="flex items-center gap-2 cursor-pointer shrink-0">
-              <input
-                type="checkbox"
-                checked={google.enabled}
-                onChange={e => handleGoogleToggle(e.target.checked)}
-                className="w-4 h-4 accent-[#ff007c]"
-              />
-              <span className="text-sm font-medium text-gray-700">Activa</span>
-            </label>
+            <Switch
+              checked={google.enabled}
+              onChange={handleGoogleToggle}
+              label="Activa"
+              className="shrink-0"
+            />
           )}
         </div>
 
         {google && !google.configured && (
-          <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-sm text-amber-800">
-            <AlertCircle className="w-4 h-4 shrink-0" />
+          <Alert tone="warning">
             Falta configurar las credenciales de Google en el servidor (GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET).
-          </div>
+          </Alert>
         )}
 
         <div className="flex flex-wrap items-center gap-2">
           {google?.connected ? (
-            <button
+            <Button
+              variant="outline"
               onClick={handleGoogleDisconnect}
-              disabled={googleBusy}
-              className="flex items-center gap-2 border border-gray-300 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
+              loading={googleBusy}
+              icon={<Unplug className="w-4 h-4" />}
             >
-              {googleBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Unplug className="w-4 h-4" />}
               Desconectar
-            </button>
+            </Button>
           ) : (
-            <button
+            <Button
               onClick={handleGoogleConnect}
-              disabled={googleBusy || !google?.configured}
-              className="flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50"
+              loading={googleBusy}
+              disabled={!google?.configured}
+              icon={<Calendar className="w-4 h-4" />}
             >
-              {googleBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calendar className="w-4 h-4" />}
               Conectar con Google
-            </button>
+            </Button>
           )}
         </div>
-        <p className="text-[11px] text-gray-400">
+        <Text size="xs" tone="muted">
           La conexión es personal: cada agente conecta su propia cuenta. Se piden permisos sólo sobre eventos de calendario.
-        </p>
-      </div>
+        </Text>
+      </Card>
 
       {isAdmin && (<>
       {/* Integración de contactos (provider interno: kiteprop) */}
-      <div className="bg-white rounded-xl border p-5 space-y-4">
+      <Card className="space-y-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-pink-50 text-brand-pink flex items-center justify-center">
+            <div className="w-10 h-10 rounded-control bg-primary/10 text-primary flex items-center justify-center">
               <Plug className="w-5 h-5" />
             </div>
             <div>
-              <p className="font-semibold text-ink">Importación de contactos</p>
-              <p className="text-xs text-gray-500">Trae los contactos nuevos al CRM · Último sync {fmtDate(integration?.last_sync_at ?? null)}</p>
+              <Text weight="semibold">Importación de contactos</Text>
+              <Text size="xs" tone="muted">Trae los contactos nuevos al CRM · Último sync {fmtDate(integration?.last_sync_at ?? null)}</Text>
             </div>
           </div>
-          <label className="flex items-center gap-2 cursor-pointer shrink-0">
-            <input
-              type="checkbox"
-              checked={enabled}
-              onChange={e => setEnabled(e.target.checked)}
-              className="w-4 h-4 accent-[#ff007c]"
-            />
-            <span className="text-sm font-medium text-gray-700">Activa</span>
-          </label>
+          <Checkbox
+            checked={enabled}
+            onChange={setEnabled}
+            label="Activa"
+            className="shrink-0"
+          />
         </div>
 
         {/* Leads compradores automáticos por consulta de portal */}
         <div className="flex items-center justify-between gap-3 mt-3 pt-3 border-t border-gray-100">
           <div>
-            <p className="text-sm font-medium text-gray-700">Leads compradores automáticos</p>
-            <p className="text-xs text-gray-500">
+            <Text weight="medium" className="text-gray-700">Leads compradores automáticos</Text>
+            <Text size="xs" tone="muted">
               Cada consulta de portal crea un lead en el pipeline de Compradores con la propiedad
               consultada vinculada (se importa como propiedad local si no existe). Guardá para aplicar.
-            </p>
+            </Text>
           </div>
-          <label className="flex items-center gap-2 cursor-pointer shrink-0">
-            <input
-              type="checkbox"
-              checked={createBuyerLeads}
-              onChange={e => setCreateBuyerLeads(e.target.checked)}
-              className="w-4 h-4 accent-[#ff007c]"
-            />
-            <span className="text-sm font-medium text-gray-700">Activo</span>
-          </label>
+          <Checkbox
+            checked={createBuyerLeads}
+            onChange={setCreateBuyerLeads}
+            label="Activo"
+            className="shrink-0"
+          />
         </div>
 
         {/* API Key */}
-        <div>
-          <label className={labelCls}>API Key</label>
+        <Field label="API Key" hint="Se guarda cifrada y nunca se muestra de nuevo.">
           {hasKey && !showKeyInput ? (
-            <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-              <span className="text-sm text-green-700 flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4" /> API Key guardada
+            <div className="flex items-center justify-between bg-success/10 border border-success/30 rounded-control px-3 py-2">
+              <span className="text-sm text-ink flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-success" /> API Key guardada
               </span>
               <button
                 type="button"
                 onClick={() => { setShowKeyInput(true); setApiKeyInput('') }}
-                className="text-xs text-brand-pink hover:underline font-medium"
+                className="text-xs text-primary hover:underline font-medium"
               >
                 Cambiar
               </button>
             </div>
           ) : (
-            <input
+            <Input
               type="password"
               value={apiKeyInput}
               onChange={e => setApiKeyInput(e.target.value)}
               placeholder={hasKey ? KEY_PLACEHOLDER : 'kp_...'}
-              className={inputCls}
             />
           )}
-          <p className="text-[11px] text-gray-400 mt-1">
-            Se guarda cifrada y nunca se muestra de nuevo.
-          </p>
-        </div>
+        </Field>
 
         {/* Resultado de prueba */}
         {testResult && (
-          <div className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${
-            testResult.ok ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-red-50 border border-red-200 text-red-700'
-          }`}>
+          <Alert tone={testResult.ok ? 'success' : 'danger'}>
             {testResult.ok
-              ? <><CheckCircle2 className="w-4 h-4 shrink-0" /> Conexión OK{testResult.profileName ? ` — cuenta de ${testResult.profileName}` : ''}</>
-              : <><XCircle className="w-4 h-4 shrink-0" /> {testResult.error || 'La conexión falló'}</>}
-          </div>
+              ? <>Conexión OK{testResult.profileName ? ` — cuenta de ${testResult.profileName}` : ''}</>
+              : <>{testResult.error || 'La conexión falló'}</>}
+          </Alert>
         )}
 
         {/* Acciones */}
         <div className="flex flex-wrap items-center gap-2 pt-1">
-          <button
+          <Button
             onClick={handleSave}
-            disabled={saving}
-            className="flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50"
+            loading={saving}
+            icon={<Save className="w-4 h-4" />}
           >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Guardar
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="outline"
             onClick={handleTest}
-            disabled={testing || (!hasKey && !apiKeyInput.trim())}
-            className="flex items-center gap-2 border border-gray-300 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
+            loading={testing}
+            disabled={!hasKey && !apiKeyInput.trim()}
+            icon={<Radio className="w-4 h-4" />}
           >
-            {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Radio className="w-4 h-4" />}
             Probar conexión
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="outline"
             onClick={handleSync}
-            disabled={syncing || !hasKey || !integration?.enabled}
+            loading={syncing}
+            disabled={!hasKey || !integration?.enabled}
             title={!integration?.enabled ? 'Activá y guardá la integración primero' : undefined}
-            className="flex items-center gap-2 border border-gray-300 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
+            icon={<RefreshCw className="w-4 h-4" />}
           >
-            {syncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
             Sincronizar ahora
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="outline"
             onClick={handleBackfill}
-            disabled={backfilling || !hasKey || !integration?.enabled}
+            loading={backfilling}
+            disabled={!hasKey || !integration?.enabled}
             title={!integration?.enabled ? 'Activá y guardá la integración primero' : undefined}
-            className="flex items-center gap-2 border border-gray-300 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
+            icon={<Download className="w-4 h-4" />}
           >
-            {backfilling ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
             Importar histórico
-          </button>
+          </Button>
         </div>
 
         {backfilling && backfillProgress && (
-          <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
-            <Loader2 className="w-4 h-4 animate-spin text-amber-500 shrink-0" />
-            <p className="text-sm text-amber-800">
-              Importando histórico… <strong>{backfillProgress.created}</strong> creados, {backfillProgress.skipped} omitidos.
-            </p>
-          </div>
+          <Alert tone="warning" hideIcon className="items-center">
+            <span className="flex items-center gap-3">
+              <Loader2 className="w-4 h-4 animate-spin text-warning shrink-0" />
+              <span>
+                Importando histórico… <strong>{backfillProgress.created}</strong> creados, {backfillProgress.skipped} omitidos.
+              </span>
+            </span>
+          </Alert>
         )}
-      </div>
+      </Card>
 
       {/* Mapeo de agentes */}
       {hasKey && (
-        <div className="bg-white rounded-xl border p-5 space-y-4">
+        <Card className="space-y-4">
           <div>
-            <p className="font-semibold text-ink flex items-center gap-2">
+            <Heading level={4} className="flex items-center gap-2">
               <Users className="w-4 h-4 text-gray-400" /> Agentes
-            </p>
-            <p className="text-xs text-gray-500 mt-1">
+            </Heading>
+            <Text size="xs" tone="muted" className="mt-1">
               Asigná cada agente de KiteProp a un usuario de VendéPro. Los leads nuevos se asignan al usuario mapeado; usá <em>Re-procesar consultas</em> para re-atribuir los ya importados.
-            </p>
+            </Text>
           </div>
 
           {kpAgents.length === 0 ? (
-            <p className="text-sm text-gray-400">No se pudieron cargar los agentes de KiteProp.</p>
+            <Text tone="muted">No se pudieron cargar los agentes de KiteProp.</Text>
           ) : (
             <div className="divide-y divide-gray-50">
               {kpAgents.map(a => (
                 <div key={a.external_id} className="flex items-center justify-between gap-3 py-2">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-ink truncate">{a.full_name}</p>
-                    {a.email && <p className="text-xs text-gray-400 truncate">{a.email}</p>}
+                    <Text weight="medium" className="truncate">{a.full_name}</Text>
+                    {a.email && <Text size="xs" tone="muted" className="truncate">{a.email}</Text>}
                   </div>
-                  <select
+                  <Select
                     value={agentMap[a.external_id] ?? ''}
                     onChange={e => setAgentMap(m => ({ ...m, [a.external_id]: e.target.value }))}
-                    className="shrink-0 border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none max-w-[55%]"
+                    className="w-auto shrink-0 px-2.5 py-1.5 max-w-[55%]"
                   >
                     <option value="">— sin asignar —</option>
                     {vpUsers.map(u => (
                       <option key={u.id} value={u.id}>{u.full_name || u.email || u.id}</option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
               ))}
             </div>
           )}
 
           <div className="flex flex-wrap items-center gap-2 pt-1">
-            <button
+            <Button
               onClick={handleSaveAgentMap}
-              disabled={savingMap || kpAgents.length === 0}
-              className="flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50"
+              loading={savingMap}
+              disabled={kpAgents.length === 0}
+              icon={<Save className="w-4 h-4" />}
             >
-              {savingMap ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               Guardar mapeo
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
               onClick={handleEnrich}
-              disabled={enriching || !integration?.enabled}
+              loading={enriching}
+              disabled={!integration?.enabled}
               title={!integration?.enabled ? 'Activá y guardá la integración primero' : undefined}
-              className="flex items-center gap-2 border border-gray-300 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
+              icon={<Sparkles className="w-4 h-4" />}
             >
-              {enriching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
               Re-procesar consultas
-            </button>
+            </Button>
           </div>
 
           {enriching && enrichProgress && (
-            <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
-              <Loader2 className="w-4 h-4 animate-spin text-amber-500 shrink-0" />
-              <p className="text-sm text-amber-800">
-                Re-procesando consultas… <strong>{enrichProgress.enriched}</strong> enriquecidos, {enrichProgress.created} nuevos.
-              </p>
-            </div>
+            <Alert tone="warning" hideIcon className="items-center">
+              <span className="flex items-center gap-3">
+                <Loader2 className="w-4 h-4 animate-spin text-warning shrink-0" />
+                <span>
+                  Re-procesando consultas… <strong>{enrichProgress.enriched}</strong> enriquecidos, {enrichProgress.created} nuevos.
+                </span>
+              </span>
+            </Alert>
           )}
-        </div>
+        </Card>
       )}
 
       {/* Log de sincronizaciones */}
-      <div className="bg-white rounded-xl border p-5">
-        <p className="font-semibold text-ink flex items-center gap-2 mb-3">
+      <Card>
+        <Heading level={4} className="flex items-center gap-2 mb-3">
           <History className="w-4 h-4 text-gray-400" /> Últimas sincronizaciones
-        </p>
+        </Heading>
         {log.length === 0 ? (
-          <div className="text-center py-6">
-            <AlertCircle className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-            <p className="text-sm text-gray-500">Sin sincronizaciones todavía.</p>
-          </div>
+          <EmptyState
+            icon={<AlertCircle className="w-6 h-6" />}
+            title="Sin sincronizaciones todavía."
+          />
         ) : (
           <ul className="divide-y divide-gray-50">
             {log.map(entry => (
               <li key={entry.id} className="flex items-center gap-2 py-2 text-xs">
                 {entry.status === 'ok'
-                  ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />
+                  ? <CheckCircle2 className="w-3.5 h-3.5 text-success shrink-0" />
                   : entry.status === 'partial'
-                    ? <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                    : <XCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />}
+                    ? <AlertCircle className="w-3.5 h-3.5 text-warning shrink-0" />
+                    : <XCircle className="w-3.5 h-3.5 text-danger shrink-0" />}
                 <span className="font-medium text-gray-700">{KIND_LABELS[entry.kind] ?? entry.kind}</span>
                 <span className="text-gray-500">
                   {entry.contacts_created} nuevos · {entry.contacts_skipped} omitidos
@@ -613,7 +608,7 @@ export default function ConexionesPage() {
             ))}
           </ul>
         )}
-      </div>
+      </Card>
       </>)}
     </div>
   )

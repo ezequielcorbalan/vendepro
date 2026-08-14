@@ -1,3 +1,5 @@
+import { twMerge } from 'tailwind-merge'
+
 export function slugify(text: string): string {
   return text
     .toLowerCase()
@@ -23,5 +25,8 @@ export function formatCurrency(amount: number, currency: 'USD' | 'ARS' = 'USD'):
 }
 
 export function cn(...classes: (string | boolean | undefined | null)[]): string {
-  return classes.filter(Boolean).join(' ')
+  // tailwind-merge resuelve conflictos de utilidades: si dos clases pisan la
+  // misma propiedad (ej. font-bold + font-semibold), gana la última. Así los
+  // overrides por `className` siempre mandan.
+  return twMerge(classes.filter(Boolean).join(' '))
 }

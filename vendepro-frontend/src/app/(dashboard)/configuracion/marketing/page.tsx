@@ -10,6 +10,15 @@ import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
 import { getCurrentUser } from '@/lib/auth'
 import EmailSection from '@/components/configuracion/EmailSection'
+import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Card'
+import { Text } from '@/components/ui/Typography'
+import { Field, Input, Select } from '@/components/ui/Input'
+import { Checkbox } from '@/components/ui/Choice'
+import { Badge } from '@/components/ui/Badge'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { Modal } from '@/components/ui/Modal'
+import { Alert } from '@/components/ui/Alert'
 
 const EVENT_KEY_GROUPS: { label: string; keys: { key: string; label: string }[] }[] = [
   {
@@ -263,16 +272,13 @@ export default function MarketingConfigPage() {
     setTestRunning(false)
   }
 
-  const inputCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none'
-  const labelCls = 'block text-sm font-medium text-gray-700 mb-1'
-
   return (
     <div>
       <Link href="/configuracion" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-ink mb-6">
         <ArrowLeft className="w-4 h-4" /> Volver a Configuración
       </Link>
 
-      {/* Header */}
+      {/* Header propio (hero con ícono degradado + imagen decorativa) — se deja como está */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-6 relative overflow-hidden">
         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-pink to-brand-orange" />
         <img src="/brand/GV-27.png" alt="" aria-hidden="true" className="absolute -top-8 -right-8 w-32 h-32 opacity-10 pointer-events-none" />
@@ -287,7 +293,9 @@ export default function MarketingConfigPage() {
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs con ícono por item + lista condicional por rol — no mapea 1:1 a
+          Tabs/SegmentedControl (sin soporte de ícono). ds-todo: candidato a
+          variante "SegmentedControl con ícono" cuando se decida en tanda. */}
       <div className="flex gap-1 mb-5 bg-gray-100 rounded-xl p-1 max-w-fit">
         {([
           { id: 'config', label: 'Configuración', icon: Settings },
@@ -314,168 +322,138 @@ export default function MarketingConfigPage() {
       </div>
 
       {tab === 'config' && (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
+        <Card className="space-y-4">
           {/* Meta */}
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={!!integration.enabled}
-              onChange={e => setIntegration({ ...integration, enabled: e.target.checked })}
-              className="w-4 h-4 accent-brand-pink"
-            />
-            <span className="text-sm font-medium text-ink">
-              Activar Meta Conversion API
-            </span>
-          </label>
+          <Checkbox
+            checked={!!integration.enabled}
+            onChange={checked => setIntegration({ ...integration, enabled: checked })}
+            label="Activar Meta Conversion API"
+          />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className={labelCls}>Pixel ID</label>
-              <input
+            <Field label="Pixel ID">
+              <Input
                 value={integration.pixel_id || ''}
                 onChange={e => setIntegration({ ...integration, pixel_id: e.target.value })}
                 placeholder="1234567890"
-                className={inputCls}
               />
-            </div>
+            </Field>
 
-            <div>
-              <label className={labelCls}>GTM Container ID</label>
-              <input
+            <Field label="GTM Container ID">
+              <Input
                 value={integration.gtm_container_id || ''}
                 onChange={e => setIntegration({ ...integration, gtm_container_id: e.target.value })}
                 placeholder="GTM-XXXXXX"
-                className={inputCls}
               />
-            </div>
+            </Field>
 
-            <div>
-              <label className={labelCls}>Ad Account ID</label>
-              <input
+            <Field label="Ad Account ID">
+              <Input
                 value={integration.ad_account_id || ''}
                 onChange={e => setIntegration({ ...integration, ad_account_id: e.target.value })}
                 placeholder="act_1234567890"
-                className={inputCls}
               />
               <p className="text-[10px] text-gray-400 mt-1">
                 Lo ves en Meta Ads Manager (act_…). Habilita el panel de campañas — el token debe tener permiso <code>ads_read</code>.
               </p>
-            </div>
+            </Field>
 
-            <div>
-              <label className={labelCls}>Test Event Code (opcional)</label>
-              <input
+            <Field label="Test Event Code (opcional)">
+              <Input
                 value={integration.test_event_code || ''}
                 onChange={e => setIntegration({ ...integration, test_event_code: e.target.value })}
                 placeholder="TEST12345"
-                className={inputCls}
               />
-            </div>
+            </Field>
 
-            <div className="sm:col-span-2">
-              <label className={labelCls}>Meta Access Token</label>
+            <Field label="Meta Access Token" className="sm:col-span-2">
               {integration.has_access_token && !showTokenInput ? (
-                <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-                  <span className="text-sm text-green-700 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4" /> Token guardado
+                <div className="flex items-center justify-between bg-success/10 border border-success/30 rounded-control px-3 py-2">
+                  <span className="text-sm text-ink flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-success" /> Token guardado
                   </span>
                   <button
                     type="button"
                     onClick={() => { setShowTokenInput(true); setAccessTokenInput('') }}
-                    className="text-xs text-brand-pink hover:underline font-medium"
+                    className="text-xs text-primary hover:underline font-medium"
                   >
                     Cambiar
                   </button>
                 </div>
               ) : (
-                <input
+                <Input
                   type="password"
                   value={accessTokenInput}
                   onChange={e => setAccessTokenInput(e.target.value)}
                   placeholder="EAAxx..."
-                  className={inputCls}
                 />
               )}
               <p className="text-[10px] text-gray-400 mt-1">El token se guarda encriptado (AES-GCM). Nunca se devuelve en plano.</p>
-            </div>
+            </Field>
           </div>
 
           {/* GA4 section */}
           <div className="pt-5 mt-5 border-t border-gray-100">
-            <label className="flex items-center gap-3 cursor-pointer mb-3">
-              <input
-                type="checkbox"
-                checked={!!integration.ga4_enabled}
-                onChange={e => setIntegration({ ...integration, ga4_enabled: e.target.checked })}
-                className="w-4 h-4 accent-brand-pink"
-              />
-              <span className="text-sm font-medium text-ink">
-                Activar Google Analytics 4 (Measurement Protocol)
-              </span>
-            </label>
+            <Checkbox
+              checked={!!integration.ga4_enabled}
+              onChange={checked => setIntegration({ ...integration, ga4_enabled: checked })}
+              label="Activar Google Analytics 4 (Measurement Protocol)"
+              className="mb-3"
+            />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className={labelCls}>GA4 Measurement ID</label>
-                <input
+              <Field label="GA4 Measurement ID">
+                <Input
                   value={integration.ga4_measurement_id || ''}
                   onChange={e => setIntegration({ ...integration, ga4_measurement_id: e.target.value })}
                   placeholder="G-XXXXXXXXXX"
-                  className={inputCls}
                 />
-              </div>
-              <div>
-                <label className={labelCls}>GA4 API Secret</label>
+              </Field>
+              <Field label="GA4 API Secret">
                 {integration.has_ga4_api_secret && !showGa4SecretInput ? (
-                  <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-                    <span className="text-sm text-green-700 flex items-center gap-1.5">
-                      <CheckCircle2 className="w-4 h-4" /> Secret guardado
+                  <div className="flex items-center justify-between bg-success/10 border border-success/30 rounded-control px-3 py-2">
+                    <span className="text-sm text-ink flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-success" /> Secret guardado
                     </span>
                     <button
                       type="button"
                       onClick={() => { setShowGa4SecretInput(true); setGa4SecretInput('') }}
-                      className="text-xs text-brand-pink hover:underline font-medium"
+                      className="text-xs text-primary hover:underline font-medium"
                     >
                       Cambiar
                     </button>
                   </div>
                 ) : (
-                  <input
+                  <Input
                     type="password"
                     value={ga4SecretInput}
                     onChange={e => setGa4SecretInput(e.target.value)}
                     placeholder="abc123..."
-                    className={inputCls}
                   />
                 )}
                 <p className="text-[10px] text-gray-400 mt-1">
                   Generado en GA4 → Admin → Data Streams → Measurement Protocol API secrets. Encriptado AES-GCM.
                 </p>
-              </div>
+              </Field>
             </div>
 
             {integration.ga4_enabled && !integration.ga4_measurement_id && (
-              <p className="text-[11px] text-amber-600 mt-2">⚠ Agregá un Measurement ID o desactivá GA4.</p>
+              <p className="text-[11px] text-warning mt-2">⚠ Agregá un Measurement ID o desactivá GA4.</p>
             )}
           </div>
 
-          <button
-            onClick={saveConfig}
-            disabled={savingConfig}
-            className="bg-gradient-to-br from-brand-pink to-brand-orange text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 inline-flex items-center gap-2"
-          >
-            {savingConfig ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          <Button onClick={saveConfig} loading={savingConfig} icon={<Save className="w-4 h-4" />}>
             Guardar configuración
-          </button>
-        </div>
+          </Button>
+        </Card>
       )}
 
       {tab === 'mappings' && (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-          <p className="text-sm text-gray-500 mb-4">
+        <Card>
+          <Text tone="muted" className="mb-4">
             Definí qué evento se dispara en Meta y/o GA4 para cada hito del CRM.
             GA4 es opcional — si lo dejás vacío, sólo se dispara Meta.
-          </p>
+          </Text>
 
           <div className="grid grid-cols-[1.4fr_1fr_1fr_auto_auto] gap-2 px-2 pb-1 text-[10px] uppercase tracking-wide text-gray-400">
             <span>Evento del CRM</span>
@@ -486,48 +464,40 @@ export default function MarketingConfigPage() {
           </div>
 
           {mappings.length === 0 ? (
-            <p className="text-center text-xs text-gray-400 py-6 border border-dashed border-gray-200 rounded-xl">
-              No hay mapeos configurados. Agregá uno con el botón de abajo.
-            </p>
+            <EmptyState title="No hay mapeos configurados" description="Agregá uno con el botón de abajo." />
           ) : (
             <div className="space-y-2">
               {mappings.map((m, i) => (
                 <div key={i} className="grid grid-cols-[1.4fr_1fr_1fr_auto_auto] items-center gap-2 border border-gray-100 rounded-xl p-2">
-                  <select
+                  <Select
                     value={m.stage_key}
                     onChange={e => { const n = [...mappings]; n[i] = { ...m, stage_key: e.target.value }; setMappings(n) }}
-                    className={inputCls}
                   >
                     {EVENT_KEY_GROUPS.map(g => (
                       <optgroup key={g.label} label={g.label}>
                         {g.keys.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
                       </optgroup>
                     ))}
-                  </select>
-                  <input
+                  </Select>
+                  <Input
                     list="meta-events"
                     value={m.meta_event_name}
                     onChange={e => { const n = [...mappings]; n[i] = { ...m, meta_event_name: e.target.value }; setMappings(n) }}
                     placeholder="Lead"
-                    className={inputCls}
                   />
-                  <input
+                  <Input
                     list="ga4-events"
                     value={m.ga4_event_name || ''}
                     onChange={e => { const n = [...mappings]; n[i] = { ...m, ga4_event_name: e.target.value }; setMappings(n) }}
                     placeholder="generate_lead (opcional)"
-                    className={inputCls}
                   />
-                  <label className="flex items-center gap-1 text-xs cursor-pointer px-1">
-                    <input
-                      type="checkbox"
-                      checked={m.enabled}
-                      onChange={e => { const n = [...mappings]; n[i] = { ...m, enabled: e.target.checked }; setMappings(n) }}
-                      className="w-4 h-4 accent-brand-pink"
-                    />
-                    Activo
-                  </label>
-                  <button onClick={() => deleteMapping(m)} className="text-red-400 hover:text-red-600 p-1.5">
+                  <Checkbox
+                    checked={m.enabled}
+                    onChange={checked => { const n = [...mappings]; n[i] = { ...m, enabled: checked }; setMappings(n) }}
+                    label="Activo"
+                    className="px-1 text-xs"
+                  />
+                  <button onClick={() => deleteMapping(m)} className="text-gray-300 hover:text-danger p-1.5">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -545,7 +515,7 @@ export default function MarketingConfigPage() {
           <div className="flex items-center gap-4 mt-3">
             <button
               onClick={() => setMappings([...mappings, { stage_key: 'lead_created', meta_event_name: 'Lead', ga4_event_name: 'generate_lead', enabled: true }])}
-              className="flex items-center gap-1 text-xs text-brand-pink font-medium hover:underline"
+              className="flex items-center gap-1 text-xs text-primary font-medium hover:underline"
             >
               <Plus className="w-3 h-3" /> Agregar mapeo
             </button>
@@ -560,65 +530,55 @@ export default function MarketingConfigPage() {
                 setMappings([...mappings, ...missing.map(r => ({ ...r }))])
                 toast(`${missing.length} mapeos recomendados agregados — revisá y guardá`)
               }}
-              className="flex items-center gap-1 text-xs text-brand-orange font-medium hover:underline"
+              className="flex items-center gap-1 text-xs text-primary font-medium hover:underline"
             >
               <CheckCircle2 className="w-3 h-3" /> Usar mapeos recomendados
             </button>
           </div>
 
-          <button
-            onClick={saveMappings}
-            disabled={savingMappings}
-            className="mt-4 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 inline-flex items-center gap-2"
-          >
-            {savingMappings ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          <Button onClick={saveMappings} loading={savingMappings} icon={<Save className="w-4 h-4" />} className="mt-4">
             Guardar mapeos
-          </button>
-        </div>
+          </Button>
+        </Card>
       )}
 
       {tab === 'email' && <EmailSection />}
 
       {tab === 'log' && (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+        <Card>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-gray-700">Últimos 50 eventos</h2>
-            <button
-              onClick={() => setShowTestModal(true)}
-              className="flex items-center gap-1.5 bg-gradient-to-br from-brand-pink to-brand-orange text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:opacity-90"
-            >
-              <Send className="w-3 h-3" /> Probar evento
-            </button>
+            <Text weight="semibold" tone="muted">Últimos 50 eventos</Text>
+            <Button onClick={() => setShowTestModal(true)} icon={<Send className="w-3 h-3" />}>
+              Probar evento
+            </Button>
           </div>
 
           {log.length === 0 ? (
-            <p className="text-center text-sm text-gray-400 py-8">Sin eventos registrados todavía</p>
+            <EmptyState title="Sin eventos registrados todavía" />
           ) : (
             <div className="space-y-1.5">
               {log.map(e => {
-                const providerBadge =
-                  e.provider === 'meta' ? 'bg-blue-100 text-blue-700' :
-                  e.provider === 'ga4' ? 'bg-amber-100 text-amber-700' :
-                  'bg-gray-100 text-gray-600'
+                const providerTone =
+                  e.provider === 'meta' ? 'info' :
+                  e.provider === 'ga4' ? 'warning' :
+                  'neutral'
+                const statusTone =
+                  e.status === 'sent' ? 'success' :
+                  e.status === 'failed' ? 'danger' :
+                  'neutral'
                 return (
                   <div key={e.id} className="flex items-center justify-between border border-gray-100 rounded-lg px-3 py-2 text-xs">
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className={`px-2 py-0.5 rounded-full font-medium whitespace-nowrap ${
-                        e.status === 'sent' ? 'bg-green-100 text-green-700' :
-                        e.status === 'failed' ? 'bg-red-100 text-red-700' :
-                        'bg-gray-100 text-gray-600'
-                      }`}>{e.status}</span>
+                      <Badge tone={statusTone} className="whitespace-nowrap">{e.status}</Badge>
                       {e.provider && (
-                        <span className={`px-2 py-0.5 rounded-full font-medium uppercase tracking-wide text-[10px] ${providerBadge}`}>
-                          {e.provider}
-                        </span>
+                        <Badge tone={providerTone} className="uppercase tracking-wide text-[10px]">{e.provider}</Badge>
                       )}
                       <span className="font-medium text-ink whitespace-nowrap">{e.event_name}</span>
                       {e.entity_type && e.entity_id && (
                         <span className="text-gray-500 whitespace-nowrap">
                           {e.entity_type}:
                           {(e.entity_type === 'lead') ? (
-                            <Link href={`/leads/${e.entity_id}`} className="text-brand-pink hover:underline ml-1">
+                            <Link href={`/leads/${e.entity_id}`} className="text-primary hover:underline ml-1">
                               {e.entity_id.slice(0, 8)}…
                             </Link>
                           ) : (
@@ -627,12 +587,12 @@ export default function MarketingConfigPage() {
                         </span>
                       )}
                       {!e.entity_id && e.lead_id && (
-                        <Link href={`/leads/${e.lead_id}`} className="text-brand-pink hover:underline truncate">
+                        <Link href={`/leads/${e.lead_id}`} className="text-primary hover:underline truncate">
                           {e.lead_id.slice(0, 8)}…
                         </Link>
                       )}
                       {e.last_error && (
-                        <span className="text-red-500 truncate" title={e.last_error}>{e.last_error.slice(0, 40)}</span>
+                        <span className="text-danger truncate" title={e.last_error}>{e.last_error.slice(0, 40)}</span>
                       )}
                     </div>
                     <span className="text-gray-400 whitespace-nowrap">
@@ -644,115 +604,105 @@ export default function MarketingConfigPage() {
               })}
             </div>
           )}
-        </div>
+        </Card>
       )}
 
-      {showTestModal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowTestModal(false)}>
-          <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="bg-gradient-to-r from-brand-pink to-brand-orange h-1.5" />
-            <div className="p-6">
-              <h3 className="text-lg font-semibold text-ink mb-4">Probar evento</h3>
-              <label className={labelCls}>Evento a simular</label>
-              <select value={testStage} onChange={e => setTestStage(e.target.value)} className={`${inputCls} mb-3`}>
-                {EVENT_KEY_GROUPS.map(g => (
-                  <optgroup key={g.label} label={g.label}>
-                    {g.keys.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
-                  </optgroup>
-                ))}
-              </select>
-              <button
-                onClick={runTestEvent}
-                disabled={testRunning}
-                className="w-full bg-gradient-to-br from-brand-pink to-brand-orange text-white py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 inline-flex items-center justify-center gap-2"
-              >
-                {testRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                Disparar evento de prueba
-              </button>
+      <Modal
+        open={showTestModal}
+        onClose={() => setShowTestModal(false)}
+        title="Probar evento"
+        icon={<Send className="w-4 h-4" />}
+        className="max-w-2xl"
+        footer={
+          <Button variant="outline" onClick={() => setShowTestModal(false)}>
+            Cerrar
+          </Button>
+        }
+      >
+        <Field label="Evento a simular">
+          <Select value={testStage} onChange={e => setTestStage(e.target.value)}>
+            {EVENT_KEY_GROUPS.map(g => (
+              <optgroup key={g.label} label={g.label}>
+                {g.keys.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
+              </optgroup>
+            ))}
+          </Select>
+        </Field>
+        <Button fullWidth onClick={runTestEvent} loading={testRunning} icon={<Send className="w-4 h-4" />} className="mt-3">
+          Disparar evento de prueba
+        </Button>
 
-              {testResult && (
-                testResult.error ? (
-                  <div className="mt-4 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-700">
-                    {testResult.error}
-                  </div>
-                ) : (
-                  <div className="mt-4 space-y-2">
-                    {testResult.event_id && (
-                      <p className="text-[11px] text-gray-500">
-                        event_id: <code className="font-mono text-gray-700 break-all">{testResult.event_id}</code>
-                      </p>
-                    )}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {(['meta', 'ga4'] as const).map(prov => {
-                        const r = testResult[prov]
-                        if (!r || r.status === 'skipped') {
-                          return (
-                            <div key={prov} className="border border-dashed border-gray-200 rounded-lg p-3 text-center text-[10px] text-gray-400">
-                              {prov.toUpperCase()}: no enviado
-                            </div>
-                          )
-                        }
-                        const ok = r.status === 'sent'
-                        const noop = r.status === 'noop' || r.status === 'disabled'
-                        const cls = ok
-                          ? 'border-green-200 bg-green-50/40'
-                          : noop
-                            ? 'border-gray-200 bg-gray-50/40'
-                            : 'border-red-200 bg-red-50/40'
-                        const badgeCls = ok
-                          ? 'bg-green-100 text-green-700'
-                          : noop
-                            ? 'bg-gray-200 text-gray-700'
-                            : 'bg-red-100 text-red-700'
-                        return (
-                          <div key={prov} className={`border rounded-lg p-3 ${cls}`}>
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-[10px] font-semibold uppercase text-gray-600">{prov}</span>
-                              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${badgeCls}`}>
-                                {r.status}{typeof r.http_status === 'number' ? ` · ${r.http_status}` : ''}
-                              </span>
-                            </div>
-                            {r.event_name && (
-                              <p className="text-[10px] text-gray-500 mb-1">event: <code>{r.event_name}</code></p>
-                            )}
-                            {r.reason && <p className="text-[10px] text-gray-500 mb-1">{r.reason}</p>}
-                            {r.body && (
-                              <pre className="bg-white border border-gray-100 rounded p-2 text-[10px] overflow-x-auto max-h-32">
-                                {r.body}
-                              </pre>
-                            )}
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )
-              )}
-
-              <button onClick={() => setShowTestModal(false)} className="w-full border border-gray-200 text-gray-700 text-sm font-medium py-2 rounded-lg mt-3 hover:bg-gray-50">
-                Cerrar
-              </button>
+        {testResult && (
+          testResult.error ? (
+            <div className="mt-4 bg-danger/10 border border-danger/30 rounded-control px-3 py-2 text-xs text-danger">
+              {testResult.error}
             </div>
-          </div>
-        </div>
-      )}
+          ) : (
+            <div className="mt-4 space-y-2">
+              {testResult.event_id && (
+                <p className="text-[11px] text-gray-500">
+                  event_id: <code className="font-mono text-gray-700 break-all">{testResult.event_id}</code>
+                </p>
+              )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {(['meta', 'ga4'] as const).map(prov => {
+                  const r = testResult[prov]
+                  if (!r || r.status === 'skipped') {
+                    return (
+                      <div key={prov} className="border border-dashed border-gray-200 rounded-control p-3 text-center text-[10px] text-gray-400">
+                        {prov.toUpperCase()}: no enviado
+                      </div>
+                    )
+                  }
+                  const ok = r.status === 'sent'
+                  const noop = r.status === 'noop' || r.status === 'disabled'
+                  const cls = ok
+                    ? 'border-success/30 bg-success/5'
+                    : noop
+                      ? 'border-gray-200 bg-gray-50/40'
+                      : 'border-danger/30 bg-danger/5'
+                  const badgeTone = ok ? 'success' : noop ? 'neutral' : 'danger'
+                  return (
+                    <div key={prov} className={`border rounded-control p-3 ${cls}`}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] font-semibold uppercase text-gray-600">{prov}</span>
+                        <Badge tone={badgeTone} className="text-[10px] px-1.5 py-0.5">
+                          {r.status}{typeof r.http_status === 'number' ? ` · ${r.http_status}` : ''}
+                        </Badge>
+                      </div>
+                      {r.event_name && (
+                        <p className="text-[10px] text-gray-500 mb-1">event: <code>{r.event_name}</code></p>
+                      )}
+                      {r.reason && <p className="text-[10px] text-gray-500 mb-1">{r.reason}</p>}
+                      {r.body && (
+                        <pre className="bg-white border border-gray-100 rounded p-2 text-[10px] overflow-x-auto max-h-32">
+                          {r.body}
+                        </pre>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        )}
+      </Modal>
 
       {/* Info section */}
-      <div className="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-900">
-        <p className="font-medium mb-1">📊 Cómo funciona la deduplicación</p>
-        <p className="text-blue-800">
+      <Alert tone="info" title="📊 Cómo funciona la deduplicación" hideIcon className="mt-6">
+        <p>
           Cada evento usa un <code className="bg-white px-1 rounded">event_id</code> determinístico
           (org + entidad + evento + día). El frontend lo pushea al <code className="bg-white px-1 rounded">dataLayer</code>{' '}
           para que el Pixel cliente lo use, y el backend lo manda igual a Meta CAPI / GA4 MP.
           Meta y GA4 dedupean los duplicados automáticamente.
         </p>
-        <p className="text-blue-800 mt-2">
+        <p className="mt-2">
           El script de GTM se inyecta en tus páginas públicas
           (<code className="bg-white px-1 rounded">/r/&lt;slug&gt;</code>, <code className="bg-white px-1 rounded">/t/&lt;slug&gt;</code>,
           {' '}<code className="bg-white px-1 rounded">/v/&lt;slug&gt;</code>, <code className="bg-white px-1 rounded">/l/&lt;slug&gt;</code>)
           cuando configurás tu Container ID arriba.
         </p>
-      </div>
+      </Alert>
     </div>
   )
 }

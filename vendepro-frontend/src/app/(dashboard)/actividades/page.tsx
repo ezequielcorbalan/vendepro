@@ -2,10 +2,19 @@
 import { useState, useEffect, useMemo } from 'react'
 import {
   Phone, MessageCircle, Users, Home, Eye, Calculator, Clock,
-  FileText, Settings, CheckCircle2, Target, Plus, X, Sparkles, BarChart3
+  FileText, Settings, CheckCircle2, Target, Plus, Sparkles, BarChart3
 } from 'lucide-react'
 import { BarChart, Bar, XAxis, ResponsiveContainer, ReferenceLine } from 'recharts'
 import { useToast } from '@/components/ui/Toast'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Card } from '@/components/ui/Card'
+import { Heading, Text } from '@/components/ui/Typography'
+import { Button } from '@/components/ui/Button'
+import { Select, Textarea } from '@/components/ui/Input'
+import { StatusBadge } from '@/components/ui/StatusBadge'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { Modal } from '@/components/ui/Modal'
+import { StatTile } from '@/components/ui/StatTile'
 import {
   ACTIVITY_TYPES, ACTIVITY_TYPE_KEYS, OBJECTIVE_METRICS,
   getObjectiveSemaforo, getPeriodProgressPct, type ActivityType, type ObjectiveMetric
@@ -132,33 +141,29 @@ export default function ActividadesPage() {
   return (
     <div className="space-y-5">
       <ActivityTabs />
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-ink">Actividad Comercial</h1>
-          <p className="text-gray-500 text-sm">{activities.length} actividades en el período</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {agents.length > 0 && (
-            <select value={filterAgent} onChange={e => setFilterAgent(e.target.value)}
-              className="border rounded-lg px-3 py-2 text-sm bg-white">
-              <option value="">Todos los agentes</option>
-              {agents.map(a => <option key={a.id} value={a.id}>{a.full_name}</option>)}
-            </select>
-          )}
-          <select value={period} onChange={e => setPeriod(e.target.value)}
-            className="border rounded-lg px-3 py-2 text-sm bg-white">
-            {PERIOD_OPTIONS.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
-          </select>
-          <button className="flex items-center gap-1.5 border border-brand-pink text-brand-pink px-3 py-2 rounded-lg text-sm font-medium hover:bg-pink-50">
-            <Sparkles className="w-4 h-4" /> con IA
-          </button>
-          <button onClick={() => setShowCreate(true)}
-            className="bg-gradient-to-br from-brand-pink to-brand-orange text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:opacity-90">
-            <Plus className="w-4 h-4" /> Registrar
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Actividad Comercial"
+        subtitle={`${activities.length} actividades en el período`}
+        actions={
+          <>
+            {agents.length > 0 && (
+              <Select value={filterAgent} onChange={e => setFilterAgent(e.target.value)} className="w-auto">
+                <option value="">Todos los agentes</option>
+                {agents.map(a => <option key={a.id} value={a.id}>{a.full_name}</option>)}
+              </Select>
+            )}
+            <Select value={period} onChange={e => setPeriod(e.target.value)} className="w-auto">
+              {PERIOD_OPTIONS.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
+            </Select>
+            <Button variant="outline" icon={<Sparkles className="w-4 h-4" />}>
+              con IA
+            </Button>
+            <Button onClick={() => setShowCreate(true)} icon={<Plus className="w-4 h-4" />}>
+              Registrar
+            </Button>
+          </>
+        }
+      />
 
       {/* Activity type summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -166,41 +171,35 @@ export default function ActividadesPage() {
           const cfg = ACTIVITY_TYPES[k]
           const Ico = ICON_MAP[cfg.icon] || Phone
           return (
-            <div key={k} className="border border-gray-200 rounded-xl p-4 flex flex-col items-center bg-white">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${cfg.color} mb-2`}>
-                <Ico className="w-5 h-5" />
-              </div>
-              <p className="text-2xl font-bold text-ink">{metrics[k]}</p>
-              <p className="text-xs text-gray-500 text-center mt-0.5">{cfg.label}</p>
-            </div>
+            <StatTile key={k} icon={<Ico className="w-5 h-5" />} tone={cfg.color} value={metrics[k]} label={cfg.label} />
           )
         })}
       </div>
 
       {/* Objectives */}
-      <div className="bg-white rounded-xl border p-5">
-        <h2 className="font-semibold text-ink mb-4 flex items-center gap-2">
-          <Target className="w-4 h-4 text-pink-500" /> Objetivos del período
-        </h2>
+      <Card>
+        <Heading level={4} className="mb-4 flex items-center gap-2">
+          <Target className="w-4 h-4 text-gray-600" /> Objetivos del período
+        </Heading>
         {objectivesWithProgress.length === 0 ? (
-          <div className="flex flex-col items-center py-6 text-center">
-            <Target className="w-10 h-10 text-gray-200 mb-2" />
-            <p className="text-sm text-gray-500 mb-3">No hay objetivos configurados para este período</p>
-            <a href="/configuracion/objetivos"
-              className="text-sm text-brand-pink font-medium hover:underline">
-              Configurar objetivos →
-            </a>
-          </div>
+          <EmptyState
+            icon={<Target className="w-6 h-6" />}
+            title="No hay objetivos configurados para este período"
+            action={
+              <a href="/configuracion/objetivos"
+                className="text-sm text-primary font-medium hover:underline">
+                Configurar objetivos →
+              </a>
+            }
+          />
         ) : (
           <div className="space-y-4">
             {objectivesWithProgress.map(obj => (
               <div key={obj.id}>
                 <div className="flex items-center justify-between mb-1.5">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-sm text-gray-700 font-medium">{obj.metricLabel}</span>
-                    <span className={`text-[11px] px-2 py-0.5 rounded-full shrink-0 ${obj.semaforo.color}`}>
-                      {obj.semaforo.label}
-                    </span>
+                    <Text as="span" weight="medium" className="text-gray-700">{obj.metricLabel}</Text>
+                    <StatusBadge label={obj.semaforo.label} color={obj.semaforo.color} className="shrink-0" />
                   </div>
                   <span className="text-sm text-gray-400 shrink-0 ml-4">
                     <span className="font-semibold text-ink">{obj.realized}/{obj.target}</span> ({obj.pct}%)
@@ -216,15 +215,15 @@ export default function ActividadesPage() {
             ))}
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Bottom panels */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Últimos 30 días chart */}
-        <div className="bg-white rounded-xl border p-5">
-          <h2 className="font-semibold text-ink mb-4 flex items-center gap-2">
-            <BarChart3 className="w-4 h-4 text-pink-500" /> Últimos 30 días
-          </h2>
+        <Card>
+          <Heading level={4} className="mb-4 flex items-center gap-2">
+            <BarChart3 className="w-4 h-4 text-gray-600" /> Últimos 30 días
+          </Heading>
           <ResponsiveContainer width="100%" height={110}>
             <BarChart data={chartData} barSize={7} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
               <XAxis
@@ -239,25 +238,25 @@ export default function ActividadesPage() {
             </BarChart>
           </ResponsiveContainer>
           <div className="text-center mt-3">
-            <p className="text-3xl font-bold text-ink">{activities.length}</p>
-            <p className="text-xs text-gray-400">Total del período</p>
+            <Text weight="bold" className="text-3xl">{activities.length}</Text>
+            <Text size="xs" className="text-gray-400">Total del período</Text>
           </div>
-        </div>
+        </Card>
 
         {/* Actividad reciente */}
-        <div className="bg-white rounded-xl border p-5">
-          <h2 className="font-semibold text-ink mb-4">Actividad reciente</h2>
+        <Card>
+          <Heading level={4} className="mb-4">Actividad reciente</Heading>
           {loading ? (
             <div className="space-y-3">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-14 bg-gray-100 rounded-lg animate-pulse" />
+                <div key={i} className="h-14 bg-gray-100 rounded-control animate-pulse" />
               ))}
             </div>
           ) : activities.length === 0 ? (
-            <div className="text-center py-8 text-gray-400 text-sm">
-              <CheckCircle2 className="w-10 h-10 mx-auto mb-2 text-gray-200" />
-              Sin actividades en este período
-            </div>
+            <EmptyState
+              icon={<CheckCircle2 className="w-6 h-6" />}
+              title="Sin actividades en este período"
+            />
           ) : (
             <div className="space-y-3 overflow-y-auto max-h-72">
               {activities.slice(0, 10).map(a => {
@@ -269,14 +268,14 @@ export default function ActividadesPage() {
                       <Ico className="w-4 h-4" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-ink">{cfg.label}</p>
+                      <Text weight="semibold">{cfg.label}</Text>
                       {a.description && (
-                        <p className="text-xs text-gray-500 truncate">{a.description}</p>
+                        <Text size="xs" tone="muted" className="truncate">{a.description}</Text>
                       )}
                       <p className="text-xs text-gray-400">
                         {a.agent_name && <span>{a.agent_name}</span>}
                         {a.lead_name && (
-                          <span className="text-brand-pink font-medium"> {a.lead_name}</span>
+                          <span className="text-primary font-medium"> {a.lead_name}</span>
                         )}
                       </p>
                     </div>
@@ -288,47 +287,38 @@ export default function ActividadesPage() {
               })}
             </div>
           )}
-        </div>
+        </Card>
       </div>
 
       {/* Create modal */}
-      {showCreate && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
-          onClick={() => setShowCreate(false)}>
-          <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-5"
-            onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-ink">Registrar actividad</h3>
-              <button onClick={() => setShowCreate(false)}><X className="w-5 h-5 text-gray-400" /></button>
-            </div>
-            <div className="space-y-3">
-              <select value={form.activity_type}
-                onChange={e => setForm(f => ({ ...f, activity_type: e.target.value }))}
-                className="border rounded-lg px-3 py-2 text-sm w-full">
-                {ACTIVITY_TYPE_KEYS.map(k => <option key={k} value={k}>{ACTIVITY_TYPES[k].label}</option>)}
-              </select>
-              <select value={form.lead_id}
-                onChange={e => setForm(f => ({ ...f, lead_id: e.target.value }))}
-                className="border rounded-lg px-3 py-2 text-sm w-full">
-                <option value="">Sin vincular a un lead</option>
-                {leads.map(l => <option key={l.id} value={l.id}>{l.full_name}</option>)}
-              </select>
-              <textarea placeholder="Descripción..." rows={3}
-                value={form.description}
-                onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                className="border rounded-lg px-3 py-2 text-sm w-full" />
-            </div>
-            <div className="flex gap-2 mt-4">
-              <button onClick={() => setShowCreate(false)}
-                className="flex-1 border rounded-lg py-2 text-sm">Cancelar</button>
-              <button onClick={handleCreate} disabled={saving}
-                className="flex-1 bg-gradient-to-br from-brand-pink to-brand-orange text-white rounded-lg py-2 text-sm font-medium disabled:opacity-50">
-                {saving ? 'Guardando...' : 'Registrar'}
-              </button>
-            </div>
-          </div>
+      <Modal
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+        title="Registrar actividad"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setShowCreate(false)}>Cancelar</Button>
+            <Button onClick={handleCreate} loading={saving}>
+              {saving ? 'Guardando...' : 'Registrar'}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <Select value={form.activity_type}
+            onChange={e => setForm(f => ({ ...f, activity_type: e.target.value }))}>
+            {ACTIVITY_TYPE_KEYS.map(k => <option key={k} value={k}>{ACTIVITY_TYPES[k].label}</option>)}
+          </Select>
+          <Select value={form.lead_id}
+            onChange={e => setForm(f => ({ ...f, lead_id: e.target.value }))}>
+            <option value="">Sin vincular a un lead</option>
+            {leads.map(l => <option key={l.id} value={l.id}>{l.full_name}</option>)}
+          </Select>
+          <Textarea placeholder="Descripción..." rows={3}
+            value={form.description}
+            onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
         </div>
-      )}
+      </Modal>
     </div>
   )
 }

@@ -9,6 +9,11 @@ import {
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
+import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Card'
+import { Heading, Text } from '@/components/ui/Typography'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { StatusBadge } from '@/components/ui/StatusBadge'
 import {
   type EmailCampaign, type CampaignSend, CAMPAIGN_STATUS,
   describeSegment, parseSegment, fmtDateTime,
@@ -70,14 +75,16 @@ export default function EmailCampaignDetailPage() {
   }
 
   if (loading) {
-    return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-brand-pink" /></div>
+    return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
   }
   if (error || !campaign) {
     return (
-      <div className="max-w-2xl mx-auto py-12 text-center">
-        <AlertCircle className="w-10 h-10 text-red-400 mx-auto mb-3" />
-        <p className="text-gray-700 font-medium">Campaña no encontrada</p>
-        <Link href="/marketing/emails" className="text-sm text-brand-pink hover:underline mt-2 inline-block">Volver a campañas</Link>
+      <div className="max-w-2xl mx-auto py-12">
+        <EmptyState
+          icon={<AlertCircle className="w-6 h-6" />}
+          title="Campaña no encontrada"
+          action={<Link href="/marketing/emails" className="text-sm text-primary hover:underline">Volver a campañas</Link>}
+        />
       </div>
     )
   }
@@ -94,58 +101,59 @@ export default function EmailCampaignDetailPage() {
       </Link>
 
       {/* Header */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-5">
+      <Card className="p-6 mb-5">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl font-semibold text-ink truncate">{campaign.name}</h1>
-              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${st.cls}`}>{st.label}</span>
+              <Heading level={3} as="h1" className="truncate">{campaign.name}</Heading>
+              <StatusBadge label={st.label} color={st.cls} />
             </div>
-            <p className="text-sm text-gray-500 mt-1">{campaign.subject || 'Sin asunto'}</p>
-            <p className="text-xs text-gray-400 mt-1">
+            <Text tone="muted" className="mt-1">{campaign.subject || 'Sin asunto'}</Text>
+            <Text size="xs" tone="muted" className="mt-1">
               {describeSegment(parseSegment(campaign.segment_json))}
               {campaign.status === 'scheduled' && campaign.scheduled_at && ` · programada ${fmtDateTime(campaign.scheduled_at)}`}
               {campaign.sent_at && ` · enviada ${fmtDateTime(campaign.sent_at)}`}
-            </p>
+            </Text>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {campaign.status === 'sending' && (
-              <button onClick={load} className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-ink px-3 py-1.5">
-                <RefreshCw className="w-4 h-4" /> Actualizar
-              </button>
+              <Button variant="ghost" onClick={load} icon={<RefreshCw className="w-4 h-4" />}>
+                Actualizar
+              </Button>
             )}
             {campaign.status === 'draft' && (
               <>
                 <Link
                   href={`/marketing/emails/nueva?id=${campaign.id}`}
-                  className="inline-flex items-center gap-1.5 text-sm border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg hover:border-gray-300"
+                  className="inline-flex items-center gap-2 text-sm font-medium border border-gray-300 text-gray-700 px-4 py-2 rounded-control hover:bg-gray-50"
                 >
-                  <Pencil className="w-3.5 h-3.5" /> Editar
+                  <Pencil className="w-4 h-4" /> Editar
                 </Link>
                 <Link
                   href={`/marketing/emails/nueva?id=${campaign.id}`}
-                  className="inline-flex items-center gap-1.5 bg-gradient-to-br from-brand-pink to-brand-orange text-white text-sm font-medium px-3.5 py-1.5 rounded-lg hover:opacity-90"
+                  className="inline-flex items-center gap-2 bg-primary text-white text-sm font-medium px-4 py-2 rounded-control hover:bg-primary-hover"
                 >
-                  <Send className="w-3.5 h-3.5" /> Continuar y enviar
+                  <Send className="w-4 h-4" /> Continuar y enviar
                 </Link>
-                <button
+                <Button
+                  variant="ghost"
                   onClick={deleteCampaign}
                   disabled={working}
-                  className="p-2 text-gray-400 hover:text-red-500"
+                  className="px-2 text-gray-400 hover:text-danger"
                   title="Borrar campaña"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                  icon={<Trash2 className="w-4 h-4" />}
+                />
               </>
             )}
             {campaign.status === 'scheduled' && (
-              <button
+              <Button
+                variant="outline"
                 onClick={cancelCampaign}
                 disabled={working}
-                className="inline-flex items-center gap-1.5 text-sm border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg hover:border-gray-300 disabled:opacity-50"
+                icon={<Ban className="w-3.5 h-3.5" />}
               >
-                <Ban className="w-3.5 h-3.5" /> Cancelar programación
-              </button>
+                Cancelar programación
+              </Button>
             )}
           </div>
         </div>
@@ -171,28 +179,28 @@ export default function EmailCampaignDetailPage() {
             </div>
           </div>
         )}
-      </div>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Vista previa */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-          <h2 className="text-sm font-semibold text-gray-700 mb-3">Vista previa</h2>
+        <Card>
+          <Heading level={4} className="mb-3">Vista previa</Heading>
           {campaign.html ? (
-            <iframe srcDoc={campaign.html} sandbox="" title="Vista previa" className="w-full h-[420px] border border-gray-100 rounded-xl" />
+            <iframe srcDoc={campaign.html} sandbox="" title="Vista previa" className="w-full h-[420px] border border-gray-100 rounded-card" />
           ) : (
-            <p className="text-sm text-gray-400 py-8 text-center">Sin contenido todavía.</p>
+            <Text tone="muted" className="py-8 text-center">Sin contenido todavía.</Text>
           )}
-        </div>
+        </Card>
 
         {/* Destinatarios */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-          <h2 className="text-sm font-semibold text-gray-700 mb-3">
+        <Card>
+          <Heading level={4} className="mb-3">
             Destinatarios {campaign.sends.length > 0 && <span className="text-gray-400 font-normal">({campaign.sends.length})</span>}
-          </h2>
+          </Heading>
           {campaign.sends.length === 0 ? (
-            <p className="text-sm text-gray-400 py-8 text-center">
+            <Text tone="muted" className="py-8 text-center">
               La lista se congela al enviar — todavía no hay destinatarios encolados.
-            </p>
+            </Text>
           ) : (
             <div className="overflow-y-auto max-h-[420px]">
               <table className="w-full text-sm">
@@ -215,7 +223,7 @@ export default function EmailCampaignDetailPage() {
               </table>
             </div>
           )}
-        </div>
+        </Card>
       </div>
     </div>
   )

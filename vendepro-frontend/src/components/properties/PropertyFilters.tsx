@@ -7,6 +7,10 @@ import { apiFetch } from '@/lib/api'
 import type { PropertyConfig } from '@/lib/property-config'
 import { COLOR_CLASS, DOT_CLASS, getStage, getStatus, getOpType, stagesForType } from '@/lib/property-config'
 import { useToast } from '@/components/ui/Toast'
+import { Input } from '@/components/ui/Input'
+import { Alert } from '@/components/ui/Alert'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { Card } from '@/components/ui/Card'
 
 const REPORT_DEADLINE_DAYS = 20
 
@@ -149,11 +153,11 @@ export default function PropertyFilters({ properties, config }: { properties: an
   return (
     <div>
       <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <input
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
+        <Input
           value={searchText} onChange={e => setSearchText(e.target.value)}
           placeholder="Buscar dirección, barrio, propietario, agente..."
-          className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white"
+          className="pl-9"
         />
       </div>
 
@@ -183,13 +187,10 @@ export default function PropertyFilters({ properties, config }: { properties: an
       </div>
 
       {overdueCount > 0 && (filter === 'active' || filter === 'all') && (
-        <div className="mb-4 bg-orange-50 border border-orange-200 rounded-xl p-3 flex items-center gap-2.5">
-          <AlertTriangle className="w-5 h-5 text-orange-500 shrink-0" />
-          <div className="text-sm">
-            <span className="font-semibold text-orange-800">{overdueCount} propiedad{overdueCount !== 1 ? 'es' : ''} sin reportar</span>
-            <span className="text-orange-600"> · Hace más de {REPORT_DEADLINE_DAYS} días sin reportes</span>
-          </div>
-        </div>
+        <Alert tone="warning" className="mb-4">
+          <span className="font-semibold">{overdueCount} propiedad{overdueCount !== 1 ? 'es' : ''} sin reportar</span>
+          <span className="text-gray-600"> · Hace más de {REPORT_DEADLINE_DAYS} días sin reportes</span>
+        </Alert>
       )}
 
       {openStageMenu && <div className="fixed inset-0 z-[9]" onClick={() => setOpenStageMenu(null)} />}
@@ -207,7 +208,7 @@ export default function PropertyFilters({ properties, config }: { properties: an
           const opStages = stagesForType(config, property.operation_type_id ?? 1)
 
           return (
-            <div key={property.id} className={`bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden ${isOverdue ? 'ring-2 ring-orange-300' : ''}`}>
+            <div key={property.id} className={`bg-white rounded-card shadow-card hover:shadow-md transition-shadow overflow-hidden ${isOverdue ? 'ring-2 ring-orange-300' : ''}`}>
               <Link href={`/propiedades/${property.id}`}>
                 <div className="h-36 bg-gradient-to-br from-brand-pink/10 to-brand-orange/10 flex items-center justify-center relative">
                   <Building2 className="w-10 h-10 text-brand-pink/30" />
@@ -240,7 +241,7 @@ export default function PropertyFilters({ properties, config }: { properties: an
                       <ChevronDown className="w-3 h-3 opacity-60" />
                     </button>
                     {openStageMenu === property.id && (
-                      <div className="absolute left-0 top-8 z-10 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[160px]">
+                      <div className="absolute left-0 top-8 z-10 bg-white border border-gray-200 rounded-card shadow-pop py-1 min-w-[160px]">
                         {opStages.map(s => (
                           <button key={s.id}
                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); changeStage(property.id, s.id) }}
@@ -302,15 +303,13 @@ export default function PropertyFilters({ properties, config }: { properties: an
       </div>
 
       {filtered.length === 0 && (
-        <div className="bg-white rounded-xl p-10 text-center shadow-sm">
-          <Building2 className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm font-medium text-gray-600 mb-1">
-            {searchText ? 'Sin resultados para esa búsqueda' : 'No hay propiedades en esta etapa'}
-          </p>
-          <p className="text-xs text-gray-400">
-            {searchText ? 'Probá con otra dirección, barrio o propietario' : 'Cambiá el filtro o agregá una nueva propiedad'}
-          </p>
-        </div>
+        <Card>
+          <EmptyState
+            icon={<Building2 className="w-6 h-6" />}
+            title={searchText ? 'Sin resultados para esa búsqueda' : 'No hay propiedades en esta etapa'}
+            description={searchText ? 'Probá con otra dirección, barrio o propietario' : 'Cambiá el filtro o agregá una nueva propiedad'}
+          />
+        </Card>
       )}
     </div>
   )

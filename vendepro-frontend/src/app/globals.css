@@ -11,6 +11,59 @@
   --color-brand-light: #f9fafb;
   --color-brand-gray: #6b7280;
   --color-ink: #27272a;                /* gris oscuro base de la tipografía (no negro pleno) → utilidad text-ink */
+
+  /* Token semántico de color primario. Hoy = brand-pink; cambialo acá y se
+     actualiza el color primario en todos los componentes del design system
+     (Button, Badge, Avatar, inputs…) y en toda la app. Genera bg-primary,
+     text-primary, border-primary, bg-primary/10, hover:bg-primary-hover, etc. */
+  --color-primary: var(--color-brand-pink);
+  --color-primary-hover: var(--color-brand-pink-hover);
+
+  /* ── Paleta genérica (por color, no por uso) ──────────────────
+     Colores base del sistema. Generan utilidades bg-{color}, text-{color},
+     border-{color} y opacidad (bg-{color}/10). Tono medio ~500/600; para
+     fondos suaves usá la opacidad (ej. bg-blue/10 text-blue). */
+  --color-blue: #3b82f6;
+  --color-indigo: #6366f1;
+  --color-cyan: #06b6d4;
+  --color-teal: #14b8a6;
+  --color-emerald: #10b981;
+  --color-green: #22c55e;
+  --color-lime: #84cc16;
+  --color-yellow: #eab308;
+  --color-amber: #f59e0b;
+  --color-orange: #f97316;
+  --color-red: #ef4444;
+  --color-rose: #f43f5e;
+  --color-purple: #a855f7;
+  --color-violet: #8b5cf6;
+  --color-slate: #64748b;
+
+  /* ── Colores semánticos de estado ─────────────────────────────
+     Apuntan a la paleta genérica: cambiás la hue y se actualiza el semántico.
+     Uso sugerido: bg-{estado}/10 text-{estado} para chips, text-{estado} para
+     texto, bg-{estado} para sólidos. */
+  --color-success: #22c55e;  /* verde (paleta genérica) */
+  --color-warning: #eab308;  /* amarillo */
+  --color-danger: #ef4444;   /* rojo */
+  --color-info: #3b82f6;     /* azul */
+  --color-neutral: var(--color-brand-gray);
+
+  /* ── Colores de canal (marca de terceros) ─────────────────────
+     El verde oficial de WhatsApp. Fuente única del color del canal. */
+  --color-whatsapp: #25d366;
+
+  /* ── Radios ───────────────────────────────────────────────────
+     Sólo los "ajustables". Los círculos/pills siguen con rounded-full.
+     Generan rounded-control / rounded-card (al usarse como clase). */
+  --radius-control: 0.5rem;   /* 8px  — botones, inputs, controles, chips de menú */
+  --radius-card: 0.75rem;     /* 12px — cards, paneles, menús, modales, drawers */
+
+  /* ── Sombras ──────────────────────────────────────────────────
+     shadow-card = superficies en reposo · shadow-pop = flotantes (menús,
+     drawer, modal, notificaciones). Generan shadow-card / shadow-pop. */
+  --shadow-card: 0 1px 2px 0 rgb(24 20 22 / 0.06), 0 8px 24px -16px rgb(24 20 22 / 0.10);
+  --shadow-pop: 0 12px 32px -12px rgb(24 20 22 / 0.28);
 }
 
 /* Compat Tailwind v3 → v4: el default de `border`/`divide` en v4 es
@@ -61,7 +114,8 @@ select {
 :focus-visible {
   outline: 2px solid #9ca3af !important; /* gray-400 */
   outline-offset: 2px;
-  border-radius: 4px;
+  /* Sin border-radius: el outline ya sigue la forma del elemento; fijarlo acá
+     pisaba el radio (rounded-full de avatares/pills/switch) al enfocar. */
 }
 /* Sin outline cuando el foco no viene del teclado (p. ej. click de mouse). */
 :focus:not(:focus-visible) {

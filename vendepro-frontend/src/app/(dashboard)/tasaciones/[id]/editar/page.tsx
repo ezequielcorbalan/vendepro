@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
+import { Alert } from '@/components/ui/Alert'
 import { EditorShell } from '@/components/tasaciones/editor/EditorShell'
 import { getTemplate, getAppraisal } from '@/components/tasaciones/shared/api'
 import type { TemplateBlock } from '@/components/tasaciones/renderer/types'
@@ -57,7 +59,7 @@ export default function EditarTasacionPage() {
   if (loading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-brand-pink" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -65,13 +67,10 @@ export default function EditarTasacionPage() {
   if (error || !appraisal) {
     return (
       <div className="mx-auto max-w-xl px-4 py-16 text-center">
-        <p className="text-sm text-rose-600">{error ?? 'Tasación no encontrada'}</p>
-        <button
-          onClick={() => router.push('/tasaciones')}
-          className="mt-4 rounded bg-gradient-to-br from-brand-pink to-brand-orange px-4 py-2 text-sm text-white"
-        >
+        <Alert tone="danger">{error ?? 'Tasación no encontrada'}</Alert>
+        <Button className="mt-4" onClick={() => router.push('/tasaciones')}>
           Volver al listado
-        </button>
+        </Button>
       </div>
     )
   }
