@@ -6,6 +6,10 @@ import Link from 'next/link'
 import { ArrowLeft, ArrowRight, Upload, Check, Loader2, FileText, Link2, Trash2, Clipboard } from 'lucide-react'
 import type { MetricSource, ExtractedMetrics } from '@/lib/types'
 import { apiFetch } from '@/lib/api'
+import { Alert } from '@/components/ui/Alert'
+import { Field, Input, Textarea, Select } from '@/components/ui/Input'
+import { Heading, Text } from '@/components/ui/Typography'
+import { Button } from '@/components/ui/Button'
 
 const steps = [
   { id: 1, title: 'Período' },
@@ -335,11 +339,13 @@ export default function NuevoReporte() {
         <ArrowLeft className="w-4 h-4" /> Volver
       </Link>
 
-      <h1 className="text-2xl font-semibold text-ink mb-6">{editId ? 'Editar reporte' : 'Nuevo reporte'}</h1>
+      <Heading level={1} className="mb-6">{editId ? 'Editar reporte' : 'Nuevo reporte'}</Heading>
       {loadingExisting && (
-        <div className="bg-blue-50 border border-blue-200 text-blue-700 text-sm rounded-xl p-3 mb-4 flex items-center gap-2">
-          <Loader2 className="w-4 h-4 animate-spin" /> Cargando reporte existente...
-        </div>
+        <Alert tone="info" hideIcon className="mb-4">
+          <span className="flex items-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin shrink-0" /> Cargando reporte existente...
+          </span>
+        </Alert>
       )}
 
       {/* Steps indicator */}
@@ -367,43 +373,37 @@ export default function NuevoReporte() {
       </div>
 
       {error && (
-        <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg mb-4">{error}</div>
+        <Alert tone="danger" className="mb-4">{error}</Alert>
       )}
 
-      <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className="bg-white rounded-card shadow-card p-6">
         {/* Step 1: Period */}
         {step === 1 && (
           <div className="space-y-4">
-            <h2 className="text-lg font-medium text-ink">Período del reporte</h2>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del período *</label>
-              <input
+            <Heading level={4}>Período del reporte</Heading>
+            <Field label="Nombre del período" required>
+              <Input
                 type="text"
                 value={periodLabel}
                 onChange={(e) => setPeriodLabel(e.target.value)}
                 placeholder="Ej: Marzo 2026 - 1era quincena"
-                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none"
               />
-            </div>
+            </Field>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Desde *</label>
-                <input
+              <Field label="Desde" required>
+                <Input
                   type="date"
                   value={periodStart}
                   onChange={(e) => setPeriodStart(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none"
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Hasta *</label>
-                <input
+              </Field>
+              <Field label="Hasta" required>
+                <Input
                   type="date"
                   value={periodEnd}
                   onChange={(e) => setPeriodEnd(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none"
                 />
-              </div>
+              </Field>
             </div>
           </div>
         )}
@@ -412,7 +412,7 @@ export default function NuevoReporte() {
         {step === 2 && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-medium text-ink">Métricas por portal</h2>
+              <Heading level={4}>Métricas por portal</Heading>
               <label className="inline-flex items-center gap-2 text-sm bg-brand-orange/10 text-brand-orange px-3 py-2 rounded-lg cursor-pointer hover:bg-brand-orange/20 transition-colors">
                 <FileText className="w-4 h-4" />
                 {extractingPdf ? 'Extrayendo PDF...' : 'Importar PDF KiteProp'}
@@ -435,16 +435,16 @@ export default function NuevoReporte() {
             {metricsList.map((metrics, idx) => (
               <div key={idx} className="border border-gray-200 rounded-lg p-4 space-y-4">
                 <div className="flex items-center justify-between">
-                  <select
+                  <Select
                     value={metrics.source}
                     onChange={(e) => updateMetric(idx, 'source', e.target.value)}
-                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm font-medium focus:outline-none"
+                    className="w-auto font-medium"
                   >
                     <option value="zonaprop">ZonaProp</option>
                     <option value="argenprop">Argenprop</option>
                     <option value="mercadolibre">MercadoLibre</option>
                     <option value="manual">Manual</option>
-                  </select>
+                  </Select>
 
                   <label className="inline-flex items-center gap-2 text-sm text-brand-pink cursor-pointer hover:underline">
                     <Upload className="w-4 h-4" />
@@ -478,16 +478,14 @@ export default function NuevoReporte() {
                     { key: 'ranking_position', label: 'Posición ranking' },
                     { key: 'avg_market_price', label: 'Precio promedio zona' },
                   ].map((field) => (
-                    <div key={field.key}>
-                      <label className="block text-xs text-brand-gray mb-1">{field.label}</label>
-                      <input
+                    <Field key={field.key} label={field.label}>
+                      <Input
                         type="number"
                         value={(metrics as any)[field.key]}
                         onChange={(e) => updateMetric(idx, field.key, e.target.value)}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none"
                         placeholder="0"
                       />
-                    </div>
+                    </Field>
                   ))}
                 </div>
               </div>
@@ -496,7 +494,7 @@ export default function NuevoReporte() {
             <button
               type="button"
               onClick={addPortal}
-              className="text-sm text-brand-pink font-medium hover:underline"
+              className="text-sm text-primary font-medium hover:underline"
             >
               + Agregar otro portal
             </button>
@@ -506,59 +504,51 @@ export default function NuevoReporte() {
         {/* Step 3: Content */}
         {step === 3 && (
           <div className="space-y-4">
-            <h2 className="text-lg font-medium text-ink">Contenido del reporte</h2>
+            <Heading level={4}>Contenido del reporte</Heading>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Estrategia comercial</label>
-              <textarea
+            <Field label="Estrategia comercial">
+              <Textarea
                 value={strategy}
                 onChange={(e) => setStrategy(e.target.value)}
                 rows={3}
                 placeholder="Describí la estrategia comercial aplicada..."
-                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none"
               />
-            </div>
+            </Field>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Marketing y difusión</label>
-              <textarea
+            <Field label="Marketing y difusión">
+              <Textarea
                 value={marketing}
                 onChange={(e) => setMarketing(e.target.value)}
                 rows={3}
                 placeholder="Detallá las acciones de marketing realizadas..."
-                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none"
               />
-            </div>
+            </Field>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Referencia de precio</label>
-              <textarea
+            <Field label="Referencia de precio">
+              <Textarea
                 value={priceReference}
                 onChange={(e) => setPriceReference(e.target.value)}
                 rows={2}
                 placeholder="Comentarios sobre el precio vs mercado..."
-                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none"
               />
-            </div>
+            </Field>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Conclusión y recomendación *</label>
-              <textarea
+            <Field label="Conclusión y recomendación" required>
+              <Textarea
                 value={conclusion}
                 onChange={(e) => setConclusion(e.target.value)}
                 rows={6}
                 placeholder="Análisis del desempeño y recomendaciones para el propietario..."
-                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none"
               />
-            </div>
+            </Field>
           </div>
         )}
 
         {/* Step 4: Competitor links */}
         {step === 4 && (
           <div className="space-y-4">
-            <h2 className="text-lg font-medium text-ink">Links de competencia</h2>
-            <p className="text-sm text-brand-gray">Agregá links de propiedades similares que son competencia directa en la zona.</p>
+            <Heading level={4}>Links de competencia</Heading>
+            <Text tone="muted">Agregá links de propiedades similares que son competencia directa en la zona.</Text>
 
             {competitors.map((comp, idx) => (
               <div key={idx} className="border border-gray-200 rounded-lg p-4 space-y-3">
@@ -579,9 +569,9 @@ export default function NuevoReporte() {
                         }}
                       />
                     </label>
-                    <button onClick={() => removeCompetitor(idx)} className="text-red-400 hover:text-red-600">
+                    <Button variant="ghost" size="icon" aria-label="Eliminar propiedad" onClick={() => removeCompetitor(idx)} className="text-danger hover:bg-danger/10">
                       <Trash2 className="w-4 h-4" />
-                    </button>
+                    </Button>
                   </div>
                 </div>
                 {extractingComp === idx && (
@@ -606,55 +596,47 @@ export default function NuevoReporte() {
                 >
                   Pegá un screenshot aquí (Ctrl+V)
                 </div>
-                <div>
-                  <label className="block text-xs text-brand-gray mb-1">URL del aviso</label>
-                  <input
+                <Field label="URL del aviso">
+                  <Input
                     type="url"
                     value={comp.url}
                     onChange={(e) => updateCompetitor(idx, 'url', e.target.value)}
                     placeholder="https://www.zonaprop.com.ar/propiedades/..."
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none"
                   />
-                </div>
+                </Field>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs text-brand-gray mb-1">Dirección</label>
-                    <input
+                  <Field label="Dirección">
+                    <Input
                       type="text"
                       value={comp.address}
                       onChange={(e) => updateCompetitor(idx, 'address', e.target.value)}
                       placeholder="Ej: Av. Rivadavia 5200"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none"
                     />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-brand-gray mb-1">Precio (USD)</label>
-                    <input
+                  </Field>
+                  <Field label="Precio (USD)">
+                    <Input
                       type="number"
                       value={comp.price}
                       onChange={(e) => updateCompetitor(idx, 'price', e.target.value)}
                       placeholder="85000"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none"
                     />
-                  </div>
+                  </Field>
                 </div>
-                <div>
-                  <label className="block text-xs text-brand-gray mb-1">Notas</label>
-                  <input
+                <Field label="Notas">
+                  <Input
                     type="text"
                     value={comp.notes}
                     onChange={(e) => updateCompetitor(idx, 'notes', e.target.value)}
                     placeholder="Ej: Mismo barrio, peor estado, más barato"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none"
                   />
-                </div>
+                </Field>
               </div>
             ))}
 
             <button
               type="button"
               onClick={addCompetitor}
-              className="inline-flex items-center gap-2 text-sm text-brand-pink font-medium hover:underline"
+              className="inline-flex items-center gap-2 text-sm text-primary font-medium hover:underline"
             >
               <Link2 className="w-4 h-4" /> Agregar propiedad competencia
             </button>
@@ -664,10 +646,10 @@ export default function NuevoReporte() {
         {/* Step 5: Photos */}
         {step === 5 && (
           <div className="space-y-4">
-            <h2 className="text-lg font-medium text-ink">Fotos de fichas de visita</h2>
-            <p className="text-sm text-brand-gray">Subí las fotos de las fichas de visita que completaron los interesados.</p>
+            <Heading level={4}>Fotos de fichas de visita</Heading>
+            <Text tone="muted">Subí las fotos de las fichas de visita que completaron los interesados.</Text>
 
-            <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl p-8 cursor-pointer hover:border-brand-pink/50 transition-colors">
+            <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-card p-8 cursor-pointer hover:border-brand-pink/50 transition-colors">
               <Upload className="w-8 h-8 text-brand-gray mb-2" />
               <span className="text-sm text-brand-gray">Click para seleccionar fotos</span>
               <input
@@ -708,38 +690,39 @@ export default function NuevoReporte() {
         {/* Step 6: Preview & Publish */}
         {step === 6 && (
           <div className="space-y-4">
-            <h2 className="text-lg font-medium text-ink">Revisá y publicá</h2>
+            <Heading level={4}>Revisá y publicá</Heading>
             <div className="bg-brand-light rounded-lg p-4 space-y-3 text-sm">
-              <p><strong>Período:</strong> {periodLabel} ({periodStart} a {periodEnd})</p>
-              <p><strong>Portales:</strong> {metricsList.map(m => m.source).join(', ')}</p>
-              <p><strong>Métricas cargadas:</strong>{' '}
+              <Text as="p"><strong>Período:</strong> {periodLabel} ({periodStart} a {periodEnd})</Text>
+              <Text as="p"><strong>Portales:</strong> {metricsList.map(m => m.source).join(', ')}</Text>
+              <Text as="p"><strong>Métricas cargadas:</strong>{' '}
                 {metricsList.reduce((acc, m) => {
                   const filled = Object.entries(m).filter(([k, v]) => k !== 'source' && v).length
                   return acc + filled
                 }, 0)} campos
-              </p>
-              <p><strong>Secciones de contenido:</strong>{' '}
+              </Text>
+              <Text as="p"><strong>Secciones de contenido:</strong>{' '}
                 {[strategy, marketing, conclusion, priceReference].filter(Boolean).length} de 4
-              </p>
-              <p><strong>Competencia:</strong> {competitors.filter(c => c.url).length} propiedades</p>
-              <p><strong>Fotos:</strong> {photos.length}</p>
+              </Text>
+              <Text as="p"><strong>Competencia:</strong> {competitors.filter(c => c.url).length} propiedades</Text>
+              <Text as="p"><strong>Fotos:</strong> {photos.length}</Text>
             </div>
 
             <div className="flex gap-3">
-              <button
+              <Button
+                variant="outline"
+                fullWidth
                 onClick={() => handleSubmit(false)}
-                disabled={loading}
-                className="flex-1 border border-gray-300 text-gray-700 px-4 py-2.5 rounded-lg font-medium hover:bg-gray-50 disabled:opacity-50"
+                loading={loading}
               >
                 {loading ? 'Guardando...' : 'Guardar como borrador'}
-              </button>
-              <button
+              </Button>
+              <Button
+                fullWidth
                 onClick={() => handleSubmit(true)}
-                disabled={loading}
-                className="flex-1 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2.5 rounded-lg font-medium hover:opacity-90 disabled:opacity-50"
+                loading={loading}
               >
                 {loading ? 'Publicando...' : 'Publicar reporte'}
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -747,19 +730,19 @@ export default function NuevoReporte() {
         {/* Navigation */}
         {step < 6 && (
           <div className="flex justify-between mt-6 pt-4 border-t border-gray-100">
-            <button
+            <Button
+              variant="ghost"
               onClick={() => setStep((s) => Math.max(1, s - 1))}
               disabled={step === 1}
-              className="inline-flex items-center gap-2 text-sm text-brand-gray hover:text-ink disabled:opacity-30"
+              icon={<ArrowLeft className="w-4 h-4" />}
             >
-              <ArrowLeft className="w-4 h-4" /> Anterior
-            </button>
-            <button
+              Anterior
+            </Button>
+            <Button
               onClick={() => setStep((s) => Math.min(6, s + 1))}
-              className="inline-flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
             >
               Siguiente <ArrowRight className="w-4 h-4" />
-            </button>
+            </Button>
           </div>
         )}
       </div>
