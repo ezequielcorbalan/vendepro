@@ -22,7 +22,11 @@ import { Avatar } from '@/components/ui/Avatar'
 export default function ConfiguracionPage() {
   const { toast } = useToast()
   const router = useRouter()
-  const isAdmin = getCurrentUser()?.role === 'admin'
+  // isAdmin arranca en false (coincide con el render de servidor, que no tiene
+  // localStorage) y se resuelve en el useEffect de abajo — leerlo directo de
+  // getCurrentUser() en el render causaba un mismatch de hidratación (el server
+  // siempre renderiza 3 nav cards, el cliente podía renderizar 6).
+  const [isAdmin, setIsAdmin] = useState(false)
   const [loadingProfile, setLoadingProfile] = useState(true)
   const [loadingOrg, setLoadingOrg] = useState(true)
   const [profile, setProfile] = useState<any>(null)
@@ -41,13 +45,16 @@ export default function ConfiguracionPage() {
   const [slugStatus, setSlugStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle')
 
   useEffect(() => {
+    const admin = getCurrentUser()?.role === 'admin'
+    setIsAdmin(admin)
+
     apiFetch('admin', '/profile').then(r => r.json() as Promise<any>).then(d => {
       setProfile(d)
       setPhotoUrl(d.photo_url || '')
       setLoadingProfile(false)
     }).catch(() => setLoadingProfile(false))
 
-    if (isAdmin) {
+    if (admin) {
       apiFetch('admin', '/org-settings').then(r => r.json() as Promise<any>).then(d => {
         setOrgName(d.name || '')
         setSlug(d.slug || '')
