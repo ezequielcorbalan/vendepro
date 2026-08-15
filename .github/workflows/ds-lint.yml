@@ -1,12 +1,13 @@
 name: DS lint (frontend)
 
 # Regla del design system automatizada: el uso de colores Tailwind semánticos
-# sueltos (emerald/green/red/blue/amber/yellow) en src/app no puede crecer sobre
-# el baseline. Corre en PRs que tocan el frontend.
+# sueltos (emerald/green/red/blue/amber/yellow) en src/app y src/components no
+# puede crecer sobre el baseline. Corre en PRs que tocan el frontend.
 on:
   pull_request:
     paths:
       - 'vendepro-frontend/src/app/**'
+      - 'vendepro-frontend/src/components/**'
       - 'vendepro-frontend/scripts/ds-color-lint.mjs'
       - 'vendepro-frontend/scripts/.ds-color-baseline'
 
