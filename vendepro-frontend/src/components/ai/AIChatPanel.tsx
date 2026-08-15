@@ -8,6 +8,8 @@ import {
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
+import { Input as DSInput, Select as DSSelect, Textarea as DSTextarea } from '@/components/ui/Input'
+import { Button } from '@/components/ui/Button'
 
 type Mode = 'text' | 'image'
 type Step = 'input' | 'review' | 'done'
@@ -52,12 +54,11 @@ function Field({
         <span className="text-gray-400">{icon}</span>
         {label}
       </label>
-      <input
+      <DSInput
         type="text"
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none placeholder:text-gray-400"
       />
     </div>
   )
@@ -195,7 +196,7 @@ export default function AIChatPanel(_props: {
     <div className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
-      <div className="relative w-full max-w-md bg-white shadow-2xl flex flex-col h-full overflow-hidden">
+      <div className="relative w-full max-w-md bg-white shadow-pop flex flex-col h-full overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-brand-pink/5 to-brand-orange/5 shrink-0">
           <div className="flex items-center gap-2.5">
@@ -255,10 +256,10 @@ export default function AIChatPanel(_props: {
                   onChange={e => setText(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) extract() }}
                   placeholder={'Ej: "Hola, quiero vender mi depto en Palermo. Soy Marcos García, te dejo mi número: 11-5534-2210"'}
-                  className="w-full h-48 border border-gray-200 rounded-xl p-3.5 text-sm resize-none focus:outline-none placeholder:text-gray-400"
+                  className="w-full h-48 border border-gray-200 rounded-control p-3.5 text-sm resize-none focus:outline-none placeholder:text-gray-400"
                 />
               </div>
-              <div className="bg-gray-50 rounded-xl p-3.5 space-y-1.5">
+              <div className="bg-gray-50 rounded-card p-3.5 space-y-1.5">
                 <p className="text-xs font-medium text-gray-600">Podés pegar:</p>
                 <ul className="text-xs text-gray-500 space-y-1 list-disc list-inside">
                   <li>Conversación de WhatsApp</li>
@@ -273,7 +274,7 @@ export default function AIChatPanel(_props: {
           {step === 'input' && mode === 'image' && (
             <div className="space-y-4">
               {!imageData ? (
-                <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-xl p-8 text-center space-y-3 bg-gray-50 min-h-[200px]">
+                <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-card p-8 text-center space-y-3 bg-gray-50 min-h-[200px]">
                   <div className="bg-gray-100 rounded-full p-3">
                     <ClipboardPaste size={24} className="text-gray-400" />
                   </div>
@@ -290,7 +291,7 @@ export default function AIChatPanel(_props: {
               ) : (
                 <div className="space-y-3">
                   <p className="text-sm font-medium text-gray-700">Imagen lista para analizar</p>
-                  <div className="relative rounded-xl overflow-hidden border border-gray-200">
+                  <div className="relative rounded-card overflow-hidden border border-gray-200">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={imageData.previewUrl}
@@ -306,7 +307,7 @@ export default function AIChatPanel(_props: {
                   </button>
                 </div>
               )}
-              <div className="bg-blue-50 rounded-xl p-3.5 space-y-1">
+              <div className="bg-blue-50 rounded-card p-3.5 space-y-1">
                 <p className="text-xs font-medium text-blue-700">Tip</p>
                 <p className="text-xs text-blue-600">
                   Copiá cualquier screenshot y pegalo acá con Ctrl+V. También funciona desde la pestaña Texto.
@@ -337,15 +338,14 @@ export default function AIChatPanel(_props: {
                     <span className="text-gray-400"><Home size={14} /></span>
                     Operación
                   </label>
-                  <select
+                  <DSSelect
                     value={normalizeOperation(fields.operation)}
                     onChange={e => setFields(f => ({ ...f, operation: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none bg-white"
                   >
                     <option value="venta">Venta</option>
                     <option value="alquiler">Alquiler</option>
                     <option value="venta_alquiler">Venta o Alquiler</option>
-                  </select>
+                  </DSSelect>
                 </div>
                 <Field icon={<DollarSign size={14} />} label="Presupuesto" value={fields.budget ?? ''} onChange={v => setFields(f => ({ ...f, budget: v }))} placeholder="Ej: USD 150.000" />
                 <div>
@@ -353,11 +353,11 @@ export default function AIChatPanel(_props: {
                     <span className="text-gray-400"><FileText size={14} /></span>
                     Notas
                   </label>
-                  <textarea
+                  <DSTextarea
                     value={fields.notes ?? ''}
                     onChange={e => setFields(f => ({ ...f, notes: e.target.value }))}
                     rows={3}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none"
+                    className="resize-none"
                     placeholder="Información adicional..."
                   />
                 </div>
@@ -390,56 +390,32 @@ export default function AIChatPanel(_props: {
         {/* Footer */}
         <div className="border-t border-gray-100 px-5 py-4 shrink-0">
           {step === 'input' && mode === 'text' && (
-            <button
-              onClick={extract}
-              disabled={!text.trim() || loading}
-              className="w-full bg-gradient-to-br from-brand-pink to-brand-orange text-white py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-40 hover:opacity-90 transition-colors"
-            >
-              {loading
-                ? <><Loader2 size={16} className="animate-spin" /> Extrayendo datos...</>
-                : <><Sparkles size={16} /> Extraer datos con IA</>}
-            </button>
+            <Button onClick={extract} disabled={!text.trim()} loading={loading} fullWidth icon={<Sparkles size={16} />}>
+              {loading ? 'Extrayendo datos...' : 'Extraer datos con IA'}
+            </Button>
           )}
 
           {step === 'input' && mode === 'image' && (
-            <button
-              onClick={extractImage}
-              disabled={!imageData || loading}
-              className="w-full bg-gradient-to-br from-brand-pink to-brand-orange text-white py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-40 hover:opacity-90 transition-colors"
-            >
-              {loading
-                ? <><Loader2 size={16} className="animate-spin" /> Analizando imagen...</>
-                : <><Sparkles size={16} /> Analizar imagen con IA</>}
-            </button>
+            <Button onClick={extractImage} disabled={!imageData} loading={loading} fullWidth icon={<Sparkles size={16} />}>
+              {loading ? 'Analizando imagen...' : 'Analizar imagen con IA'}
+            </Button>
           )}
 
           {step === 'review' && (
             <div className="space-y-2">
-              <button
-                onClick={createLead}
-                disabled={creating || !fields.full_name?.trim()}
-                className="w-full bg-gradient-to-br from-brand-pink to-brand-orange text-white py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-40 hover:opacity-90 transition-colors"
-              >
-                {creating
-                  ? <><Loader2 size={16} className="animate-spin" /> Creando lead...</>
-                  : <><Plus size={16} /> Crear lead</>}
-              </button>
-              <button
-                onClick={() => setStep('input')}
-                className="w-full text-gray-500 py-2 text-sm flex items-center justify-center gap-1.5 hover:text-gray-700 transition-colors"
-              >
-                <ArrowLeft size={14} /> Volver a editar
-              </button>
+              <Button onClick={createLead} disabled={!fields.full_name?.trim()} loading={creating} fullWidth icon={<Plus size={16} />}>
+                Crear lead
+              </Button>
+              <Button variant="ghost" onClick={() => setStep('input')} fullWidth icon={<ArrowLeft size={14} />}>
+                Volver a editar
+              </Button>
             </div>
           )}
 
           {step === 'done' && (
-            <button
-              onClick={onClose}
-              className="w-full border border-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
-            >
+            <Button variant="outline" onClick={onClose} fullWidth>
               Cerrar
-            </button>
+            </Button>
           )}
         </div>
       </div>

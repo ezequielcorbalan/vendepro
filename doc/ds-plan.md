@@ -71,6 +71,7 @@ Reemplazar los usos inline por los componentes/tokens. Escala real hoy: **~101 a
 ## Fase 5 — Pase visual final 🟡 ⬜
 - [ ] Aplicar los hallazgos 🟡 tocando **cada componente/token una sola vez** → se propaga a toda la app.
 - [ ] Revisar en pantallas reales (data real, densidad real), mobile/desktop, dark mode si aplica.
+- Checklist de reglas (extraídas de los ajustes ya hechos en Dashboard/Leads/Contactos): [`ds-visual-rules.md`](./ds-visual-rules.md).
 - **Listo cuando:** el look quedó pulido y consistente en las pantallas de verdad.
 
 ## Fase 6 — Gobernanza / mantenimiento ⬜

@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import { apiFetch } from './api'
 
 export interface OperationType {
@@ -30,34 +31,16 @@ export interface PropertyConfig {
   property_statuses: PropertyStatus[]
 }
 
-// Tailwind class map por color slug
-export const COLOR_CLASS: Record<string, string> = {
-  green:   'bg-green-100 text-green-700',
-  amber:   'bg-amber-100 text-amber-700',
-  blue:    'bg-blue-100 text-blue-700',
-  purple:  'bg-purple-100 text-purple-700',
-  emerald: 'bg-emerald-100 text-emerald-700',
-  cyan:    'bg-cyan-100 text-cyan-700',
-  orange:  'bg-orange-100 text-orange-700',
-  red:     'bg-red-100 text-red-700',
-  gray:    'bg-gray-100 text-gray-500',
-  pink:    'bg-pink-100 text-pink-700',
-  yellow:  'bg-yellow-100 text-yellow-700',
+// El color de etapas/estados viene de la config dinámica por org como HEX
+// (dato de negocio por org, no un token Tailwind) — se aplica con estilo
+// inline, nunca con una clase. `stagePillStyle` imita el par -100/-800 (bg
+// tenue + texto sólido); `stageDotStyle` es el color plano del punto.
+export function stagePillStyle(hex?: string): CSSProperties {
+  const c = hex || '#9ca3af'
+  return { backgroundColor: `${c}1a`, color: c }
 }
-
-// Dot color map for stage indicators
-export const DOT_CLASS: Record<string, string> = {
-  green:   'bg-green-500',
-  amber:   'bg-amber-500',
-  blue:    'bg-blue-500',
-  purple:  'bg-purple-500',
-  emerald: 'bg-emerald-500',
-  cyan:    'bg-cyan-500',
-  orange:  'bg-orange-500',
-  red:     'bg-red-500',
-  gray:    'bg-gray-400',
-  pink:    'bg-pink-500',
-  yellow:  'bg-yellow-400',
+export function stageDotStyle(hex?: string): CSSProperties {
+  return { backgroundColor: hex || '#9ca3af' }
 }
 
 let _cache: PropertyConfig | null = null

@@ -9,6 +9,7 @@ import {
 import { apiFetch } from '@/lib/api'
 import { LEAD_PROPERTY_STATUSES } from '@/lib/crm-config'
 import type { LeadPropertyItem } from '@/lib/types'
+import { Input } from '@/components/ui/Input'
 
 const STATUS_ACTIONS: Array<{ status: keyof typeof LEAD_PROPERTY_STATUSES; label: string; icon: any }> = [
   { status: 'visita_agendada', label: 'Visita agendada', icon: CalendarPlus },
@@ -135,10 +136,10 @@ export function LeadPropertiesSection({ leadId }: { leadId: string }) {
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
+    <div className="bg-white border border-gray-200 rounded-card p-4 shadow-card">
       <div className="flex items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-sm">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center">
             <Building2 className="w-3.5 h-3.5 text-white" />
           </div>
           <p className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Propiedades de interés</p>
@@ -156,17 +157,17 @@ export function LeadPropertiesSection({ leadId }: { leadId: string }) {
         <div className="mb-3">
           <div className="relative">
             <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
+            <Input
               autoFocus
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder="Buscar por dirección o barrio..."
-              className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none"
+              className="pl-9"
             />
           </div>
           {searching && <p className="text-xs text-gray-400 mt-2">Buscando…</p>}
           {!searching && results.length > 0 && (
-            <div className="mt-2 border border-gray-100 rounded-xl divide-y divide-gray-100 overflow-hidden">
+            <div className="mt-2 border border-gray-100 rounded-card divide-y divide-gray-100 overflow-hidden">
               {results.map(r => (
                 <button
                   key={r.id}
@@ -205,7 +206,7 @@ export function LeadPropertiesSection({ leadId }: { leadId: string }) {
             const price = formatPrice(item.property_asking_price, item.property_currency)
             const busy = busyId === item.id
             return (
-              <div key={item.id} className="border border-gray-100 rounded-xl p-3">
+              <div key={item.id} className="border border-gray-100 rounded-card p-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">

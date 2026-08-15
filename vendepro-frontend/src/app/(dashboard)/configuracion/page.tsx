@@ -22,7 +22,11 @@ import { Avatar } from '@/components/ui/Avatar'
 export default function ConfiguracionPage() {
   const { toast } = useToast()
   const router = useRouter()
-  const isAdmin = getCurrentUser()?.role === 'admin'
+  // isAdmin arranca en false (coincide con el render de servidor, que no tiene
+  // localStorage) y se resuelve en el useEffect de abajo — leerlo directo de
+  // getCurrentUser() en el render causaba un mismatch de hidratación (el server
+  // siempre renderiza 3 nav cards, el cliente podía renderizar 6).
+  const [isAdmin, setIsAdmin] = useState(false)
   const [loadingProfile, setLoadingProfile] = useState(true)
   const [loadingOrg, setLoadingOrg] = useState(true)
   const [profile, setProfile] = useState<any>(null)
@@ -41,13 +45,16 @@ export default function ConfiguracionPage() {
   const [slugStatus, setSlugStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle')
 
   useEffect(() => {
+    const admin = getCurrentUser()?.role === 'admin'
+    setIsAdmin(admin)
+
     apiFetch('admin', '/profile').then(r => r.json() as Promise<any>).then(d => {
       setProfile(d)
       setPhotoUrl(d.photo_url || '')
       setLoadingProfile(false)
     }).catch(() => setLoadingProfile(false))
 
-    if (isAdmin) {
+    if (admin) {
       apiFetch('admin', '/org-settings').then(r => r.json() as Promise<any>).then(d => {
         setOrgName(d.name || '')
         setSlug(d.slug || '')
@@ -122,40 +129,40 @@ export default function ConfiguracionPage() {
     {
       href: '/configuracion/tasacion',
       icon: <ClipboardList className="w-5 h-5" />,
-      iconColor: 'text-primary',
+      iconColor: 'bg-primary/10 text-primary',
       title: 'Tasaciones',
       subtitle: 'Bloques, marca y datos de mercado',
     },
     {
       href: '/perfil',
       icon: <FileText className="w-5 h-5" />,
-      iconColor: 'text-purple-500',
+      iconColor: 'bg-purple-500/10 text-purple-500',
       title: 'Mi Performance',
       subtitle: 'Métricas y rendimiento personal',
     },
     {
       href: '/configuracion/objetivos',
       icon: <Settings className="w-5 h-5" />,
-      iconColor: 'text-orange-500',
+      iconColor: 'bg-orange-500/10 text-orange-500',
       title: 'Mis Objetivos',
       subtitle: 'Metas y seguimiento',
     },
     ...(isAdmin ? [{
       href: '/configuracion/marketing',
       icon: <Megaphone className="w-5 h-5" />,
-      iconColor: 'text-primary',
+      iconColor: 'bg-primary/10 text-primary',
       title: 'Marketing',
       subtitle: 'Meta Pixel + GTM + tracking de leads',
     }, {
       href: '/configuracion/api',
       icon: <KeyRound className="w-5 h-5" />,
-      iconColor: 'text-purple-500',
+      iconColor: 'bg-purple-500/10 text-purple-500',
       title: 'Configuración de API',
       subtitle: 'Tokens para importar leads',
     }, {
       href: '/configuracion/conexiones',
       icon: <Plug className="w-5 h-5" />,
-      iconColor: 'text-amber-500',
+      iconColor: 'bg-amber-500/10 text-amber-500',
       title: 'Integraciones',
       subtitle: 'Importación automática de contactos',
     }] : []),
@@ -204,7 +211,7 @@ export default function ConfiguracionPage() {
         {navCards.map(card => (
           <Link key={card.href} href={card.href}>
             <Card interactive className="h-full hover:border-gray-300 transition-all">
-              <div className={`mb-2 ${card.iconColor}`}>{card.icon}</div>
+              <div className={`w-9 h-9 rounded-control flex items-center justify-center mb-2 ${card.iconColor}`}>{card.icon}</div>
               <Text weight="semibold">{card.title}</Text>
               <Text size="xs" tone="muted" className="mt-0.5">{card.subtitle}</Text>
             </Card>
@@ -215,7 +222,7 @@ export default function ConfiguracionPage() {
       {/* Datos de la inmobiliaria — solo admin */}
       {isAdmin && <Card className="p-6">
         <Heading level={4} className="mb-5 flex items-center gap-2">
-          <Building2 className="w-4 h-4 text-indigo-500" /> Datos de la inmobiliaria
+          <Building2 className="w-4 h-4 text-gray-600" /> Datos de la inmobiliaria
         </Heading>
         {loadingOrg ? (
           <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>
@@ -398,7 +405,7 @@ export default function ConfiguracionPage() {
       {/* Google Calendar */}
       <Card className="p-6">
         <Heading level={4} className="mb-3 flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-blue-500" /> Google Calendar
+          <Calendar className="w-4 h-4 text-gray-600" /> Google Calendar
         </Heading>
         <Text tone="muted" className="mb-3">
           Conectá tu Google Calendar para ver tus eventos en el CRM y sincronizar automáticamente.

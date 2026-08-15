@@ -28,7 +28,7 @@ export function StepTemplate({ selectedId, onSelect }: Props) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="rounded-xl border bg-slate-100 animate-pulse h-36" />
+          <div key={i} className="rounded-card border bg-slate-100 animate-pulse h-36" />
         ))}
       </div>
     )
@@ -59,7 +59,7 @@ export function StepTemplate({ selectedId, onSelect }: Props) {
         <button
           type="button"
           onClick={() => onSelect(null)}
-          className={`flex flex-col items-center justify-center gap-3 rounded-xl border-2 p-6 text-center transition ${
+          className={`flex flex-col items-center justify-center gap-3 rounded-card border-2 p-6 text-center transition ${
             selectedId === null
               ? 'border-brand-pink bg-brand-pink/5'
               : 'border-dashed border-slate-200 hover:border-slate-300 hover:bg-slate-50'
@@ -77,7 +77,7 @@ export function StepTemplate({ selectedId, onSelect }: Props) {
             key={t.id}
             type="button"
             onClick={() => onSelect(t.id)}
-            className={`flex flex-col gap-2 rounded-xl border-2 p-6 text-left transition ${
+            className={`flex flex-col gap-2 rounded-card border-2 p-6 text-left transition ${
               selectedId === t.id
                 ? 'border-brand-pink bg-brand-pink/5'
                 : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'

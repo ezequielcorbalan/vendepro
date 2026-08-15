@@ -18,7 +18,7 @@ export default function Step1Welcome({ name }: { name: string }) {
           ['🔄', 'Seguí cada operación desde el primer contacto hasta la venta'],
           ['📅', 'Automatizá tu seguimiento y nunca pierdas un cliente'],
         ].map(([icon, text]) => (
-          <div key={text} className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+          <div key={text} className="flex items-start gap-3 p-3 bg-gray-50 rounded-card">
             <span className="text-lg leading-none mt-0.5">{icon}</span>
             <p className="text-sm text-gray-700">{text}</p>
           </div>

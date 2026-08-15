@@ -2,6 +2,8 @@
 
 import { useEffect } from 'react'
 import { AlertTriangle } from 'lucide-react'
+import { Heading, Text } from '@/components/ui/Typography'
+import { Button } from '@/components/ui/Button'
 
 export default function DashboardError({
   error,
@@ -16,17 +18,12 @@ export default function DashboardError({
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
-      <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
-        <AlertTriangle className="w-6 h-6 text-red-500" />
+      <div className="w-14 h-14 rounded-card bg-danger/10 text-danger grid place-items-center mb-3.5">
+        <AlertTriangle className="w-6 h-6" />
       </div>
-      <h2 className="text-lg font-semibold text-ink mb-2">Algo salió mal</h2>
-      <p className="text-sm text-gray-500 mb-4 max-w-sm">{error.message || 'Ocurrió un error inesperado.'}</p>
-      <button
-        onClick={reset}
-        className="bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
-      >
-        Reintentar
-      </button>
+      <Heading level={4}>Algo salió mal</Heading>
+      <Text tone="muted" className="mt-1 max-w-sm">{error.message || 'Ocurrió un error inesperado.'}</Text>
+      <Button onClick={reset} className="mt-4">Reintentar</Button>
     </div>
   )
 }

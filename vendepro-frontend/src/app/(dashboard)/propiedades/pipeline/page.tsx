@@ -208,7 +208,7 @@ export default function PipelinePage() {
             </div>
           </div>
           <DragOverlay dropAnimation={null}>
-            {activeProperty ? <div className="w-64"><CardBody p={activeProperty} dragging /></div> : null}
+            {activeProperty ? <div className="w-72"><CardBody p={activeProperty} dragging /></div> : null}
           </DragOverlay>
         </DndContext>
       ) : (
@@ -264,10 +264,13 @@ function KanbanColumn({ stage, items, activeId }: { stage: PropertyStage; items:
   const { setNodeRef, isOver } = useDroppable({ id: stage })
   const cfg = PROPERTY_STAGES[stage]
   return (
-    <div className="w-64 shrink-0 flex flex-col">
-      <div className={`flex items-center justify-between mb-2 px-3 py-2 rounded-lg ${cfg.color}`}>
-        <span className="text-xs font-semibold uppercase tracking-wide truncate">{cfg.label}</span>
-        <span className="text-xs font-bold tabular-nums ml-2 shrink-0">{items.length}</span>
+    <div className="w-72 shrink-0 flex flex-col">
+      <div className="flex items-center justify-between mb-2 px-3 py-2 rounded-control bg-white">
+        <span className="flex items-center gap-2 text-sm font-medium text-ink truncate">
+          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: cfg.dot }} aria-hidden />
+          {cfg.label}
+        </span>
+        <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ml-2 shrink-0 ${cfg.color}`}>{items.length}</span>
       </div>
       <div
         ref={setNodeRef}
@@ -298,7 +301,7 @@ function DraggableCard({ p, hidden }: { p: any; hidden: boolean }) {
 // ── Contenido de la card (compartido con el DragOverlay) ────────
 function CardBody({ p, dragging }: { p: any; dragging?: boolean }) {
   return (
-    <div className={`bg-white border rounded-lg p-3 select-none cursor-grab active:cursor-grabbing ${dragging ? 'shadow-pop ring-2 ring-primary/40' : 'border-gray-200'}`}>
+    <div className={`bg-white border rounded-card p-3 select-none cursor-grab active:cursor-grabbing ${dragging ? 'shadow-pop ring-2 ring-primary/40' : 'border-gray-200'}`}>
       <div className="flex items-start gap-1.5">
         <GripVertical className="w-3.5 h-3.5 text-gray-300 shrink-0 mt-0.5" />
         <div className="min-w-0 flex-1">

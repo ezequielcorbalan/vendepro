@@ -203,7 +203,7 @@ export default function MisObjetivosPage() {
       {mode === 'method' && (
         <Card className="mb-6 space-y-5">
           <CardHeader className="mb-0">
-            <CardTitle className="flex items-center gap-2"><Zap className="w-4 h-4 text-primary" /> Elegí tu método</CardTitle>
+            <CardTitle className="flex items-center gap-2"><Zap className="w-4 h-4 text-gray-600" /> Elegí tu método</CardTitle>
             <Button variant="ghost" onClick={cancel}>Cancelar</Button>
           </CardHeader>
 

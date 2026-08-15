@@ -130,44 +130,45 @@ export default function PerformancePage() {
 
   return (
     <div className="space-y-4 sm:space-y-5">
-      {/* Filters bar */}
-      <Card className="p-3 sm:p-4 bg-gradient-to-br from-white to-gray-50/50">
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <Select
-            value={propertyType}
-            onChange={e => setPropertyType(e.target.value)}
-            className="w-auto"
-          >
-            {PROPERTY_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-          </Select>
-          <div className="flex items-center gap-1 text-sm text-gray-500">USD</div>
-          <Input
-            type="number"
-            value={priceMin}
-            onChange={e => setPriceMin(e.target.value)}
-            placeholder="Desde"
-            className="w-24"
-          />
-          <Input
-            type="number"
-            value={priceMax}
-            onChange={e => setPriceMax(e.target.value)}
-            placeholder="Hasta"
-            className="w-24"
-          />
-          {hasFilters && (
-            <Button variant="ghost" onClick={clearFilters}>
-              Limpiar filtros
-            </Button>
-          )}
-          <div className="flex-1" />
-          <SegmentedControl
-            options={PERIOD_OPTIONS}
-            value={period}
-            onChange={v => setPeriod(v as Period)}
-          />
-        </div>
-      </Card>
+      {/* Búsqueda + filtros: una sola fila compacta (sin labels ni card propio) */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Select
+          aria-label="Tipo de propiedad"
+          value={propertyType}
+          onChange={e => setPropertyType(e.target.value)}
+          className="w-auto"
+        >
+          {PROPERTY_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+        </Select>
+        <div className="flex items-center gap-1 text-sm text-gray-500">USD</div>
+        <Input
+          aria-label="Precio desde"
+          type="number"
+          value={priceMin}
+          onChange={e => setPriceMin(e.target.value)}
+          placeholder="Desde"
+          className="w-24"
+        />
+        <Input
+          aria-label="Precio hasta"
+          type="number"
+          value={priceMax}
+          onChange={e => setPriceMax(e.target.value)}
+          placeholder="Hasta"
+          className="w-24"
+        />
+        {hasFilters && (
+          <button onClick={clearFilters} className="text-xs text-gray-500 hover:text-primary shrink-0">
+            Limpiar
+          </button>
+        )}
+        <div className="flex-1" />
+        <SegmentedControl
+          options={PERIOD_OPTIONS}
+          value={period}
+          onChange={v => setPeriod(v as Period)}
+        />
+      </div>
 
       {!hasData && (
         <Card padded={false}>
@@ -183,7 +184,9 @@ export default function PerformancePage() {
         <>
           {/* KPIs globales */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {/* KPI destacado: visualizaciones/día con color del semáforo */}
+            {/* KPI destacado: visualizaciones/día con color del semáforo.
+                ds-todo: candidato a variante de StatTile con borde de color + slot de badge
+                (HealthBadge abajo) — StatTile hoy no soporta ninguna de las dos cosas. */}
             <Card className={`border-2 p-3 sm:p-4 bg-gradient-to-br ${overallCfg.border} ${overallCfg.bg}`}>
               <div className={`w-9 h-9 rounded-control flex items-center justify-center mb-2 bg-white/70 border ${overallCfg.border} shadow-card`} aria-hidden="true">
                 <Eye className={`w-5 h-5 ${overallCfg.text}`} />
@@ -249,11 +252,11 @@ export default function PerformancePage() {
       <Card className="p-3 sm:p-4 text-xs sm:text-sm bg-gradient-to-br from-gray-50 to-white">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2">
           <span className="font-medium text-gray-700">Referencia MG — visualizaciones/día:</span>
-          <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-sm" /> 0–9</span>
-          <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-sm" /> 10–13</span>
-          <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-yellow-400 shadow-sm" /> 14–22</span>
-          <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-lime-500 shadow-sm" /> 23–27</span>
-          <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-sm" /> +28</span>
+          <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-red-500" /> 0–9</span>
+          <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-orange-500" /> 10–13</span>
+          <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-yellow-400" /> 14–22</span>
+          <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-lime-500" /> 23–27</span>
+          <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-green-500" /> +28</span>
         </div>
         <Text tone="muted" className="text-xs sm:text-sm leading-snug">
           <strong>Mínimo para vender en 4 meses:</strong>{' '}

@@ -16,8 +16,8 @@ import { StatusBadge } from '@/components/ui/StatusBadge'
 
 const statusLabels: Record<string, { label: string; color: string }> = {
   draft: { label: 'Borrador', color: 'bg-gray-100 text-gray-700' },
-  generated: { label: 'Generada', color: 'bg-blue-100 text-blue-700' },
-  sent: { label: 'Enviada', color: 'bg-green-100 text-green-700' },
+  generated: { label: 'Generada', color: 'bg-blue-100 text-blue-800' },
+  sent: { label: 'Enviada', color: 'bg-green-100 text-green-800' },
 }
 
 export default function TasacionesPage() {

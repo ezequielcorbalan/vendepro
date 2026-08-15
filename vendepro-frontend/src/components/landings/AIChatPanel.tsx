@@ -90,7 +90,7 @@ export default function AIChatPanel({ landingId, selectedBlockId, onProposalAcce
           <p className="text-xs text-gray-400 text-center mt-8">Escribí un pedido y la IA propone cambios (con Aceptar/Rechazar).</p>
         )}
         {messages.map((msg, i) => (
-          <div key={i} className={`rounded-xl p-3 text-sm ${msg.role === 'user' ? 'bg-brand-pink/10 ml-8 text-ink' : 'bg-gray-50 mr-8 text-gray-700'}`}>
+          <div key={i} className={`rounded-card p-3 text-sm ${msg.role === 'user' ? 'bg-brand-pink/10 ml-8 text-ink' : 'bg-gray-50 mr-8 text-gray-700'}`}>
             <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">{msg.role === 'user' ? 'Vos' : 'Groq · llama-3.3-70b'}</p>
             <p>{msg.text}</p>
             {msg.proposal && (

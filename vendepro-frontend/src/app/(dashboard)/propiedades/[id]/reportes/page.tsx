@@ -5,10 +5,11 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, FileBarChart, Plus, Loader2, Eye, Pencil } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
+import { getReportStatus } from '@/lib/crm-config'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { StatusBadge } from '@/components/ui/StatusBadge'
-import { Text } from '@/components/ui/Typography'
+import { Heading, Text } from '@/components/ui/Typography'
 
 interface Report {
   id: string
@@ -62,21 +63,21 @@ export default function PropertyReportsPage() {
         <ArrowLeft className="w-4 h-4" /> Volver a la propiedad
       </Link>
 
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-6 relative overflow-hidden">
+      <div className="bg-white rounded-card border border-gray-200 shadow-card p-6 mb-6 relative overflow-hidden">
         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-pink to-brand-orange" />
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center flex-shrink-0 shadow-sm">
+            <div className="w-12 h-12 rounded-control bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center flex-shrink-0">
               <FileBarChart className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-ink">Reportes</h1>
-              <p className="text-sm text-gray-500 mt-0.5">{propertyAddress || 'Propiedad'} · {reports.length} {reports.length === 1 ? 'reporte' : 'reportes'}</p>
+              <Heading level={3} as="h1">Reportes</Heading>
+              <Text tone="muted" className="mt-0.5">{propertyAddress || 'Propiedad'} · {reports.length} {reports.length === 1 ? 'reporte' : 'reportes'}</Text>
             </div>
           </div>
           <Link
             href={`/propiedades/${id}/reportes/nuevo`}
-            className="inline-flex items-center gap-1.5 bg-primary text-white px-4 py-2 rounded-control text-sm font-medium hover:bg-primary-hover shadow-sm"
+            className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-control text-sm font-medium hover:bg-primary-hover"
           >
             <Plus className="w-4 h-4" /> Nuevo reporte
           </Link>
@@ -91,7 +92,7 @@ export default function PropertyReportsPage() {
             action={
               <Link
                 href={`/propiedades/${id}/reportes/nuevo`}
-                className="inline-flex items-center gap-1.5 bg-primary text-white px-4 py-2 rounded-control text-sm font-medium hover:bg-primary-hover"
+                className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-control text-sm font-medium hover:bg-primary-hover"
               >
                 <Plus className="w-4 h-4" /> Crear el primer reporte
               </Link>
@@ -103,7 +104,7 @@ export default function PropertyReportsPage() {
           {reports.map(r => (
             <Card
               key={r.id}
-              className="p-4 shadow-none hover:border-primary/30 hover:shadow-sm transition-all flex items-center justify-between"
+              className="p-4 shadow-none hover:border-primary/30 hover:shadow-md transition-all flex items-center justify-between"
             >
               <div>
                 <Text size="base" weight="medium">
@@ -123,12 +124,8 @@ export default function PropertyReportsPage() {
               </div>
               <div className="flex items-center gap-3">
                 <StatusBadge
-                  label={r.status === 'published' ? 'Publicado' : r.status === 'draft' ? 'Borrador' : (r.status || '—')}
-                  color={
-                    r.status === 'published' ? 'bg-green-100 text-green-700' :
-                    r.status === 'draft' ? 'bg-gray-100 text-gray-600' :
-                    'bg-amber-100 text-amber-700'
-                  }
+                  label={getReportStatus(r.status).label}
+                  color={getReportStatus(r.status).color}
                 />
                 <Link
                   href={`/propiedades/${id}/reportes/nuevo?edit=${r.id}`}

@@ -7,7 +7,7 @@ export default function Loading() {
         <div className="h-10 w-28 bg-gray-200 rounded-lg" />
       </div>
       {[...Array(6)].map((_, i) => (
-        <div key={i} className="h-20 bg-gray-200 rounded-xl" />
+        <div key={i} className="h-20 bg-gray-200 rounded-card" />
       ))}
     </div>
   )

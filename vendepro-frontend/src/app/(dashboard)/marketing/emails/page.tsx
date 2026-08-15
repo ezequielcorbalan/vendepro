@@ -58,7 +58,7 @@ export default function EmailCampaignsPage() {
           <>
             <Link
               href="/configuracion/marketing"
-              className="inline-flex items-center gap-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-control px-3 py-2"
+              className="inline-flex items-center gap-2 border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 text-sm font-medium px-4 py-2 rounded-control"
             >
               <Settings className="w-4 h-4" /> Remitente
             </Link>

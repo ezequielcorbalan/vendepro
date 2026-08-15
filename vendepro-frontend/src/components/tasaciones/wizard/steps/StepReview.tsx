@@ -1,9 +1,10 @@
 'use client'
 import { useEffect, useMemo, useState } from 'react'
-import { Loader2 } from 'lucide-react'
+import { Loader2, FileText } from 'lucide-react'
 import type { WizardState } from '../use-wizard-form'
 import { getTemplate, listVariables } from '../../shared/api'
 import { TemplateRenderer } from '../../renderer/TemplateRenderer'
+import { EmptyState } from '@/components/ui/EmptyState'
 import {
   APPRAISAL_BLOCK_TYPES,
   type AppraisalBlockType,
@@ -134,7 +135,7 @@ export function StepReview({ templateId, property, details, comparables, customB
   return (
     <div className="space-y-6">
       {/* Hint sobre las dos acciones del footer */}
-      <div className="rounded-xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-600">
+      <div className="rounded-card border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-600">
         Revisá la previsualización y elegí abajo:{' '}
         <span className="font-medium text-ink">Guardar borrador</span> deja la tasación
         privada (sólo accesible desde el editor); <span className="font-medium text-ink">Publicar</span>{' '}
@@ -161,15 +162,16 @@ export function StepReview({ templateId, property, details, comparables, customB
         {!loading && !error && snapshot !== null && (
           <>
             {snapshot.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-6 py-12 text-center">
-                <p className="text-sm text-slate-500">
-                  {templateId
+              <div className="rounded-card border border-dashed border-slate-200 bg-slate-50">
+                <EmptyState
+                  icon={<FileText className="w-6 h-6" />}
+                  title={templateId
                     ? 'La plantilla no tiene bloques configurados.'
                     : 'No elegiste ningún bloque. Podés agregarlos desde el editor más adelante.'}
-                </p>
+                />
               </div>
             ) : (
-              <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+              <div className="overflow-hidden rounded-card border border-slate-200 bg-white">
                 <TemplateRenderer
                   snapshot={snapshot}
                   overrides={blockOverrides}

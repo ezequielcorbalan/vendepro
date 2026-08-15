@@ -12,6 +12,8 @@ import { useToast } from '@/components/ui/Toast'
 import {
   type AutomationStep, TRIGGER_OPTIONS, describeDelay, parseSteps,
 } from '@/lib/email-automations'
+import { Field, Input, Select, Textarea } from '@/components/ui/Input'
+import { Button } from '@/components/ui/Button'
 
 const emptyStep = (delay = 72): AutomationStep => ({ delay_hours: delay, subject: '', preheader: '', html: '', text: '' })
 
@@ -123,8 +125,6 @@ export default function AutomationBuilder({ automationId }: { automationId?: str
     return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-brand-pink" /></div>
   }
 
-  const inputCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none'
-  const labelCls = 'block text-sm font-medium text-gray-700 mb-1'
   const selectedTrigger = TRIGGER_OPTIONS.find(t => t.value === trigger)
 
   return (
@@ -134,9 +134,9 @@ export default function AutomationBuilder({ automationId }: { automationId?: str
       </Link>
 
       {/* Nombre + disparador */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-5">
+      <div className="bg-white rounded-card border border-gray-200 shadow-card p-6 mb-5">
         <div className="flex items-center gap-3 mb-5">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-control bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shrink-0">
             <Workflow className="w-5 h-5 text-white" />
           </div>
           <input
@@ -146,10 +146,11 @@ export default function AutomationBuilder({ automationId }: { automationId?: str
             onChange={e => setName(e.target.value)}
           />
         </div>
-        <label className={labelCls}>¿Cuándo se inscribe la gente?</label>
-        <select className={inputCls} value={trigger} onChange={e => setTrigger(e.target.value)}>
-          {TRIGGER_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-        </select>
+        <Field label="¿Cuándo se inscribe la gente?">
+          <Select value={trigger} onChange={e => setTrigger(e.target.value)}>
+            {TRIGGER_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+          </Select>
+        </Field>
         {selectedTrigger && (
           <p className="flex items-center gap-1.5 text-xs text-gray-500 mt-1.5">
             {trigger ? <Zap className="w-3.5 h-3.5 text-brand-orange" /> : <Hand className="w-3.5 h-3.5" />}
@@ -159,14 +160,14 @@ export default function AutomationBuilder({ automationId }: { automationId?: str
       </div>
 
       {/* Generador IA */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-5">
-        <div className="border border-brand-pink/30 bg-brand-pink/[0.03] rounded-xl p-4">
+      <div className="bg-white rounded-card border border-gray-200 shadow-card p-6 mb-5">
+        <div className="border border-brand-pink/30 bg-brand-pink/[0.03] rounded-card p-4">
           <div className="flex items-center gap-2 mb-3">
             <Sparkles className="w-4 h-4 text-brand-pink" />
             <p className="text-sm font-semibold text-ink">Generar la secuencia con IA</p>
           </div>
-          <textarea
-            className={`${inputCls} min-h-[70px]`}
+          <Textarea
+            className="min-h-[70px]"
             placeholder="Ej: Secuencia de bienvenida para compradores nuevos: presentarnos, mostrar cómo trabajamos y ofrecer una primera reunión sin compromiso."
             value={brief}
             onChange={e => setBrief(e.target.value)}
@@ -174,18 +175,13 @@ export default function AutomationBuilder({ automationId }: { automationId?: str
           <div className="mt-3 flex items-center justify-between gap-3">
             <label className="flex items-center gap-2 text-sm text-gray-600">
               Emails:
-              <select className="border border-gray-300 rounded-lg px-2 py-1 text-sm" value={stepCount} onChange={e => setStepCount(Number(e.target.value))}>
+              <Select className="w-auto" value={stepCount} onChange={e => setStepCount(Number(e.target.value))}>
                 {[2, 3, 4, 5, 6].map(n => <option key={n} value={n}>{n}</option>)}
-              </select>
+              </Select>
             </label>
-            <button
-              onClick={generateSequence}
-              disabled={generating}
-              className="inline-flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white text-sm font-medium px-4 py-2 rounded-lg hover:opacity-90 disabled:opacity-50"
-            >
-              {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+            <Button onClick={generateSequence} loading={generating} icon={<Sparkles className="w-4 h-4" />}>
               Generar secuencia
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -206,20 +202,20 @@ export default function AutomationBuilder({ automationId }: { automationId?: str
         ))}
         <button
           onClick={addStep}
-          className="w-full border border-dashed border-gray-300 rounded-xl py-3 text-sm text-gray-500 hover:border-brand-pink hover:text-brand-pink inline-flex items-center justify-center gap-2"
+          className="w-full border border-dashed border-gray-300 rounded-control py-3 text-sm text-gray-500 hover:border-brand-pink hover:text-brand-pink inline-flex items-center justify-center gap-2"
         >
           <Plus className="w-4 h-4" /> Agregar email a la secuencia
         </button>
       </div>
 
       {/* Acciones */}
-      <div className="sticky bottom-4 mt-5 bg-white rounded-xl border border-gray-200 shadow-lg p-3 flex items-center justify-between">
-        <button onClick={() => save(false)} disabled={saving} className="inline-flex items-center gap-2 text-sm text-gray-600 px-4 py-2 rounded-lg border border-gray-200 hover:border-gray-300 disabled:opacity-50">
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Guardar borrador
-        </button>
-        <button onClick={() => save(true)} disabled={saving} className="inline-flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white text-sm font-medium px-5 py-2 rounded-lg hover:opacity-90 disabled:opacity-50">
-          <Zap className="w-4 h-4" /> Activar
-        </button>
+      <div className="sticky bottom-4 mt-5 bg-white rounded-card border border-gray-200 shadow-pop p-3 flex items-center justify-between">
+        <Button variant="outline" onClick={() => save(false)} loading={saving} icon={<Save className="w-4 h-4" />}>
+          Guardar borrador
+        </Button>
+        <Button onClick={() => save(true)} loading={saving} icon={<Zap className="w-4 h-4" />}>
+          Activar
+        </Button>
       </div>
     </div>
   )
@@ -237,10 +233,9 @@ function StepCard({
   isFirst: boolean
 }) {
   const [view, setView] = useState<'preview' | 'html'>('preview')
-  const inputCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none'
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-card border border-gray-200 shadow-card overflow-hidden">
       <div className="flex items-center gap-3 p-4 cursor-pointer" onClick={onToggle}>
         <span className="w-7 h-7 rounded-full bg-gray-100 text-gray-600 text-sm flex items-center justify-center shrink-0 font-medium">{index + 1}</span>
         <div className="flex-1 min-w-0">
@@ -260,48 +255,45 @@ function StepCard({
       {open && (
         <div className="p-4 pt-0 space-y-4 border-t border-gray-50">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Demora</label>
+            <Field label="Demora">
               {isFirst ? (
                 <div className="text-sm text-gray-500 py-2">Al inscribirse</div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <input
+                  <Input
                     type="number" min={0}
-                    className={inputCls}
                     value={Math.round(step.delay_hours / 24) || 0}
                     onChange={e => onPatch({ delay_hours: Math.max(0, Number(e.target.value)) * 24 })}
                   />
                   <span className="text-sm text-gray-500">días</span>
                 </div>
               )}
-            </div>
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-medium text-gray-600 mb-1">Asunto</label>
-              <input className={inputCls} value={step.subject} onChange={e => onPatch({ subject: e.target.value })} placeholder="Asunto del email" />
-            </div>
+            </Field>
+            <Field label="Asunto" className="sm:col-span-2">
+              <Input value={step.subject} onChange={e => onPatch({ subject: e.target.value })} placeholder="Asunto del email" />
+            </Field>
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="block text-xs font-medium text-gray-600">Contenido</label>
               <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5">
-                <button onClick={() => setView('preview')} className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-md ${view === 'preview' ? 'bg-white shadow-sm text-brand-pink font-medium' : 'text-gray-500'}`}>
+                <button onClick={() => setView('preview')} className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-md ${view === 'preview' ? 'bg-white shadow-card text-brand-pink font-medium' : 'text-gray-500'}`}>
                   <Eye className="w-3 h-3" /> Vista
                 </button>
-                <button onClick={() => setView('html')} className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-md ${view === 'html' ? 'bg-white shadow-sm text-brand-pink font-medium' : 'text-gray-500'}`}>
+                <button onClick={() => setView('html')} className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-md ${view === 'html' ? 'bg-white shadow-card text-brand-pink font-medium' : 'text-gray-500'}`}>
                   <Code className="w-3 h-3" /> HTML
                 </button>
               </div>
             </div>
             {view === 'preview' ? (
               step.html ? (
-                <iframe srcDoc={step.html} sandbox="" title={`Paso ${index + 1}`} className="w-full h-[320px] border border-gray-200 rounded-xl bg-white" />
+                <iframe srcDoc={step.html} sandbox="" title={`Paso ${index + 1}`} className="w-full h-[320px] border border-gray-200 rounded-card bg-white" />
               ) : (
-                <div className="h-[120px] border border-dashed border-gray-200 rounded-xl flex items-center justify-center text-sm text-gray-400">Generá con IA o escribí el HTML.</div>
+                <div className="h-[120px] border border-dashed border-gray-200 rounded-card flex items-center justify-center text-sm text-gray-400">Generá con IA o escribí el HTML.</div>
               )
             ) : (
-              <textarea className={`${inputCls} font-mono text-xs min-h-[320px]`} value={step.html} onChange={e => onPatch({ html: e.target.value })} placeholder="<html>…</html>" />
+              <Textarea className="font-mono text-xs min-h-[320px]" value={step.html} onChange={e => onPatch({ html: e.target.value })} placeholder="<html>…</html>" />
             )}
           </div>
         </div>

@@ -3,7 +3,7 @@ import { CalendarDays } from 'lucide-react'
 export default function Step6Calendario() {
   return (
     <div className="flex flex-col items-center text-center px-4 py-6 gap-5">
-      <div className="w-16 h-16 rounded-2xl bg-blue-100 flex items-center justify-center">
+      <div className="w-16 h-16 rounded-control bg-blue-100 flex items-center justify-center">
         <CalendarDays className="w-8 h-8 text-blue-600" />
       </div>
       <div className="space-y-1">
@@ -36,7 +36,7 @@ export default function Step6Calendario() {
           ['⏰', 'El dashboard muestra los eventos de hoy y los seguimientos pendientes'],
           ['🚨', 'Los eventos vencidos sin completar se marcan en rojo automáticamente'],
         ].map(([icon, text]) => (
-          <div key={text} className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+          <div key={text} className="flex items-start gap-3 p-3 bg-gray-50 rounded-card">
             <span className="text-lg leading-none mt-0.5">{icon}</span>
             <p className="text-sm text-gray-700">{text}</p>
           </div>

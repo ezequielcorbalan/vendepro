@@ -4,6 +4,8 @@ import { X, Save } from 'lucide-react'
 import { landingsApi } from '@/lib/landings/api'
 import { slugifyBase, isValidSlugBase, publicLandingHostPath } from '@/lib/landings/slug'
 import type { Landing } from '@/lib/landings/types'
+import { Field, Input, Textarea } from '@/components/ui/Input'
+import { Button } from '@/components/ui/Button'
 
 export default function ConfigDrawer({
   landing,
@@ -62,7 +64,7 @@ export default function ConfigDrawer({
   return (
     <div className="fixed inset-0 z-40 bg-black/40" onClick={onClose}>
       <aside
-        className="absolute right-0 top-0 h-full w-[460px] bg-white shadow-xl flex flex-col"
+        className="absolute right-0 top-0 h-full w-[460px] bg-white shadow-pop flex flex-col"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
@@ -72,93 +74,47 @@ export default function ConfigDrawer({
           </button>
         </div>
         <div className="flex-1 overflow-auto p-4 space-y-4">
-          <div>
-            <label className="block text-xs uppercase tracking-wider font-semibold text-gray-500 mb-1">
-              Slug
-            </label>
-            <input
-              value={slugBase}
-              onChange={e => setSlugBase(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-            />
+          <Field label="Slug">
+            <Input value={slugBase} onChange={e => setSlugBase(e.target.value)} />
             <p className="text-xs text-gray-500 mt-1">
-              URL:{' '}
-              <code>
-                {publicLandingHostPath(`${slugifyBase(slugBase)}-${landing.slug_suffix}`)}
-              </code>
+              URL: <code>{publicLandingHostPath(`${slugifyBase(slugBase)}-${landing.slug_suffix}`)}</code>
             </p>
-          </div>
-          <div>
-            <label className="block text-xs uppercase tracking-wider font-semibold text-gray-500 mb-1">
-              Brand voice (para la IA)
-            </label>
-            <textarea
+          </Field>
+          <Field label="Brand voice (para la IA)">
+            <Textarea
               value={brandVoice}
               onChange={e => setBrandVoice(e.target.value)}
               maxLength={300}
               placeholder="ej: cálido, cercano, profesional"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-y min-h-[80px]"
+              className="min-h-[80px]"
             />
-          </div>
-          <div>
-            <label className="block text-xs uppercase tracking-wider font-semibold text-gray-500 mb-1">
-              SEO Title
-            </label>
-            <input
-              value={seoTitle}
-              onChange={e => setSeoTitle(e.target.value)}
-              maxLength={60}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-xs uppercase tracking-wider font-semibold text-gray-500 mb-1">
-              SEO Description
-            </label>
-            <textarea
-              value={seoDesc}
-              onChange={e => setSeoDesc(e.target.value)}
-              maxLength={160}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-xs uppercase tracking-wider font-semibold text-gray-500 mb-1">
-              OG Image URL
-            </label>
-            <input
-              value={ogImage}
-              onChange={e => setOgImage(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-xs uppercase tracking-wider font-semibold text-gray-500 mb-1">
-              Lead rules (JSON)
-            </label>
-            <textarea
+          </Field>
+          <Field label="SEO Title">
+            <Input value={seoTitle} onChange={e => setSeoTitle(e.target.value)} maxLength={60} />
+          </Field>
+          <Field label="SEO Description">
+            <Textarea value={seoDesc} onChange={e => setSeoDesc(e.target.value)} maxLength={160} />
+          </Field>
+          <Field label="OG Image URL">
+            <Input value={ogImage} onChange={e => setOgImage(e.target.value)} />
+          </Field>
+          <Field label="Lead rules (JSON)">
+            <Textarea
               value={leadRulesJson}
               onChange={e => setLeadRulesJson(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs font-mono resize-y min-h-[120px]"
+              className="text-xs font-mono min-h-[120px]"
             />
             <p className="text-xs text-gray-500 mt-1">
-              Ej:{' '}
-              <code>
-                {'{"assigned_agent_id":"u_123","tags":["palermo"],"campaign":"Q2","notify_channels":["email"]}'}
-              </code>
+              Ej: <code>{'{"assigned_agent_id":"u_123","tags":["palermo"],"campaign":"Q2","notify_channels":["email"]}'}</code>
             </p>
-          </div>
+          </Field>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-danger">{error}</p>}
         </div>
         <div className="p-4 border-t border-gray-200">
-          <button
-            onClick={save}
-            disabled={saving}
-            className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange hover:opacity-90 text-white font-semibold py-2.5 rounded-full disabled:opacity-60"
-          >
-            <Save className="w-4 h-4" /> {saving ? 'Guardando…' : 'Guardar'}
-          </button>
+          <Button onClick={save} loading={saving} fullWidth icon={<Save className="w-4 h-4" />}>
+            Guardar
+          </Button>
         </div>
       </aside>
     </div>

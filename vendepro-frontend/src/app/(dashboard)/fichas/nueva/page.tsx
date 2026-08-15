@@ -12,6 +12,7 @@ import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { Alert } from '@/components/ui/Alert'
 import { Text } from '@/components/ui/Typography'
 import { Field, Input, Textarea } from '@/components/ui/Input'
 import { Checkbox } from '@/components/ui/Choice'
@@ -24,7 +25,7 @@ function Section({ title, icon: Icon, children, defaultOpen = false }: { title: 
     <Card padded={false} className="overflow-hidden">
       <button type="button" onClick={() => setOpen(!open)} className="w-full flex items-center justify-between px-4 py-3.5 text-left">
         <div className="flex items-center gap-2.5">
-          <Icon className="w-4 h-4 text-primary" />
+          <Icon className="w-4 h-4 text-gray-600" />
           <Text as="span" weight="semibold">{title}</Text>
         </div>
         {open ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
@@ -199,7 +200,7 @@ export default function NuevaFichaPage() {
       </Link>
 
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center">
+        <div className="w-10 h-10 rounded-control bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center">
           <ClipboardList className="w-5 h-5 text-white" />
         </div>
         <div>
@@ -209,12 +210,13 @@ export default function NuevaFichaPage() {
       </div>
 
       {linkedLead && (
-        // ds-todo: candidato a Alert con ícono custom (banner informativo de vínculo)
-        <div className="mb-5 flex items-center gap-2 bg-primary/5 border border-primary/20 rounded-card px-3 py-2.5 text-sm">
-          <Link2 className="w-4 h-4 text-primary shrink-0" />
-          <Text as="span" tone="muted">Tasación vinculada al lead:</Text>
-          <Text as="span" weight="semibold" className="truncate">{linkedLead.full_name}</Text>
-        </div>
+        <Alert tone="brand" hideIcon className="mb-5">
+          <span className="flex items-center gap-2">
+            <Link2 className="w-4 h-4 text-primary shrink-0" />
+            <Text as="span" tone="muted">Tasación vinculada al lead:</Text>
+            <Text as="span" weight="semibold" className="truncate">{linkedLead.full_name}</Text>
+          </span>
+        </Alert>
       )}
 
       <div className="space-y-3">

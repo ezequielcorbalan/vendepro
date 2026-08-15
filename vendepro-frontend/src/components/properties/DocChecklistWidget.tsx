@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { FileCheck2, Check, X, Circle, FolderOpen, Plus, ExternalLink, Trash2 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
+import { Input } from '@/components/ui/Input'
+import { Button } from '@/components/ui/Button'
 
 type DocState = 'done' | 'na' | 'pending'
 
@@ -145,10 +147,10 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+    <div className="bg-white rounded-card border border-gray-200 shadow-card p-5">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-sm">
+          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center">
             <FileCheck2 className="w-4.5 h-4.5 text-white" />
           </div>
           <div>
@@ -171,7 +173,7 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
       </div>
 
       {daysRemaining !== null && daysRemaining > 0 && resolvedItems < totalItems && (
-        <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5 mb-3">
+        <div className="text-xs text-warning bg-warning/10 border border-warning/30 rounded-control px-3 py-1.5 mb-3">
           <b>{daysRemaining} días</b> para completar · Meta: 15 días desde captación
         </div>
       )}
@@ -199,25 +201,20 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
           </div>
         ) : showCloudInput ? (
           <div className="flex gap-2">
-            <input
+            <Input
               type="url"
               value={cloudInput}
               onChange={e => setCloudInput(e.target.value)}
               placeholder="https://drive.google.com/..."
-              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none"
+              className="flex-1"
             />
-            <button
-              onClick={saveCloudUrl}
-              className="bg-gradient-to-br from-brand-pink to-brand-orange text-white px-3 py-2 rounded-lg text-xs font-medium hover:opacity-90"
-            >
-              Guardar
-            </button>
-            <button
+            <Button size="sm" onClick={saveCloudUrl}>Guardar</Button>
+            <Button
+              variant="ghost" size="icon" aria-label="Cancelar"
               onClick={() => { setShowCloudInput(false); setCloudInput('') }}
-              className="text-gray-400 hover:text-gray-600 px-2"
             >
               <X className="w-4 h-4" />
-            </button>
+            </Button>
           </div>
         ) : (
           <button
@@ -300,28 +297,22 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
       <div className="mt-3 pt-3 border-t border-gray-100">
         {showCustomInput ? (
           <div className="flex gap-2">
-            <input
+            <Input
               type="text"
               value={customInput}
               onChange={e => setCustomInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') addCustomDoc() }}
               autoFocus
               placeholder="Ej: Aprobación banco hipotecario"
-              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none"
+              className="flex-1"
             />
-            <button
-              onClick={addCustomDoc}
-              disabled={!customInput.trim()}
-              className="bg-gradient-to-br from-brand-pink to-brand-orange text-white px-3 py-2 rounded-lg text-xs font-medium hover:opacity-90 disabled:opacity-50"
-            >
-              Agregar
-            </button>
-            <button
+            <Button size="sm" onClick={addCustomDoc} disabled={!customInput.trim()}>Agregar</Button>
+            <Button
+              variant="ghost" size="icon" aria-label="Cancelar"
               onClick={() => { setShowCustomInput(false); setCustomInput('') }}
-              className="text-gray-400 hover:text-gray-600 px-2"
             >
               <X className="w-4 h-4" />
-            </button>
+            </Button>
           </div>
         ) : (
           <button

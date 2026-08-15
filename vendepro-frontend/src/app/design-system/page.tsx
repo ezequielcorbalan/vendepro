@@ -112,7 +112,7 @@ const PROP_ROWS: PropRow[] = [
 const SALUD_DOT: Record<PropRow['salud'], string> = { green: 'bg-success', yellow: 'bg-warning', red: 'bg-danger' }
 
 const PROP_COLUMNS: Column<PropRow>[] = [
-  { key: 'propiedad', header: 'Propiedad' },
+  { key: 'propiedad', header: 'Propiedad', sortable: true },
   {
     key: 'estado',
     header: 'Estado',
@@ -121,7 +121,7 @@ const PROP_COLUMNS: Column<PropRow>[] = [
         ? <Badge tone="success">Publicada</Badge>
         : <Badge tone="warning">En revisión</Badge>,
   },
-  { key: 'vistas', header: 'Vistas/día', align: 'right' },
+  { key: 'vistas', header: 'Vistas/día', align: 'right', sortable: true },
   {
     key: 'salud',
     header: 'Salud',

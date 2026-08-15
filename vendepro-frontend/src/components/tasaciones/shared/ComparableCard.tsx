@@ -9,6 +9,7 @@ import {
   extractComparableFromImage,
   type ExtractedComparable,
 } from './extract-comparable'
+import { Field, Input } from '@/components/ui/Input'
 
 export type ComparableKind = 'publicacion' | 'venta'
 
@@ -42,10 +43,6 @@ interface Props {
   /** Si true, arranca colapsado (default true salvo en card recién creada). */
   defaultCollapsed?: boolean
 }
-
-const inputClass =
-  'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none'
-const labelClass = 'mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500'
 
 const EXTRACTABLE_KEYS = [
   'address', 'zonaprop_url', 'total_area', 'covered_area',
@@ -139,7 +136,7 @@ export function ComparableCard({
   const summaryAddress = comparable.address || `Comparable ${index + 1}`
 
   return (
-    <article className="rounded-xl border border-slate-200 bg-white">
+    <article className="rounded-card border border-slate-200 bg-white">
       {/* Header colapsable (siempre visible) */}
       <header className="flex items-center gap-2 px-4 py-3">
         <button
@@ -208,16 +205,14 @@ export function ComparableCard({
           <div className="space-y-4">
             {/* Link de ZonaProp solo aplica a publicación */}
             {!isVenta && (
-              <div>
-                <label className={labelClass}>Link de ZonaProp (referencia)</label>
-                <input
+              <Field label="Link de ZonaProp (referencia)">
+                <Input
                   type="url"
                   value={comparable.zonaprop_url ?? ''}
                   onChange={(e) => onPatch({ zonaprop_url: e.target.value || null })}
                   placeholder="https://www.zonaprop.com.ar/..."
-                  className={inputClass}
                 />
-              </div>
+              </Field>
             )}
 
             {/* Drop zone — disponible en ambos kinds */}
@@ -228,7 +223,7 @@ export function ComparableCard({
               onDragLeave={() => setHighlight(false)}
               onDrop={handleDrop}
               onClick={() => fileRef.current?.click()}
-              className={`flex cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed px-4 py-6 text-center transition ${
+              className={`flex cursor-pointer flex-col items-center justify-center gap-1 rounded-card border-2 border-dashed px-4 py-6 text-center transition ${
                 highlight ? 'border-brand-pink bg-rose-50' : 'border-slate-300 hover:border-brand-pink/60'
               }`}
             >
@@ -239,7 +234,7 @@ export function ComparableCard({
                 </>
               ) : previewUrl ? (
                 <>
-                  <img src={previewUrl} alt="" className="max-h-32 rounded shadow-sm" />
+                  <img src={previewUrl} alt="" className="max-h-32 rounded" />
                   {extracted ? (
                     <p className="mt-2 text-xs text-emerald-600">
                       <Sparkles className="mr-1 inline h-3 w-3" />
@@ -281,114 +276,92 @@ export function ComparableCard({
 
             {/* Campos */}
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
-              <div className="lg:col-span-2">
-                <label className={labelClass}>Dirección</label>
-                <input
+              <Field label="Dirección" className="lg:col-span-2">
+                <Input
                   type="text"
                   value={comparable.address ?? ''}
                   onChange={(e) => onPatch({ address: e.target.value || null })}
-                  className={inputClass}
                 />
-              </div>
+              </Field>
 
               {isVenta ? (
                 <>
-                  <div>
-                    <label className={labelClass}>Precio publicado USD</label>
-                    <input
+                  <Field label="Precio publicado USD">
+                    <Input
                       type="number" min={0}
                       value={comparable.price ?? ''}
                       onChange={(e) => onPatch({ price: e.target.value ? Number(e.target.value) : null })}
-                      className={inputClass}
                     />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Precio de cierre USD</label>
-                    <input
+                  </Field>
+                  <Field label="Precio de cierre USD">
+                    <Input
                       type="number" min={0}
                       value={comparable.closing_price_usd ?? ''}
                       onChange={(e) => onPatch({ closing_price_usd: e.target.value ? Number(e.target.value) : null })}
-                      className={inputClass}
                     />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Fecha de cierre</label>
-                    <input
+                  </Field>
+                  <Field label="Fecha de cierre">
+                    <Input
                       type="date"
                       value={comparable.closed_at ? comparable.closed_at.slice(0, 10) : ''}
                       onChange={(e) => onPatch({ closed_at: e.target.value || null })}
-                      className={inputClass}
                     />
-                  </div>
+                  </Field>
                 </>
               ) : (
                 <>
-                  <div>
-                    <label className={labelClass}>Precio USD</label>
-                    <input
+                  <Field label="Precio USD">
+                    <Input
                       type="number" min={0}
                       value={comparable.price ?? ''}
                       onChange={(e) => onPatch({ price: e.target.value ? Number(e.target.value) : null })}
-                      className={inputClass}
                     />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Días en venta</label>
-                    <input
+                  </Field>
+                  <Field label="Días en venta">
+                    <Input
                       type="number" min={0}
                       value={comparable.days_on_market ?? ''}
                       onChange={(e) => onPatch({ days_on_market: e.target.value ? Number(e.target.value) : null })}
-                      className={inputClass}
                     />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Vistas 30d</label>
-                    <input
+                  </Field>
+                  <Field label="Vistas 30d">
+                    <Input
                       type="number" min={0}
                       value={comparable.views_per_day ?? ''}
                       onChange={(e) => onPatch({ views_per_day: e.target.value ? Number(e.target.value) : null })}
-                      className={inputClass}
                     />
-                  </div>
+                  </Field>
                 </>
               )}
 
-              <div>
-                <label className={labelClass}>USD/m²</label>
-                <input
+              <Field label="USD/m²">
+                <Input
                   type="number" min={0}
                   value={comparable.usd_per_m2 ?? ''}
                   onChange={(e) => onPatch({ usd_per_m2: e.target.value ? Number(e.target.value) : null })}
-                  className={inputClass}
                 />
-              </div>
-              <div>
-                <label className={labelClass}>m² total</label>
-                <input
+              </Field>
+              <Field label="m² total">
+                <Input
                   type="number" min={0}
                   value={comparable.total_area ?? ''}
                   onChange={(e) => onPatch({ total_area: e.target.value ? Number(e.target.value) : null })}
-                  className={inputClass}
                 />
-              </div>
-              <div>
-                <label className={labelClass}>m² cubierto</label>
-                <input
+              </Field>
+              <Field label="m² cubierto">
+                <Input
                   type="number" min={0}
                   value={comparable.covered_area ?? ''}
                   onChange={(e) => onPatch({ covered_area: e.target.value ? Number(e.target.value) : null })}
-                  className={inputClass}
                 />
-              </div>
-              <div>
-                <label className={labelClass}>Antigüedad</label>
-                <input
+              </Field>
+              <Field label="Antigüedad">
+                <Input
                   type="number" min={0}
                   value={comparable.age ?? ''}
                   onChange={(e) => onPatch({ age: e.target.value ? Number(e.target.value) : null })}
-                  className={inputClass}
                 />
-              </div>
+              </Field>
             </div>
           </div>
         </div>

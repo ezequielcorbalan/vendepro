@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { PropertySelector } from '@/components/ui/PropertySelector'
 import { LeadSelector, type LeadOption } from '@/components/ui/LeadSelector'
+import { Field, Input, Select } from '@/components/ui/Input'
 import { apiFetch } from '@/lib/api'
 import {
   calcWeightedArea,
@@ -21,10 +22,6 @@ interface Props {
   onSetPropertyId: (id: string | null) => void
   onSetLead: (id: string | null) => void
 }
-
-const inputClass =
-  'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none'
-const labelClass = 'mb-1 block text-sm font-medium text-slate-700'
 
 export function StepProperty({
   property,
@@ -122,63 +119,50 @@ export function StepProperty({
       </p>
 
       {/* Property selector */}
-      <div>
-        <label className={labelClass}>Propiedad del CRM (opcional)</label>
+      <Field
+        label="Propiedad del CRM (opcional)"
+        hint={propertyId ? 'La tasación quedará vinculada a esta propiedad. Podés editar los campos igualmente.' : undefined}
+      >
         <PropertySelector value={selectedValue} onChange={handleSelectProperty} />
-        {propertyId && (
-          <p className="mt-1 text-xs text-slate-400">
-            La tasación quedará vinculada a esta propiedad. Podés editar los campos igualmente.
-          </p>
-        )}
-      </div>
+      </Field>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {/* Address — required, full width */}
-        <div className="md:col-span-2">
-          <label className={labelClass}>
-            Dirección <span className="text-brand-pink">*</span>
-          </label>
-          <input
+        <Field label="Dirección" required className="md:col-span-2">
+          <Input
             type="text"
             value={property.address}
             onChange={(e) => onPatchProperty({ address: e.target.value })}
             placeholder="Ej: Av. Corrientes 1234, CABA"
-            className={inputClass}
             required
           />
-        </div>
+        </Field>
 
         {/* Neighborhood */}
-        <div>
-          <label className={labelClass}>Barrio</label>
-          <input
+        <Field label="Barrio">
+          <Input
             type="text"
             value={property.neighborhood ?? ''}
             onChange={(e) => onPatchProperty({ neighborhood: e.target.value })}
             placeholder="Palermo"
-            className={inputClass}
           />
-        </div>
+        </Field>
 
         {/* City */}
-        <div>
-          <label className={labelClass}>Ciudad</label>
-          <input
+        <Field label="Ciudad">
+          <Input
             type="text"
             value={property.city ?? ''}
             onChange={(e) => onPatchProperty({ city: e.target.value })}
             placeholder="Buenos Aires"
-            className={inputClass}
           />
-        </div>
+        </Field>
 
         {/* Property type */}
-        <div>
-          <label className={labelClass}>Tipo de propiedad</label>
-          <select
+        <Field label="Tipo de propiedad">
+          <Select
             value={property.property_type ?? ''}
             onChange={(e) => onPatchProperty({ property_type: e.target.value })}
-            className={inputClass}
           >
             <option value="">Seleccionar…</option>
             {PROPERTY_TYPES.map((t) => (
@@ -186,72 +170,64 @@ export function StepProperty({
                 {t.charAt(0).toUpperCase() + t.slice(1)}
               </option>
             ))}
-          </select>
-        </div>
+          </Select>
+        </Field>
 
         {/* Covered area */}
-        <div>
-          <label className={labelClass}>Sup. cubierta (m²)</label>
-          <input
+        <Field label="Sup. cubierta (m²)">
+          <Input
             type="number"
             min={0}
             value={property.covered_area ?? ''}
             onChange={(e) =>
               onPatchProperty({ covered_area: e.target.value ? Number(e.target.value) : null })
             }
-            className={inputClass}
           />
-        </div>
+        </Field>
 
         {/* Total area */}
-        <div>
-          <label className={labelClass}>Sup. total (m²)</label>
-          <input
+        <Field label="Sup. total (m²)">
+          <Input
             type="number"
             min={0}
             value={property.total_area ?? ''}
             onChange={(e) =>
               onPatchProperty({ total_area: e.target.value ? Number(e.target.value) : null })
             }
-            className={inputClass}
           />
-        </div>
+        </Field>
 
         {/* Semi-covered area */}
-        <div>
-          <label className={labelClass}>Sup. semicubierta (m²)</label>
-          <input
+        <Field label="Sup. semicubierta (m²)">
+          <Input
             type="number"
             min={0}
             value={property.semi_area ?? ''}
             onChange={(e) =>
               onPatchProperty({ semi_area: e.target.value ? Number(e.target.value) : null })
             }
-            className={inputClass}
           />
-        </div>
+        </Field>
 
         {/* Weighted area — auto-calculado */}
-        <div>
-          <label className={labelClass}>
-            Sup. ponderada (m²)
-            <span className="ml-2 text-xs font-normal text-slate-400">auto</span>
-          </label>
+        <Field
+          label="Sup. ponderada (m²) · auto"
+          hint={`Pesos: cubierta ${Math.round(weights.covered * 100)}% / semi ${Math.round(weights.semi * 100)}% / descubierta ${Math.round(weights.uncovered * 100)}%. Editalos en Configuración.`}
+        >
           <div
-            className="flex h-[42px] items-center rounded-lg border border-rose-200 bg-rose-50 px-3 text-sm font-semibold text-brand-pink"
+            className="flex h-[42px] items-center rounded-control border border-rose-200 bg-rose-50 px-3 text-sm font-semibold text-brand-pink"
             title={`${Math.round(weights.covered * 100)}% cubierta + ${Math.round(weights.semi * 100)}% semi + ${Math.round(weights.uncovered * 100)}% descubierta`}
           >
             {computedWeighted !== null ? `${computedWeighted} m²` : '—'}
           </div>
-          <p className="mt-1 text-[11px] text-slate-400">
-            Pesos: cubierta {Math.round(weights.covered * 100)}% / semi {Math.round(weights.semi * 100)}% /
-            descubierta {Math.round(weights.uncovered * 100)}%. Editalos en Configuración.
-          </p>
-        </div>
+        </Field>
 
         {/* Lead — buscador */}
-        <div className="md:col-span-2">
-          <label className={labelClass}>Lead vinculado (opcional)</label>
+        <Field
+          label="Lead vinculado (opcional)"
+          hint="Buscá por nombre o teléfono. También podés vincular el lead desde el editor más adelante."
+          className="md:col-span-2"
+        >
           <LeadSelector
             value={selectedLead}
             onChange={(l) => {
@@ -259,10 +235,7 @@ export function StepProperty({
               onSetLead(l?.id ?? null)
             }}
           />
-          <p className="mt-1 text-xs text-slate-400">
-            Buscá por nombre o teléfono. También podés vincular el lead desde el editor más adelante.
-          </p>
-        </div>
+        </Field>
       </div>
     </div>
   )

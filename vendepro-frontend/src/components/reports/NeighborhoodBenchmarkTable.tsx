@@ -40,7 +40,7 @@ function DeltaCell({ pct, status }: { pct: number | null; status: HealthStatus }
   const prefix = pct >= 0 ? '+' : ''
   const Icon = pct >= 0 ? TrendingUp : pct < -10 ? TrendingDown : Minus
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${cfg.bg} ${cfg.border} shadow-sm`}>
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${cfg.bg} ${cfg.border}`}>
       <Icon className={`w-3 h-3 ${cfg.text}`} aria-hidden="true" />
       <span className={`font-semibold text-xs ${cfg.text}`}>{prefix}{pct.toFixed(0)}%</span>
     </span>
@@ -54,10 +54,10 @@ export default function NeighborhoodBenchmarkTable({ data }: Props) {
   if (!hasAnyData) return null
 
   return (
-    <div className="rounded-2xl border border-gray-200 overflow-hidden shadow-sm bg-gradient-to-br from-white via-white to-orange-50/20">
+    <div className="rounded-card border border-gray-200 overflow-hidden shadow-card bg-gradient-to-br from-white via-white to-orange-50/20">
       <div className="px-4 sm:px-5 py-4 bg-gradient-to-r from-white to-orange-50/30 border-b border-gray-100">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shadow-sm" aria-hidden="true">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center" aria-hidden="true">
             <Scale className="w-4 h-4 text-white" />
           </div>
           <h2 className="font-semibold text-ink">Tus activos vs vendidos — resumen por barrio</h2>

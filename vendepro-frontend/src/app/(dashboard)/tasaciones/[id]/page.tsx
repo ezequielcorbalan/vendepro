@@ -334,11 +334,11 @@ export default function TasacionDetailPage() {
           </h2>
 
           <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-6">
-            <div className="bg-white/10 rounded-xl p-4 text-center">
+            <div className="bg-white/10 rounded-control p-4 text-center">
               <p className="text-xs text-white/60">Sup. ponderada</p>
               <p className="text-xl sm:text-2xl font-bold">{weighted.toFixed(1)} m²</p>
             </div>
-            <div className="bg-white/10 rounded-xl p-4 text-center">
+            <div className="bg-white/10 rounded-control p-4 text-center">
               <p className="text-xs text-white/60">USD/m² promedio</p>
               <p className="text-xl sm:text-2xl font-bold">{usdM2.toLocaleString('es-AR')}</p>
             </div>
@@ -346,7 +346,7 @@ export default function TasacionDetailPage() {
 
           <div className="space-y-3">
             {a.test_price && (
-              <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center justify-between">
+              <div className="bg-white/5 border border-white/10 rounded-control p-4 flex items-center justify-between">
                 <div>
                   <p className="text-xs text-white/60">Valor de publicación prueba</p>
                   <p className="text-xs text-white/40">Primeros 30 días</p>
@@ -358,7 +358,7 @@ export default function TasacionDetailPage() {
             )}
 
             {a.suggested_price && (
-              <div className="bg-primary/20 border border-primary/30 rounded-xl p-4 flex items-center justify-between">
+              <div className="bg-primary/20 border border-primary/30 rounded-control p-4 flex items-center justify-between">
                 <div>
                   <p className="text-xs text-white/80 font-semibold">Valor sugerido</p>
                   <p className="text-xs text-white/40">Valor de mercado</p>
@@ -370,7 +370,7 @@ export default function TasacionDetailPage() {
             )}
 
             {a.expected_close_price && (
-              <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center justify-between">
+              <div className="bg-white/5 border border-white/10 rounded-control p-4 flex items-center justify-between">
                 <div>
                   <p className="text-xs text-white/60">Precio de cierre esperado</p>
                   <p className="text-xs text-white/40">120 días</p>

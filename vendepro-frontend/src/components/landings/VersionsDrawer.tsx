@@ -46,7 +46,7 @@ export default function VersionsDrawer({
   return (
     <div className="fixed inset-0 z-40 bg-black/40" onClick={onClose}>
       <aside
-        className="absolute right-0 top-0 h-full w-[380px] bg-white shadow-xl flex flex-col"
+        className="absolute right-0 top-0 h-full w-[380px] bg-white shadow-pop flex flex-col"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-200">

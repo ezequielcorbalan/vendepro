@@ -157,11 +157,11 @@ export default function ContactDetailPage() {
             {contact.phone && (
               <WhatsAppButton phone={contact.phone} />
             )}
-            <Link href={`/leads?new=1&contact_id=${contact.id}`} className="flex items-center gap-1.5 text-sm bg-gray-800 hover:bg-gray-700 text-white px-3 py-2 rounded-control transition-colors">
-              <UserPlus className="w-3.5 h-3.5" /> Nuevo lead
+            <Link href={`/leads?new=1&contact_id=${contact.id}`} className="flex items-center gap-2 text-sm bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-control transition-colors">
+              <UserPlus className="w-4 h-4" /> Nuevo lead
             </Link>
-            <Link href={`/propiedades/nueva?contact_id=${contact.id}`} className="flex items-center gap-1.5 text-sm bg-primary hover:bg-primary-hover text-white px-3 py-2 rounded-control transition-colors">
-              <Home className="w-3.5 h-3.5" /> Crear propiedad
+            <Link href={`/propiedades/nueva?contact_id=${contact.id}`} className="flex items-center gap-2 text-sm bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-control transition-colors">
+              <Home className="w-4 h-4" /> Crear propiedad
             </Link>
           </div>
         </div>

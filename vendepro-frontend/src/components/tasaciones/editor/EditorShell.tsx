@@ -203,10 +203,10 @@ export function EditorShell({ initial, snapshot, context }: Props) {
         <div className="flex items-center gap-3">
           <Link
             href={`/tasaciones/${state.appraisal.id}/wizard`}
-            className="flex items-center gap-1.5 rounded border border-slate-200 px-3 py-1 text-xs text-slate-600 hover:bg-slate-50 hover:text-ink"
+            className="flex items-center gap-2 rounded-control border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-ink"
             title="Abrir el wizard completo de edición"
           >
-            <Wand2 className="h-3.5 w-3.5" /> Edición completa
+            <Wand2 className="w-4 h-4" /> Edición completa
           </Link>
           <button
             onClick={() => setSidebarCollapsed(c => !c)}
@@ -372,7 +372,7 @@ export function EditorShell({ initial, snapshot, context }: Props) {
         </div>
       </div>
 
-      <button onClick={() => setMobilePreviewOpen(true)} className="fixed bottom-6 right-6 z-30 rounded-full bg-gradient-to-br from-brand-pink to-brand-orange px-5 py-3 text-sm font-semibold text-white shadow-lg lg:hidden">
+      <button onClick={() => setMobilePreviewOpen(true)} className="fixed bottom-6 right-6 z-30 rounded-full bg-gradient-to-br from-brand-pink to-brand-orange px-5 py-3 text-sm font-semibold text-white shadow-pop lg:hidden">
         Preview
       </button>
       {mobilePreviewOpen && (

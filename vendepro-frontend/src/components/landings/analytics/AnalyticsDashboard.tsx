@@ -3,16 +3,7 @@ import { useEffect, useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { landingsApi } from '@/lib/landings/api'
 import type { AnalyticsSummary } from '@/lib/landings/types'
-
-function KPI({ label, value, hint }: { label: string; value: string | number; hint?: string }) {
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4">
-      <p className="text-xs uppercase tracking-wider font-semibold text-gray-500">{label}</p>
-      <p className="text-2xl font-bold text-ink mt-1">{value}</p>
-      {hint && <p className="text-xs text-gray-500 mt-0.5">{hint}</p>}
-    </div>
-  )
-}
+import { StatTile } from '@/components/ui/StatTile'
 
 function FunnelRow({ label, count, pct }: { label: string; count: number; pct: number }) {
   return (
@@ -51,14 +42,14 @@ export default function AnalyticsDashboard({ landingId }: { landingId: string })
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KPI label="Pageviews" value={data.pageviews.toLocaleString('es-AR')} />
-        <KPI label="Unique visitors" value={data.unique_visitors.toLocaleString('es-AR')} />
-        <KPI label="Form submits" value={data.form_submits.toLocaleString('es-AR')} />
-        <KPI label="Conversion rate" value={`${(data.conversion_rate * 100).toFixed(1)}%`} hint="submits / pageviews" />
+        <StatTile label="Pageviews" value={data.pageviews.toLocaleString('es-AR')} />
+        <StatTile label="Unique visitors" value={data.unique_visitors.toLocaleString('es-AR')} />
+        <StatTile label="Form submits" value={data.form_submits.toLocaleString('es-AR')} />
+        <StatTile label="Conversion rate" value={`${(data.conversion_rate * 100).toFixed(1)}%`} caption="submits / pageviews" />
       </div>
 
       <div className="grid md:grid-cols-2 gap-3">
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-white rounded-card border border-gray-200 p-4">
           <h4 className="text-xs uppercase tracking-wider font-semibold text-gray-500 mb-3">Pageviews por día</h4>
           <div className="h-48">
             <ResponsiveContainer>
@@ -72,7 +63,7 @@ export default function AnalyticsDashboard({ landingId }: { landingId: string })
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-white rounded-card border border-gray-200 p-4">
           <h4 className="text-xs uppercase tracking-wider font-semibold text-gray-500 mb-3">Funnel</h4>
           <FunnelRow label="Pageviews" count={data.pageviews} pct={100} />
           <FunnelRow label="CTA clicks" count={data.cta_clicks} pct={pct(data.cta_clicks)} />
@@ -81,7 +72,7 @@ export default function AnalyticsDashboard({ landingId }: { landingId: string })
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
+      <div className="bg-white rounded-card border border-gray-200 p-4">
         <h4 className="text-xs uppercase tracking-wider font-semibold text-gray-500 mb-3">Top UTM sources</h4>
         <div className="space-y-1.5">
           {data.top_utm_sources.length === 0 && <p className="text-sm text-gray-500">Sin datos.</p>}

@@ -67,15 +67,15 @@ export default function ActiveListingsTable({ data }: Props) {
   const noReportCount = data.filter(r => r.reports_count === 0).length
 
   return (
-    <div className="rounded-2xl border border-gray-200 overflow-hidden shadow-sm bg-gradient-to-br from-white via-white to-pink-50/30">
+    <div className="rounded-card border border-gray-200 overflow-hidden shadow-card bg-gradient-to-br from-white via-white to-pink-50/30">
       <div className="px-4 sm:px-5 py-4 bg-gradient-to-r from-white to-pink-50/40 border-b border-gray-100">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-sm" aria-hidden="true">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center" aria-hidden="true">
             <Home className="w-4 h-4 text-white" />
           </div>
           <h2 className="font-semibold text-ink">Mis avisos activos</h2>
           {noReportCount > 0 && (
-            <span className="ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">
+            <span className="ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
               {noReportCount} sin reportes aún
             </span>
           )}
@@ -135,7 +135,7 @@ export default function ActiveListingsTable({ data }: Props) {
                           {row.reports_count} reporte{row.reports_count !== 1 ? 's' : ''} · {row.avg_in_person_visits_per_week} vis pres/sem
                         </p>
                       ) : (
-                        <p className="text-[10px] text-amber-600 mt-0.5 font-medium inline-flex items-center gap-1">
+                        <p className="text-[10px] text-warning mt-0.5 font-medium inline-flex items-center gap-1">
                           <FileBarChart className="w-3 h-3" aria-hidden="true" />
                           Sin reportes aún
                         </p>
@@ -180,7 +180,7 @@ export default function ActiveListingsTable({ data }: Props) {
                       <Link
                         href={`/propiedades/${row.property_id}/reportes/nuevo`}
                         onClick={e => e.stopPropagation()}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gradient-to-r from-brand-pink to-brand-orange text-white text-xs font-medium shadow-sm hover:opacity-90 transition-opacity"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-control bg-primary text-white text-xs font-medium hover:bg-primary-hover transition-colors"
                         title="Crear nuevo reporte"
                       >
                         <Plus className="w-3 h-3" aria-hidden="true" />

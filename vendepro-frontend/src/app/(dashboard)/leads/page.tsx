@@ -873,7 +873,7 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
                   </button>
                 ))}
                 {/* ds-todo: StatusBadge con ícono (pill Tasación) */}
-                {hasAppraisal && <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium shrink-0"><Check className="w-2.5 h-2.5" /> Tasación</span>}
+                {hasAppraisal && <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-800 font-medium shrink-0"><Check className="w-2.5 h-2.5" /> Tasación</span>}
               </div>
               <p className="text-xs text-gray-500 truncate mt-0.5">
                 {lead.phone && <span className="text-gray-600">{lead.phone}</span>}

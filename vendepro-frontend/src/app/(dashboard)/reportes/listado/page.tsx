@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Filter, ChevronLeft, ChevronRight, FileBarChart, Eye } from 'lucide-react'
+import { ChevronLeft, ChevronRight, FileBarChart, Eye } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
+import { getReportStatus } from '@/lib/crm-config'
 import HealthBadge from '@/components/reports/HealthBadge'
 import { type HealthStatus } from '@/lib/semaforo'
 import { Card } from '@/components/ui/Card'
@@ -11,6 +12,7 @@ import { Input, Select } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { Alert } from '@/components/ui/Alert'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { StatusBadge } from '@/components/ui/StatusBadge'
 import { Text } from '@/components/ui/Typography'
 
 interface ReportItem {
@@ -91,39 +93,31 @@ export default function ListadoPage() {
 
   return (
     <div className="space-y-4">
-      {/* Filters */}
-      <Card padded={false} className="p-3 sm:p-4">
-        <div className="flex items-center gap-2 mb-3 text-sm font-medium text-gray-700">
-          <Filter className="w-4 h-4" aria-hidden="true" />
-          Filtros
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-          <Input
-            type="text"
-            value={neighborhood}
-            onChange={e => setNeighborhood(e.target.value)}
-            placeholder="Barrio"
-          />
-          <Select
-            value={status}
-            onChange={e => setStatus(e.target.value)}
+      {/* Búsqueda + filtros: una sola fila compacta (sin labels ni card propio) */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Input
+          type="text"
+          value={neighborhood}
+          onChange={e => setNeighborhood(e.target.value)}
+          placeholder="Buscar barrio..."
+          className="flex-1 min-w-[180px]"
+        />
+        <Select aria-label="Estado" value={status} onChange={e => setStatus(e.target.value)} className="w-auto">
+          <option value="">Estado: todos</option>
+          <option value="published">Publicados</option>
+          <option value="draft">Borradores</option>
+        </Select>
+        <Input aria-label="Desde" type="date" value={from} onChange={e => setFrom(e.target.value)} className="w-auto" />
+        <Input aria-label="Hasta" type="date" value={to} onChange={e => setTo(e.target.value)} className="w-auto" />
+        {(neighborhood || status || from || to) && (
+          <button
+            onClick={() => { setNeighborhood(''); setStatus(''); setFrom(''); setTo('') }}
+            className="text-xs text-gray-500 hover:text-primary shrink-0"
           >
-            <option value="">Todos</option>
-            <option value="published">Publicados</option>
-            <option value="draft">Borradores</option>
-          </Select>
-          <Input
-            type="date"
-            value={from}
-            onChange={e => setFrom(e.target.value)}
-          />
-          <Input
-            type="date"
-            value={to}
-            onChange={e => setTo(e.target.value)}
-          />
-        </div>
-      </Card>
+            Limpiar
+          </button>
+        )}
+      </div>
 
       {/* Table */}
       <Card padded={false} className="overflow-hidden">
@@ -187,9 +181,7 @@ export default function ListadoPage() {
                     <td className="py-2 px-2 text-gray-600 hidden sm:table-cell">{r.property_neighborhood}</td>
                     <td className="py-2 px-2 text-gray-600">{r.period_label}</td>
                     <td className="py-2 px-2">
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full ${r.status === 'published' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
-                        {r.status === 'published' ? 'Publicado' : 'Borrador'}
-                      </span>
+                      <StatusBadge label={getReportStatus(r.status).label} color={getReportStatus(r.status).color} size="sm" />
                     </td>
                     <td className="py-2 px-2 text-right text-gray-700 font-semibold">{r.views_per_day}</td>
                     <td className="py-2 px-2 text-right text-gray-700 hidden md:table-cell">{r.portal_visits}</td>

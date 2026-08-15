@@ -134,9 +134,9 @@ export default function EmailCampaignWizard({ campaignId }: { campaignId?: strin
       </Link>
 
       {/* Nombre + stepper */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-5">
+      <div className="bg-white rounded-card border border-gray-200 shadow-card p-6 mb-5">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-control bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shrink-0">
             <Mail className="w-5 h-5 text-white" />
           </div>
           <input
@@ -171,7 +171,7 @@ export default function EmailCampaignWizard({ campaignId }: { campaignId?: strin
       </div>
 
       {/* Paso actual */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+      <div className="bg-white rounded-card border border-gray-200 shadow-card p-6">
         {step === 1 && (
           <AudienceStep segment={segment} onChange={setSegment} preview={preview} onPreview={setPreview} />
         )}
