@@ -62,7 +62,7 @@ export default function BlockListSidebar({ blocks, selectedId, onSelect, onReord
         </button>
 
         {showAdd && (
-          <div className="border border-gray-200 rounded-xl p-2 bg-gray-50 space-y-1">
+          <div className="border border-gray-200 rounded-card p-2 bg-gray-50 space-y-1">
             {AVAILABLE_BLOCK_TYPES.map(t => (
               <button key={t.type} onClick={async () => {
                 await onAdd({ type: t.type, visible: true, data: t.seedData })

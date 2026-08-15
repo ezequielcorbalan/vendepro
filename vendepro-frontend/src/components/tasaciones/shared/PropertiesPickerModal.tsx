@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { Search, Loader2, Building2, MapPin, Calendar, X } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import type { ComparableData } from './ComparableCard'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { Input, Select } from '@/components/ui/Input'
 
 interface PropertyLite {
   id: string
@@ -63,13 +65,13 @@ function formatDate(d: string | null | undefined): string {
 
 const STAGE_LABELS: Record<string, { label: string; cls: string }> = {
   propuesta: { label: 'Propuesta', cls: 'bg-gray-100 text-gray-600' },
-  captada: { label: 'Captada', cls: 'bg-green-100 text-green-700' },
-  captacion: { label: 'Captación', cls: 'bg-green-100 text-green-700' },
-  publicada: { label: 'Publicada', cls: 'bg-blue-100 text-blue-700' },
-  reservada: { label: 'Reservada', cls: 'bg-amber-100 text-amber-700' },
-  vendida: { label: 'Vendida', cls: 'bg-emerald-100 text-emerald-700' },
-  alquilada: { label: 'Alquilada', cls: 'bg-purple-100 text-purple-700' },
-  perdida: { label: 'Perdida', cls: 'bg-red-100 text-red-700' },
+  captada: { label: 'Captada', cls: 'bg-green-100 text-green-800' },
+  captacion: { label: 'Captación', cls: 'bg-green-100 text-green-800' },
+  publicada: { label: 'Publicada', cls: 'bg-blue-100 text-blue-800' },
+  reservada: { label: 'Reservada', cls: 'bg-amber-100 text-amber-800' },
+  vendida: { label: 'Vendida', cls: 'bg-emerald-100 text-emerald-800' },
+  alquilada: { label: 'Alquilada', cls: 'bg-purple-100 text-purple-800' },
+  perdida: { label: 'Perdida', cls: 'bg-red-100 text-red-800' },
   invalida: { label: 'Inválida', cls: 'bg-gray-100 text-gray-500' },
 }
 
@@ -122,7 +124,7 @@ export function PropertiesPickerModal({ open, onClose, onPick }: Props) {
       onClick={onClose}
     >
       <div
-        className="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
+        className="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-card bg-white shadow-pop"
         onClick={e => e.stopPropagation()}
       >
         <div className="bg-gradient-to-r from-brand-pink to-brand-orange h-1" />
@@ -130,7 +132,7 @@ export function PropertiesPickerModal({ open, onClose, onPick }: Props) {
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
           <div className="flex items-center gap-2">
-            <Building2 className="h-5 w-5 text-brand-pink" />
+            <Building2 className="h-5 w-5 text-gray-600" />
             <h2 className="text-lg font-semibold text-ink">Elegir desde una propiedad cargada</h2>
           </div>
           <button onClick={onClose} className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
@@ -142,19 +144,15 @@ export function PropertiesPickerModal({ open, onClose, onPick }: Props) {
         <div className="border-b border-slate-100 bg-slate-50 px-6 py-3">
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-              <input
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" />
+              <Input
                 placeholder="Buscar dirección, barrio, dueño…"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-white pl-8 pr-2 py-1.5 text-xs"
+                className="pl-10"
               />
             </div>
-            <select
-              value={stage}
-              onChange={e => setStage(e.target.value)}
-              className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs"
-            >
+            <Select value={stage} onChange={e => setStage(e.target.value)}>
               <option value="">Estado: cualquiera</option>
               <option value="propuesta">Propuestas</option>
               <option value="captada">Captadas</option>
@@ -162,7 +160,7 @@ export function PropertiesPickerModal({ open, onClose, onPick }: Props) {
               <option value="reservada">Reservadas</option>
               <option value="vendida">Solo vendidas (cierres reales)</option>
               <option value="perdida">Perdidas</option>
-            </select>
+            </Select>
           </div>
           <p className="mt-2 text-[11px] text-slate-500">
             Las propiedades en estado <strong>vendida</strong> se agregan como cierre real;
@@ -177,13 +175,13 @@ export function PropertiesPickerModal({ open, onClose, onPick }: Props) {
               <Loader2 className="h-7 w-7 animate-spin text-brand-pink" />
             </div>
           ) : filtered.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-slate-200 px-6 py-12 text-center">
-              <Building2 className="mx-auto mb-3 h-8 w-8 text-slate-300" />
-              <p className="text-sm font-medium text-slate-700">
-                {items.length === 0
+            <div className="rounded-card border border-dashed border-slate-200">
+              <EmptyState
+                icon={<Building2 className="w-6 h-6" />}
+                title={items.length === 0
                   ? 'No tenés propiedades cargadas todavía.'
                   : 'Ninguna propiedad coincide con los filtros.'}
-              </p>
+              />
             </div>
           ) : (
             <ul className="space-y-2">

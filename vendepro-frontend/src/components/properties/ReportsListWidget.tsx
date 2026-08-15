@@ -38,10 +38,10 @@ export default function ReportsListWidget({ propertyId }: Props) {
   }, [propertyId])
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+    <div className="bg-white rounded-card border border-gray-200 shadow-card p-5">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-sm">
+          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center">
             <FileBarChart className="w-4.5 h-4.5 text-white" />
           </div>
           <div>
@@ -60,7 +60,7 @@ export default function ReportsListWidget({ propertyId }: Props) {
       {loading ? (
         <div className="py-6 text-center text-xs text-gray-400">Cargando...</div>
       ) : reports.length === 0 ? (
-        <div className="bg-gradient-to-br from-gray-50 to-white border border-dashed border-gray-200 rounded-xl p-6 text-center">
+        <div className="bg-gradient-to-br from-gray-50 to-white border border-dashed border-gray-200 rounded-card p-6 text-center">
           <p className="text-sm text-gray-500 mb-3">No hay reportes para esta propiedad</p>
           <Link
             href={`/propiedades/${propertyId}/reportes/nuevo`}
@@ -74,7 +74,7 @@ export default function ReportsListWidget({ propertyId }: Props) {
           {reports.slice(0, 5).map(r => (
             <div
               key={r.id}
-              className="flex items-center justify-between border border-gray-100 rounded-xl px-3 py-2"
+              className="flex items-center justify-between border border-gray-100 rounded-control px-3 py-2"
             >
               <div>
                 <p className="text-sm font-medium text-ink">

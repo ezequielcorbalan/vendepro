@@ -5,6 +5,8 @@ import { ArrowLeft, BarChart3, History, Settings, Eye, Send, CheckCircle2, XCirc
 import type { Landing } from '@/lib/landings/types'
 import { publicLandingHostPath } from '@/lib/landings/slug'
 import StatusBadge from './StatusBadge'
+import { Textarea } from '@/components/ui/Input'
+import { Button } from '@/components/ui/Button'
 
 interface Props {
   landing: Landing
@@ -70,13 +72,12 @@ export default function EditorToolbar({ landing, isAdmin, dirty, saving, onOpenV
 
       {showReject && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowReject(false)}>
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-card shadow-pop p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
             <h3 className="font-semibold text-ink mb-3">Rechazar solicitud</h3>
-            <textarea value={note} onChange={e => setNote(e.target.value)} placeholder="Nota para el agente (opcional)…"
-              className="w-full border border-gray-200 rounded-xl p-3 text-sm resize-none h-28 focus:outline-none" />
+            <Textarea value={note} onChange={e => setNote(e.target.value)} placeholder="Nota para el agente (opcional)…" className="resize-none h-28" />
             <div className="flex justify-end gap-2 mt-4">
-              <button onClick={() => setShowReject(false)} className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-full">Cancelar</button>
-              <button onClick={() => { handle(() => onRejectPublish(note)); setShowReject(false) }} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-full">Rechazar</button>
+              <Button variant="ghost" onClick={() => setShowReject(false)}>Cancelar</Button>
+              <Button variant="danger" onClick={() => { handle(() => onRejectPublish(note)); setShowReject(false) }}>Rechazar</Button>
             </div>
           </div>
         </div>

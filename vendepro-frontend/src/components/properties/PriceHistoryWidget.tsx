@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { TrendingDown, TrendingUp, DollarSign, Plus, X } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
+import { Field, Input } from '@/components/ui/Input'
+import { Button } from '@/components/ui/Button'
 
 interface PriceChange {
   id: string
@@ -75,10 +77,10 @@ export default function PriceHistoryWidget({
 
   return (
     <>
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+      <div className="bg-white rounded-card border border-gray-200 shadow-card p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-sm">
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center">
               <DollarSign className="w-4.5 h-4.5 text-white" />
             </div>
             <h2 className="text-sm font-semibold text-ink">Historial de precio</h2>
@@ -91,7 +93,7 @@ export default function PriceHistoryWidget({
           </button>
         </div>
 
-        <div className="bg-gradient-to-br from-brand-pink/5 to-brand-orange/5 rounded-xl p-4 mb-3 border border-brand-pink/20">
+        <div className="bg-gradient-to-br from-brand-pink/5 to-brand-orange/5 rounded-card p-4 mb-3 border border-brand-pink/20">
           <p className="text-xs text-gray-500">Precio actual</p>
           <p className="text-2xl font-bold bg-gradient-to-br from-brand-pink to-brand-orange bg-clip-text text-transparent">
             {currentPrice ? `${currency} ${Number(currentPrice).toLocaleString('es-AR')}` : 'Sin precio'}
@@ -130,7 +132,7 @@ export default function PriceHistoryWidget({
           onClick={() => setShowModal(false)}
         >
           <div
-            className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden"
+            className="bg-white rounded-card shadow-pop max-w-md w-full overflow-hidden"
             onClick={e => e.stopPropagation()}
           >
             <div className="bg-gradient-to-r from-brand-pink to-brand-orange h-1.5" />
@@ -143,14 +145,12 @@ export default function PriceHistoryWidget({
               </div>
 
               <div className="space-y-3">
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Nuevo precio (USD)</label>
-                  <input
+                <Field label="Nuevo precio (USD)">
+                  <Input
                     type="number"
                     value={newPrice}
                     onChange={e => setNewPrice(e.target.value)}
                     placeholder="0"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none"
                   />
                   {(() => {
                     const parsed = parseFloat(newPrice)
@@ -164,30 +164,24 @@ export default function PriceHistoryWidget({
                       </p>
                     )
                   })()}
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Motivo (opcional)</label>
-                  <input
+                </Field>
+                <Field label="Motivo (opcional)">
+                  <Input
                     type="text"
                     value={reason}
                     onChange={e => setReason(e.target.value)}
                     placeholder="Ej: Ajuste de mercado"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none"
                   />
-                </div>
+                </Field>
               </div>
 
               {error && (
-                <p className="mt-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>
+                <p className="mt-3 text-xs text-danger bg-danger/10 border border-danger/20 rounded-control px-3 py-2">{error}</p>
               )}
 
-              <button
-                onClick={submitChange}
-                disabled={!newPrice || saving}
-                className="mt-5 w-full bg-gradient-to-br from-brand-pink to-brand-orange text-white text-sm font-medium py-2.5 rounded-lg hover:opacity-90 disabled:opacity-50"
-              >
-                {saving ? 'Guardando...' : 'Guardar ajuste'}
-              </button>
+              <Button onClick={submitChange} disabled={!newPrice} loading={saving} fullWidth className="mt-5">
+                Guardar ajuste
+              </Button>
             </div>
           </div>
         </div>

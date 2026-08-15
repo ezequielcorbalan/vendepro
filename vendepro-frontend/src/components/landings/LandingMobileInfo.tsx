@@ -5,6 +5,8 @@ import { useState } from 'react'
 import type { Landing } from '@/lib/landings/types'
 import { publicLandingUrl, publicLandingHostPath } from '@/lib/landings/slug'
 import StatusBadge from './StatusBadge'
+import { Alert } from '@/components/ui/Alert'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 export default function LandingMobileInfo({ landing }: { landing: Landing }) {
   const [copied, setCopied] = useState(false)
@@ -29,7 +31,7 @@ export default function LandingMobileInfo({ landing }: { landing: Landing }) {
       </header>
 
       <div className="p-4 space-y-4">
-        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-card border border-gray-200 overflow-hidden">
           {landing.og_image_url ? (
             <img src={landing.og_image_url} alt="" className="w-full h-40 object-cover" />
           ) : (
@@ -54,7 +56,7 @@ export default function LandingMobileInfo({ landing }: { landing: Landing }) {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-3">
+        <div className="bg-white rounded-card border border-gray-200 p-4 space-y-3">
           <div>
             <p className="text-xs uppercase tracking-wider font-semibold text-gray-500 mb-1">URL pública</p>
             <p className="text-sm font-mono text-ink break-all">{publicLandingHostPath(landing.full_slug)}</p>
@@ -63,7 +65,7 @@ export default function LandingMobileInfo({ landing }: { landing: Landing }) {
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={copyUrl}
-              className="inline-flex items-center justify-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-ink text-sm font-medium py-2.5 rounded-xl transition-colors"
+              className="inline-flex items-center justify-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-ink text-sm font-medium py-2.5 rounded-control transition-colors"
             >
               {copied ? <><Check className="w-4 h-4" /> Copiado</> : <><Copy className="w-4 h-4" /> Copiar</>}
             </button>
@@ -72,14 +74,14 @@ export default function LandingMobileInfo({ landing }: { landing: Landing }) {
                 href={url}
                 target="_blank"
                 rel="noopener"
-                className="inline-flex items-center justify-center gap-1.5 bg-gradient-to-br from-brand-pink to-brand-orange hover:opacity-90 text-white text-sm font-semibold py-2.5 rounded-xl"
+                className="inline-flex items-center justify-center gap-1.5 bg-gradient-to-br from-brand-pink to-brand-orange hover:opacity-90 text-white text-sm font-semibold py-2.5 rounded-control"
               >
                 <ExternalLink className="w-4 h-4" /> Abrir
               </a>
             ) : (
               <button
                 disabled
-                className="inline-flex items-center justify-center gap-1.5 bg-gray-100 text-gray-400 text-sm font-medium py-2.5 rounded-xl cursor-not-allowed"
+                className="inline-flex items-center justify-center gap-1.5 bg-gray-100 text-gray-400 text-sm font-medium py-2.5 rounded-control cursor-not-allowed"
                 title="La landing aún no está publicada"
               >
                 <ExternalLink className="w-4 h-4" /> Abrir
@@ -89,23 +91,17 @@ export default function LandingMobileInfo({ landing }: { landing: Landing }) {
         </div>
 
         {landing.status === 'draft' && landing.last_review_note && (
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
-            <p className="text-xs uppercase tracking-wider font-semibold text-amber-800 mb-1">
-              Publicación rechazada
-            </p>
-            <p className="text-sm text-amber-900">{landing.last_review_note}</p>
-          </div>
+          <Alert tone="warning" title="Publicación rechazada">
+            {landing.last_review_note}
+          </Alert>
         )}
 
-        <div className="bg-white rounded-2xl border border-dashed border-gray-300 p-6 text-center">
-          <div className="w-12 h-12 rounded-2xl bg-brand-pink/10 text-brand-pink flex items-center justify-center mx-auto mb-3">
-            <Monitor className="w-6 h-6" />
-          </div>
-          <p className="font-semibold text-ink mb-1">El editor solo está disponible en desktop</p>
-          <p className="text-sm text-gray-600">
-            Abrí esta landing desde una computadora para editar los bloques, usar la IA y cambiar la
-            configuración.
-          </p>
+        <div className="bg-white rounded-card border border-dashed border-gray-300">
+          <EmptyState
+            icon={<Monitor className="w-6 h-6" />}
+            title="El editor solo está disponible en desktop"
+            description="Abrí esta landing desde una computadora para editar los bloques, usar la IA y cambiar la configuración."
+          />
         </div>
       </div>
     </div>

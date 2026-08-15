@@ -1,16 +1,16 @@
 const stages = [
-  { label: 'Lead', color: 'bg-blue-100 text-blue-700' },
-  { label: 'Contacto', color: 'bg-cyan-100 text-cyan-700' },
-  { label: 'Tasación', color: 'bg-purple-100 text-purple-700' },
-  { label: 'Propiedad', color: 'bg-green-100 text-green-700' },
-  { label: 'Reserva', color: 'bg-orange-100 text-orange-700' },
-  { label: 'Venta', color: 'bg-pink-100 text-pink-700' },
+  { label: 'Lead', color: 'bg-blue-100 text-blue-800' },
+  { label: 'Contacto', color: 'bg-cyan-100 text-cyan-800' },
+  { label: 'Tasación', color: 'bg-purple-100 text-purple-800' },
+  { label: 'Propiedad', color: 'bg-green-100 text-green-800' },
+  { label: 'Reserva', color: 'bg-orange-100 text-orange-800' },
+  { label: 'Venta', color: 'bg-pink-100 text-pink-800' },
 ]
 
 export default function Step2Pipeline() {
   return (
     <div className="flex flex-col items-center text-center px-4 py-6 gap-5">
-      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-md shadow-pink-200">
+      <div className="w-16 h-16 rounded-control bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-md shadow-pink-200">
         <span className="text-3xl">🔄</span>
       </div>
       <div className="space-y-1">
@@ -56,7 +56,7 @@ export default function Step2Pipeline() {
           ['🚨', 'El sistema te avisa cuando un lead está vencido o sin actividad'],
           ['🔍', 'Filtrá por etapa desde leads, tasaciones o propiedades'],
         ].map(([icon, text]) => (
-          <div key={text} className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+          <div key={text} className="flex items-start gap-3 p-3 bg-gray-50 rounded-card">
             <span className="text-lg leading-none mt-0.5">{icon}</span>
             <p className="text-sm text-gray-700">{text}</p>
           </div>

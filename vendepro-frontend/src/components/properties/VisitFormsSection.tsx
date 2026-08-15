@@ -16,6 +16,7 @@ import {
   User,
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 type BuyIntention = 'compraria' | 'tal_vez' | 'no' | null
 
@@ -133,11 +134,11 @@ export function VisitFormsSection({
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+    <div className="bg-white rounded-card shadow-card border border-gray-100 p-6">
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-pink to-[#ff5e3a] flex items-center justify-center text-white">
+          <div className="w-10 h-10 rounded-control bg-gradient-to-br from-brand-pink to-[#ff5e3a] flex items-center justify-center text-white">
             <ClipboardList className="w-5 h-5" />
           </div>
           <div>
@@ -192,14 +193,12 @@ export function VisitFormsSection({
           <Loader2 className="w-6 h-6 animate-spin text-brand-pink" />
         </div>
       ) : submitted.length === 0 ? (
-        <div className="py-10 text-center border-2 border-dashed border-gray-200 rounded-xl">
-          <MessageSquare className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-          <p className="text-sm text-gray-500">Todavía no hay fichas completadas.</p>
-          {publicLink && (
-            <p className="text-xs text-gray-400 mt-1">
-              Mandá el link por WhatsApp después de cada visita.
-            </p>
-          )}
+        <div className="border-2 border-dashed border-gray-200 rounded-card">
+          <EmptyState
+            icon={<MessageSquare className="w-6 h-6" />}
+            title="Todavía no hay fichas completadas."
+            description={publicLink ? 'Mandá el link por WhatsApp después de cada visita.' : undefined}
+          />
         </div>
       ) : (
         <div className="divide-y divide-gray-100">
@@ -340,11 +339,11 @@ function Badge({
   children: React.ReactNode
 }) {
   const cls = {
-    green: 'bg-green-100 text-green-700 border-green-200',
-    red: 'bg-red-100 text-red-700 border-red-200',
-    amber: 'bg-amber-100 text-amber-700 border-amber-200',
+    green: 'bg-green-100 text-green-800 border-green-200',
+    red: 'bg-red-100 text-red-800 border-red-200',
+    amber: 'bg-amber-100 text-amber-800 border-amber-200',
     gray: 'bg-gray-100 text-gray-700 border-gray-200',
-    orange: 'bg-orange-100 text-orange-700 border-orange-200',
+    orange: 'bg-orange-100 text-orange-800 border-orange-200',
   }[color]
   return (
     <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${cls}`}>

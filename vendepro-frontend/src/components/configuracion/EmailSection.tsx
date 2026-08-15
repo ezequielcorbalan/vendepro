@@ -6,6 +6,10 @@ import {
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
+import { Field, Input } from '@/components/ui/Input'
+import { Checkbox } from '@/components/ui/Choice'
+import { Button } from '@/components/ui/Button'
+import { Alert } from '@/components/ui/Alert'
 
 interface EmailSettings {
   configured: boolean
@@ -113,9 +117,6 @@ export default function EmailSection() {
     setTesting(false)
   }
 
-  const inputCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none'
-  const labelCls = 'block text-sm font-medium text-gray-700 mb-1'
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
@@ -127,9 +128,9 @@ export default function EmailSection() {
   return (
     <div className="space-y-6">
       {/* Remitente */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+      <div className="bg-white rounded-card border border-gray-200 shadow-card p-6">
         <div className="flex items-center gap-2 mb-4">
-          <Mail className="w-4 h-4 text-brand-pink" />
+          <Mail className="w-4 h-4 text-gray-600" />
           <h2 className="font-semibold text-ink">Remitente</h2>
         </div>
         <p className="text-sm text-gray-500 mb-4">
@@ -137,85 +138,69 @@ export default function EmailSection() {
           remitente debe estar verificado en Resend para que los emails no caigan en spam.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className={labelCls}>Nombre remitente</label>
-            <input className={inputCls} value={fromName} onChange={e => setFromName(e.target.value)} placeholder="Marcela Genta Inmobiliaria" />
-          </div>
-          <div>
-            <label className={labelCls}>Email remitente</label>
-            <input className={inputCls} type="email" value={fromEmail} onChange={e => setFromEmail(e.target.value)} placeholder="novedades@tudominio.com.ar" />
-          </div>
-          <div>
-            <label className={labelCls}>Responder a (opcional)</label>
-            <input className={inputCls} type="email" value={replyTo} onChange={e => setReplyTo(e.target.value)} placeholder="contacto@tudominio.com.ar" />
-            <p className="text-xs text-gray-400 mt-1">Las respuestas de los clientes llegan a esta casilla.</p>
-          </div>
+          <Field label="Nombre remitente">
+            <Input value={fromName} onChange={e => setFromName(e.target.value)} placeholder="Marcela Genta Inmobiliaria" />
+          </Field>
+          <Field label="Email remitente">
+            <Input type="email" value={fromEmail} onChange={e => setFromEmail(e.target.value)} placeholder="novedades@tudominio.com.ar" />
+          </Field>
+          <Field label="Responder a (opcional)" hint="Las respuestas de los clientes llegan a esta casilla.">
+            <Input type="email" value={replyTo} onChange={e => setReplyTo(e.target.value)} placeholder="contacto@tudominio.com.ar" />
+          </Field>
           <div className="flex items-end pb-1">
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={enabled}
-                onChange={e => setEnabled(e.target.checked)}
-                className="w-4 h-4 rounded border-gray-300 text-brand-pink"
-              />
-              <span className="text-sm text-gray-700">Envío de emails habilitado</span>
-            </label>
+            <Checkbox checked={enabled} onChange={setEnabled} label="Envío de emails habilitado" />
           </div>
         </div>
         <div className="mt-5 flex justify-end">
-          <button
-            onClick={saveSettings}
-            disabled={saving}
-            className="inline-flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white text-sm font-medium px-4 py-2 rounded-lg hover:opacity-90 disabled:opacity-50"
-          >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          <Button onClick={saveSettings} loading={saving} icon={<Save className="w-4 h-4" />}>
             Guardar
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Email de prueba */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+      <div className="bg-white rounded-card border border-gray-200 shadow-card p-6">
         <div className="flex items-center gap-2 mb-4">
-          <Send className="w-4 h-4 text-brand-orange" />
+          <Send className="w-4 h-4 text-gray-600" />
           <h2 className="font-semibold text-ink">Email de prueba</h2>
         </div>
         <p className="text-sm text-gray-500 mb-4">
           Verificá la configuración antes de habilitar campañas. El envío usa el remitente guardado.
         </p>
         <div className="flex flex-col sm:flex-row gap-3">
-          <input
-            className={`${inputCls} sm:max-w-xs`}
+          <Input
+            className="sm:max-w-xs"
             type="email"
             value={testTo}
             onChange={e => setTestTo(e.target.value)}
             placeholder="tu@email.com"
           />
-          <button
+          <Button
+            variant="outline"
             onClick={sendTest}
-            disabled={testing || !fromEmail}
-            className="inline-flex items-center justify-center gap-2 border border-brand-orange text-brand-orange text-sm font-medium px-4 py-2 rounded-lg hover:bg-brand-orange/5 disabled:opacity-50"
+            loading={testing}
+            disabled={!fromEmail}
+            icon={<Send className="w-4 h-4" />}
           >
-            {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             Enviar prueba
-          </button>
+          </Button>
         </div>
         {!fromEmail && (
-          <p className="flex items-center gap-1.5 text-xs text-amber-600 mt-2">
+          <p className="flex items-center gap-1.5 text-xs text-warning mt-2">
             <AlertCircle className="w-3.5 h-3.5" /> Guardá primero un email remitente.
           </p>
         )}
         {testResult && (
-          <div className={`mt-4 flex items-start gap-2 rounded-lg px-3 py-2 text-sm ${testResult.ok ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+          <Alert tone={testResult.ok ? 'success' : 'danger'} className="mt-4">
             {testResult.ok
-              ? <><CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" /> Email enviado. Revisá la casilla (y spam) para confirmar la recepción.</>
-              : <><XCircle className="w-4 h-4 mt-0.5 shrink-0" /> <span>No se pudo enviar: {testResult.error}</span></>}
-          </div>
+              ? 'Email enviado. Revisá la casilla (y spam) para confirmar la recepción.'
+              : `No se pudo enviar: ${testResult.error}`}
+          </Alert>
         )}
       </div>
 
       {/* Lista de supresión */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+      <div className="bg-white rounded-card border border-gray-200 shadow-card p-6">
         <div className="flex items-center gap-2 mb-4">
           <Ban className="w-4 h-4 text-gray-500" />
           <h2 className="font-semibold text-ink">Lista de supresión</h2>

@@ -72,7 +72,7 @@ export default function GlobalSearch() {
 
   return (
     <div className="fixed inset-0 bg-black/30 z-50 flex items-start justify-center pt-[10vh]" onClick={close}>
-      <div ref={containerRef} className="bg-white rounded-xl shadow-2xl w-[90vw] max-w-lg mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
+      <div ref={containerRef} className="bg-white rounded-card shadow-pop w-[90vw] max-w-lg mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-3 px-4 py-3 border-b">
           <Search className="w-5 h-5 text-gray-400 shrink-0" />
           <input ref={inputRef} type="text" value={query} onChange={e => setQuery(e.target.value)}

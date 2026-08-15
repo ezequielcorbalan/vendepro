@@ -56,7 +56,7 @@ export default function MobileHeader({ profile }: { profile: Profile }) {
           aria-hidden="true"
         >
           <aside
-            className="w-72 bg-white h-full shadow-xl flex flex-col"
+            className="w-72 bg-white h-full shadow-pop flex flex-col"
             role="dialog"
             aria-label="Menú de navegación"
             onClick={(e) => e.stopPropagation()}

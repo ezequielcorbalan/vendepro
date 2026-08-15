@@ -228,7 +228,7 @@ export default function Sidebar({ profile }: { profile: Profile }) {
           title={collapsed ? (profile.full_name || profile.email) : undefined}
           className={cn('flex items-center rounded-lg hover:bg-gray-50 transition-colors', collapsed ? 'justify-center py-2' : 'gap-3 px-3 py-2')}
         >
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center text-white font-semibold text-sm shadow-sm shrink-0" aria-hidden="true">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center text-white font-semibold text-sm shrink-0" aria-hidden="true">
             {(profile.full_name || profile.email || '?').charAt(0).toUpperCase()}
           </div>
           {!collapsed && (

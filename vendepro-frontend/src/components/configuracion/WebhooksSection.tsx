@@ -9,6 +9,10 @@ import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
 import { WEBHOOK_EVENTS, type WebhookEventKey } from '@/lib/crm-config'
 import type { Webhook, WebhookDelivery } from '@/lib/types'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { Button } from '@/components/ui/Button'
+import { Field, Input } from '@/components/ui/Input'
+import { Checkbox } from '@/components/ui/Choice'
 
 const EVENT_KEYS = Object.keys(WEBHOOK_EVENTS) as WebhookEventKey[]
 
@@ -172,27 +176,26 @@ export default function WebhooksSection({ onCountChange }: { onCountChange?: (n:
       {loading ? (
         <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
       ) : error ? (
-        <div className="bg-white rounded-xl border p-8 text-center">
-          <AlertCircle className="w-10 h-10 text-red-400 mx-auto mb-3" />
-          <p className="text-gray-600 text-sm">No se pudieron cargar los webhooks.</p>
-          <button onClick={load} className="text-sm text-brand-pink mt-2">Reintentar</button>
+        <div className="bg-white rounded-card border">
+          <EmptyState
+            icon={<AlertCircle className="w-6 h-6" />}
+            title="No se pudieron cargar los webhooks."
+            action={<Button variant="outline" onClick={load}>Reintentar</Button>}
+          />
         </div>
       ) : webhooks.length === 0 ? (
-        <div className="bg-white rounded-xl border p-10 text-center">
-          <WebhookIcon className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-600 font-medium">Todavía no hay webhooks</p>
-          <p className="text-sm text-gray-500 mt-1 mb-4">Creá uno para que tu sistema reciba los eventos del CRM en tiempo real.</p>
-          <button
-            onClick={() => setShowCreate(true)}
-            className="inline-flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
-          >
-            <Plus className="w-4 h-4" /> Nuevo webhook
-          </button>
+        <div className="bg-white rounded-card border">
+          <EmptyState
+            icon={<WebhookIcon className="w-6 h-6" />}
+            title="Todavía no hay webhooks"
+            description="Creá uno para que tu sistema reciba los eventos del CRM en tiempo real."
+            action={<Button icon={<Plus className="w-4 h-4" />} onClick={() => setShowCreate(true)}>Nuevo webhook</Button>}
+          />
         </div>
       ) : (
         <div className="space-y-3">
           {webhooks.map(w => (
-            <div key={w.id} className={`bg-white border rounded-xl p-4 space-y-3 ${w.is_active ? '' : 'opacity-70'}`}>
+            <div key={w.id} className={`bg-white border rounded-card p-4 space-y-3 ${w.is_active ? '' : 'opacity-70'}`}>
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-2 min-w-0">
                   <div className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center ${w.is_active ? 'bg-pink-50 text-brand-pink' : 'bg-gray-100 text-gray-400'}`}>
@@ -214,7 +217,7 @@ export default function WebhooksSection({ onCountChange }: { onCountChange?: (n:
                   >
                     <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${w.is_active ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
                   </button>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${w.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${w.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'}`}>
                     {w.is_active ? 'Activo' : 'Pausado'}
                   </span>
                 </div>
@@ -320,69 +323,61 @@ export default function WebhooksSection({ onCountChange }: { onCountChange?: (n:
             role="dialog"
             aria-modal="true"
             aria-labelledby="new-webhook-title"
-            className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-5"
+            className="bg-white w-full sm:max-w-md sm:rounded-card rounded-t-2xl p-5"
             onClick={e => e.stopPropagation()}
             onKeyDown={e => { if (e.key === 'Escape') setShowCreate(false) }}
           >
             <h3 id="new-webhook-title" className="font-semibold text-ink mb-1">Nuevo webhook</h3>
             <p className="text-sm text-gray-500 mb-4">Vamos a hacer un POST a esta URL cada vez que ocurra un evento seleccionado.</p>
 
-            <label htmlFor="webhook-name" className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
-            <input
-              id="webhook-name"
-              placeholder="Ej: n8n producción"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none"
-            />
+            <Field label="Nombre" htmlFor="webhook-name">
+              <Input
+                id="webhook-name"
+                placeholder="Ej: n8n producción"
+                value={name}
+                onChange={e => setName(e.target.value)}
+              />
+            </Field>
 
-            <label htmlFor="webhook-url" className="block text-sm font-medium text-gray-700 mb-1 mt-3">
-              URL <span className="text-brand-pink">*</span>
-            </label>
-            <input
-              id="webhook-url"
-              autoFocus
-              placeholder="https://tu-n8n.com/webhook/vendepro"
-              value={url}
-              onChange={e => setUrl(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm font-mono focus:outline-none"
-            />
+            <Field label="URL" required htmlFor="webhook-url" className="mt-3">
+              <Input
+                id="webhook-url"
+                autoFocus
+                placeholder="https://tu-n8n.com/webhook/vendepro"
+                value={url}
+                onChange={e => setUrl(e.target.value)}
+                className="font-mono"
+              />
+            </Field>
 
             <p className="block text-sm font-medium text-gray-700 mb-1 mt-3">
               Eventos <span className="text-brand-pink">*</span>
             </p>
             <div className="space-y-2">
               {EVENT_KEYS.map(key => (
-                <label key={key} className="flex items-start gap-2.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={events.includes(key)}
-                    onChange={e => setEvents(e.target.checked ? [...events, key] : events.filter(x => x !== key))}
-                    className="mt-0.5 w-4 h-4 accent-[#ff007c]"
-                  />
-                  <span className="text-sm">
-                    <span className="text-ink font-medium">{WEBHOOK_EVENTS[key].label}</span>
-                    <span className="block text-xs text-gray-500">{WEBHOOK_EVENTS[key].description}</span>
-                  </span>
-                </label>
+                <Checkbox
+                  key={key}
+                  checked={events.includes(key)}
+                  onChange={checked => setEvents(checked ? [...events, key] : events.filter(x => x !== key))}
+                  label={`${WEBHOOK_EVENTS[key].label} — ${WEBHOOK_EVENTS[key].description}`}
+                  className="items-start"
+                />
               ))}
             </div>
 
             <div className="flex gap-2 mt-5">
-              <button
-                onClick={() => setShowCreate(false)}
-                className="flex-1 border rounded-lg py-2 text-sm text-gray-600 hover:bg-gray-50"
-              >
+              <Button variant="outline" fullWidth onClick={() => setShowCreate(false)}>
                 Cancelar
-              </button>
-              <button
+              </Button>
+              <Button
+                fullWidth
                 onClick={handleCreate}
-                disabled={!urlValid || events.length === 0 || saving}
-                className="flex-1 bg-gradient-to-br from-brand-pink to-brand-orange text-white rounded-lg py-2 text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+                disabled={!urlValid || events.length === 0}
+                loading={saving}
+                icon={<Plus className="w-4 h-4" />}
               >
-                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                {saving ? 'Creando...' : 'Crear webhook'}
-              </button>
+                Crear webhook
+              </Button>
             </div>
           </div>
         </div>

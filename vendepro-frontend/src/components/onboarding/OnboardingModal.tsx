@@ -54,7 +54,7 @@ export default function OnboardingModal({ userName, onClose }: Props) {
       onClick={onClose}
     >
       <div
-        className={`bg-white rounded-2xl w-full max-w-xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300 ${visible ? 'scale-100' : 'scale-95'}`}
+        className={`bg-white rounded-card w-full max-w-xl shadow-pop flex flex-col overflow-hidden transition-all duration-300 ${visible ? 'scale-100' : 'scale-95'}`}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -86,7 +86,7 @@ export default function OnboardingModal({ userName, onClose }: Props) {
             </button>
             <button
               onClick={goNext}
-              className="flex items-center gap-1.5 bg-gradient-to-r from-brand-pink to-brand-orange text-white px-5 py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity shadow-sm"
+              className="flex items-center gap-1.5 bg-gradient-to-r from-brand-pink to-brand-orange text-white px-5 py-2 rounded-control text-sm font-semibold hover:opacity-90 transition-opacity"
             >
               Siguiente <ChevronRight className="w-4 h-4" />
             </button>

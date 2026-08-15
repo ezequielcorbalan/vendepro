@@ -1,9 +1,10 @@
 import { BarChart3 } from 'lucide-react'
+import { StatTile } from '@/components/ui/StatTile'
 
 export default function Step7Reportes() {
   return (
     <div className="flex flex-col items-center text-center px-4 py-6 gap-5">
-      <div className="w-16 h-16 rounded-2xl bg-amber-100 flex items-center justify-center">
+      <div className="w-16 h-16 rounded-control bg-amber-100 flex items-center justify-center">
         <BarChart3 className="w-8 h-8 text-amber-600" />
       </div>
       <div className="space-y-1">
@@ -20,10 +21,7 @@ export default function Step7Reportes() {
           { label: 'Tasaciones', value: '8', color: 'bg-purple-50 text-purple-700' },
           { label: 'Conversión', value: '18%', color: 'bg-pink-50 text-pink-700' },
         ].map(kpi => (
-          <div key={kpi.label} className={`rounded-xl p-3 text-center ${kpi.color}`}>
-            <p className="text-xl font-bold">{kpi.value}</p>
-            <p className="text-[10px] font-medium opacity-80">{kpi.label}</p>
-          </div>
+          <StatTile key={kpi.label} value={kpi.value} label={kpi.label} tone={kpi.color} />
         ))}
       </div>
 
@@ -34,7 +32,7 @@ export default function Step7Reportes() {
           ['📑', 'Reportes PDF para propietarios con tu branding y datos de mercado'],
           ['🏆', 'Mi Performance: métricas individuales y seguimiento de objetivos'],
         ].map(([icon, text]) => (
-          <div key={text} className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+          <div key={text} className="flex items-start gap-3 p-3 bg-gray-50 rounded-card">
             <span className="text-lg leading-none mt-0.5">{icon}</span>
             <p className="text-sm text-gray-700">{text}</p>
           </div>

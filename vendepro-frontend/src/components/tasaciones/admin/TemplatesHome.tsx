@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation'
 import { Plus, Copy, Archive, Edit, User } from 'lucide-react'
 import { listTemplates, createTemplate, duplicateTemplate, archiveTemplate } from '../shared/api'
 import { getCurrentUser } from '@/lib/auth'
+import { Field, Input, Select } from '@/components/ui/Input'
+import { Button } from '@/components/ui/Button'
 
 const KINDS = ['casa', 'depto', 'terreno', 'corporativo', 'custom'] as const
 
@@ -81,8 +83,8 @@ export function TemplatesHome() {
           const badgeColor = t.is_system
             ? 'bg-slate-100 text-slate-600'
             : t.agent_id
-              ? (isOwn ? 'bg-pink-100 text-pink-700' : 'bg-purple-100 text-purple-700')
-              : 'bg-blue-100 text-blue-700'
+              ? (isOwn ? 'bg-pink-100 text-pink-800' : 'bg-purple-100 text-purple-800')
+              : 'bg-blue-100 text-blue-800'
 
           return (
             <article key={t.id} className={`rounded-lg border bg-white p-4 ${isOwn ? 'border-pink-200' : 'border-slate-200'}`}>
@@ -106,14 +108,18 @@ export function TemplatesHome() {
           <div className="w-full max-w-sm rounded-lg bg-white p-6">
             <h3 className="text-lg font-semibold">Nuevo template</h3>
             <div className="mt-4 space-y-3">
-              <input placeholder="Nombre" value={newName} onChange={e => setNewName(e.target.value)} className="w-full rounded border border-slate-300 px-3 py-2 text-sm" />
-              <select value={newKind} onChange={e => setNewKind(e.target.value as any)} className="w-full rounded border border-slate-300 px-3 py-2 text-sm">
-                {KINDS.map(k => <option key={k} value={k}>{k}</option>)}
-              </select>
+              <Field label="Nombre">
+                <Input placeholder="Nombre" value={newName} onChange={e => setNewName(e.target.value)} />
+              </Field>
+              <Field label="Tipo">
+                <Select value={newKind} onChange={e => setNewKind(e.target.value as any)}>
+                  {KINDS.map(k => <option key={k} value={k}>{k}</option>)}
+                </Select>
+              </Field>
             </div>
             <div className="mt-4 flex justify-end gap-2">
-              <button onClick={() => setCreating(false)} className="rounded px-4 py-2 text-sm">Cancelar</button>
-              <button onClick={handleCreate} className="rounded bg-gradient-to-br from-brand-pink to-brand-orange px-4 py-2 text-sm text-white">Crear</button>
+              <Button variant="ghost" onClick={() => setCreating(false)}>Cancelar</Button>
+              <Button onClick={handleCreate}>Crear</Button>
             </div>
           </div>
         </div>

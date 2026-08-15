@@ -29,9 +29,9 @@ export function InterestedLeadsSection({ propertyId }: { propertyId: string }) {
   }, [propertyId])
 
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
+    <div className="bg-white border border-gray-200 rounded-card p-4 shadow-card">
       <div className="flex items-center gap-2 mb-3">
-        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-sm">
+        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center">
           <Users className="w-3.5 h-3.5 text-white" />
         </div>
         <p className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Interesados</p>
@@ -60,7 +60,7 @@ export function InterestedLeadsSection({ propertyId }: { propertyId: string }) {
               ?? { label: item.status, color: 'bg-gray-100 text-gray-600' }
             const stageCfg = getStageConfig(item.lead_stage, item.lead_pipeline)
             return (
-              <div key={item.id} className="border border-gray-100 rounded-xl p-3">
+              <div key={item.id} className="border border-gray-100 rounded-card p-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">

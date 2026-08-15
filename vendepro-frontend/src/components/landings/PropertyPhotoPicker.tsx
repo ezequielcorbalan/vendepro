@@ -62,7 +62,7 @@ export default function PropertyPhotoPicker({
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl w-full max-w-3xl max-h-[85vh] overflow-hidden flex"
+        className="bg-white rounded-card shadow-pop w-full max-w-3xl max-h-[85vh] overflow-hidden flex"
         onClick={e => e.stopPropagation()}
       >
         <aside className="w-60 border-r border-gray-200 overflow-auto flex-shrink-0">

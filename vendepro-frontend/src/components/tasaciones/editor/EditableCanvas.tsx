@@ -185,17 +185,17 @@ function SortableBlock({
           {...attributes}
           {...listeners}
           onClick={(e) => e.stopPropagation()}
-          className="cursor-grab rounded bg-white/90 p-1 text-slate-500 shadow-sm hover:text-ink active:cursor-grabbing"
+          className="cursor-grab rounded bg-white/90 p-1 text-slate-500 shadow-pop hover:text-ink active:cursor-grabbing"
           title="Arrastrar para reordenar"
           aria-label="Reordenar bloque"
         >
           <GripVertical className="h-4 w-4" />
         </button>
-        <span className="rounded bg-white/90 px-2 py-0.5 text-[10px] font-medium text-slate-500 shadow-sm">
+        <span className="rounded bg-white/90 px-2 py-0.5 text-[10px] font-medium text-slate-500 shadow-pop">
           {getBlockMeta(block.type).label}
         </span>
         {!isFree && (
-          <span className="flex items-center gap-0.5 rounded bg-white/90 px-1.5 py-0.5 text-[10px] text-slate-400 shadow-sm" title="Bloque del template">
+          <span className="flex items-center gap-0.5 rounded bg-white/90 px-1.5 py-0.5 text-[10px] text-slate-400 shadow-pop" title="Bloque del template">
             <Lock className="h-3 w-3" /> template
           </span>
         )}
@@ -206,14 +206,14 @@ function SortableBlock({
         {!isFree && onEditStructured && (
           <button
             onClick={(e) => { e.stopPropagation(); onEditStructured() }}
-            className="rounded bg-white/90 px-2 py-1 text-[11px] font-medium text-slate-600 shadow-sm hover:text-brand-pink"
+            className="rounded bg-white/90 px-2 py-1 text-[11px] font-medium text-slate-600 shadow-pop hover:text-brand-pink"
           >
             Editar campos
           </button>
         )}
         <button
           onClick={(e) => { e.stopPropagation(); if (confirm('¿Eliminar este bloque de la tasación?')) onRemove() }}
-          className="rounded bg-white/90 p-1 text-slate-400 shadow-sm hover:text-rose-600"
+          className="rounded bg-white/90 p-1 text-slate-400 shadow-pop hover:text-rose-600"
           title="Eliminar bloque"
           aria-label="Eliminar bloque"
         >
@@ -246,7 +246,7 @@ function BackgroundColorButton({ value, onChange }: { value: string | null; onCh
     <div className="relative">
       <button
         onClick={(e) => { e.stopPropagation(); setOpen(o => !o) }}
-        className="rounded bg-white/90 p-1 text-slate-400 shadow-sm hover:text-slate-700"
+        className="rounded bg-white/90 p-1 text-slate-400 shadow-pop hover:text-slate-700"
         title="Color de fondo"
         aria-label="Color de fondo del bloque"
       >
@@ -255,7 +255,7 @@ function BackgroundColorButton({ value, onChange }: { value: string | null; onCh
       {open && (
         <>
           <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-6 z-30 flex items-center gap-2 rounded-lg border border-slate-200 bg-white p-2 shadow-lg" onClick={(e) => e.stopPropagation()}>
+          <div className="absolute right-0 top-6 z-30 flex items-center gap-2 rounded-control border border-slate-200 bg-white p-2 shadow-pop" onClick={(e) => e.stopPropagation()}>
             <input
               type="color"
               value={value ?? '#ffffff'}
@@ -409,7 +409,7 @@ function InsertZone({ onInsert }: { onInsert: (type: AppraisalBlockType) => void
       <div className={`pointer-events-none absolute inset-x-6 top-1/2 h-px -translate-y-1/2 transition-colors ${open ? 'bg-brand-pink/30' : 'bg-transparent group-hover/insert:bg-brand-pink/30'}`} />
       <button
         onClick={() => setOpen(o => !o)}
-        className={`z-10 flex h-5 w-5 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 shadow-sm transition-opacity hover:border-brand-pink hover:text-brand-pink ${open ? 'opacity-100' : 'opacity-0 group-hover/insert:opacity-100 focus:opacity-100'}`}
+        className={`z-10 flex h-5 w-5 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 shadow-pop transition-opacity hover:border-brand-pink hover:text-brand-pink ${open ? 'opacity-100' : 'opacity-0 group-hover/insert:opacity-100 focus:opacity-100'}`}
         title="Insertar elemento aquí"
         aria-label="Insertar elemento"
       >
@@ -418,7 +418,7 @@ function InsertZone({ onInsert }: { onInsert: (type: AppraisalBlockType) => void
       {open && (
         <>
           <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
-          <div className="absolute top-6 z-30 flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
+          <div className="absolute top-6 z-30 flex flex-wrap gap-1 rounded-card border border-slate-200 bg-white p-2 shadow-pop">
             {PALETTE.map(({ type, icon: Icon }) => (
               <button
                 key={type}

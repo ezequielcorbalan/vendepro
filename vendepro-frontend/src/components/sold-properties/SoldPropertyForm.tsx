@@ -10,16 +10,14 @@ import {
   uploadPhotoToR2,
 } from '@/lib/sold-properties/api'
 import { useToast } from '@/components/ui/Toast'
+import { Field, Input, Select, Textarea } from '@/components/ui/Input'
+import { Button } from '@/components/ui/Button'
 
 interface Props {
   initial?: Partial<SoldProperty> | null
   onCancel: () => void
   onSaved: (id: string) => void
 }
-
-const inputCls =
-  'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none'
-const labelCls = 'block text-xs font-medium text-gray-700 mb-1'
 
 export default function SoldPropertyForm({ initial, onCancel, onSaved }: Props) {
   const { toast } = useToast()
@@ -175,7 +173,7 @@ export default function SoldPropertyForm({ initial, onCancel, onSaved }: Props) 
         <button
           type="button"
           onClick={() => setOriginType('team')}
-          className={`px-3 py-1.5 rounded-lg font-medium ${
+          className={`px-3 py-1.5 rounded-control font-medium ${
             originType === 'team' ? 'bg-brand-pink/10 text-brand-pink' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
@@ -184,7 +182,7 @@ export default function SoldPropertyForm({ initial, onCancel, onSaved }: Props) 
         <button
           type="button"
           onClick={() => setOriginType('external')}
-          className={`px-3 py-1.5 rounded-lg font-medium ${
+          className={`px-3 py-1.5 rounded-control font-medium ${
             originType === 'external' ? 'bg-brand-pink/10 text-brand-pink' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
@@ -194,132 +192,99 @@ export default function SoldPropertyForm({ initial, onCancel, onSaved }: Props) 
 
       {originType === 'external' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label className={labelCls}>Nombre del colega *</label>
-            <input
+          <Field label="Nombre del colega *">
+            <Input
               required
               value={form.external_agent_name}
               onChange={e => setField('external_agent_name', e.target.value)}
               placeholder="Juan Pérez"
-              className={inputCls}
             />
-          </div>
-          <div>
-            <label className={labelCls}>Inmobiliaria</label>
-            <input
+          </Field>
+          <Field label="Inmobiliaria">
+            <Input
               value={form.external_agency}
               onChange={e => setField('external_agency', e.target.value)}
               placeholder="ej. Tizado / Reynolds"
-              className={inputCls}
             />
-          </div>
+          </Field>
         </div>
       )}
 
       {/* Identificación */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div>
-          <label className={labelCls}>Tipo *</label>
-          <select
-            value={form.property_type}
-            onChange={e => setField('property_type', e.target.value as any)}
-            className={inputCls}
-          >
+        <Field label="Tipo *">
+          <Select value={form.property_type} onChange={e => setField('property_type', e.target.value as any)}>
             {PROPERTY_TYPES.map(t => (
               <option key={t.value} value={t.value}>{t.label}</option>
             ))}
-          </select>
-        </div>
-        <div>
-          <label className={labelCls}>Barrio</label>
-          <input
-            value={form.neighborhood}
-            onChange={e => setField('neighborhood', e.target.value)}
-            placeholder="Palermo"
-            className={inputCls}
-          />
-        </div>
-        <div>
-          <label className={labelCls}>Dirección aproximada</label>
-          <input
-            value={form.address_approx}
-            onChange={e => setField('address_approx', e.target.value)}
-            placeholder="Ladines al 2400"
-            className={inputCls}
-          />
-        </div>
+          </Select>
+        </Field>
+        <Field label="Barrio">
+          <Input value={form.neighborhood} onChange={e => setField('neighborhood', e.target.value)} placeholder="Palermo" />
+        </Field>
+        <Field label="Dirección aproximada">
+          <Input value={form.address_approx} onChange={e => setField('address_approx', e.target.value)} placeholder="Ladines al 2400" />
+        </Field>
       </div>
 
       {/* Áreas */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div>
-          <label className={labelCls}>Sup. cubierta (m²)</label>
-          <input type="number" step="0.1" value={form.covered_area as any} onChange={e => setField('covered_area', e.target.value as any)} className={inputCls} />
-        </div>
-        <div>
-          <label className={labelCls}>Sup. total (m²)</label>
-          <input type="number" step="0.1" value={form.total_area as any} onChange={e => setField('total_area', e.target.value as any)} className={inputCls} />
-        </div>
-        <div>
-          <label className={labelCls}>Semicub. (m²)</label>
-          <input type="number" step="0.1" value={form.semi_area as any} onChange={e => setField('semi_area', e.target.value as any)} className={inputCls} />
-        </div>
-        <div>
-          <label className={labelCls}>Cocheras</label>
-          <input type="number" step="1" value={form.parking as any} onChange={e => setField('parking', e.target.value as any)} className={inputCls} />
-        </div>
+        <Field label="Sup. cubierta (m²)">
+          <Input type="number" step="0.1" value={form.covered_area as any} onChange={e => setField('covered_area', e.target.value as any)} />
+        </Field>
+        <Field label="Sup. total (m²)">
+          <Input type="number" step="0.1" value={form.total_area as any} onChange={e => setField('total_area', e.target.value as any)} />
+        </Field>
+        <Field label="Semicub. (m²)">
+          <Input type="number" step="0.1" value={form.semi_area as any} onChange={e => setField('semi_area', e.target.value as any)} />
+        </Field>
+        <Field label="Cocheras">
+          <Input type="number" step="1" value={form.parking as any} onChange={e => setField('parking', e.target.value as any)} />
+        </Field>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        <div>
-          <label className={labelCls}>Ambientes</label>
-          <input type="number" step="1" value={form.rooms as any} onChange={e => setField('rooms', e.target.value as any)} className={inputCls} />
-        </div>
-        <div>
-          <label className={labelCls}>Dormitorios</label>
-          <input type="number" step="1" value={form.bedrooms as any} onChange={e => setField('bedrooms', e.target.value as any)} className={inputCls} />
-        </div>
-        <div>
-          <label className={labelCls}>Baños</label>
-          <input type="number" step="1" value={form.bathrooms as any} onChange={e => setField('bathrooms', e.target.value as any)} className={inputCls} />
-        </div>
+        <Field label="Ambientes">
+          <Input type="number" step="1" value={form.rooms as any} onChange={e => setField('rooms', e.target.value as any)} />
+        </Field>
+        <Field label="Dormitorios">
+          <Input type="number" step="1" value={form.bedrooms as any} onChange={e => setField('bedrooms', e.target.value as any)} />
+        </Field>
+        <Field label="Baños">
+          <Input type="number" step="1" value={form.bathrooms as any} onChange={e => setField('bathrooms', e.target.value as any)} />
+        </Field>
       </div>
 
       {/* Precios y fecha */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div>
-          <label className={labelCls}>Precio publicación (USD)</label>
-          <input type="number" step="100" value={form.listing_price_usd as any} onChange={e => setField('listing_price_usd', e.target.value as any)} className={inputCls} placeholder="180000" />
-        </div>
-        <div>
-          <label className={labelCls}>Precio de cierre (USD) *</label>
-          <input type="number" step="100" required value={form.closing_price_usd as any} onChange={e => setField('closing_price_usd', e.target.value as any)} className={inputCls} placeholder="170000" />
-        </div>
-        <div>
-          <label className={labelCls}>Fecha de cierre</label>
-          <input type="date" value={form.closed_at} onChange={e => setField('closed_at', e.target.value)} className={inputCls} />
-        </div>
+        <Field label="Precio publicación (USD)">
+          <Input type="number" step="100" value={form.listing_price_usd as any} onChange={e => setField('listing_price_usd', e.target.value as any)} placeholder="180000" />
+        </Field>
+        <Field label="Precio de cierre (USD) *">
+          <Input type="number" step="100" required value={form.closing_price_usd as any} onChange={e => setField('closing_price_usd', e.target.value as any)} placeholder="170000" />
+        </Field>
+        <Field label="Fecha de cierre">
+          <Input type="date" value={form.closed_at} onChange={e => setField('closed_at', e.target.value)} />
+        </Field>
       </div>
 
       {/* Notas */}
-      <div>
-        <label className={labelCls}>Notas internas</label>
-        <textarea
+      <Field label="Notas internas">
+        <Textarea
           rows={2}
           value={form.notes}
           onChange={e => setField('notes', e.target.value)}
           placeholder="ej. vendió rápido por mudanza, contraoferta del 8%, etc."
-          className={inputCls + ' resize-none'}
         />
-      </div>
+      </Field>
 
       {/* Fotos */}
       <div>
-        <label className={labelCls}>Fotos (8 ideales)</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">Fotos (8 ideales)</label>
         <div
           onDragOver={e => e.preventDefault()}
           onDrop={onDrop}
-          className="border-2 border-dashed border-gray-200 rounded-xl p-3 hover:border-brand-pink/40 transition-colors"
+          className="border-2 border-dashed border-gray-200 rounded-card p-3 hover:border-brand-pink/40 transition-colors"
         >
           {photos.length === 0 ? (
             <div className="text-center py-6 text-xs text-gray-500">
@@ -343,13 +308,9 @@ export default function SoldPropertyForm({ initial, onCancel, onSaved }: Props) 
             </div>
           )}
           <div className="flex items-center gap-2 mt-2">
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              className="text-xs flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
-            >
-              <Upload className="w-3.5 h-3.5" /> Subir
-            </button>
+            <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()} icon={<Upload className="w-3.5 h-3.5" />}>
+              Subir
+            </Button>
             <span className="text-[10px] text-gray-400 flex items-center gap-1">
               <ClipboardPaste className="w-3 h-3" /> o pegá con Ctrl+V
             </span>
@@ -372,21 +333,10 @@ export default function SoldPropertyForm({ initial, onCancel, onSaved }: Props) 
 
       {/* Acciones */}
       <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg"
-        >
-          Cancelar
-        </button>
-        <button
-          type="submit"
-          disabled={saving}
-          className="px-5 py-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white text-sm font-medium rounded-lg hover:opacity-90 disabled:opacity-50 inline-flex items-center gap-2"
-        >
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+        <Button type="button" variant="ghost" onClick={onCancel}>Cancelar</Button>
+        <Button type="submit" loading={saving} icon={<Save className="w-4 h-4" />}>
           {initial?.id ? 'Guardar cambios' : 'Cargar cierre'}
-        </button>
+        </Button>
       </div>
     </form>
   )

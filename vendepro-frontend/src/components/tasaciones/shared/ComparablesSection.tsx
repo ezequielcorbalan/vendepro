@@ -4,6 +4,7 @@ import { Plus, Database, Building2 } from 'lucide-react'
 import { ComparableCard, type ComparableData } from './ComparableCard'
 import { SoldPropertiesPickerModal } from './SoldPropertiesPickerModal'
 import { PropertiesPickerModal } from './PropertiesPickerModal'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 /**
  * Cualquier estructura que tenga al menos los campos de un ComparableData
@@ -112,10 +113,8 @@ export function ComparablesSection<Key extends string | number>({
 
       {/* Lista */}
       {items.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-300 px-6 py-10 text-center">
-          <p className="text-sm text-slate-500">
-            Todavía no agregaste comparables.
-          </p>
+        <div className="rounded-card border border-dashed border-slate-300">
+          <EmptyState icon={<Building2 className="w-6 h-6" />} title="Todavía no agregaste comparables." />
         </div>
       ) : (
         <div className="space-y-3">

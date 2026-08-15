@@ -28,7 +28,7 @@ export default function DiagnosisCard({
   soldViewsPerDay,
 }: DiagnosisCardProps) {
   return (
-    <div className="rounded-xl overflow-hidden shadow-sm border border-red-200 bg-gradient-to-br from-red-50 via-orange-50/50 to-red-50">
+    <div className="rounded-card overflow-hidden shadow-card border border-red-200 bg-gradient-to-br from-red-50 via-orange-50/50 to-red-50">
       <div className="flex items-start gap-3 p-4 sm:p-5">
         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-md shrink-0" aria-hidden="true">
           <AlertTriangle className="w-5 h-5 text-white" />
@@ -53,7 +53,7 @@ export default function DiagnosisCard({
                 return (
                   <div
                     key={s.label}
-                    className="flex items-start gap-2 p-2 rounded-lg bg-white/70 border border-red-100/60 shadow-sm"
+                    className="flex items-start gap-2 p-2 rounded-lg bg-white/70 border border-red-100/60"
                   >
                     <div className="w-7 h-7 rounded-md bg-gradient-to-br from-brand-orange/20 to-brand-pink/20 flex items-center justify-center shrink-0" aria-hidden="true">
                       <Icon className="w-3.5 h-3.5 text-brand-pink" />

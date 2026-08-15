@@ -5,6 +5,7 @@ import { X, ChevronRight, Loader2 } from 'lucide-react'
 import { templatesApi, landingsApi } from '@/lib/landings/api'
 import type { LandingTemplate, LandingKind } from '@/lib/landings/types'
 import { slugifyBase, isValidSlugBase, publicLandingHostPath } from '@/lib/landings/slug'
+import { Field, Input } from '@/components/ui/Input'
 
 type Step = 'template' | 'name'
 
@@ -49,7 +50,7 @@ export default function NewLandingModal({ onClose, asTasacionTemplate = false }:
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-xl flex flex-col" onClick={e => e.stopPropagation()}>
+      <div className="bg-white rounded-card w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-pop flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-semibold text-ink">
@@ -85,7 +86,7 @@ export default function NewLandingModal({ onClose, asTasacionTemplate = false }:
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {filtered.map(t => (
                   <button key={t.id} onClick={() => { setSelectedTemplate(t); setStep('name') }}
-                    className="text-left bg-white border border-gray-200 hover:border-brand-pink rounded-2xl overflow-hidden transition-colors">
+                    className="text-left bg-white border border-gray-200 hover:border-brand-pink rounded-card overflow-hidden transition-colors">
                     <div className="aspect-[16/10] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-gray-400">
                       {t.preview_image_url ? <img src={t.preview_image_url} alt="" className="w-full h-full object-cover" /> : <span className="text-xs">Sin preview</span>}
                     </div>
@@ -107,20 +108,20 @@ export default function NewLandingModal({ onClose, asTasacionTemplate = false }:
           <div className="flex-1 overflow-auto p-6">
             <p className="text-sm text-gray-500 mb-6">Template elegido: <strong className="text-ink">{selectedTemplate.name}</strong></p>
 
-            <label className="block text-sm font-medium text-gray-700 mb-2">Nombre / slug de la landing</label>
-            <input
-              autoFocus
-              value={slugBase}
-              onChange={e => setSlugBase(e.target.value)}
-              placeholder="ej: palermo-soho"
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none"
-            />
+            <Field label="Nombre / slug de la landing">
+              <Input
+                autoFocus
+                value={slugBase}
+                onChange={e => setSlugBase(e.target.value)}
+                placeholder="ej: palermo-soho"
+              />
+            </Field>
             {slugBase && (
               <p className="mt-2 text-xs text-gray-500">
                 URL final: <code>{publicLandingHostPath(`${slugifyBase(slugBase) || 'slug'}-XXXXX`)}</code> (se agrega un sufijo aleatorio de 5 chars)
               </p>
             )}
-            {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+            {error && <p className="mt-3 text-sm text-danger">{error}</p>}
 
             <div className="flex items-center justify-between mt-8">
               <button onClick={() => setStep('template')} className="text-sm text-gray-600 hover:text-ink">← Volver</button>

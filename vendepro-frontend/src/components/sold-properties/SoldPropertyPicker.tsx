@@ -8,6 +8,7 @@ import {
   PROPERTY_TYPES,
   listSoldProperties,
 } from '@/lib/sold-properties/api'
+import { Input, Select } from '@/components/ui/Input'
 
 interface Props {
   /** Filtros pre-cargados (ej. desde la propiedad que se está tasando). */
@@ -22,9 +23,9 @@ interface Props {
 }
 
 const ORIGIN_LABELS: Record<string, { label: string; cls: string }> = {
-  mine: { label: 'Mías', cls: 'bg-pink-100 text-pink-700' },
-  team: { label: 'Equipo', cls: 'bg-blue-100 text-blue-700' },
-  external: { label: 'Externos', cls: 'bg-amber-100 text-amber-700' },
+  mine: { label: 'Mías', cls: 'bg-pink-100 text-pink-800' },
+  team: { label: 'Equipo', cls: 'bg-blue-100 text-blue-800' },
+  external: { label: 'Externos', cls: 'bg-amber-100 text-amber-800' },
 }
 
 export default function SoldPropertyPicker({
@@ -64,11 +65,11 @@ export default function SoldPropertyPicker({
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl max-w-3xl w-full overflow-hidden flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+      <div className="bg-white rounded-card shadow-pop max-w-3xl w-full overflow-hidden flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
         <div className="bg-gradient-to-r from-brand-pink to-brand-orange h-1.5" />
         <div className="p-5 flex items-center justify-between border-b border-gray-100">
           <div className="flex items-center gap-2">
-            <Database className="w-5 h-5 text-brand-pink" />
+            <Database className="w-5 h-5 text-gray-600" />
             <h2 className="text-lg font-semibold text-ink">Cierres reales</h2>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
@@ -96,33 +97,29 @@ export default function SoldPropertyPicker({
             })}
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <select
+            <Select
               value={filters.property_type ?? ''}
               onChange={e => setFilters(f => ({ ...f, property_type: e.target.value || undefined }))}
-              className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs"
             >
               <option value="">Tipo: cualquiera</option>
               {PROPERTY_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-            </select>
-            <input
+            </Select>
+            <Input
               placeholder="Barrio"
               value={filters.neighborhood ?? ''}
               onChange={e => setFilters(f => ({ ...f, neighborhood: e.target.value || undefined }))}
-              className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs"
             />
-            <input
+            <Input
               type="number"
               placeholder="m² desde"
               value={filters.min_covered_area ?? ''}
               onChange={e => setFilters(f => ({ ...f, min_covered_area: e.target.value ? Number(e.target.value) : undefined }))}
-              className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs"
             />
-            <input
+            <Input
               type="number"
               placeholder="m² hasta"
               value={filters.max_covered_area ?? ''}
               onChange={e => setFilters(f => ({ ...f, max_covered_area: e.target.value ? Number(e.target.value) : undefined }))}
-              className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs"
             />
           </div>
         </div>
@@ -147,7 +144,7 @@ export default function SoldPropertyPicker({
                     key={sp.id}
                     type="button"
                     onClick={() => toggle(sp.id)}
-                    className={`w-full text-left flex items-center gap-3 p-3 rounded-xl border transition ${
+                    className={`w-full text-left flex items-center gap-3 p-3 rounded-control border transition ${
                       isSelected
                         ? 'border-brand-pink bg-brand-pink/5'
                         : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50'

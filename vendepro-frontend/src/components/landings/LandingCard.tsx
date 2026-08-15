@@ -11,7 +11,7 @@ export default function LandingCard({ landing }: { landing: Landing }) {
   const isTasacionTemplate = landing.template_type === 'tasacion'
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+    <div className="bg-white rounded-card border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
       <Link href={`/landings/${landing.id}`} className="block">
         <div className="h-36 bg-gradient-to-br from-brand-pink/10 to-brand-orange/10 flex items-center justify-center text-gray-400">
           {landing.og_image_url

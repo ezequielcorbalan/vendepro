@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { Calendar, CheckCircle2, AlertCircle } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
+import { Field, Input } from '@/components/ui/Input'
+import { Button } from '@/components/ui/Button'
 
 interface Props {
   propertyId: string
@@ -54,34 +56,21 @@ export default function AuthorizationWidget({
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 relative overflow-hidden">
+    <div className="bg-white rounded-card border border-gray-200 shadow-card p-5 relative overflow-hidden">
       <div className="flex items-center gap-2 mb-4">
-        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-sm">
+        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center">
           <Calendar className="w-4.5 h-4.5 text-white" />
         </div>
         <h2 className="text-sm font-semibold text-ink">Autorización de venta</h2>
       </div>
 
       <div className="grid grid-cols-2 gap-3 mb-3">
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Fecha de inicio</label>
-          <input
-            type="date"
-            value={startDate}
-            onChange={e => setStartDate(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none"
-          />
-        </div>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Duración (días)</label>
-          <input
-            type="number"
-            value={durationDays}
-            onChange={e => setDurationDays(e.target.value)}
-            placeholder="180"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none"
-          />
-        </div>
+        <Field label="Fecha de inicio">
+          <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+        </Field>
+        <Field label="Duración (días)">
+          <Input type="number" value={durationDays} onChange={e => setDurationDays(e.target.value)} placeholder="180" />
+        </Field>
       </div>
 
       {remainingDays !== null && (
@@ -106,13 +95,9 @@ export default function AuthorizationWidget({
         </div>
       )}
 
-      <button
-        onClick={save}
-        disabled={saving}
-        className="mt-3 w-full bg-gradient-to-br from-brand-pink to-brand-orange text-white text-sm font-medium py-2 rounded-lg hover:opacity-90 disabled:opacity-50"
-      >
-        {saved ? '✓ Guardado' : saving ? 'Guardando...' : 'Guardar'}
-      </button>
+      <Button onClick={save} loading={saving} fullWidth className="mt-3">
+        {saved ? '✓ Guardado' : 'Guardar'}
+      </Button>
     </div>
   )
 }
