@@ -168,17 +168,17 @@ export const DEFAULT_TAGS = {
 } as const
 
 export const PROPERTY_STAGES = {
-  propuesta:     { label: 'Propuesta',       color: 'bg-gray-100 text-gray-700',       order: 0 },
-  captada:       { label: 'Captada',         color: 'bg-green-100 text-green-800',     order: 1 },
-  publicada:     { label: 'Publicada',       color: 'bg-blue-100 text-blue-800',       order: 2 },
-  reservada:     { label: 'Reservada',       color: 'bg-purple-100 text-purple-800',   order: 3 },
-  suspendida:    { label: 'Suspendida',      color: 'bg-orange-100 text-orange-800',   order: 4 },
-  vendida:       { label: 'Vendida',         color: 'bg-emerald-100 text-emerald-800', order: 5 },
-  perdida:       { label: 'Perdida',         color: 'bg-red-100 text-red-700',         order: 6 },
-  invalida:      { label: 'Inválida',        color: 'bg-gray-100 text-gray-700',       order: 7 },
-  vencida:       { label: 'Vencida',         color: 'bg-red-100 text-red-800',         order: 8 },
-  archivada:     { label: 'Archivada',       color: 'bg-gray-100 text-gray-500',       order: 9 },
-  documentacion: { label: 'Documentación',   color: 'bg-amber-100 text-amber-800',     order: 99 },
+  propuesta:     { label: 'Propuesta',       color: 'bg-gray-100 text-gray-700',       dot: '#6b7280', order: 0 },
+  captada:       { label: 'Captada',         color: 'bg-green-100 text-green-800',     dot: '#22c55e', order: 1 },
+  publicada:     { label: 'Publicada',       color: 'bg-blue-100 text-blue-800',       dot: '#3b82f6', order: 2 },
+  reservada:     { label: 'Reservada',       color: 'bg-purple-100 text-purple-800',   dot: '#a855f7', order: 3 },
+  suspendida:    { label: 'Suspendida',      color: 'bg-orange-100 text-orange-800',   dot: '#f97316', order: 4 },
+  vendida:       { label: 'Vendida',         color: 'bg-emerald-100 text-emerald-800', dot: '#10b981', order: 5 },
+  perdida:       { label: 'Perdida',         color: 'bg-red-100 text-red-800',         dot: '#ef4444', order: 6 },
+  invalida:      { label: 'Inválida',        color: 'bg-gray-100 text-gray-700',       dot: '#6b7280', order: 7 },
+  vencida:       { label: 'Vencida',         color: 'bg-red-100 text-red-800',         dot: '#ef4444', order: 8 },
+  archivada:     { label: 'Archivada',       color: 'bg-gray-100 text-gray-500',       dot: '#9ca3af', order: 9 },
+  documentacion: { label: 'Documentación',   color: 'bg-amber-100 text-amber-800',     dot: '#f59e0b', order: 99 },
 } as const
 
 export type PropertyStage = keyof typeof PROPERTY_STAGES
@@ -189,6 +189,16 @@ export const ACTIVE_PROPERTY_STAGES: PropertyStage[] = ['captada', 'documentacio
 export const PROPOSED_PROPERTY_STAGES: PropertyStage[] = ['propuesta']
 export const FINAL_PROPERTY_STAGES: PropertyStage[] = ['vendida', 'perdida', 'invalida', 'archivada']
 export const PAUSED_PROPERTY_STAGES: PropertyStage[] = ['suspendida', 'vencida']
+
+// Estado de un reporte de propiedad (fuente única — antes duplicado entre el
+// detalle de reportes de una propiedad y el listado general).
+export const PROPERTY_REPORT_STATUS: Record<string, { label: string; color: string }> = {
+  published: { label: 'Publicado', color: 'bg-green-100 text-green-800' },
+  draft: { label: 'Borrador', color: 'bg-gray-100 text-gray-600' },
+}
+export function getReportStatus(status?: string) {
+  return PROPERTY_REPORT_STATUS[status ?? ''] ?? { label: status || '—', color: 'bg-amber-100 text-amber-800' }
+}
 
 export const ACTIVITY_TYPES = {
   llamada:           { label: 'Llamada',              icon: 'Phone',           color: 'text-blue-600 bg-blue-50' },
@@ -406,10 +416,10 @@ export function getUrgencyBadge(lead: any): { text: string; color: string } | nu
 }
 
 export const USER_ROLES = {
-  owner:      { label: 'Dueño',          color: 'bg-yellow-100 text-yellow-700', level: 4 },
-  admin:      { label: 'Administrador',  color: 'bg-red-100 text-red-700',       level: 3 },
-  supervisor: { label: 'Supervisor',     color: 'bg-purple-100 text-purple-700', level: 2 },
-  agent:      { label: 'Agente',         color: 'bg-blue-100 text-blue-700',     level: 1 },
+  owner:      { label: 'Dueño',          color: 'bg-yellow-100 text-yellow-800', level: 4 },
+  admin:      { label: 'Administrador',  color: 'bg-red-100 text-red-800',       level: 3 },
+  supervisor: { label: 'Supervisor',     color: 'bg-purple-100 text-purple-800', level: 2 },
+  agent:      { label: 'Agente',         color: 'bg-blue-100 text-blue-800',     level: 1 },
 } as const
 
 export type RoleKey = keyof typeof USER_ROLES
