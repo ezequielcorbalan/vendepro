@@ -51,7 +51,7 @@ export default function AlquiladasPage() {
 
       {loading ? (
         <div className="space-y-4 animate-pulse">
-          {[...Array(5)].map((_, i) => <div key={i} className="h-24 bg-gray-200 rounded-xl" />)}
+          {[...Array(5)].map((_, i) => <div key={i} className="h-24 bg-gray-200 rounded-card" />)}
         </div>
       ) : properties.length === 0 ? (
         <Card padded={false}>
@@ -83,7 +83,7 @@ export default function AlquiladasPage() {
                     </div>
                   </div>
                   {/* ds-todo: chip de estado "Alquilada" (cyan) sin mapeo en StageBadge (usa getStageConfig de leads) — por ahora se deja el span */}
-                  <span className="bg-cyan-100 text-cyan-700 text-[10px] font-medium px-2 py-1 rounded-full shrink-0">Alquilada</span>
+                  <span className="bg-cyan-100 text-cyan-800 text-[10px] font-medium px-2 py-1 rounded-full shrink-0">Alquilada</span>
                 </div>
               </Card>
             </Link>

@@ -151,7 +151,7 @@ export default function AgentesPage() {
                 <div className="flex items-center gap-2 flex-wrap">
                   <Text weight="medium">{agent.full_name}</Text>
                   {agent.id === currentUser?.id && (
-                    <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">Tú</span>
+                    <span className="text-[10px] bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-full">Tú</span>
                   )}
 
                   {agent.id === currentUser?.id ? (
@@ -169,7 +169,7 @@ export default function AgentesPage() {
                         <ChevronDown className="w-2.5 h-2.5" />
                       </button>
                       {changingRole === agent.id && (
-                        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20 bg-white border rounded-xl shadow-lg py-1 min-w-[160px]">
+                        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20 bg-white border rounded-card shadow-pop py-1 min-w-[160px]">
                           {roles.map(r => (
                             <button
                               key={r.id}

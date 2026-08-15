@@ -322,9 +322,9 @@ export default function ObjetivosConfigPage() {
             </div>
           ))}
 
-          {/* Proyección económica */}
-          <div className="border border-orange-200 bg-orange-50 rounded-xl p-4 space-y-3">
-            <p className="text-xs font-semibold text-orange-700 flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5" /> Proyección económica</p>
+          {/* Proyección económica — highlight con el token de marca (no es un alert, es un panel de resultados) */}
+          <div className="border border-brand-orange/20 bg-brand-orange/5 rounded-card p-4 space-y-3">
+            <p className="text-xs font-semibold text-brand-orange flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5" /> Proyección económica</p>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Ticket promedio (USD)">
                 <Input
@@ -345,24 +345,24 @@ export default function ObjetivosConfigPage() {
             </div>
             {facturacionMensual > 0 && (
               <div className="grid grid-cols-2 gap-3 pt-1">
-                <div className="bg-white rounded-lg p-3 text-center border border-orange-100">
+                <div className="bg-white rounded-control p-3 text-center border border-brand-orange/10">
                   <div className="text-[10px] text-gray-400 mb-0.5">Facturación mensual</div>
                   <div className="text-lg font-bold text-brand-orange">USD {facturacionMensual.toLocaleString()}</div>
                 </div>
-                <div className="bg-white rounded-lg p-3 text-center border border-orange-100">
+                <div className="bg-white rounded-control p-3 text-center border border-brand-orange/10">
                   <div className="text-[10px] text-gray-400 mb-0.5">Facturación anual</div>
                   <div className="text-lg font-bold text-primary">USD {facturacionAnual.toLocaleString()}</div>
                   {facturacionAnual < 40000 && (
-                    <div className="text-[10px] text-amber-600 mt-0.5">Por debajo del mínimo recomendado (USD 40.000/año)</div>
+                    <div className="text-[10px] text-warning mt-0.5">Por debajo del mínimo recomendado (USD 40.000/año)</div>
                   )}
                   {facturacionAnual >= 40000 && (
-                    <div className="text-[10px] text-green-600 mt-0.5">Supera el mínimo recomendado</div>
+                    <div className="text-[10px] text-success mt-0.5">Supera el mínimo recomendado</div>
                   )}
                 </div>
               </div>
             )}
             {ticketPromedio > 0 && comisionPct > 0 && !batchTargets['cierres'] && (
-              <p className="text-[10px] text-orange-600">Cargá el objetivo de cierres/ventas para calcular la proyección.</p>
+              <p className="text-[10px] text-brand-orange">Cargá el objetivo de cierres/ventas para calcular la proyección.</p>
             )}
           </div>
 

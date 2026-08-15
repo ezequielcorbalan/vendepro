@@ -274,8 +274,8 @@ export default function LeadDetailPage() {
             Ficha de tasación
           </Button>
         </div>
-        <div className="h-32 bg-gray-200 rounded-xl animate-pulse" />
-        <div className="h-48 bg-gray-200 rounded-xl animate-pulse" />
+        <div className="h-32 bg-gray-200 rounded-card animate-pulse" />
+        <div className="h-48 bg-gray-200 rounded-card animate-pulse" />
       </div>
     )
   }
@@ -437,7 +437,7 @@ export default function LeadDetailPage() {
                 {showTagPicker && (
                   <>
                     <div className="fixed inset-0 z-[9]" onClick={() => setShowTagPicker(false)} />
-                    <div className="absolute top-full left-0 mt-1 bg-white border rounded-lg shadow-lg z-10 p-2 min-w-[160px]">
+                    <div className="absolute top-full left-0 mt-1 bg-white border rounded-card shadow-pop z-10 p-2 min-w-[160px]">
                       {tagsLoading ? (
                         <div className="flex items-center gap-2 px-2 py-1"><Loader2 className="w-3 h-3 animate-spin text-gray-400" /><span className="text-xs text-gray-400">Cargando...</span></div>
                       ) : (
@@ -477,7 +477,7 @@ export default function LeadDetailPage() {
               <WhatsAppButton phone={lead.phone} onClick={() => handleQuickActivity('whatsapp')} />
               <Link
                 href={`/calendario?lead_id=${leadId}`}
-                className="inline-flex items-center gap-1.5 border border-gray-300 text-gray-700 px-4 py-2 rounded-control text-sm font-medium hover:bg-gray-50 transition-colors"
+                className="inline-flex items-center gap-2 border border-gray-300 text-gray-700 px-4 py-2 rounded-control text-sm font-medium hover:bg-gray-50 transition-colors"
               >
                 <Calendar className="w-4 h-4" /> Agendar
               </Link>
@@ -720,14 +720,14 @@ export default function LeadDetailPage() {
               )}
             </p>
             <div className="space-y-2">
-              <button onClick={goCreateProperty} className="w-full px-4 py-3 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 flex items-center justify-center gap-2">
+              <button onClick={goCreateProperty} className="w-full px-4 py-3 bg-green-600 text-white rounded-control text-sm font-medium hover:bg-green-700 flex items-center justify-center gap-2">
                 <Home className="w-4 h-4" /> Crear propiedad vinculada
               </button>
-              <button onClick={goCreateAppraisal} className="w-full px-4 py-3 bg-gradient-to-br from-brand-pink to-brand-orange text-white rounded-xl text-sm font-medium hover:opacity-90 flex items-center justify-center gap-2">
+              <button onClick={goCreateAppraisal} className="w-full px-4 py-3 bg-gradient-to-br from-brand-pink to-brand-orange text-white rounded-control text-sm font-medium hover:opacity-90 flex items-center justify-center gap-2">
                 <FileText className="w-4 h-4" /> Crear tasación vinculada
               </button>
               {!propModal.requireProperty && (
-                <button onClick={() => { const t = propModal.targetStage; setPropModal(null); applyStageChange(t) }} className="w-full px-4 py-3 border rounded-xl text-sm text-gray-600 hover:bg-gray-50">
+                <button onClick={() => { const t = propModal.targetStage; setPropModal(null); applyStageChange(t) }} className="w-full px-4 py-3 border rounded-control text-sm text-gray-600 hover:bg-gray-50">
                   Avanzar sin vincular
                 </button>
               )}
@@ -748,13 +748,13 @@ export default function LeadDetailPage() {
             <div className="space-y-2">
               <button
                 onClick={async () => { setShowReservaModal(false); await applyStageChange('cerrado'); router.push('/reservas') }}
-                className="w-full px-4 py-3 bg-pink-600 text-white rounded-xl text-sm font-medium hover:bg-pink-700"
+                className="w-full px-4 py-3 bg-pink-600 text-white rounded-control text-sm font-medium hover:bg-pink-700"
               >
                 Cerrar y crear reserva
               </button>
               <button
                 onClick={async () => { setShowReservaModal(false); await applyStageChange('cerrado') }}
-                className="w-full px-4 py-3 border rounded-xl text-sm text-gray-600 hover:bg-gray-50"
+                className="w-full px-4 py-3 border rounded-control text-sm text-gray-600 hover:bg-gray-50"
               >
                 Solo cerrar
               </button>

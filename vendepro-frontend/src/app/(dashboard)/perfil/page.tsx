@@ -79,7 +79,7 @@ export default function PerfilPage() {
       {/* Profile section */}
       <Card padded={false} className="p-6">
         <div className="flex items-center gap-2 mb-4">
-          <User className="w-4 h-4 text-primary" />
+          <User className="w-4 h-4 text-gray-600" />
           <Heading level={4} as="h2">Información personal</Heading>
         </div>
         <div className="space-y-4">
@@ -106,7 +106,7 @@ export default function PerfilPage() {
       {/* Password section */}
       <Card padded={false} className="p-6">
         <div className="flex items-center gap-2 mb-4">
-          <Lock className="w-4 h-4 text-primary" />
+          <Lock className="w-4 h-4 text-gray-600" />
           <Heading level={4} as="h2">Cambiar contraseña</Heading>
         </div>
         <div className="space-y-4">

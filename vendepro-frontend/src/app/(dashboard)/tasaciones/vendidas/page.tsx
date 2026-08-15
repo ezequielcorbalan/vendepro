@@ -23,9 +23,9 @@ import {
 import SoldPropertyForm from '@/components/sold-properties/SoldPropertyForm'
 
 const ORIGIN_LABELS: Record<string, { label: string; cls: string }> = {
-  mine: { label: 'Mías', cls: 'bg-pink-100 text-pink-700' },
-  team: { label: 'Equipo', cls: 'bg-blue-100 text-blue-700' },
-  external: { label: 'Externos', cls: 'bg-amber-100 text-amber-700' },
+  mine: { label: 'Mías', cls: 'bg-pink-100 text-pink-800' },
+  team: { label: 'Equipo', cls: 'bg-blue-100 text-blue-800' },
+  external: { label: 'Externos', cls: 'bg-amber-100 text-amber-800' },
 }
 
 function formatPrice(n: number | null | undefined): string {
@@ -129,68 +129,79 @@ export default function SoldPropertiesPage() {
         </div>
       )}
 
-      {/* Filtros */}
-      <Card className="p-4 mb-5">
-        <div className="flex flex-wrap items-center gap-2 mb-3">
-          {(['all', 'mine', 'team', 'external'] as const).map(o => {
-            const active = (filters.origin ?? 'all') === o
-            const labels = { all: 'Todos', mine: 'Míos', team: 'Equipo', external: 'Externos' }
-            return (
-              <button
-                key={o}
-                type="button"
-                onClick={() => setFilters(f => ({ ...f, origin: o }))}
-                className={`px-3 py-1.5 rounded-control text-xs font-medium ${
-                  active ? 'bg-primary/10 text-primary' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                {labels[o]}
-              </button>
-            )
-          })}
-        </div>
+      {/* Origen: toggle de pertenencia */}
+      <div className="flex flex-wrap items-center gap-2">
+        {(['all', 'mine', 'team', 'external'] as const).map(o => {
+          const active = (filters.origin ?? 'all') === o
+          const labels = { all: 'Todos', mine: 'Míos', team: 'Equipo', external: 'Externos' }
+          return (
+            <button
+              key={o}
+              type="button"
+              onClick={() => setFilters(f => ({ ...f, origin: o }))}
+              className={`px-3 py-1.5 rounded-control text-xs font-medium ${
+                active ? 'bg-primary/10 text-primary' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {labels[o]}
+            </button>
+          )
+        })}
+      </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-          <Select
-            value={filters.property_type ?? ''}
-            onChange={e => setFilters(f => ({ ...f, property_type: e.target.value || undefined }))}
-            className="px-2 py-1.5 text-xs"
-          >
-            <option value="">Tipo: cualquiera</option>
-            {PROPERTY_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-          </Select>
+      {/* Búsqueda + filtros: una sola fila compacta (sin labels ni card propio) */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[160px]">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 z-10" />
           <Input
-            placeholder="Barrio"
-            value={filters.neighborhood ?? ''}
-            onChange={e => setFilters(f => ({ ...f, neighborhood: e.target.value || undefined }))}
-            className="px-2 py-1.5 text-xs"
+            placeholder="Buscar dirección, barrio..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') loadItems() }}
+            className="pl-10"
           />
-          <Input
-            type="number"
-            placeholder="m² desde"
-            value={filters.min_covered_area ?? ''}
-            onChange={e => setFilters(f => ({ ...f, min_covered_area: e.target.value ? Number(e.target.value) : undefined }))}
-            className="px-2 py-1.5 text-xs"
-          />
-          <Input
-            type="number"
-            placeholder="m² hasta"
-            value={filters.max_covered_area ?? ''}
-            onChange={e => setFilters(f => ({ ...f, max_covered_area: e.target.value ? Number(e.target.value) : undefined }))}
-            className="px-2 py-1.5 text-xs"
-          />
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 z-10" />
-            <Input
-              placeholder="Buscar"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') loadItems() }}
-              className="pl-7 pr-2 py-1.5 text-xs"
-            />
-          </div>
         </div>
-      </Card>
+        <Select
+          aria-label="Tipo"
+          value={filters.property_type ?? ''}
+          onChange={e => setFilters(f => ({ ...f, property_type: e.target.value || undefined }))}
+          className="w-auto"
+        >
+          <option value="">Tipo: cualquiera</option>
+          {PROPERTY_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+        </Select>
+        <Input
+          aria-label="Barrio"
+          placeholder="Barrio"
+          value={filters.neighborhood ?? ''}
+          onChange={e => setFilters(f => ({ ...f, neighborhood: e.target.value || undefined }))}
+          className="w-auto"
+        />
+        <Input
+          aria-label="m² desde"
+          type="number"
+          placeholder="m² desde"
+          value={filters.min_covered_area ?? ''}
+          onChange={e => setFilters(f => ({ ...f, min_covered_area: e.target.value ? Number(e.target.value) : undefined }))}
+          className="w-auto"
+        />
+        <Input
+          aria-label="m² hasta"
+          type="number"
+          placeholder="m² hasta"
+          value={filters.max_covered_area ?? ''}
+          onChange={e => setFilters(f => ({ ...f, max_covered_area: e.target.value ? Number(e.target.value) : undefined }))}
+          className="w-auto"
+        />
+        {(filters.property_type || filters.neighborhood || filters.min_covered_area != null || filters.max_covered_area != null || search) && (
+          <button
+            onClick={() => { setFilters(f => ({ origin: f.origin })); setSearch('') }}
+            className="text-xs text-gray-500 hover:text-primary shrink-0"
+          >
+            Limpiar
+          </button>
+        )}
+      </div>
 
       {/* Listado */}
       {loading ? (

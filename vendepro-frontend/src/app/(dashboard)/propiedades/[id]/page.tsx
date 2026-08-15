@@ -19,39 +19,18 @@ import AuthorizationWidget from '@/components/properties/AuthorizationWidget'
 import PriceHistoryWidget from '@/components/properties/PriceHistoryWidget'
 import DocChecklistWidget from '@/components/properties/DocChecklistWidget'
 import ReportsListWidget from '@/components/properties/ReportsListWidget'
+import { PROPERTY_STAGES, type PropertyStage } from '@/lib/crm-config'
 
-// ds-todo: PROPERTY_STAGES (crm-config) no incluye "captacion" ni "con_ofertas",
-// así que no se puede usar PropertyStageBadge todavía; el mapa local sigue siendo
-// la fuente y se renderiza con StatusBadge para unificar la forma del pill.
-const stageLabel: Record<string, string> = {
-  propuesta: 'Propuesta',
-  captacion: 'Captación',
-  publicada: 'Publicada',
-  con_ofertas: 'Con ofertas',
-  reservada: 'Reservada',
-  vendida: 'Vendida',
-  suspendida: 'Suspendida',
-  perdida: 'Perdida',
-  invalida: 'Inválida',
-  // Legacy
-  captada: 'Captada',
-  archivada: 'Archivada',
-  documentacion: 'En documentación',
+// Sólo "captacion" y "con_ofertas" son slugs legacy que ya no existen como
+// clave en PROPERTY_STAGES (se renombraron a "captada"/"reservada"); el resto
+// de las claves de esta pantalla ya son canónicas. Label y color salen de
+// PROPERTY_STAGES (crm-config), no se duplican acá.
+const LEGACY_STAGE_ALIASES: Record<string, PropertyStage> = {
+  captacion: 'captada',
+  con_ofertas: 'reservada',
 }
-const stageColor: Record<string, string> = {
-  propuesta: 'bg-gray-100 text-gray-600',
-  captacion: 'bg-green-100 text-green-700',
-  publicada: 'bg-blue-100 text-blue-700',
-  con_ofertas: 'bg-violet-100 text-violet-700',
-  reservada: 'bg-purple-100 text-purple-700',
-  vendida: 'bg-emerald-100 text-emerald-700',
-  suspendida: 'bg-orange-100 text-orange-700',
-  perdida: 'bg-red-100 text-red-700',
-  invalida: 'bg-gray-100 text-gray-500',
-  // Legacy
-  captada: 'bg-green-100 text-green-700',
-  archivada: 'bg-gray-100 text-gray-500',
-  documentacion: 'bg-amber-100 text-amber-700',
+function resolveStage(slug: string): PropertyStage {
+  return (LEGACY_STAGE_ALIASES[slug] ?? slug) as PropertyStage
 }
 
 export default function PropiedadDetailPage() {
@@ -142,8 +121,8 @@ export default function PropiedadDetailPage() {
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <StatusBadge
-              label={stageLabel[stage] || stage}
-              color={stageColor[stage]}
+              label={PROPERTY_STAGES[resolveStage(stage)]?.label ?? stage}
+              color={PROPERTY_STAGES[resolveStage(stage)]?.color}
               className="whitespace-nowrap"
             />
             {(property as any).source === 'kiteprop' && (

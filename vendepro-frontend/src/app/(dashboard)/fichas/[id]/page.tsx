@@ -24,7 +24,7 @@ function Section({ title, icon: Icon, children, defaultOpen = false }: { title: 
     <Card padded={false} className="overflow-hidden">
       <button type="button" onClick={() => setOpen(!open)} className="w-full flex items-center justify-between px-4 py-3.5 text-left">
         <div className="flex items-center gap-2.5">
-          <Icon className="w-4 h-4 text-primary" />
+          <Icon className="w-4 h-4 text-gray-600" />
           <CardTitle>{title}</CardTitle>
         </div>
         {open ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
@@ -282,8 +282,8 @@ export default function FichaDetailPage() {
     return (
       <div className="max-w-lg mx-auto space-y-4 animate-pulse">
         <div className="h-6 w-32 bg-gray-200 rounded" />
-        <div className="h-20 bg-gray-200 rounded-xl" />
-        <div className="h-40 bg-gray-200 rounded-xl" />
+        <div className="h-20 bg-gray-200 rounded-card" />
+        <div className="h-40 bg-gray-200 rounded-card" />
       </div>
     )
   }
@@ -318,7 +318,7 @@ export default function FichaDetailPage() {
       </div>
 
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center">
+        <div className="w-10 h-10 rounded-control bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center">
           <ClipboardList className="w-5 h-5 text-white" />
         </div>
         <div>

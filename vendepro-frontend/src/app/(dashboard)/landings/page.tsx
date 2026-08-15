@@ -9,6 +9,7 @@ import NewLandingModal from '@/components/landings/NewLandingModal'
 import { getCurrentUser } from '@/lib/auth'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
 import { EmptyState } from '@/components/ui/EmptyState'
 
 type Tab = 'mine' | 'org' | 'pending_review'
@@ -81,15 +82,15 @@ export default function LandingsPage() {
       />
 
       <div className="flex items-center gap-4 border-b border-gray-200 mb-4">
-        <button onClick={() => setTab('mine')} className={`pb-3 px-1 text-sm font-medium ${tab === 'mine' ? 'border-b-2 border-brand-pink text-ink' : 'text-gray-500 hover:text-gray-700'}`}>
+        <button onClick={() => setTab('mine')} className={`pb-3 px-1 text-sm font-medium border-b-2 -mb-px transition-colors ${tab === 'mine' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
           Mías
         </button>
         {isAdmin && (
           <>
-            <button onClick={() => setTab('org')} className={`pb-3 px-1 text-sm font-medium ${tab === 'org' ? 'border-b-2 border-brand-pink text-ink' : 'text-gray-500 hover:text-gray-700'}`}>
+            <button onClick={() => setTab('org')} className={`pb-3 px-1 text-sm font-medium border-b-2 -mb-px transition-colors ${tab === 'org' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
               Todas del org
             </button>
-            <button onClick={() => setTab('pending_review')} className={`pb-3 px-1 text-sm font-medium ${tab === 'pending_review' ? 'border-b-2 border-brand-pink text-ink' : 'text-gray-500 hover:text-gray-700'}`}>
+            <button onClick={() => setTab('pending_review')} className={`pb-3 px-1 text-sm font-medium border-b-2 -mb-px transition-colors ${tab === 'pending_review' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
               Pendientes de aprobación
             </button>
           </>
@@ -105,10 +106,10 @@ export default function LandingsPage() {
           <button
             key={t.id}
             onClick={() => setTypeTab(t.id)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
               typeTab === t.id
-                ? 'bg-brand-pink text-white border-brand-pink'
-                : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                ? 'bg-primary/10 text-primary'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
             {t.label}
@@ -118,17 +119,17 @@ export default function LandingsPage() {
 
       <div className="relative mb-5 max-w-sm">
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input
+        <Input
           placeholder="Buscar por slug o título…"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="w-full bg-white border border-gray-200 rounded-full pl-9 pr-4 py-2 text-sm focus:outline-none"
+          className="pl-10"
         />
       </div>
 
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-64 bg-gray-100 rounded-2xl animate-pulse" />)}
+          {Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-64 bg-gray-100 rounded-card animate-pulse" />)}
         </div>
       ) : filtered.length === 0 ? (
         <EmptyState

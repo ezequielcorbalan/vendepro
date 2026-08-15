@@ -18,10 +18,10 @@ import { Badge } from '@/components/ui/Badge'
 import { Avatar } from '@/components/ui/Avatar'
 
 const typeLabels: Record<string, { label: string; color: string }> = {
-  vendedor: { label: 'Vendedor', color: 'bg-blue-100 text-blue-700' },
-  comprador: { label: 'Comprador', color: 'bg-green-100 text-green-700' },
-  inversor: { label: 'Inversor', color: 'bg-purple-100 text-purple-700' },
-  inquilino: { label: 'Inquilino', color: 'bg-orange-100 text-orange-700' },
+  vendedor: { label: 'Vendedor', color: 'bg-blue-100 text-blue-800' },
+  comprador: { label: 'Comprador', color: 'bg-green-100 text-green-800' },
+  inversor: { label: 'Inversor', color: 'bg-purple-100 text-purple-800' },
+  inquilino: { label: 'Inquilino', color: 'bg-orange-100 text-orange-800' },
   otro: { label: 'Otro', color: 'bg-gray-100 text-gray-700' },
 }
 

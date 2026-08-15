@@ -33,7 +33,7 @@ export default function ReservasPage() {
 
       {loading ? (
         <div className="space-y-4 animate-pulse">
-          {[...Array(5)].map((_, i) => <div key={i} className="h-24 bg-gray-200 rounded-xl" />)}
+          {[...Array(5)].map((_, i) => <div key={i} className="h-24 bg-gray-200 rounded-card" />)}
         </div>
       ) : properties.length === 0 ? (
         <Card>

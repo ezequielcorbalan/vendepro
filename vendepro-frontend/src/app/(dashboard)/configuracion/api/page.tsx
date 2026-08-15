@@ -228,7 +228,7 @@ export default function ConfiguracionApiPage() {
         <div className="flex items-center justify-between gap-4">
           <div>
             <h1 className="text-xl sm:text-2xl font-semibold text-ink flex items-center gap-2">
-              <KeyRound className="w-6 h-6 text-primary" /> Configuración de API
+              <KeyRound className="w-6 h-6 text-gray-600" /> Configuración de API
             </h1>
             <Text tone="muted" className="mt-1">Tokens para importar leads y webhooks para avisar a tus sistemas cuando pasa algo en el CRM.</Text>
           </div>
