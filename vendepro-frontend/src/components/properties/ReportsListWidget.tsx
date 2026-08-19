@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { FileBarChart, Plus, ArrowRight } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
+import { Card } from '@/components/ui/Card'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { Heading, Text } from '@/components/ui/Typography'
 
 interface Report {
   id: string
@@ -38,37 +41,39 @@ export default function ReportsListWidget({ propertyId }: Props) {
   }, [propertyId])
 
   return (
-    <div className="bg-white rounded-card border border-gray-200 shadow-card p-5">
+    <Card>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center">
-            <FileBarChart className="w-4.5 h-4.5 text-white" />
-          </div>
+          <FileBarChart className="w-4 h-4 text-gray-600" aria-hidden="true" />
           <div>
-            <h2 className="text-sm font-semibold text-ink">Reportes</h2>
-            <p className="text-xs text-gray-500">{reports.length} {reports.length === 1 ? 'reporte' : 'reportes'}</p>
+            <Heading level={4}>Reportes</Heading>
+            <Text size="xs" tone="muted">{reports.length} {reports.length === 1 ? 'reporte' : 'reportes'}</Text>
           </div>
         </div>
+        {/* Regla 2: el link estilado como botón iguala la escala md de Button. */}
         <Link
           href={`/propiedades/${propertyId}/reportes/nuevo`}
-          className="flex items-center gap-1 text-xs text-brand-pink font-medium hover:underline"
+          className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-control text-primary font-medium hover:bg-primary/10"
         >
-          <Plus className="w-3 h-3" /> Nuevo
+          <Plus className="w-4 h-4" aria-hidden="true" /> Nuevo
         </Link>
       </div>
 
       {loading ? (
-        <div className="py-6 text-center text-xs text-gray-400">Cargando...</div>
+        <div className="py-6 text-center"><Text size="xs" tone="muted">Cargando...</Text></div>
       ) : reports.length === 0 ? (
-        <div className="bg-gradient-to-br from-gray-50 to-white border border-dashed border-gray-200 rounded-card p-6 text-center">
-          <p className="text-sm text-gray-500 mb-3">No hay reportes para esta propiedad</p>
-          <Link
-            href={`/propiedades/${propertyId}/reportes/nuevo`}
-            className="inline-flex items-center gap-1.5 text-sm font-medium bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2 rounded-lg hover:opacity-90"
-          >
-            Crear el primer reporte
-          </Link>
-        </div>
+        <EmptyState
+          icon={<FileBarChart className="w-6 h-6" />}
+          title="No hay reportes para esta propiedad"
+          action={
+            <Link
+              href={`/propiedades/${propertyId}/reportes/nuevo`}
+              className="inline-flex items-center gap-2 text-sm font-medium bg-primary text-white px-4 py-2 rounded-control hover:bg-primary-hover"
+            >
+              Crear el primer reporte
+            </Link>
+          }
+        />
       ) : (
         <div className="space-y-2">
           {reports.slice(0, 5).map(r => (
@@ -77,25 +82,25 @@ export default function ReportsListWidget({ propertyId }: Props) {
               className="flex items-center justify-between border border-gray-100 rounded-control px-3 py-2"
             >
               <div>
-                <p className="text-sm font-medium text-ink">
+                <Text size="sm" weight="medium">
                   {r.period_label || (r.period_start ? new Date(r.period_start).toLocaleDateString('es-AR') : 'Reporte')}
-                </p>
-                <p className="text-xs text-gray-500">
+                </Text>
+                <Text size="xs" tone="muted">
                   {r.impressions != null && `${r.impressions} imp. · `}
                   {r.portal_visits != null && `${r.portal_visits} vistas · `}
                   {r.in_person_visits != null && `${r.in_person_visits} visitas`}
-                </p>
+                </Text>
               </div>
             </div>
           ))}
           <Link
             href={`/propiedades/${propertyId}/reportes`}
-            className="block text-center text-xs text-brand-pink font-medium hover:underline pt-2"
+            className="block text-center text-sm text-primary font-medium hover:underline pt-2"
           >
             Ver todos los reportes →
           </Link>
         </div>
       )}
-    </div>
+    </Card>
   )
 }

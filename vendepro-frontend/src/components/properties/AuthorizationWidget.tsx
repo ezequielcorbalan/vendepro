@@ -58,9 +58,7 @@ export default function AuthorizationWidget({
   return (
     <div className="bg-white rounded-card border border-gray-200 shadow-card p-5 relative overflow-hidden">
       <div className="flex items-center gap-2 mb-4">
-        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center">
-          <Calendar className="w-4.5 h-4.5 text-white" />
-        </div>
+        <Calendar className="w-5 h-5 text-gray-600" aria-hidden="true" />
         <h2 className="text-sm font-semibold text-ink">Autorización de venta</h2>
       </div>
 
@@ -74,12 +72,12 @@ export default function AuthorizationWidget({
       </div>
 
       {remainingDays !== null && (
-        <div className={`rounded-lg px-3 py-2 text-sm font-medium flex items-center gap-2 ${
+        <div className={`rounded-control px-3 py-2 text-sm font-medium flex items-center gap-2 ${
           remainingDays < 0
-            ? 'bg-red-50 text-red-700 border border-red-200'
+            ? 'bg-danger/10 text-danger border border-danger/20'
             : remainingDays < 15
-            ? 'bg-orange-50 text-orange-700 border border-orange-200'
-            : 'bg-brand-pink/5 text-brand-pink border border-brand-pink/20'
+            ? 'bg-warning/10 text-warning border border-warning/20'
+            : 'bg-primary/5 text-primary border border-primary/20'
         }`}>
           {remainingDays < 0 ? (
             <>

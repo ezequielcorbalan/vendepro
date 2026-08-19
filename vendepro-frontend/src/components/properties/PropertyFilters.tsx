@@ -9,7 +9,7 @@ import { stagePillStyle, stageDotStyle, getStage, getStatus, getOpType, stagesFo
 import { useToast } from '@/components/ui/Toast'
 import { Input, Select } from '@/components/ui/Input'
 import { Alert } from '@/components/ui/Alert'
-import { StatusBadge } from '@/components/ui/StatusBadge'
+import { Badge } from '@/components/ui/Badge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Card } from '@/components/ui/Card'
 
@@ -203,16 +203,16 @@ export default function PropertyFilters({ properties, config }: { properties: an
           return (
             <div key={property.id} className="bg-white border border-gray-200 rounded-card shadow-card hover:shadow-md transition-shadow overflow-hidden">
               <Link href={`/propiedades/${property.id}`}>
-                <div className="h-36 bg-gradient-to-br from-brand-pink/10 to-brand-orange/10 flex items-center justify-center relative">
-                  <Building2 className="w-10 h-10 text-brand-pink/30" />
+                <div className="h-36 bg-primary/10 flex items-center justify-center relative">
+                  <Building2 className="w-10 h-10 text-primary/30" aria-hidden="true" />
                   {isOverdue && (
                     <div className="absolute top-2 left-2">
-                      <StatusBadge label={info.days === null ? 'Sin reportes' : `Hace ${info.days}d`} color="bg-orange-100 text-orange-800" />
+                      <Badge tone="danger">{info.days === null ? 'Sin reportes' : `Hace ${info.days}d`}</Badge>
                     </div>
                   )}
                   {isWarning && !isOverdue && (
                     <div className="absolute top-2 left-2">
-                      <StatusBadge label={`Hace ${info.days}d`} color="bg-yellow-100 text-yellow-800" />
+                      <Badge tone="warning">{`Hace ${info.days}d`}</Badge>
                     </div>
                   )}
                 </div>
@@ -267,7 +267,7 @@ export default function PropertyFilters({ properties, config }: { properties: an
                   )}
                   {property.agent_name && <p className="text-xs text-gray-400 mt-0.5">Agente: {property.agent_name}</p>}
                   {info.days !== null && (
-                    <p className={`text-xs mt-0.5 ${isOverdue ? 'text-orange-600 font-medium' : isWarning ? 'text-yellow-700' : 'text-gray-400'}`}>
+                    <p className={`text-xs mt-0.5 ${isOverdue ? 'text-danger font-medium' : isWarning ? 'text-warning' : 'text-gray-400'}`}>
                       Último reporte: hace {info.days}d{info.isExternal ? ' (ext)' : ''}
                     </p>
                   )}
@@ -282,7 +282,7 @@ export default function PropertyFilters({ properties, config }: { properties: an
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleExternal(property.id, externalMarked) }}
                     className={`text-xs flex items-center gap-1 px-2 py-0.5 rounded-full transition-colors ml-auto ${
                       externalMarked
-                        ? 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100'
+                        ? 'bg-success/10 text-success border border-success/20 hover:bg-success/20'
                         : 'bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100'
                     }`}
                   >

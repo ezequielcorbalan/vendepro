@@ -2,10 +2,17 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Loader2, Users, Phone, MessageSquare } from 'lucide-react'
+import { Loader2, Users, MessageSquare } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
-import { LEAD_PROPERTY_STATUSES, getStageConfig, formatWhatsApp } from '@/lib/crm-config'
+import { LEAD_PROPERTY_STATUSES } from '@/lib/crm-config'
 import type { InterestedLead } from '@/lib/types'
+import { Alert } from '@/components/ui/Alert'
+import { Badge } from '@/components/ui/Badge'
+import { Card } from '@/components/ui/Card'
+import { CallButton, WhatsAppButton } from '@/components/ui/ContactButtons'
+import { StageBadge } from '@/components/ui/StageBadge'
+import { StatusBadge } from '@/components/ui/StatusBadge'
+import { Text } from '@/components/ui/Typography'
 
 /**
  * Interesados en la propiedad: leads (compradores) vinculados vía lead_properties,
@@ -29,36 +36,29 @@ export function InterestedLeadsSection({ propertyId }: { propertyId: string }) {
   }, [propertyId])
 
   return (
-    <div className="bg-white border border-gray-200 rounded-card p-4 shadow-card">
+    <Card className="p-4">
       <div className="flex items-center gap-2 mb-3">
-        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center">
-          <Users className="w-3.5 h-3.5 text-white" />
-        </div>
-        <p className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Interesados</p>
-        {items.length > 0 && (
-          <span className="text-[10px] font-medium bg-pink-50 text-brand-pink px-1.5 py-0.5 rounded-full">
-            {items.length}
-          </span>
-        )}
+        <Users className="w-4 h-4 text-gray-600" aria-hidden="true" />
+        <Text size="xs" weight="semibold" className="text-gray-700 uppercase tracking-wider">Interesados</Text>
+        {items.length > 0 && <Badge tone="primary">{items.length}</Badge>}
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-6 text-gray-400">
-          <Loader2 className="w-5 h-5 animate-spin" />
+          <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
         </div>
       ) : error ? (
-        <p className="text-sm text-red-500 py-3">{error}</p>
+        <Alert tone="danger">{error}</Alert>
       ) : items.length === 0 ? (
-        <p className="text-sm text-gray-400 py-3">
+        <Text size="sm" tone="muted" className="py-3">
           Sin interesados todavía. Cuando un comprador consulte por esta propiedad
           (portales vía KiteProp o carga manual), aparece acá con su estado.
-        </p>
+        </Text>
       ) : (
         <div className="space-y-2">
           {items.map(item => {
             const statusCfg = (LEAD_PROPERTY_STATUSES as Record<string, { label: string; color: string }>)[item.status]
-              ?? { label: item.status, color: 'bg-gray-100 text-gray-600' }
-            const stageCfg = getStageConfig(item.lead_stage, item.lead_pipeline)
+              ?? { label: item.status, color: undefined }
             return (
               <div key={item.id} className="border border-gray-100 rounded-card p-3">
                 <div className="flex items-start justify-between gap-2">
@@ -66,46 +66,35 @@ export function InterestedLeadsSection({ propertyId }: { propertyId: string }) {
                     <div className="flex items-center gap-2 flex-wrap">
                       <Link
                         href={`/leads/${item.lead_id}`}
-                        className="text-sm font-semibold text-ink hover:text-brand-pink truncate"
+                        className="text-sm font-semibold text-ink hover:text-primary truncate"
                       >
                         {item.lead_full_name}
                       </Link>
-                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${stageCfg.color}`}>
-                        {stageCfg.label}
-                      </span>
+                      {/* lead_pipeline viene como string de la API; StageBadge tipa la unión.
+                          El ternario replica el criterio de getStageConfig (todo lo que no es
+                          'comprador' cae en el pipeline vendedor). */}
+                      <StageBadge
+                        stage={item.lead_stage}
+                        pipeline={item.lead_pipeline === 'comprador' ? 'comprador' : 'vendedor'}
+                        size="sm"
+                      />
                     </div>
-                    <p className="text-xs text-gray-400 mt-0.5">
+                    <Text size="xs" tone="muted" className="mt-0.5">
                       {item.lead_assigned_name ? `Agente: ${item.lead_assigned_name}` : 'Sin agente asignado'}
-                    </p>
+                    </Text>
                     {item.feedback && (
-                      <p className="text-xs text-gray-600 mt-1.5 flex items-start gap-1">
-                        <MessageSquare className="w-3 h-3 mt-0.5 shrink-0 text-gray-400" />
+                      <Text size="xs" className="text-gray-600 mt-1.5 flex items-start gap-1">
+                        <MessageSquare className="w-3 h-3 mt-0.5 shrink-0 text-gray-400" aria-hidden="true" />
                         <span className="line-clamp-2">{item.feedback}</span>
-                      </p>
+                      </Text>
                     )}
                   </div>
                   <div className="flex flex-col items-end gap-1.5 shrink-0">
-                    <span className={`text-[10px] font-medium px-2 py-1 rounded-full ${statusCfg.color}`}>
-                      {statusCfg.label}
-                    </span>
+                    <StatusBadge label={statusCfg.label} color={statusCfg.color} size="sm" />
                     {item.lead_phone && (
                       <div className="flex items-center gap-1">
-                        <a
-                          href={`tel:${item.lead_phone}`}
-                          className="p-2 text-gray-400 hover:text-brand-pink rounded-lg hover:bg-pink-50"
-                          title="Llamar"
-                        >
-                          <Phone className="w-3.5 h-3.5" />
-                        </a>
-                        <a
-                          href={`https://wa.me/${formatWhatsApp(item.lead_phone)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-2 text-gray-400 hover:text-green-600 rounded-lg hover:bg-green-50"
-                          title="WhatsApp"
-                        >
-                          <MessageSquare className="w-3.5 h-3.5" />
-                        </a>
+                        <CallButton phone={item.lead_phone} iconOnly />
+                        <WhatsAppButton phone={item.lead_phone} iconOnly />
                       </div>
                     )}
                   </div>
@@ -115,6 +104,6 @@ export function InterestedLeadsSection({ propertyId }: { propertyId: string }) {
           })}
         </div>
       )}
-    </div>
+    </Card>
   )
 }

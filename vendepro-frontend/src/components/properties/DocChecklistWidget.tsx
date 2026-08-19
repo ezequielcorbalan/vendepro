@@ -150,9 +150,7 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
     <div className="bg-white rounded-card border border-gray-200 shadow-card p-5">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center">
-            <FileCheck2 className="w-4.5 h-4.5 text-white" />
-          </div>
+          <FileCheck2 className="w-5 h-5 text-gray-600" aria-hidden="true" />
           <div>
             <h2 className="text-sm font-semibold text-ink">Documentación</h2>
             <p className="text-xs text-gray-500">{resolvedItems} de {totalItems} resueltos</p>
@@ -181,7 +179,7 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
       {/* Cloud folder link */}
       <div className="mb-3">
         {data.cloud_url && !showCloudInput ? (
-          <div className="flex items-center justify-between bg-gradient-to-br from-brand-pink/5 to-brand-orange/5 border border-brand-pink/20 rounded-lg px-3 py-2">
+          <div className="flex items-center justify-between bg-primary/5 border border-primary/20 rounded-control px-3 py-2">
             <a
               href={data.cloud_url}
               target="_blank"
@@ -244,7 +242,7 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
                 <button
                   onClick={() => isCustom ? removeCustomDoc(doc.key) : hideDefaultDoc(doc.key)}
                   title="Eliminar item"
-                  className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity p-1"
+                  className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-danger transition-opacity p-1"
                 >
                   <Trash2 className="w-3 h-3" />
                 </button>
@@ -252,7 +250,7 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
                   onClick={() => updateStatus(doc.key, s === 'done' ? 'pending' : 'done')}
                   title="Tengo el documento"
                   className={`w-6 h-6 rounded-md flex items-center justify-center transition-all ${
-                    s === 'done' ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-400 hover:bg-green-100'
+                    s === 'done' ? 'bg-success text-white' : 'bg-gray-100 text-gray-400 hover:bg-success/20'
                   }`}
                 >
                   <Check className="w-3.5 h-3.5" />
@@ -261,7 +259,7 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
                   onClick={() => updateStatus(doc.key, s === 'na' ? 'pending' : 'na')}
                   title="No aplica"
                   className={`w-6 h-6 rounded-md flex items-center justify-center transition-all ${
-                    s === 'na' ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-400 hover:bg-red-100'
+                    s === 'na' ? 'bg-danger text-white' : 'bg-gray-100 text-gray-400 hover:bg-danger/20'
                   }`}
                 >
                   <X className="w-3.5 h-3.5" />

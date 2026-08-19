@@ -16,7 +16,11 @@ import {
   User,
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
+import { Badge } from '@/components/ui/Badge'
+import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { Heading, Text } from '@/components/ui/Typography'
 
 type BuyIntention = 'compraria' | 'tal_vez' | 'no' | null
 
@@ -134,63 +138,52 @@ export function VisitFormsSection({
   }
 
   return (
-    <div className="bg-white rounded-card shadow-card border border-gray-100 p-6">
+    <Card className="p-6">
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-control bg-gradient-to-br from-brand-pink to-[#ff5e3a] flex items-center justify-center text-white">
-            <ClipboardList className="w-5 h-5" />
-          </div>
+          <ClipboardList className="w-5 h-5 text-gray-600 mt-0.5" aria-hidden="true" />
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-base font-semibold text-ink">Fichas de visita</h2>
-              <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                {submitted.length}
-              </span>
+              <Heading level={4}>Fichas de visita</Heading>
+              <Badge tone="neutral">{submitted.length}</Badge>
             </div>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <Text size="xs" tone="muted" className="mt-0.5">
               Compartí el link con los visitantes para que completen su ficha después de la visita.
-            </p>
+            </Text>
           </div>
         </div>
 
         {publicLink && (
           <div className="flex items-center gap-2">
+            {/* ds-todo: WhatsAppButton requiere número; acá es wa.me sólo con texto (compartir) */}
             <button
               type="button"
               onClick={handleWhatsApp}
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 px-3 py-1.5 rounded-lg transition-colors"
+              className="inline-flex items-center gap-2 text-sm font-medium text-white bg-whatsapp hover:opacity-90 px-4 py-2 rounded-control transition-opacity"
             >
-              <MessageSquare className="w-4 h-4" />
+              <MessageSquare className="w-4 h-4" aria-hidden="true" />
               WhatsApp
             </button>
-            <button
-              type="button"
-              onClick={handleCopy}
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 px-3 py-1.5 rounded-lg transition-colors"
-            >
-              {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+            <Button variant="outline" onClick={handleCopy}>
+              {copied ? <Check className="w-4 h-4 text-success" aria-hidden="true" /> : <Copy className="w-4 h-4" aria-hidden="true" />}
               {copied ? 'Copiado' : 'Copiar link'}
-            </button>
+            </Button>
           </div>
         )}
       </div>
 
       {/* Toggle archived */}
       <div className="flex justify-end mb-3">
-        <button
-          type="button"
-          onClick={() => setShowArchived((v) => !v)}
-          className="text-xs text-gray-500 hover:text-gray-700"
-        >
+        <Button variant="ghost" size="sm" onClick={() => setShowArchived((v) => !v)}>
           {showArchived ? 'Ocultar archivadas' : 'Ver archivadas'}
-        </button>
+        </Button>
       </div>
 
       {/* List */}
       {loading ? (
         <div className="py-10 flex items-center justify-center">
-          <Loader2 className="w-6 h-6 animate-spin text-brand-pink" />
+          <Loader2 className="w-6 h-6 animate-spin text-primary" aria-hidden="true" />
         </div>
       ) : submitted.length === 0 ? (
         <div className="border-2 border-dashed border-gray-200 rounded-card">
@@ -213,7 +206,7 @@ export function VisitFormsSection({
           ))}
         </div>
       )}
-    </div>
+    </Card>
   )
 }
 
@@ -235,82 +228,80 @@ function SubmittedCard({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 mb-0.5">
-            <User className="w-4 h-4 text-gray-400 flex-shrink-0" />
-            <h3 className="font-semibold text-ink truncate">
+            <User className="w-4 h-4 text-gray-400 flex-shrink-0" aria-hidden="true" />
+            <Text size="sm" weight="semibold" className="truncate">
               {item.visitor_name || 'Visitante'}
-            </h3>
-            {archived && (
-              <span className="text-[10px] uppercase tracking-wide font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
-                Archivada
-              </span>
-            )}
+            </Text>
+            {archived && <Badge tone="neutral">Archivada</Badge>}
           </div>
-          <div className="text-xs text-gray-500 ml-6">
+          <Text size="xs" tone="muted" className="ml-6">
             {item.submitted_at ? formatDate(item.submitted_at) : '—'}
-          </div>
+          </Text>
         </div>
 
         <div className="flex items-center gap-3 flex-shrink-0">
           {item.rating !== null && <Stars value={item.rating} />}
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="icon"
             disabled={busy}
             onClick={onArchive}
             title={archived ? 'Desarchivar' : 'Archivar'}
-            className="p-1.5 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+            aria-label={archived ? 'Desarchivar ficha' : 'Archivar ficha'}
+            className="text-gray-400 hover:text-gray-700"
           >
             {archived ? <ArchiveRestore className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
             disabled={busy}
             onClick={onDelete}
             title="Borrar"
-            className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-50"
+            aria-label="Borrar ficha"
+            className="text-gray-400 hover:text-danger hover:bg-danger/10"
           >
             <Trash2 className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Liked / Disliked */}
       <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
         {item.liked && (
-          <div className="rounded-lg bg-green-50/60 border border-green-100 px-3 py-2">
-            <div className="flex items-center gap-1.5 text-xs font-medium text-green-700 mb-1">
-              <ThumbsUp className="w-3.5 h-3.5" /> Le gustó
+          <div className="rounded-control bg-success/10 border border-success/20 px-3 py-2">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-success mb-1">
+              <ThumbsUp className="w-3.5 h-3.5" aria-hidden="true" /> Le gustó
             </div>
-            <p className="text-sm text-gray-700 whitespace-pre-wrap">{item.liked}</p>
+            <Text size="sm" className="text-gray-700 whitespace-pre-wrap">{item.liked}</Text>
           </div>
         )}
         {item.disliked && (
-          <div className="rounded-lg bg-red-50/60 border border-red-100 px-3 py-2">
-            <div className="flex items-center gap-1.5 text-xs font-medium text-red-700 mb-1">
-              <ThumbsDown className="w-3.5 h-3.5" /> No le gustó
+          <div className="rounded-control bg-danger/10 border border-danger/20 px-3 py-2">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-danger mb-1">
+              <ThumbsDown className="w-3.5 h-3.5" aria-hidden="true" /> No le gustó
             </div>
-            <p className="text-sm text-gray-700 whitespace-pre-wrap">{item.disliked}</p>
+            <Text size="sm" className="text-gray-700 whitespace-pre-wrap">{item.disliked}</Text>
           </div>
         )}
       </div>
 
       {/* Badges row */}
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
-        {item.buy_intention === 'compraria' && (
-          <Badge color="green">Compraría</Badge>
-        )}
-        {item.buy_intention === 'no' && <Badge color="red">No compraría</Badge>}
-        {item.buy_intention === 'tal_vez' && <Badge color="amber">Tal vez</Badge>}
+        {item.buy_intention === 'compraria' && <Badge tone="success">Compraría</Badge>}
+        {item.buy_intention === 'no' && <Badge tone="danger">No compraría</Badge>}
+        {item.buy_intention === 'tal_vez' && <Badge tone="warning">Tal vez</Badge>}
         {item.situation && (
-          <Badge color="gray">{SITUATION_LABEL[item.situation] ?? item.situation}</Badge>
+          <Badge tone="neutral">{SITUATION_LABEL[item.situation] ?? item.situation}</Badge>
         )}
         {item.source && (
-          <Badge color="orange">Vía: {SOURCE_LABEL[item.source] ?? item.source}</Badge>
+          <Badge tone="info">Vía: {SOURCE_LABEL[item.source] ?? item.source}</Badge>
         )}
       </div>
 
       {/* Observations */}
       {item.observations && (
-        <p className="mt-2 text-sm text-gray-600 italic">"{item.observations}"</p>
+        <Text size="sm" className="mt-2 text-gray-600 italic">"{item.observations}"</Text>
       )}
     </div>
   )
@@ -323,32 +314,11 @@ function Stars({ value }: { value: number }) {
         <Star
           key={n}
           className={`w-4 h-4 ${
-            n <= value ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200 fill-gray-100'
+            n <= value ? 'text-yellow fill-yellow' : 'text-gray-200 fill-gray-100'
           }`}
         />
       ))}
     </div>
-  )
-}
-
-function Badge({
-  color,
-  children,
-}: {
-  color: 'green' | 'red' | 'amber' | 'gray' | 'orange'
-  children: React.ReactNode
-}) {
-  const cls = {
-    green: 'bg-green-100 text-green-800 border-green-200',
-    red: 'bg-red-100 text-red-800 border-red-200',
-    amber: 'bg-amber-100 text-amber-800 border-amber-200',
-    gray: 'bg-gray-100 text-gray-700 border-gray-200',
-    orange: 'bg-orange-100 text-orange-800 border-orange-200',
-  }[color]
-  return (
-    <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${cls}`}>
-      {children}
-    </span>
   )
 }
 

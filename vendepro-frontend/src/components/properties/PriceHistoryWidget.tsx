@@ -80,9 +80,7 @@ export default function PriceHistoryWidget({
       <div className="bg-white rounded-card border border-gray-200 shadow-card p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center">
-              <DollarSign className="w-4.5 h-4.5 text-white" />
-            </div>
+            <DollarSign className="w-5 h-5 text-gray-600" aria-hidden="true" />
             <h2 className="text-sm font-semibold text-ink">Historial de precio</h2>
           </div>
           <button
@@ -93,7 +91,7 @@ export default function PriceHistoryWidget({
           </button>
         </div>
 
-        <div className="bg-gradient-to-br from-brand-pink/5 to-brand-orange/5 rounded-card p-4 mb-3 border border-brand-pink/20">
+        <div className="bg-primary/5 rounded-card p-4 mb-3 border border-primary/20">
           <p className="text-xs text-gray-500">Precio actual</p>
           <p className="text-2xl font-bold bg-gradient-to-br from-brand-pink to-brand-orange bg-clip-text text-transparent">
             {currentPrice ? `${currency} ${Number(currentPrice).toLocaleString('es-AR')}` : 'Sin precio'}
@@ -114,7 +112,7 @@ export default function PriceHistoryWidget({
                     <p className="text-gray-400">{new Date(h.changed_at).toLocaleDateString('es-AR')}{h.reason ? ` · ${h.reason}` : ''}</p>
                   </div>
                   {delta !== null && delta !== 0 && (
-                    <span className={`flex items-center gap-0.5 font-medium ${delta > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <span className={`flex items-center gap-0.5 font-medium ${delta > 0 ? 'text-success' : 'text-danger'}`}>
                       {delta > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                       {delta > 0 ? '+' : ''}{delta.toFixed(1)}%
                     </span>
@@ -158,7 +156,7 @@ export default function PriceHistoryWidget({
                     const delta = ((parsed - currentPrice) / currentPrice) * 100
                     if (delta === 0) return null
                     return (
-                      <p className={`mt-1 flex items-center gap-0.5 text-[11px] font-medium ${delta > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      <p className={`mt-1 flex items-center gap-0.5 text-xs font-medium ${delta > 0 ? 'text-success' : 'text-danger'}`}>
                         {delta > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                         {delta > 0 ? '+' : ''}{delta.toFixed(1)}% respecto del precio actual
                       </p>
