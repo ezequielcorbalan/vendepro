@@ -1,6 +1,6 @@
 import type { FichaRepository } from '../../ports/repositories/ficha-repository'
 import type { IdGenerator } from '../../ports/id-generator'
-import { FichaTasacion } from '../../../domain/entities/ficha-tasacion'
+import { FichaTasacion, type FichaFilledBy } from '../../../domain/entities/ficha-tasacion'
 
 export interface CreateFichaInput {
   org_id: string
@@ -46,6 +46,32 @@ export interface CreateFichaInput {
   aysa?: number | null
   notes?: string | null
   photos?: string | null
+  // ── Capa pública (041_): sólo las completa SubmitPublicFichaUseCase ──
+  ficha_link_id?: string | null
+  filled_by?: FichaFilledBy
+  submitted_at?: string | null
+  owner_name?: string | null
+  owner_phone?: string | null
+  owner_email?: string | null
+  unit?: string | null
+  rooms?: number | null
+  kitchen_type?: string | null
+  furnished?: string | null
+  light_level?: string | null
+  parking_type?: string | null
+  pets_allowed?: string | null
+  // ── Preguntas que sólo aplican a algunos tipos de propiedad (042_) ──
+  operation?: string | null
+  land_area?: number | null
+  frontage_m?: number | null
+  depth_m?: number | null
+  zoning?: string | null
+  utilities?: string | null
+  floors_count?: number | null
+  commercial_use?: string | null
+  has_warehouse?: string | null
+  parking_unit?: string | null
+  storage_unit?: string | null
 }
 
 export class CreateFichaUseCase {
@@ -68,6 +94,31 @@ export class CreateFichaUseCase {
       agent_id: input.agent_id,
       lead_id: input.lead_id ?? null,
       appraisal_id: input.appraisal_id ?? null,
+      ficha_link_id: input.ficha_link_id ?? null,
+      filled_by: input.filled_by ?? 'agente',
+      // La ficha del agente nace completa; la del propietario sella su fecha al enviar.
+      submitted_at: input.submitted_at ?? null,
+      owner_name: input.owner_name ?? null,
+      owner_phone: input.owner_phone ?? null,
+      owner_email: input.owner_email ?? null,
+      unit: input.unit ?? null,
+      rooms: input.rooms ?? null,
+      kitchen_type: input.kitchen_type ?? null,
+      furnished: input.furnished ?? null,
+      light_level: input.light_level ?? null,
+      parking_type: input.parking_type ?? null,
+      pets_allowed: input.pets_allowed ?? null,
+      operation: input.operation ?? null,
+      land_area: input.land_area ?? null,
+      frontage_m: input.frontage_m ?? null,
+      depth_m: input.depth_m ?? null,
+      zoning: input.zoning ?? null,
+      utilities: input.utilities ?? null,
+      floors_count: input.floors_count ?? null,
+      commercial_use: input.commercial_use ?? null,
+      has_warehouse: input.has_warehouse ?? null,
+      parking_unit: input.parking_unit ?? null,
+      storage_unit: input.storage_unit ?? null,
       inspection_date: input.inspection_date ?? null,
       address: input.address.trim(),
       neighborhood: input.neighborhood ?? null,

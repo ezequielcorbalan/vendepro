@@ -5,6 +5,7 @@ import { registerPhotoRoutes } from './routes/photos'
 import { registerAppraisalRoutes } from './routes/appraisals'
 import { registerPrefactibilidadRoutes } from './routes/prefactibilidades'
 import { registerFichaRoutes } from './routes/fichas'
+import { registerFichaLinkRoutes } from './routes/ficha-links'
 import { registerReportRoutes } from './routes/reports'
 import { registerVisitFormRoutes } from './routes/visit-forms'
 import { registerLandingTemplateRoutes } from './routes/landings'
@@ -29,6 +30,7 @@ registerPhotoRoutes(app)
 registerAppraisalRoutes(app)
 registerPrefactibilidadRoutes(app)
 registerFichaRoutes(app)
+registerFichaLinkRoutes(app)
 registerReportRoutes(app)
 registerVisitFormRoutes(app)
 registerLandingTemplateRoutes(app)

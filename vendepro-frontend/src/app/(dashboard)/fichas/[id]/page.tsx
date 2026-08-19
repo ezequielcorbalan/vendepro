@@ -16,6 +16,7 @@ import { Field, Input, Textarea } from '@/components/ui/Input'
 import { Checkbox } from '@/components/ui/Choice'
 import { PillRadioGroup as RadioGroup, PillCheckGroup } from '@/components/ui/ChoicePills'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { DeclaredByOwnerCard, type OwnerDeclaredFicha } from '@/components/fichas/DeclaredByOwnerCard'
 
 // ── Collapsible section ─────────────────────────────────────
 function Section({ title, icon: Icon, children, defaultOpen = false }: { title: string; icon: any; children: React.ReactNode; defaultOpen?: boolean }) {
@@ -87,6 +88,7 @@ export default function FichaDetailPage() {
   const [saving, setSaving] = useState(false)
   const [notFound, setNotFound] = useState(false)
   const [leadId, setLeadId] = useState<string | null>(null)
+  const [ownerDeclared, setOwnerDeclared] = useState<OwnerDeclaredFicha | null>(null)
 
   const [f, setF] = useState({
     inspection_date: '',
@@ -146,6 +148,9 @@ export default function FichaDetailPage() {
         if (cancelled) return
         const amenities = safeParseAmenities(data.amenities)
         setLeadId(data.lead_id ?? null)
+        // Lo declarado por el propietario se muestra aparte y en lectura: no
+        // entra al form editable para que el agente no lo pise sin querer.
+        setOwnerDeclared(data as OwnerDeclaredFicha)
         setF({
           inspection_date: (data.inspection_date ?? '').slice(0, 10),
           address: data.address ?? '',
@@ -328,6 +333,8 @@ export default function FichaDetailPage() {
       </div>
 
       <div className="space-y-3">
+        {ownerDeclared && <DeclaredByOwnerCard ficha={ownerDeclared} />}
+
         <Section title="Datos generales" icon={Home} defaultOpen={true}>
           <Field label="Fecha de inspección">
             <Input type="date" value={f.inspection_date} onChange={e => u('inspection_date', e.target.value)} />

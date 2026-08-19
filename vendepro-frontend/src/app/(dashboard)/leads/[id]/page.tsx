@@ -29,6 +29,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { Timeline } from '@/components/ui/Timeline'
 import { LeadStagePipeline } from '@/components/leads/LeadStagePipeline'
 import { LeadPropertiesSection } from '@/components/leads/LeadPropertiesSection'
+import { FichaLinkSection } from '@/components/fichas/FichaLinkSection'
 
 // Etapas en las que conviene tener una propiedad/tasación vinculada: si el lead
 // no tiene, ofrecemos crear/vincular antes de avanzar.
@@ -629,6 +630,11 @@ export default function LeadDetailPage() {
 
       {/* Comprador: propiedades de interés. Vendedor: fichas de tasación. */}
       {isBuyer && <LeadPropertiesSection leadId={leadId} />}
+
+      {/* Link para que el propietario cargue la ficha antes de la visita. */}
+      {!isBuyer && (
+        <FichaLinkSection mode="single" leadId={leadId} ownerPhone={lead?.phone ?? null} />
+      )}
 
       {/* Fichas de tasación */}
       {!isBuyer && (

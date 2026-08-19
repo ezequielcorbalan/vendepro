@@ -15,6 +15,7 @@ const PUBLIC_PREFIXES = [
   '/r/',   // public property reports
   '/t/',   // public appraisal pages
   '/v/',   // public visit forms
+  '/f/',   // fichas de tasación que completa el propietario
   '/p/',   // public prefactibilidades
   '/l/',   // landings públicas
   '/u/',   // baja de emails de marketing (unsubscribe)

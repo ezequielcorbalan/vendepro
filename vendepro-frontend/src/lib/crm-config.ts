@@ -249,6 +249,7 @@ export const LEAD_SOURCES = {
 export const OPERATION_TYPES = {
   venta:     { label: 'Venta',     color: 'bg-blue-100 text-blue-800' },
   alquiler:  { label: 'Alquiler',  color: 'bg-cyan-100 text-cyan-800' },
+  ambas:     { label: 'Venta o alquiler', color: 'bg-violet-100 text-violet-800' },
   tasacion:  { label: 'Tasación',  color: 'bg-pink-100 text-pink-800' },
   otro:      { label: 'Otro',      color: 'bg-gray-100 text-gray-700' },
 } as const

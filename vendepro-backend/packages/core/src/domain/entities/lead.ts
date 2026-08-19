@@ -48,7 +48,9 @@ export class Lead {
     if (props.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(props.email)) {
       throw new ValidationError('Email no válido', { email: 'Formato inválido' })
     }
-    const validOps = ['venta', 'alquiler', 'alquiler_temporal', 'tasacion', 'otro']
+    // `ambas` = el dueño vende o alquila, lo que salga primero. Es un caso real
+    // de captación y llega desde la ficha pública, donde el propietario elige.
+    const validOps = ['venta', 'alquiler', 'ambas', 'alquiler_temporal', 'tasacion', 'otro']
     if (props.operation && !validOps.includes(props.operation)) {
       throw new ValidationError(`Operación inválida: "${props.operation}"`)
     }
