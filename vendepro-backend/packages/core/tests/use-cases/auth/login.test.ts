@@ -61,4 +61,26 @@ describe('LoginUseCase', () => {
     await expect(useCase.execute({ email: 'agent@mg.com', password: 'wrong' }))
       .rejects.toThrow(UnauthorizedError)
   })
+
+  it('rejects a deleted agent even with the right password', async () => {
+    const deletedUser = User.create({
+      id: 'user-2',
+      email: 'borrado@mg.com',
+      password_hash: 'hashed_pass',
+      full_name: 'Agente Borrado',
+      phone: null,
+      photo_url: null,
+      role: 'agent',
+      org_id: 'org_mg',
+      active: 0,
+    })
+    mockUserRepo.findByEmail.mockResolvedValue(deletedUser)
+    mockAuthService.verifyPassword.mockResolvedValue(true)
+    mockAuthService.createToken.mockClear()
+
+    const useCase = new LoginUseCase(mockUserRepo, mockAuthService)
+    await expect(useCase.execute({ email: 'borrado@mg.com', password: 'pass123' }))
+      .rejects.toThrow(UnauthorizedError)
+    expect(mockAuthService.createToken).not.toHaveBeenCalled()
+  })
 })

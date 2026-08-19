@@ -12,6 +12,11 @@ export interface UserProps {
   org_id: string | null
   active: number
   created_at: string
+  /**
+   * Momento del borrado lógico (active = 0). Solo lectura: lo escribe el
+   * repositorio en `delete()`/`restore()`, no el upsert de `save()`.
+   */
+  deleted_at?: string | null
 }
 
 const VALID_ROLES: UserRole[] = ['owner', 'admin', 'supervisor', 'agent']
@@ -34,6 +39,7 @@ export class User {
       email: props.email.toLowerCase().trim(),
       active: props.active ?? 1,
       created_at: props.created_at ?? new Date().toISOString(),
+      deleted_at: props.deleted_at ?? null,
     })
   }
 
@@ -48,6 +54,7 @@ export class User {
   get org_id() { return this.props.org_id }
   get active() { return this.props.active }
   get created_at() { return this.props.created_at }
+  get deleted_at() { return this.props.deleted_at ?? null }
 
   isAdmin(): boolean {
     return this.props.role === 'admin' || this.props.role === 'owner'

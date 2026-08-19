@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { corsMiddleware, errorHandler, createAuthMiddleware, D1UserRepository, D1ObjectiveRepository, D1TemplateBlockRepository, JwtAuthService, CryptoIdGenerator, D1RoleRepository, D1NotificationRepository, D1OrganizationRepository, D1AppraisalTemplateRepository, D1OrgVariableRepository } from '@vendepro/infrastructure'
-import { CreateAgentUseCase, GetAgentsUseCase, SetObjectivesUseCase, UpdateAgentRoleUseCase, GetRolesUseCase, GetOrgSettingsUseCase, UpdateOrgSettingsUseCase, GetUserProfileUseCase, UpdateUserProfileUseCase, GetUserNotificationsUseCase, ListAppraisalTemplatesUseCase, GetAppraisalTemplateUseCase, CreateAppraisalTemplateUseCase, UpdateAppraisalTemplateUseCase, DuplicateAppraisalTemplateUseCase, ArchiveAppraisalTemplateUseCase, ListOrgVariablesUseCase, CreateOrgVariableUseCase, UpdateOrgVariableUseCase, DeleteOrgVariableUseCase } from '@vendepro/core'
+import { CreateAgentUseCase, GetAgentsUseCase, GetDeletedAgentsUseCase, UpdateAgentUseCase, DeleteAgentUseCase, RestoreAgentUseCase, SetObjectivesUseCase, UpdateAgentRoleUseCase, GetRolesUseCase, GetOrgSettingsUseCase, UpdateOrgSettingsUseCase, GetUserProfileUseCase, UpdateUserProfileUseCase, GetUserNotificationsUseCase, ListAppraisalTemplatesUseCase, GetAppraisalTemplateUseCase, CreateAppraisalTemplateUseCase, UpdateAppraisalTemplateUseCase, DuplicateAppraisalTemplateUseCase, ArchiveAppraisalTemplateUseCase, ListOrgVariablesUseCase, CreateOrgVariableUseCase, UpdateOrgVariableUseCase, DeleteOrgVariableUseCase } from '@vendepro/core'
 
 type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket }
 type AuthVars = { Variables: { userId: string; userRole: string; orgId: string } }
@@ -25,6 +25,17 @@ app.get('/agents', async (c) => {
   }))
 })
 
+// Papelera: agentes con borrado lógico (active = 0), restaurables.
+app.get('/agents/deleted', async (c) => {
+  const repo = new D1UserRepository(c.env.DB)
+  const useCase = new GetDeletedAgentsUseCase(repo)
+  const agents = await useCase.execute(c.get('orgId'), c.get('userRole'))
+  return c.json(agents.map(a => {
+    const { password_hash, ...rest } = a.toObject()
+    return rest
+  }))
+})
+
 app.post('/create-agent', async (c) => {
   const body = (await c.req.json()) as any
   const repo = new D1UserRepository(c.env.DB)
@@ -42,10 +53,43 @@ app.post('/create-agent', async (c) => {
   return c.json(result, 201)
 })
 
+app.put('/agents/:id', async (c) => {
+  const body = (await c.req.json()) as any
+  const repo = new D1UserRepository(c.env.DB)
+  const useCase = new UpdateAgentUseCase(repo, new JwtAuthService(c.env.JWT_SECRET))
+  await useCase.execute({
+    requestingUserRole: c.get('userRole'),
+    agentId: c.req.param('id'),
+    orgId: c.get('orgId'),
+    full_name: body.full_name,
+    email: body.email,
+    phone: body.phone,
+    password: body.password,
+  })
+  return c.json({ success: true })
+})
+
 app.delete('/agents', async (c) => {
   const { id } = c.req.query()
   const repo = new D1UserRepository(c.env.DB)
-  await repo.delete(id, c.get('orgId'))
+  const useCase = new DeleteAgentUseCase(repo)
+  await useCase.execute({
+    requestingUserId: c.get('userId'),
+    requestingUserRole: c.get('userRole'),
+    agentId: id,
+    orgId: c.get('orgId'),
+  })
+  return c.json({ success: true })
+})
+
+app.post('/agents/:id/restore', async (c) => {
+  const repo = new D1UserRepository(c.env.DB)
+  const useCase = new RestoreAgentUseCase(repo)
+  await useCase.execute({
+    requestingUserRole: c.get('userRole'),
+    agentId: c.req.param('id'),
+    orgId: c.get('orgId'),
+  })
   return c.json({ success: true })
 })
 
