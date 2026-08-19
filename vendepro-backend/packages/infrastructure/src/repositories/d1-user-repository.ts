@@ -22,7 +22,15 @@ export class D1UserRepository implements UserRepository {
 
   async findByOrg(orgId: string): Promise<User[]> {
     const rows = (await this.db
-      .prepare('SELECT * FROM users WHERE org_id = ? ORDER BY full_name')
+      .prepare('SELECT * FROM users WHERE org_id = ? AND active = 1 ORDER BY full_name')
+      .bind(orgId)
+      .all()).results as any[]
+    return rows.map(r => this.toEntity(r))
+  }
+
+  async findDeletedByOrg(orgId: string): Promise<User[]> {
+    const rows = (await this.db
+      .prepare('SELECT * FROM users WHERE org_id = ? AND active = 0 ORDER BY full_name')
       .bind(orgId)
       .all()).results as any[]
     return rows.map(r => this.toEntity(r))
@@ -41,12 +49,36 @@ export class D1UserRepository implements UserRepository {
 
   async delete(id: string, orgId: string): Promise<void> {
     await this.db.prepare('UPDATE users SET active = 0 WHERE id = ? AND org_id = ?').bind(id, orgId).run()
+    await this.touchDeletedAt(id, orgId, "datetime('now')")
   }
 
-  async updateRole(id: string, orgId: string, roleId: number, roleName: string): Promise<void> {
+  async restore(id: string, orgId: string): Promise<void> {
+    await this.db.prepare('UPDATE users SET active = 1 WHERE id = ? AND org_id = ?').bind(id, orgId).run()
+    await this.touchDeletedAt(id, orgId, 'NULL')
+  }
+
+  /**
+   * deleted_at llega con la migración 041. Va en un UPDATE aparte y silencia el
+   * error de columna ausente para que borrar/restaurar funcione igual si todavía
+   * no se aplicó (el estado real lo manda `active`).
+   */
+  private async touchDeletedAt(id: string, orgId: string, valueSql: string): Promise<void> {
+    try {
+      await this.db
+        .prepare(`UPDATE users SET deleted_at = ${valueSql} WHERE id = ? AND org_id = ?`)
+        .bind(id, orgId)
+        .run()
+    } catch {
+      // columna deleted_at inexistente — sin fecha, pero el borrado ya se aplicó
+    }
+  }
+
+  async updateRole(id: string, orgId: string, _roleId: number, roleName: string): Promise<void> {
+    // El rol vive en users.role (TEXT). No existe columna role_id en el esquema:
+    // el id numérico solo sirve para resolver el nombre desde la tabla `roles`.
     await this.db
-      .prepare('UPDATE users SET role_id = ?, role = ? WHERE id = ? AND org_id = ?')
-      .bind(roleId, roleName, id, orgId)
+      .prepare('UPDATE users SET role = ? WHERE id = ? AND org_id = ?')
+      .bind(roleName, id, orgId)
       .run()
   }
 
@@ -96,7 +128,7 @@ export class D1UserRepository implements UserRepository {
       id: row.id, email: row.email, password_hash: row.password_hash ?? '',
       full_name: row.full_name, phone: row.phone ?? null, photo_url: row.photo_url ?? null,
       role: row.role, org_id: row.org_id ?? null, active: row.active ?? 1,
-      created_at: row.created_at,
+      created_at: row.created_at, deleted_at: row.deleted_at ?? null,
     })
   }
 }

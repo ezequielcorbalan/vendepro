@@ -31,6 +31,10 @@ export class LoginUseCase {
     const valid = await this.authService.verifyPassword(input.password, user.password_hash)
     if (!valid) throw new UnauthorizedError('Credenciales inválidas')
 
+    // Un agente eliminado (borrado lógico, active = 0) pierde el acceso: sin
+    // esto quedaría en la papelera pero podría seguir entrando a la app.
+    if (user.active !== 1) throw new UnauthorizedError('Tu cuenta fue desactivada')
+
     const token = await this.authService.createToken({
       sub: user.id,
       email: user.email,
