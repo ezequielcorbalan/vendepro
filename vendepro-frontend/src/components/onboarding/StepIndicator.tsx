@@ -1,3 +1,7 @@
+import { Text } from '@/components/ui/Typography'
+
+// ds-todo: candidato a componente "Stepper" — el patrón (puntos + paso activo
+// estirado) está en el muestrario pero no existe como componente del DS.
 interface Props {
   total: number
   current: number
@@ -17,13 +21,13 @@ export default function StepIndicator({ total, current }: Props) {
               isActive
                 ? 'w-6 h-2 bg-gradient-to-r from-brand-pink to-brand-orange'
                 : isDone
-                ? 'w-2 h-2 bg-brand-pink'
+                ? 'w-2 h-2 bg-primary'
                 : 'w-2 h-2 bg-gray-200'
             }`}
           />
         )
       })}
-      <span className="text-xs text-gray-400 ml-1">{current}/{total}</span>
+      <Text size="xs" tone="muted" as="span" className="ml-1">{current}/{total}</Text>
     </div>
   )
 }

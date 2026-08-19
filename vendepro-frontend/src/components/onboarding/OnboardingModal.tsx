@@ -10,6 +10,8 @@ import Step5Propiedades from './steps/Step5Propiedades'
 import Step6Calendario from './steps/Step6Calendario'
 import Step7Reportes from './steps/Step7Reportes'
 import Step8Ready from './steps/Step8Ready'
+import { Button } from '@/components/ui/Button'
+import { Modal } from '@/components/ui/Modal'
 
 const TOTAL_STEPS = 8
 
@@ -20,23 +22,16 @@ interface Props {
 
 export default function OnboardingModal({ userName, onClose }: Props) {
   const [step, setStep] = useState(1)
-  const [visible, setVisible] = useState(false)
 
   useEffect(() => {
-    // Trigger fade-in on mount
-    const t = setTimeout(() => setVisible(true), 10)
-    return () => clearTimeout(t)
-  }, [])
-
-  useEffect(() => {
+    // Flechas para navegar entre pasos. El Esc lo maneja el Modal del DS.
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'ArrowRight' && step < TOTAL_STEPS) setStep(s => s + 1)
       if (e.key === 'ArrowLeft' && step > 1) setStep(s => s - 1)
-      if (e.key === 'Escape') onClose()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [step, onClose])
+  }, [step])
 
   const goNext = useCallback(() => {
     if (step < TOTAL_STEPS) setStep(s => s + 1)
@@ -49,51 +44,43 @@ export default function OnboardingModal({ userName, onClose }: Props) {
   const isLast = step === TOTAL_STEPS
 
   return (
-    <div
-      className={`fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4 transition-opacity duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}
-      onClick={onClose}
-    >
-      <div
-        className={`bg-white rounded-card w-full max-w-xl shadow-pop flex flex-col overflow-hidden transition-all duration-300 ${visible ? 'scale-100' : 'scale-95'}`}
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <StepIndicator total={TOTAL_STEPS} current={step} />
-          <button
-            onClick={onClose}
-            className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            Omitir
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        {/* Content — scrollable */}
-        <div className="overflow-y-auto max-h-[70vh]">
-          <StepContent step={step} userName={userName} onClose={onClose} />
-        </div>
-
-        {/* Footer nav — hidden on last step (Step8 has its own CTAs) */}
-        {!isLast && (
-          <div className="flex items-center justify-between px-5 py-4 border-t border-gray-100 bg-gray-50/50">
-            <button
-              onClick={goPrev}
-              disabled={step === 1}
-              className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4" /> Anterior
-            </button>
-            <button
-              onClick={goNext}
-              className="flex items-center gap-1.5 bg-gradient-to-r from-brand-pink to-brand-orange text-white px-5 py-2 rounded-control text-sm font-semibold hover:opacity-90 transition-opacity"
-            >
-              Siguiente <ChevronRight className="w-4 h-4" />
-            </button>
+    // ds-todo: candidato a variante "Modal con animación de entrada" — el del DS
+    // no anima, así que se pierde el fade+scale que tenía este onboarding.
+    <Modal
+      open
+      onClose={onClose}
+      className="max-w-xl"
+      footer={
+        // El último paso trae sus propios CTA.
+        isLast ? undefined : (
+          <div className="flex items-center justify-between w-full">
+            <Button variant="ghost" onClick={goPrev} disabled={step === 1}>
+              <ChevronLeft className="w-4 h-4" aria-hidden="true" /> Anterior
+            </Button>
+            <Button onClick={goNext}>
+              Siguiente <ChevronRight className="w-4 h-4" aria-hidden="true" />
+            </Button>
           </div>
-        )}
+        )
+      }
+    >
+      {/* Header propio: el Modal sólo arma el suyo si recibe `title`, y acá
+          el encabezado es el indicador de pasos. Los márgenes negativos
+          compensan el padding del cuerpo del Modal, para que el borde y el
+          contenido de cada paso lleguen a los extremos del panel.
+          ds-todo: candidato a variante "Modal con contenido a sangre". */}
+      <div className="-mx-6 -mt-4 mb-4 flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <StepIndicator total={TOTAL_STEPS} current={step} />
+        <Button variant="ghost" size="sm" onClick={onClose}>
+          Omitir
+          <X className="w-3.5 h-3.5" aria-hidden="true" />
+        </Button>
       </div>
-    </div>
+
+      <div className="-mx-6 -mb-4 overflow-y-auto max-h-[70vh]">
+        <StepContent step={step} userName={userName} onClose={onClose} />
+      </div>
+    </Modal>
   )
 }
 
