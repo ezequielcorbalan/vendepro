@@ -7,6 +7,9 @@ import { cn } from '@/lib/utils'
 
 // Pestañas que unifican "Actividad" (registro/supervisión) y "Mi Performance"
 // (analytics personal) bajo un solo item del menú, sin fusionar sus lógicas.
+// ds-todo: candidato a variante "Tabs con href" — Tabs del DS es controlado
+// (value + onChange) y acá cada pestaña es una ruta, así que el estilo se
+// replica a mano contra el de ui/Tabs.
 const TABS = [
   { href: '/actividades', label: 'Registro', icon: Activity },
   { href: '/mi-performance', label: 'Mi Performance', icon: TrendingUp },
@@ -28,7 +31,7 @@ export default function ActivityTabs() {
             className={cn(
               'flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors',
               active
-                ? 'border-brand-pink text-brand-pink'
+                ? 'border-primary text-primary'
                 : 'border-transparent text-gray-500 hover:text-ink hover:border-gray-300'
             )}
           >

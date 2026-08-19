@@ -1,8 +1,11 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { Bell, AlertTriangle, Clock, X } from 'lucide-react'
 import Link from 'next/link'
 import { apiFetch } from '@/lib/api'
+import { Button } from '@/components/ui/Button'
+import { Dropdown } from '@/components/ui/Dropdown'
+import { Text } from '@/components/ui/Typography'
 
 type Notification = {
   id: string
@@ -13,11 +16,17 @@ type Notification = {
   urgency: 'high' | 'medium' | 'low'
 }
 
+// Ícono y color por urgencia. Los colores salen de los tokens semánticos del
+// DS (danger/warning/info), no de la paleta Tailwind suelta.
+const URGENCY = {
+  high: { Icon: AlertTriangle, tone: 'text-danger' },
+  medium: { Icon: Clock, tone: 'text-warning' },
+  low: { Icon: Bell, tone: 'text-info' },
+} as const
+
 export default function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([])
-  const [open, setOpen] = useState(false)
   const [dismissed, setDismissed] = useState<Set<string>>(new Set())
-  const ref = useRef<HTMLDivElement>(null)
 
   async function loadNotifications() {
     try {
@@ -33,63 +42,87 @@ export default function NotificationBell() {
     return () => clearInterval(interval)
   }, [])
 
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [])
-
   const active = notifications.filter(n => !dismissed.has(n.id))
   const hasUrgent = active.some(n => n.urgency === 'high')
 
   return (
-    <div ref={ref} className="relative">
-      <button onClick={() => setOpen(!open)} className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors">
-        <Bell className={`w-5 h-5 ${hasUrgent ? 'text-red-500' : active.length > 0 ? 'text-gray-600' : 'text-gray-400'}`} />
+    <Dropdown
+      align="left"
+      // El panel de notificaciones no es un menú de ítems: ancho fijo y filas
+      // full-width, así que anulamos el padding del contenedor.
+      className="w-72 sm:w-80 p-0 overflow-hidden"
+      trigger={
+        <Button variant="ghost" size="icon" className="relative" aria-label="Notificaciones">
+          <Bell className={hasUrgent ? 'w-5 h-5 text-danger' : active.length > 0 ? 'w-5 h-5 text-gray-600' : 'w-5 h-5 text-gray-400'} />
+          {active.length > 0 && (
+            <span
+              className={`absolute top-0.5 right-0.5 w-4 h-4 text-[9px] font-bold text-white rounded-full flex items-center justify-center ${hasUrgent ? 'bg-danger' : 'bg-primary'}`}
+            >
+              {active.length}
+            </span>
+          )}
+        </Button>
+      }
+    >
+      <div
+        className="px-4 py-3 border-b border-gray-100 flex items-center justify-between"
+        // El Dropdown cierra al clickear su contenido (comportamiento de menú);
+        // el header no navega, así que no debe cerrarlo.
+        onClick={e => e.stopPropagation()}
+      >
+        <Text size="sm" weight="semibold">Notificaciones</Text>
         {active.length > 0 && (
-          <span className={`absolute -top-0.5 -right-0.5 w-4 h-4 text-[9px] font-bold text-white rounded-full flex items-center justify-center ${hasUrgent ? 'bg-red-500' : 'bg-pink-500'}`}>
-            {active.length}
-          </span>
+          <button
+            type="button"
+            onClick={() => setDismissed(new Set(notifications.map(n => n.id)))}
+            className="text-xs text-gray-400 hover:text-gray-600"
+          >
+            Limpiar
+          </button>
         )}
-      </button>
-
-      {open && (
-        <div className="absolute left-0 top-full mt-2 w-72 sm:w-80 bg-white rounded-card shadow-pop border border-gray-200 z-50 overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-            <span className="text-sm font-semibold text-ink">Notificaciones</span>
-            {active.length > 0 && (
-              <button onClick={() => setDismissed(new Set(notifications.map(n => n.id)))} className="text-[10px] text-gray-400 hover:text-gray-600">
-                Limpiar
-              </button>
-            )}
+      </div>
+      <div className="max-h-80 overflow-y-auto">
+        {active.length === 0 ? (
+          <div className="p-6 text-center">
+            <Text size="sm" tone="muted">Sin notificaciones</Text>
           </div>
-          <div className="max-h-80 overflow-y-auto">
-            {active.length === 0 ? (
-              <div className="p-6 text-center text-sm text-gray-400">Sin notificaciones</div>
-            ) : (
-              active.map(n => (
-                <Link key={n.id} href={n.link} onClick={() => setOpen(false)}
-                  className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 border-b border-gray-50 transition-colors">
-                  {n.urgency === 'high' ? <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" /> :
-                   n.urgency === 'medium' ? <Clock className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" /> :
-                   <Bell className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />}
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-sm ${n.urgency === 'high' ? 'text-red-700 font-medium' : 'text-gray-700'} truncate`}>{n.title}</p>
-                    <p className="text-xs text-gray-400 truncate">{n.body}</p>
-                  </div>
-                  <button
-                    onClick={e => { e.preventDefault(); e.stopPropagation(); setDismissed(prev => new Set([...prev, n.id])) }}
-                    className="p-1 text-gray-300 hover:text-gray-500 shrink-0">
-                    <X className="w-3 h-3" />
-                  </button>
-                </Link>
-              ))
-            )}
-          </div>
-        </div>
-      )}
-    </div>
+        ) : (
+          active.map(n => {
+            const { Icon, tone } = URGENCY[n.urgency] ?? URGENCY.low
+            return (
+              <Link
+                key={n.id}
+                href={n.link}
+                className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 border-b border-gray-50 transition-colors"
+              >
+                <Icon className={`w-4 h-4 ${tone} mt-0.5 shrink-0`} aria-hidden="true" />
+                <div className="flex-1 min-w-0">
+                  <Text
+                    size="sm"
+                    weight={n.urgency === 'high' ? 'medium' : 'normal'}
+                    className={`truncate ${n.urgency === 'high' ? 'text-danger' : 'text-gray-700'}`}
+                  >
+                    {n.title}
+                  </Text>
+                  <Text size="xs" tone="muted" className="truncate">{n.body}</Text>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Descartar notificación"
+                  onClick={e => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    setDismissed(prev => new Set([...prev, n.id]))
+                  }}
+                  className="p-1 text-gray-300 hover:text-gray-500 shrink-0"
+                >
+                  <X className="w-3 h-3" aria-hidden="true" />
+                </button>
+              </Link>
+            )
+          })
+        )}
+      </div>
+    </Dropdown>
   )
 }

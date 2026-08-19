@@ -10,6 +10,9 @@ import NotificationBell from './NotificationBell'
 import { menuSections, adminSection, type NavLink } from '@/lib/nav-config'
 import { apiFetch, clearToken } from '@/lib/api'
 import type { Profile } from '@/lib/types'
+import { Avatar } from '@/components/ui/Avatar'
+import { Button } from '@/components/ui/Button'
+import { Text } from '@/components/ui/Typography'
 
 const COLLAPSE_KEY = 'sidebar_collapsed'
 
@@ -44,6 +47,8 @@ export default function Sidebar({ profile }: { profile: Profile }) {
     : menuSections
 
   const settingsActive = pathname.startsWith('/configuracion') || pathname.startsWith('/perfil')
+  const displayName = profile.full_name || profile.email
+  const roleLabel = profile.role === 'admin' ? 'Administrador' : 'Agente'
 
   const isLeafActive = (link: NavLink) =>
     !link.external && (
@@ -57,15 +62,17 @@ export default function Sidebar({ profile }: { profile: Profile }) {
 
   // Renderiza un link "hoja" (Link interno o <a> externo). `sub` ajusta el padding
   // cuando el item vive dentro de un grupo desplegable.
+  // ds-todo: candidato a componente "NavItem" — el patrón de item de navegación
+  // (ícono + label + estado activo) se repite acá y en MobileHeader.
   const renderLeaf = (link: NavLink, sub = false) => {
     const Icon = link.icon
     const isActive = isLeafActive(link)
     const className = cn(
-      'flex items-center text-sm font-medium transition-all relative group',
+      'flex items-center text-sm font-medium transition-all relative group rounded-control',
       collapsed ? 'justify-center h-11 w-11 mx-auto' : sub ? 'gap-3 px-3 py-2' : 'gap-3 px-3 py-2.5',
       isActive
-        ? 'bg-gradient-to-r from-brand-pink/10 to-brand-orange/10 text-brand-pink'
-        : 'rounded-lg text-gray-600 hover:bg-gray-50 hover:text-ink'
+        ? 'bg-primary/10 text-primary'
+        : 'text-gray-600 hover:bg-gray-50 hover:text-ink'
     )
     const inner = (
       <>
@@ -100,34 +107,46 @@ export default function Sidebar({ profile }: { profile: Profile }) {
 
   return (
     <aside
+      // Sin overflow-hidden: el panel del Dropdown (notificaciones) se posiciona
+      // con `absolute` y un ancestro recortado lo cortaba. El recorte que hacía
+      // falta —la marca de agua— vive ahora en su propio contenedor.
+      // ds-todo: candidato a variante "Dropdown en Portal" — así el panel no
+      // depende del overflow de sus ancestros.
+      // `sticky` crea su propio stacking context, así que sin z-index el
+      // contenido (que va después en el DOM) tapa el panel de notificaciones.
+      // Queda por debajo de los overlays del DS (Z.overlay = 50).
       className={cn(
-        'sticky top-0 h-screen shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-hidden transition-[width] duration-200 ease-out',
+        'sticky top-0 z-10 h-screen shrink-0 bg-white border-r border-gray-200 flex flex-col transition-[width] duration-200 ease-out',
         collapsed ? 'w-[72px]' : 'w-64',
       )}
     >
       {!collapsed && (
-        <img
-          src="/brand/GV-27.png"
-          alt=""
-          aria-hidden="true"
-          className="absolute -bottom-12 -right-12 w-48 h-48 opacity-5 pointer-events-none"
-        />
+        <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+          <img
+            src="/brand/GV-27.png"
+            alt=""
+            className="absolute -bottom-12 -right-12 w-48 h-48 opacity-5"
+          />
+        </div>
       )}
 
       {/* Header */}
       <div className="p-4 border-b border-gray-100 relative">
+        {/* Acento de marca: el gradiente se reserva para esto, no para superficies. */}
         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-pink to-brand-orange" />
         {collapsed ? (
           <div className="flex flex-col items-center gap-2 pt-1">
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={toggle}
               aria-label="Expandir menú"
               aria-expanded={false}
               title="Expandir menú"
-              className="w-10 h-10 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-brand-pink transition-colors"
+              className="w-10 h-10 text-gray-500 hover:text-primary"
             >
               <PanelLeftOpen className="w-5 h-5" aria-hidden="true" />
-            </button>
+            </Button>
             <NotificationBell />
           </div>
         ) : (
@@ -136,20 +155,22 @@ export default function Sidebar({ profile }: { profile: Profile }) {
               <img src="/brand/logo-horizontal.png" alt="VendéPro" className="h-9" />
               <div className="flex items-center gap-1">
                 <NotificationBell />
-                <button
+                <Button
+                  variant="ghost"
+                  size="icon"
                   onClick={toggle}
                   aria-label="Contraer menú"
                   aria-expanded={true}
                   title="Contraer menú"
-                  className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-brand-pink transition-colors"
+                  className="w-8 h-8 text-gray-400 hover:text-primary"
                 >
                   <PanelLeftClose className="w-5 h-5" aria-hidden="true" />
-                </button>
+                </Button>
               </div>
             </div>
-            <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+            <Text size="xs" tone="muted" className="mt-2 flex items-center gap-1">
               <FileBarChart className="w-3 h-3" aria-hidden="true" /> Gestión inmobiliaria
-            </p>
+            </Text>
           </>
         )}
       </div>
@@ -157,14 +178,16 @@ export default function Sidebar({ profile }: { profile: Profile }) {
       {/* Búsqueda */}
       <div className={cn('pt-3 pb-1', collapsed ? 'px-3' : 'px-4')}>
         {collapsed ? (
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={toggle}
             aria-label="Buscar"
             title="Buscar"
-            className="w-full h-10 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-brand-pink transition-colors"
+            className="w-full h-10 text-gray-400 hover:text-primary"
           >
             <Search className="w-5 h-5" aria-hidden="true" />
-          </button>
+          </Button>
         ) : (
           <GlobalSearch />
         )}
@@ -175,9 +198,9 @@ export default function Sidebar({ profile }: { profile: Profile }) {
         {sections.map((section) => (
           <div key={section.title}>
             {!collapsed && (
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-3 mb-1">
+              <Text size="xs" weight="semibold" tone="muted" className="uppercase tracking-wider px-3 mb-1">
                 {section.title}
-              </p>
+              </Text>
             )}
             <div className="space-y-0.5">
               {section.links.map((link) => {
@@ -194,11 +217,12 @@ export default function Sidebar({ profile }: { profile: Profile }) {
                 return (
                   <div key={link.href}>
                     <button
+                      type="button"
                       onClick={() => toggleGroup(link.href, groupActive)}
                       aria-expanded={open}
                       className={cn(
-                        'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all',
-                        groupActive ? 'text-brand-pink' : 'text-gray-600 hover:bg-gray-50 hover:text-ink'
+                        'w-full flex items-center gap-3 px-3 py-2.5 rounded-control text-sm font-medium transition-all',
+                        groupActive ? 'text-primary' : 'text-gray-600 hover:bg-gray-50 hover:text-ink'
                       )}
                     >
                       <GroupIcon className="w-5 h-5 shrink-0" aria-hidden="true" />
@@ -225,16 +249,14 @@ export default function Sidebar({ profile }: { profile: Profile }) {
       <div className={cn('border-t border-gray-100 py-4 space-y-1', collapsed ? 'px-2' : 'px-4')}>
         <Link
           href="/perfil"
-          title={collapsed ? (profile.full_name || profile.email) : undefined}
-          className={cn('flex items-center rounded-lg hover:bg-gray-50 transition-colors', collapsed ? 'justify-center py-2' : 'gap-3 px-3 py-2')}
+          title={collapsed ? displayName : undefined}
+          className={cn('flex items-center rounded-control hover:bg-gray-50 transition-colors', collapsed ? 'justify-center py-2' : 'gap-3 px-3 py-2')}
         >
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center text-white font-semibold text-sm shrink-0" aria-hidden="true">
-            {(profile.full_name || profile.email || '?').charAt(0).toUpperCase()}
-          </div>
+          <Avatar name={displayName} size="sm" />
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-ink truncate">{profile.full_name || profile.email}</p>
-              <p className="text-xs text-gray-500 truncate">{profile.role === 'admin' ? 'Administrador' : 'Agente'}</p>
+              <Text size="sm" weight="medium" className="truncate">{displayName}</Text>
+              <Text size="xs" tone="muted" className="truncate">{roleLabel}</Text>
             </div>
           )}
         </Link>
@@ -243,20 +265,21 @@ export default function Sidebar({ profile }: { profile: Profile }) {
           aria-current={settingsActive ? 'page' : undefined}
           title={collapsed ? 'Configuración' : undefined}
           className={cn(
-            'flex items-center rounded-lg text-sm font-medium transition-colors',
+            'flex items-center rounded-control text-sm font-medium transition-colors',
             collapsed ? 'justify-center h-11 w-11 mx-auto' : 'gap-3 px-3 py-2',
-            settingsActive ? 'bg-brand-pink/10 text-brand-pink' : 'text-gray-600 hover:bg-gray-100'
+            settingsActive ? 'bg-primary/10 text-primary' : 'text-gray-600 hover:bg-gray-100'
           )}
         >
           <Settings className="w-4 h-4 shrink-0" aria-hidden="true" />
           {!collapsed && 'Configuración'}
         </Link>
         <button
+          type="button"
           onClick={handleLogout}
           aria-label="Cerrar sesión"
           title={collapsed ? 'Cerrar sesión' : undefined}
           className={cn(
-            'flex items-center rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition-colors w-full',
+            'flex items-center rounded-control text-sm text-gray-600 hover:bg-gray-100 transition-colors w-full',
             collapsed ? 'justify-center h-11 w-11 mx-auto' : 'gap-3 px-3 py-2'
           )}
         >
