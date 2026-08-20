@@ -3,6 +3,11 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { AuthCard } from '@/components/auth/AuthCard'
+import { Alert } from '@/components/ui/Alert'
+import { Button } from '@/components/ui/Button'
+import { Field, Input } from '@/components/ui/Input'
+import { Text } from '@/components/ui/Typography'
 import { apiFetch } from '@/lib/api'
 
 function ResetPasswordForm() {
@@ -51,12 +56,12 @@ function ResetPasswordForm() {
   if (success) {
     return (
       <div className="text-center space-y-4">
-        <div className="bg-green-50 text-green-700 text-sm p-4 rounded-lg">
+        <Alert tone="success">
           ¡Contraseña actualizada correctamente! Ya podés ingresar con tu nueva contraseña.
-        </div>
+        </Alert>
         <Link
           href="/login"
-          className="block w-full text-center bg-gradient-to-br from-brand-pink to-brand-orange text-white font-medium py-2.5 rounded-lg hover:opacity-90 transition-opacity"
+          className="block w-full text-center bg-primary hover:bg-primary-hover text-white text-sm font-medium py-2 rounded-control transition-colors"
         >
           Ir al inicio de sesión
         </Link>
@@ -69,77 +74,62 @@ function ResetPasswordForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg">
+        <Alert tone="danger">
           {error}
           {isInvalidToken && (
-            <span>
+            <>
               {' '}
               <Link href="/forgot-password" className="underline font-medium">
                 Solicitá un nuevo link
               </Link>
-            </span>
+            </>
           )}
-        </div>
+        </Alert>
       )}
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Nueva contraseña</label>
-        <input
+      <Field label="Nueva contraseña">
+        <Input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
           minLength={8}
           disabled={!token}
-          className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none disabled:bg-gray-100"
           placeholder="Mínimo 8 caracteres"
         />
-      </div>
+      </Field>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Repetir contraseña</label>
-        <input
+      <Field label="Repetir contraseña">
+        <Input
           type="password"
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
           required
           minLength={8}
           disabled={!token}
-          className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none disabled:bg-gray-100"
           placeholder="Repetí la contraseña"
         />
-      </div>
+      </Field>
 
-      <button
-        type="submit"
-        disabled={loading || !token}
-        className="w-full bg-gradient-to-br from-brand-pink to-brand-orange text-white font-medium py-2.5 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
-      >
+      <Button type="submit" loading={loading} disabled={!token} className="w-full justify-center">
         {loading ? 'Guardando...' : 'Guardar contraseña'}
-      </button>
+      </Button>
 
-      <p className="text-center text-sm text-gray-500">
-        <Link href="/login" className="text-brand-pink hover:underline font-medium">
+      <Text size="sm" tone="muted" className="text-center">
+        <Link href="/login" className="text-primary hover:underline font-medium">
           Volver al inicio de sesión
         </Link>
-      </p>
+      </Text>
     </form>
   )
 }
 
 export default function ResetPasswordPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="bg-white rounded-2xl shadow-lg p-5 sm:p-8 w-full max-w-md">
-        <div className="text-center mb-6">
-          <img src="/brand/logo-horizontal.png" alt="VendéPro" className="h-12 sm:h-16 mx-auto mb-3" />
-          <h1 className="text-xl sm:text-2xl font-semibold text-ink">Nueva contraseña</h1>
-          <p className="text-gray-500 text-sm mt-1">Elegí una contraseña segura para tu cuenta</p>
-        </div>
-        <Suspense fallback={<div className="text-center text-sm text-gray-400">Cargando...</div>}>
-          <ResetPasswordForm />
-        </Suspense>
-      </div>
-    </div>
+    <AuthCard title="Nueva contraseña" subtitle="Elegí una contraseña segura para tu cuenta">
+      <Suspense fallback={<Text size="sm" tone="muted" className="text-center">Cargando...</Text>}>
+        <ResetPasswordForm />
+      </Suspense>
+    </AuthCard>
   )
 }

@@ -8,6 +8,11 @@ const PUBLIC_PATHS = [
   '/login',
   '/register',
   '/terminos',
+  // Recuperar contraseña: por definición se entra sin sesión (el segundo se
+  // abre desde el link del mail). Sin esto el middleware manda a /login y no
+  // hay forma de recuperar la cuenta.
+  '/forgot-password',
+  '/reset-password',
 ]
 
 const PUBLIC_PREFIXES = [
