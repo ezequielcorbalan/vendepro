@@ -184,11 +184,10 @@ export default function PerformancePage() {
         <>
           {/* KPIs globales */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {/* KPI destacado: visualizaciones/día con color del semáforo.
-                ds-todo: candidato a variante de StatTile con borde de color + slot de badge
-                (HealthBadge abajo) — StatTile hoy no soporta ninguna de las dos cosas. */}
-            <Card className={`border-2 p-3 sm:p-4 bg-gradient-to-br ${overallCfg.border} ${overallCfg.bg}`}>
-              <div className={`w-9 h-9 rounded-control flex items-center justify-center mb-2 bg-white/70 border ${overallCfg.border} shadow-card`} aria-hidden="true">
+            {/* KPI destacado: el semáforo se lee en el color del valor y en el
+                HealthBadge; la tile queda igual a las demás (sin borde ni tinte). */}
+            <Card className="p-3 sm:p-4">
+              <div className="w-9 h-9 rounded-control flex items-center justify-center mb-2 bg-gray-50" aria-hidden="true">
                 <Eye className={`w-5 h-5 ${overallCfg.text}`} />
               </div>
               <Text weight="bold" className={`text-xl sm:text-2xl ${overallCfg.text}`}>

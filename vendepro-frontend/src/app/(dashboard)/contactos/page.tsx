@@ -16,6 +16,7 @@ import { Tabs } from '@/components/ui/Tabs'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { Badge } from '@/components/ui/Badge'
 import { Avatar } from '@/components/ui/Avatar'
+import { DataList, DataListRow } from '@/components/ui/DataList'
 
 const typeLabels: Record<string, { label: string; color: string }> = {
   vendedor: { label: 'Vendedor', color: 'bg-blue-100 text-blue-800' },
@@ -344,7 +345,8 @@ export default function ContactosPage() {
       ) : (
         <Card padded={false} className="overflow-hidden">
           {/* Tabla desktop — scroll horizontal para que ninguna columna quede recortada */}
-          {/* ds-todo: migrable al Table del DS — ya soporta hover-reveal (group en la fila) y hideBelow; falta resolver la vista de cards en mobile, que acá es un render aparte */}
+          {/* ds-todo: la tabla desktop es migrable al Table del DS (ya soporta
+              hover-reveal con `group` y `hideBelow`); la vista mobile ya usa DataList */}
           <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-sm min-w-[900px]">
             <thead>
@@ -418,20 +420,32 @@ export default function ContactosPage() {
           </div>
 
           {/* Cards mobile */}
-          <div className="md:hidden divide-y divide-gray-100">
+          <DataList className="md:hidden">
             {paginated.map(c => {
               const t = typeLabels[c.contact_type] || typeLabels.otro
               return (
-                <div key={c.id} className="p-4 flex items-start gap-3">
-                  <Avatar name={c.full_name || '?'} />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Link href={`/contactos/${c.id}`} className="font-semibold text-ink hover:text-primary truncate">
-                        {c.full_name}
-                      </Link>
-                      <StatusBadge label={t.label} color={t.color} />
-                    </div>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+                <DataListRow
+                  key={c.id}
+                  media={<Avatar name={c.full_name || '?'} />}
+                  title={
+                    <Link href={`/contactos/${c.id}`} className="font-semibold text-ink hover:text-primary truncate">
+                      {c.full_name}
+                    </Link>
+                  }
+                  badge={<StatusBadge label={t.label} color={t.color} />}
+                  action={
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(c.id)}
+                      aria-label={`Borrar ${c.full_name}`}
+                      className="text-gray-300 hover:text-danger"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  }
+                >
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
                       {c.phone && (
                         <a href={`tel:${c.phone}`} className="text-xs text-gray-500 flex items-center gap-1 hover:text-primary">
                           <Phone className="w-3 h-3" />{c.phone}
@@ -444,20 +458,16 @@ export default function ContactosPage() {
                       )}
                       {c.property_address && <span className="text-xs text-gray-500 flex items-center gap-1 min-w-0"><MapPin className="w-3 h-3 flex-shrink-0" /><span className="truncate">{c.property_address}</span></span>}
                     </div>
-                    <div className="flex flex-wrap items-center gap-2 mt-2">
-                      <SourceBadge source={c.source} />
-                      {agentNames[c.agent_id] && <span className="text-xs text-primary font-medium">{agentNames[c.agent_id]}</span>}
-                      <TagChips tags={c.tags} max={2} />
-                      {c.created_at && <span className="text-xs text-gray-400 ml-auto whitespace-nowrap">{formatShortDate(c.created_at)}</span>}
-                    </div>
+                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                    <SourceBadge source={c.source} />
+                    {agentNames[c.agent_id] && <span className="text-xs text-primary font-medium">{agentNames[c.agent_id]}</span>}
+                    <TagChips tags={c.tags} max={2} />
+                    {c.created_at && <span className="text-xs text-gray-400 ml-auto whitespace-nowrap">{formatShortDate(c.created_at)}</span>}
                   </div>
-                  <button onClick={() => handleDelete(c.id)} className="text-gray-300 hover:text-danger p-1 flex-shrink-0">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+                </DataListRow>
               )
             })}
-          </div>
+          </DataList>
 
           {/* Paginación */}
           <div className="flex items-center justify-between gap-3 border-t border-gray-100 bg-gray-50/40 px-4 py-3 text-sm">
