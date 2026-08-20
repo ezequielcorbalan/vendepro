@@ -5,6 +5,8 @@ import { ChevronDown, ChevronRight, Scale, TrendingUp, TrendingDown, Minus } fro
 import HealthBadge from './HealthBadge'
 import DiagnosisCard from './DiagnosisCard'
 import { HEALTH_COLORS, type HealthStatus } from '@/lib/semaforo'
+import { Card } from '@/components/ui/Card'
+import { Heading, Text } from '@/components/ui/Typography'
 
 export interface NeighborhoodGroupMetrics {
   property_count: number
@@ -54,17 +56,17 @@ export default function NeighborhoodBenchmarkTable({ data }: Props) {
   if (!hasAnyData) return null
 
   return (
-    <div className="rounded-card border border-gray-200 overflow-hidden shadow-card bg-gradient-to-br from-white via-white to-orange-50/20">
-      <div className="px-4 sm:px-5 py-4 bg-gradient-to-r from-white to-orange-50/30 border-b border-gray-100">
+    // ds-todo: candidato a variante "Table con fila expandible" — igual que en
+    // ActiveListingsTable: cada fila abre un DiagnosisCard con colSpan.
+    <Card padded={false} className="overflow-hidden">
+      <div className="px-4 sm:px-5 py-4 border-b border-gray-100">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center" aria-hidden="true">
-            <Scale className="w-4 h-4 text-white" />
-          </div>
-          <h2 className="font-semibold text-ink">Tus activos vs vendidos — resumen por barrio</h2>
+          <Scale className="w-4 h-4 text-gray-600" aria-hidden="true" />
+          <Heading level={4}>Tus activos vs vendidos — resumen por barrio</Heading>
         </div>
-        <p className="text-xs text-gray-500 mt-1.5">
+        <Text size="xs" tone="muted" className="mt-1.5">
           ¿Cómo vienen tus avisos contra los que se vendieron? (promedio por barrio)
-        </p>
+        </Text>
       </div>
 
       <div className="overflow-x-auto">
@@ -103,7 +105,7 @@ export default function NeighborhoodBenchmarkTable({ data }: Props) {
                     </td>
                     <td className="py-2.5 px-2">
                       <p className="font-medium text-ink">{row.neighborhood}</p>
-                      <p className="text-[10px] text-gray-400 mt-0.5">
+                      <p className="text-xs text-gray-400 mt-0.5">
                         {activePropCount > 0 && (
                           <>
                             {activePropCount} activa{activePropCount !== 1 ? 's' : ''}
@@ -121,7 +123,7 @@ export default function NeighborhoodBenchmarkTable({ data }: Props) {
                       {row.active ? (
                         <>
                           <span className="font-semibold text-ink">{row.active.avg_views_per_day}</span>
-                          <span className="text-[10px] text-gray-400 ml-0.5">vis/día</span>
+                          <span className="text-xs text-gray-400 ml-0.5">vis/día</span>
                         </>
                       ) : '—'}
                     </td>
@@ -129,7 +131,7 @@ export default function NeighborhoodBenchmarkTable({ data }: Props) {
                       {row.sold ? (
                         <>
                           <span className="font-semibold text-ink">{row.sold.avg_views_per_day}</span>
-                          <span className="text-[10px] text-gray-400 ml-0.5">vis/día</span>
+                          <span className="text-xs text-gray-400 ml-0.5">vis/día</span>
                         </>
                       ) : '—'}
                     </td>
@@ -163,6 +165,6 @@ export default function NeighborhoodBenchmarkTable({ data }: Props) {
           </tbody>
         </table>
       </div>
-    </div>
+    </Card>
   )
 }

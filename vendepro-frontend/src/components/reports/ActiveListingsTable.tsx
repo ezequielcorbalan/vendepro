@@ -6,6 +6,9 @@ import { ChevronDown, ChevronRight, Home, ExternalLink, Plus, FileBarChart, Cloc
 import HealthBadge from './HealthBadge'
 import DiagnosisCard from './DiagnosisCard'
 import { HEALTH_COLORS, type HealthStatus } from '@/lib/semaforo'
+import { Badge } from '@/components/ui/Badge'
+import { Card } from '@/components/ui/Card'
+import { Heading, Text } from '@/components/ui/Typography'
 
 export interface ActiveListingWithBenchmark {
   property_id: string
@@ -67,22 +70,21 @@ export default function ActiveListingsTable({ data }: Props) {
   const noReportCount = data.filter(r => r.reports_count === 0).length
 
   return (
-    <div className="rounded-card border border-gray-200 overflow-hidden shadow-card bg-gradient-to-br from-white via-white to-pink-50/30">
-      <div className="px-4 sm:px-5 py-4 bg-gradient-to-r from-white to-pink-50/40 border-b border-gray-100">
+    // ds-todo: candidato a variante "Table con fila expandible" — el Table del
+    // DS toma columns + data y acá cada fila puede abrir un DiagnosisCard con
+    // colSpan, así que la tabla sigue armada a mano.
+    <Card padded={false} className="overflow-hidden">
+      <div className="px-4 sm:px-5 py-4 border-b border-gray-100">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center" aria-hidden="true">
-            <Home className="w-4 h-4 text-white" />
-          </div>
-          <h2 className="font-semibold text-ink">Mis avisos activos</h2>
+          <Home className="w-4 h-4 text-gray-600" aria-hidden="true" />
+          <Heading level={4}>Mis avisos activos</Heading>
           {noReportCount > 0 && (
-            <span className="ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
-              {noReportCount} sin reportes aún
-            </span>
+            <Badge tone="warning" className="ml-auto">{noReportCount} sin reportes aún</Badge>
           )}
         </div>
-        <p className="text-xs text-gray-500 mt-1.5">
+        <Text size="xs" tone="muted" className="mt-1.5">
           Cada aviso comparado contra el promedio de vendidas de su barrio — los que más se alejan aparecen primero.
-        </p>
+        </Text>
       </div>
 
       <div className="overflow-x-auto">
@@ -111,7 +113,7 @@ export default function ActiveListingsTable({ data }: Props) {
               return (
                 <Fragment key={row.property_id}>
                   <tr
-                    className={`hover:bg-pink-50/20 transition-colors ${showDiagnosis ? 'cursor-pointer' : ''}`}
+                    className={`hover:bg-primary/5 transition-colors ${showDiagnosis ? 'cursor-pointer' : ''}`}
                     onClick={showDiagnosis ? () => setExpandedKey(expanded ? null : row.property_id) : undefined}
                   >
                     <td className="py-2.5 pl-4 pr-2">
@@ -124,18 +126,18 @@ export default function ActiveListingsTable({ data }: Props) {
                     <td className="py-2.5 px-2">
                       <Link
                         href={`/propiedades/${row.property_id}/reportes`}
-                        className="inline-flex items-center gap-1 text-brand-pink hover:underline font-medium"
+                        className="inline-flex items-center gap-1 text-primary hover:underline font-medium"
                         onClick={e => e.stopPropagation()}
                       >
                         {row.address}
                         <ExternalLink className="w-3 h-3" aria-hidden="true" />
                       </Link>
                       {hasReports ? (
-                        <p className="text-[10px] text-gray-400 mt-0.5">
+                        <p className="text-xs text-gray-400 mt-0.5">
                           {row.reports_count} reporte{row.reports_count !== 1 ? 's' : ''} · {row.avg_in_person_visits_per_week} vis pres/sem
                         </p>
                       ) : (
-                        <p className="text-[10px] text-warning mt-0.5 font-medium inline-flex items-center gap-1">
+                        <p className="text-xs text-warning mt-0.5 font-medium inline-flex items-center gap-1">
                           <FileBarChart className="w-3 h-3" aria-hidden="true" />
                           Sin reportes aún
                         </p>
@@ -159,7 +161,7 @@ export default function ActiveListingsTable({ data }: Props) {
                       {hasReports ? (
                         <>
                           <span className="font-semibold text-ink">{row.avg_views_per_day}</span>
-                          <span className="text-[10px] text-gray-400 ml-0.5">vis/día</span>
+                          <span className="text-xs text-gray-400 ml-0.5">vis/día</span>
                         </>
                       ) : (
                         <span className="text-gray-300">—</span>
@@ -206,6 +208,6 @@ export default function ActiveListingsTable({ data }: Props) {
           </tbody>
         </table>
       </div>
-    </div>
+    </Card>
   )
 }
