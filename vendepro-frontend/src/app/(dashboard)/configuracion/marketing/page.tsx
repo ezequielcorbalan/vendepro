@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
-  Megaphone, Settings, BarChart3, Activity, Save, Loader2,
-  Plus, Trash2, ArrowLeft, Send, CheckCircle2, Mail,
+  Megaphone, Save, Loader2,
+  Plus, Trash2, ArrowLeft, Send, CheckCircle2,
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
@@ -12,6 +12,7 @@ import { getCurrentUser } from '@/lib/auth'
 import EmailSection from '@/components/configuracion/EmailSection'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { Tabs } from '@/components/ui/Tabs'
 import { Text } from '@/components/ui/Typography'
 import { Field, Input, Select } from '@/components/ui/Input'
 import { Checkbox } from '@/components/ui/Choice'
@@ -293,33 +294,19 @@ export default function MarketingConfigPage() {
         </div>
       </div>
 
-      {/* Tabs con ícono por item + lista condicional por rol — no mapea 1:1 a
-          Tabs/SegmentedControl (sin soporte de ícono). ds-todo: candidato a
-          variante "SegmentedControl con ícono" cuando se decida en tanda. */}
-      <div className="flex gap-1 mb-5 bg-gray-100 rounded-xl p-1 max-w-fit">
-        {([
-          { id: 'config', label: 'Configuración', icon: Settings },
-          // Mapeos (funnel de la org) y Email son admin-only.
-          ...(isAdmin ? [{ id: 'mappings', label: 'Mapeo de eventos', icon: BarChart3 }] as const : []),
-          { id: 'log', label: 'Log de eventos', icon: Activity },
-          ...(isAdmin ? [{ id: 'email', label: 'Email', icon: Mail }] as const : []),
-        ] as { id: 'config' | 'mappings' | 'log' | 'email'; label: string; icon: typeof Settings }[]).map(t => {
-          const Icon = t.icon
-          return (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                tab === t.id
-                  ? 'bg-white text-brand-pink shadow-sm'
-                  : 'text-gray-600 hover:text-ink'
-              }`}
-            >
-              <Icon className="w-3.5 h-3.5" /> {t.label}
-            </button>
-          )
-        })}
-      </div>
+      {/* Secciones de la pantalla: Tabs del DS, sin íconos. Mapeos y Email son
+          admin-only, así que la lista se arma según el rol. */}
+      <Tabs
+        className="mb-5"
+        value={tab}
+        onChange={v => setTab(v as 'config' | 'mappings' | 'log' | 'email')}
+        items={[
+          { value: 'config', label: 'Configuración' },
+          ...(isAdmin ? [{ value: 'mappings', label: 'Mapeo de eventos' }] : []),
+          { value: 'log', label: 'Log de eventos' },
+          ...(isAdmin ? [{ value: 'email', label: 'Email' }] : []),
+        ]}
+      />
 
       {tab === 'config' && (
         <Card className="space-y-4">

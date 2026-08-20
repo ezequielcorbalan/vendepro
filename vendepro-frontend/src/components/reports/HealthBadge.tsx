@@ -18,9 +18,9 @@ const SIZE_MAP: Record<NonNullable<HealthBadgeProps['size']>, { dot: string; tex
  * semáforo de un reporte/barrio/KPI. Muestra gris/— cuando status es null.
  *
  * El color sale de HEALTH_COLORS (lib/semaforo), la fuente única del semáforo.
- * ds-todo: no hay equivalente en el DS — Badge usa tonos semánticos y
- * StatusBadge es un pill con fondo; esto es punto + label sin fondo. Candidato
- * a variante "Badge sin fondo (dot + label)".
+ * Se queda como componente propio: Badge y StatusBadge son pills con fondo, y
+ * acá el semáforo se lee como punto + label sin superficie, para poder ir dentro
+ * de una celda o al lado de un KPI sin competir con el dato.
  */
 export default function HealthBadge({
   status,

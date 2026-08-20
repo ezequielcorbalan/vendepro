@@ -107,16 +107,10 @@ export default function Sidebar({ profile }: { profile: Profile }) {
 
   return (
     <aside
-      // Sin overflow-hidden: el panel del Dropdown (notificaciones) se posiciona
-      // con `absolute` y un ancestro recortado lo cortaba. El recorte que hacía
-      // falta —la marca de agua— vive ahora en su propio contenedor.
-      // ds-todo: candidato a variante "Dropdown en Portal" — así el panel no
-      // depende del overflow de sus ancestros.
-      // `sticky` crea su propio stacking context, así que sin z-index el
-      // contenido (que va después en el DOM) tapa el panel de notificaciones.
-      // Queda por debajo de los overlays del DS (Z.overlay = 50).
+      // Sin overflow-hidden: el recorte que hacía falta —la marca de agua— vive
+      // en su propio contenedor.
       className={cn(
-        'sticky top-0 z-10 h-screen shrink-0 bg-white border-r border-gray-200 flex flex-col transition-[width] duration-200 ease-out',
+        'sticky top-0 h-screen shrink-0 bg-white border-r border-gray-200 flex flex-col transition-[width] duration-200 ease-out',
         collapsed ? 'w-[72px]' : 'w-64',
       )}
     >

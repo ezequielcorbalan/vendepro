@@ -5,6 +5,27 @@ import { useEffect, type RefObject } from 'react'
 const FOCUSABLE = 'a[href],button:not([disabled]),textarea:not([disabled]),input:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])'
 
 /**
+ * Bloqueo de scroll compartido entre overlays. Con dos abiertos a la vez (un
+ * Drawer sobre un Modal, por ejemplo), cada uno guardaba y restauraba el estilo
+ * por su cuenta y el último en cerrar dejaba el body en `hidden`: la página
+ * quedaba sin scroll. Se cuenta cuántos hay abiertos y sólo el primero guarda
+ * el valor y el último lo restaura.
+ */
+let openOverlays = 0
+let savedOverflow = ''
+
+function lockScroll() {
+  if (openOverlays === 0) savedOverflow = document.body.style.overflow
+  openOverlays += 1
+  document.body.style.overflow = 'hidden'
+}
+
+function unlockScroll() {
+  openOverlays = Math.max(0, openOverlays - 1)
+  if (openOverlays === 0) document.body.style.overflow = savedOverflow
+}
+
+/**
  * Comportamiento base de un overlay (Modal/Drawer): cierre con Esc, bloqueo de
  * scroll del body, foco al panel al abrir + trap de Tab dentro del panel, y
  * devolución del foco al elemento previo al cerrar.
@@ -13,8 +34,7 @@ export function useOverlay(open: boolean, onClose: () => void, panelRef: RefObje
   useEffect(() => {
     if (!open) return
     const prevActive = document.activeElement as HTMLElement | null
-    const prevOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
+    lockScroll()
 
     const panel = panelRef.current
     const focusables = () =>
@@ -38,7 +58,7 @@ export function useOverlay(open: boolean, onClose: () => void, panelRef: RefObje
     document.addEventListener('keydown', onKey)
     return () => {
       document.removeEventListener('keydown', onKey)
-      document.body.style.overflow = prevOverflow
+      unlockScroll()
       prevActive?.focus?.()
     }
   }, [open, onClose, panelRef])

@@ -8,7 +8,7 @@ import {
   ChevronRight, Check, Tag, Loader2
 } from 'lucide-react'
 import {
-  LEAD_SOURCES,
+  LEAD_SOURCES, LEAD_STAGES,
   LEAD_AGENT_FINAL_STAGES, BUYER_LEAD_TERMINAL_STAGES,
   OPERATION_TYPES, getLeadChecklist,
   getLeadUrgency, getUrgencyBadge,
@@ -17,6 +17,7 @@ import {
 import type { Contact } from '@/lib/types'
 import { useToast } from '@/components/ui/Toast'
 import { useConfirm } from '@/components/ui/useConfirm'
+import { Badge } from '@/components/ui/Badge'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { StageBadge } from '@/components/ui/StageBadge'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -29,6 +30,7 @@ import { Heading, Text } from '@/components/ui/Typography'
 import { CallButton, WhatsAppButton } from '@/components/ui/ContactButtons'
 import AIChatPanel from '@/components/ai/AIChatPanel'
 import { apiFetch } from '@/lib/api'
+import { cn } from '@/lib/utils'
 import { scopeQueryString } from '@/lib/agent-scope'
 import { pushFromApiResponse } from '@/components/marketing/dataLayer'
 import { DndContext, DragOverlay, useDraggable, useDroppable, type DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
@@ -872,8 +874,13 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
                     <X className="w-2 h-2 opacity-0 group-hover:opacity-60 transition-opacity" />
                   </button>
                 ))}
-                {/* ds-todo: StatusBadge con ícono (pill Tasación) */}
-                {hasAppraisal && <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-800 font-medium shrink-0"><Check className="w-2.5 h-2.5" /> Tasación</span>}
+                {/* Badge acepta children, así que el ícono entra sin variante nueva.
+                    El morado sale de la etapa "en_tasacion" de LEAD_STAGES. */}
+                {hasAppraisal && (
+                  <Badge className={cn('shrink-0', LEAD_STAGES.en_tasacion.color)}>
+                    <Check className="w-2.5 h-2.5" aria-hidden="true" /> Tasación
+                  </Badge>
+                )}
               </div>
               <p className="text-xs text-gray-500 truncate mt-0.5">
                 {lead.phone && <span className="text-gray-600">{lead.phone}</span>}
