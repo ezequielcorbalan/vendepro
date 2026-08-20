@@ -23,10 +23,15 @@ interface ModalProps {
   danger?: boolean
   children: ReactNode
   footer?: ReactNode
+  /**
+   * Padding del cuerpo. Desactivalo para contenido a sangre (un header propio,
+   * una tabla, un flujo de pasos) y manejá el espaciado adentro.
+   */
+  padded?: boolean
   className?: string
 }
 
-export function Modal({ open, onClose, title, icon, danger = false, children, footer, className }: ModalProps) {
+export function Modal({ open, onClose, title, icon, danger = false, children, footer, padded = true, className }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null)
   const downOnScrim = useRef(false)
   useOverlay(open, onClose, panelRef)
@@ -36,7 +41,7 @@ export function Modal({ open, onClose, title, icon, danger = false, children, fo
   return (
     <Portal>
       <div
-        className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
+        className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 animate-overlay-in"
         style={{ zIndex: Z.modal }}
         onMouseDown={e => { downOnScrim.current = e.target === e.currentTarget }}
         onMouseUp={e => { if (downOnScrim.current && e.target === e.currentTarget) onClose() }}
@@ -47,7 +52,7 @@ export function Modal({ open, onClose, title, icon, danger = false, children, fo
           aria-modal="true"
           aria-label={title}
           tabIndex={-1}
-          className={cn('bg-white rounded-card w-full max-w-md shadow-pop overflow-hidden outline-none', className)}
+          className={cn('bg-white rounded-card w-full max-w-md shadow-pop overflow-hidden outline-none animate-panel-in', className)}
         >
           {title && (
             <div className="flex items-start justify-between gap-3 px-6 pt-5 pb-3 border-b border-gray-100">
@@ -69,7 +74,7 @@ export function Modal({ open, onClose, title, icon, danger = false, children, fo
               </button>
             </div>
           )}
-          <div className="px-6 py-4 text-sm text-gray-600">{children}</div>
+          <div className={cn('text-sm text-gray-600', padded && 'px-6 py-4')}>{children}</div>
           {footer && (
             <div className="flex items-center justify-end gap-2 px-6 py-4 bg-gray-50 border-t border-gray-100">
               {footer}

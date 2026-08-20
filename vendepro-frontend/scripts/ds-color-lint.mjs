@@ -25,6 +25,16 @@ const EXCLUDE_PATH_PREFIXES = [
   'src/components/tasaciones/legacy',
   'src/components/landings/public',
   'src/components/landings/blocks',
+  // Superficies públicas: subsistema propio, no siguen el DS de la app.
+  // Ver regla 12 en doc/ds-visual-rules.md.
+  'src/app/l/',
+  'src/app/p/',
+  'src/app/r/',
+  'src/app/t/',
+  'src/app/u/',
+  'src/app/v/',
+  'src/app/terminos',
+  'src/app/page.tsx',
   // Primitivos del propio DS: acá SÍ viven los colores reales (son la fuente
   // de los tokens), no son "drift" a migrar.
   'src/components/ui',

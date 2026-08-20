@@ -7,6 +7,8 @@ import { apiFetch } from '@/lib/api'
 import { formatCurrency } from '@/lib/utils'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
+import { StatusBadge } from '@/components/ui/StatusBadge'
+import { OPERATION_TYPES } from '@/lib/crm-config'
 import { Heading, Text } from '@/components/ui/Typography'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { StatTile } from '@/components/ui/StatTile'
@@ -82,8 +84,14 @@ export default function AlquiladasPage() {
                       {p.updated_at && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{formatDate(p.updated_at)}</span>}
                     </div>
                   </div>
-                  {/* ds-todo: chip de estado "Alquilada" (cyan) sin mapeo en StageBadge (usa getStageConfig de leads) — por ahora se deja el span */}
-                  <span className="bg-cyan-100 text-cyan-800 text-[10px] font-medium px-2 py-1 rounded-full shrink-0">Alquilada</span>
+                  {/* El cyan es el de la operación Alquiler en OPERATION_TYPES: no se
+                      suma un estado nuevo, se reutiliza el color de dominio que ya existe. */}
+                  <StatusBadge
+                    label="Alquilada"
+                    color={OPERATION_TYPES.alquiler.color}
+                    size="sm"
+                    className="shrink-0"
+                  />
                 </div>
               </Card>
             </Link>

@@ -65,14 +65,15 @@ function KpiCard({ label, value, trendLabel, trend, sparkData, sparkColor }: {
   )
 }
 
-// ds-todo: candidato a componente "IntegrationBadge" (chip de estado de integración con detalle) — sin mapeo directo en el DS
+// Chip local: ya usa los tonos semánticos del DS (success / gris) y no se repite
+// en otra pantalla, así que no sube al design system.
 function IntegrationBadge({ name, enabled, detail }: { name: string; enabled: boolean; detail?: string }) {
   return (
     <div className={`flex items-center gap-2.5 flex-1 px-3 py-2.5 rounded-control border ${enabled ? 'bg-success/10 border-success/30' : 'bg-gray-50 border-gray-200'}`}>
       {enabled ? <CheckCircle2 className="w-4 h-4 text-success shrink-0" /> : <AlertCircle className="w-4 h-4 text-gray-400 shrink-0" />}
       <div className="min-w-0">
         <p className={`text-xs font-semibold ${enabled ? 'text-ink' : 'text-gray-500'}`}>{name}</p>
-        {detail && <p className="text-[10px] text-gray-400 truncate">{detail}</p>}
+        {detail && <p className="text-xs text-gray-400 truncate">{detail}</p>}
       </div>
     </div>
   )

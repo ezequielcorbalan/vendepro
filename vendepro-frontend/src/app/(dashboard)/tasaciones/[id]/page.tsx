@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { ArrowLeft, Building2, ExternalLink, Ruler, Eye, TrendingUp, Shield, Pencil, Loader2 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { Card } from '@/components/ui/Card'
+import { StatTile } from '@/components/ui/StatTile'
 import { Heading, Text } from '@/components/ui/Typography'
 import { Alert } from '@/components/ui/Alert'
 import { Table, type Column } from '@/components/ui/Table'
@@ -326,42 +327,35 @@ export default function TasacionDetailPage() {
           </Card>
         )}
 
-        {/* ds-todo: candidato a variante "Card oscura/destacada" — superficie dark sin mapeo en el DS */}
-        <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-card p-5 sm:p-8 text-white shadow-card">
-          <h2 className="text-lg sm:text-xl font-bold mb-6 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-primary" />
+        <Card className="p-5 sm:p-8">
+          <Heading level={3} className="mb-6 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-gray-600" aria-hidden="true" />
             Tasación proyectada
-          </h2>
+          </Heading>
 
           <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-6">
-            <div className="bg-white/10 rounded-control p-4 text-center">
-              <p className="text-xs text-white/60">Sup. ponderada</p>
-              <p className="text-xl sm:text-2xl font-bold">{weighted.toFixed(1)} m²</p>
-            </div>
-            <div className="bg-white/10 rounded-control p-4 text-center">
-              <p className="text-xs text-white/60">USD/m² promedio</p>
-              <p className="text-xl sm:text-2xl font-bold">{usdM2.toLocaleString('es-AR')}</p>
-            </div>
+            <StatTile label="Sup. ponderada" value={`${weighted.toFixed(1)} m²`} />
+            <StatTile label="USD/m² promedio" value={usdM2.toLocaleString('es-AR')} />
           </div>
 
           <div className="space-y-3">
             {a.test_price && (
-              <div className="bg-white/5 border border-white/10 rounded-control p-4 flex items-center justify-between">
+              <div className="bg-gray-50 border border-gray-200 rounded-control p-4 flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-white/60">Valor de publicación prueba</p>
-                  <p className="text-xs text-white/40">Primeros 30 días</p>
+                  <Text size="xs" tone="muted">Valor de publicación prueba</Text>
+                  <Text size="xs" tone="muted">Primeros 30 días</Text>
                 </div>
-                <p className="text-xl sm:text-2xl font-bold text-yellow-400">
+                <p className="text-xl sm:text-2xl font-bold text-warning">
                   USD {Number(a.test_price).toLocaleString('es-AR')}
                 </p>
               </div>
             )}
 
             {a.suggested_price && (
-              <div className="bg-primary/20 border border-primary/30 rounded-control p-4 flex items-center justify-between">
+              <div className="bg-primary/5 border border-primary/20 rounded-control p-4 flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-white/80 font-semibold">Valor sugerido</p>
-                  <p className="text-xs text-white/40">Valor de mercado</p>
+                  <Text size="xs" weight="semibold">Valor sugerido</Text>
+                  <Text size="xs" tone="muted">Valor de mercado</Text>
                 </div>
                 <p className="text-2xl sm:text-3xl font-bold text-primary">
                   USD {Number(a.suggested_price).toLocaleString('es-AR')}
@@ -370,12 +364,12 @@ export default function TasacionDetailPage() {
             )}
 
             {a.expected_close_price && (
-              <div className="bg-white/5 border border-white/10 rounded-control p-4 flex items-center justify-between">
+              <div className="bg-gray-50 border border-gray-200 rounded-control p-4 flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-white/60">Precio de cierre esperado</p>
-                  <p className="text-xs text-white/40">120 días</p>
+                  <Text size="xs" tone="muted">Precio de cierre esperado</Text>
+                  <Text size="xs" tone="muted">120 días</Text>
                 </div>
-                <p className="text-xl sm:text-2xl font-bold text-green-400">
+                <p className="text-xl sm:text-2xl font-bold text-success">
                   USD {Number(a.expected_close_price).toLocaleString('es-AR')}
                 </p>
               </div>
@@ -383,13 +377,13 @@ export default function TasacionDetailPage() {
 
             {usdM2 > 0 && (
               <div className="text-center pt-2">
-                <p className="text-xs text-white/40">
+                <Text size="xs" tone="muted">
                   {usdM2.toLocaleString('es-AR')} USD/m² × {weighted.toFixed(1)} m² = USD {Math.round(usdM2 * weighted).toLocaleString('es-AR')}
-                </p>
+                </Text>
               </div>
             )}
           </div>
-        </div>
+        </Card>
 
         <Card className="p-5 sm:p-8 text-center">
           <img src="/brand/logo-horizontal.png" alt="Logo" className="h-8 sm:h-10 mx-auto mb-3" />

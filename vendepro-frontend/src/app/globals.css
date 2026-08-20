@@ -108,6 +108,23 @@ select {
   animation: slide-up 0.2s ease-out;
 }
 
+/* Entrada de overlays (Modal/Drawer): el scrim aparece y el panel sube apenas.
+   La preferencia de movimiento reducido las neutraliza más abajo. */
+@keyframes overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-overlay-in {
+  animation: overlay-in 0.15s ease-out;
+}
+@keyframes panel-in {
+  from { transform: translateY(8px) scale(0.98); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+.animate-panel-in {
+  animation: panel-in 0.2s ease-out;
+}
+
 /* ── Foco ────────────────────────────────────────────────────── */
 /* Foco gris tenue, visible solo en navegación por teclado (no en click de mouse).
    !important para ganarle a los `focus:outline-none` inline de varios inputs. */

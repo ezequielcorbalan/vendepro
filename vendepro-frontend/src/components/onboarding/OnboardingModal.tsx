@@ -44,11 +44,10 @@ export default function OnboardingModal({ userName, onClose }: Props) {
   const isLast = step === TOTAL_STEPS
 
   return (
-    // ds-todo: candidato a variante "Modal con animación de entrada" — el del DS
-    // no anima, así que se pierde el fade+scale que tenía este onboarding.
     <Modal
       open
       onClose={onClose}
+      padded={false}
       className="max-w-xl"
       footer={
         // El último paso trae sus propios CTA.
@@ -64,12 +63,10 @@ export default function OnboardingModal({ userName, onClose }: Props) {
         )
       }
     >
-      {/* Header propio: el Modal sólo arma el suyo si recibe `title`, y acá
-          el encabezado es el indicador de pasos. Los márgenes negativos
-          compensan el padding del cuerpo del Modal, para que el borde y el
-          contenido de cada paso lleguen a los extremos del panel.
-          ds-todo: candidato a variante "Modal con contenido a sangre". */}
-      <div className="-mx-6 -mt-4 mb-4 flex items-center justify-between px-5 py-4 border-b border-gray-100">
+      {/* Header propio: el Modal sólo arma el suyo si recibe `title`, y acá el
+          encabezado es el indicador de pasos. Va con padded={false} para que
+          el borde y cada paso lleguen a los extremos del panel. */}
+      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
         <Stepper steps={TOTAL_STEPS} current={step - 1} showCount label="Progreso del tutorial" />
         <Button variant="ghost" size="sm" onClick={onClose}>
           Omitir
@@ -77,7 +74,7 @@ export default function OnboardingModal({ userName, onClose }: Props) {
         </Button>
       </div>
 
-      <div className="-mx-6 -mb-4 overflow-y-auto max-h-[70vh]">
+      <div className="overflow-y-auto max-h-[70vh]">
         <StepContent step={step} userName={userName} onClose={onClose} />
       </div>
     </Modal>

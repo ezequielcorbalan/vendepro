@@ -7,6 +7,7 @@ import { ArrowLeft, Building2, Loader2, Phone, Mail, User, Plus, Pencil, Send, T
 import { apiFetch } from '@/lib/api'
 import { Card } from '@/components/ui/Card'
 import { Heading, Text } from '@/components/ui/Typography'
+import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { WhatsAppButton } from '@/components/ui/ContactButtons'
 import { StatusBadge } from '@/components/ui/StatusBadge'
@@ -127,12 +128,7 @@ export default function PropiedadDetailPage() {
               className="whitespace-nowrap"
             />
             {(property as any).source === 'kiteprop' && (
-              // ds-todo: candidato a badge de origen/integración (color fuera de tokens)
-              <StatusBadge
-                label="Importada de KiteProp"
-                color="bg-indigo-50 text-indigo-600 border border-indigo-100"
-                className="whitespace-nowrap"
-              />
+              <Badge tone="info" className="whitespace-nowrap">Importada de KiteProp</Badge>
             )}
             <Link href={`/tasaciones/nueva?property_id=${id}`}
               className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-control text-sm font-medium hover:bg-primary-hover">

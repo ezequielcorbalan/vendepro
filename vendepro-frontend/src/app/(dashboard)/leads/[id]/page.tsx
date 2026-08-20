@@ -310,9 +310,9 @@ export default function LeadDetailPage() {
           )}
           {!isBuyer && (
             <>
-              {/* ds-todo: candidato a variante "accent" (naranja de marca) — por ahora outline */}
               <Button
-                variant="outline"                icon={<FileText className="w-3.5 h-3.5" />}
+                variant="outline"
+                icon={<FileText className="w-3.5 h-3.5" />}
                 disabled={editing}
                 onClick={() => {
                   const qs = new URLSearchParams({ lead_id: leadId })
@@ -323,8 +323,8 @@ export default function LeadDetailPage() {
               >
                 Ficha de tasación
               </Button>
-              {/* ds-todo: candidato a variante "success" (verde crear) — por ahora primary */}
-              <Button                icon={<Home className="w-3.5 h-3.5" />}
+              <Button
+                icon={<Home className="w-3.5 h-3.5" />}
                 onClick={() => {
                   const qs = new URLSearchParams({ lead_id: leadId })
                   if (fichas.length > 0) qs.set('ficha_id', fichas[0].id)

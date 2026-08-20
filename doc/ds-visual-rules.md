@@ -198,3 +198,42 @@ grep -rn 'style={{.*backgroundColor.*\.color' src/app src/components --include=*
 El ratchet de color (`scripts/ds-color-lint.mjs` + `scripts/.ds-color-baseline`)
 ya evita que SUBA el uso de colores Tailwind sueltos. Mismo espíritu: cuando una
 pantalla se corrige acá, el baseline baja y queda trabado el retroceso.
+
+---
+
+## 12. Superficies públicas: subsistema propio
+
+Las pantallas que ve alguien que **no** es agente —landings de propiedad
+(`/l`, `/p`), reporte al propietario (`/r`), tasación compartida (`/t`), ficha
+de visita (`/v`), link de unsubscribe (`/u`), la home y términos— **no siguen el
+design system de la app**. Son un subsistema aparte.
+
+**Por qué:** el DS está calibrado para trabajo denso y repetido (leer, filtrar,
+comparar, decidir en pocos clics). Una landing tiene otro objetivo —una sola
+acción, primera impresión, marca al frente— y otra tipografía de titulares. Si
+las dos superficies comparten los mismos componentes, una de las dos pierde:
+o la app se vuelve decorativa, o la landing se vuelve un formulario.
+
+**Qué comparten y qué no:**
+
+| Comparten | No comparten |
+|---|---|
+| Tokens de marca (`brand-pink`, `brand-orange`, `ink`) | Componentes de `ui/` |
+| Tipografía (Poppins) | Escala de tamaños y pesos |
+| Logo y assets | Radios, sombras y densidad |
+| El gradiente como acento | Los mapas de dominio (`crm-config`) |
+
+**Consecuencias prácticas:**
+
+- Están excluidas del lint de color (`EXCLUDE_PATH_PREFIXES` en
+  `scripts/ds-color-lint.mjs`): `landings/public`, `landings/blocks`,
+  `tasaciones/renderer`, `tasaciones/legacy`.
+- No se marcan con `ds-todo`: no son deuda, son otro sistema.
+- Un componente de `ui/` puede usarse ahí si encaja, pero **no es obligatorio**
+  y no se fuerza el retrofit.
+- Si un patrón de landing se repite (hero, bloque de galería, CTA de contacto),
+  se abstrae **dentro** de ese subsistema, no en `ui/`.
+
+**Lo que sí aplica siempre**, en cualquier superficie: el foco visible por
+teclado, el `alt` de las imágenes, el contraste de texto, y que el color no sea
+el único portador de información.
