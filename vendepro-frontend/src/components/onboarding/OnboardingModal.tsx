@@ -1,7 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
-import StepIndicator from './StepIndicator'
 import Step1Welcome from './steps/Step1Welcome'
 import Step2Pipeline from './steps/Step2Pipeline'
 import Step3Leads from './steps/Step3Leads'
@@ -12,6 +11,7 @@ import Step7Reportes from './steps/Step7Reportes'
 import Step8Ready from './steps/Step8Ready'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
+import { Stepper } from '@/components/ui/Stepper'
 
 const TOTAL_STEPS = 8
 
@@ -70,7 +70,7 @@ export default function OnboardingModal({ userName, onClose }: Props) {
           contenido de cada paso lleguen a los extremos del panel.
           ds-todo: candidato a variante "Modal con contenido a sangre". */}
       <div className="-mx-6 -mt-4 mb-4 flex items-center justify-between px-5 py-4 border-b border-gray-100">
-        <StepIndicator total={TOTAL_STEPS} current={step} />
+        <Stepper steps={TOTAL_STEPS} current={step - 1} showCount label="Progreso del tutorial" />
         <Button variant="ghost" size="sm" onClick={onClose}>
           Omitir
           <X className="w-3.5 h-3.5" aria-hidden="true" />

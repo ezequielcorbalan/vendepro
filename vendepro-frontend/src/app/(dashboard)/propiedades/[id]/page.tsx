@@ -8,6 +8,7 @@ import { apiFetch } from '@/lib/api'
 import { Card } from '@/components/ui/Card'
 import { Heading, Text } from '@/components/ui/Typography'
 import { Button } from '@/components/ui/Button'
+import { WhatsAppButton } from '@/components/ui/ContactButtons'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { Alert } from '@/components/ui/Alert'
 import { Modal } from '@/components/ui/Modal'
@@ -389,9 +390,7 @@ function GenerateVisitFormModal({
     ? `${typeof window !== 'undefined' ? window.location.origin : 'https://app.vendepro.com.ar'}/v/${slug}`
     : ''
 
-  const whatsappText = encodeURIComponent(
-    `Hola, te mando la ficha de visita de la propiedad. Si podés completarla nos ayuda un montón:\n${publicUrl}`,
-  )
+  const shareMessage = `Hola, te mando la ficha de visita de la propiedad. Si podés completarla nos ayuda un montón:\n${publicUrl}`
 
   async function copyLink() {
     if (!publicUrl) return
@@ -449,15 +448,12 @@ function GenerateVisitFormModal({
             </div>
           </Field>
 
-          {/* ds-todo: WhatsAppButton requiere número; acá es wa.me sólo con texto (compartir) */}
-          <a
-            href={`https://wa.me/?text=${whatsappText}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-3 w-full inline-flex items-center justify-center gap-2 bg-whatsapp hover:opacity-90 text-white text-sm font-medium py-2.5 rounded-control"
-          >
-            Abrir WhatsApp
-          </a>
+          <WhatsAppButton
+            share
+            label="Abrir WhatsApp"
+            message={shareMessage}
+            className="mt-3 w-full justify-center py-2.5"
+          />
         </>
       )}
     </Modal>

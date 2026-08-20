@@ -344,7 +344,7 @@ export default function ContactosPage() {
       ) : (
         <Card padded={false} className="overflow-hidden">
           {/* Tabla desktop — scroll horizontal para que ninguna columna quede recortada */}
-          {/* ds-todo: candidato a Table del DS cuando soporte hover-reveal por fila y render responsive */}
+          {/* ds-todo: migrable al Table del DS — ya soporta hover-reveal (group en la fila) y hideBelow; falta resolver la vista de cards en mobile, que acá es un render aparte */}
           <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-sm min-w-[900px]">
             <thead>

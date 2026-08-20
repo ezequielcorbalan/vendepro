@@ -19,6 +19,7 @@ import { apiFetch } from '@/lib/api'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { WhatsAppButton } from '@/components/ui/ContactButtons'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Heading, Text } from '@/components/ui/Typography'
 
@@ -103,14 +104,6 @@ export function VisitFormsSection({
     setTimeout(() => setCopied(false), 2000)
   }
 
-  function handleWhatsApp() {
-    if (!publicLink) return
-    const msg = encodeURIComponent(
-      `Hola, te dejo el link para que completes la ficha de visita: ${publicLink}`,
-    )
-    window.open(`https://wa.me/?text=${msg}`, '_blank')
-  }
-
   async function archive(id: string, archived: boolean) {
     setBusyId(id)
     try {
@@ -156,15 +149,10 @@ export function VisitFormsSection({
 
         {publicLink && (
           <div className="flex items-center gap-2">
-            {/* ds-todo: WhatsAppButton requiere número; acá es wa.me sólo con texto (compartir) */}
-            <button
-              type="button"
-              onClick={handleWhatsApp}
-              className="inline-flex items-center gap-2 text-sm font-medium text-white bg-whatsapp hover:opacity-90 px-4 py-2 rounded-control transition-opacity"
-            >
-              <MessageSquare className="w-4 h-4" aria-hidden="true" />
-              WhatsApp
-            </button>
+            <WhatsAppButton
+              share
+              message={`Hola, te dejo el link para que completes la ficha de visita: ${publicLink}`}
+            />
             <Button variant="outline" onClick={handleCopy}>
               {copied ? <Check className="w-4 h-4 text-success" aria-hidden="true" /> : <Copy className="w-4 h-4" aria-hidden="true" />}
               {copied ? 'Copiado' : 'Copiar link'}

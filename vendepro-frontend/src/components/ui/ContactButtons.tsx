@@ -43,20 +43,30 @@ export function CallButton({ phone, onClick, iconOnly = false, className }: Chan
 interface WhatsAppProps extends ChannelProps {
   /** Texto pre-cargado en el chat. */
   message?: string
+  /**
+   * Modo compartir: abre WhatsApp sin destinatario para que la persona elija el
+   * contacto (wa.me/?text=). Va sin `phone`; el botón no queda deshabilitado.
+   */
+  share?: boolean
+  /** Etiqueta visible (default "WhatsApp"). */
+  label?: string
 }
 
-export function WhatsAppButton({ phone, message, onClick, iconOnly = false, className }: WhatsAppProps) {
+export function WhatsAppButton({ phone, message, share = false, label, onClick, iconOnly = false, className }: WhatsAppProps) {
   const cls = cn(BASE, iconOnly ? SHAPE.icon : SHAPE.labeled, 'bg-whatsapp text-white', className)
   const content = (
     <>
       <MessageCircle className="w-4 h-4" />
-      {!iconOnly && <span>WhatsApp</span>}
+      {!iconOnly && <span>{label ?? 'WhatsApp'}</span>}
     </>
   )
-  if (!phone) {
+  if (!phone && !share) {
     return <button type="button" disabled className={cn(cls, OFF)} aria-label="WhatsApp">{content}</button>
   }
-  const href = `https://wa.me/${formatWhatsApp(phone)}${message ? `?text=${encodeURIComponent(message)}` : ''}`
+  const text = message ? `?text=${encodeURIComponent(message)}` : ''
+  const href = phone
+    ? `https://wa.me/${formatWhatsApp(phone)}${text}`
+    : `https://wa.me/${text}`
   return (
     <a href={href} target="_blank" rel="noreferrer" onClick={onClick} className={cls} aria-label="WhatsApp">{content}</a>
   )

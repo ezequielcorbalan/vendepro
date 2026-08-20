@@ -1,11 +1,11 @@
 'use client'
 
-import { Fragment, useState } from 'react'
-import { ChevronDown, ChevronRight, Scale, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { Scale, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import HealthBadge from './HealthBadge'
 import DiagnosisCard from './DiagnosisCard'
 import { HEALTH_COLORS, type HealthStatus } from '@/lib/semaforo'
 import { Card } from '@/components/ui/Card'
+import { Table, type Column } from '@/components/ui/Table'
 import { Heading, Text } from '@/components/ui/Typography'
 
 export interface NeighborhoodGroupMetrics {
@@ -49,15 +49,58 @@ function DeltaCell({ pct, status }: { pct: number | null; status: HealthStatus }
   )
 }
 
-export default function NeighborhoodBenchmarkTable({ data }: Props) {
-  const [expandedKey, setExpandedKey] = useState<string | null>(null)
+function ViewsCell({ metrics }: { metrics: NeighborhoodGroupMetrics | null }) {
+  if (!metrics) return <span className="text-gray-300">—</span>
+  return (
+    <>
+      <span className="font-semibold text-ink">{metrics.avg_views_per_day}</span>
+      <Text size="xs" as="span" tone="muted" className="ml-0.5">vis/día</Text>
+    </>
+  )
+}
 
+export default function NeighborhoodBenchmarkTable({ data }: Props) {
   const hasAnyData = data.some(d => d.active !== null)
   if (!hasAnyData) return null
 
+  const columns: Column<NeighborhoodComparison>[] = [
+    {
+      key: 'neighborhood',
+      header: 'Barrio',
+      render: row => (
+        <>
+          <Text size="sm" weight="medium">{row.neighborhood}</Text>
+          <Text size="xs" tone="muted" className="mt-0.5">
+            {row.active?.property_count ?? 0} activos · {row.sold?.property_count ?? 0} vendidos
+          </Text>
+        </>
+      ),
+    },
+    { key: 'active', header: 'Activos ∅', align: 'right', render: row => <ViewsCell metrics={row.active} /> },
+    { key: 'sold', header: 'Vendidos ∅', align: 'right', render: row => <ViewsCell metrics={row.sold} /> },
+    {
+      key: 'visits',
+      header: 'Vis. pres./sem',
+      align: 'right',
+      hideBelow: 'sm',
+      render: row => row.active
+        ? (
+          <>
+            {row.active.avg_in_person_visits_per_week}
+            {row.sold && <Text size="xs" as="span" tone="muted"> / {row.sold.avg_in_person_visits_per_week}</Text>}
+          </>
+        )
+        : <span className="text-gray-300">—</span>,
+    },
+    {
+      key: 'diagnosis',
+      header: 'Diagnóstico',
+      align: 'right',
+      render: row => <DeltaCell pct={row.delta_views_per_day_pct} status={row.delta_health_status} />,
+    },
+  ]
+
   return (
-    // ds-todo: candidato a variante "Table con fila expandible" — igual que en
-    // ActiveListingsTable: cada fila abre un DiagnosisCard con colSpan.
     <Card padded={false} className="overflow-hidden">
       <div className="px-4 sm:px-5 py-4 border-b border-gray-100">
         <div className="flex flex-wrap items-center gap-2">
@@ -69,102 +112,29 @@ export default function NeighborhoodBenchmarkTable({ data }: Props) {
         </Text>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-xs font-medium text-gray-500 bg-gray-50/50 border-b border-gray-100">
-              <th className="py-2.5 pl-4 pr-2 w-8"></th>
-              <th className="py-2.5 px-2">Barrio</th>
-              <th className="py-2.5 px-2 text-right">Activos ∅</th>
-              <th className="py-2.5 px-2 text-right">Vendidos ∅</th>
-              <th className="py-2.5 px-2 text-right hidden sm:table-cell">Vis. pres./sem</th>
-              <th className="py-2.5 pr-4 pl-2 text-right">Diagnóstico</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {data.map(row => {
-              const expanded = expandedKey === row.neighborhood
-              const showDiagnosis = row.delta_views_per_day_pct !== null
-                && row.delta_views_per_day_pct < -10
-                && row.active !== null
-                && row.sold !== null
-              const activePropCount = row.active?.property_count ?? 0
-              const soldPropCount = row.sold?.property_count ?? 0
-              return (
-                <Fragment key={row.neighborhood}>
-                  <tr
-                    className={`hover:bg-orange-50/20 transition-colors ${showDiagnosis ? 'cursor-pointer' : ''}`}
-                    onClick={showDiagnosis ? () => setExpandedKey(expanded ? null : row.neighborhood) : undefined}
-                  >
-                    <td className="py-2.5 pl-4 pr-2">
-                      {showDiagnosis && (
-                        expanded
-                          ? <ChevronDown className="w-4 h-4 text-gray-400" aria-hidden="true" />
-                          : <ChevronRight className="w-4 h-4 text-gray-400" aria-hidden="true" />
-                      )}
-                    </td>
-                    <td className="py-2.5 px-2">
-                      <p className="font-medium text-ink">{row.neighborhood}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {activePropCount > 0 && (
-                          <>
-                            {activePropCount} activa{activePropCount !== 1 ? 's' : ''}
-                          </>
-                        )}
-                        {activePropCount > 0 && soldPropCount > 0 && ' · '}
-                        {soldPropCount > 0 && (
-                          <>
-                            {soldPropCount} vendida{soldPropCount !== 1 ? 's' : ''}
-                          </>
-                        )}
-                      </p>
-                    </td>
-                    <td className="py-2.5 px-2 text-right">
-                      {row.active ? (
-                        <>
-                          <span className="font-semibold text-ink">{row.active.avg_views_per_day}</span>
-                          <span className="text-xs text-gray-400 ml-0.5">vis/día</span>
-                        </>
-                      ) : '—'}
-                    </td>
-                    <td className="py-2.5 px-2 text-right">
-                      {row.sold ? (
-                        <>
-                          <span className="font-semibold text-ink">{row.sold.avg_views_per_day}</span>
-                          <span className="text-xs text-gray-400 ml-0.5">vis/día</span>
-                        </>
-                      ) : '—'}
-                    </td>
-                    <td className="py-2.5 px-2 text-right text-gray-600 hidden sm:table-cell">
-                      {row.active ? (
-                        <>
-                          <span>{row.active.avg_in_person_visits_per_week}</span>
-                          {row.sold && <span className="text-gray-400"> / {row.sold.avg_in_person_visits_per_week}</span>}
-                        </>
-                      ) : '—'}
-                    </td>
-                    <td className="py-2.5 pr-4 pl-2 text-right">
-                      <DeltaCell pct={row.delta_views_per_day_pct} status={row.delta_health_status} />
-                    </td>
-                  </tr>
-                  {expanded && showDiagnosis && row.active && row.sold && row.delta_views_per_day_pct !== null && (
-                    <tr>
-                      <td colSpan={6} className="px-4 pb-4 pt-1">
-                        <DiagnosisCard
-                          neighborhood={row.neighborhood}
-                          deltaPct={row.delta_views_per_day_pct}
-                          activeViewsPerDay={row.active.avg_views_per_day}
-                          soldViewsPerDay={row.sold.avg_views_per_day}
-                        />
-                      </td>
-                    </tr>
-                  )}
-                </Fragment>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
+      <Table
+        columns={columns}
+        data={data}
+        rowKey={row => row.neighborhood}
+        className="border-0 rounded-none"
+        // El detalle sólo aparece cuando el barrio está más de 10% por debajo
+        // de su benchmark y hay con qué compararlo.
+        expandedContent={row =>
+          row.delta_views_per_day_pct !== null
+            && row.delta_views_per_day_pct < -10
+            && row.active
+            && row.sold
+            ? (
+              <DiagnosisCard
+                neighborhood={row.neighborhood}
+                deltaPct={row.delta_views_per_day_pct}
+                activeViewsPerDay={row.active.avg_views_per_day}
+                soldViewsPerDay={row.sold.avg_views_per_day}
+              />
+            )
+            : null
+        }
+      />
     </Card>
   )
 }
