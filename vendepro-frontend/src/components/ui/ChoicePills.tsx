@@ -19,6 +19,8 @@ const PILL_INACTIVE = 'bg-white text-gray-600 border-gray-200 hover:border-gray-
 
 interface PillRadioGroupProps {
   label?: string
+  /** Aclaración bajo el label, igual que en Field. */
+  hint?: string
   options: PillOption[]
   value: string
   onChange: (value: string) => void
@@ -26,10 +28,11 @@ interface PillRadioGroupProps {
 }
 
 /** Selección única. */
-export function PillRadioGroup({ label, options, value, onChange, className }: PillRadioGroupProps) {
+export function PillRadioGroup({ label, hint, options, value, onChange, className }: PillRadioGroupProps) {
   return (
     <div className={className}>
       {label && <p className="block text-sm font-medium text-gray-700 mb-1.5">{label}</p>}
+      {hint && <p className="text-xs text-gray-500 -mt-1 mb-1.5">{hint}</p>}
       <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={label}>
         {options.map(o => (
           <button
@@ -50,6 +53,8 @@ export function PillRadioGroup({ label, options, value, onChange, className }: P
 
 interface PillCheckGroupProps {
   label?: string
+  /** Aclaración bajo el label, igual que en Field. */
+  hint?: string
   options: PillOption[]
   value: string[]
   onChange: (value: string[]) => void
@@ -57,12 +62,14 @@ interface PillCheckGroupProps {
 }
 
 /** Selección múltiple. */
-export function PillCheckGroup({ label, options, value, onChange, className }: PillCheckGroupProps) {
+export function PillCheckGroup({ label, hint, options, value, onChange, className }: PillCheckGroupProps) {
   const toggle = (v: string) => onChange(value.includes(v) ? value.filter(x => x !== v) : [...value, v])
   return (
     <div className={className}>
       {label && <p className="block text-sm font-medium text-gray-700 mb-1.5">{label}</p>}
-      <div className="flex flex-wrap gap-2">
+      {hint && <p className="text-xs text-gray-500 -mt-1 mb-1.5">{hint}</p>}
+      {/* Igual que PillRadioGroup: el grupo se anuncia con su etiqueta. */}
+      <div className="flex flex-wrap gap-2" role="group" aria-label={label}>
         {options.map(o => (
           <button
             key={o.value}

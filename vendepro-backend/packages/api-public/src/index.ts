@@ -7,6 +7,8 @@ import {
   D1TemplateBlockRepository,
   D1VisitFormRepository,
   D1PropertyVisitFormRepository,
+  D1FichaLinkRepository,
+  D1FichaRepository,
   D1PrefactibilidadRepository,
   D1OrganizationRepository,
   D1UserRepository,
@@ -38,7 +40,10 @@ import {
   SubmitLeadFromLandingUseCase,
   ImportLeadsUseCase,
   ProcessUnsubscribeUseCase,
+  GetPublicFichaLinkUseCase,
+  SubmitPublicFichaUseCase,
   propertyFromIncoming,
+  buildLeadProperty,
 } from '@vendepro/core'
 
 type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket }
@@ -204,6 +209,146 @@ app.post('/public/property-visit-form/:slug/submit', async (c) => {
     return c.json({ ...result, marketing: mk ?? null }, 201)
   }
   return c.json(result, 201)
+})
+
+// ── FICHA DE TASACIÓN PÚBLICA (/f/:slug) ───────────────────────
+// La completa el PROPIETARIO desde el celular, sin cuenta y sin entrar al CRM.
+// Distinta de la ficha de visita (/v/), que la completa el comprador.
+app.get('/public/ficha/:slug', async (c) => {
+  const uc = new GetPublicFichaLinkUseCase(
+    new D1FichaLinkRepository(c.env.DB),
+    new D1OrganizationRepository(c.env.DB),
+    new D1UserRepository(c.env.DB),
+  )
+  const result = await uc.execute(c.req.param('slug'))
+  if (!result) return c.json({ error: 'Not found' }, 404)
+  return c.json(result)
+})
+
+// Cada envío crea contacto + lead + ficha + tasación en borrador.
+app.post('/public/ficha/:slug/submit', async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as any
+
+  // Honeypot: campo oculto que sólo completan los bots. Devolvemos éxito
+  // para no darle señal al que scrapea, pero no escribimos nada.
+  if (typeof body?.miel === 'string' && body.miel.trim() !== '') {
+    return c.json({ success: true }, 201)
+  }
+
+  const linkRepo = new D1FichaLinkRepository(c.env.DB)
+  const uc = new SubmitPublicFichaUseCase(
+    linkRepo,
+    new D1FichaRepository(c.env.DB),
+    new D1LeadRepository(c.env.DB),
+    new D1ContactRepository(c.env.DB),
+    new D1UserRepository(c.env.DB),
+    new D1AppraisalRepository(c.env.DB),
+    new CryptoIdGenerator(),
+  )
+  const result = await uc.execute({
+    slug: c.req.param('slug'),
+    owner_name: body.owner_name ?? body.propietario_nombre ?? '',
+    owner_phone: body.owner_phone ?? body.propietario_telefono ?? '',
+    owner_email: body.owner_email ?? body.propietario_email ?? null,
+    address: body.address ?? body.direccion ?? '',
+    neighborhood: body.neighborhood ?? body.zona ?? null,
+    property_type: body.property_type ?? null,
+    floor_number: body.floor_number ?? body.piso ?? null,
+    unit: body.unit ?? body.unidad ?? null,
+    rooms: body.rooms ?? body.ambientes ?? null,
+    bathrooms: body.bathrooms ?? body.banos ?? null,
+    covered_area: body.covered_area ?? body.superficie_m2 ?? null,
+    kitchen_type: body.kitchen_type ?? body.cocina ?? null,
+    furnished: body.furnished ?? body.amueblado ?? null,
+    age: body.age ?? body.antiguedad_anios ?? null,
+    light_level: body.light_level ?? body.luminosidad ?? null,
+    balcony_type: body.balcony_type ?? body.balcon ?? null,
+    parking_type: body.parking_type ?? body.cochera ?? null,
+    storage_rooms: body.storage_rooms ?? body.baulera ?? null,
+    pets_allowed: body.pets_allowed ?? body.apto_mascota ?? null,
+    is_professional: body.is_professional ?? body.apto_profesional ?? null,
+    amenities: body.amenities ?? null,
+    heating_type: body.heating_type ?? body.calefaccion ?? null,
+    expenses: body.expenses ?? body.expensas ?? null,
+    notes: body.notes ?? body.observaciones ?? null,
+    // ── Superficies desglosadas y preguntas por tipo (042_) ──
+    semi_area: body.semi_area ?? null,
+    uncovered_area: body.uncovered_area ?? null,
+    operation: body.operation ?? null,
+    land_area: body.land_area ?? null,
+    frontage_m: body.frontage_m ?? null,
+    depth_m: body.depth_m ?? null,
+    property_condition: body.property_condition ?? null,
+    zoning: body.zoning ?? null,
+    utilities: body.utilities ?? null,
+    floors_count: body.floors_count ?? null,
+    commercial_use: body.commercial_use ?? null,
+    has_warehouse: body.has_warehouse ?? null,
+    parking_unit: body.parking_unit ?? null,
+    storage_unit: body.storage_unit ?? null,
+  })
+
+  // Mismo evento de conversión que el resto de las entradas web, para que la
+  // captación por ficha se vea en el Meta/GA4 del agente dueño del link.
+  const link = await linkRepo.findBySlug(c.req.param('slug'))
+  const mk = await fireMarketingEvent(c.env, {
+    orgId: result.org_id,
+    agentId: link?.agent_id ?? null,
+    eventKey: 'ficha_publica_submitted',
+    entityType: 'lead',
+    entityId: result.lead_id,
+    leadId: result.lead_id,
+    userData: {
+      full_name: body.owner_name ?? null,
+      email: body.owner_email ?? null,
+      phone: body.owner_phone ?? null,
+      client_ip_address: c.req.header('CF-Connecting-IP') ?? c.req.header('x-forwarded-for') ?? null,
+      client_user_agent: c.req.header('user-agent') ?? null,
+      external_id: body.ga4_client_id ?? null,
+    },
+    customData: {
+      source: 'ficha_web',
+      ficha_link_mode: link?.mode ?? null,
+    },
+    actionSource: 'website',
+    eventSourceUrl: c.req.header('referer') ?? null,
+    ga4ClientId: body.ga4_client_id ?? null,
+  })
+
+  // Webhook saliente `lead.created`: las automatizaciones que ya escuchan
+  // leads nuevos (n8n → Resend/OneTalk) no necesitan saber de este flujo.
+  // Acá la dirección SÍ identifica una propiedad concreta (es una captación),
+  // así que se arma el objeto `property` en vez de dejarlo en null.
+  const assignedUser = await new D1UserRepository(c.env.DB)
+    .findById(result.agent_id, result.org_id)
+    .catch(() => null)
+  await fireWebhookEvent(c.env, {
+    orgId: result.org_id,
+    event: 'lead.created',
+    payload: {
+      lead: {
+        id: result.lead_id,
+        full_name: body.owner_name ?? null,
+        email: body.owner_email ?? null,
+        phone: body.owner_phone ?? null,
+        operation: body.operation ?? 'venta',
+        source: 'ficha_web',
+        source_detail: link?.label ?? 'Ficha de tasación web',
+        notes: body.notes ?? null,
+        contact_id: result.contact_id,
+        assigned_agent: assignedUser
+          ? { name: assignedUser.name ?? null, email: assignedUser.email ?? null }
+          : null,
+        property: buildLeadProperty({
+          address: body.address ?? null,
+          neighborhood: body.neighborhood ?? null,
+          operation: body.operation ?? 'venta',
+        }),
+      },
+    },
+  })
+
+  return c.json({ ...result, marketing: mk ?? null }, 201)
 })
 
 // ── PUBLIC PREFACTIBILIDAD (/p/:slug) ──────────────────────────

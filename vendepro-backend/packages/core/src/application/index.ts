@@ -70,6 +70,10 @@ export * from './use-cases/fichas/list-fichas'
 export * from './use-cases/fichas/update-ficha'
 export * from './use-cases/fichas/delete-ficha'
 
+// Ficha de Tasación pública — links que completa el propietario (041_)
+export * from './use-cases/ficha-links/generate-ficha-link'
+export * from './use-cases/ficha-links/manage-ficha-links'
+
 // Reports
 export * from './use-cases/reports/get-reports'
 export * from './use-cases/reports/get-report-detail'
@@ -156,6 +160,8 @@ export * from './use-cases/public/get-public-visit-form'
 export * from './use-cases/public/submit-visit-form-response'
 export * from './use-cases/public/get-public-prefactibilidad'
 export * from './use-cases/public/create-public-lead'
+export * from './use-cases/public/get-public-ficha-link'
+export * from './use-cases/public/submit-public-ficha'
 
 // Appraisal Templates
 export { ListAppraisalTemplatesUseCase } from './use-cases/appraisal-templates/list-appraisal-templates'

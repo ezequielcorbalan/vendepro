@@ -25,6 +25,7 @@ vendepro-frontend/
 │   │   ├── r/[slug]/              # Reporte público de propiedad
 │   │   ├── t/[slug]/              # Tasación pública
 │   │   ├── v/[slug]/              # Formulario visita público
+│   │   ├── f/[slug]/              # Ficha de tasación que completa el propietario
 │   │   ├── p/[slug]/              # Prefactibilidad pública
 │   │   ├── terminos/              # Términos y condiciones
 │   │   ├── globals.css            # Poppins + brand vars (#ff007c, #ff8017)

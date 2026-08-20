@@ -13,6 +13,7 @@ import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Heading, Text } from '@/components/ui/Typography'
 import { StatusBadge } from '@/components/ui/StatusBadge'
+import { FichaLinkSection } from '@/components/fichas/FichaLinkSection'
 
 const statusLabels: Record<string, { label: string; color: string }> = {
   draft: { label: 'Borrador', color: 'bg-gray-100 text-gray-700' },
@@ -84,6 +85,8 @@ export default function TasacionesPage() {
           </>
         }
       />
+
+      <FichaLinkSection mode="open" className="mb-6" />
 
       {loading ? (
         <div className="space-y-3 animate-pulse">

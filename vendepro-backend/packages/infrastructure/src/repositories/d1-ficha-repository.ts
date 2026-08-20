@@ -5,6 +5,10 @@ import type { FichaRepository, FichaFilters } from '@vendepro/core'
 // schema, excluding identity / ownership columns that must never change via patch.
 const FICHA_UPDATABLE_COLUMNS = [
   'agent_id', 'lead_id', 'appraisal_id', 'inspection_date',
+  'owner_name', 'owner_phone', 'owner_email',
+  'unit', 'rooms', 'kitchen_type', 'furnished', 'light_level',
+  'operation', 'land_area', 'frontage_m', 'depth_m', 'zoning', 'utilities', 'floors_count', 'commercial_use', 'has_warehouse', 'parking_unit', 'storage_unit',
+  'parking_type', 'pets_allowed',
   'address', 'neighborhood', 'property_type', 'floor_number', 'elevators', 'age',
   'building_category', 'property_condition', 'covered_area', 'semi_area', 'uncovered_area',
   'm2_value_neighborhood', 'm2_value_zone', 'bedrooms', 'bathrooms', 'storage_rooms',
@@ -19,8 +23,9 @@ const FICHA_UPDATABLE_COLUMNS = [
  * D1 adapter for the `fichas_tasacion` table.
  *
  * Schema notes:
- * - `fichas_tasacion` has NO `public_slug` column, so `findPublicBySlug()`
- *   always returns null. Kept in the interface for future use.
+ * - `fichas_tasacion` has NO `public_slug` column: el link público vive en
+ *   `ficha_links` (041_), así que `findPublicBySlug()` siempre devuelve null.
+ *   Se mantiene en la interfaz por compatibilidad.
  * - Photos are stored as TEXT (JSON-encoded string) in the column; the entity
  *   also exposes them as a string — no transformation needed.
  */
@@ -78,6 +83,10 @@ export class D1FichaRepository implements FichaRepository {
       .prepare(
         `INSERT INTO fichas_tasacion (
           id, org_id, agent_id, lead_id, appraisal_id, inspection_date,
+          ficha_link_id, filled_by, submitted_at,
+          owner_name, owner_phone, owner_email,
+          unit, rooms, kitchen_type, furnished, light_level, parking_type, pets_allowed,
+          operation, land_area, frontage_m, depth_m, zoning, utilities, floors_count, commercial_use, has_warehouse, parking_unit, storage_unit,
           address, neighborhood, property_type, floor_number, elevators, age,
           building_category, property_condition, covered_area, semi_area, uncovered_area,
           m2_value_neighborhood, m2_value_zone, bedrooms, bathrooms, storage_rooms,
@@ -86,12 +95,36 @@ export class D1FichaRepository implements FichaRepository {
           balcony_type, heating_type, noise_level, amenities, is_professional,
           is_occupied, is_credit_eligible, sells_to_buy, expenses, abl, aysa,
           notes, photos, created_at, updated_at
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT(id) DO UPDATE SET
           agent_id=excluded.agent_id,
           lead_id=excluded.lead_id,
           appraisal_id=excluded.appraisal_id,
           inspection_date=excluded.inspection_date,
+          ficha_link_id=excluded.ficha_link_id,
+          filled_by=excluded.filled_by,
+          submitted_at=excluded.submitted_at,
+          owner_name=excluded.owner_name,
+          owner_phone=excluded.owner_phone,
+          owner_email=excluded.owner_email,
+          unit=excluded.unit,
+          rooms=excluded.rooms,
+          kitchen_type=excluded.kitchen_type,
+          furnished=excluded.furnished,
+          light_level=excluded.light_level,
+          parking_type=excluded.parking_type,
+          pets_allowed=excluded.pets_allowed,
+          operation=excluded.operation,
+          land_area=excluded.land_area,
+          frontage_m=excluded.frontage_m,
+          depth_m=excluded.depth_m,
+          zoning=excluded.zoning,
+          utilities=excluded.utilities,
+          floors_count=excluded.floors_count,
+          commercial_use=excluded.commercial_use,
+          has_warehouse=excluded.has_warehouse,
+          parking_unit=excluded.parking_unit,
+          storage_unit=excluded.storage_unit,
           address=excluded.address,
           neighborhood=excluded.neighborhood,
           property_type=excluded.property_type,
@@ -134,6 +167,10 @@ export class D1FichaRepository implements FichaRepository {
       )
       .bind(
         o.id, o.org_id, o.agent_id, o.lead_id, o.appraisal_id, o.inspection_date,
+        o.ficha_link_id, o.filled_by, o.submitted_at,
+        o.owner_name, o.owner_phone, o.owner_email,
+        o.unit, o.rooms, o.kitchen_type, o.furnished, o.light_level, o.parking_type, o.pets_allowed,
+        o.operation, o.land_area, o.frontage_m, o.depth_m, o.zoning, o.utilities, o.floors_count, o.commercial_use, o.has_warehouse, o.parking_unit, o.storage_unit,
         o.address, o.neighborhood, o.property_type, o.floor_number, o.elevators, o.age,
         o.building_category, o.property_condition, o.covered_area, o.semi_area, o.uncovered_area,
         o.m2_value_neighborhood, o.m2_value_zone, o.bedrooms, o.bathrooms, o.storage_rooms,
@@ -176,6 +213,30 @@ export class D1FichaRepository implements FichaRepository {
       agent_id: row.agent_id,
       lead_id: row.lead_id ?? null,
       appraisal_id: row.appraisal_id ?? null,
+      ficha_link_id: row.ficha_link_id ?? null,
+      filled_by: row.filled_by ?? 'agente',
+      submitted_at: row.submitted_at ?? null,
+      owner_name: row.owner_name ?? null,
+      owner_phone: row.owner_phone ?? null,
+      owner_email: row.owner_email ?? null,
+      unit: row.unit ?? null,
+      rooms: row.rooms ?? null,
+      kitchen_type: row.kitchen_type ?? null,
+      furnished: row.furnished ?? null,
+      light_level: row.light_level ?? null,
+      parking_type: row.parking_type ?? null,
+      pets_allowed: row.pets_allowed ?? null,
+      operation: row.operation ?? null,
+      land_area: row.land_area ?? null,
+      frontage_m: row.frontage_m ?? null,
+      depth_m: row.depth_m ?? null,
+      zoning: row.zoning ?? null,
+      utilities: row.utilities ?? null,
+      floors_count: row.floors_count ?? null,
+      commercial_use: row.commercial_use ?? null,
+      has_warehouse: row.has_warehouse ?? null,
+      parking_unit: row.parking_unit ?? null,
+      storage_unit: row.storage_unit ?? null,
       inspection_date: row.inspection_date ?? null,
       address: row.address,
       neighborhood: row.neighborhood ?? null,
