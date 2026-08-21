@@ -5,6 +5,9 @@ import { apiFetch } from '@/lib/api'
 import type { ComparableData } from './ComparableCard'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Input, Select } from '@/components/ui/Input'
+import { PropertyStageBadge } from '@/components/ui/PropertyStageBadge'
+import { StatusBadge } from '@/components/ui/StatusBadge'
+import { OPERATION_TYPES } from '@/lib/crm-config'
 
 interface PropertyLite {
   id: string
@@ -63,16 +66,17 @@ function formatDate(d: string | null | undefined): string {
   try { return new Date(d).toLocaleDateString('es-AR') } catch { return d }
 }
 
-const STAGE_LABELS: Record<string, { label: string; cls: string }> = {
-  propuesta: { label: 'Propuesta', cls: 'bg-gray-100 text-gray-600' },
-  captada: { label: 'Captada', cls: 'bg-green-100 text-green-800' },
-  captacion: { label: 'Captación', cls: 'bg-green-100 text-green-800' },
-  publicada: { label: 'Publicada', cls: 'bg-blue-100 text-blue-800' },
-  reservada: { label: 'Reservada', cls: 'bg-amber-100 text-amber-800' },
-  vendida: { label: 'Vendida', cls: 'bg-emerald-100 text-emerald-800' },
-  alquilada: { label: 'Alquilada', cls: 'bg-purple-100 text-purple-800' },
-  perdida: { label: 'Perdida', cls: 'bg-red-100 text-red-800' },
-  invalida: { label: 'Inválida', cls: 'bg-gray-100 text-gray-500' },
+/**
+ * El listado trae `commercial_stage` del backend, que incluye un par de valores
+ * que no son etapas de PROPERTY_STAGES: 'captacion' es como llega 'captada' en
+ * registros viejos, y 'alquilada' es una etapa exclusiva de alquiler que vive
+ * fuera del mapa. El resto sale del dominio, así que el color no se define acá:
+ * antes este mapa local tenía reservada en ámbar y alquilada en violeta, cuando
+ * el pipeline las muestra en violeta y cian.
+ */
+function normalizeStage(stage: string | null | undefined): string {
+  const s = (stage ?? '').toLowerCase()
+  return s === 'captacion' ? 'captada' : s
 }
 
 export function PropertiesPickerModal({ open, onClose, onPick }: Props) {
@@ -186,8 +190,8 @@ export function PropertiesPickerModal({ open, onClose, onPick }: Props) {
           ) : (
             <ul className="space-y-2">
               {filtered.map(p => {
-                const stageInfo = STAGE_LABELS[(p.commercial_stage ?? '').toLowerCase()] ?? null
-                const isVendida = (p.commercial_stage ?? '').toLowerCase() === 'vendida'
+                const stage = normalizeStage(p.commercial_stage)
+                const isVendida = stage === 'vendida'
                 return (
                   <li key={p.id}>
                     <button
@@ -198,11 +202,16 @@ export function PropertiesPickerModal({ open, onClose, onPick }: Props) {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="truncate text-sm font-semibold text-ink">{p.address}</span>
-                          {stageInfo && (
-                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium whitespace-nowrap ${stageInfo.cls}`}>
-                              {stageInfo.label}
-                            </span>
-                          )}
+                          {stage === 'alquilada' ? (
+                            <StatusBadge
+                              label="Alquilada"
+                              color={OPERATION_TYPES.alquiler.color}
+                              size="sm"
+                              className="whitespace-nowrap"
+                            />
+                          ) : stage ? (
+                            <PropertyStageBadge stage={stage} className="whitespace-nowrap" />
+                          ) : null}
                         </div>
                         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500">
                           {p.neighborhood && (

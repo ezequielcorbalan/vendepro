@@ -4,6 +4,7 @@ import { Loader2, FileText } from 'lucide-react'
 import type { WizardState } from '../use-wizard-form'
 import { getTemplate, listVariables } from '../../shared/api'
 import { TemplateRenderer } from '../../renderer/TemplateRenderer'
+import { Alert } from '@/components/ui/Alert'
 import { EmptyState } from '@/components/ui/EmptyState'
 import {
   APPRAISAL_BLOCK_TYPES,
@@ -154,9 +155,7 @@ export function StepReview({ templateId, property, details, comparables, customB
         )}
 
         {error && (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
-          </div>
+          <Alert tone="danger">{error}</Alert>
         )}
 
         {!loading && !error && snapshot !== null && (

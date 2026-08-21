@@ -10,6 +10,7 @@ import {
   type ExtractedComparable,
 } from './extract-comparable'
 import { Field, Input } from '@/components/ui/Input'
+import { Badge } from '@/components/ui/Badge'
 
 export type ComparableKind = 'publicacion' | 'venta'
 
@@ -127,8 +128,8 @@ export function ComparableCard({
   }
 
   const kindPill = isVenta
-    ? <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">Cierre real</span>
-    : <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold text-brand-pink">Publicación</span>
+    ? <Badge tone="success">Cierre real</Badge>
+    : <Badge tone="primary">Publicación</Badge>
 
   const summaryPrice = isVenta
     ? formatPriceUsd(comparable.closing_price_usd)
@@ -196,7 +197,7 @@ export function ComparableCard({
       {!collapsed && (
         <div className="border-t border-slate-100 px-5 py-4">
           {fromSoldProperty && (
-            <p className="mb-3 flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-1.5 text-[11px] text-emerald-700">
+            <p className="mb-3 flex items-center gap-1.5 rounded-control bg-success/10 px-3 py-1.5 text-xs text-success">
               <Database className="h-3 w-3" />
               Datos extraídos de tu base de Cierres Reales.
             </p>
@@ -236,7 +237,7 @@ export function ComparableCard({
                 <>
                   <img src={previewUrl} alt="" className="max-h-32 rounded" />
                   {extracted ? (
-                    <p className="mt-2 text-xs text-emerald-600">
+                    <p className="mt-2 text-xs text-success">
                       <Sparkles className="mr-1 inline h-3 w-3" />
                       Datos extraídos. Pegá otra para reemplazar.
                     </p>
