@@ -10,6 +10,7 @@ import {
   saveStaticBlockDefault,
 } from '../shared/static-block-defaults'
 import { _invalidateStaticDefaultsCache } from './BlockAdminForm'
+import { Alert } from '@/components/ui/Alert'
 
 interface RowState {
   /** Datos editables del bloque. */
@@ -117,19 +118,17 @@ export function StaticBlocksHome() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border border-amber-200 bg-amber-50/60 px-4 py-3 text-sm text-amber-900">
+      <Alert tone="info">
         <p>
           <strong>Bloques estáticos</strong> — definí acá el contenido fijo de tu inmobiliaria
           (portada, metodología, servicios, etc.). Los valores guardados se pueden{' '}
           <strong>aplicar a cada template</strong> desde el editor, en los bloques con modo{' '}
           <em>"Texto fijo de la inmobiliaria"</em> o <em>"Valor por defecto editable"</em>.
         </p>
-      </div>
+      </Alert>
 
       {loadError && (
-        <div className="flex items-start gap-2 rounded border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /> {loadError}
-        </div>
+        <Alert tone="danger">{loadError}</Alert>
       )}
 
       <div className="space-y-3">
@@ -186,10 +185,10 @@ function StaticBlockRow({ type, row, isOpen, onToggle, onPatch, onSave }: RowPro
           <div className="truncate text-xs text-slate-500">{meta.description}</div>
         </div>
         <div className="flex items-center gap-2 text-xs">
-          {row.dirty && <span className="text-amber-600">Sin guardar</span>}
+          {row.dirty && <span className="text-warning">Sin guardar</span>}
           {row.saved && !row.dirty && (
-            <span className="flex items-center gap-1 text-emerald-600">
-              <CheckCircle2 className="h-3 w-3" /> Guardado
+            <span className="flex items-center gap-1 text-success">
+              <CheckCircle2 className="h-3 w-3" aria-hidden="true" /> Guardado
             </span>
           )}
           {!row.id && !row.dirty && !row.saved && (

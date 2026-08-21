@@ -6,6 +6,7 @@ import { listTemplates, createTemplate, duplicateTemplate, archiveTemplate } fro
 import { getCurrentUser } from '@/lib/auth'
 import { Field, Input, Select } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/Badge'
 
 const KINDS = ['casa', 'depto', 'terreno', 'corporativo', 'custom'] as const
 
@@ -80,18 +81,20 @@ export function TemplatesHome() {
             : t.agent_id
               ? (isOwn ? 'Mío' : 'Agente')
               : 'Organización'
-          const badgeColor = t.is_system
-            ? 'bg-slate-100 text-slate-600'
+          // Sistema y "de otro agente" son metadato (neutro); las propias y las
+          // de la organización sí se distinguen: primary e info.
+          const badgeTone = t.is_system
+            ? 'neutral'
             : t.agent_id
-              ? (isOwn ? 'bg-pink-100 text-pink-800' : 'bg-purple-100 text-purple-800')
-              : 'bg-blue-100 text-blue-800'
+              ? (isOwn ? 'primary' : 'neutral')
+              : 'info'
 
           return (
-            <article key={t.id} className={`rounded-lg border bg-white p-4 ${isOwn ? 'border-pink-200' : 'border-slate-200'}`}>
+            <article key={t.id} className={`rounded-card border bg-white p-4 ${isOwn ? 'border-primary/30' : 'border-gray-200'}`}>
               {t.preview_image_url && <img src={t.preview_image_url} alt="" className="mb-3 aspect-video w-full rounded object-cover" />}
               <div className="flex items-center gap-2">
                 <h3 className="font-semibold truncate">{t.name}</h3>
-                <span className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full font-medium ${badgeColor}`}>{ownerBadge}</span>
+                <Badge tone={badgeTone} className="shrink-0">{ownerBadge}</Badge>
               </div>
               <p className="mt-1 text-xs text-slate-500">{t.kind} · {(t.blocks ?? []).length} bloques</p>
               <div className="mt-4 flex gap-2">
