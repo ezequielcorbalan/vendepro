@@ -229,7 +229,7 @@ function SortableBlock({
       )}
 
       {incomplete && (
-        <div className="flex items-center gap-1.5 bg-amber-50 px-4 py-1 text-[11px] text-amber-800">
+        <div className="flex items-center gap-1.5 bg-warning/10 px-4 py-1 text-xs text-warning">
           <AlertTriangle className="h-3 w-3 shrink-0" />
           No se va a publicar{missingLabel ? ` — falta ${missingLabel}.` : ' porque faltan datos.'}
         </div>

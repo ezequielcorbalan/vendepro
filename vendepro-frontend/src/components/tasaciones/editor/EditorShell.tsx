@@ -246,7 +246,7 @@ export function EditorShell({ initial, snapshot, context }: Props) {
         </div>
       </header>
       {monthlyUsed !== null && (
-        <div className={`px-4 py-1 text-xs ${monthlyUsed >= 40 ? (monthlyUsed >= 50 ? 'text-rose-600' : 'text-amber-600') : 'text-slate-500'}`}>
+        <div className={`px-4 py-1 text-xs ${monthlyUsed >= 40 ? (monthlyUsed >= 50 ? 'text-danger' : 'text-warning') : 'text-gray-500'}`}>
           PDFs este mes: {monthlyUsed} / 50
         </div>
       )}
@@ -398,9 +398,9 @@ function AppraisalField({ label, value, onChange, type = 'text' }: { label: stri
 
 function SaveStatus({ status, errorMsg, lastSavedAt, onRetry }: { status: string; errorMsg: string | null; lastSavedAt: number | null; onRetry: () => void }) {
   if (status === 'saving') return <span className="flex items-center gap-1 text-xs text-slate-500"><Loader2 className="h-3 w-3 animate-spin" /> Guardando...</span>
-  if (status === 'saved') return <span className="flex items-center gap-1 text-xs text-emerald-600"><CheckCircle2 className="h-3 w-3" /> Guardado</span>
+  if (status === 'saved') return <span className="flex items-center gap-1 text-xs text-success"><CheckCircle2 className="h-3 w-3" aria-hidden="true" /> Guardado</span>
   if (status === 'error') return (
-    <span title={errorMsg ?? undefined} className="flex max-w-md items-center gap-1 truncate text-xs text-rose-600">
+    <span title={errorMsg ?? undefined} className="flex max-w-md items-center gap-1 truncate text-xs text-danger">
       <AlertCircle className="h-3 w-3 shrink-0" /> {errorMsg ?? 'Error al guardar'}
       <button onClick={onRetry} className="ml-1 shrink-0 underline">Reintentar</button>
     </span>
