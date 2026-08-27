@@ -59,7 +59,7 @@ function makeMockDb(tokenRow: any = null) {
   }
 }
 
-const ENV_BASE = { JWT_SECRET: 'test-secret', EMBLUE_API_KEY: 'test-api-key' }
+const ENV_BASE = { JWT_SECRET: 'test-secret', RESEND_API_KEY: 'test-api-key', APP_BASE_URL: 'https://app.vendepro.com.ar' }
 
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({}) }))
@@ -112,7 +112,7 @@ describe('POST /forgot-password', () => {
     expect(body.success).toBe(true)
   })
 
-  it('returns 200 success when email exists, inserts token and calls emBlue', async () => {
+  it('returns 200 success when email exists, inserts token and calls Resend', async () => {
     vi.mocked(D1UserRepository).mockImplementation(() => ({
       findByEmail: vi.fn().mockResolvedValue(mockUser as any),
       findById: vi.fn().mockResolvedValue(mockUser as any),
@@ -133,12 +133,19 @@ describe('POST /forgot-password', () => {
     // D1PasswordResetTokenRepository.save() issues an INSERT (with ON CONFLICT upsert)
     expect(mockDb.prepare).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO password_reset_tokens'))
     expect(fetch).toHaveBeenCalledWith(
-      'https://api.embluemail.com/v2.3/send',
+      'https://api.resend.com/emails',
       expect.objectContaining({ method: 'POST' })
     )
+    const [, init] = vi.mocked(fetch).mock.calls[0] as [string, RequestInit]
+    expect((init.headers as Record<string, string>)['Authorization']).toBe('Bearer test-api-key')
+    const payload = JSON.parse(init.body as string)
+    expect(payload.from).toBe('VendéPro CRM <noreply@vendepro.com.ar>')
+    expect(payload.to).toEqual(['Test Agent <agent@mg.com>'])
+    // El link del email tiene que apuntar al frontend, con el token en query.
+    expect(payload.html).toContain('https://app.vendepro.com.ar/reset-password?token=')
   })
 
-  it('returns 200 even if emBlue call fails (graceful degradation)', async () => {
+  it('returns 200 even if the Resend call fails (graceful degradation)', async () => {
     vi.mocked(D1UserRepository).mockImplementation(() => ({
       findByEmail: vi.fn().mockResolvedValue(mockUser as any),
       findById: vi.fn().mockResolvedValue(null),
@@ -156,6 +163,20 @@ describe('POST /forgot-password', () => {
     expect(res.status).toBe(200)
     const body = await res.json() as any
     expect(body.success).toBe(true)
+  })
+
+  it('returns 503 when RESEND_API_KEY is not configured', async () => {
+    const { default: app } = await import('../src/index')
+    const res = await app.request('/forgot-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'agent@mg.com' }),
+    }, { DB: makeMockDb(), JWT_SECRET: 'test-secret' })
+    expect(res.status).toBe(503)
+    const body = await res.json() as any
+    expect(body.error).toContain('RESEND_API_KEY')
+    // Sin proveedor configurado no se debe generar ningún token.
+    expect(fetch).not.toHaveBeenCalled()
   })
 })
 

@@ -1,12 +1,15 @@
 import { Hono } from 'hono'
 import { corsMiddleware, errorHandler } from '@vendepro/infrastructure'
-import { D1UserRepository, D1OrganizationRepository, D1PasswordResetTokenRepository, JwtAuthService, CryptoIdGenerator, EmBlueEmailService } from '@vendepro/infrastructure'
+import { D1UserRepository, D1OrganizationRepository, D1PasswordResetTokenRepository, JwtAuthService, CryptoIdGenerator, ResendEmailService } from '@vendepro/infrastructure'
 import { LoginUseCase, CreateUserUseCase, ChangePasswordUseCase, RegisterWithOrgUseCase, RequestPasswordResetUseCase, CompletePasswordResetUseCase } from '@vendepro/core'
 
 type Env = {
   DB: D1Database
   JWT_SECRET: string
-  EMBLUE_API_KEY: string
+  // Envío del email de recuperación — secret vía wrangler secret put / dashboard.
+  RESEND_API_KEY?: string
+  // Base del frontend para armar el link del email (default: prod).
+  APP_BASE_URL?: string
 }
 
 const app = new Hono<{ Bindings: Env }>()
@@ -108,6 +111,13 @@ app.post('/register-org', async (c) => {
 // ── Password Reset ─────────────────────────────────────────────
 
 app.post('/forgot-password', async (c) => {
+  // Falta de configuración: no depende del email pedido, así que responder 503
+  // no filtra si la cuenta existe — y evita el silencio total del catch.
+  if (!c.env.RESEND_API_KEY) {
+    console.error('[forgot-password] RESEND_API_KEY no configurada en el worker')
+    return c.json({ error: 'Envío de emails no disponible: falta configurar RESEND_API_KEY en el worker' }, 503)
+  }
+
   const body = (await c.req.json()) as any
   const email = (body.email as string | undefined)?.toLowerCase().trim()
 
@@ -118,18 +128,20 @@ app.post('/forgot-password', async (c) => {
     const useCase = new RequestPasswordResetUseCase(
       new D1UserRepository(c.env.DB),
       new D1PasswordResetTokenRepository(c.env.DB),
-      new EmBlueEmailService(c.env.EMBLUE_API_KEY),
+      new ResendEmailService(c.env.RESEND_API_KEY),
       new CryptoIdGenerator(),
     )
     await useCase.execute({
       email,
-      appBaseUrl: 'https://app.vendepro.com.ar',
+      appBaseUrl: c.env.APP_BASE_URL ?? 'https://app.vendepro.com.ar',
       fromEmail: 'noreply@vendepro.com.ar',
       fromName: 'VendéPro CRM',
     })
   } catch (err) {
-    // Log error but never block the user or reveal internal state
-    console.error('[forgot-password]', err)
+    // El usuario sigue viendo la respuesta genérica (no filtrar existencia del
+    // email), pero el fallo tiene que quedar diagnosticable en `wrangler tail`.
+    console.error('[forgot-password] fallo el envío:', err instanceof Error ? `${err.message}` : String(err))
+    if (err instanceof Error && err.stack) console.error('[forgot-password] stack:', err.stack)
   }
 
   return c.json({ success: true })
