@@ -58,7 +58,12 @@ describe('Block A — Lead manual', () => {
     expect(JSON.stringify(r.data)).toMatch(/inv[áa]lida/i)
   })
 
-  it('A3 full chain to presentada emits auto-followup event', async () => {
+  it('A3 full chain to presentada', async () => {
+    // El seguimiento a +7 días dejó de ser parte del state machine: ahora lo
+    // crea la automatización `seguimiento_presentada`, que la org puede editar
+    // o apagar. Por eso este smoke ya no lo afirma — sería atar el pipeline a
+    // una configuración del cliente. `advanceLeadStage` igual lo busca para
+    // poder limpiarlo.
     const id = await createLead('A3')
     for (const s of ['asignado', 'contactado', 'calificado', 'en_tasacion'] as const) {
       const r = await advanceLeadStage(id, s)
@@ -66,8 +71,7 @@ describe('Block A — Lead manual', () => {
     }
     const presentada = await advanceLeadStage(id, 'presentada')
     expect(presentada.status).toBe(200)
-    expect(presentada.data?.autoFollowup?.id).toBeTruthy()
-    expect(presentada.data?.autoFollowup?.event_type).toBe('seguimiento')
+    await expectLeadStage(id, 'presentada')
   })
 
   it('A4 stage_history records 5 user-triggered rows', async () => {
