@@ -1,4 +1,8 @@
-import { Notification, CalendarEvent, EVENT_TYPES, htmlToText } from '@vendepro/core'
+import { Notification, CalendarEvent, htmlToText } from '@vendepro/core'
+// Desde el subpath del dominio: en el barrel raíz `EVENT_TYPES` choca con el
+// mapa de config de `shared/crm-config`, y esbuild corta el build con
+// "Ambiguous import" aunque TypeScript no diga nada.
+import { EVENT_TYPES } from '@vendepro/core/domain'
 import type {
   AutomationActionExecutor,
   AutomationExecutorRegistry,
