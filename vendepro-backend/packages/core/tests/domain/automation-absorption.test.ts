@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { DatabaseSync } from 'node:sqlite'
+import { createRequire } from 'node:module'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { AutomationAction, MAX_DELAY_MINUTES } from '../../src/domain/entities/automation-action'
@@ -19,6 +19,21 @@ import { Automation } from '../../src/domain/entities/automation'
 const MIGRATIONS = resolve(__dirname, '../../../../migrations_v2')
 const sql = (name: string) => readFileSync(resolve(MIGRATIONS, name), 'utf8')
 
+/**
+ * `node:sqlite` existe desde Node 22.5. El CI todavía corre Node 20, así que
+ * se carga en runtime y el bloque se saltea si no está — de lo contrario el
+ * archivo entero explota al importar y tumba el pipeline.
+ *
+ * El costo es real: en CI esta guardia NO corre. Mientras el CI siga en Node
+ * 20, la migración 045 se valida sólo localmente.
+ */
+let DatabaseSync: any = null
+try {
+  DatabaseSync = createRequire(import.meta.url)('node:sqlite').DatabaseSync
+} catch {
+  console.warn('[automation-absorption] node:sqlite no disponible (Node < 22.5): tests salteados')
+}
+
 function stepsJson(delays: number[]): string {
   return JSON.stringify(delays.map((delay_hours, i) => ({
     delay_hours,
@@ -29,7 +44,7 @@ function stepsJson(delays: number[]): string {
   })))
 }
 
-let db: DatabaseSync
+let db: any
 
 function seedAutomation(row: {
   id: string
@@ -53,13 +68,15 @@ function rows(query: string): any[] {
   return db.prepare(query).all() as any[]
 }
 
-beforeEach(() => {
-  db = new DatabaseSync(':memory:')
-  db.exec(sql('039_email_automations.sql'))
-  db.exec(sql('043_automations.sql'))
-})
+describe.skipIf(!DatabaseSync)('migración 045 — absorción de las secuencias de email', () => {
+  // Adentro del describe: si el bloque se saltea, el hook no corre y no
+  // intenta instanciar un DatabaseSync que no existe.
+  beforeEach(() => {
+    db = new DatabaseSync(':memory:')
+    db.exec(sql('039_email_automations.sql'))
+    db.exec(sql('043_automations.sql'))
+  })
 
-describe('migración 045 — absorción de las secuencias de email', () => {
   it('convierte los delays relativos en absolutos desde el disparo', () => {
     // 0h, +48h, +72h  →  0min, 2880min, 7200min
     seedAutomation({ id: 'ea1' })
