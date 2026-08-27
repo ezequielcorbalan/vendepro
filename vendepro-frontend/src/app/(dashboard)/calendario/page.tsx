@@ -121,6 +121,7 @@ export default function CalendarioPage() {
   const [googleEvents, setGoogleEvents] = useState<any[]>([])
   const [googleConnected, setGoogleConnected] = useState(false)
   const [googleReason, setGoogleReason] = useState<string | null>(null)
+  const [googleEmail, setGoogleEmail] = useState<string | null>(null)
   const [showGoogle, setShowGoogle] = useState(true)
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<'month' | 'agenda'>('month')
@@ -158,6 +159,7 @@ export default function CalendarioPage() {
       .then(d => {
         setGoogleConnected(!!d?.connected)
         setGoogleReason(d?.reason ?? null)
+        setGoogleEmail(d?.email ?? null)
         setGoogleEvents(
           Array.isArray(d?.events)
             ? d.events.map((e: any) => ({
@@ -278,8 +280,11 @@ export default function CalendarioPage() {
         title="Calendario"
         subtitle={
           `${events.length} evento${events.length !== 1 ? 's' : ''} del CRM este mes` +
-          (googleConnected && showGoogle && googleEvents.length > 0
-            ? ` · ${googleEvents.length} de tu Google Calendar`
+          (googleConnected && googleEmail && !googleSinPermisos
+            // Se nombra la cuenta siempre, incluso con 0 eventos: si alguien
+            // conectó la personal en vez de la de trabajo, ver el mail es la
+            // única forma de darse cuenta de por qué el calendario está vacío.
+            ? ` · ${showGoogle ? googleEvents.length : 0} de ${googleEmail}`
             : '')
         }
         actions={
@@ -289,7 +294,11 @@ export default function CalendarioPage() {
                 checked={showGoogle && !googleSinPermisos}
                 onChange={setShowGoogle}
                 disabled={googleSinPermisos}
-                label={googleSinPermisos ? 'Google (sin permisos)' : `Google (${googleEvents.length})`}
+                label={
+                  googleSinPermisos
+                    ? 'Google (sin permisos)'
+                    : `${googleEmail ?? 'Google'} (${googleEvents.length})`
+                }
               />
             )}
             <SegmentedControl
@@ -309,8 +318,9 @@ export default function CalendarioPage() {
           dice qué pasó y cómo arreglarlo. */}
       {googleSinPermisos && (
         <Alert tone="warning" title="Permisos insuficientes en Google Calendar">
-          Tu cuenta está conectada, pero no autorizaste el acceso al calendario, así que no podemos
-          mostrar tus eventos. Volvé a conectarla y dejá tildada la casilla de Google Calendar.
+          {googleEmail ? <strong>{googleEmail}</strong> : 'Tu cuenta'} está conectada, pero no autorizaste
+          el acceso al calendario, así que no podemos mostrar tus eventos. Volvé a conectarla y dejá
+          tildada la casilla de Google Calendar.
           <div className="mt-3">
             <Link
               href="/configuracion/conexiones"
