@@ -79,17 +79,17 @@ describe('AdvanceLeadStageUseCase', () => {
     expect(mockStageHistoryRepo.log).toHaveBeenCalledWith(
       expect.objectContaining({ from_stage: 'nuevo', to_stage: 'contactado' })
     )
-    expect(result.autoFollowup).toBeNull()
   })
 
-  it('creates followup calendar event when advancing to presentada', async () => {
+  it('ya no crea el seguimiento a mano: eso pasó a ser una automatización', async () => {
+    // El evento a +7 días lo crea ahora la automatización `seguimiento_presentada`
+    // (migración 046), para que el cliente pueda editarla o apagarla.
     mockLeadRepo.findById.mockResolvedValue(makeEnTasacionLead())
-
     const useCase = new AdvanceLeadStageUseCase(mockLeadRepo, mockCalendarRepo, mockStageHistoryRepo, mockIdGen)
-    const result = await useCase.execute({ leadId: 'lead-2', orgId: 'org_mg', newStage: 'presentada', changedBy: 'agent-1' })
 
-    expect(mockCalendarRepo.save).toHaveBeenCalled()
-    expect(result.autoFollowup).not.toBeNull()
+    await useCase.execute({ leadId: 'lead-2', orgId: 'org_mg', newStage: 'presentada', changedBy: 'agent-1' })
+
+    expect(mockCalendarRepo.save).not.toHaveBeenCalled()
   })
 
   it('throws NotFoundError when lead does not exist', async () => {
@@ -188,7 +188,6 @@ describe('AdvanceLeadStageUseCase — pipeline comprador', () => {
     expect(mockStageHistoryRepo.log).toHaveBeenCalledWith(
       expect.objectContaining({ from_stage: 'visito', to_stage: 'oferta', entity_type: 'lead' })
     )
-    expect(result.autoFollowup).toBeNull()
     expect(result.syncedPropertyId).toBeNull()
   })
 
@@ -227,6 +226,5 @@ describe('AdvanceLeadStageUseCase — pipeline comprador', () => {
     const result = await useCase.execute({ leadId: 'buyer-1', orgId: 'org_mg', newStage: 'cerrado' as any, changedBy: 'agent-1' })
 
     expect(mockCalendarRepo.save).not.toHaveBeenCalled()
-    expect(result.autoFollowup).toBeNull()
   })
 })

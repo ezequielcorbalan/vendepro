@@ -191,7 +191,6 @@ export default function LeadDetailPage() {
         if (!res.ok) { toast(result?.error || 'No se pudo avanzar a esa etapa', 'error'); return }
         pushFromApiResponse(result, { entity_type: 'lead', entity_id: leadId, event_name_fallback: stage })
         toast(`Etapa: ${getStageConfig(stage, lead.pipeline).label}`)
-        if (result.autoFollowup) toast(`Seguimiento automático creado para ${formatDate(result.autoFollowup.start_at)}`)
         if (result.syncedPropertyId) {
           const propLabel = PROPERTY_STAGES[result.syncedPropertyStage as PropertyStage]?.label || result.syncedPropertyStage
           toast(`La propiedad vinculada también avanzó a "${propLabel}" en su pipeline`, 'info')
