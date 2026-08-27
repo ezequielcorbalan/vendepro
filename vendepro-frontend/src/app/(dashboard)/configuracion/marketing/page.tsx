@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
-  Megaphone, Save, Loader2,
+  Save, Loader2,
   Plus, Trash2, ArrowLeft, Send, CheckCircle2,
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
@@ -12,6 +12,7 @@ import { getCurrentUser } from '@/lib/auth'
 import EmailSection from '@/components/configuracion/EmailSection'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { Tabs } from '@/components/ui/Tabs'
 import { Text } from '@/components/ui/Typography'
 import { Field, Input, Select } from '@/components/ui/Input'
@@ -279,20 +280,11 @@ export default function MarketingConfigPage() {
         <ArrowLeft className="w-4 h-4" /> Volver a Configuración
       </Link>
 
-      {/* Header propio (hero con ícono degradado + imagen decorativa) — se deja como está */}
-      <div className="bg-white rounded-card border border-gray-200 shadow-card p-6 mb-6 relative overflow-hidden">
-        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-pink to-brand-orange" />
-        <img src="/brand/GV-27.png" alt="" aria-hidden="true" className="absolute -top-8 -right-8 w-32 h-32 opacity-10 pointer-events-none" />
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-control bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center">
-            <Megaphone className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-xl font-semibold text-ink">Marketing</h1>
-            <p className="text-sm text-gray-500 mt-0.5">Tu Meta Pixel + Google Analytics 4 + GTM — la configuración es por agente</p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        className="mb-6"
+        title="Marketing"
+        subtitle="Tu Meta Pixel + Google Analytics 4 + GTM — la configuración es por agente"
+      />
 
       {/* Secciones de la pantalla: Tabs del DS, sin íconos. Mapeos y Email son
           admin-only, así que la lista se arma según el rol. */}

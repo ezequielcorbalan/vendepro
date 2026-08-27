@@ -9,7 +9,8 @@ import { getReportStatus } from '@/lib/crm-config'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { StatusBadge } from '@/components/ui/StatusBadge'
-import { Heading, Text } from '@/components/ui/Typography'
+import { Text } from '@/components/ui/Typography'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 interface Report {
   id: string
@@ -63,26 +64,20 @@ export default function PropertyReportsPage() {
         <ArrowLeft className="w-4 h-4" /> Volver a la propiedad
       </Link>
 
-      <div className="bg-white rounded-card border border-gray-200 shadow-card p-6 mb-6 relative overflow-hidden">
-        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-pink to-brand-orange" />
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-control bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center flex-shrink-0">
-              <FileBarChart className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <Heading level={3} as="h1">Reportes</Heading>
-              <Text tone="muted" className="mt-0.5">{propertyAddress || 'Propiedad'} · {reports.length} {reports.length === 1 ? 'reporte' : 'reportes'}</Text>
-            </div>
-          </div>
-          <Link
-            href={`/propiedades/${id}/reportes/nuevo`}
-            className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-control text-sm font-medium hover:bg-primary-hover"
-          >
-            <Plus className="w-4 h-4" /> Nuevo reporte
-          </Link>
-        </div>
-      </div>
+      <Card className="mb-6">
+        <PageHeader
+          title="Reportes"
+          subtitle={`${propertyAddress || 'Propiedad'} · ${reports.length} ${reports.length === 1 ? 'reporte' : 'reportes'}`}
+          actions={
+            <Link
+              href={`/propiedades/${id}/reportes/nuevo`}
+              className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-control text-sm font-medium hover:bg-primary-hover"
+            >
+              <Plus className="w-4 h-4" aria-hidden="true" /> Nuevo reporte
+            </Link>
+          }
+        />
+      </Card>
 
       {reports.length === 0 ? (
         <Card padded={false} className="border-dashed border-gray-300 shadow-none">

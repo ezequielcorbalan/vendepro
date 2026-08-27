@@ -17,6 +17,7 @@ import { Field, Input, Textarea } from '@/components/ui/Input'
 import { Heading, Text } from '@/components/ui/Typography'
 import { Alert } from '@/components/ui/Alert'
 import { Tag } from '@/components/ui/Tag'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 const steps = [
   { label: 'Terreno', icon: MapPin },
@@ -143,15 +144,12 @@ export default function NuevaPrefactibilidadPage() {
         <ArrowLeft className="w-4 h-4" /> Volver
       </Link>
 
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-control bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center">
-          <BarChart3 className="w-5 h-5 text-white" />
-        </div>
-        <div>
-          <h1 className="text-xl font-bold text-ink">Estudio de Prefactibilidad</h1>
-          <p className="text-xs text-gray-400">Análisis de viabilidad para lotes e inversores · Paso {step + 1} de {steps.length}</p>
-        </div>
-      </div>
+      <Card className="mb-6">
+        <PageHeader
+          title="Estudio de Prefactibilidad"
+          subtitle={`Análisis de viabilidad para lotes e inversores · Paso ${step + 1} de ${steps.length}`}
+        />
+      </Card>
 
       {/* Steps nav */}
       <Stepper

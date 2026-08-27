@@ -16,6 +16,7 @@ import { Field, Input, Textarea } from '@/components/ui/Input'
 import { Checkbox } from '@/components/ui/Choice'
 import { PillRadioGroup as RadioGroup, PillCheckGroup } from '@/components/ui/ChoicePills'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 // ── Collapsible section ─────────────────────────────────────
 function Section({ title, icon: Icon, children, defaultOpen = false }: { title: string; icon: any; children: React.ReactNode; defaultOpen?: boolean }) {
@@ -317,15 +318,12 @@ export default function FichaDetailPage() {
         </div>
       </div>
 
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-control bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center">
-          <ClipboardList className="w-5 h-5 text-white" />
-        </div>
-        <div>
-          <h1 className="text-lg font-bold text-ink">Ficha de Tasación</h1>
-          <p className="text-xs text-gray-400">{f.address || 'Sin dirección'}</p>
-        </div>
-      </div>
+      <Card className="mb-6">
+        <PageHeader
+          title="Ficha de Tasación"
+          subtitle={f.address || 'Sin dirección'}
+        />
+      </Card>
 
       <div className="space-y-3">
         <Section title="Datos generales" icon={Home} defaultOpen={true}>
