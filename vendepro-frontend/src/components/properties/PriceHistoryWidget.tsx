@@ -84,10 +84,11 @@ export default function PriceHistoryWidget({
             <h2 className="text-sm font-semibold text-ink">Historial de precio</h2>
           </div>
           <button
+            type="button"
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-1 text-xs text-brand-pink font-medium hover:underline"
+            className="flex items-center gap-1.5 text-sm text-primary font-medium hover:underline"
           >
-            <Plus className="w-3 h-3" /> Ajustar
+            <Plus className="w-4 h-4" aria-hidden="true" /> Ajustar
           </button>
         </div>
 

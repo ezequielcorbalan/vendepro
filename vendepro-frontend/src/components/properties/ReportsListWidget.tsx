@@ -50,10 +50,12 @@ export default function ReportsListWidget({ propertyId }: Props) {
             <Text size="xs" tone="muted">{reports.length} {reports.length === 1 ? 'reporte' : 'reportes'}</Text>
           </div>
         </div>
-        {/* Regla 2: el link estilado como botón iguala la escala md de Button. */}
+        {/* Acción del widget: link de texto en primario, el mismo patrón que
+            usa PriceHistoryWidget. No es un Button: no hay variante del DS con
+            fondo primario tenue. */}
         <Link
           href={`/propiedades/${propertyId}/reportes/nuevo`}
-          className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-control text-primary font-medium hover:bg-primary/10"
+          className="inline-flex items-center gap-1.5 text-sm text-primary font-medium hover:underline"
         >
           <Plus className="w-4 h-4" aria-hidden="true" /> Nuevo
         </Link>
