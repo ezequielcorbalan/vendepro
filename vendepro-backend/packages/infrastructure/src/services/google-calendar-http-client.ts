@@ -1,4 +1,7 @@
-import type { GoogleCalendarGateway, GoogleTokenSet, GoogleEventPayload } from '@vendepro/core'
+import type {
+  GoogleCalendarGateway, GoogleTokenSet, GoogleEventPayload,
+  GoogleCalendarEvent, ListGoogleEventsInput,
+} from '@vendepro/core'
 
 const OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token'
 const OAUTH_REVOKE_URL = 'https://oauth2.googleapis.com/revoke'
@@ -66,6 +69,29 @@ export class GoogleCalendarHttpClient implements GoogleCalendarGateway {
     }
   }
 
+  async listEvents(accessToken: string, input: ListGoogleEventsInput): Promise<GoogleCalendarEvent[]> {
+    const params = new URLSearchParams({
+      timeMin: input.timeMin,
+      timeMax: input.timeMax,
+      // Expande los recurrentes en instancias concretas: si no, una reunión
+      // semanal llega como una sola fila con regla de repetición.
+      singleEvents: 'true',
+      orderBy: 'startTime',
+      maxResults: String(Math.min(input.maxResults ?? 250, 2500)),
+    })
+    const res = await fetch(`${CALENDAR_EVENTS_URL}?${params.toString()}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      signal: AbortSignal.timeout(this.timeoutMs),
+    })
+    const data = (await res.json().catch(() => ({}))) as any
+    if (!res.ok) {
+      throw new Error(`Google Calendar: ${data?.error?.message || `HTTP ${res.status}`}`)
+    }
+    return (Array.isArray(data.items) ? data.items : [])
+      .filter((item: any) => item?.id && item?.status !== 'cancelled')
+      .map(toGoogleCalendarEvent)
+  }
+
   async createEvent(accessToken: string, event: GoogleEventPayload): Promise<{ id: string }> {
     const data = await this.calendarRequest(accessToken, 'POST', `${CALENDAR_EVENTS_URL}?sendUpdates=all`, toGoogleBody(event))
     if (!data?.id) throw new Error('Google Calendar: la creación no devolvió id')
@@ -127,6 +153,25 @@ export class GoogleCalendarHttpClient implements GoogleCalendarGateway {
       throw new Error(`Google Calendar: ${data?.error?.message || `HTTP ${res.status}`}`)
     }
     return data
+  }
+}
+
+/**
+ * Google manda `dateTime` (con zona) para eventos con hora y `date` para los de
+ * día completo. Se normaliza a un solo shape para que el resto no tenga que
+ * distinguir.
+ */
+function toGoogleCalendarEvent(item: any): GoogleCalendarEvent {
+  const allDay = !item?.start?.dateTime
+  return {
+    id: String(item.id),
+    summary: typeof item.summary === 'string' && item.summary.trim() ? item.summary : '(sin título)',
+    description: typeof item.description === 'string' ? item.description : null,
+    start: item?.start?.dateTime ?? item?.start?.date ?? '',
+    end: item?.end?.dateTime ?? item?.end?.date ?? '',
+    all_day: allDay,
+    html_link: typeof item.htmlLink === 'string' ? item.htmlLink : null,
+    status: typeof item.status === 'string' ? item.status : null,
   }
 }
 

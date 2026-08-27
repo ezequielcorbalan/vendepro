@@ -7,6 +7,7 @@ import type { CalendarEvent } from '../../../domain/entities/calendar-event'
 import type { TokenEncryptor } from '../marketing/save-meta-integration'
 import type { TokenDecryptor } from './test-kiteprop-connection'
 import { GOOGLE_CALENDAR_PROVIDER } from './get-google-integration'
+import { getValidGoogleAccessToken } from './google-access-token'
 
 const ARGENTINA_TZ = 'America/Argentina/Buenos_Aires'
 const DEFAULT_DURATION_MS = 60 * 60 * 1000
@@ -29,12 +30,6 @@ export interface SyncEventToGoogleResult {
   /** true si el evento quedó en Google con el cliente como invitado (Google le manda el mail). */
   inviteSent: boolean
   reason?: string
-}
-
-interface StoredCredentials {
-  refresh_token: string
-  access_token?: string
-  expires_at?: string
 }
 
 const NOT_SYNCED = (reason: string): SyncEventToGoogleResult => ({ synced: false, inviteSent: false, reason })
@@ -65,7 +60,13 @@ export class SyncEventToGoogleUseCase {
       return NOT_SYNCED('not_connected')
     }
 
-    const accessToken = await this.getValidAccessToken(integration)
+    const accessToken = await getValidGoogleAccessToken({
+      integration,
+      repo: this.integrationRepo,
+      gateway: this.gateway,
+      encryptToken: this.encryptToken,
+      decryptToken: this.decryptToken,
+    })
     if (!accessToken) return NOT_SYNCED('invalid_credentials')
 
     if (input.action === 'delete') {
@@ -123,35 +124,6 @@ export class SyncEventToGoogleUseCase {
     }
   }
 
-  /** Access token vigente; refresca (y persiste) si expiró. Null si las credenciales no sirven. */
-  private async getValidAccessToken(integration: UserIntegration): Promise<string | null> {
-    const plain = await this.decryptToken(integration.credentials_encrypted as string)
-    if (!plain) return null
-
-    let creds: StoredCredentials
-    try {
-      creds = JSON.parse(plain) as StoredCredentials
-    } catch {
-      return null
-    }
-    if (!creds.refresh_token) return null
-
-    const stillValid = creds.access_token && creds.expires_at && new Date(creds.expires_at) > new Date()
-    if (stillValid) return creds.access_token as string
-
-    const refreshed = await this.gateway.refreshAccessToken(creds.refresh_token)
-    const next: StoredCredentials = {
-      refresh_token: creds.refresh_token,
-      access_token: refreshed.access_token,
-      expires_at: new Date(Date.now() + Math.max(refreshed.expires_in - 60, 0) * 1000).toISOString(),
-    }
-    integration.update({
-      credentials_encrypted: await this.encryptToken(JSON.stringify(next)),
-      last_sync_at: new Date().toISOString(),
-    })
-    await this.integrationRepo.save(integration)
-    return refreshed.access_token
-  }
 }
 
 /** '2026-07-10T15:00' (datetime-local) → '2026-07-10T15:00:00'; ISO absolutos quedan como están. */
