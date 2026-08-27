@@ -20,6 +20,27 @@ export interface GoogleEventPayload {
   attendees: string[]
 }
 
+/** Evento tal como lo devuelve Google, ya normalizado. */
+export interface GoogleCalendarEvent {
+  id: string
+  summary: string
+  description: string | null
+  /** ISO. Para eventos de día completo, Google manda sólo `date`. */
+  start: string
+  end: string
+  all_day: boolean
+  html_link: string | null
+  /** 'confirmed' | 'tentative' | 'cancelled' */
+  status: string | null
+}
+
+export interface ListGoogleEventsInput {
+  /** Rango a consultar, en ISO. */
+  timeMin: string
+  timeMax: string
+  maxResults?: number
+}
+
 /**
  * Gateway a Google (OAuth 2.0 + Calendar API v3). Las operaciones de eventos
  * usan sendUpdates=all: Google notifica por email a los invitados en cada
@@ -30,6 +51,12 @@ export interface GoogleCalendarGateway {
   refreshAccessToken(refreshToken: string): Promise<{ access_token: string; expires_in: number }>
   /** Best-effort: revocar al desconectar. No debe tirar si el token ya expiró. */
   revokeToken(token: string): Promise<void>
+  /**
+   * Eventos del calendario principal del usuario en un rango.
+   * Sólo lectura: el scope `calendar.events` ya lo permite, no hace falta
+   * re-consentir.
+   */
+  listEvents(accessToken: string, input: ListGoogleEventsInput): Promise<GoogleCalendarEvent[]>
   createEvent(accessToken: string, event: GoogleEventPayload): Promise<{ id: string }>
   updateEvent(accessToken: string, eventId: string, event: GoogleEventPayload): Promise<void>
   deleteEvent(accessToken: string, eventId: string): Promise<void>

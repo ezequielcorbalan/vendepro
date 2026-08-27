@@ -39,7 +39,7 @@ import {
   GetKitepropAgentsUseCase, SaveAgentMapUseCase,
   GetGoogleIntegrationUseCase, ConnectGoogleCalendarUseCase,
   DisconnectGoogleCalendarUseCase, SaveGoogleIntegrationSettingsUseCase,
-  SyncEventToGoogleUseCase,
+  SyncEventToGoogleUseCase, ListGoogleCalendarEventsUseCase,
   GetEmailSettingsUseCase, SaveEmailSettingsUseCase,
   SendTestEmailUseCase, ListEmailSuppressionsUseCase,
   CreateEmailCampaignUseCase, UpdateEmailCampaignUseCase, ListEmailCampaignsUseCase,
@@ -841,6 +841,39 @@ app.get(GOOGLE_CALLBACK_PATH, async (c) => {
     return finish('ok')
   } catch {
     return finish('error', 'canje_fallido')
+  }
+})
+
+/**
+ * Eventos del Google Calendar del usuario logueado, para mostrarlos junto a
+ * los del CRM. Sólo lectura y sólo del calendario propio: el userId sale del
+ * token, nadie puede pedir la agenda de otro agente.
+ *
+ * Nunca falla con 5xx: si Google se cae, devuelve la lista vacía con el motivo
+ * y el calendario del CRM se sigue viendo igual.
+ */
+app.get('/integrations/google/events', async (c) => {
+  const { start, end } = c.req.query()
+  if (!start || !end) return c.json({ error: 'start y end son requeridos' }, 400)
+  if (!googleConfigured(c.env)) {
+    return c.json({ events: [], connected: false, reason: 'no_configurado' })
+  }
+  try {
+    const useCase = new ListGoogleCalendarEventsUseCase(
+      new D1UserIntegrationRepository(c.env.DB),
+      new D1CalendarRepository(c.env.DB),
+      googleGateway(c.env),
+      (plain) => encrypt(plain, c.env.JWT_SECRET),
+      (cipher) => decrypt(cipher, c.env.JWT_SECRET),
+    )
+    return c.json(await useCase.execute({
+      orgId: c.get('orgId'),
+      userId: c.get('userId'),
+      start,
+      end,
+    }))
+  } catch (err: any) {
+    return c.json({ events: [], connected: true, reason: err?.message || 'google_error' })
   }
 })
 
