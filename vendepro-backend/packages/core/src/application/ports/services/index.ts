@@ -16,3 +16,9 @@ export type {
   EmailContentGenerator, GenerateEmailContentInput, GeneratedEmailContent,
   GenerateSequenceInput, GeneratedSequenceStep,
 } from './email-content-generator'
+export type {
+  AutomationActionExecutor,
+  AutomationExecutorRegistry,
+  ActionExecutionInput,
+  ActionOutcome,
+} from './automation-action-executor'

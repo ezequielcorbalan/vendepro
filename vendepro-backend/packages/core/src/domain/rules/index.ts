@@ -22,3 +22,21 @@ export {
   AUTOSAVE_THROTTLE_MS,
 } from './landing-rules'
 export type { Role, Actor, LandingRef } from './landing-rules'
+
+// Automatizaciones — condiciones e interpolación
+export {
+  readPath,
+  parseConditions,
+  evaluateConditions,
+  evaluateCondition,
+  firstFailingCondition,
+} from './automation-conditions'
+export type { AutomationCondition, AutomationContext } from './automation-conditions'
+export {
+  interpolate,
+  extractTokens,
+  unknownTokens,
+  escapeHtml,
+  htmlToText,
+} from './automation-interpolation'
+export type { InterpolateOptions } from './automation-interpolation'
