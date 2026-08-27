@@ -30,8 +30,8 @@ const decrypt = vi.fn(async (c: string) => (c.startsWith('enc(') ? c.slice(4, -1
 
 const RANGE = { orgId: 'org_mg', userId: 'agent-1', start: '2026-08-01T00:00:00Z', end: '2026-08-31T23:59:59Z' }
 
-function connected(creds: Record<string, unknown> = {}) {
-  return UserIntegration.create({
+function connected(creds: Record<string, unknown> = {}, email = 'agente@gmail.com') {
+  const integration = UserIntegration.create({
     id: 'ui-1', org_id: 'org_mg', user_id: 'agent-1', provider: 'google_calendar',
     enabled: true,
     credentials_encrypted: `enc(${JSON.stringify({
@@ -41,6 +41,8 @@ function connected(creds: Record<string, unknown> = {}) {
       ...creds,
     })})`,
   })
+  integration.setConfig({ email })
+  return integration
 }
 
 function googleEvent(id: string, summary = 'Reunión') {
@@ -94,6 +96,13 @@ describe('ListGoogleCalendarEventsUseCase', () => {
     const result = await useCase().execute(RANGE)
     expect(result.connected).toBe(false)
     expect(mockGateway.listEvents).not.toHaveBeenCalled()
+  })
+
+  it('devuelve la cuenta vinculada: conectar la personal en vez de la de trabajo es el error más común', async () => {
+    mockIntegrationRepo.findByUserAndProvider.mockResolvedValue(connected({}, 'personal@gmail.com'))
+
+    const result = await useCase().execute(RANGE)
+    expect(result.email).toBe('personal@gmail.com')
   })
 
   it('pide a Google exactamente el rango solicitado', async () => {

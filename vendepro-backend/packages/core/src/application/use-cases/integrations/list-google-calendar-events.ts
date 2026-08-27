@@ -19,6 +19,15 @@ export interface ListGoogleCalendarEventsOutput {
   events: GoogleCalendarEvent[]
   /** false cuando el agente no conectó su cuenta — el UI lo distingue de "no hay eventos". */
   connected: boolean
+  /**
+   * Cuenta de Google de la que salen los eventos.
+   *
+   * Se devuelve acá y no en una segunda request porque es parte de la
+   * respuesta a "¿por qué no veo mis eventos?": lo más común es haber
+   * conectado la cuenta personal en vez de la de trabajo, y sin mostrar cuál
+   * es no hay forma de darse cuenta.
+   */
+  email?: string | null
   /** Motivo por el que no se pudo traer nada, si aplica. */
   reason?: string
 }
@@ -72,9 +81,11 @@ export class ListGoogleCalendarEventsUseCase {
       timeMax: input.end,
     })
 
+    const cfg = integration.getConfig()
     return {
       events: await this.withoutMirrored(events, input),
       connected: true,
+      email: typeof cfg.email === 'string' ? cfg.email : null,
     }
   }
 
