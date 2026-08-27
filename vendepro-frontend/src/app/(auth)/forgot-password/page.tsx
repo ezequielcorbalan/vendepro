@@ -16,10 +16,20 @@ export default function ForgotPasswordPage() {
     setError('')
 
     try {
-      await apiFetch('auth', '/forgot-password', {
+      const res = await apiFetch('auth', '/forgot-password', {
         method: 'POST',
         body: JSON.stringify({ email }),
       })
+
+      // apiFetch no tira ante un non-2xx: devuelve la Response. Sin este chequeo
+      // un 503 (proveedor de emails sin configurar) mostraba igual "revisá tu
+      // bandeja" y el usuario esperaba un mail que nunca iba a salir.
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as any
+        setError(data.error ?? 'No pudimos enviar el email. Intentá de nuevo en unos minutos.')
+        return
+      }
+
       setSent(true)
     } catch {
       setError('Error de conexión. Intentá de nuevo.')
