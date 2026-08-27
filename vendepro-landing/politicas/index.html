@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Políticas de Privacidad y Protección de Datos | VendéPro</title>
+  <meta name="description" content="Cómo VendéPro trata, protege y conserva los datos personales de sus usuarios y de los contactos cargados en la plataforma. Ley 25.326 de Protección de Datos Personales, República Argentina." />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://vendepro.com.ar/politicas" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root { --brand: #ff007c; --brand-2: #ff8017; }
+    body { font-family: 'Poppins', ui-sans-serif, system-ui, -apple-system, sans-serif; }
+
+    /* Anclas por debajo del nav sticky */
+    .doc section { scroll-margin-top: 6rem; }
+
+    /* Tipografía de lectura larga */
+    .doc p, .doc li { color: #374151; font-size: 15px; line-height: 1.75; }
+    .doc p + p { margin-top: .75rem; }
+    .doc ul { list-style: disc; padding-left: 1.15rem; margin-top: .6rem; }
+    .doc ul li + li { margin-top: .4rem; }
+    .doc strong { color: #111827; font-weight: 600; }
+    .doc a:not(.plain) { color: var(--brand); text-decoration: underline; text-underline-offset: 2px; }
+    .legal-note { color: #6b7280 !important; font-size: 13px !important; font-style: italic; border-left: 2px solid #e5e7eb; padding-left: 1rem; }
+
+
+    /* Índice lateral */
+    .toc a { display: block; padding: 5px 10px; border-left: 2px solid #f3f4f6; color: #6b7280; font-size: 13px; line-height: 1.4; }
+    .toc a:hover { color: #374151; background: #fafafa; }
+    .toc a.active { color: var(--brand); border-left-color: var(--brand); font-weight: 500; }
+
+    :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 4px; }
+
+    html { scroll-behavior: smooth; }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      * { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+    @media print {
+      nav, .toc, .no-print { display: none !important; }
+      .doc section { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-white">
+
+  <a href="#contenido" class="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:bg-white focus:px-4 focus:py-2 focus:rounded-lg focus:shadow-lg focus:text-sm focus:font-medium">Saltar al contenido</a>
+
+  <!-- Nav -->
+  <nav class="border-b border-gray-100 bg-white/95 backdrop-blur sticky top-0 z-40">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16 gap-4">
+      <a href="/" class="flex items-center gap-2.5 plain">
+        <div class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style="background: linear-gradient(135deg, #ff007c, #ff8017)">
+          <span class="text-white font-black" style="font-size:10px">VP</span>
+        </div>
+        <span class="font-bold text-gray-800">Vendé<span style="color:#ff007c">Pro</span></span>
+      </a>
+      <div class="flex items-center gap-4 sm:gap-5 text-[13px] font-medium">
+        <span class="text-gray-900" aria-current="page">Privacidad</span>
+        <a href="/condiciones" class="text-gray-400 hover:text-gray-700 plain">Condiciones</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
+
+    <header class="mb-8 sm:mb-12">
+      <a href="/" class="inline-flex items-center gap-2 text-[13px] text-gray-400 hover:text-gray-600 mb-6 plain">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Volver al inicio
+      </a>
+      <h1 class="text-3xl sm:text-4xl font-black text-gray-900 tracking-tight">Políticas de Privacidad y Protección de Datos Personales</h1>
+      <p class="mt-3 text-gray-500 text-sm max-w-2xl leading-relaxed">Esta política explica qué datos personales trata VendéPro, con qué finalidad, durante cuánto tiempo y cómo podés ejercer tus derechos. Se rige por la <strong class="font-semibold text-gray-700">Ley N.º 25.326</strong> de Protección de los Datos Personales de la República Argentina y su reglamentación.</p>
+      <div class="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-gray-400">
+        <span>Última actualización: <strong class="font-semibold text-gray-600">27 de agosto de 2026</strong></span>
+        <span class="hidden sm:inline text-gray-200">|</span>
+        <span>Vigencia: desde su publicación</span>
+        <span class="hidden sm:inline text-gray-200">|</span>
+        <a href="/condiciones" class="text-gray-400 hover:text-gray-700 underline underline-offset-2 plain">Ver Términos y Condiciones</a>
+      </div>
+    </header>
+
+    <div class="lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-12">
+
+      <!-- Índice -->
+      <aside class="toc mb-8 lg:mb-0">
+        <div class="lg:sticky lg:top-24">
+          <details class="lg:hidden border border-gray-200 rounded-xl px-4 py-3">
+            <summary class="text-sm font-semibold text-gray-700 cursor-pointer select-none">Índice del documento</summary>
+            <nav class="mt-3 -ml-2" aria-label="Índice del documento"><div class="toc-links"></div></nav>
+          </details>
+          <div class="hidden lg:block">
+            <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-3 pl-2.5">Contenido</p>
+            <nav aria-label="Índice del documento"><div class="toc-links"></div></nav>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Documento -->
+      <div id="contenido" class="doc max-w-[70ch] space-y-9">
+
+        <section id="responsable">
+          <h2 class="text-lg font-bold text-gray-900 mb-3">1. Quién es el responsable de tus datos</h2>
+          <p>VendéPro es una plataforma de gestión inmobiliaria (CRM) operada por Ezequiel Corbalán, CUIT 20-38350220-4, con domicilio en Bazurco 2644, Ciudad Autónoma de Buenos Aires, República Argentina (en adelante, &ldquo;VendéPro&rdquo;, &ldquo;nosotros&rdquo;).</p>
+          <p>VendéPro es titular y responsable de las bases de datos personales que se generan a partir del uso de la plataforma.</p>
+          <p>Para cualquier consulta sobre esta política podés escribirnos a <a href="mailto:privacidad@vendepro.com.ar">privacidad@vendepro.com.ar</a>.</p>
+        </section>
+
+        <section id="alcance">
+          <h2 class="text-lg font-bold text-gray-900 mb-3">2. Alcance</h2>
+          <p>Esta política se aplica al sitio <strong>vendepro.com.ar</strong>, a la aplicación <strong>app.vendepro.com.ar</strong>, a las páginas y reportes públicos que la plataforma genera, y a todo servicio prestado por VendéPro.</p>
+          <p>No se aplica a sitios de terceros a los que puedas acceder desde nuestros enlaces, que se rigen por sus propias políticas.</p>
+        </section>
+
+        <section id="roles">
+          <h2 class="text-lg font-bold text-gray-900 mb-3">3. Dos roles distintos: responsable y encargado del tratamiento</h2>
+          <p>Es importante distinguir dos situaciones, porque las obligaciones de cada parte son diferentes:</p>
+          <ul>
+            <li><strong>Datos de nuestros usuarios y visitantes.</strong> Respecto de los datos de quienes contratan o usan VendéPro (nombre, correo, teléfono, datos de facturación, datos de uso), VendéPro actúa como <strong>responsable del tratamiento</strong>.</li>
+            <li><strong>Datos que vos cargás en la plataforma.</strong> Respecto de los datos de leads, contactos, propietarios, compradores y demás terceros que vos o tu organización incorporan al CRM, VendéPro actúa como <strong>encargado del tratamiento</strong> por cuenta y orden tuya, en los términos del artículo 25 de la Ley N.º 25.326. Vos seguís siendo el responsable de esa base de datos: nosotros sólo los tratamos para prestarte el servicio, siguiendo tus instrucciones, y no los usamos para fines propios.</li>
+          </ul>
+        </section>
+
+        <section id="datos">
+          <h2 class="text-lg font-bold text-gray-900 mb-3">4. Qué datos tratamos</h2>
+          <ul>
+            <li><strong>Datos de cuenta:</strong> nombre y apellido, correo electrónico, teléfono, organización o inmobiliaria, rol dentro del equipo y contraseña (almacenada de forma cifrada, nunca en texto plano).</li>
+            <li><strong>Datos de facturación:</strong> razón social, CUIT/CUIL, domicilio y plan contratado. <strong>No almacenamos datos de tarjetas de crédito o débito</strong>: los pagos se procesan íntegramente en la plataforma de Mercado Pago.</li>
+            <li><strong>Datos que cargás en el CRM:</strong> información de leads, contactos, propiedades, tasaciones, reservas, operaciones, notas, eventos de agenda y archivos adjuntos.</li>
+            <li><strong>Datos técnicos y de uso:</strong> dirección IP, tipo de dispositivo y navegador, fecha y hora de acceso, páginas visitadas, acciones realizadas y registros de error, con fines de seguridad, diagnóstico y mejora del servicio.</li>
+            <li><strong>Comunicaciones:</strong> las consultas que nos enviás por correo electrónico, WhatsApp o formularios, y su contenido.</li>
+          </ul>
+          <p>No solicitamos ni requerimos datos sensibles en los términos del artículo 2 de la Ley N.º 25.326 (origen racial o étnico, opiniones políticas, convicciones religiosas, filosóficas o morales, afiliación sindical, información referente a la salud o a la vida sexual). Te pedimos que no los cargues en campos de texto libre.</p>
+        </section>
+
+        <section id="finalidades">
+          <h2 class="text-lg font-bold text-gray-900 mb-3">5. Para qué los usamos y con qué base legal</h2>
+          <p>Tratamos los datos para las siguientes finalidades:</p>
+          <ul>
+            <li>Crear y administrar tu cuenta, autenticarte y darte acceso a la plataforma.</li>
+            <li>Prestar las funcionalidades contratadas: gestión de leads, tasaciones, propiedades, agenda, reportes y asistente de inteligencia artificial.</li>
+            <li>Facturar, cobrar y administrar la suscripción.</li>
+            <li>Brindar soporte técnico y responder consultas.</li>
+            <li>Garantizar la seguridad del servicio y prevenir fraudes, abusos y accesos no autorizados.</li>
+            <li>Analizar el uso de forma agregada para mejorar el producto.</li>
+            <li>Enviarte comunicaciones sobre el servicio (avisos operativos, cambios de términos, vencimientos). Las comunicaciones comerciales sólo se envían con tu consentimiento y siempre incluyen un mecanismo de baja.</li>
+            <li>Cumplir obligaciones legales, fiscales y requerimientos de autoridad competente.</li>
+          </ul>
+          <p>La base de licitud del tratamiento es tu <strong>consentimiento libre, expreso e informado</strong> (artículo 5 de la Ley N.º 25.326) y la <strong>existencia de una relación contractual</strong> entre las partes, supuesto en el que el consentimiento no resulta necesario conforme el artículo 5, inciso 2, apartado d) de la misma ley.</p>
+        </section>
+
+        <section id="terceros-cargados">
+          <h2 class="text-lg font-bold text-gray-900 mb-3">6. Datos de terceros que cargás en la plataforma</h2>
+          <p>Cuando cargás en VendéPro datos de un lead, un propietario, un comprador o cualquier otra persona, <strong>sos vos quien responde por la licitud de esa recolección</strong>. En particular, al usar la plataforma declarás que:</p>
+          <ul>
+            <li>Obtuviste los datos de forma lícita y contás con el consentimiento del titular o con otra base legal que habilite su tratamiento.</li>
+            <li>Informaste al titular la finalidad del tratamiento, quién es el responsable y cómo puede ejercer sus derechos, conforme el artículo 6 de la Ley N.º 25.326.</li>
+            <li>Respetás el Registro Nacional &ldquo;No Llame&rdquo; (Ley N.º 26.951) y las normas aplicables al envío de comunicaciones no solicitadas.</li>
+            <li>Vas a atender los pedidos de acceso, rectificación y supresión que te dirijan esos titulares.</li>
+          </ul>
+          <p>Si un titular de datos nos contacta directamente por información que cargó un cliente nuestro, le vamos a indicar quién es el responsable de esa base y, de corresponder, te trasladaremos el pedido para que lo resuelvas.</p>
+        </section>
+
+        <section id="ia">
+          <h2 class="text-lg font-bold text-gray-900 mb-3">7. Inteligencia artificial</h2>
+          <p>Algunas funciones de VendéPro (asistente conversacional, extracción de datos desde imágenes o PDF, sugerencias y resúmenes) se apoyan en modelos de lenguaje provistos por terceros, actualmente <strong>Anthropic (Claude)</strong>.</p>
+          <p>El contenido que enviás a esas funciones se transmite al proveedor únicamente para generar la respuesta solicitada. <strong>No autorizamos el uso de tus datos para entrenar modelos de terceros.</strong> Las respuestas generadas son orientativas, pueden contener errores y no constituyen asesoramiento profesional: la verificación final es responsabilidad del usuario.</p>
+        </section>
+
+        <section id="proveedores">
+          <h2 class="text-lg font-bold text-gray-900 mb-3">8. Con quién compartimos datos</h2>
+          <p><strong>No vendemos, alquilamos ni cedemos datos personales a terceros con fines comerciales.</strong> Sólo los compartimos con proveedores que nos prestan servicios necesarios para operar, obligados contractualmente a mantener la confidencialidad y a tratarlos únicamente conforme nuestras instrucciones:</p>
+          <ul>
+            <li><strong>Cloudflare, Inc.</strong> — infraestructura, alojamiento, base de datos y almacenamiento de archivos.</li>
+            <li><strong>Anthropic, PBC</strong> — procesamiento de las funciones de inteligencia artificial.</li>
+            <li><strong>Mercado Pago</strong> — procesamiento de pagos y facturación.</li>
+            <li><strong>Proveedores de correo electrónico transaccional</strong> — envío de avisos, recuperación de contraseña y notificaciones.</li>
+          </ul>
+          <p>También podemos revelar datos cuando exista una orden judicial o un requerimiento de autoridad competente, o cuando sea necesario para defender derechos propios o de terceros.</p>
+          <p>En caso de fusión, adquisición o transferencia del negocio, los datos podrán transferirse al continuador, que quedará sujeto a esta misma política. Te lo informaremos con antelación razonable.</p>
+        </section>
+
+        <section id="transferencia">
+          <h2 class="text-lg font-bold text-gray-900 mb-3">9. Transferencia internacional de datos</h2>
+          <p>Parte de la infraestructura y de los proveedores mencionados se encuentra fuera de la República Argentina, principalmente en los Estados Unidos de América y en la Unión Europea. Esto implica una <strong>transferencia internacional de datos</strong> en los términos del artículo 12 de la Ley N.º 25.326.</p>
+          <p>Cuando el país de destino no es considerado de nivel adecuado de protección, la transferencia se realiza con el consentimiento del titular y bajo contratos que incorporan las cláusulas contractuales tipo aprobadas por la Disposición N.º 60-E/2016 de la Agencia de Acceso a la Información Pública, o garantías equivalentes. Al usar VendéPro prestás tu conformidad con estas transferencias.</p>
+        </section>
+
+        <section id="cookies">
+          <h2 class="text-lg font-bold text-gray-900 mb-3">10. Cookies y tecnologías similares</h2>
+          <p>Usamos cookies y almacenamiento local del navegador para:</p>
+          <ul>
+            <li><strong>Cookies necesarias:</strong> mantener tu sesión iniciada y la seguridad de la cuenta. Sin ellas la plataforma no funciona.</li>
+            <li><strong>Cookies de preferencias:</strong> recordar configuraciones de vista y filtros.</li>
+            <li><strong>Cookies de medición:</strong> entender de forma agregada cómo se usa el producto.</li>
+          </ul>
+          <p>Podés bloquear o eliminar las cookies desde la configuración de tu navegador. Si bloqueás las cookies necesarias, no vas a poder iniciar sesión.</p>
+        </section>
+
+        <section id="conservacion">
+          <h2 class="text-lg font-bold text-gray-900 mb-3">11. Cuánto tiempo conservamos los datos</h2>
+          <p>Conservamos los datos mientras la cuenta esté activa. Al darla de baja, los datos se mantienen en modo inactivo durante <strong>90 días corridos</strong> &mdash;plazo durante el cual podés solicitar su exportación o la reactivación de la cuenta&mdash; y luego se eliminan de forma permanente de los sistemas productivos. Las copias de resguardo se sobrescriben en el ciclo habitual de backups.</p>
+          <p>Se exceptúan los datos que debamos conservar por un plazo mayor para cumplir obligaciones legales, fiscales o contables, o para la defensa de reclamos, y los datos agregados o anonimizados que ya no permiten identificar a una persona.</p>
+        </section>
+
+        <section id="seguridad">
+          <h2 class="text-lg font-bold text-gray-900 mb-3">12. Seguridad de la información</h2>
+          <p>Adoptamos las medidas técnicas y organizativas necesarias para garantizar la seguridad y confidencialidad de los datos, conforme el artículo 9 de la Ley N.º 25.326 y las medidas de seguridad recomendadas por la Resolución N.º 47/2018 de la Agencia de Acceso a la Información Pública. Entre ellas:</p>
+          <ul>
+            <li>Cifrado de las comunicaciones en tránsito (HTTPS/TLS) y cifrado de la información en reposo.</li>
+            <li>Contraseñas almacenadas mediante funciones de hash con sal, nunca en texto plano.</li>
+            <li>Control de acceso por roles y aislamiento de la información de cada organización.</li>
+            <li>Registros de auditoría y monitoreo de accesos.</li>
+            <li>Copias de resguardo periódicas.</li>
+          </ul>
+          <p>Ningún sistema es completamente infalible. Ante un incidente de seguridad que afecte datos personales, lo notificaremos a los usuarios afectados y a la autoridad de control cuando corresponda, sin dilaciones indebidas.</p>
+        </section>
+
+        <section id="derechos">
+          <h2 class="text-lg font-bold text-gray-900 mb-3">13. Tus derechos y cómo ejercerlos</h2>
+          <p>Como titular de los datos personales tenés derecho a <strong>acceder</strong> a tus datos y a solicitar su <strong>rectificación, actualización o supresión</strong> cuando resulten inexactos o incompletos, así como a retirar el consentimiento prestado.</p>
+          <p>Podés ejercerlos escribiendo a <a href="mailto:privacidad@vendepro.com.ar">privacidad@vendepro.com.ar</a>, acreditando tu identidad. Los plazos legales son de <strong>10 días corridos</strong> para responder un pedido de acceso y de <strong>5 días hábiles</strong> para rectificar, actualizar o suprimir, conforme los artículos 14 y 16 de la Ley N.º 25.326.</p>
+          <p class="legal-note">El titular de los datos personales tiene la facultad de ejercer el derecho de acceso a los mismos en forma gratuita a intervalos no inferiores a seis meses, salvo que se acredite un interés legítimo al efecto, conforme lo establecido en el artículo 14, inciso 3 de la Ley N.º 25.326.</p>
+          <p>Desde la propia plataforma podés además exportar tu información y solicitar la eliminación total de la cuenta en cualquier momento.</p>
+        </section>
+
+        <section id="organo-control">
+          <h2 class="text-lg font-bold text-gray-900 mb-3">14. Órgano de control</h2>
+          <p class="legal-note">La AGENCIA DE ACCESO A LA INFORMACIÓN PÚBLICA, en su carácter de Órgano de Control de la Ley N.º 25.326, tiene la atribución de atender las denuncias y reclamos que interpongan quienes resulten afectados en sus derechos por incumplimiento de las normas vigentes en materia de protección de datos personales.</p>
+          <p>Más información en <a href="https://www.argentina.gob.ar/aaip" target="_blank" rel="noopener noreferrer">argentina.gob.ar/aaip</a>.</p>
+        </section>
+
+        <section id="menores">
+          <h2 class="text-lg font-bold text-gray-900 mb-3">15. Menores de edad</h2>
+          <p>VendéPro es una herramienta de uso profesional. No está dirigida a menores de 18 años y no recolectamos deliberadamente datos de menores. Si detectamos que se creó una cuenta con datos de un menor, la daremos de baja y eliminaremos la información.</p>
+        </section>
+
+        <section id="cambios">
+          <h2 class="text-lg font-bold text-gray-900 mb-3">16. Cambios en esta política</h2>
+          <p>Podemos actualizar esta política para reflejar cambios en el servicio o en la normativa aplicable. La versión vigente es siempre la publicada en esta página, con su fecha de última actualización. Si el cambio es sustancial, te lo notificaremos por correo electrónico o dentro de la plataforma con al menos <strong>30 días</strong> de antelación.</p>
+        </section>
+
+        <section id="contacto">
+          <h2 class="text-lg font-bold text-gray-900 mb-3">17. Contacto</h2>
+          <p>Para consultas, reclamos o para ejercer tus derechos:</p>
+          <ul>
+            <li>Correo electrónico: <a href="mailto:privacidad@vendepro.com.ar">privacidad@vendepro.com.ar</a></li>
+            <li>WhatsApp: <a href="https://wa.me/5491158905594" target="_blank" rel="noopener noreferrer">+54 9 11 5890-5594</a></li>
+            <li>Domicilio: Bazurco 2644, Ciudad Autónoma de Buenos Aires, Argentina</li>
+          </ul>
+        </section>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-gray-100 py-8 mt-8">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-2">
+        <div class="w-6 h-6 rounded-lg flex items-center justify-center" style="background: linear-gradient(135deg, #ff007c, #ff8017)">
+          <span class="text-white font-black" style="font-size:9px">VP</span>
+        </div>
+        <span class="text-sm font-semibold text-gray-700">VendéPro</span>
+      </div>
+      <p class="text-xs text-gray-400 text-center">Ezequiel Corbalán · Buenos Aires, Argentina</p>
+      <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-gray-400">
+        <a href="/condiciones" class="hover:text-gray-600 plain">Condiciones</a>
+        <a href="/condiciones#arrepentimiento" class="hover:text-gray-600 plain">Botón de arrepentimiento</a>
+        <a href="https://autogestion.produccion.gob.ar/consumidores" target="_blank" rel="noopener noreferrer" class="hover:text-gray-600 plain">Defensa del consumidor</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var sections = Array.prototype.slice.call(document.querySelectorAll('.doc section'));
+      if (!sections.length) return;
+
+      // El índice se arma a partir de los h2 del documento
+      var html = sections.map(function (s) {
+        var h = s.querySelector('h2');
+        return '<a href="#' + s.id + '">' + h.textContent.trim() + '</a>';
+      }).join('');
+      Array.prototype.forEach.call(document.querySelectorAll('.toc-links'), function (c) { c.innerHTML = html; });
+
+      var links = Array.prototype.slice.call(document.querySelectorAll('.toc-links a'));
+      if (!('IntersectionObserver' in window)) return;
+
+      var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          links.forEach(function (a) {
+            a.classList.toggle('active', a.getAttribute('href') === '#' + e.target.id);
+          });
+        });
+      }, { rootMargin: '-80px 0px -70% 0px' });
+      sections.forEach(function (s) { observer.observe(s); });
+
+      // En mobile, cerrar el índice al elegir una sección
+      links.forEach(function (a) {
+        a.addEventListener('click', function () {
+          var d = a.closest('details');
+          if (d) d.open = false;
+        });
+      });
+
+      // El CDN de Tailwind inyecta los estilos después del parseo y desplaza el layout:
+      // reaplicamos el ancla del hash para que los enlaces profundos caigan en su sección.
+      if (location.hash) {
+        var target = document.getElementById(location.hash.slice(1));
+        if (target) {
+          window.addEventListener('load', function () { target.scrollIntoView(); });
+        }
+      }
+    })();
+  </script>
+
+</body>
+</html>
