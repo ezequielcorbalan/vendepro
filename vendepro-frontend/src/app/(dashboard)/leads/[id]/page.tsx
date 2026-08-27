@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
-  ArrowLeft, Phone, Edit3, Save, X, Trash2,
+  ArrowLeft, Phone, Edit3, Save, X, Trash2, MoreVertical,
   User, ChevronRight, Plus, Loader2, Calendar, Activity,
   Home, FileText, MapPin, Target, StickyNote, Building2,
   CheckCircle2, Mail, DollarSign
@@ -24,6 +24,7 @@ import { Card } from '@/components/ui/Card'
 import { Heading } from '@/components/ui/Typography'
 import { StageBadge } from '@/components/ui/StageBadge'
 import { Button } from '@/components/ui/Button'
+import { Dropdown, DropdownItem, DropdownSeparator } from '@/components/ui/Dropdown'
 import { Field, Input, Select, Textarea } from '@/components/ui/Input'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Timeline } from '@/components/ui/Timeline'
@@ -298,58 +299,63 @@ export default function LeadDetailPage() {
           <ArrowLeft className="w-4 h-4" /> Volver a Leads
         </Link>
         <div className="flex items-center gap-2 flex-wrap">
-          {!editing ? (
-            <Button variant="outline" icon={<Edit3 className="w-3.5 h-3.5" />} onClick={() => setEditing(true)}>Editar</Button>
-          ) : (
+          {editing ? (
+            // En edición las dos acciones del flujo quedan a la vista; el menú
+            // aparece sólo en lectura.
             <>
-              <Button variant="outline" aria-label="Cancelar" onClick={() => { setEditing(false); setEditForm(lead) }}>
-                <X className="w-4 h-4" />
+              <Button variant="outline" onClick={() => { setEditing(false); setEditForm(lead) }}>
+                Cancelar
               </Button>
               <Button loading={saving} icon={<Save className="w-3.5 h-3.5" />} onClick={handleSave}>Guardar</Button>
             </>
+          ) : (
+            <Dropdown
+              align="right"
+              trigger={
+                <Button variant="ghost" size="icon" aria-label="Acciones del lead">
+                  <MoreVertical className="w-5 h-5" />
+                </Button>
+              }
+            >
+              <DropdownItem icon={<Edit3 className="w-4 h-4" />} onClick={() => setEditing(true)}>
+                Editar
+              </DropdownItem>
+              {!isBuyer && (
+                <DropdownItem
+                  icon={<FileText className="w-4 h-4" />}
+                  onClick={() => {
+                    const qs = new URLSearchParams({ lead_id: leadId })
+                    if (lead?.property_address) qs.set('address', lead.property_address)
+                    if (lead?.neighborhood) qs.set('neighborhood', lead.neighborhood)
+                    router.push(`/fichas/nueva?${qs.toString()}`)
+                  }}
+                >
+                  Ficha de tasación
+                </DropdownItem>
+              )}
+              {!isBuyer && (
+                <DropdownItem
+                  icon={<Home className="w-4 h-4" />}
+                  onClick={() => {
+                    const qs = new URLSearchParams({ lead_id: leadId })
+                    if (fichas.length > 0) qs.set('ficha_id', fichas[0].id)
+                    router.push(`/propiedades/nueva?${qs.toString()}`)
+                  }}
+                >
+                  Crear propiedad
+                </DropdownItem>
+              )}
+              <DropdownSeparator />
+              <DropdownItem danger icon={<Trash2 className="w-4 h-4" />} onClick={handleDelete}>
+                Eliminar
+              </DropdownItem>
+            </Dropdown>
           )}
-          {!isBuyer && (
-            <>
-              <Button
-                variant="outline"
-                icon={<FileText className="w-3.5 h-3.5" />}
-                disabled={editing}
-                onClick={() => {
-                  const qs = new URLSearchParams({ lead_id: leadId })
-                  if (lead?.property_address) qs.set('address', lead.property_address)
-                  if (lead?.neighborhood) qs.set('neighborhood', lead.neighborhood)
-                  router.push(`/fichas/nueva?${qs.toString()}`)
-                }}
-              >
-                Ficha de tasación
-              </Button>
-              <Button
-                icon={<Home className="w-3.5 h-3.5" />}
-                onClick={() => {
-                  const qs = new URLSearchParams({ lead_id: leadId })
-                  if (fichas.length > 0) qs.set('ficha_id', fichas[0].id)
-                  router.push(`/propiedades/nueva?${qs.toString()}`)
-                }}
-              >
-                Crear propiedad
-              </Button>
-            </>
-          )}
-          <Button variant="outline" size="icon" aria-label="Eliminar" onClick={handleDelete}>
-            <Trash2 className="w-4 h-4" />
-          </Button>
         </div>
       </div>
 
       {/* Header card */}
-      <Card padded={false} className="p-5 relative overflow-hidden">
-        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-pink to-brand-orange" />
-        <img
-          src="/brand/GV-27.png"
-          alt=""
-          aria-hidden="true"
-          className="absolute -top-8 -right-8 w-32 h-32 opacity-10 pointer-events-none"
-        />
+      <Card padded={false} className="p-5">
         {editing ? (
           <div className="space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

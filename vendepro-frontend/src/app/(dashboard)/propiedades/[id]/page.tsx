@@ -3,12 +3,14 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Building2, Loader2, Phone, Mail, User, Plus, Pencil, Send, Trash2 } from 'lucide-react'
+import { ArrowLeft, Loader2, Phone, Mail, User, Plus, Pencil, Send, Trash2, MoreVertical } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { Card } from '@/components/ui/Card'
 import { Heading, Text } from '@/components/ui/Typography'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
+import { Dropdown, DropdownItem, DropdownSeparator } from '@/components/ui/Dropdown'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { WhatsAppButton } from '@/components/ui/ContactButtons'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { Alert } from '@/components/ui/Alert'
@@ -101,56 +103,52 @@ export default function PropiedadDetailPage() {
         <ArrowLeft className="w-4 h-4" /> Volver a Propiedades
       </Link>
 
-      {/* Header (hero propio de pantalla de detalle) */}
-      <Card className="p-6 mb-6 relative overflow-hidden">
-        <img
-          src="/brand/GV-27.png"
-          alt=""
-          aria-hidden="true"
-          className="absolute -top-6 -right-6 w-40 h-40 opacity-10 pointer-events-none"
+      <Card className="mb-6">
+        <PageHeader
+          title={property.address}
+          subtitle={[property.neighborhood, property.city].filter(Boolean).join(' · ')}
+          actions={
+            <>
+              <StatusBadge
+                label={PROPERTY_STAGES[resolveStage(stage)]?.label ?? stage}
+                color={PROPERTY_STAGES[resolveStage(stage)]?.color}
+                className="whitespace-nowrap"
+              />
+              {(property as any).source === 'kiteprop' && (
+                <Badge tone="info" className="whitespace-nowrap">Importada de KiteProp</Badge>
+              )}
+              {/* Todas las acciones de la propiedad viven en un solo menú. */}
+              <Dropdown
+                align="right"
+                trigger={
+                  <Button variant="ghost" size="icon" aria-label="Acciones de la propiedad">
+                    <MoreVertical className="w-5 h-5" />
+                  </Button>
+                }
+              >
+                <DropdownItem
+                  icon={<Plus className="w-4 h-4" />}
+                  onClick={() => router.push(`/tasaciones/nueva?property_id=${id}`)}
+                >
+                  Nueva tasación
+                </DropdownItem>
+                <DropdownItem icon={<Send className="w-4 h-4" />} onClick={() => setShowGenerate(true)}>
+                  Enviar ficha de visita
+                </DropdownItem>
+                <DropdownItem
+                  icon={<Pencil className="w-4 h-4" />}
+                  onClick={() => router.push(`/propiedades/${id}/editar`)}
+                >
+                  Editar
+                </DropdownItem>
+                <DropdownSeparator />
+                <DropdownItem danger icon={<Trash2 className="w-4 h-4" />} onClick={() => setShowDeleteConfirm(true)}>
+                  Eliminar
+                </DropdownItem>
+              </Dropdown>
+            </>
+          }
         />
-        <div className="relative flex items-start justify-between gap-4 flex-wrap">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-card bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center flex-shrink-0 shadow-card">
-              <Building2 className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <Heading level={3} as="h1">{property.address}</Heading>
-              <Text tone="muted" className="mt-0.5">
-                {[property.neighborhood, property.city].filter(Boolean).join(' · ')}
-              </Text>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <StatusBadge
-              label={PROPERTY_STAGES[resolveStage(stage)]?.label ?? stage}
-              color={PROPERTY_STAGES[resolveStage(stage)]?.color}
-              className="whitespace-nowrap"
-            />
-            {(property as any).source === 'kiteprop' && (
-              <Badge tone="info" className="whitespace-nowrap">Importada de KiteProp</Badge>
-            )}
-            <Link href={`/tasaciones/nueva?property_id=${id}`}
-              className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-control text-sm font-medium hover:bg-primary-hover">
-              <Plus className="w-4 h-4" /> Nueva tasación
-            </Link>
-            <Button onClick={() => setShowGenerate(true)} icon={<Send className="w-4 h-4" />}>
-              Enviar ficha de visita
-            </Button>
-            <Link href={`/propiedades/${id}/editar`}
-              className="inline-flex items-center gap-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-control text-sm font-medium hover:bg-gray-50">
-              <Pencil className="w-4 h-4" /> Editar
-            </Link>
-            <Button
-              variant="outline"
-              onClick={() => setShowDeleteConfirm(true)}
-              icon={<Trash2 className="w-4 h-4" />}
-              className="text-danger border-danger/30 hover:bg-danger/10"
-            >
-              Eliminar
-            </Button>
-          </div>
-        </div>
       </Card>
 
       {/* Widgets operativos: autorización + precio + docs */}
