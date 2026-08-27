@@ -7,7 +7,19 @@ export interface GoogleTokenSet {
   expires_in: number
   /** Email de la cuenta conectada (del id_token). */
   email?: string | null
+  /**
+   * Scopes que Google concedió realmente, separados por espacio.
+   *
+   * No siempre son los que se pidieron: la pantalla de consentimiento muestra
+   * los permisos con checkboxes independientes, y el usuario puede destildar
+   * el de calendario. Sin mirar esto, se guarda un token que no sirve y el
+   * error recién aparece al primer uso.
+   */
+  scope?: string | null
 }
+
+/** Scope mínimo sin el cual la integración no puede hacer nada útil. */
+export const GOOGLE_CALENDAR_REQUIRED_SCOPE = 'https://www.googleapis.com/auth/calendar.events'
 
 export interface GoogleEventPayload {
   summary: string

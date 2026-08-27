@@ -115,6 +115,6 @@ describe('GetGoogleIntegrationUseCase', () => {
   it('sin fila devuelve el estado desconectado por defecto', async () => {
     mockRepo.findByUserAndProvider.mockResolvedValue(null)
     const view = await new GetGoogleIntegrationUseCase(mockRepo).execute({ userId: 'user-1' })
-    expect(view).toEqual({ connected: false, enabled: false, auto_invite: true, email: null, last_sync_at: null })
+    expect(view).toEqual({ connected: false, enabled: false, auto_invite: true, email: null, last_sync_at: null, scopes: null })
   })
 })

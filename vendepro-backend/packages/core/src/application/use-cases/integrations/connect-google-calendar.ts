@@ -1,5 +1,6 @@
 import type { UserIntegrationRepository } from '../../ports/repositories/user-integration-repository'
 import type { GoogleCalendarGateway } from '../../ports/services/google-calendar-gateway'
+import { GOOGLE_CALENDAR_REQUIRED_SCOPE } from '../../ports/services/google-calendar-gateway'
 import type { IdGenerator } from '../../ports/id-generator'
 import type { TokenEncryptor } from '../marketing/save-meta-integration'
 import { UserIntegration } from '../../../domain/entities/user-integration'
@@ -35,6 +36,16 @@ export class ConnectGoogleCalendarUseCase {
       throw new ValidationError('Google no devolvió refresh token; reintentá la conexión')
     }
 
+    // El consentimiento de Google tiene un checkbox por permiso. Si el de
+    // calendario queda sin tildar, el token se emite igual pero no sirve —
+    // y el error recién aparecería al primer uso, sin explicación.
+    const granted = (tokens.scope ?? '').split(/\s+/).filter(Boolean)
+    if (granted.length > 0 && !granted.includes(GOOGLE_CALENDAR_REQUIRED_SCOPE)) {
+      throw new ValidationError(
+        'Faltó aceptar el permiso de Google Calendar. Reintentá y dejá tildada la casilla de calendario.',
+      )
+    }
+
     const credentials = JSON.stringify({
       refresh_token: tokens.refresh_token,
       access_token: tokens.access_token,
@@ -59,6 +70,9 @@ export class ConnectGoogleCalendarUseCase {
       ...cfg,
       email: tokens.email ?? (typeof cfg.email === 'string' ? cfg.email : null),
       auto_invite: cfg.auto_invite !== false,
+      // Se guardan para poder diagnosticar sin adivinar: si algo falla por
+      // permisos, se ve qué concedió Google en vez de qué se pidió.
+      scopes: granted.length > 0 ? granted.join(' ') : (typeof cfg.scopes === 'string' ? cfg.scopes : null),
     })
 
     await this.repo.save(next)

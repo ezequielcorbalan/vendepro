@@ -46,6 +46,7 @@ export class GoogleCalendarHttpClient implements GoogleCalendarGateway {
       refresh_token: data.refresh_token ?? null,
       expires_in: data.expires_in ?? 3600,
       email: decodeIdTokenEmail(data.id_token),
+      scope: typeof data.scope === 'string' ? data.scope : null,
     }
   }
 
