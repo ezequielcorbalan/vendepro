@@ -29,6 +29,26 @@ const PUBLIC_PREFIXES = [
   '/api/',
 ]
 
+/**
+ * ¿El JWT de la cookie sigue vigente? Lee el `exp` sin verificar la firma: el
+ * middleware no tiene el secret (lo tienen las APIs, que validan de verdad en
+ * cada request). Alcanza para no mandar al dashboard a alguien con la sesión
+ * vencida, que rebotaría de vuelta al login apenas la primera llamada dé 401.
+ */
+function hasLiveSession(token: string | undefined): boolean {
+  if (!token) return false
+  const payload = token.split('.')[1]
+  if (!payload) return false
+  try {
+    const claims = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')))
+    // Sin `exp` el token no vence (los de integración se emiten así).
+    if (typeof claims.exp !== 'number') return true
+    return claims.exp * 1000 > Date.now()
+  } catch {
+    return false
+  }
+}
+
 function isPublic(pathname: string): boolean {
   if (pathname === '/') return true
   if (PUBLIC_PATHS.includes(pathname)) return true
@@ -49,6 +69,12 @@ export function middleware(request: NextRequest) {
   }
 
   const { pathname } = request.nextUrl
+
+  // Ya logueado: el formulario de login no tiene nada que ofrecerle. Va antes
+  // del chequeo de rutas públicas porque /login es una de ellas.
+  if (pathname === '/login' && hasLiveSession(request.cookies.get('vendepro_token')?.value)) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
 
   if (isPublic(pathname)) {
     return NextResponse.next()
