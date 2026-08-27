@@ -34,23 +34,56 @@ function loadMigrations(): string[] {
 }
 
 /**
- * Strips line-level SQL comments and blank lines, then splits on `;` into executable
- * statements. Works for the current migrations because none contain CREATE TRIGGER
- * blocks with inline semicolons. Revisit if triggers are added.
+ * Parte una migración en sentencias ejecutables, salteando comentarios `--`.
+ *
+ * Es consciente de los strings: un `;` o un `--` dentro de un literal SQL son
+ * datos, no sintaxis. Sin eso, una migración con un punto y coma en una
+ * descripción se parte al medio y falla con "unrecognized token", aunque
+ * SQLite y `wrangler d1 migrations apply` la acepten sin problema.
+ *
+ * SQLite escapa la comilla simple duplicándola (`''`), y eso se respeta acá.
  */
 function splitStatements(sql: string): string[] {
-  const withoutLineComments = sql
-    .split('\n')
-    .map((line) => {
-      const idx = line.indexOf('--')
-      return idx >= 0 ? line.slice(0, idx) : line
-    })
-    .join('\n')
+  const statements: string[] = []
+  let current = ''
+  let inString = false
 
-  return withoutLineComments
-    .split(';')
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0)
+  for (let i = 0; i < sql.length; i++) {
+    const ch = sql[i]
+
+    if (inString) {
+      current += ch
+      if (ch === "'") {
+        // `''` es una comilla escapada, no el cierre del literal.
+        if (sql[i + 1] === "'") { current += "'"; i++ }
+        else inString = false
+      }
+      continue
+    }
+
+    if (ch === "'") { inString = true; current += ch; continue }
+
+    // Comentario de línea fuera de string: se descarta hasta el salto.
+    if (ch === '-' && sql[i + 1] === '-') {
+      const nl = sql.indexOf('\n', i)
+      if (nl === -1) break
+      i = nl - 1
+      continue
+    }
+
+    if (ch === ';') {
+      const trimmed = current.trim()
+      if (trimmed.length > 0) statements.push(trimmed)
+      current = ''
+      continue
+    }
+
+    current += ch
+  }
+
+  const last = current.trim()
+  if (last.length > 0) statements.push(last)
+  return statements
 }
 
 export async function createTestDB(): Promise<TestEnv> {
