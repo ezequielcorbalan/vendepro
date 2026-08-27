@@ -48,3 +48,4 @@ export type {
   EmailAutomationRepository, EmailAutomationEnrollmentRepository, EmailAutomationSendRepository,
   EnrollmentRow, AutomationSendRow,
 } from './email-automation-repository'
+export * from './portal-feed-repository'

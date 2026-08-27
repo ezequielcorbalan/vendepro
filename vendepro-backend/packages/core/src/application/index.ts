@@ -203,3 +203,6 @@ export { HydrateTemplateBlocksUseCase } from './use-cases/appraisal-rendering/hy
 export type { HydratedBlock, HydrateInput } from './use-cases/appraisal-rendering/hydrate-template-blocks'
 export { SyncTemplateSnapshotUseCase } from './use-cases/appraisal-rendering/sync-template-snapshot'
 export { SetBlockOverridesUseCase } from './use-cases/appraisal-rendering/set-block-overrides'
+// Portales (feed XML ZonaProp / Argenprop)
+export * from './use-cases/portals/zonaprop-feed-mapper'
+export * from './use-cases/portals/get-portal-feed'

@@ -22,6 +22,7 @@ import {
   D1LandingEventRepository,
   D1OrgVariableRepository,
   D1EmailSuppressionRepository,
+  D1PortalFeedRepository,
   HmacUnsubscribeTokenSigner,
   fireMarketingEvent,
   fireWebhookEvent,
@@ -44,9 +45,10 @@ import {
   SubmitPublicFichaUseCase,
   propertyFromIncoming,
   buildLeadProperty,
+  GetPortalFeedUseCase,
 } from '@vendepro/core'
 
-type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket }
+type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket; PUBLIC_BASE_URL?: string }
 type IntegrationVars = { Variables: { orgId: string; tokenId: string; tokenScopes: string[] } }
 
 const app = new Hono<{ Bindings: Env } & IntegrationVars>()
@@ -699,6 +701,43 @@ app.post('/public/unsubscribe/:token', async (c) => {
   const result = await uc.execute(c.req.param('token'))
   if (!result.ok) return c.json(result, 404)
   return c.json(result)
+})
+
+// ── FEED XML DE PORTALES (/feed/:token.xml) ───────────────────────
+// Lo crawlea ZonaProp/Argenprop desde el Panel del Anunciante. Sin auth:
+// la protección es que el token de la URL no sea adivinable. Acepta el
+// sufijo `.xml` porque algunos portales exigen que la URL termine así.
+app.get('/feed/:token', async (c) => {
+  const token = c.req.param('token').replace(/\.xml$/i, '')
+
+  const uc = new GetPortalFeedUseCase(
+    new D1PortalFeedRepository(c.env.DB),
+    new D1OrganizationRepository(c.env.DB),
+    c.env.PUBLIC_BASE_URL ?? 'https://www.marcelagenta.com',
+  )
+  const result = await uc.execute(token)
+  if (!result) return c.text('Not found', 404)
+
+  // Las propiedades descartadas se loguean (wrangler tail) en vez de ir al
+  // XML: así el portal nunca recibe un aviso incompleto, pero queda rastro
+  // de qué le falta a cada una.
+  if (result.skipped.length > 0) {
+    console.warn(
+      `[feed:${result.portal}] ${result.skipped.length} propiedades omitidas`,
+      JSON.stringify(result.skipped),
+    )
+  }
+
+  return new Response(result.xml, {
+    headers: {
+      'Content-Type': 'application/xml; charset=utf-8',
+      // El portal crawlea cada varias horas; 10 min de cache absorbe
+      // reintentos sin retrasar un cambio de precio de forma perceptible.
+      'Cache-Control': 'public, max-age=600',
+      'X-Feed-Items': String(result.included),
+      'X-Feed-Skipped': String(result.skipped.length),
+    },
+  })
 })
 
 export default app
