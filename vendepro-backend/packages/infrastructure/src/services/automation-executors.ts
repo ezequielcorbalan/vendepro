@@ -1,4 +1,4 @@
-import { Notification, htmlToText } from '@vendepro/core'
+import { Notification, CalendarEvent, EVENT_TYPES, htmlToText } from '@vendepro/core'
 import type {
   AutomationActionExecutor,
   AutomationExecutorRegistry,
@@ -9,8 +9,10 @@ import type {
   EmailService,
   NotificationRepository,
   UserRepository,
+  CalendarRepository,
   UnsubscribeTokenSigner,
   IdGenerator,
+  EventTypeValue,
 } from '@vendepro/core'
 
 /**
@@ -146,6 +148,96 @@ export class NotifyAgentActionExecutor implements AutomationActionExecutor {
     const agentId = readString(input.context, 'agent', 'id')
     return agentId ? [agentId] : []
   }
+}
+
+// ── create_calendar_event ─────────────────────────────────────
+
+/**
+ * Espejo del evento en el Google Calendar del agente. Se inyecta como función
+ * para no arrastrar a este módulo la dependencia de OAuth: el worker que tenga
+ * las credenciales la provee, y el que no, simplemente no la pasa.
+ */
+export type CalendarMirror = (input: {
+  orgId: string
+  agentId: string
+  eventId: string
+}) => Promise<{ synced: boolean; inviteSent: boolean; reason?: string } | null>
+
+export class CreateCalendarEventActionExecutor implements AutomationActionExecutor {
+  readonly type = 'create_calendar_event'
+
+  constructor(
+    private readonly calendar: CalendarRepository,
+    private readonly ids: IdGenerator,
+    private readonly mirrorToGoogle?: CalendarMirror,
+  ) {}
+
+  async execute(input: ActionExecutionInput): Promise<ActionOutcome> {
+    const title = String(input.config.title ?? '').trim()
+    if (!title) return { status: 'skipped', reason: 'empty_content' }
+
+    // Sin agente no hay calendario donde ponerlo: los eventos son por agente.
+    const agentId = readString(input.context, 'agent', 'id')
+    if (!agentId) return { status: 'skipped', reason: 'no_recipient' }
+
+    const dueInDays = toPositiveNumber(input.config.due_in_days, 7)
+    const dueAt = new Date(Date.now() + dueInDays * 24 * 60 * 60_000).toISOString()
+
+    const event = CalendarEvent.create({
+      id: this.ids.generate(),
+      org_id: input.orgId,
+      agent_id: agentId,
+      title,
+      event_type: normalizeEventType(input.config.event_type),
+      start_at: dueAt,
+      end_at: dueAt,
+      all_day: 0,
+      description: String(input.config.description ?? '') || null,
+      lead_id: readString(input.context, 'lead', 'id'),
+      contact_id: readString(input.context, 'contact', 'id'),
+      property_id: readString(input.context, 'property', 'id'),
+      appraisal_id: readString(input.context, 'appraisal', 'id'),
+      reservation_id: null,
+      color: null,
+      completed: 0,
+    })
+    await this.calendar.save(event)
+
+    // El espejo en Google es un extra, no la acción: si el agente no conectó su
+    // cuenta o Google falla, la tarea igual quedó creada en el CRM y eso es lo
+    // que el negocio necesitaba. Se reporta en el resultado, no como fallo.
+    let google: { synced: boolean; inviteSent: boolean; reason?: string } | null = null
+    if (this.mirrorToGoogle) {
+      try {
+        google = await this.mirrorToGoogle({ orgId: input.orgId, agentId, eventId: event.id })
+      } catch (err) {
+        google = { synced: false, inviteSent: false, reason: (err as Error)?.message ?? 'mirror_failed' }
+      }
+    }
+
+    return {
+      status: 'success',
+      result: {
+        event_id: event.id,
+        agent_id: agentId,
+        due_at: dueAt,
+        google_synced: google?.synced ?? false,
+        ...(google?.reason ? { google_reason: google.reason } : {}),
+      },
+    }
+  }
+}
+
+function normalizeEventType(raw: unknown): EventTypeValue {
+  const value = typeof raw === 'string' ? raw.trim() : ''
+  return (EVENT_TYPES as readonly string[]).includes(value)
+    ? (value as EventTypeValue)
+    : 'seguimiento'
+}
+
+function toPositiveNumber(raw: unknown, fallback: number): number {
+  const n = typeof raw === 'number' ? raw : Number(raw)
+  return Number.isFinite(n) && n > 0 ? n : fallback
 }
 
 // ── Registry ──────────────────────────────────────────────────

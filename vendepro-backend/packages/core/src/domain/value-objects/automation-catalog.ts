@@ -184,7 +184,9 @@ export const AUTOMATION_ACTIONS = [
 export type AutomationActionType = (typeof AUTOMATION_ACTIONS)[number]
 
 /** Acciones implementadas en la Fase 1. El resto se valida pero se marca `skipped`. */
-export const PHASE_1_ACTIONS: readonly AutomationActionType[] = ['send_email', 'notify_agent']
+export const PHASE_1_ACTIONS: readonly AutomationActionType[] = [
+  'send_email', 'notify_agent', 'create_calendar_event',
+]
 
 export interface ActionDefinition {
   key: AutomationActionType
@@ -291,9 +293,9 @@ export const ACTION_DEFINITIONS: readonly ActionDefinition[] = [
   {
     key: 'create_calendar_event',
     label: 'Crear tarea en el calendario',
-    description: 'Agenda un evento para el agente asignado, con vencimiento relativo al disparo.',
+    description: 'Agenda un evento para el agente asignado. Si conectó su Google Calendar, también aparece ahí.',
     applies_to: ['lead', 'contact', 'property', 'appraisal'],
-    implemented: false,
+    implemented: true,
     config_fields: [
       { name: 'title', label: 'Título', type: 'text', required: true, placeholder: 'Seguimiento: {{lead.full_name}}' },
       { name: 'description', label: 'Descripción', type: 'textarea' },
@@ -462,6 +464,7 @@ export const VARIABLE_DEFINITIONS: readonly VariableDefinition[] = [
   { key: 'lead.email', label: 'Email del lead', scope: 'lead', example: 'ana@mail.com' },
   { key: 'lead.phone', label: 'Teléfono del lead', scope: 'lead', example: '11 5555-5555' },
   { key: 'lead.stage', label: 'Etapa del lead', scope: 'lead', example: 'contactado' },
+  { key: 'lead.pipeline', label: 'Pipeline del lead', scope: 'lead', example: 'vendedor' },
   { key: 'lead.source', label: 'Origen del lead', scope: 'lead', example: 'zonaprop' },
   { key: 'lead.operation', label: 'Operación', scope: 'lead', example: 'venta' },
   { key: 'contact.full_name', label: 'Nombre completo del contacto', scope: 'contact', example: 'Ana Pérez' },

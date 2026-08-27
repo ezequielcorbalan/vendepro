@@ -85,30 +85,48 @@ VALUES
 );
 
 -- ── 4. Seguimiento post-tasación ──────────────────────────────
--- Reemplaza el seguimiento que estaba hardcodeado en advance-lead-stage.
--- Se seedea apagada: se enciende recién cuando la cola de diferidos esté
--- en producción, para no dejar una ventana sin el seguimiento.
+-- Reemplazo EXACTO del seguimiento que estaba hardcodeado en
+-- advance-lead-stage.ts: una tarea en el calendario a los 7 días, nada más.
+-- La migración 046 la activa en cada org existente para que el comportamiento
+-- no cambie al sacar el hardcode.
 INSERT OR IGNORE INTO automations
   (id, org_id, name, description, template_key, is_system, trigger_type, trigger_config, conditions, dedupe_scope, is_active, created_by)
 VALUES (
   'sysauto-post-tasacion', NULL,
   'Seguimiento post-tasación',
-  'Cuando la tasación pasa a "presentada": email al cliente a los 3 días y tarea de llamado al agente a los 7.',
-  'seguimiento_presentada', 1, 'lead.stage_changed', '{"to_stage":"presentada"}', '[]', 'daily', 0, NULL
+  'Cuando la tasación pasa a "presentada", se le agenda al agente una tarea de seguimiento para dentro de 7 días.',
+  'seguimiento_presentada', 1, 'lead.stage_changed', '{"to_stage":"presentada"}',
+  -- Misma guarda que tenía el código: el seguimiento es del pipeline vendedor,
+  -- el comprador sólo mueve su máquina de estados.
+  '[{"field":"lead.pipeline","op":"neq","value":"comprador"}]', 'daily', 0, NULL
 );
 
 INSERT OR IGNORE INTO automation_actions
   (id, automation_id, org_id, order_index, action_type, action_config, delay_minutes)
-VALUES
-(
-  'sysact-post-mail', 'sysauto-post-tasacion', NULL, 0, 'send_email',
-  '{"subject":"¿Qué te pareció la tasación, {{lead.first_name|}}?","body_html":"<p>Hola {{lead.first_name|}},</p><p>Hace unos días te presentamos la tasación de tu propiedad. Queríamos saber si pudiste revisarla y si te quedó alguna duda.</p><p>Estamos para ayudarte cuando quieras avanzar.</p><p>{{agent.full_name|}}<br>{{org.name}}</p>","include_unsubscribe":true,"reply_to_agent":true}',
-  4320
-),
-(
-  'sysact-post-tarea', 'sysauto-post-tasacion', NULL, 1, 'create_calendar_event',
+VALUES (
+  'sysact-post-tarea', 'sysauto-post-tasacion', NULL, 0, 'create_calendar_event',
   '{"title":"Seguimiento: {{lead.full_name}}","description":"Seguimiento automático post-presentación de la tasación.","event_type":"seguimiento","due_in_days":7}',
   0
+);
+
+-- ── 4b. Email de seguimiento post-tasación ────────────────────
+-- Va aparte porque el hardcode NO mandaba ningún email: activarla es una
+-- decisión del cliente, no un efecto colateral de la migración.
+INSERT OR IGNORE INTO automations
+  (id, org_id, name, description, template_key, is_system, trigger_type, trigger_config, conditions, dedupe_scope, is_active, created_by)
+VALUES (
+  'sysauto-post-tasacion-mail', NULL,
+  'Email de seguimiento post-tasación',
+  'Tres días después de presentar la tasación, se le pregunta al cliente por email si le quedaron dudas.',
+  'email_post_tasacion', 1, 'lead.stage_changed', '{"to_stage":"presentada"}', '[]', 'daily', 0, NULL
+);
+
+INSERT OR IGNORE INTO automation_actions
+  (id, automation_id, org_id, order_index, action_type, action_config, delay_minutes)
+VALUES (
+  'sysact-post-mail', 'sysauto-post-tasacion-mail', NULL, 0, 'send_email',
+  '{"subject":"¿Qué te pareció la tasación, {{lead.first_name|}}?","body_html":"<p>Hola {{lead.first_name|}},</p><p>Hace unos días te presentamos la tasación de tu propiedad. Queríamos saber si pudiste revisarla y si te quedó alguna duda.</p><p>Estamos para ayudarte cuando quieras avanzar.</p><p>{{agent.full_name|}}<br>{{org.name}}</p>","include_unsubscribe":true,"reply_to_agent":true}',
+  4320
 );
 
 -- ── 5. Propiedad publicada ────────────────────────────────────

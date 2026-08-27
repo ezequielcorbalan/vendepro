@@ -41,7 +41,8 @@ const NOT_SYNCED = (reason: string): SyncEventToGoogleResult => ({ synced: false
 
 /**
  * Espeja un evento del CRM en el Google Calendar del agente. Si hay un email
- * de cliente (explícito o del contacto vinculado) lo agrega como invitado:
+ * de cliente (explícito o del contacto vinculado) y el agente dejó activo
+ * `auto_invite`, lo agrega como invitado:
  * con sendUpdates=all Google le envía la invitación por email automáticamente
  * y el evento aparece en el calendario del cliente cuando acepta.
  *
@@ -77,7 +78,13 @@ export class SyncEventToGoogleUseCase {
     const event = await this.calendarRepo.findById(input.eventId, input.orgId)
     if (!event || !event.start_at) return NOT_SYNCED('no_event')
 
-    const attendee = await this.resolveAttendee(input.attendeeEmail, event, input.orgId)
+    // El agente puede apagar "invitar al cliente" desde su configuración. Sin
+    // este chequeo el evento se creaba igual con el cliente como invitado y
+    // Google le mandaba el mail — el setting quedaba decorativo.
+    const autoInvite = integration.getConfig().auto_invite !== false
+    const attendee = autoInvite
+      ? await this.resolveAttendee(input.attendeeEmail, event, input.orgId)
+      : null
     const payload = this.buildPayload(event, attendee)
 
     let googleEventId = event.google_event_id ?? null

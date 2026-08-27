@@ -42,8 +42,9 @@ interface SeededAction {
 
 /**
  * Los VALUES del seed son tuplas con literales SQL. Se parsean respetando el
- * escape de comilla simple duplicada (`''`), que es como SQLite escapa las
- * comillas dentro de un string.
+ * escape de comilla simple duplicada (`''`) —como escapa SQLite— y salteando
+ * los comentarios `--`, que son válidos dentro de un VALUES y si no corren las
+ * columnas de lugar.
  */
 function parseTuples(block: string): string[][] {
   const tuples: string[][] = []
@@ -58,6 +59,13 @@ function parseTuples(block: string): string[][] {
       if (ch === "'" && block[i + 1] === "'") { field += "'"; i++; continue }
       if (ch === "'") { inString = false; continue }
       field += ch
+      continue
+    }
+    // Comentario SQL fuera de string: hasta el fin de línea.
+    if (ch === '-' && block[i + 1] === '-') {
+      const nl = block.indexOf('\n', i)
+      if (nl === -1) break
+      i = nl
       continue
     }
     if (ch === "'") { inString = true; continue }

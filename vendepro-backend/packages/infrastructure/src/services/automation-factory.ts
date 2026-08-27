@@ -16,14 +16,21 @@ import { D1OrganizationRepository } from '../repositories/d1-organization-reposi
 import { D1EmailSettingsRepository } from '../repositories/d1-email-settings-repository'
 import { D1EmailSuppressionRepository } from '../repositories/d1-email-suppression-repository'
 import { D1NotificationRepository } from '../repositories/d1-notification-repository'
+import { D1CalendarRepository } from '../repositories/d1-calendar-repository'
+import { D1UserIntegrationRepository } from '../repositories/d1-user-integration-repository'
+import { GoogleCalendarHttpClient } from './google-calendar-http-client'
+import { encrypt, decrypt } from './token-encryption'
 import { ResendEmailService } from './resend-email-service'
 import { HmacUnsubscribeTokenSigner } from './unsubscribe-token-signer-impl'
 import { CryptoIdGenerator } from './crypto-id-generator'
 import {
   SendEmailActionExecutor,
   NotifyAgentActionExecutor,
+  CreateCalendarEventActionExecutor,
   MapExecutorRegistry,
+  type CalendarMirror,
 } from './automation-executors'
+import { SyncEventToGoogleUseCase } from '@vendepro/core'
 
 /**
  * Entorno mínimo para el motor. `RESEND_API_KEY` es opcional: sin ella el
@@ -36,6 +43,29 @@ export interface AutomationEnv {
   JWT_SECRET: string
   RESEND_API_KEY?: string
   PUBLIC_BASE_URL?: string
+  // OAuth de Google Calendar. Sin estas dos, el evento se crea sólo en el CRM.
+  GOOGLE_CLIENT_ID?: string
+  GOOGLE_CLIENT_SECRET?: string
+}
+
+/**
+ * Espejo del evento en el Google Calendar del agente, o `undefined` si el
+ * worker no tiene las credenciales de OAuth. Devolverlo opcional es lo que
+ * permite que un worker sin Google configurado siga creando tareas locales.
+ */
+function buildCalendarMirror(env: AutomationEnv): CalendarMirror | undefined {
+  if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) return undefined
+
+  const sync = new SyncEventToGoogleUseCase(
+    new D1UserIntegrationRepository(env.DB),
+    new D1CalendarRepository(env.DB),
+    new D1ContactRepository(env.DB),
+    new GoogleCalendarHttpClient(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET),
+    (plain) => encrypt(plain, env.JWT_SECRET),
+    (cipher) => decrypt(cipher, env.JWT_SECRET),
+  )
+  return ({ orgId, agentId, eventId }) =>
+    sync.execute({ orgId, agentId, eventId, action: 'upsert' })
 }
 
 const DEFAULT_PUBLIC_BASE_URL = 'https://www.marcelagenta.com'
@@ -70,7 +100,12 @@ export function createAutomationRegistry(env: AutomationEnv): MapExecutorRegistr
       new D1NotificationRepository(env.DB),
       new D1UserRepository(env.DB),
       new CryptoIdGenerator(),
-    ),
+    ) as any,
+    new CreateCalendarEventActionExecutor(
+      new D1CalendarRepository(env.DB),
+      new CryptoIdGenerator(),
+      buildCalendarMirror(env),
+    ) as any,
   ]
 
   if (env.RESEND_API_KEY) {

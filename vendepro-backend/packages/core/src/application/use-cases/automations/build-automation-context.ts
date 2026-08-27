@@ -59,6 +59,9 @@ export class BuildAutomationContextUseCase {
           email: lead.email,
           phone: lead.phone,
           stage: lead.stage,
+          // Distingue el pipeline vendedor del comprador. Varias reglas del
+          // negocio sólo aplican a uno de los dos.
+          pipeline: (lead as any).pipeline ?? 'vendedor',
           source: (lead as any).source ?? null,
           source_detail: (lead as any).source_detail ?? null,
           operation: (lead as any).operation ?? null,
