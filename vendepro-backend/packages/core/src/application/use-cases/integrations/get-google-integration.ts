@@ -9,6 +9,8 @@ export interface GoogleIntegrationView {
   auto_invite: boolean
   email: string | null
   last_sync_at: string | null
+  /** Permisos que Google concedió. Sirve para diagnosticar fallas por scopes. */
+  scopes?: string | null
 }
 
 /** Estado de la conexión Google Calendar del usuario (sin credenciales). */
@@ -18,7 +20,7 @@ export class GetGoogleIntegrationUseCase {
   async execute(input: { userId: string }): Promise<GoogleIntegrationView> {
     const integration = await this.repo.findByUserAndProvider(input.userId, GOOGLE_CALENDAR_PROVIDER)
     if (!integration) {
-      return { connected: false, enabled: false, auto_invite: true, email: null, last_sync_at: null }
+      return { connected: false, enabled: false, auto_invite: true, email: null, last_sync_at: null, scopes: null }
     }
     const cfg = integration.getConfig()
     return {
@@ -27,6 +29,7 @@ export class GetGoogleIntegrationUseCase {
       auto_invite: cfg.auto_invite !== false,
       email: typeof cfg.email === 'string' ? cfg.email : null,
       last_sync_at: integration.last_sync_at,
+      scopes: typeof cfg.scopes === 'string' ? cfg.scopes : null,
     }
   }
 }

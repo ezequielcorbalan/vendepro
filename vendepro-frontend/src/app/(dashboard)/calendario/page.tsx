@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import Link from 'next/link'
 import {
   Plus, X, ChevronLeft, ChevronRight, Calendar, Phone, Users, Home, Eye,
   ClipboardList, RefreshCw, FileText, FileSignature, CheckCircle2, Trash2,
@@ -14,6 +15,7 @@ import { Card, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { Alert } from '@/components/ui/Alert'
 import { Heading, Text } from '@/components/ui/Typography'
 import { Field, Input, Select, Textarea } from '@/components/ui/Input'
 import { CallButton, WhatsAppButton } from '@/components/ui/ContactButtons'
@@ -118,6 +120,7 @@ export default function CalendarioPage() {
   // completa sin salir del CRM.
   const [googleEvents, setGoogleEvents] = useState<any[]>([])
   const [googleConnected, setGoogleConnected] = useState(false)
+  const [googleReason, setGoogleReason] = useState<string | null>(null)
   const [showGoogle, setShowGoogle] = useState(true)
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<'month' | 'agenda'>('month')
@@ -154,6 +157,7 @@ export default function CalendarioPage() {
       .then(r => r.json() as Promise<any>)
       .then(d => {
         setGoogleConnected(!!d?.connected)
+        setGoogleReason(d?.reason ?? null)
         setGoogleEvents(
           Array.isArray(d?.events)
             ? d.events.map((e: any) => ({
@@ -171,10 +175,13 @@ export default function CalendarioPage() {
             : [],
         )
       })
-      .catch(() => { setGoogleConnected(false); setGoogleEvents([]) })
+      .catch(() => { setGoogleConnected(false); setGoogleEvents([]); setGoogleReason('error_red') })
   }
 
   useEffect(() => { loadEvents(); loadGoogleEvents() }, [year, month])
+
+  /** Conectado pero sin permiso de lectura: hay que volver a autorizar. */
+  const googleSinPermisos = googleConnected && googleReason === 'insufficient_scopes'
 
   /** Lo que se muestra: los del CRM más los de Google, si el switch está activo. */
   const visibleEvents = useMemo(
@@ -279,9 +286,10 @@ export default function CalendarioPage() {
           <>
             {googleConnected && (
               <Switch
-                checked={showGoogle}
+                checked={showGoogle && !googleSinPermisos}
                 onChange={setShowGoogle}
-                label={`Google (${googleEvents.length})`}
+                disabled={googleSinPermisos}
+                label={googleSinPermisos ? 'Google (sin permisos)' : `Google (${googleEvents.length})`}
               />
             )}
             <SegmentedControl
@@ -295,6 +303,24 @@ export default function CalendarioPage() {
           </>
         }
       />
+
+      {/* Conectó la cuenta pero el consentimiento no incluyó el permiso de
+          calendario: el token existe y no sirve. Es accionable, así que se
+          dice qué pasó y cómo arreglarlo. */}
+      {googleSinPermisos && (
+        <Alert tone="warning" title="Permisos insuficientes en Google Calendar">
+          Tu cuenta está conectada, pero no autorizaste el acceso al calendario, así que no podemos
+          mostrar tus eventos. Volvé a conectarla y dejá tildada la casilla de Google Calendar.
+          <div className="mt-3">
+            <Link
+              href="/configuracion/conexiones"
+              className="inline-flex items-center text-sm px-4 py-2 gap-2 rounded-control bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+            >
+              Ir a Integraciones
+            </Link>
+          </div>
+        </Alert>
+      )}
 
       {view === 'month' ? (
         <Card padded={false} className="overflow-hidden">

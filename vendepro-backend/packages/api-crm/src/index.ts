@@ -839,8 +839,13 @@ app.get(GOOGLE_CALLBACK_PATH, async (c) => {
       redirectUri: googleRedirectUri(c),
     })
     return finish('ok')
-  } catch {
-    return finish('error', 'canje_fallido')
+  } catch (err: any) {
+    // Un ValidationError trae un motivo accionable (ej. faltó tildar el
+    // permiso de calendario); mostrarlo vale más que "canje_fallido".
+    const reason = typeof err?.message === 'string' && err.message.length < 200
+      ? err.message
+      : 'canje_fallido'
+    return finish('error', reason)
   }
 })
 
@@ -873,7 +878,13 @@ app.get('/integrations/google/events', async (c) => {
       end,
     }))
   } catch (err: any) {
-    return c.json({ events: [], connected: true, reason: err?.message || 'google_error' })
+    // Se normaliza el motivo: el UI necesita distinguir "faltan permisos"
+    // (accionable: reconectar) de "Google se cayó" (esperar y reintentar).
+    const raw = String(err?.message ?? '')
+    const reason = /insufficient authentication scopes|insufficientPermissions|403/i.test(raw)
+      ? 'insufficient_scopes'
+      : (raw || 'google_error')
+    return c.json({ events: [], connected: true, reason })
   }
 })
 
