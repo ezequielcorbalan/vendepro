@@ -28,8 +28,8 @@ const mockGateway = {
 const encrypt = vi.fn(async (plain: string) => `enc(${plain})`)
 const decrypt = vi.fn(async (cipher: string) => cipher.startsWith('enc(') ? cipher.slice(4, -1) : null)
 
-function connectedIntegration(creds: Record<string, unknown> = {}) {
-  return UserIntegration.create({
+function connectedIntegration(creds: Record<string, unknown> = {}, config?: Record<string, unknown>) {
+  const integration = UserIntegration.create({
     id: 'uinteg-1', org_id: 'org_mg', user_id: 'agent-1', provider: 'google_calendar',
     enabled: true,
     credentials_encrypted: `enc(${JSON.stringify({
@@ -39,6 +39,8 @@ function connectedIntegration(creds: Record<string, unknown> = {}) {
       ...creds,
     })})`,
   })
+  if (config) integration.setConfig(config)
+  return integration
 }
 
 function localEvent(overrides: Record<string, unknown> = {}) {
@@ -146,5 +148,63 @@ describe('SyncEventToGoogleUseCase', () => {
     const result = await makeUseCase().execute({ orgId: 'org_mg', agentId: 'agent-1', action: 'delete' })
     expect(result.reason).toBe('no_google_event')
     expect(mockGateway.deleteEvent).not.toHaveBeenCalled()
+  })
+})
+
+describe('auto_invite — el setting del agente manda', () => {
+  beforeEach(() => {
+    // El clearAllMocks del describe de arriba no alcanza a este bloque.
+    vi.clearAllMocks()
+    mockGateway.createEvent.mockResolvedValue({ id: 'gcal-evt-1' })
+    mockCalendarRepo.setGoogleMeta.mockResolvedValue(undefined)
+    mockCalendarRepo.findById.mockResolvedValue(localEvent({ contact_id: 'contact-1' }))
+    mockContactRepo.findById.mockResolvedValue({ id: 'contact-1', email: 'cliente@mail.com' })
+  })
+
+  it('con auto_invite activo, invita al cliente y Google le manda el mail', async () => {
+    mockIntegrationRepo.findByUserAndProvider.mockResolvedValue(connectedIntegration({}, { auto_invite: true }))
+
+    const result = await makeUseCase().execute({
+      orgId: 'org_mg', agentId: 'agent-1', action: 'upsert', eventId: 'evt-1',
+    })
+
+    expect(result.inviteSent).toBe(true)
+    expect(mockGateway.createEvent.mock.calls[0][1].attendees).toEqual(['cliente@mail.com'])
+  })
+
+  it('con auto_invite apagado NO invita, aunque haya email del contacto', async () => {
+    mockIntegrationRepo.findByUserAndProvider.mockResolvedValue(connectedIntegration({}, { auto_invite: false }))
+
+    const result = await makeUseCase().execute({
+      orgId: 'org_mg', agentId: 'agent-1', action: 'upsert', eventId: 'evt-1',
+    })
+
+    // El evento igual se espeja en el calendario del agente: lo que se apaga
+    // es la invitación al cliente, no la sincronización.
+    expect(result.synced).toBe(true)
+    expect(result.inviteSent).toBe(false)
+    expect(mockGateway.createEvent.mock.calls[0][1].attendees).toEqual([])
+  })
+
+  it('con auto_invite apagado ignora también el email pasado explícitamente', async () => {
+    mockIntegrationRepo.findByUserAndProvider.mockResolvedValue(connectedIntegration({}, { auto_invite: false }))
+
+    const result = await makeUseCase().execute({
+      orgId: 'org_mg', agentId: 'agent-1', action: 'upsert', eventId: 'evt-1',
+      attendeeEmail: 'otro@mail.com',
+    })
+
+    expect(result.inviteSent).toBe(false)
+    expect(mockGateway.createEvent.mock.calls[0][1].attendees).toEqual([])
+  })
+
+  it('sin config guardada, el default es invitar', async () => {
+    mockIntegrationRepo.findByUserAndProvider.mockResolvedValue(connectedIntegration())
+
+    const result = await makeUseCase().execute({
+      orgId: 'org_mg', agentId: 'agent-1', action: 'upsert', eventId: 'evt-1',
+    })
+
+    expect(result.inviteSent).toBe(true)
   })
 })

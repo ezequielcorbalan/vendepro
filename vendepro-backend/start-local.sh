@@ -75,18 +75,42 @@ echo ""
 echo "--- Levantando Workers ---"
 > "$PIDS_FILE"
 
+# Overrides personales sin commitear: packages/<worker>/.dev.vars.local.
+# Ahi van las credenciales reales para probar integraciones externas en local
+# (GOOGLE_CLIENT_ID/SECRET, RESEND_API_KEY, ...). Ese archivo esta gitignoreado;
+# el .dev.vars de al lado se regenera en cada arranque y se pisaria.
+# Formato: una linea KEY=VALUE por variable. Se ignoran comentarios y vacias.
+local_vars_args() {
+  local worker=$1
+  local file="$BACKEND_DIR/packages/$worker/.dev.vars.local"
+  [ -f "$file" ] || return 0
+  while IFS= read -r line || [ -n "$line" ]; do
+    case "$line" in
+      ''|'#'*) continue ;;
+      *=*) printf -- '--var
+%s
+' "${line%%=*}:${line#*=}" ;;
+    esac
+  done < "$file"
+}
+
 start_worker() {
   local name=$1
   local port=$2
   local config=$3
-  # JWT_SECRET se pasa via --var para evitar problemas con cómo wrangler
+  # JWT_SECRET se pasa via --var para evitar problemas con como wrangler
   # carga .dev.vars en Windows/Git Bash (jose tiraba "HMAC key length 0").
-  npx wrangler dev --port "$port" \
-    --config "$config" \
-    --persist-to "$PERSIST_DIR" \
-    --inspector-port $((port + 1000)) \
-    --var "JWT_SECRET:$DEV_JWT_SECRET" \
-    > "$BACKEND_DIR/logs/${name}.log" 2>&1 &
+  # Los overrides de .dev.vars.local viajan por el mismo camino.
+  local extra_args=()
+  while IFS= read -r arg; do
+    [ -n "$arg" ] && extra_args+=("$arg")
+  done < <(local_vars_args "$name")
+
+  if [ ${#extra_args[@]} -gt 0 ]; then
+    echo "  . $name: $(( ${#extra_args[@]} / 2 )) override(s) desde .dev.vars.local"
+  fi
+
+  npx wrangler dev --port "$port"     --config "$config"     --persist-to "$PERSIST_DIR"     --inspector-port $((port + 1000))     --var "JWT_SECRET:$DEV_JWT_SECRET"     "${extra_args[@]}"     > "$BACKEND_DIR/logs/${name}.log" 2>&1 &
   echo $! >> "$PIDS_FILE"
   echo "  ↑ $name  →  http://localhost:$port  (PID $!)"
 }

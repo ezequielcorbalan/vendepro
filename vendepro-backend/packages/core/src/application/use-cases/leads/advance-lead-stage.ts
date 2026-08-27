@@ -5,7 +5,6 @@ import type { PropertyRepository } from '../../ports/repositories/property-repos
 import type { IdGenerator } from '../../ports/id-generator'
 import { NotFoundError } from '../../../domain/errors/not-found'
 import { ValidationError } from '../../../domain/errors/validation-error'
-import { CalendarEvent } from '../../../domain/entities/calendar-event'
 import type { AnyLeadStageValue } from '../../../domain/value-objects/lead-stage'
 import type { PropertyStageValue } from '../../../domain/value-objects/property-stage'
 import { SyncEngine } from '../../../domain/rules/sync-engine'
@@ -22,15 +21,23 @@ export interface AdvanceLeadStageInput {
 }
 
 export interface AdvanceLeadStageOutput {
-  autoFollowup: object | null
   syncedPropertyId: string | null
   syncedPropertyStage: PropertyStageValue | null
   fromStage: string
 }
 
+/**
+ * El seguimiento automático a +7 días al pasar a "presentada" ya no vive acá:
+ * es la automatización `seguimiento_presentada`, que la migración 046 activa
+ * en cada org con la misma guarda de pipeline vendedor que tenía este código.
+ * Se mudó para que el cliente pueda verla, cambiarle el plazo o apagarla.
+ */
 export class AdvanceLeadStageUseCase {
   constructor(
     private readonly leadRepo: LeadRepository,
+    // Sin uso desde que el seguimiento pasó a ser una automatización. Se
+    // mantiene para no cambiar la firma en 19 call sites; sacarlo es una
+    // limpieza aparte.
     private readonly calendarRepo: CalendarRepository,
     private readonly stageHistoryRepo: StageHistoryRepository,
     private readonly idGen: IdGenerator,
@@ -100,31 +107,6 @@ export class AdvanceLeadStageUseCase {
       }
     }
 
-    let autoFollowup: object | null = null
-    if (isVendor && input.newStage === 'presentada') {
-      const followupDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-      const event = CalendarEvent.create({
-        id: this.idGen.generate(),
-        org_id: input.orgId,
-        agent_id: lead.assigned_to,
-        title: `Seguimiento: ${lead.full_name}`,
-        event_type: 'seguimiento',
-        start_at: followupDate,
-        end_at: followupDate,
-        all_day: 0,
-        description: 'Seguimiento automático post-presentación',
-        lead_id: lead.id,
-        contact_id: null,
-        property_id: null,
-        appraisal_id: null,
-        reservation_id: null,
-        color: null,
-        completed: 0,
-      })
-      await this.calendarRepo.save(event)
-      autoFollowup = event.toObject()
-    }
-
     if (this.metaSender) {
       try {
         await this.metaSender.execute({
@@ -137,6 +119,6 @@ export class AdvanceLeadStageUseCase {
       }
     }
 
-    return { autoFollowup, syncedPropertyId, syncedPropertyStage, fromStage }
+    return { syncedPropertyId, syncedPropertyStage, fromStage }
   }
 }
