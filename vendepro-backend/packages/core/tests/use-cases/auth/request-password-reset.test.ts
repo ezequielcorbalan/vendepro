@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { RequestPasswordResetUseCase } from '../../../src/application/use-cases/auth/request-password-reset'
 import { User } from '../../../src/domain/entities/user'
 
-const buildUser = () =>
+const buildUser = (overrides: Partial<{ active: number }> = {}) =>
   User.create({
     id: 'user-1',
     email: 'agent@mg.com',
@@ -13,6 +13,7 @@ const buildUser = () =>
     role: 'agent',
     org_id: 'org_mg',
     active: 1,
+    ...overrides,
   })
 
 const makeUserRepo = () => ({
@@ -87,6 +88,19 @@ describe('RequestPasswordResetUseCase', () => {
     expect(emailPayload.html).toContain('a'.repeat(32) + 'b'.repeat(32))
     expect(emailPayload.html).toContain('https://app.vendepro.com.ar/reset-password?token=')
     expect(emailPayload.text).toContain('https://app.vendepro.com.ar/reset-password?token=')
+  })
+
+  // Un usuario desactivado no puede loguearse igual (LoginUseCase lo corta), así
+  // que mandarle el mail solo lo lleva a poner una contraseña nueva y chocar
+  // contra "Tu cuenta fue desactivada" — que es lo que pasó en producción.
+  it('returns silently when the user is deactivated — no token saved, no email sent', async () => {
+    userRepo.findByEmail.mockResolvedValue(buildUser({ active: 0 }))
+
+    const useCase = new RequestPasswordResetUseCase(userRepo, tokenRepo, emailService, idGen)
+    await useCase.execute(baseInput)
+
+    expect(tokenRepo.save).not.toHaveBeenCalled()
+    expect(emailService.send).not.toHaveBeenCalled()
   })
 
   it('returns silently when user is not found — no token saved, no email sent', async () => {

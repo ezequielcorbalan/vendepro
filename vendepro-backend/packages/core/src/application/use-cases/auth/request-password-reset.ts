@@ -28,6 +28,11 @@ export class RequestPasswordResetUseCase {
     // Never reveal whether the email is registered
     if (!user) return
 
+    // Una cuenta desactivada no puede loguearse (lo corta LoginUseCase), así que
+    // mandarle el mail solo la lleva a poner una contraseña nueva y chocar igual
+    // contra "Tu cuenta fue desactivada". Se corta acá, con el mismo silencio.
+    if (user.active !== 1) return
+
     // Generate a 64-char hex reset token (two 32-char concats → 256 bits entropy).
     // 128 bits would be cryptographically sufficient; using 256 keeps parity
     // with the original route which used 32 random bytes.
