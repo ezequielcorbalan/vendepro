@@ -165,7 +165,7 @@ app.post('/leads', async (c) => {
   // Automatizaciones: evento `lead.created`. Se dispara y se drena dentro del
   // mismo request para que la bienvenida salga en el acto; el cron recoge lo
   // diferido y lo que falle.
-  c.executionCtx.waitUntil(fireAndDrainAutomations(c.env, {
+  await runInBackground(c, fireAndDrainAutomations(c.env, {
     orgId: c.get('orgId'),
     trigger: 'lead.created',
     entityType: 'lead',
@@ -232,7 +232,7 @@ app.post('/leads/stage', async (c) => {
   })
   // Automatizaciones: evento `lead.stage_changed`. El motor arma el contexto
   // desde la base, así que no hace falta pasarle los datos del lead.
-  c.executionCtx.waitUntil(fireAndDrainAutomations(c.env, {
+  await runInBackground(c, fireAndDrainAutomations(c.env, {
     orgId: c.get('orgId'),
     trigger: 'lead.stage_changed',
     entityType: 'lead',
@@ -560,6 +560,22 @@ app.post('/marketing/email/campaigns/:id/cancel', async (c) => {
   await useCase.execute(c.req.param('id'), c.get('orgId'))
   return c.json({ success: true })
 })
+
+/**
+ * Corre una tarea en segundo plano sin bloquear la respuesta.
+ *
+ * En el Worker usa `waitUntil`, que mantiene vivo el request hasta que termina.
+ * En los tests `app.request()` corre sin ExecutionContext y acceder a él tira,
+ * así que ahí se espera la promesa: el test ve el efecto completo y la ruta no
+ * devuelve 500.
+ */
+function runInBackground(c: any, task: Promise<unknown>): Promise<void> | void {
+  try {
+    c.executionCtx.waitUntil(task)
+  } catch {
+    return task.then(() => undefined)
+  }
+}
 
 // -- MARKETING -- AUTOMATIZACIONES ------------------------------
 // Las secuencias drip (`/marketing/email/automations`) se absorbieron dentro
