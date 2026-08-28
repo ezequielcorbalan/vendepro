@@ -3,12 +3,14 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Settings, LogOut, FileBarChart, ExternalLink, PanelLeftClose, PanelLeftOpen, Search, ChevronDown } from 'lucide-react'
+import { Settings, LogOut, FileBarChart, ExternalLink, PanelLeftClose, PanelLeftOpen, Search, ChevronDown, Lock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import GlobalSearch from './GlobalSearch'
 import NotificationBell from './NotificationBell'
 import { menuSections, adminSection, type NavLink } from '@/lib/nav-config'
 import { apiFetch, clearToken } from '@/lib/api'
+import { hasModule } from '@/lib/modules'
+import { useModules } from '@/components/modules/ModulesProvider'
 import type { Profile } from '@/lib/types'
 
 const COLLAPSE_KEY = 'sidebar_collapsed'
@@ -18,6 +20,7 @@ export default function Sidebar({ profile }: { profile: Profile }) {
   const router = useRouter()
   const [collapsed, setCollapsed] = useState(false)
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({})
+  const modules = useModules()
 
   // Persistimos la preferencia. Se lee post-mount para no romper la hidratación.
   useEffect(() => {
@@ -43,7 +46,11 @@ export default function Sidebar({ profile }: { profile: Profile }) {
     ? [...menuSections, adminSection]
     : menuSections
 
-  const settingsActive = pathname.startsWith('/configuracion') || pathname.startsWith('/perfil')
+  // Automatizaciones vive bajo /configuracion pero se navega desde Marketing:
+  // sin excluirla se encenderían los dos ítems a la vez.
+  const settingsActive =
+    (pathname.startsWith('/configuracion') && !pathname.startsWith('/configuracion/automatizaciones')) ||
+    pathname.startsWith('/perfil')
 
   const isLeafActive = (link: NavLink) =>
     !link.external && (
@@ -60,17 +67,23 @@ export default function Sidebar({ profile }: { profile: Profile }) {
   const renderLeaf = (link: NavLink, sub = false) => {
     const Icon = link.icon
     const isActive = isLeafActive(link)
+    // Módulo del plan que la org no tiene: el ítem sigue navegable (la pantalla
+    // explica de qué se trata), pero se ve apagado y con candado.
+    const locked = !!link.module && !hasModule(modules, link.module)
     const className = cn(
       'flex items-center text-sm font-medium transition-all relative group',
       collapsed ? 'justify-center h-11 w-11 mx-auto' : sub ? 'gap-3 px-3 py-2' : 'gap-3 px-3 py-2.5',
       isActive
         ? 'bg-gradient-to-r from-brand-pink/10 to-brand-orange/10 text-brand-pink'
+        : locked
+        ? 'rounded-lg text-gray-400 hover:bg-gray-50'
         : 'rounded-lg text-gray-600 hover:bg-gray-50 hover:text-ink'
     )
     const inner = (
       <>
         <Icon className={cn('w-5 h-5 shrink-0 transition-transform', isActive && 'scale-110')} aria-hidden="true" />
         {!collapsed && link.label}
+        {!collapsed && locked && <Lock className="w-3.5 h-3.5 ml-auto opacity-60" aria-hidden="true" />}
         {!collapsed && link.external && <ExternalLink className="w-3 h-3 ml-auto opacity-40" aria-hidden="true" />}
       </>
     )

@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { corsMiddleware, errorHandler, createAuthMiddleware, D1UserRepository, D1ObjectiveRepository, D1TemplateBlockRepository, JwtAuthService, CryptoIdGenerator, D1RoleRepository, D1NotificationRepository, D1OrganizationRepository, D1AppraisalTemplateRepository, D1OrgVariableRepository } from '@vendepro/infrastructure'
-import { CreateAgentUseCase, GetAgentsUseCase, GetDeletedAgentsUseCase, UpdateAgentUseCase, DeleteAgentUseCase, RestoreAgentUseCase, SetObjectivesUseCase, UpdateAgentRoleUseCase, GetRolesUseCase, GetOrgSettingsUseCase, UpdateOrgSettingsUseCase, GetUserProfileUseCase, UpdateUserProfileUseCase, GetUserNotificationsUseCase, ListAppraisalTemplatesUseCase, GetAppraisalTemplateUseCase, CreateAppraisalTemplateUseCase, UpdateAppraisalTemplateUseCase, DuplicateAppraisalTemplateUseCase, ArchiveAppraisalTemplateUseCase, ListOrgVariablesUseCase, CreateOrgVariableUseCase, UpdateOrgVariableUseCase, DeleteOrgVariableUseCase } from '@vendepro/core'
+import { CreateAgentUseCase, GetAgentsUseCase, GetDeletedAgentsUseCase, UpdateAgentUseCase, DeleteAgentUseCase, RestoreAgentUseCase, SetObjectivesUseCase, UpdateAgentRoleUseCase, GetRolesUseCase, GetOrgSettingsUseCase, UpdateOrgSettingsUseCase, GetUserProfileUseCase, UpdateUserProfileUseCase, GetUserNotificationsUseCase, ListAppraisalTemplatesUseCase, GetAppraisalTemplateUseCase, CreateAppraisalTemplateUseCase, UpdateAppraisalTemplateUseCase, DuplicateAppraisalTemplateUseCase, ArchiveAppraisalTemplateUseCase, ListOrgVariablesUseCase, CreateOrgVariableUseCase, UpdateOrgVariableUseCase, DeleteOrgVariableUseCase, MODULE_DEFINITIONS } from '@vendepro/core'
 
 type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket }
 type AuthVars = { Variables: { userId: string; userRole: string; orgId: string } }
@@ -175,6 +175,27 @@ app.post('/tasacion-blocks/reorder', async (c) => {
   const repo = new D1TemplateBlockRepository(c.env.DB)
   await repo.updateOrder(body.blocks, c.get('orgId'))
   return c.json({ success: true })
+})
+
+// ── MÓDULOS DEL PLAN ───────────────────────────────────────────
+/**
+ * Qué módulos tiene habilitados la org. Lo lee cualquier usuario logueado
+ * porque de esto depende el menú lateral, que ven todos los roles.
+ *
+ * Es sólo de lectura a propósito: `plan` y `modules` no están en el patch de
+ * `PUT /org-settings`, así que un admin de inmobiliaria no puede activarse
+ * módulos solo. La activación es manual y por plataforma (ver la migración
+ * 047_org_plan_modules.sql).
+ */
+app.get('/modules', async (c) => {
+  const repo = new D1OrganizationRepository(c.env.DB)
+  const org = await repo.findById(c.get('orgId'))
+  return c.json({
+    plan: org?.plan ?? 'basic',
+    modules: org?.modules ?? [],
+    enabled: org?.enabled_modules ?? [],
+    catalog: MODULE_DEFINITIONS,
+  })
 })
 
 // ── ORG SETTINGS & PROFILE ─────────────────────────────────────
