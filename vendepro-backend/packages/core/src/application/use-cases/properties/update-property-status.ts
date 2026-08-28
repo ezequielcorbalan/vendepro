@@ -1,6 +1,6 @@
 import type { PropertyRepository } from '../../ports/repositories/property-repository'
 import { NotFoundError } from '../../../domain/errors/not-found'
-import type { PropertyStatus } from '../../../domain/rules/property-rules'
+import type { PropertyStatus } from '../../../domain/entities/property'
 
 export interface UpdatePropertyStatusInput {
   propertyId: string

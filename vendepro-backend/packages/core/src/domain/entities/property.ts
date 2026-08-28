@@ -1,9 +1,9 @@
 import { ValidationError } from '../errors/validation-error'
 import type { PropertyStatus } from '../rules/property-rules'
-import type { Currency } from '../value-objects/money'
 import { canTransitionPropertyStatus } from '../rules/property-rules'
 
 export type PropertyType = 'departamento' | 'casa' | 'ph' | 'local' | 'terreno' | 'oficina'
+export type Currency = 'USD' | 'ARS'
 /** Origen del alta: cargada en VendéPro o importada por el sync de KiteProp. */
 export type PropertySource = 'manual' | 'kiteprop'
 
@@ -32,8 +32,7 @@ export interface PropertyProps {
   operation_type_id: number
   commercial_stage_id: number | null
   status_id: number
-  // `contact_id` ya está declarado arriba como `string | null`. Estaba repetido
-  // acá como opcional, lo que rompía el tipo (TS2300/2687/2717).
+  contact_id?: string | null
   lead_id?: string | null
   auth_start_date?: string | null
   auth_duration_days?: number | null
