@@ -156,12 +156,35 @@ asentado, para no re-abrirlo:
 | **`Card` oscura/destacada** | ❌ No se crea — 1 uso (`tasaciones/[id]`). Queda marcado. |
 | **`IntegrationBadge`** | ❌ No se crea — 1 uso local en `marketing`. Queda marcado. |
 
-**Abierta nueva** (encontrada al migrar `register`):
-- **`StepIndicator`** — hay **tres** diseños de stepper distintos y conviviendo:
-  círculos numerados con label y línea (`auth/register`), dots (`ui/Progress` →
-  `Steps`, usado por `components/onboarding/StepIndicator`) y pills segmentadas
-  (`components/tasaciones/wizard/WizardShell`). Unificarlos es una decisión de
-  diseño —hay que elegir cuál gana— así que queda marcado, no resuelto.
+### Tercera tanda (cerrada) — las decisiones de diseño
+
+Al medir en serio no eran tres steppers distintos: eran **seis**.
+
+| # | Dónde vivía | Forma |
+|---|---|---|
+| 1 | `auth/register` | círculo numerado + label **debajo** + línea |
+| 2 | `propiedades/[id]/reportes/nuevo` | círculo numerado + label **al lado** + línea · "hecho" en **verde** |
+| 3 | `components/marketing/wizard` | idem 2 pero círculo de 20px en vez de 32px |
+| 4 | `ui/Progress` → `Steps` (onboarding, `app/f/[slug]`) | dots + contador, sin labels |
+| 5 | `components/tasaciones/wizard/WizardShell` | pastillas segmentadas full-width |
+| 6 | `prefactibilidades/nueva` | `SegmentedControl` con ícono |
+
+Los 1, 2 y 3 eran **el mismo dibujo con tres medidas distintas**.
+
+| Decisión | Resultado |
+|---|---|
+| **`StepIndicator`** | ✅ **componente nuevo** `ui/StepIndicator`. Gana la anatomía "círculo numerado + label al lado + línea de unión" como `variant="numbered"` (canónica). `variant="dots"` sobrevive como la compacta, para cuando NO hay lugar para labels (header de un modal, página pública) — es un contexto distinto, no drift. Los seis diseños migraron. Props: `steps` (labels, o un número para `dots`; cada paso acepta `icon`), `current` (1-based), `onStepClick` (los pasos completados se vuelven clickeables), `allowForward`, `showCount`. |
+| **"Hecho" en verde vs rosa** | ✅ gana el **rosa** (`primary`). El verde queda reservado para `success`. Afectaba sólo a `reportes/nuevo`. |
+| **Mobile en `numbered`** | ✅ los labels se esconden abajo de `sm` y aparece una línea "Paso N de M · Label" debajo, en vez de que la fila scrollee fuera de la pantalla. Resuelto en el componente, una vez. |
+| **`Button variant="neutral"`** | ✅ **variante nueva** (relleno oscuro sólido). Apareció al medir la Card oscura: había **5 botones** `gray-800`/`slate-900` inline en 5 módulos — más señal que la que tuvo `success`. Nadie lo había marcado. |
+| **`Card tone="dark"`** | ❌ **no se crea** — 1 solo uso (el panel "Tasación proyectada"). Queda marcado con la decisión anotada al lado, para no re-abrirlo. |
+| **`IntegrationBadge`** | ❌ **no se crea** — 1 solo uso. La marca se cerró y la función queda local a la pantalla de marketing. |
+
+**Legacy reemplazado en esta tanda:**
+- `Steps` (de `ui/Progress`) → `StepIndicator variant="dots"`. `Progress` queda
+  sólo con `ProgressBar`.
+- `components/onboarding/StepIndicator.tsx` **borrado**: era una copia casi
+  idéntica de `Steps`. Ahora usa el del DS.
 
 ## Convenciones de trabajo
 

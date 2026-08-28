@@ -97,10 +97,16 @@ Reemplazar los usos inline por los componentes/tokens. Escala real hoy: **~101 a
   `StatusBadge`, `emphasis`/`badge` en `StatTile`.
 - ✅ **Segunda tanda cerrada**: el gradiente deja de ser relleno de botón (se
   aplana a `primary`; quedan 0 botones con gradiente) y `Table` se extiende con
-  `actions` / `renderMobileCard` / `footer` / `minWidth`. Queda abierta una sola
-  decisión: unificar los **tres** steppers distintos que conviven.
-- 🟡 **Fase 4 en curso.** Medición del 2026-08-28, después de las dos tandas:
-  `lint:ds` bajó 198 → **185**. Migradas: las 4 pantallas de `auth/` (que tenían
+  `actions` / `renderMobileCard` / `footer` / `minWidth`.
+- ✅ **Tercera tanda cerrada — las decisiones de diseño.** No eran tres steppers
+  sino **seis**: se unificaron en `ui/StepIndicator` (`numbered` canónica +
+  `dots` compacta), el "hecho" quedó en rosa y no verde, y se borró la copia
+  duplicada de `components/onboarding/StepIndicator`. Salió además
+  `Button variant="neutral"` (5 botones oscuros inline que nadie había marcado).
+  `Card tone="dark"` e `IntegrationBadge` se decidieron **no crear** (1 uso cada
+  uno). **No quedan decisiones de contrato pendientes.**
+- 🟡 **Fase 4 en curso.** Medición del 2026-08-28, después de las tres tandas:
+  `lint:ds` bajó 198 → **184**. Migradas: las 4 pantallas de `auth/` (que tenían
   cero adopción), `contactos` (primera lista real sobre `Table`), y los 9 sitios
   que estaban marcados con `ds-todo`.
 - ⚠️ **Ojo con el orden de la Fase 4**: el 64% de los botones y el 73% del color

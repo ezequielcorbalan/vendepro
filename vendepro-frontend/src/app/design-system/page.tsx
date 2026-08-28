@@ -25,7 +25,8 @@ import { Dropdown, DropdownItem, DropdownSeparator } from '@/components/ui/Dropd
 import { Table, type Column } from '@/components/ui/Table'
 import { Drawer } from '@/components/ui/Drawer'
 import { Timeline } from '@/components/ui/Timeline'
-import { ProgressBar, Steps } from '@/components/ui/Progress'
+import { ProgressBar } from '@/components/ui/Progress'
+import { StepIndicator } from '@/components/ui/StepIndicator'
 import { Heading, Text } from '@/components/ui/Typography'
 import { CallButton, WhatsAppButton } from '@/components/ui/ContactButtons'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -150,6 +151,7 @@ export default function DesignSystemPage() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [optMode, setOptMode] = useState('method')
   const [segIcon, setSegIcon] = useState('config')
+  const [stepDemo, setStepDemo] = useState(3)
 
   return (
     <div className="min-h-screen bg-brand-light">
@@ -295,6 +297,7 @@ export default function DesignSystemPage() {
               <Button variant="primary" icon={<Plus className="w-4 h-4" />}>Nueva propiedad</Button>
               <Button variant="outline">Ver detalle</Button>
               <Button variant="ghost">Cancelar</Button>
+              <Button variant="neutral">Nuevo lead</Button>
               <Button variant="success" icon={<Check className="w-4 h-4" />}>Publicar</Button>
               <Button variant="danger" icon={<Trash2 className="w-4 h-4" />}>Eliminar</Button>
             </Row>
@@ -338,6 +341,39 @@ export default function DesignSystemPage() {
                 </div>
               </div>
             </Card>
+          </div>
+        </Section>
+
+        {/* StepIndicator */}
+        <Section
+          title="StepIndicator"
+          hint="Fuente única para “en qué paso estás”. Antes había SEIS diseños distintos para esto (tres de ellos el mismo dibujo con tres medidas). Variante `numbered` (canónica: número + label + hecho) y `dots` (compacta, para cuando no hay lugar para labels: header de un modal, página pública). El check de “hecho” va en primary, no en verde."
+        >
+          <div className="space-y-6">
+            <div>
+              <Text size="xs" tone="muted" className="mb-2">numbered · clickeable hacia atrás</Text>
+              <StepIndicator
+                steps={['Período', 'Métricas', 'Contenido', 'Competencia', 'Publicar']}
+                current={stepDemo}
+                onStepClick={setStepDemo}
+                allowForward
+              />
+            </div>
+            <div>
+              <Text size="xs" tone="muted" className="mb-2">numbered · con ícono por paso</Text>
+              <StepIndicator
+                steps={[
+                  { label: 'Terreno', icon: <Home className="w-3.5 h-3.5" /> },
+                  { label: 'Proyecto', icon: <Building2 className="w-3.5 h-3.5" /> },
+                  { label: 'Economía', icon: <Target className="w-3.5 h-3.5" /> },
+                ]}
+                current={2}
+              />
+            </div>
+            <div>
+              <Text size="xs" tone="muted" className="mb-2">dots · sin labels, con contador</Text>
+              <StepIndicator variant="dots" steps={8} current={3} />
+            </div>
           </div>
         </Section>
 
@@ -760,7 +796,6 @@ export default function DesignSystemPage() {
               ]}
             />
             <div className="flex flex-col gap-6">
-              <Steps total={5} current={3} />
               <div className="flex flex-col gap-1.5 max-w-xs">
                 <div className="flex justify-between text-xs text-gray-500">
                   <span>Perfil completo</span><span>70%</span>

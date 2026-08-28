@@ -1,8 +1,11 @@
 import { cn } from '@/lib/utils'
 
 /**
- * Barra de progreso e indicador de pasos del design system.
- * Ambos usan el gradiente de marca sobre track gris.
+ * Barra de progreso del design system — gradiente de marca sobre track gris.
+ *
+ * El indicador de pasos que vivía acá (`Steps`, dots) se movió a
+ * `ui/StepIndicator` con `variant="dots"`, que unificó los seis diseños de
+ * stepper que había en la app. Importalo de ahí.
  */
 interface ProgressBarProps {
   /** 0 a 100. */
@@ -24,40 +27,6 @@ export function ProgressBar({ value, className }: ProgressBarProps) {
         className="h-full rounded-full bg-brand-gradient-r transition-[width] duration-300"
         style={{ width: `${pct}%` }}
       />
-    </div>
-  )
-}
-
-interface StepsProps {
-  total: number
-  /** Paso actual (1-indexed). */
-  current: number
-  showCount?: boolean
-  className?: string
-}
-
-export function Steps({ total, current, showCount = true, className }: StepsProps) {
-  return (
-    <div className={cn('flex items-center gap-2', className)}>
-      {Array.from({ length: total }, (_, i) => {
-        const step = i + 1
-        const active = step === current
-        const done = step < current
-        return (
-          <span
-            key={step}
-            className={cn(
-              'h-2 rounded-full transition-all duration-300',
-              active
-                ? 'w-6 bg-brand-gradient-r'
-                : done
-                  ? 'w-2 bg-primary'
-                  : 'w-2 bg-gray-200',
-            )}
-          />
-        )
-      })}
-      {showCount && <span className="text-xs text-gray-400 ml-1">{current}/{total}</span>}
     </div>
   )
 }

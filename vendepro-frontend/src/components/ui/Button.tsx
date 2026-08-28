@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils'
  * se refleja en toda la app. Los colores salen de los tokens de marca
  * (globals.css → @theme): brand-pink / brand-orange y el gradiente de marca.
  */
-export type ButtonVariant = 'primary' | 'outline' | 'ghost' | 'success' | 'danger'
+export type ButtonVariant = 'primary' | 'outline' | 'ghost' | 'neutral' | 'success' | 'danger'
 export type ButtonSize = 'sm' | 'md' | 'lg' | 'icon'
 
 const VARIANTS: Record<ButtonVariant, string> = {
@@ -21,6 +21,11 @@ const VARIANTS: Record<ButtonVariant, string> = {
   outline: 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50',
   // Fantasma — acción terciaria / cancelar.
   ghost: 'text-gray-700 hover:bg-gray-100',
+  // Neutra oscura — acción con peso que no es la primaria de la pantalla, ni
+  // secundaria gris. Se agregó con datos: 5 botones gray-800/slate-900 inline en
+  // 5 módulos (crear lead desde contacto, baja de suscripción, subir imagen,
+  // guardar campaña, guardar tasación).
+  neutral: 'bg-gray-800 text-white hover:bg-gray-900',
   // Confirmatoria/constructiva — crear, publicar, aprobar. Se agregó con datos:
   // 4 botones verdes inline en 3 archivos (crear propiedad, publicar landing).
   success: 'bg-success text-white hover:opacity-90',
