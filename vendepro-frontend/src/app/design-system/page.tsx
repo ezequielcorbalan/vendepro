@@ -4,6 +4,7 @@ import { useState } from 'react'
 import {
   Plus, Trash2, Search, Car, Sun, Waves, Inbox, AlertTriangle,
   MoreVertical, Pencil, Copy, RefreshCw, HelpCircle, Settings, Building2, Target, Home,
+  Zap, SlidersHorizontal, ChevronRight, Check, Eye, BarChart3, Activity,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -33,6 +34,8 @@ import { StatusBadge } from '@/components/ui/StatusBadge'
 import { OperationBadge } from '@/components/ui/OperationBadge'
 import { Alert } from '@/components/ui/Alert'
 import { StatTile } from '@/components/ui/StatTile'
+import { IconMedallion, BrandAccentBar } from '@/components/ui/IconMedallion'
+import { OptionCard } from '@/components/ui/OptionCard'
 import { PillRadioGroup, PillCheckGroup } from '@/components/ui/ChoicePills'
 import { NotificationBell, NotificationPanel } from '@/components/ui/Notifications'
 import { KanbanBoard, KanbanColumn, KanbanCard } from '@/components/ui/Kanban'
@@ -145,6 +148,8 @@ export default function DesignSystemPage() {
   const [op, setOp] = useState('venta')
   const [modalOpen, setModalOpen] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [optMode, setOptMode] = useState('method')
+  const [segIcon, setSegIcon] = useState('config')
 
   return (
     <div className="min-h-screen bg-brand-light">
@@ -290,6 +295,7 @@ export default function DesignSystemPage() {
               <Button variant="primary" icon={<Plus className="w-4 h-4" />}>Nueva propiedad</Button>
               <Button variant="outline">Ver detalle</Button>
               <Button variant="ghost">Cancelar</Button>
+              <Button variant="success" icon={<Check className="w-4 h-4" />}>Publicar</Button>
               <Button variant="danger" icon={<Trash2 className="w-4 h-4" />}>Eliminar</Button>
             </Row>
             <Row>
@@ -304,6 +310,66 @@ export default function DesignSystemPage() {
               <Button variant="outline" size="icon" aria-label="Eliminar"><Trash2 className="w-4 h-4" /></Button>
               <Text size="xs" tone="muted" className="ml-2">size="icon" — sólo ícono, sin texto</Text>
             </Row>
+          </div>
+        </Section>
+
+        {/* Gradiente de marca */}
+        <Section
+          title="Gradiente de marca · IconMedallion + BrandAccentBar"
+          hint="El gradiente rosa→naranja ahora es una utilidad (bg-brand-gradient en globals.css), no clases escritas a mano. IconMedallion es el patrón más repetido de la app: caja con gradiente + ícono blanco."
+        >
+          <div className="space-y-4">
+            <Row>
+              <IconMedallion size="sm"><Home className="w-4 h-4" /></IconMedallion>
+              <IconMedallion size="md"><Home className="w-4 h-4" /></IconMedallion>
+              <IconMedallion size="lg"><Home className="w-5 h-5" /></IconMedallion>
+              <IconMedallion size="xl"><Home className="w-6 h-6" /></IconMedallion>
+              <IconMedallion size="lg" shape="circle"><Check className="w-5 h-5" /></IconMedallion>
+              <IconMedallion size="lg" elevated><Target className="w-5 h-5" /></IconMedallion>
+              <Text size="xs" tone="muted" className="ml-2">sm · md · lg · xl · circle · elevated</Text>
+            </Row>
+            <Card padded={false} className="max-w-sm overflow-hidden">
+              <BrandAccentBar />
+              <div className="p-5 flex items-center gap-3">
+                <IconMedallion size="lg"><Building2 className="w-5 h-5" /></IconMedallion>
+                <div>
+                  <Heading level={4}>Barra de acento</Heading>
+                  <Text size="xs" tone="muted">BrandAccentBar como primer hijo de la card</Text>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </Section>
+
+        {/* OptionCard */}
+        <Section
+          title="OptionCard"
+          hint="Tarjeta seleccionable — “elegí una de estas opciones”. Es un botón con forma de card. orientation=&quot;row&quot; para 2–3 opciones con ícono y chevron; &quot;stack&quot; para grillas de templates."
+        >
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-3 max-w-md">
+              <OptionCard
+                title="Método probado"
+                description="Keller, Magnin, Agenda"
+                icon={<Zap className="w-5 h-5" />}
+                trailing={<ChevronRight className="w-4 h-4" />}
+                selected={optMode === 'method'}
+                onClick={() => setOptMode('method')}
+              />
+              <OptionCard
+                title="Personalizado"
+                description="Métrica a métrica"
+                icon={<SlidersHorizontal className="w-5 h-5" />}
+                trailing={<ChevronRight className="w-4 h-4" />}
+                selected={optMode === 'custom'}
+                onClick={() => setOptMode('custom')}
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 max-w-2xl">
+              <OptionCard orientation="stack" title="Keller" description="4 métricas base" selected={optMode === 'keller'} onClick={() => setOptMode('keller')} />
+              <OptionCard orientation="stack" title="Magnin" description="Foco en captación" selected={optMode === 'magnin'} onClick={() => setOptMode('magnin')} />
+              <OptionCard orientation="stack" title="Agenda" description="Actividad diaria" disabled />
+            </div>
           </div>
         </Section>
 
@@ -401,6 +467,20 @@ export default function DesignSystemPage() {
             <StatTile label="Inversión total" value="USD 850.000" className="w-40" />
             <StatTile tone="success" label="Ingresos proyectados" value="USD 1.200.000" className="w-40" />
             <StatTile tone="danger" label="Margen bruto" value="USD -30.000" caption="-2.4% ROI" className="w-40" />
+          </Row>
+          <Row className="mt-3">
+            <StatTile
+              emphasis
+              tone="border-green-300 bg-green-50 text-green-700"
+              icon={<Eye className="w-5 h-5" />}
+              label="Visualizaciones/día ∅"
+              value={42}
+              badge={<StatusBadge size="sm" label="Saludable" color="bg-green-100 text-green-800" icon={<Check className="w-2.5 h-2.5" />} />}
+              className="w-52"
+            />
+            <Text size="xs" tone="muted" className="ml-2">
+              emphasis → borde 2px + fondo teñidos con el tone (KPI destacado) · badge → slot al pie
+            </Text>
           </Row>
         </Section>
 
@@ -521,6 +601,16 @@ export default function DesignSystemPage() {
                 { value: 'semana', label: 'Semana' },
                 { value: 'dia', label: 'Día' },
                 { value: 'agenda', label: 'Agenda' },
+              ]}
+            />
+            {/* Con ícono — simétrico con Tabs, que ya lo soportaba. */}
+            <SegmentedControl
+              value={segIcon}
+              onChange={setSegIcon}
+              options={[
+                { value: 'config', label: 'Configuración', icon: <Settings className="w-3.5 h-3.5" /> },
+                { value: 'mappings', label: 'Mapeo', icon: <BarChart3 className="w-3.5 h-3.5" /> },
+                { value: 'log', label: 'Log', icon: <Activity className="w-3.5 h-3.5" /> },
               ]}
             />
           </div>

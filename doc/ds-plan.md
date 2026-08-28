@@ -89,7 +89,19 @@ Reemplazar los usos inline por los componentes/tokens. Escala real hoy: **~101 a
 5. Seguís.
 
 ## Estado actual (resumen)
-- ✅ Foundations de **color** y **tipografía** en tokens/componentes.
+- ✅ Foundations de **color**, **tipografía**, **radios** y **sombras** en tokens.
 - ✅ **Todos los componentes** construidos y con color tokenizado.
-- 🟡 Falta: tokenizar **radios/sombras**, **revisar con rúbrica** + **congelar APIs** (Fases 1–3), y después **migrar** (Fase 4).
-- ⏳ Nada commiteado aún (rama `design/ui-consistency-pass`).
+- ✅ **Tanda de decisiones de variantes cerrada** — ver la tabla en [`ds-review.md`](./ds-review.md).
+  Salieron: `IconMedallion`, `BrandAccentBar`, `OptionCard`, la utilidad
+  `bg-brand-gradient`, `Button variant="success"`, `icon` en `SegmentedControl` y
+  `StatusBadge`, `emphasis`/`badge` en `StatTile`. Quedan 4 decisiones abiertas.
+- 🟡 **Fase 4 en curso — 26% del alcance limpio** (45 de 175 archivos).
+  Medición del 2026-08-28: 314 `<button>` inline, 389 usos de color de marca
+  inline, 98 inputs crudos, 104 headings crudos. `lint:ds` en 195.
+- ⚠️ **Ojo con el orden de la Fase 4**: el 64% de los botones y el 73% del color
+  inline NO están en `src/app/` sino en `src/components/<feature>/`
+  (`tasaciones/editor`, `landings`, `properties`, `marketing/wizard`, `layout`).
+  Migrar "por pantalla" no mueve la aguja. Conviene ir **por carpeta de
+  componentes**. Foco con cero adopción del DS: `components/layout`, las 4
+  pantallas de `auth/`, y las públicas `app/v` y `app/r`.
+- Rama de trabajo: `design/ui-consistency-pass`.

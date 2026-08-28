@@ -114,7 +114,7 @@ Convención de props para todos los componentes (auditada: ya se cumple):
 
 | Prop | Significado | Valores | Ejemplos |
 |---|---|---|---|
-| `variant` | **estilo** estructural/de relleno | según componente | Button `primary\|outline\|ghost\|danger` · Tag `solid\|soft` |
+| `variant` | **estilo** estructural/de relleno | según componente | Button `primary\|outline\|ghost\|success\|danger` · Tag `solid\|soft` |
 | `tone` | **color** semántico | `neutral\|primary\|success\|warning\|danger\|info` (Text suma `muted`) | Badge, Text |
 | `size` | **tamaño** | `sm\|md\|lg` (tipografía: `xs\|sm\|base\|lg`) | Button, Avatar, Text |
 | booleanos | modificador de estado puntual | — | `loading`, `fullWidth`, `dot`, `danger`, `interactive`, `padded`, `hideIcon` |
@@ -127,6 +127,36 @@ Reglas de contrato:
 - **Dominio (etapas, eventos, colores de negocio) → `lib/crm-config.ts`**.
 - Sin barrels; `'use client'` sólo si hay interacción/estado.
 - Componentes legacy a reemplazar en la migración: `ConfirmDialog` → `Modal`.
+
+### Tanda de decisiones de variantes (cerrada)
+
+Resuelta con los datos de uso real, según la regla del método ("las variantes se
+crean con datos, no adivinando"). Lo que se decidió NO hacer también queda
+asentado, para no re-abrirlo:
+
+| Marca `ds-todo` | Usos reales | Decisión |
+|---|---|---|
+| `OptionCard` (tarjeta seleccionable) | 6 en 3 módulos | ✅ **componente nuevo** `ui/OptionCard` (`orientation="row"\|"stack"`) |
+| Medallón de ícono con gradiente | 24 inline | ✅ **componente nuevo** `ui/IconMedallion` (`size`, `shape`, `elevated`) |
+| Barra de acento con gradiente | 10 inline | ✅ **componente nuevo** `BrandAccentBar` (en `ui/IconMedallion`) |
+| Gradiente de marca escrito a mano | 74 inline, 2 direcciones | ✅ **utilidad** `bg-brand-gradient` / `bg-brand-gradient-r` en `globals.css` |
+| `SegmentedControl` con ícono | 2 pantallas | ✅ **prop `icon`** en `SegmentedOption` (simetría con `TabItem.icon`, que ya lo tenía) |
+| `StatusBadge` con ícono | 1 + habilita badges de dominio | ✅ **prop `icon`** |
+| `StatTile` con borde de color + slot de badge | 1 (KPI del semáforo) | ✅ **props `emphasis` + `badge`** |
+| `Button variant="success"` (verde crear/publicar) | 4 en 3 archivos | ✅ **variante nueva** |
+| `Button variant="accent"` (naranja de marca) | **0 botones naranjas sólidos en toda la app** | ❌ **no se crea.** El contrato queda `primary\|outline\|ghost\|success\|danger`. Ese botón va `outline` |
+| Chips de dominio sin mapeo (Alquilada cyan, KiteProp indigo, Tasación morada) | 3 | ✅ **al dominio**, no a componentes: `LEAD_FLAGS`, `PROPERTY_SOURCES`, `PROPERTY_ALT_STATUSES` en `crm-config.ts` |
+
+**Abiertas** (necesitan decisión antes de migrar los módulos que las tocan):
+1. **Gradiente como relleno de botón** — 13 usos, 7 de ellos en las 4 pantallas de
+   `auth/` (que tienen cero adopción del DS). ¿Variante `brand` en `Button`, o se
+   aplanan a `primary` sólido? Es una decisión de marca sobre la pantalla más vista.
+2. **`Table` con hover-reveal por fila + render responsive** — hoy `Table` está en
+   2 de 175 archivos, y el `ds-todo` de `contactos` dice que no se adopta por esta
+   carencia, no por olvido. Es 🔴: define si `contactos` y las listas se migran.
+3. **`Card` oscura/destacada** — 1 uso (`tasaciones/[id]`). Sin más datos, se deja
+   marcado y NO se crea la variante.
+4. **`IntegrationBadge`** — 1 uso local en `marketing`. Mismo criterio: no se crea.
 
 ## Convenciones de trabajo
 

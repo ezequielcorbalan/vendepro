@@ -167,6 +167,15 @@ export const DEFAULT_TAGS = {
   aliado:      { label: 'Aliado',      color: '#10b981' },
 } as const
 
+// Marcadores de un lead — NO son etapas del pipeline, son hechos que se
+// muestran como pill al lado del nombre. Estaban hardcodeados en la lista de
+// leads (pill morada "Tasación").
+export const LEAD_FLAGS = {
+  tasacion: { label: 'Tasación', color: 'bg-purple-100 text-purple-800' },
+} as const
+
+export type LeadFlag = keyof typeof LEAD_FLAGS
+
 export const PROPERTY_STAGES = {
   propuesta:     { label: 'Propuesta',       color: 'bg-gray-100 text-gray-700',       dot: '#6b7280', order: 0 },
   captada:       { label: 'Captada',         color: 'bg-green-100 text-green-800',     dot: '#22c55e', order: 1 },
@@ -198,6 +207,22 @@ export const PROPERTY_REPORT_STATUS: Record<string, { label: string; color: stri
 }
 export function getReportStatus(status?: string) {
   return PROPERTY_REPORT_STATUS[status ?? ''] ?? { label: status || '—', color: 'bg-amber-100 text-amber-800' }
+}
+
+// Origen de una propiedad — de dónde vino el registro. Sólo se muestra badge
+// cuando NO es carga manual. Estaba hardcodeado en el detalle de propiedad.
+export const PROPERTY_SOURCES: Record<string, { label: string; color: string }> = {
+  kiteprop: { label: 'Importada de KiteProp', color: 'bg-indigo-50 text-indigo-600 border border-indigo-100' },
+}
+export function getPropertySource(source?: string | null) {
+  return source ? PROPERTY_SOURCES[source] ?? null : null
+}
+
+// Estados de propiedad que NO viven en el pipeline de venta (PROPERTY_STAGES):
+// alquiler es un flujo aparte, con su propia lista. Estaba hardcodeado como
+// span cyan en /alquiladas.
+export const PROPERTY_ALT_STATUSES: Record<string, { label: string; color: string }> = {
+  alquilada: { label: 'Alquilada', color: 'bg-cyan-100 text-cyan-800' },
 }
 
 export const ACTIVITY_TYPES = {

@@ -1,14 +1,17 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 /**
  * Segmented control — cambia de vista sin recargar. Track gris, opción activa
  * en blanco con sombra. Controlado.
  */
-interface SegmentedOption {
+export interface SegmentedOption {
   value: string
   label: string
+  /** Ícono a la izquierda del label (lucide). Simétrico con `TabItem.icon`. */
+  icon?: ReactNode
 }
 
 interface SegmentedControlProps {
@@ -31,10 +34,11 @@ export function SegmentedControl({ options, value, onChange, className }: Segmen
             aria-selected={active}
             onClick={() => onChange(opt.value)}
             className={cn(
-              'text-sm font-medium px-3.5 py-1.5 rounded-control transition-colors',
+              'inline-flex items-center gap-1.5 text-sm font-medium px-3.5 py-1.5 rounded-control transition-colors',
               active ? 'bg-white text-ink shadow-card' : 'text-gray-500 hover:text-ink',
             )}
           >
+            {opt.icon}
             {opt.label}
           </button>
         )

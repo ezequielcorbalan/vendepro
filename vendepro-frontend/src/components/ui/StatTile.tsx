@@ -13,6 +13,10 @@ import { cn } from '@/lib/utils'
  * `tone` acepta los tokens semánticos (primary|success|danger|info) o una
  * clase Tailwind cruda para categorías puramente decorativas sin significado
  * de estado (ej. 'bg-cyan-50 text-cyan-600') — mismo criterio que StatusBadge.
+ *
+ * Para el KPI destacado (semáforo de performance): `emphasis` engrosa el borde y
+ * tiñe el fondo con el `tone`, y `badge` agrega un slot debajo del label. Antes
+ * eso era una Card armada a mano porque StatTile no soportaba ninguna de las dos.
  */
 const TONE: Record<string, string> = {
   primary: 'bg-primary/10 text-primary',
@@ -28,17 +32,34 @@ interface StatTileProps {
   value: ReactNode
   /** Línea chica opcional debajo del valor (ej. "12% ROI"). */
   caption?: string
+  /** Slot al pie de la tile — un badge de estado (ej. HealthBadge del semáforo). */
+  badge?: ReactNode
+  /** KPI destacado: borde de 2px y fondo teñidos con el `tone`, sin perder el ícono. */
+  emphasis?: boolean
   /** Si se pasa, la tile es un link. */
   href?: string
   className?: string
 }
 
-export function StatTile({ icon, tone, label, value, caption, href, className }: StatTileProps) {
+export function StatTile({
+  icon,
+  tone,
+  label,
+  value,
+  caption,
+  badge,
+  emphasis = false,
+  href,
+  className,
+}: StatTileProps) {
   const toneClasses = tone ? (TONE[tone] ?? tone) : ''
-  const tinted = !icon && !!tone // sin ícono + con tone: tiñe toda la tile
+  // sin ícono + con tone: tiñe toda la tile. Con `emphasis` también tiñe, pero
+  // conserva el ícono en su propia caja blanca.
+  const tinted = (!icon && !!tone) || (emphasis && !!tone)
   const base = cn(
-    'rounded-card border border-gray-200 shadow-card p-3 sm:p-4 relative overflow-hidden',
-    icon ? 'bg-white' : tinted ? toneClasses : 'bg-gray-50',
+    'rounded-card shadow-card p-3 sm:p-4 relative overflow-hidden',
+    emphasis ? 'border-2' : 'border border-gray-200',
+    emphasis && tone ? toneClasses : icon ? 'bg-white' : tinted ? toneClasses : 'bg-gray-50',
     className,
   )
   const valueClass = cn('text-xl sm:text-2xl font-bold', !tinted && 'text-ink')
@@ -47,13 +68,21 @@ export function StatTile({ icon, tone, label, value, caption, href, className }:
   const content = (
     <>
       {icon && (
-        <div className={cn('w-9 h-9 rounded-control flex items-center justify-center mb-2', toneClasses)}>
+        <div
+          className={cn(
+            'w-9 h-9 rounded-control flex items-center justify-center mb-2',
+            // Con emphasis el fondo de la tile ya está teñido: la caja del ícono
+            // va en blanco translúcido para que el ícono siga legible.
+            emphasis ? 'bg-white/70 border shadow-card' : toneClasses,
+          )}
+        >
           {icon}
         </div>
       )}
       <p className={valueClass}>{value}</p>
       <p className={cn(mutedClass, 'mt-0.5')}>{label}</p>
       {caption && <p className={cn(mutedClass, 'mt-1')}>{caption}</p>}
+      {badge && <div className="mt-1">{badge}</div>}
     </>
   )
 
