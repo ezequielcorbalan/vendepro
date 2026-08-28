@@ -1,5 +1,7 @@
 import type { SendEmailInput } from '../../ports/services/email-service'
 import type { UnsubscribeTokenSigner } from '../../ports/services/unsubscribe-token-signer'
+import { renderEmailHtml, renderEmailText, VENDEPRO_BRAND } from '../../../domain/rules/email-template'
+import type { EmailBrand } from '../../../domain/rules/email-template'
 
 export interface RecipientVars {
   email: string
@@ -14,21 +16,17 @@ export function substituteVars(s: string, recipient: RecipientVars): string {
     .replace(/\{\{\s*email\s*\}\}/gi, recipient.email)
 }
 
-/** Inserta el footer de baja antes de </body> (o al final si no hay). */
-export function appendUnsubscribeHtml(html: string, url: string): string {
-  const footer = `<p style="margin-top:32px;font-size:12px;color:#999;text-align:center;">` +
-    `¿No querés recibir más estos emails? <a href="${url}" style="color:#999;">Cancelar suscripción</a></p>`
-  return /<\/body>/i.test(html) ? html.replace(/<\/body>/i, `${footer}</body>`) : html + footer
-}
-
 export interface EmailFields {
   subject: string
   html: string
   text: string
+  /** Vista previa en la bandeja. Opcional. */
+  preheader?: string | null
 }
 
 /**
- * Arma un SendEmailInput personalizado con footer de baja firmado.
+ * Arma un SendEmailInput personalizado, envuelto en el template base de
+ * VendéPro y con el link de baja firmado en el footer.
  * Compartido por campañas (Fase 3) y automatizaciones (Fase 5).
  */
 export async function buildPersonalizedEmail(opts: {
@@ -39,19 +37,27 @@ export async function buildPersonalizedEmail(opts: {
   replyTo: string | null
   publicBaseUrl: string
   signer: UnsubscribeTokenSigner
+  /** Branding de la org. Sin esto, el mail sale con la marca de la plataforma. */
+  brand?: EmailBrand
   tags?: Record<string, string>
 }): Promise<SendEmailInput> {
   const { recipient } = opts
   const sub = (s: string) => substituteVars(s, recipient)
   const token = await opts.signer.sign({ orgId: opts.orgId, email: recipient.email })
   const unsubscribeUrl = `${opts.publicBaseUrl}/u/${token}`
+  const brand = opts.brand ?? VENDEPRO_BRAND
 
   return {
     from: opts.from,
     to: { email: recipient.email, name: recipient.name ?? '' },
     subject: sub(opts.fields.subject),
-    html: appendUnsubscribeHtml(sub(opts.fields.html), unsubscribeUrl),
-    text: `${sub(opts.fields.text)}\n\n—\nPara dejar de recibir estos emails: ${unsubscribeUrl}`,
+    html: renderEmailHtml({
+      brand,
+      contentHtml: sub(opts.fields.html),
+      unsubscribeUrl,
+      preheader: opts.fields.preheader ? sub(opts.fields.preheader) : null,
+    }),
+    text: renderEmailText({ brand, contentText: sub(opts.fields.text), unsubscribeUrl }),
     replyTo: opts.replyTo ?? undefined,
     tags: opts.tags,
   }

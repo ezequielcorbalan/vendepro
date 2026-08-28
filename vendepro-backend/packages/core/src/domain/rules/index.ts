@@ -40,3 +40,12 @@ export {
   htmlToText,
 } from './automation-interpolation'
 export type { InterpolateOptions } from './automation-interpolation'
+
+// Template base de los emails — el marco de marca que envuelve todo envío
+export {
+  renderEmailHtml,
+  renderEmailText,
+  extractContentFragment,
+  VENDEPRO_BRAND,
+} from './email-template'
+export type { EmailBrand, RenderEmailHtmlInput, RenderEmailTextInput } from './email-template'

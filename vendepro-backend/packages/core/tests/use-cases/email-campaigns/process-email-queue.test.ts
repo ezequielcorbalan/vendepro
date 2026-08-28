@@ -76,10 +76,15 @@ describe('ProcessEmailQueueUseCase', () => {
     expect(batch[0].html).toContain('Hola Ana')
     // Sin nombre → variable vacía, no "undefined"
     expect(batch[1].subject).toBe('Hola ')
-    // Footer de unsubscribe dentro del body con token propio
+    // Footer de baja del template base, con el token propio de cada destinatario
     expect(batch[0].html).toContain('https://vendepro.com.ar/u/tok-ana@x.com')
-    expect(batch[0].html).toMatch(/Cancelar suscripción<\/a><\/p><\/body>/)
+    expect(batch[0].html).toContain('Cancelar suscripción')
     expect(batch[1].text).toContain('/u/tok-beto@x.com')
+    // El HTML de la campaña ya era un documento completo: se re-enmarca en el
+    // template base sin quedar un <html> adentro de otro.
+    expect(batch[0].html).toMatch(/^<!DOCTYPE html>/)
+    expect(batch[0].html.match(/<html/gi)).toHaveLength(1)
+    expect(batch[0].html).toContain('Enviado con VendéPro')
     // Remitente y reply-to de la config
     expect(batch[0].from).toEqual({ email: 'hola@mg.com', name: 'MG Inmobiliaria' })
     expect(batch[0].replyTo).toBe('resp@mg.com')

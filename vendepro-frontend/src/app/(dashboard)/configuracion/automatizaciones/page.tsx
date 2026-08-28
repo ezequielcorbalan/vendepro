@@ -228,7 +228,7 @@ Esta acción no se puede deshacer.`,
         <RecetasTab catalog={catalog} isAdmin={isAdmin} busy={busy} onActivate={activate} />
       )}
 
-      {tab === 'historial' && <HistorialTab runs={runs} items={items} />}
+      {tab === 'historial' && <HistorialTab runs={runs} items={items} meta={meta} />}
 
       {confirmDialog}
     </div>
@@ -289,7 +289,7 @@ function ActivasTab({
                   <Text size="xs" tone="muted">
                     {item.stats.total === 0
                       ? 'Todavía no se ejecutó'
-                      : `${item.stats.total} ejecucion${item.stats.total === 1 ? '' : 'es'} · última ${fmtDateTime(item.stats.last_run_at)}`}
+                      : `${item.stats.total} ${item.stats.total === 1 ? 'ejecución' : 'ejecuciones'} · última ${fmtDateTime(item.stats.last_run_at)}`}
                   </Text>
                   {item.stats.failed > 0 && (
                     <Text size="xs" tone="danger">{item.stats.failed} con error</Text>
@@ -369,7 +369,10 @@ function RecetasTab({
   }
 
   return (
-    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+    // `auto-rows-fr` + `flex-1` en el detalle: las tarjetas quedan todas de la
+    // misma altura y el botón "Activar" a la misma altura en todas, aunque la
+    // descripción o la cantidad de acciones cambien de receta a receta.
+    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 auto-rows-fr">
       {catalog.map(recipe => (
         <Card key={recipe.template_key} className="flex flex-col">
           <div className="flex items-start justify-between gap-2">
@@ -383,7 +386,7 @@ function RecetasTab({
             <Text size="sm" tone="muted" className="mt-1.5">{recipe.description}</Text>
           )}
 
-          <div className="mt-3 space-y-1.5">
+          <div className="mt-3 space-y-1.5 flex-1">
             <div className="flex items-start gap-2">
               <Zap className="w-4 h-4 text-gray-600 shrink-0 mt-0.5" aria-hidden />
               <Text size="xs" tone="muted">{recipe.trigger_label}</Text>
@@ -427,8 +430,18 @@ function RecetasTab({
 
 // ── Pestaña: historial ────────────────────────────────────────
 
-function HistorialTab({ runs, items }: { runs: AutomationRun[]; items: AutomationListItem[] }) {
+function HistorialTab({
+  runs, items, meta,
+}: {
+  runs: AutomationRun[]
+  items: AutomationListItem[]
+  meta: AutomationsMeta | null
+}) {
   const nameById = new Map(items.map(i => [i.automation.id, i.automation.name]))
+  // El backend guarda la clave técnica ('lead.stage_changed', 'send_email');
+  // acá se muestra la etiqueta del catálogo, igual que en el resto del módulo.
+  const triggerLabel = (key: string) => meta?.triggers.find(t => t.key === key)?.label ?? key
+  const actionLabel = (key: string) => meta?.actions.find(a => a.key === key)?.label ?? key
 
   if (runs.length === 0) {
     return (
@@ -456,7 +469,7 @@ function HistorialTab({ runs, items }: { runs: AutomationRun[]; items: Automatio
                   <StatusBadge label={status.label} color={status.color} />
                 </div>
                 <Text size="xs" tone="muted" className="mt-0.5">
-                  {run.trigger_event} · {fmtDateTime(run.created_at)}
+                  {triggerLabel(run.trigger_event)} · {fmtDateTime(run.created_at)}
                 </Text>
                 {skip && <Text size="xs" tone="muted" className="mt-1">{skip}</Text>}
               </div>
@@ -468,7 +481,7 @@ function HistorialTab({ runs, items }: { runs: AutomationRun[]; items: Automatio
                     return (
                       <StatusBadge
                         key={action.id}
-                        label={`${action.action_type}: ${cfg.label}`}
+                        label={`${actionLabel(action.action_type)}: ${cfg.label}`}
                         color={cfg.color}
                         size="sm"
                       />

@@ -3,6 +3,8 @@ import type { PasswordResetTokenRepository } from '../../ports/repositories/pass
 import type { EmailService } from '../../ports/services/email-service'
 import type { IdGenerator } from '../../ports/id-generator'
 import { PasswordResetToken } from '../../../domain/entities/password-reset-token'
+import { renderEmailHtml, renderEmailText, VENDEPRO_BRAND } from '../../../domain/rules/email-template'
+import { escapeHtml } from '../../../domain/rules/automation-interpolation'
 
 export interface RequestPasswordResetInput {
   email: string
@@ -50,22 +52,22 @@ export class RequestPasswordResetUseCase {
 
     const resetLink = `${input.appBaseUrl.replace(/\/$/, '')}/reset-password?token=${resetToken}`
     const subject = 'Recuperá tu contraseña — VendéPro'
-    const html = `
-      <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#fff;">
-        <h2 style="color:#ff007c;margin-bottom:8px;">Recuperá tu contraseña</h2>
-        <p style="color:#333;">Hola <strong>${user.full_name}</strong>,</p>
-        <p style="color:#555;">Recibimos una solicitud para restablecer la contraseña de tu cuenta en <strong>VendéPro CRM</strong>.</p>
-        <p style="margin:28px 0;">
-          <a href="${resetLink}"
-             style="background:#ff007c;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block;">
-            Recuperar contraseña
-          </a>
-        </p>
-        <p style="color:#888;font-size:13px;">Este link es válido por <strong>1 hora</strong>. Si no solicitaste este cambio, podés ignorar este email.</p>
-        <hr style="border:none;border-top:1px solid #eee;margin:24px 0;" />
-        <p style="color:#aaa;font-size:12px;">O copiá este link en tu navegador:</p>
-        <p style="color:#aaa;font-size:11px;word-break:break-all;">${resetLink}</p>
-      </div>
+    // Sólo el contenido: el encabezado de marca y el footer los pone el
+    // template base, igual que en el resto de los envíos de la plataforma.
+    const content = `
+      <h2 style="margin:0 0 16px;font-size:20px;color:#111827;">Recuperá tu contraseña</h2>
+      <p style="margin:0 0 12px;">Hola <strong>${escapeHtml(user.full_name)}</strong>,</p>
+      <p style="margin:0 0 12px;">Recibimos una solicitud para restablecer la contraseña de tu cuenta en <strong>VendéPro CRM</strong>.</p>
+      <p style="margin:28px 0;">
+        <a href="${resetLink}"
+           style="background:#ff007c;color:#ffffff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block;">
+          Recuperar contraseña
+        </a>
+      </p>
+      <p style="margin:0 0 12px;color:#6b7280;font-size:13px;">Este link es válido por <strong>1 hora</strong>. Si no solicitaste este cambio, podés ignorar este email.</p>
+      <hr style="border:none;border-top:1px solid #eeeeee;margin:24px 0;" />
+      <p style="margin:0 0 4px;color:#9ca3af;font-size:12px;">O copiá este link en tu navegador:</p>
+      <p style="margin:0;color:#9ca3af;font-size:11px;word-break:break-all;">${resetLink}</p>
     `
     const text = `Hola ${user.full_name}, ingresá al siguiente link para recuperar tu contraseña: ${resetLink} (válido por 1 hora)`
 
@@ -73,8 +75,14 @@ export class RequestPasswordResetUseCase {
       from: { email: input.fromEmail, name: input.fromName },
       to: { email: user.email, name: user.full_name },
       subject,
-      html,
-      text,
+      // Es un mail transaccional de la plataforma, no de la inmobiliaria:
+      // va con la marca VendéPro y sin link de baja.
+      html: renderEmailHtml({
+        brand: VENDEPRO_BRAND,
+        contentHtml: content,
+        preheader: 'Tu link para restablecer la contraseña, válido por 1 hora.',
+      }),
+      text: renderEmailText({ brand: VENDEPRO_BRAND, contentText: text }),
     })
   }
 }
