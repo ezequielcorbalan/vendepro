@@ -1,9 +1,11 @@
 import type { LandingStatusValue } from '../value-objects/landing-status'
 
-export type Role = 'admin' | 'agent'
+/** Rol del actor en las reglas de landings. Se llama `LandingRole` y no
+ *  `Role` para no colisionar con la entidad `Role` del dominio. */
+export type LandingRole = 'admin' | 'agent'
 
 export interface Actor {
-  role: Role
+  role: LandingRole
   userId: string
 }
 

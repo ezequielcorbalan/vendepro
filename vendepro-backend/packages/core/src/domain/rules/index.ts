@@ -21,4 +21,4 @@ export {
   AI_EDITS_PER_MINUTE,
   AUTOSAVE_THROTTLE_MS,
 } from './landing-rules'
-export type { Role, Actor, LandingRef } from './landing-rules'
+export type { LandingRole, Actor, LandingRef } from './landing-rules'
