@@ -311,7 +311,7 @@ export default function DesignSystemPage() {
             <Row>
               <Button variant="ghost" size="icon" aria-label="Eliminar"><Trash2 className="w-4 h-4" /></Button>
               <Button variant="outline" size="icon" aria-label="Eliminar"><Trash2 className="w-4 h-4" /></Button>
-              <Text size="xs" tone="muted" className="ml-2">size="icon" — sólo ícono, sin texto</Text>
+              <Text size="xs" tone="muted" className="ml-2">size=&ldquo;icon&rdquo; — sólo ícono, sin texto</Text>
             </Row>
           </div>
         </Section>
@@ -453,7 +453,7 @@ export default function DesignSystemPage() {
             {LEAD_STAGE_KEYS.slice(0, 4).map(stage => (
               <StageBadge key={stage} stage={stage} size="sm" />
             ))}
-            <Text size="xs" tone="muted" className="ml-2">size="sm"</Text>
+            <Text size="xs" tone="muted" className="ml-2">size=&ldquo;sm&rdquo;</Text>
           </Row>
         </Section>
 
@@ -491,7 +491,7 @@ export default function DesignSystemPage() {
           <Row className="mt-3">
             <StatusBadge label="Generada" color="bg-blue-100 text-blue-700" size="sm" />
             <StatusBadge label="Enviada" color="bg-green-100 text-green-700" size="sm" />
-            <Text size="xs" tone="muted" className="ml-2">size="sm"</Text>
+            <Text size="xs" tone="muted" className="ml-2">size=&ldquo;sm&rdquo;</Text>
           </Row>
         </Section>
 

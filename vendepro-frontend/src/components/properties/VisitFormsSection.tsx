@@ -310,7 +310,7 @@ function SubmittedCard({
 
       {/* Observations */}
       {item.observations && (
-        <p className="mt-2 text-sm text-gray-600 italic">"{item.observations}"</p>
+        <p className="mt-2 text-sm text-gray-600 italic">&ldquo;{item.observations}&rdquo;</p>
       )}
     </div>
   )

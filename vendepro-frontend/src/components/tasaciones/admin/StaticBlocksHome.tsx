@@ -122,7 +122,7 @@ export function StaticBlocksHome() {
           <strong>Bloques estáticos</strong> — definí acá el contenido fijo de tu inmobiliaria
           (portada, metodología, servicios, etc.). Los valores guardados se pueden{' '}
           <strong>aplicar a cada template</strong> desde el editor, en los bloques con modo{' '}
-          <em>"Texto fijo de la inmobiliaria"</em> o <em>"Valor por defecto editable"</em>.
+          <em>&ldquo;Texto fijo de la inmobiliaria&rdquo;</em> o <em>&ldquo;Valor por defecto editable&rdquo;</em>.
         </p>
       </div>
 

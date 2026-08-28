@@ -13,7 +13,7 @@ interface PendingPatches {
   blocksRev?: number | null
 }
 
-interface SavedPatches extends PendingPatches {}
+type SavedPatches = PendingPatches
 
 interface Params {
   appraisalId: string
