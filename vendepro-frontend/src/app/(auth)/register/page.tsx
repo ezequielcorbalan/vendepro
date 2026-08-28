@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button'
 import { Field, Input } from '@/components/ui/Input'
 import { Heading, Text } from '@/components/ui/Typography'
 import { Alert } from '@/components/ui/Alert'
+import { StepIndicator } from '@/components/ui/StepIndicator'
 
 type Step = 1 | 2 | 3
 
@@ -169,38 +170,7 @@ export default function RegisterPage() {
           <Heading level={3}>Registrá tu inmobiliaria</Heading>
         </div>
 
-        {/* Progress bar — stepper numerado con label y línea de unión.
-            ds-todo: candidato a componente "StepIndicator". Hay TRES diseños de
-            stepper distintos en la app (este de círculos+labels, los dots de
-            components/onboarding/StepIndicator, y las pills segmentadas de
-            components/tasaciones/wizard/WizardShell). Unificarlos es una decisión
-            de diseño: hay que elegir cuál gana antes de crear el componente. */}
-        <div className="flex items-center mb-8">
-          {STEPS.map((label, i) => {
-            const n = (i + 1) as Step
-            const isActive = step === n
-            const isDone = step > n
-            return (
-              <div key={n} className="flex items-center flex-1">
-                <div className="flex flex-col items-center flex-1">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold border-2 transition-colors ${
-                    isDone ? 'bg-primary border-primary text-white' :
-                    isActive ? 'border-primary text-primary' :
-                    'border-gray-300 text-gray-400'
-                  }`}>
-                    {isDone ? '✓' : n}
-                  </div>
-                  <span className={`text-xs mt-1 hidden sm:block ${isActive ? 'text-primary font-medium' : 'text-gray-400'}`}>
-                    {label}
-                  </span>
-                </div>
-                {i < STEPS.length - 1 && (
-                  <div className={`h-0.5 flex-1 mx-1 transition-colors ${step > n ? 'bg-primary' : 'bg-gray-200'}`} />
-                )}
-              </div>
-            )
-          })}
-        </div>
+        <StepIndicator steps={STEPS} current={step} className="mb-8" />
 
         {error && <Alert tone="danger" className="mb-4">{error}</Alert>}
 

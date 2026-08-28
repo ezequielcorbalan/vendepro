@@ -20,6 +20,7 @@ import {
   type SurfaceWeights,
 } from '@/lib/surface-weights'
 import type { TemplateBlock, AppraisalContext, RenderMode } from '../renderer/types'
+import { Button } from '@/components/ui/Button'
 
 interface Props {
   initial: any
@@ -236,13 +237,14 @@ export function EditorShell({ initial, snapshot, context }: Props) {
               Ver pública <ExternalLink className="h-3 w-3" />
             </a>
           )}
-          <button
+          <Button
+            variant="neutral"
+            size="sm"
             onClick={handleDownloadPdf}
             disabled={pdfStatus === 'generating' || (monthlyUsed !== null && monthlyUsed >= 50)}
-            className="rounded bg-slate-900 px-3 py-1 text-xs font-semibold text-white disabled:opacity-50"
           >
-            {pdfStatus === 'generating' ? 'Generando...' : pdfStatus === 'error' ? 'Error, reintentar' : 'Descargar PDF'}
-          </button>
+            {pdfStatus === 'generating' ? 'Generando…' : pdfStatus === 'error' ? 'Error, reintentar' : 'Descargar PDF'}
+          </Button>
         </div>
       </header>
       {monthlyUsed !== null && (

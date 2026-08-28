@@ -12,6 +12,7 @@ import { StepReview } from './steps/StepReview'
 import { createAppraisal, updateAppraisal, publishAppraisal, syncTemplate, addComparable, deleteComparable, patchBlockOverride } from '../shared/api'
 import { APPRAISAL_BLOCK_TYPES, type AppraisalBlockType } from '../renderer/types'
 import { useToast } from '@/components/ui/Toast'
+import { StepIndicator } from '@/components/ui/StepIndicator'
 import type { WizardState } from './use-wizard-form'
 
 interface Props {
@@ -170,33 +171,13 @@ export function WizardShell({ initialTemplateId, initialLeadId, existingAppraisa
         </button>
       </header>
 
-      {/* Stepper */}
-      <div className="mb-8 flex gap-2">
-        {STEP_LABELS.map((label, i) => {
-          const n = (i + 1) as WizardStep
-          const done = n < state.step
-          const active = n === state.step
-          return (
-            <button
-              key={i}
-              type="button"
-              onClick={() => goToStep(n)}
-              aria-current={active ? 'step' : undefined}
-              title={`Ir a: ${label}`}
-              className={`flex-1 rounded px-3 py-2 text-center text-xs font-medium transition hover:brightness-95 focus:outline-none ${
-                active
-                  ? 'bg-brand-pink text-white'
-                  : done
-                  ? 'bg-slate-200 text-slate-700 hover:bg-slate-300'
-                  : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
-              }`}
-            >
-              {done && '✓ '}
-              {n}. {label}
-            </button>
-          )
-        })}
-      </div>
+      <StepIndicator
+        steps={STEP_LABELS}
+        current={state.step}
+        onStepClick={n => goToStep(n as WizardStep)}
+        allowForward
+        className="mb-8"
+      />
 
       {/* Step body */}
       <div className="min-h-[50vh]">

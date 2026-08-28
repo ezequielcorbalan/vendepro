@@ -6,10 +6,12 @@ import Link from 'next/link'
 import { ArrowLeft, ArrowRight, Loader2, Save, Send, Mail } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
+import { StepIndicator } from '@/components/ui/StepIndicator'
 import { type CampaignSegment, parseSegment } from '@/lib/email-campaigns'
 import AudienceStep, { type AudiencePreview } from './AudienceStep'
 import ContentStep, { type CampaignContent } from './ContentStep'
 import ReviewStep from './ReviewStep'
+import { Button } from '@/components/ui/Button'
 
 const STEPS = [
   { n: 1, label: 'Audiencia' },
@@ -146,28 +148,11 @@ export default function EmailCampaignWizard({ campaignId }: { campaignId?: strin
             onChange={e => setName(e.target.value)}
           />
         </div>
-        <div className="flex items-center gap-2">
-          {STEPS.map((s, i) => (
-            <div key={s.n} className="flex items-center gap-2">
-              {i > 0 && <div className="w-8 h-px bg-gray-200" />}
-              <button
-                onClick={() => s.n < step && setStep(s.n)}
-                className={`flex items-center gap-1.5 text-sm ${
-                  s.n === step ? 'text-brand-pink font-semibold'
-                  : s.n < step ? 'text-gray-600 hover:text-ink'
-                  : 'text-gray-300'
-                }`}
-              >
-                <span className={`w-5 h-5 rounded-full text-xs flex items-center justify-center ${
-                  s.n === step ? 'bg-brand-pink text-white'
-                  : s.n < step ? 'bg-gray-200 text-gray-600'
-                  : 'bg-gray-100 text-gray-300'
-                }`}>{s.n}</span>
-                {s.label}
-              </button>
-            </div>
-          ))}
-        </div>
+        <StepIndicator
+          steps={STEPS.map(s => s.label)}
+          current={step}
+          onStepClick={setStep}
+        />
       </div>
 
       {/* Paso actual */}
@@ -209,13 +194,9 @@ export default function EmailCampaignWizard({ campaignId }: { campaignId?: strin
               </button>
             )}
             {step < 3 ? (
-              <button
-                onClick={() => setStep(step + 1)}
-                disabled={!canNext}
-                className="inline-flex items-center gap-2 bg-gray-800 text-white text-sm font-medium px-4 py-2 rounded-lg hover:opacity-90 disabled:opacity-40"
-              >
+              <Button variant="neutral" onClick={() => setStep(step + 1)} disabled={!canNext}>
                 Siguiente <ArrowRight className="w-4 h-4" />
-              </button>
+              </Button>
             ) : (
               <button
                 onClick={send}

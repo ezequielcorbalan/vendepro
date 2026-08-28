@@ -10,6 +10,7 @@ import { Alert } from '@/components/ui/Alert'
 import { Field, Input, Textarea, Select } from '@/components/ui/Input'
 import { Heading, Text } from '@/components/ui/Typography'
 import { Button } from '@/components/ui/Button'
+import { StepIndicator } from '@/components/ui/StepIndicator'
 
 const steps = [
   { id: 1, title: 'Período' },
@@ -348,29 +349,12 @@ export default function NuevoReporte() {
         </Alert>
       )}
 
-      {/* Steps indicator */}
-      <div className="flex items-center gap-2 mb-8">
-        {steps.map((s) => (
-          <div key={s.id} className="flex items-center gap-2">
-            <button
-              onClick={() => s.id < step && setStep(s.id)}
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
-                s.id === step
-                  ? 'bg-brand-pink text-white'
-                  : s.id < step
-                  ? 'bg-green-500 text-white'
-                  : 'bg-gray-200 text-gray-500'
-              }`}
-            >
-              {s.id < step ? <Check className="w-4 h-4" /> : s.id}
-            </button>
-            <span className={`text-sm ${s.id === step ? 'text-ink font-medium' : 'text-brand-gray'}`}>
-              {s.title}
-            </span>
-            {s.id < steps.length && <div className="w-8 h-px bg-gray-300" />}
-          </div>
-        ))}
-      </div>
+      <StepIndicator
+        steps={steps.map(s => s.title)}
+        current={step}
+        onStepClick={setStep}
+        className="mb-8"
+      />
 
       {error && (
         <Alert tone="danger" className="mb-4">{error}</Alert>

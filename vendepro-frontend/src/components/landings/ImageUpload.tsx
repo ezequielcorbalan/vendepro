@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Upload, Link as LinkIcon, Home } from 'lucide-react'
 import { apiFetch, getApiBase } from '@/lib/api'
 import PropertyPhotoPicker from './PropertyPhotoPicker'
+import { Button } from '@/components/ui/Button'
 
 interface Props {
   value: string
@@ -92,13 +93,9 @@ export default function ImageUpload({ value, onChange, allowPropertyPicker }: Pr
             placeholder="https://…"
             className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-xs"
           />
-          <button
-            type="button"
-            onClick={() => onChange(urlInput, 'external')}
-            className="bg-gray-900 text-white text-xs px-3 rounded-lg"
-          >
+          <Button variant="neutral" size="sm" onClick={() => onChange(urlInput, 'external')}>
             Usar
-          </button>
+          </Button>
         </div>
       )}
 

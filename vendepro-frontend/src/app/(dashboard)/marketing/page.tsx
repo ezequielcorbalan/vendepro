@@ -65,7 +65,9 @@ function KpiCard({ label, value, trendLabel, trend, sparkData, sparkColor }: {
   )
 }
 
-// ds-todo: candidato a componente "IntegrationBadge" (chip de estado de integración con detalle) — sin mapeo directo en el DS
+// Chip de estado de una integración. Se decidió NO promoverlo al DS: 1 solo uso
+// en toda la app (ver la tanda de decisiones en doc/ds-review.md). Si aparecen
+// más integraciones y el patrón se repite, ahí sí va a ui/.
 function IntegrationBadge({ name, enabled, detail }: { name: string; enabled: boolean; detail?: string }) {
   return (
     <div className={`flex items-center gap-2.5 flex-1 px-3 py-2.5 rounded-control border ${enabled ? 'bg-success/10 border-success/30' : 'bg-gray-50 border-gray-200'}`}>

@@ -326,7 +326,10 @@ export default function TasacionDetailPage() {
           </Card>
         )}
 
-        {/* ds-todo: candidato a variante "Card oscura/destacada" — superficie dark sin mapeo en el DS */}
+        {/* ds-todo: superficie oscura sin mapeo en el DS. Revisado en la tanda de
+            decisiones: NO se crea `Card tone="dark"` — es el único uso en toda la
+            app. Si otro panel de resultado (reportes, prefactibilidades) adopta
+            este look, ahí sí se promueve. Ver doc/ds-review.md. */}
         <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-card p-5 sm:p-8 text-white shadow-card">
           <h2 className="text-lg sm:text-xl font-bold mb-6 flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-primary" />

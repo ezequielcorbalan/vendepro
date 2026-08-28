@@ -16,7 +16,7 @@ import { Field, Input, Textarea } from '@/components/ui/Input'
 import { Heading, Text } from '@/components/ui/Typography'
 import { Alert } from '@/components/ui/Alert'
 import { Tag } from '@/components/ui/Tag'
-import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { StepIndicator } from '@/components/ui/StepIndicator'
 
 const steps = [
   { label: 'Terreno', icon: MapPin },
@@ -153,17 +153,16 @@ export default function NuevaPrefactibilidadPage() {
         </div>
       </div>
 
-      {/* Steps nav — SegmentedControl con ícono; scrollea en mobile. */}
-      <div className="mb-6 overflow-x-auto pb-2">
-        <SegmentedControl
-          value={String(step)}
-          onChange={v => setStep(Number(v))}
-          options={steps.map((s, i) => {
-            const Icon = s.icon
-            return { value: String(i), label: s.label, icon: <Icon className="w-3.5 h-3.5" /> }
-          })}
-        />
-      </div>
+      <StepIndicator
+        steps={steps.map(s => {
+          const Icon = s.icon
+          return { label: s.label, icon: <Icon className="w-3.5 h-3.5" /> }
+        })}
+        current={step + 1}
+        onStepClick={n => setStep(n - 1)}
+        allowForward
+        className="mb-6"
+      />
 
       <Card className="p-5 sm:p-6">
 

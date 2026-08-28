@@ -730,8 +730,6 @@ export default function LeadDetailPage() {
               <Button variant="success" size="lg" fullWidth icon={<Home className="w-4 h-4" />} onClick={goCreateProperty}>
                 Crear propiedad vinculada
               </Button>
-              {/* ds-todo: gradiente de marca como relleno de botón — decisión abierta
-                  (¿variante `brand` o se aplana a `primary`?). Por ahora primary. */}
               <Button size="lg" fullWidth icon={<FileText className="w-4 h-4" />} onClick={goCreateAppraisal}>
                 Crear tasación vinculada
               </Button>

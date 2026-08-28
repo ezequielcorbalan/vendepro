@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
-import StepIndicator from './StepIndicator'
+import { StepIndicator } from '@/components/ui/StepIndicator'
 import Step1Welcome from './steps/Step1Welcome'
 import Step2Pipeline from './steps/Step2Pipeline'
 import Step3Leads from './steps/Step3Leads'
@@ -59,7 +59,7 @@ export default function OnboardingModal({ userName, onClose }: Props) {
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <StepIndicator total={TOTAL_STEPS} current={step} />
+          <StepIndicator variant="dots" steps={TOTAL_STEPS} current={step} />
           <button
             onClick={onClose}
             className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors"
