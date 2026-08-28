@@ -6,6 +6,10 @@ import Link from 'next/link'
 import { CheckCircle, XCircle, Loader2, ChevronRight } from 'lucide-react'
 import { apiFetch, setToken } from '@/lib/api'
 import { setCurrentUser } from '@/lib/auth'
+import { Button } from '@/components/ui/Button'
+import { Field, Input } from '@/components/ui/Input'
+import { Heading, Text } from '@/components/ui/Typography'
+import { Alert } from '@/components/ui/Alert'
 
 type Step = 1 | 2 | 3
 
@@ -154,8 +158,6 @@ export default function RegisterPage() {
     router.refresh()
   }
 
-  const inputClass = 'w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none'
-
   const STEPS = ['Tu inmobiliaria', 'Tu cuenta', 'Personalización']
 
   return (
@@ -164,10 +166,15 @@ export default function RegisterPage() {
         {/* Logo */}
         <div className="text-center mb-6">
           <img src="/brand/logo-horizontal.png" alt="VendéPro" className="h-12 mx-auto mb-3" />
-          <h1 className="text-xl font-semibold text-ink">Registrá tu inmobiliaria</h1>
+          <Heading level={3}>Registrá tu inmobiliaria</Heading>
         </div>
 
-        {/* Progress bar */}
+        {/* Progress bar — stepper numerado con label y línea de unión.
+            ds-todo: candidato a componente "StepIndicator". Hay TRES diseños de
+            stepper distintos en la app (este de círculos+labels, los dots de
+            components/onboarding/StepIndicator, y las pills segmentadas de
+            components/tasaciones/wizard/WizardShell). Unificarlos es una decisión
+            de diseño: hay que elegir cuál gana antes de crear el componente. */}
         <div className="flex items-center mb-8">
           {STEPS.map((label, i) => {
             const n = (i + 1) as Step
@@ -177,53 +184,47 @@ export default function RegisterPage() {
               <div key={n} className="flex items-center flex-1">
                 <div className="flex flex-col items-center flex-1">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold border-2 transition-colors ${
-                    isDone ? 'bg-brand-pink border-brand-pink text-white' :
-                    isActive ? 'border-brand-pink text-brand-pink' :
+                    isDone ? 'bg-primary border-primary text-white' :
+                    isActive ? 'border-primary text-primary' :
                     'border-gray-300 text-gray-400'
                   }`}>
                     {isDone ? '✓' : n}
                   </div>
-                  <span className={`text-xs mt-1 hidden sm:block ${isActive ? 'text-brand-pink font-medium' : 'text-gray-400'}`}>
+                  <span className={`text-xs mt-1 hidden sm:block ${isActive ? 'text-primary font-medium' : 'text-gray-400'}`}>
                     {label}
                   </span>
                 </div>
                 {i < STEPS.length - 1 && (
-                  <div className={`h-0.5 flex-1 mx-1 transition-colors ${step > n ? 'bg-brand-pink' : 'bg-gray-200'}`} />
+                  <div className={`h-0.5 flex-1 mx-1 transition-colors ${step > n ? 'bg-primary' : 'bg-gray-200'}`} />
                 )}
               </div>
             )
           })}
         </div>
 
-        {error && <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg mb-4">{error}</div>}
+        {error && <Alert tone="danger" className="mb-4">{error}</Alert>}
 
         {/* STEP 1 */}
         {step === 1 && (
           <form onSubmit={handleStep1Next} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de la inmobiliaria *</label>
-              <input
+            <Field label="Nombre de la inmobiliaria" required>
+              <Input
                 type="text"
                 value={form.org_name}
                 onChange={e => update('org_name', e.target.value)}
                 required
                 placeholder="Ej: Genta Inmobiliaria"
-                className={inputClass}
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Identificador único (URL)
-                <span className="text-gray-400 font-normal ml-1 text-xs">— se usa en links públicos</span>
-              </label>
+            </Field>
+            <Field label="Identificador único (URL)" hint="Se usa en links públicos">
               <div className="relative">
-                <input
+                <Input
                   type="text"
                   value={form.org_slug}
                   onChange={e => update('org_slug', e.target.value)}
                   required
                   placeholder="genta-inmobiliaria"
-                  className={`${inputClass} pr-8`}
+                  className="pr-8"
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
                   {slugStatus === 'checking' && <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />}
@@ -231,72 +232,63 @@ export default function RegisterPage() {
                   {slugStatus === 'taken' && <XCircle className="w-4 h-4 text-red-500" />}
                 </div>
               </div>
-              {slugStatus === 'available' && <p className="text-xs text-green-600 mt-1">Disponible</p>}
-              {slugStatus === 'taken' && <p className="text-xs text-red-600 mt-1">Ya está en uso, elegí otro</p>}
-            </div>
-            <button
+              {slugStatus === 'available' && <Text size="xs" tone="success" className="mt-1">Disponible</Text>}
+              {slugStatus === 'taken' && <Text size="xs" tone="danger" className="mt-1">Ya está en uso, elegí otro</Text>}
+            </Field>
+            <Button
               type="submit"
+              size="lg"
+              fullWidth
               disabled={slugStatus === 'taken' || slugStatus === 'checking' || !form.org_name}
-              className="w-full bg-gradient-to-br from-brand-pink to-brand-orange text-white font-medium py-2.5 rounded-lg hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               Continuar <ChevronRight className="w-4 h-4" />
-            </button>
+            </Button>
           </form>
         )}
 
         {/* STEP 2 */}
         {step === 2 && (
           <form onSubmit={handleStep2Submit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Tu nombre completo *</label>
-              <input
+            <Field label="Tu nombre completo" required>
+              <Input
                 type="text"
                 value={form.admin_name}
                 onChange={e => update('admin_name', e.target.value)}
                 required
                 placeholder="Marcela Genta"
-                className={inputClass}
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-              <input
+            </Field>
+            <Field label="Email" required>
+              <Input
                 type="email"
                 value={form.email}
                 onChange={e => update('email', e.target.value)}
                 required
                 placeholder="marcela@genta.com"
-                className={inputClass}
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña *</label>
-              <input
+            </Field>
+            <Field label="Contraseña" required>
+              <Input
                 type="password"
                 value={form.password}
                 onChange={e => update('password', e.target.value)}
                 required
                 minLength={8}
                 placeholder="Mínimo 8 caracteres"
-                className={inputClass}
               />
-            </div>
+            </Field>
             <div className="flex gap-3">
-              <button
-                type="button"
+              <Button
+                variant="outline"
+                size="lg"
+                className="flex-1"
                 onClick={() => { setStep(1); setError('') }}
-                className="flex-1 border border-gray-300 text-gray-700 font-medium py-2.5 rounded-lg hover:bg-gray-50"
               >
                 Atrás
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex-1 bg-gradient-to-br from-brand-pink to-brand-orange text-white font-medium py-2.5 rounded-lg hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                {loading ? 'Creando...' : 'Crear cuenta'}
-              </button>
+              </Button>
+              <Button type="submit" size="lg" className="flex-1" loading={loading}>
+                {loading ? 'Creando…' : 'Crear cuenta'}
+              </Button>
             </div>
           </form>
         )}
@@ -304,56 +296,48 @@ export default function RegisterPage() {
         {/* STEP 3 — Optional personalization */}
         {step === 3 && (
           <form onSubmit={handleStep3Save} className="space-y-4">
-            <p className="text-sm text-gray-500 -mt-2 mb-2">
+            <Text size="sm" tone="muted" className="-mt-2 mb-2">
               Podés configurar esto ahora o después desde <strong>Configuración</strong>.
-            </p>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">URL del logo</label>
-              <input
+            </Text>
+            <Field label="URL del logo">
+              <Input
                 type="url"
                 value={form.logo_url}
                 onChange={e => update('logo_url', e.target.value)}
                 placeholder="https://tuinmobiliaria.com/logo.png"
-                className={inputClass}
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Color de marca</label>
+            </Field>
+            <Field label="Color de marca">
               <div className="flex items-center gap-3">
-                <input
+                <Input
                   type="color"
                   value={form.brand_color}
                   onChange={e => update('brand_color', e.target.value)}
-                  className="h-10 w-16 rounded border border-gray-300 cursor-pointer p-1"
+                  className="h-10 w-16 cursor-pointer p-1 px-1"
                 />
-                <span className="text-sm text-gray-500 font-mono">{form.brand_color}</span>
+                <Text size="sm" tone="muted" className="font-mono">{form.brand_color}</Text>
               </div>
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-br from-brand-pink to-brand-orange text-white font-medium py-2.5 rounded-lg hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+            </Field>
+            <Button type="submit" size="lg" fullWidth loading={loading}>
               Guardar y entrar
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="ghost"
+              fullWidth
               onClick={() => { router.push('/dashboard'); router.refresh() }}
-              className="w-full text-gray-500 text-sm py-2 hover:text-gray-700"
             >
               Saltar por ahora
-            </button>
+            </Button>
           </form>
         )}
 
         {step < 3 && (
-          <p className="text-center text-sm text-gray-500 mt-6">
+          <Text size="sm" tone="muted" className="text-center mt-6">
             ¿Ya tenés cuenta?{' '}
-            <Link href="/login" className="text-brand-pink hover:underline font-medium">
+            <Link href="/login" className="text-primary hover:underline font-medium">
               Ingresá acá
             </Link>
-          </p>
+          </Text>
         )}
       </div>
     </div>

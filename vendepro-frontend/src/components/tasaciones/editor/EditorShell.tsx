@@ -372,7 +372,7 @@ export function EditorShell({ initial, snapshot, context }: Props) {
         </div>
       </div>
 
-      <button onClick={() => setMobilePreviewOpen(true)} className="fixed bottom-6 right-6 z-30 rounded-full bg-gradient-to-br from-brand-pink to-brand-orange px-5 py-3 text-sm font-semibold text-white shadow-pop lg:hidden">
+      <button onClick={() => setMobilePreviewOpen(true)} className="fixed bottom-6 right-6 z-30 rounded-full bg-primary hover:bg-primary-hover px-5 py-3 text-sm font-semibold text-white shadow-pop lg:hidden">
         Preview
       </button>
       {mobilePreviewOpen && (

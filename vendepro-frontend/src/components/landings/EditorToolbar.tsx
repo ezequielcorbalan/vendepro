@@ -50,18 +50,18 @@ export default function EditorToolbar({ landing, isAdmin, dirty, saving, onOpenV
       <button onClick={onOpenPreview} className="p-2 hover:bg-gray-100 rounded-lg" title="Vista previa"><Eye className="w-4 h-4 text-gray-600" /></button>
 
       {landing.status === 'draft' && !isAdmin && (
-        <button onClick={() => handle(onRequestPublish)} disabled={busy} className="inline-flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange hover:opacity-90 text-white text-sm font-semibold px-4 py-2 rounded-full disabled:opacity-60">
+        <button onClick={() => handle(onRequestPublish)} disabled={busy} className="inline-flex items-center gap-2 bg-primary hover:bg-primary-hover text-white text-sm font-semibold px-4 py-2 rounded-full disabled:opacity-60">
           <Send className="w-4 h-4" /> Solicitar publicación
         </button>
       )}
       {landing.status === 'draft' && isAdmin && (
-        <button onClick={() => handle(onPublish)} disabled={busy} className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-4 py-2 rounded-full disabled:opacity-60">
+        <button onClick={() => handle(onPublish)} disabled={busy} className="inline-flex items-center gap-2 bg-success hover:opacity-90 text-white text-sm font-semibold px-4 py-2 rounded-full disabled:opacity-60">
           <CheckCircle2 className="w-4 h-4" /> Publicar
         </button>
       )}
       {landing.status === 'pending_review' && isAdmin && (
         <div className="flex items-center gap-2">
-          <button onClick={() => handle(onPublish)} disabled={busy} className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-4 py-2 rounded-full">
+          <button onClick={() => handle(onPublish)} disabled={busy} className="inline-flex items-center gap-2 bg-success hover:opacity-90 text-white text-sm font-semibold px-4 py-2 rounded-full">
             <CheckCircle2 className="w-4 h-4" /> Aprobar y publicar
           </button>
           <button onClick={() => setShowReject(true)} className="inline-flex items-center gap-2 border border-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded-full hover:bg-gray-50">
