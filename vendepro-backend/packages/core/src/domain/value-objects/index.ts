@@ -59,3 +59,18 @@ export type {
   ConfigField,
   VariableDefinition,
 } from './automation-catalog'
+
+// Planes y módulos comerciales por organización
+export {
+  ORG_PLANS,
+  ORG_MODULES,
+  MODULE_DEFINITIONS,
+  getModuleDefinition,
+  isOrgModule,
+  isOrgPlan,
+  parseModules,
+  parsePlan,
+  isModuleEnabled,
+  enabledModules,
+} from './org-modules'
+export type { OrgPlan, OrgModule, ModuleDefinition } from './org-modules'
