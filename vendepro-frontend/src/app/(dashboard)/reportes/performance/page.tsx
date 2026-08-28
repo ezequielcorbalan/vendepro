@@ -184,21 +184,15 @@ export default function PerformancePage() {
         <>
           {/* KPIs globales */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {/* KPI destacado: visualizaciones/día con color del semáforo.
-                ds-todo: candidato a variante de StatTile con borde de color + slot de badge
-                (HealthBadge abajo) — StatTile hoy no soporta ninguna de las dos cosas. */}
-            <Card className={`border-2 p-3 sm:p-4 bg-gradient-to-br ${overallCfg.border} ${overallCfg.bg}`}>
-              <div className={`w-9 h-9 rounded-control flex items-center justify-center mb-2 bg-white/70 border ${overallCfg.border} shadow-card`} aria-hidden="true">
-                <Eye className={`w-5 h-5 ${overallCfg.text}`} />
-              </div>
-              <Text weight="bold" className={`text-xl sm:text-2xl ${overallCfg.text}`}>
-                {k.avg_views_per_day}
-              </Text>
-              <Text size="xs" className="text-gray-600 mt-0.5">Visualizaciones/día ∅</Text>
-              <div className="mt-1">
-                <HealthBadge status={k.overall_health_status} size="sm" withLabel />
-              </div>
-            </Card>
+            {/* KPI destacado: visualizaciones/día con el color del semáforo. */}
+            <StatTile
+              emphasis
+              tone={`${overallCfg.border} ${overallCfg.bg} ${overallCfg.text}`}
+              icon={<Eye className="w-5 h-5" />}
+              label="Visualizaciones/día ∅"
+              value={k.avg_views_per_day}
+              badge={<HealthBadge status={k.overall_health_status} size="sm" withLabel />}
+            />
 
             <StatTile
               icon={<FileBarChart className="w-5 h-5" />}

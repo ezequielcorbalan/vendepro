@@ -10,6 +10,8 @@ import { Card } from '@/components/ui/Card'
 import { Heading, Text } from '@/components/ui/Typography'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { StatTile } from '@/components/ui/StatTile'
+import { StatusBadge } from '@/components/ui/StatusBadge'
+import { PROPERTY_ALT_STATUSES } from '@/lib/crm-config'
 
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
@@ -82,8 +84,12 @@ export default function AlquiladasPage() {
                       {p.updated_at && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{formatDate(p.updated_at)}</span>}
                     </div>
                   </div>
-                  {/* ds-todo: chip de estado "Alquilada" (cyan) sin mapeo en StageBadge (usa getStageConfig de leads) — por ahora se deja el span */}
-                  <span className="bg-cyan-100 text-cyan-800 text-[10px] font-medium px-2 py-1 rounded-full shrink-0">Alquilada</span>
+                  <StatusBadge
+                    size="sm"
+                    label={PROPERTY_ALT_STATUSES.alquilada.label}
+                    color={PROPERTY_ALT_STATUSES.alquilada.color}
+                    className="shrink-0"
+                  />
                 </div>
               </Card>
             </Link>

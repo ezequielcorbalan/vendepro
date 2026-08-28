@@ -19,6 +19,7 @@ import { Badge } from '@/components/ui/Badge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Modal } from '@/components/ui/Modal'
 import { Alert } from '@/components/ui/Alert'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
 
 const EVENT_KEY_GROUPS: { label: string; keys: { key: string; label: string }[] }[] = [
   {
@@ -293,33 +294,18 @@ export default function MarketingConfigPage() {
         </div>
       </div>
 
-      {/* Tabs con ícono por item + lista condicional por rol — no mapea 1:1 a
-          Tabs/SegmentedControl (sin soporte de ícono). ds-todo: candidato a
-          variante "SegmentedControl con ícono" cuando se decida en tanda. */}
-      <div className="flex gap-1 mb-5 bg-gray-100 rounded-xl p-1 max-w-fit">
-        {([
-          { id: 'config', label: 'Configuración', icon: Settings },
-          // Mapeos (funnel de la org) y Email son admin-only.
-          ...(isAdmin ? [{ id: 'mappings', label: 'Mapeo de eventos', icon: BarChart3 }] as const : []),
-          { id: 'log', label: 'Log de eventos', icon: Activity },
-          ...(isAdmin ? [{ id: 'email', label: 'Email', icon: Mail }] as const : []),
-        ] as { id: 'config' | 'mappings' | 'log' | 'email'; label: string; icon: typeof Settings }[]).map(t => {
-          const Icon = t.icon
-          return (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                tab === t.id
-                  ? 'bg-white text-brand-pink shadow-sm'
-                  : 'text-gray-600 hover:text-ink'
-              }`}
-            >
-              <Icon className="w-3.5 h-3.5" /> {t.label}
-            </button>
-          )
-        })}
-      </div>
+      {/* Mapeos (funnel de la org) y Email son admin-only. */}
+      <SegmentedControl
+        className="mb-5"
+        value={tab}
+        onChange={v => setTab(v as typeof tab)}
+        options={[
+          { value: 'config', label: 'Configuración', icon: <Settings className="w-3.5 h-3.5" /> },
+          ...(isAdmin ? [{ value: 'mappings', label: 'Mapeo de eventos', icon: <BarChart3 className="w-3.5 h-3.5" /> }] : []),
+          { value: 'log', label: 'Log de eventos', icon: <Activity className="w-3.5 h-3.5" /> },
+          ...(isAdmin ? [{ value: 'email', label: 'Email', icon: <Mail className="w-3.5 h-3.5" /> }] : []),
+        ]}
+      />
 
       {tab === 'config' && (
         <Card className="space-y-4">
