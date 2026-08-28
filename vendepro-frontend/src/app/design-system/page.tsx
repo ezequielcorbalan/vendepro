@@ -707,11 +707,44 @@ export default function DesignSystemPage() {
         </Section>
 
         {/* Table */}
-        <Section title="Tabla" hint="Data-driven, con columnas tipadas y celdas custom.">
+        <Section
+          title="Tabla"
+          hint="Data-driven, con columnas tipadas y celdas custom. `actions` agrega la celda de acciones por fila (aparece en hover en desktop, siempre visible en touch), `renderMobileCard` reemplaza la tabla por cards abajo de md, y `footer` mete la paginación dentro de la misma superficie."
+        >
           <Table
             rowKey={r => r.id as string}
             columns={PROP_COLUMNS}
             data={PROP_ROWS}
+            actions={r => (
+              <>
+                <button className="text-gray-300 hover:text-danger p-1.5" title={`Eliminar ${r.propiedad}`}>
+                  <Trash2 className="w-4 h-4" />
+                </button>
+                <button className="text-gray-400 hover:text-primary p-1.5" title="Ver detalle">
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </>
+            )}
+            renderMobileCard={r => (
+              <div className="p-4 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <Text weight="semibold" className="truncate">{r.propiedad}</Text>
+                  <Text size="xs" tone="muted">{r.vistas} vistas/día</Text>
+                </div>
+                {r.estado === 'publicada'
+                  ? <Badge tone="success">Publicada</Badge>
+                  : <Badge tone="warning">En revisión</Badge>}
+              </div>
+            )}
+            footer={
+              <div className="flex items-center justify-between">
+                <Text size="sm" tone="muted">1–3 de 3</Text>
+                <div className="flex items-center gap-1">
+                  <Button variant="outline" size="sm" disabled>Anterior</Button>
+                  <Button variant="outline" size="sm" disabled>Siguiente</Button>
+                </div>
+              </div>
+            }
           />
         </Section>
 

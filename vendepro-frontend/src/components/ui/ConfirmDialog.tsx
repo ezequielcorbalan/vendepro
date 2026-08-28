@@ -48,7 +48,7 @@ export function ConfirmDialog({
         <div className="flex items-start justify-between px-6 pt-5 pb-3 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <div className={`w-9 h-9 rounded-card flex items-center justify-center shrink-0 ${
-              isDanger ? 'bg-danger/10' : 'bg-gradient-to-br from-brand-pink to-brand-orange'
+              isDanger ? 'bg-danger/10' : 'bg-brand-gradient'
             }`}>
               <AlertTriangle className={`w-4.5 h-4.5 ${isDanger ? 'text-danger' : 'text-white'}`} />
             </div>

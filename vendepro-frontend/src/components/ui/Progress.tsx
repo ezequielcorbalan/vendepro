@@ -21,7 +21,7 @@ export function ProgressBar({ value, className }: ProgressBarProps) {
       aria-valuemax={100}
     >
       <div
-        className="h-full rounded-full bg-gradient-to-r from-brand-pink to-brand-orange transition-[width] duration-300"
+        className="h-full rounded-full bg-brand-gradient-r transition-[width] duration-300"
         style={{ width: `${pct}%` }}
       />
     </div>
@@ -49,7 +49,7 @@ export function Steps({ total, current, showCount = true, className }: StepsProp
             className={cn(
               'h-2 rounded-full transition-all duration-300',
               active
-                ? 'w-6 bg-gradient-to-r from-brand-pink to-brand-orange'
+                ? 'w-6 bg-brand-gradient-r'
                 : done
                   ? 'w-2 bg-primary'
                   : 'w-2 bg-gray-200',

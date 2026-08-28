@@ -147,16 +147,21 @@ asentado, para no re-abrirlo:
 | `Button variant="accent"` (naranja de marca) | **0 botones naranjas sólidos en toda la app** | ❌ **no se crea.** El contrato queda `primary\|outline\|ghost\|success\|danger`. Ese botón va `outline` |
 | Chips de dominio sin mapeo (Alquilada cyan, KiteProp indigo, Tasación morada) | 3 | ✅ **al dominio**, no a componentes: `LEAD_FLAGS`, `PROPERTY_SOURCES`, `PROPERTY_ALT_STATUSES` en `crm-config.ts` |
 
-**Abiertas** (necesitan decisión antes de migrar los módulos que las tocan):
-1. **Gradiente como relleno de botón** — 13 usos, 7 de ellos en las 4 pantallas de
-   `auth/` (que tienen cero adopción del DS). ¿Variante `brand` en `Button`, o se
-   aplanan a `primary` sólido? Es una decisión de marca sobre la pantalla más vista.
-2. **`Table` con hover-reveal por fila + render responsive** — hoy `Table` está en
-   2 de 175 archivos, y el `ds-todo` de `contactos` dice que no se adopta por esta
-   carencia, no por olvido. Es 🔴: define si `contactos` y las listas se migran.
-3. **`Card` oscura/destacada** — 1 uso (`tasaciones/[id]`). Sin más datos, se deja
-   marcado y NO se crea la variante.
-4. **`IntegrationBadge`** — 1 uso local en `marketing`. Mismo criterio: no se crea.
+### Segunda tanda (cerrada)
+
+| Decisión | Resultado |
+|---|---|
+| **Gradiente como relleno de botón** (13 usos) | ❌ **Se aplana a `primary` sólido.** NO se crea `Button variant="brand"`. El gradiente queda para superficies (`IconMedallion`) y barras de acento (`BrandAccentBar`), nunca como relleno de un botón. Hoy quedan **0** botones con gradiente. |
+| **`Table` con hover-reveal + responsive** | ✅ **Se extiende `Table`** con `actions` (celda de acciones por fila: hover-reveal en desktop, siempre visible en touch), `renderMobileCard` (abajo de `md` la tabla se reemplaza por cards) y `footer` (paginación dentro de la misma superficie), más `minWidth`. `renderMobileCard` a propósito NO proyecta las columnas automáticamente: el layout mobile de una lista nunca es "las mismas celdas apiladas". |
+| **`Card` oscura/destacada** | ❌ No se crea — 1 uso (`tasaciones/[id]`). Queda marcado. |
+| **`IntegrationBadge`** | ❌ No se crea — 1 uso local en `marketing`. Queda marcado. |
+
+**Abierta nueva** (encontrada al migrar `register`):
+- **`StepIndicator`** — hay **tres** diseños de stepper distintos y conviviendo:
+  círculos numerados con label y línea (`auth/register`), dots (`ui/Progress` →
+  `Steps`, usado por `components/onboarding/StepIndicator`) y pills segmentadas
+  (`components/tasaciones/wizard/WizardShell`). Unificarlos es una decisión de
+  diseño —hay que elegir cuál gana— así que queda marcado, no resuelto.
 
 ## Convenciones de trabajo
 
