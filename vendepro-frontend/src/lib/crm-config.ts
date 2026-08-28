@@ -170,6 +170,24 @@ export const DEFAULT_TAGS = {
 // Marcadores de un lead — NO son etapas del pipeline, son hechos que se
 // muestran como pill al lado del nombre. Estaban hardcodeados en la lista de
 // leads (pill morada "Tasación").
+// Urgencia de una notificación. Estaba hardcodeada en NotificationBell con
+// red/yellow/blue sueltos; los tonos son de dominio y viven acá.
+export const URGENCY_TONES = {
+  high:   { icon: 'text-danger',  title: 'text-danger font-medium' },
+  medium: { icon: 'text-warning', title: 'text-gray-700' },
+  low:    { icon: 'text-info',    title: 'text-gray-700' },
+} as const
+
+export type UrgencyLevel = keyof typeof URGENCY_TONES
+
+// Color del ícono de cada tipo de entidad en la búsqueda global. Estaba
+// hardcodeado con pink/blue/green sueltos en GlobalSearch.
+export const SEARCH_ENTITY_TONES = {
+  lead: 'text-primary',
+  contact: 'text-info',
+  property: 'text-success',
+} as const
+
 export const LEAD_FLAGS = {
   tasacion: { label: 'Tasación', color: 'bg-purple-100 text-purple-800' },
 } as const

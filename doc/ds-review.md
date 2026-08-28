@@ -186,6 +186,25 @@ Los 1, 2 y 3 eran **el mismo dibujo con tres medidas distintas**.
 - `components/onboarding/StepIndicator.tsx` **borrado**: era una copia casi
   idéntica de `Steps`. Ahora usa el del DS.
 
+## Hallazgos abiertos (encontrados al migrar, no resueltos)
+
+Cosas que aparecieron migrando y que NO son decisiones de contrato pendientes,
+pero conviene no perder:
+
+1. **`ui/Notifications` no coincide con la realidad.** Sólo lo usa la galería. El
+   que está en producción es `components/layout/NotificationBell`, y es bastante
+   más rico: badge numérico (no un punto), color de campana según urgencia,
+   items con link + ícono por urgencia + descartar individual. El del DS es una
+   versión simplificada que se construyó desde el muestrario y nunca se validó
+   contra la app. Hay que decidir si el DS se pone al día o si el de layout sube
+   a `ui/`.
+2. **`profile.full_name` viene vacío** en el layout del dashboard, así que el
+   avatar del sidebar y del header caen al email (`dev@dev.com` → "D") en vez de
+   mostrar las iniciales del nombre. No es del design system, pero se ve.
+3. **`Tabs` en modo ruta**: el match de ruta lo calcula quien llama, a propósito
+   (a veces es exacto, a veces con `startsWith`). Si aparece un tercer patrón de
+   match, evaluar si vale un helper.
+
 ## Convenciones de trabajo
 
 - Refactor y ajuste visual **en commits separados** (para poder revertir uno sin el otro).
