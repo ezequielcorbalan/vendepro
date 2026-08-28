@@ -3,7 +3,10 @@ import type { EmailSettingsRepository } from '../../ports/repositories/email-set
 import type { EmailService, SendEmailInput } from '../../ports/services/email-service'
 import type { UnsubscribeTokenSigner } from '../../ports/services/unsubscribe-token-signer'
 import type { EmailCampaign } from '../../../domain/entities/email-campaign'
+import type { OrganizationRepository } from '../../ports/repositories/organization-repository'
 import { buildPersonalizedEmail } from '../email-shared/personalize'
+import { VENDEPRO_BRAND } from '../../../domain/rules/email-template'
+import type { EmailBrand } from '../../../domain/rules/email-template'
 
 const BATCH_SIZE = 100
 const MAX_ATTEMPTS = 3
@@ -33,6 +36,11 @@ export class ProcessEmailQueueUseCase {
     private readonly unsubscribeSigner: UnsubscribeTokenSigner,
     /** Base de la página pública de baja, ej: https://vendepro.com.ar */
     private readonly publicBaseUrl: string,
+    /**
+     * Opcional: de acá sale el logo y el color con los que el template base
+     * arma el encabezado. Sin repo, el mail sale con la marca de la plataforma.
+     */
+    private readonly orgRepo?: OrganizationRepository,
   ) {}
 
   async execute(maxBatchesPerCampaign = 5): Promise<ProcessEmailQueueResult> {
@@ -68,6 +76,7 @@ export class ProcessEmailQueueUseCase {
     if (!settings?.isReadyToSend) return { sent: 0, failed: 0 }
 
     const from = { email: settings.from_email!, name: settings.from_name ?? 'VendéPro' }
+    const brand = await this.resolveBrand(campaign.org_id, settings.from_name)
     let sent = 0
     let failed = 0
 
@@ -75,7 +84,7 @@ export class ProcessEmailQueueUseCase {
       const pending = await this.sendRepo.listPending(campaign.id, BATCH_SIZE, MAX_ATTEMPTS)
       if (pending.length === 0) break
 
-      const emails = await Promise.all(pending.map(row => this.buildEmail(campaign, row, from, settings.reply_to)))
+      const emails = await Promise.all(pending.map(row => this.buildEmail(campaign, row, from, settings.reply_to, brand)))
       try {
         if (this.emailService.sendBatch && emails.length > 1) {
           await this.emailService.sendBatch(emails)
@@ -110,16 +119,45 @@ export class ProcessEmailQueueUseCase {
     row: CampaignSendRow,
     from: { email: string; name: string },
     replyTo: string | null,
+    brand: EmailBrand,
   ): Promise<SendEmailInput> {
     return buildPersonalizedEmail({
       orgId: campaign.org_id,
       recipient: { email: row.email, name: row.name },
-      fields: { subject: campaign.subject ?? '', html: campaign.html ?? '', text: campaign.text ?? '' },
+      fields: {
+        subject: campaign.subject ?? '',
+        html: campaign.html ?? '',
+        text: campaign.text ?? '',
+        preheader: campaign.preheader,
+      },
       from,
       replyTo,
       publicBaseUrl: this.publicBaseUrl,
       signer: this.unsubscribeSigner,
+      brand,
       tags: { kind: 'campaign', campaign_id: campaign.id },
     })
+  }
+
+  /**
+   * Branding de la org para el template base. El nombre del remitente pesa más
+   * que el de la organización: es el que el cliente ya vio en la bandeja.
+   * Una falla acá no puede frenar la campaña — se cae a la marca de VendéPro.
+   */
+  private async resolveBrand(orgId: string, fromName: string | null): Promise<EmailBrand> {
+    const fallback: EmailBrand = { ...VENDEPRO_BRAND, name: fromName ?? VENDEPRO_BRAND.name }
+    if (!this.orgRepo) return fallback
+    try {
+      const org = await this.orgRepo.findById(orgId)
+      if (!org) return fallback
+      return {
+        name: fromName ?? org.name,
+        logoUrl: org.logo_url,
+        color: org.brand_color,
+        accentColor: VENDEPRO_BRAND.accentColor,
+      }
+    } catch {
+      return fallback
+    }
   }
 }

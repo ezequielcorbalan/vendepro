@@ -31,8 +31,13 @@ export class AnthropicEmailContentGenerator implements EmailContentGenerator {
 Generás emails que se leen bien en celular, con un solo llamado a la acción claro.
 
 Reglas del HTML:
-- HTML de email: tabla o divs con estilos inline, ancho máximo 600px centrado, fondo #f7f7f8, tarjeta blanca con border-radius.
-- Tipografía: font-family: Poppins, Arial, sans-serif.
+- Devolvé SOLO el contenido del mensaje (párrafos, títulos, botón). El sistema lo
+  envuelve después en el template base de VendéPro, que ya trae el documento HTML,
+  la tarjeta blanca de 600px, el encabezado con el logo y el footer.
+- NO incluyas <!DOCTYPE>, <html>, <head>, <body> ni una tarjeta/fondo propios:
+  quedaría una tarjeta adentro de otra.
+- Estilos inline en cada etiqueta (los clientes de email ignoran el CSS del head).
+- Tipografía: no la declares, la hereda del template.
 - Color primario para botones/acentos: ${brandColor}.
 - Podés usar la variable {{nombre}} para personalizar (se reemplaza por el nombre del destinatario).
 - NO incluyas link de "cancelar suscripción" — el sistema lo agrega solo.

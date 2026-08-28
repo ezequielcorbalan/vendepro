@@ -1,4 +1,8 @@
-import { Notification, CalendarEvent, htmlToText } from '@vendepro/core'
+import {
+  Notification, CalendarEvent, htmlToText,
+  renderEmailHtml, renderEmailText, VENDEPRO_BRAND,
+} from '@vendepro/core'
+import type { EmailBrand } from '@vendepro/core'
 // Desde el subpath del dominio: en el barrel raíz `EVENT_TYPES` choca con el
 // mapa de config de `shared/crm-config`, y esbuild corta el build con
 // "Ambiguous import" aunque TypeScript no diga nada.
@@ -54,18 +58,20 @@ export class SendEmailActionExecutor implements AutomationActionExecutor {
     if (suppressed) return { status: 'skipped', reason: 'suppressed' }
 
     const subject = String(input.config.subject ?? '').trim()
-    let html = String(input.config.body_html ?? '')
-    if (!subject || !html) return { status: 'skipped', reason: 'empty_content' }
+    let content = String(input.config.body_html ?? '')
+    if (!subject || !content) return { status: 'skipped', reason: 'empty_content' }
 
     // El link de baja se resuelve acá, no en la interpolación: necesita firmar
     // con el email real del destinatario.
     const includeUnsubscribe = input.config.include_unsubscribe !== false
+    let footerUnsubscribeUrl: string | null = null
     if (includeUnsubscribe) {
       const token = await this.unsubscribeSigner.sign({ orgId: input.orgId, email: recipient.email })
       const url = `${trimSlash(this.publicBaseUrl)}/u/${token}`
-      html = html.includes('{{unsubscribe_url}}')
-        ? html.replaceAll('{{unsubscribe_url}}', url)
-        : html + unsubscribeFooter(url)
+      // Si el autor puso el token en el cuerpo, ese es el lugar que eligió para
+      // el link; si no, lo pone el footer del template. Nunca los dos.
+      if (content.includes('{{unsubscribe_url}}')) content = content.replaceAll('{{unsubscribe_url}}', url)
+      else footerUnsubscribeUrl = url
     }
 
     const agentEmail = readString(input.context, 'agent', 'email')
@@ -73,13 +79,27 @@ export class SendEmailActionExecutor implements AutomationActionExecutor {
       ? agentEmail
       : settings.reply_to ?? undefined
 
+    // La marca sale del contexto del evento, que ya trae la org resuelta.
+    const brand: EmailBrand = {
+      name: settings.from_name ?? readString(input.context, 'org', 'name') ?? VENDEPRO_BRAND.name,
+      logoUrl: readString(input.context, 'org', 'logo_url'),
+      color: readString(input.context, 'org', 'brand_color'),
+      accentColor: VENDEPRO_BRAND.accentColor,
+    }
+
     await this.email.send({
       from: { email: settings.from_email, name: settings.from_name ?? 'VendéPro' },
       to: { email: recipient.email, name: recipient.name ?? recipient.email },
       replyTo,
       subject,
-      html,
-      text: htmlToText(html),
+      html: renderEmailHtml({ brand, contentHtml: content, unsubscribeUrl: footerUnsubscribeUrl }),
+      // El texto sale del contenido, no del documento envuelto: si no, arrastra
+      // el encabezado y el footer del marco duplicados.
+      text: renderEmailText({
+        brand,
+        contentText: htmlToText(content),
+        unsubscribeUrl: footerUnsubscribeUrl,
+      }),
       tags: { kind: 'automation', automation_id: input.automationId },
       // Un reintento del mismo job no puede mandar el mail dos veces.
       idempotencyKey: `automation:${input.runId}:${input.automationId}`,
@@ -87,12 +107,6 @@ export class SendEmailActionExecutor implements AutomationActionExecutor {
 
     return { status: 'success', result: { to: recipient.email, subject } }
   }
-}
-
-function unsubscribeFooter(url: string): string {
-  return `<p style="color:#999;font-size:12px;margin-top:24px;">
-  Si no querés recibir más estos mensajes, <a href="${url}" style="color:#999;">date de baja acá</a>.
-</p>`
 }
 
 // ── notify_agent ──────────────────────────────────────────────

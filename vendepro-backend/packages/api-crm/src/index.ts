@@ -441,6 +441,7 @@ app.post('/marketing/email/test', async (c) => {
   const useCase = new SendTestEmailUseCase(
     new D1EmailSettingsRepository(c.env.DB),
     new ResendEmailService(c.env.RESEND_API_KEY),
+    new D1OrganizationRepository(c.env.DB),
   )
   const result = await useCase.execute({ orgId: c.get('orgId'), to: body.to })
   return c.json(result, result.ok ? 200 : 502)
@@ -1465,6 +1466,8 @@ function buildEmailQueueProcessor(env: Env) {
     new ResendEmailService(env.RESEND_API_KEY ?? ''),
     new HmacUnsubscribeTokenSigner(env.JWT_SECRET),
     env.FRONTEND_URL ?? 'https://vendepro.com.ar',
+    // Logo y color de la org para el encabezado del template base.
+    new D1OrganizationRepository(env.DB),
   )
 }
 
