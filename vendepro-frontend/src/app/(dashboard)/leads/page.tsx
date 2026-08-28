@@ -18,6 +18,7 @@ import type { Contact } from '@/lib/types'
 import { useToast } from '@/components/ui/Toast'
 import { useConfirm } from '@/components/ui/useConfirm'
 import { StatusBadge } from '@/components/ui/StatusBadge'
+import { Tabs } from '@/components/ui/Tabs'
 import { StageBadge } from '@/components/ui/StageBadge'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
@@ -433,24 +434,15 @@ export default function LeadsPage() {
 
       {/* Pestañas de pipeline: Vendedores | Compradores */}
       <div className="flex items-center justify-between border-b border-gray-200">
-        <div className="flex items-center gap-1">
-          {([
-            { key: 'vendedor' as const, label: 'Vendedores' },
-            { key: 'comprador' as const, label: 'Compradores' },
-          ]).map(t => (
-            <button
-              key={t.key}
-              onClick={() => switchPipeline(t.key)}
-              className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                pipeline === t.key
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+        <Tabs
+          className="border-b-0"
+          value={pipeline}
+          onChange={v => switchPipeline(v as LeadPipelineKey)}
+          items={[
+            { value: 'vendedor', label: 'Vendedores' },
+            { value: 'comprador', label: 'Compradores' },
+          ]}
+        />
         <SegmentedControl
           className="hidden sm:inline-flex mb-1"
           options={[{ value: 'list', label: 'Lista' }, { value: 'kanban', label: 'Kanban' }]}
