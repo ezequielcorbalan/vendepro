@@ -850,17 +850,22 @@ export default function DesignSystemPage() {
         </Section>
 
         {/* Notificaciones */}
-        <Section title="Notificaciones" hint="Campana con punto de sin-leer + panel.">
+        <Section title="Notificaciones" hint="Campana con contador + panel. Es lo que usa la sidebar: `layout/NotificationBell` sólo trae los datos (fetch, polling, descartadas) y la forma sale de acá. La urgencia define ícono y color del título, desde URGENCY_TONES.">
           <div className="flex flex-wrap items-start gap-6">
-            <NotificationBell hasUnread />
+            <NotificationBell count={3} urgent />
+            <NotificationBell count={2} />
+            <NotificationBell />
+            <NotificationBell count={12} variant="outline" />
             <NotificationPanel
-              onMarkAllRead={() => {}}
+              action={{ label: 'Limpiar', onClick: () => {} }}
+              onDismiss={() => {}}
               items={[
-                { id: '1', text: <>Nuevo lead asignado: <b>Juan Pérez</b></>, time: 'Hace 5 min', unread: true },
-                { id: '2', text: 'Tasación de Tigre vence hoy', time: 'Hace 1 h', unread: true },
-                { id: '3', text: 'Propiedad publicada en portales', time: 'Ayer' },
+                { id: '1', title: 'Tasación de Tigre vence hoy', body: 'Marcela Genta · sin presentar', href: '#', urgency: 'high' },
+                { id: '2', title: 'Lead sin contactar hace 26 h', body: 'Juan Pérez · Depto Palermo', href: '#', urgency: 'medium' },
+                { id: '3', title: 'Propiedad publicada en portales', body: 'Av. Cabildo 2200', href: '#', urgency: 'low' },
               ]}
             />
+            <NotificationPanel items={[]} />
           </div>
         </Section>
 
