@@ -67,18 +67,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-pink/5 via-white to-brand-orange/5 px-4 relative overflow-hidden">
-      <img
-        src="/brand/GV-27.png"
-        alt=""
-        aria-hidden="true"
-        className="absolute -top-20 -left-20 w-96 h-96 opacity-20 pointer-events-none"
-      />
-      <img
-        src="/brand/ELEMENTOS-28.png"
-        alt=""
-        aria-hidden="true"
-        className="absolute -bottom-24 -right-16 w-80 h-80 opacity-10 pointer-events-none"
-      />
       <div className="bg-white rounded-2xl shadow-xl p-5 sm:p-8 w-full max-w-md relative z-10 border border-white/50">
         <div className="text-center mb-6 sm:mb-8">
           <img src="/brand/logo-horizontal.png" alt="VendéPro" className="h-12 sm:h-16 mx-auto mb-3 sm:mb-4" />

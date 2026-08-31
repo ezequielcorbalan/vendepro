@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Plus, ClipboardList, MapPin, ExternalLink, Pencil, Trash2, Database, Download, Loader2 } from 'lucide-react'
+import { Plus, ClipboardList, MapPin, ExternalLink, Pencil, Trash2, Database, Download, Loader2, Settings } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { scopeQueryString } from '@/lib/agent-scope'
 import { useToast } from '@/components/ui/Toast'
@@ -15,6 +15,7 @@ import { Heading, Text } from '@/components/ui/Typography'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { FichaLinkSection } from '@/components/fichas/FichaLinkSection'
 
+import { Button } from '@/components/ui/Button'
 const statusLabels: Record<string, { label: string; color: string }> = {
   draft: { label: 'Borrador', color: 'bg-gray-100 text-gray-700' },
   generated: { label: 'Generada', color: 'bg-blue-100 text-blue-800' },
@@ -70,18 +71,18 @@ export default function TasacionesPage() {
         subtitle="Tasaciones profesionales para propietarios"
         actions={
           <>
-            <Link href="/configuracion/tasacion" className="border border-gray-300 text-gray-700 px-4 py-2.5 rounded-control text-sm font-medium hover:bg-gray-50">
+            <Button href="/configuracion/tasacion" variant="outline" icon={<Settings className="w-4 h-4" />}>
               Configurar
-            </Link>
-            <Link href="/tasaciones/vendidas" className="border border-gray-300 text-gray-700 px-4 py-2.5 rounded-control text-sm font-medium hover:bg-gray-50 flex items-center gap-2">
-              <Database className="w-4 h-4" /> Cierres reales
-            </Link>
-            <Link href="/prefactibilidades/nueva" className="border border-gray-300 text-gray-700 px-4 py-2.5 rounded-control text-sm font-medium hover:bg-gray-50 flex items-center gap-2">
-              <Plus className="w-4 h-4" /> Prefactibilidad
-            </Link>
-            <Link href="/tasaciones/nueva" className="bg-primary text-white px-4 py-2.5 rounded-control text-sm font-medium hover:bg-primary-hover flex items-center gap-2">
-              <Plus className="w-4 h-4" /> Nueva tasación
-            </Link>
+            </Button>
+            <Button href="/tasaciones/vendidas" variant="outline" icon={<Database className="w-4 h-4" />}>
+              Cierres reales
+            </Button>
+            <Button href="/prefactibilidades/nueva" variant="outline" icon={<Plus className="w-4 h-4" />}>
+              Prefactibilidad
+            </Button>
+            <Button href="/tasaciones/nueva" icon={<Plus className="w-4 h-4" />}>
+              Nueva tasación
+            </Button>
           </>
         }
       />

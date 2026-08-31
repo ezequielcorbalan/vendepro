@@ -16,6 +16,9 @@ import { Field, Input, Select, Textarea } from '@/components/ui/Input'
 import { CallButton, WhatsAppButton } from '@/components/ui/ContactButtons'
 import type { Contact } from '@/lib/types'
 
+import { ActionGroup } from '@/components/ui/ActionGroup'
+import { Avatar } from '@/components/ui/Avatar'
+import { Badge } from '@/components/ui/Badge'
 const CONTACT_TYPES = ['propietario', 'comprador', 'inversor', 'inquilino', 'vendedor', 'otro']
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -137,33 +140,27 @@ export default function ContactDetailPage() {
       <Card padded={false} className="p-5 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-pink-100 flex items-center justify-center flex-shrink-0">
-              <User className="w-6 h-6 text-brand-pink" />
-            </div>
+            <Avatar size="lg" name={contact.full_name || '?'} />
             <div>
               <Heading level={3}>{contact.full_name}</Heading>
-              <span className="inline-block mt-0.5 text-xs font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+              <Badge tone="neutral" className="mt-0.5">
                 {contactTypeLabel[contact.contact_type] ?? contact.contact_type}
-              </span>
+              </Badge>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <ActionGroup>
             <Button variant="outline" onClick={openEdit} icon={<Edit3 className="w-3.5 h-3.5" />}>
               Editar
             </Button>
-            {contact.phone && (
-              <CallButton phone={contact.phone} />
-            )}
-            {contact.phone && (
-              <WhatsAppButton phone={contact.phone} />
-            )}
-            <Link href={`/leads?new=1&contact_id=${contact.id}`} className="inline-flex items-center gap-2 text-sm font-medium bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-control transition-colors">
-              <UserPlus className="w-4 h-4" /> Nuevo lead
-            </Link>
-            <Link href={`/propiedades/nueva?contact_id=${contact.id}`} className="flex items-center gap-2 text-sm bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-control transition-colors">
-              <Home className="w-4 h-4" /> Crear propiedad
-            </Link>
-          </div>
+            {contact.phone && <CallButton phone={contact.phone} />}
+            {contact.phone && <WhatsAppButton phone={contact.phone} />}
+            <Button href={`/leads?new=1&contact_id=${contact.id}`} variant="outline" icon={<UserPlus className="w-4 h-4" />}>
+              Nuevo lead
+            </Button>
+            <Button href={`/propiedades/nueva?contact_id=${contact.id}`} icon={<Home className="w-4 h-4" />}>
+              Crear propiedad
+            </Button>
+          </ActionGroup>
         </div>
 
         {/* Contact data */}

@@ -344,12 +344,6 @@ export default function LeadDetailPage() {
 
       {/* Header card */}
       <Card padded={false} className="p-5 relative overflow-hidden">
-        <img
-          src="/brand/GV-27.png"
-          alt=""
-          aria-hidden="true"
-          className="absolute -top-8 -right-8 w-32 h-32 opacity-10 pointer-events-none"
-        />
         {editing ? (
           <div className="space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

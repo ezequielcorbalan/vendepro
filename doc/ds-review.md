@@ -195,6 +195,27 @@ Los 1, 2 y 3 eran **el mismo dibujo con tres medidas distintas**.
 | Colores de dominio a `crm-config` | `VISIT_BUY_INTENTIONS` / `VISIT_SITUATIONS` / `VISIT_SOURCES` (estaban duplicados en **3** archivos), `REPORT_FRESHNESS`. |
 | **Control tri-estado de documentación** | ❌ no se crea — 1 uso (24px, tengo/no aplica/pendiente). Marcado. |
 
+### Regla de acciones en headers (nueva)
+
+`PageHeader` pasa a ser **superficie blanca** (la misma `Card` del DS) para
+despegarse del fondo de página.
+
+Y las acciones **desbordan solas**: hasta 2 quedan visibles; con 3 o más queda
+sólo la última —la principal por convención— y el resto pasa a un menú de tres
+puntos. Es automático, quien llama no hace nada.
+
+El motivo: un header con cuatro botones del mismo peso no tiene acción
+principal, y eso es peor que esconder tres detrás de un menú.
+
+La lógica vive en **`ui/ActionGroup`**, no en `PageHeader`, porque hay cabeceras
+que no son un PageHeader y necesitan la misma regla (el detalle de contacto
+tiene avatar, badge y grilla de datos propios). `ActionGroup` acepta `max`
+(default 2) pero **no se usa con otro valor en ningún lado**: si aparece la
+necesidad, es una decisión de diseño, no un ajuste al pasar.
+
+Aplicada en: `/tasaciones` (4 acciones → 1 + menú de 3) y `contactos/[id]`
+(5 → 1 + menú de 4).
+
 ### Revertido por decisión de diseño (Paula)
 
 Tres cosas que se crearon con datos de uso y se dieron de baja igual. La

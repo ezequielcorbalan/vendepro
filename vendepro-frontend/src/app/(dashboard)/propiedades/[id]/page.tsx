@@ -101,12 +101,6 @@ export default function PropiedadDetailPage() {
 
       {/* Header (hero propio de pantalla de detalle) */}
       <Card className="p-6 mb-6 relative overflow-hidden">
-        <img
-          src="/brand/GV-27.png"
-          alt=""
-          aria-hidden="true"
-          className="absolute -top-6 -right-6 w-40 h-40 opacity-10 pointer-events-none"
-        />
         <div className="relative flex items-start justify-between gap-4 flex-wrap">
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 rounded-card bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center flex-shrink-0 shadow-card">
