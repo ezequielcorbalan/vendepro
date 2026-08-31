@@ -223,6 +223,15 @@ export const REPORT_FRESHNESS = {
   warning: { badge: 'bg-yellow-100 text-yellow-800', text: 'text-yellow-700' },
 } as const
 
+// Estado de una landing. Estaba en un StatusBadge LOCAL de components/landings
+// que le hacía sombra al del design system.
+export const LANDING_STATUSES = {
+  draft:          { label: 'Borrador',    color: 'bg-gray-100 text-gray-700' },
+  pending_review: { label: 'En revisión', color: 'bg-amber-100 text-amber-800' },
+  published:      { label: 'Publicada',   color: 'bg-emerald-100 text-emerald-800' },
+  archived:       { label: 'Archivada',   color: 'bg-gray-200 text-gray-500' },
+} as const
+
 export const LEAD_FLAGS = {
   tasacion: { label: 'Tasación', color: 'bg-purple-100 text-purple-800' },
 } as const

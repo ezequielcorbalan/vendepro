@@ -1,12 +1,14 @@
 'use client'
 import { useState } from 'react'
-import Link from 'next/link'
 import { ArrowLeft, BarChart3, History, Settings, Eye, Send, CheckCircle2, XCircle } from 'lucide-react'
 import type { Landing } from '@/lib/landings/types'
 import { publicLandingHostPath } from '@/lib/landings/slug'
-import StatusBadge from './StatusBadge'
+import { StatusBadge } from '@/components/ui/StatusBadge'
+import { LANDING_STATUSES } from '@/lib/crm-config'
 import { Textarea } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import { Modal } from '@/components/ui/Modal'
+import { Heading, Text } from '@/components/ui/Typography'
 
 interface Props {
   landing: Landing
@@ -33,55 +35,63 @@ export default function EditorToolbar({ landing, isAdmin, dirty, saving, onOpenV
 
   return (
     <header className="h-14 px-4 flex items-center gap-4 bg-white border-b border-gray-200 sticky top-0 z-30">
-      <Link href="/landings" className="p-2 hover:bg-gray-100 rounded-lg"><ArrowLeft className="w-4 h-4" /></Link>
+      <Button href="/landings" variant="ghost" size="icon" aria-label="Volver a Landings"><ArrowLeft className="w-4 h-4" /></Button>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <h1 className="font-semibold text-ink truncate">{landing.seo_title || landing.full_slug}</h1>
-          <StatusBadge status={landing.status} />
-          {saving && <span className="text-xs text-gray-500">Guardando…</span>}
-          {!saving && dirty && <span className="text-xs text-amber-600">Sin guardar</span>}
+          <Heading level={4} as="h1" className="truncate">{landing.seo_title || landing.full_slug}</Heading>
+          <StatusBadge label={LANDING_STATUSES[landing.status]?.label ?? landing.status} color={LANDING_STATUSES[landing.status]?.color} />
+          {saving && <Text size="xs" tone="muted">Guardando…</Text>}
+          {!saving && dirty && <Text size="xs" className="text-warning">Sin guardar</Text>}
         </div>
-        <p className="text-xs text-gray-500 truncate">{publicLandingHostPath(landing.full_slug)}</p>
+        <Text size="xs" tone="muted" className="truncate">{publicLandingHostPath(landing.full_slug)}</Text>
       </div>
 
-      <button onClick={onOpenVersions} className="p-2 hover:bg-gray-100 rounded-lg" title="Versiones"><History className="w-4 h-4 text-gray-600" /></button>
-      <button onClick={onOpenConfig} className="p-2 hover:bg-gray-100 rounded-lg" title="Configuración"><Settings className="w-4 h-4 text-gray-600" /></button>
-      <button onClick={onOpenAnalytics} className="p-2 hover:bg-gray-100 rounded-lg" title="Analytics"><BarChart3 className="w-4 h-4 text-gray-600" /></button>
-      <button onClick={onOpenPreview} className="p-2 hover:bg-gray-100 rounded-lg" title="Vista previa"><Eye className="w-4 h-4 text-gray-600" /></button>
+      <Button onClick={onOpenVersions} variant="ghost" size="icon" aria-label="Versiones" title="Versiones"><History className="w-4 h-4 text-gray-600" /></Button>
+      <Button onClick={onOpenConfig} variant="ghost" size="icon" aria-label="Configuración" title="Configuración"><Settings className="w-4 h-4 text-gray-600" /></Button>
+      <Button onClick={onOpenAnalytics} variant="ghost" size="icon" aria-label="Analytics" title="Analytics"><BarChart3 className="w-4 h-4 text-gray-600" /></Button>
+      <Button onClick={onOpenPreview} variant="ghost" size="icon" aria-label="Vista previa" title="Vista previa"><Eye className="w-4 h-4 text-gray-600" /></Button>
 
       {landing.status === 'draft' && !isAdmin && (
-        <button onClick={() => handle(onRequestPublish)} disabled={busy} className="inline-flex items-center gap-2 bg-primary hover:bg-primary-hover text-white text-sm font-semibold px-4 py-2 rounded-full disabled:opacity-60">
-          <Send className="w-4 h-4" /> Solicitar publicación
-        </button>
+        <Button onClick={() => handle(onRequestPublish)} loading={busy} icon={<Send className="w-4 h-4" />} className="rounded-full">
+          Solicitar publicación
+        </Button>
       )}
       {landing.status === 'draft' && isAdmin && (
-        <button onClick={() => handle(onPublish)} disabled={busy} className="inline-flex items-center gap-2 bg-success hover:opacity-90 text-white text-sm font-semibold px-4 py-2 rounded-full disabled:opacity-60">
-          <CheckCircle2 className="w-4 h-4" /> Publicar
-        </button>
+        <Button variant="success" onClick={() => handle(onPublish)} loading={busy} icon={<CheckCircle2 className="w-4 h-4" />} className="rounded-full">
+          Publicar
+        </Button>
       )}
       {landing.status === 'pending_review' && isAdmin && (
         <div className="flex items-center gap-2">
-          <button onClick={() => handle(onPublish)} disabled={busy} className="inline-flex items-center gap-2 bg-success hover:opacity-90 text-white text-sm font-semibold px-4 py-2 rounded-full">
-            <CheckCircle2 className="w-4 h-4" /> Aprobar y publicar
-          </button>
-          <button onClick={() => setShowReject(true)} className="inline-flex items-center gap-2 border border-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded-full hover:bg-gray-50">
-            <XCircle className="w-4 h-4" /> Rechazar
-          </button>
+          <Button variant="success" onClick={() => handle(onPublish)} loading={busy} icon={<CheckCircle2 className="w-4 h-4" />} className="rounded-full">
+            Aprobar y publicar
+          </Button>
+          <Button variant="outline" onClick={() => setShowReject(true)} icon={<XCircle className="w-4 h-4" />} className="rounded-full">
+            Rechazar
+          </Button>
         </div>
       )}
 
-      {showReject && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowReject(false)}>
-          <div className="bg-white rounded-card shadow-pop p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
-            <h3 className="font-semibold text-ink mb-3">Rechazar solicitud</h3>
-            <Textarea value={note} onChange={e => setNote(e.target.value)} placeholder="Nota para el agente (opcional)…" className="resize-none h-28" />
-            <div className="flex justify-end gap-2 mt-4">
-              <Button variant="ghost" onClick={() => setShowReject(false)}>Cancelar</Button>
-              <Button variant="danger" onClick={() => { handle(() => onRejectPublish(note)); setShowReject(false) }}>Rechazar</Button>
-            </div>
+      <Modal
+        open={showReject}
+        onClose={() => setShowReject(false)}
+        title="Rechazar solicitud"
+        danger
+        icon={<XCircle className="w-4 h-4" />}
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setShowReject(false)}>Cancelar</Button>
+            <Button variant="danger" onClick={() => { handle(() => onRejectPublish(note)); setShowReject(false) }}>Rechazar</Button>
           </div>
-        </div>
-      )}
+        }
+      >
+        <Textarea
+          value={note}
+          onChange={e => setNote(e.target.value)}
+          placeholder="Nota para el agente (opcional)…"
+          className="resize-none h-28"
+        />
+      </Modal>
     </header>
   )
 }

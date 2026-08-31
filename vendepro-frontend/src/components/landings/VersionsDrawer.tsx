@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react'
 import { X, Clock, Sparkles, Save, CheckCircle2, RotateCcw } from 'lucide-react'
 import { landingsApi } from '@/lib/landings/api'
 import type { LandingVersion } from '@/lib/landings/types'
+import { Button } from '@/components/ui/Button'
+import { Heading } from '@/components/ui/Typography'
 
 const LABEL_ICON: Record<LandingVersion['label'], React.ComponentType<{ className?: string }>> = {
   'auto-save': Clock,
@@ -50,10 +52,10 @@ export default function VersionsDrawer({
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h2 className="font-semibold text-ink">Historial de versiones</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
+          <Heading level={4}>Historial de versiones</Heading>
+          <Button variant="ghost" size="icon" aria-label="Cerrar" onClick={onClose}>
             <X className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
         <div className="flex-1 overflow-auto p-3 space-y-2">
           {loading ? (
@@ -66,9 +68,9 @@ export default function VersionsDrawer({
               return (
                 <div
                   key={v.id}
-                  className="border border-gray-200 rounded-lg p-3 flex items-start gap-2"
+                  className="border border-gray-200 rounded-control p-3 flex items-start gap-2"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 rounded-control bg-gray-100 flex items-center justify-center flex-shrink-0">
                     <Icon className="w-4 h-4 text-gray-700" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -79,13 +81,16 @@ export default function VersionsDrawer({
                       {new Date(v.created_at).toLocaleString('es-AR')}
                     </p>
                   </div>
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => rollback(v.id)}
-                    disabled={busy === v.id}
-                    className="text-xs text-brand-pink hover:underline flex items-center gap-1 disabled:opacity-50"
+                    loading={busy === v.id}
+                    icon={<RotateCcw className="w-3 h-3" />}
+                    className="text-xs text-primary px-0"
                   >
-                    <RotateCcw className="w-3 h-3" /> Restaurar
-                  </button>
+                    Restaurar
+                  </Button>
                 </div>
               )
             })

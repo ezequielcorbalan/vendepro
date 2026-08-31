@@ -1,11 +1,17 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { X, ChevronRight, Loader2 } from 'lucide-react'
+import { X } from 'lucide-react'
 import { templatesApi, landingsApi } from '@/lib/landings/api'
 import type { LandingTemplate, LandingKind } from '@/lib/landings/types'
 import { slugifyBase, isValidSlugBase, publicLandingHostPath } from '@/lib/landings/slug'
 import { Field, Input } from '@/components/ui/Input'
+import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/Badge'
+import { OptionCard } from '@/components/ui/OptionCard'
+import { StepIndicator } from '@/components/ui/StepIndicator'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { Heading, Text } from '@/components/ui/Typography'
 
 type Step = 'template' | 'name'
 
@@ -53,51 +59,53 @@ export default function NewLandingModal({ onClose, asTasacionTemplate = false }:
       <div className="bg-white rounded-card w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-pop flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <div className="flex items-center gap-2">
-            <h2 className="text-xl font-semibold text-ink">
+            <Heading level={3}>
               {asTasacionTemplate ? 'Nueva plantilla de tasación' : 'Nueva landing'}
-            </h2>
-            {asTasacionTemplate && (
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-gradient-to-br from-brand-pink to-brand-orange text-white">
-                PLANTILLA TASACIÓN
-              </span>
-            )}
+            </Heading>
+            {asTasacionTemplate && <Badge tone="primary">Plantilla tasación</Badge>}
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
+          <Button variant="ghost" size="icon" aria-label="Cerrar" onClick={onClose}><X className="w-5 h-5" /></Button>
         </div>
 
-        <div className="flex items-center gap-3 px-6 py-3 border-b border-gray-100 text-sm">
-          <span className={`font-medium ${step === 'template' ? 'text-brand-pink' : 'text-gray-400'}`}>1. Elegí un template</span>
-          <ChevronRight className="w-4 h-4 text-gray-300" />
-          <span className={`font-medium ${step === 'name' ? 'text-brand-pink' : 'text-gray-400'}`}>2. Nombrala</span>
+        <div className="px-6 py-3 border-b border-gray-100">
+          <StepIndicator
+            steps={['Elegí un template', 'Nombrala']}
+            current={step === 'template' ? 1 : 2}
+          />
         </div>
 
         {step === 'template' && (
           <div className="flex-1 overflow-auto p-6">
-            <div className="flex gap-2 mb-4">
-              {(['all', 'lead_capture', 'property'] as const).map(k => (
-                <button key={k} onClick={() => setKindFilter(k)} className={`px-3 py-1.5 rounded-full text-sm ${kindFilter === k ? 'bg-brand-pink text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
-                  {k === 'all' ? 'Todos' : k === 'lead_capture' ? 'Captación' : 'Propiedad'}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              className="mb-4"
+              value={kindFilter}
+              onChange={v => setKindFilter(v as typeof kindFilter)}
+              options={[
+                { value: 'all', label: 'Todos' },
+                { value: 'lead_capture', label: 'Captación' },
+                { value: 'property', label: 'Propiedad' },
+              ]}
+            />
             {loading ? (
-              <div className="text-center py-12 text-gray-500">Cargando templates…</div>
+              <Text tone="muted" className="text-center py-12">Cargando templates…</Text>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {filtered.map(t => (
-                  <button key={t.id} onClick={() => { setSelectedTemplate(t); setStep('name') }}
-                    className="text-left bg-white border border-gray-200 hover:border-brand-pink rounded-card overflow-hidden transition-colors">
-                    <div className="aspect-[16/10] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-gray-400">
-                      {t.preview_image_url ? <img src={t.preview_image_url} alt="" className="w-full h-full object-cover" /> : <span className="text-xs">Sin preview</span>}
-                    </div>
-                    <div className="p-4">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-600">{t.kind === 'lead_capture' ? 'Captación' : 'Propiedad'}</span>
+                  <OptionCard
+                    key={t.id}
+                    orientation="stack"
+                    onClick={() => { setSelectedTemplate(t); setStep('name') }}
+                    selected={selectedTemplate?.id === t.id}
+                    media={
+                      <div className="aspect-[16/10] bg-gray-100 flex items-center justify-center text-gray-400">
+                        {t.preview_image_url
+                          ? <img src={t.preview_image_url} alt="" className="w-full h-full object-cover" />
+                          : <span className="text-xs">Sin preview</span>}
                       </div>
-                      <h3 className="font-semibold text-ink mb-1">{t.name}</h3>
-                      {t.description && <p className="text-sm text-gray-600 line-clamp-2">{t.description}</p>}
-                    </div>
-                  </button>
+                    }
+                    title={t.name}
+                    description={t.description ?? undefined}
+                  />
                 ))}
               </div>
             )}
@@ -106,7 +114,7 @@ export default function NewLandingModal({ onClose, asTasacionTemplate = false }:
 
         {step === 'name' && selectedTemplate && (
           <div className="flex-1 overflow-auto p-6">
-            <p className="text-sm text-gray-500 mb-6">Template elegido: <strong className="text-ink">{selectedTemplate.name}</strong></p>
+            <Text size="sm" tone="muted" className="mb-6">Template elegido: <strong className="text-ink">{selectedTemplate.name}</strong></Text>
 
             <Field label="Nombre / slug de la landing">
               <Input
@@ -117,18 +125,23 @@ export default function NewLandingModal({ onClose, asTasacionTemplate = false }:
               />
             </Field>
             {slugBase && (
-              <p className="mt-2 text-xs text-gray-500">
+              <Text size="xs" tone="muted" className="mt-2">
                 URL final: <code>{publicLandingHostPath(`${slugifyBase(slugBase) || 'slug'}-XXXXX`)}</code> (se agrega un sufijo aleatorio de 5 chars)
-              </p>
+              </Text>
             )}
-            {error && <p className="mt-3 text-sm text-danger">{error}</p>}
+            {error && <Text size="sm" tone="danger" className="mt-3">{error}</Text>}
 
             <div className="flex items-center justify-between mt-8">
-              <button onClick={() => setStep('template')} className="text-sm text-gray-600 hover:text-ink">← Volver</button>
-              <button onClick={submit} disabled={creating || !slugBase.trim()}
-                className="inline-flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange hover:opacity-90 text-white font-semibold px-6 py-2.5 rounded-full disabled:opacity-60">
-                {creating ? <><Loader2 className="w-4 h-4 animate-spin" />Creando…</> : 'Crear landing'}
-              </button>
+              <Button variant="ghost" onClick={() => setStep('template')}>← Volver</Button>
+              <Button
+                size="lg"
+                onClick={submit}
+                loading={creating}
+                disabled={!slugBase.trim()}
+                className="rounded-full px-6"
+              >
+                {creating ? 'Creando…' : 'Crear landing'}
+              </Button>
             </div>
           </div>
         )}
