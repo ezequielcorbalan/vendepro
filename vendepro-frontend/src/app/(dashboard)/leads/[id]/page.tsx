@@ -654,7 +654,7 @@ export default function LeadDetailPage() {
           <div className="space-y-2">
             {fichas.map((ficha: any) => (
               <div key={ficha.id} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
-                <IconMedallion tone="primary" className="shrink-0">
+                <IconMedallion className="shrink-0">
                   <FileText className="w-4 h-4" />
                 </IconMedallion>
                 <div className="flex-1 min-w-0">

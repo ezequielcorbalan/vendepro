@@ -7,11 +7,17 @@ import { cn } from '@/lib/utils'
  * de pantalla, header de card, avatar de sección, pantallas de onboarding.
  *
  * Unifica el drift que había: tamaños w-7/8/9/10/12/24, radios mezclados
- * (`rounded-lg` suelto vs `rounded-control`) y sombras distintas. El gradiente
+ * (`rounded-lg` suelto vs `rounded-control`) y sombras distintas.
+ *
+ * El tono por default es GRIS, no primary. Un ícono de encabezado no se tiñe de
+ * marca: el rosa se reserva para CTAs y estados activos (regla 3 de
+ * doc/ds-visual-rules.md, de donde salieron 17 encabezados corregidos). Cuando
+ * este componente nació con `primary` de default volvió a meter, callado, lo que
+ * esa regla había sacado. El color se pide, no se hereda.
  *
  * Uso:
- *   <IconMedallion size="lg"><Home className="w-5 h-5 text-white" /></IconMedallion>
- *   <IconMedallion shape="circle" size="hero" elevated><Check .../></IconMedallion>
+ *   <IconMedallion size="lg"><Home className="w-5 h-5" /></IconMedallion>
+ *   <IconMedallion shape="circle" size="hero" tone="primary" elevated><Check .../></IconMedallion>
  */
 export type IconMedallionSize = 'sm' | 'md' | 'lg' | 'xl' | 'hero'
 export type IconMedallionShape = 'control' | 'circle'
@@ -57,7 +63,7 @@ export function IconMedallion({
   children,
   size = 'md',
   shape = 'control',
-  tone = 'primary',
+  tone = 'neutral',
   elevated = false,
   className,
 }: IconMedallionProps) {

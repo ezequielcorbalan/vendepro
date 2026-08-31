@@ -30,14 +30,23 @@ rounded-control`, íconos `w-4 h-4`. Nada de `text-xs`, `py-1.5`, `gap-1.5`, `w-
 Ref: `413eaf3` — botones-link de headers que habían quedado en la escala vieja.
 
 ## 3. Ícono de encabezado de sección
-Ícono chico al lado de un `Heading` de sección: `text-gray-600` (no `text-primary`).
-El rosa de marca se reserva para CTAs y estados activos, no para decorar títulos.
+Ícono chico al lado de un `Heading` de sección: GRIS. El rosa de marca se
+reserva para CTAs y estados activos, no para decorar títulos.
 
 - ❌ `<Heading level={4}><Target className="w-4 h-4 text-primary" /> Objetivos</Heading>`
 - ✅ `<Heading level={4}><Target className="w-4 h-4 text-gray-600" /> Objetivos</Heading>`
-- Excepción: ícono ligado a una integración externa a propósito (azul de Meta/Facebook, verde de WhatsApp) — mismo criterio que los botones de canal.
+- En un header de card el ícono va en `WidgetHeader`, cuyo medallón es gris por
+  default. Vale para `IconMedallion` suelto: el default es `neutral`.
+- ❌ `<WidgetHeader tone="primary" ...>` / `<IconMedallion tone="primary">` en un encabezado
+- ✅ `<WidgetHeader icon={...} title={...} />` — el gris se hereda
+- Excepción: ícono ligado a una integración externa a propósito (azul de Meta/Facebook, verde de WhatsApp) — mismo criterio que los botones de canal. Ahí sí se pasa `tone`.
+- Excepción: el medallón `hero` de onboarding/éxito, que es un momento de marca y pide `tone="primary"` explícito.
 
-Ref: `bacb6f4` — 17 encabezados corregidos, con las 2 excepciones de Meta documentadas.
+Ref: `bacb6f4` — 17 encabezados corregidos, con las 2 excepciones de Meta
+documentadas. Y una recaída: `IconMedallion` nació con `tone='primary'` de
+default, así que al migrar los encabezados a `WidgetHeader` el rosa volvió solo.
+El default es gris justamente para que la regla no dependa de que cada llamador
+se acuerde.
 
 ## 4. Barra de búsqueda + filtros (listados)
 Una sola fila compacta: sin `Card`/contenedor gris envolvente, sin botón

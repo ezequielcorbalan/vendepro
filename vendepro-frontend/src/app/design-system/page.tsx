@@ -327,7 +327,7 @@ export default function DesignSystemPage() {
         {/* Gradiente de marca */}
         <Section
           title="IconMedallion"
-          hint="Caja con tinte de color + ícono del mismo color. Es el patrón más repetido de la app (24 usos inline antes de existir) y venía con drift: tamaños de w-7 a w-24 y radios mezclados. El `tone` usa los mismos nombres que Badge y StatTile — un solo vocabulario de tonos en todo el DS."
+          hint="Caja con tinte de color + ícono del mismo color. Es el patrón más repetido de la app (24 usos inline antes de existir) y venía con drift: tamaños de w-7 a w-24 y radios mezclados. El `tone` usa los mismos nombres que Badge y StatTile — un solo vocabulario de tonos en todo el DS. El default es `neutral`: un ícono de encabezado no se tiñe de marca (regla 3), el color se pide."
         >
           <div className="space-y-4">
             <Row>

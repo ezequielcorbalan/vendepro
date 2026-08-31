@@ -23,7 +23,7 @@ export function StepLayout({
 }) {
   return (
     <div className="flex flex-col items-center text-center px-4 py-5 gap-4">
-      <IconMedallion size="hero" shape="circle" elevated className="w-16 h-16">
+      <IconMedallion size="hero" shape="circle" tone="primary" elevated className="w-16 h-16">
         {icon}
       </IconMedallion>
       <div className="space-y-1">

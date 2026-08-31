@@ -35,6 +35,11 @@ interface WidgetHeaderProps {
   action?: ReactNode
   /** Tamaño del medallón. `md` (w-9) por default. */
   size?: IconMedallionSize
+  /** Tono del medallón. Gris por default: un ícono de encabezado NO se tiñe de
+   *  marca (regla 3 de doc/ds-visual-rules.md). Se pasa un tono sólo cuando el
+   *  ícono está ligado a algo con color propio (un canal, una integración) o
+   *  cuando el widget comunica un estado. */
+  tone?: string
   className?: string
 }
 
@@ -45,12 +50,13 @@ export function WidgetHeader({
   badge,
   action,
   size = 'md',
+  tone,
   className,
 }: WidgetHeaderProps) {
   return (
     <div className={cn('flex items-start justify-between gap-3 mb-3', className)}>
       <div className="flex items-center gap-2 min-w-0">
-        {icon && <IconMedallion size={size}>{icon}</IconMedallion>}
+        {icon && <IconMedallion size={size} tone={tone}>{icon}</IconMedallion>}
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             {/* Reusa CardTitle: el DS ya decidió cómo se ve un título de card
