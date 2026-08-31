@@ -95,8 +95,9 @@ export default function PriceHistoryWidget({
           }
         />
 
+        {/* Sin `tone`: la tile teñida es para resultados con significado
+            (margen positivo/negativo). Un precio es un dato. */}
         <StatTile
-          tone="primary"
           label="Precio actual"
           value={currentPrice ? `${currency} ${Number(currentPrice).toLocaleString('es-AR')}` : 'Sin precio'}
           className="mb-3"

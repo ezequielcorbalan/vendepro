@@ -8,6 +8,9 @@
  * 2. Medallones de gradiente armados a mano. El gradiente de marca dejó de ser
  *    el color por default de un ícono: va `IconMedallion` con un `tone`, o
  *    `WidgetHeader`, que ya lo trae. Ver regla 14 de doc/ds-visual-rules.md.
+ * 3. Íconos escritos como carácter o emoji en un texto de UI (✓ Guardado,
+ *    "📱 Móvil"). Van como ícono de lucide, que escala, hereda color y se lee
+ *    igual en todos los sistemas. Ver regla 20.
  *
  * Es un "ratchet" con baseline: como la migración está en curso, no falla por las
  * ocurrencias existentes; falla sólo si el total SUBE del baseline. Al migrar
@@ -40,8 +43,15 @@ const PATTERN = /(bg|text|border)-(emerald|green|red|blue|amber|yellow)-(50|100|
 const GRADIENT_PATTERN = /bg-gradient-to-\w+ from-brand-pink/
 const BASELINE_FILE = 'scripts/.ds-color-baseline'
 const GRADIENT_BASELINE_FILE = 'scripts/.ds-gradient-baseline'
+// Vistos, cruces y emoji dentro de un string o de texto JSX. NO incluye flechas
+// (→ ← ↑ ↓): en prosa son tipografía legítima ("Configuración → Ayuda"), no un
+// ícono disfrazado. Tampoco mira `emoji:`, que en los bloques de landing es un
+// campo de contenido del cliente, no UI.
+const GLYPH_PATTERN = /[\u2713\u2714\u2715\u2716\u2717\u2718\u2705\u274C\u274E\u{1F300}-\u{1FAFF}]/u
+const GLYPH_BASELINE_FILE = 'scripts/.ds-glyph-baseline'
 const baseline = existsSync(BASELINE_FILE) ? Number(readFileSync(BASELINE_FILE, 'utf8').trim() || '0') : 0
 const gradientBaseline = existsSync(GRADIENT_BASELINE_FILE) ? Number(readFileSync(GRADIENT_BASELINE_FILE, 'utf8').trim() || '0') : 0
+const glyphBaseline = existsSync(GLYPH_BASELINE_FILE) ? Number(readFileSync(GLYPH_BASELINE_FILE, 'utf8').trim() || '0') : 0
 
 function walk(dir) {
   let out = []
@@ -57,12 +67,14 @@ function walk(dir) {
 
 const hits = []
 const gradientHits = []
+const glyphHits = []
 for (const root of ROOTS) {
   for (const file of walk(root)) {
     readFileSync(file, 'utf8').split('\n').forEach((line, i) => {
       if (line.includes('ds-todo')) return
       if (PATTERN.test(line)) hits.push(`${file}:${i + 1}`)
       if (GRADIENT_PATTERN.test(line)) gradientHits.push(`${file}:${i + 1}`)
+      if (GLYPH_PATTERN.test(line) && !line.includes('emoji')) glyphHits.push(`${file}:${i + 1}`)
     })
   }
 }
@@ -71,9 +83,20 @@ const count = hits.length
 console.log(`DS color lint · colores semánticos sueltos en ${ROOTS.join(' + ')}: ${count} (baseline ${baseline})`)
 
 const gradientCount = gradientHits.length
+const glyphCount = glyphHits.length
 console.log(`DS color lint · medallones de gradiente a mano: ${gradientCount} (baseline ${gradientBaseline})`)
+console.log(`DS color lint · íconos escritos como carácter/emoji: ${glyphCount} (baseline ${glyphBaseline})`)
 
 let failed = false
+
+if (glyphCount > glyphBaseline) {
+  console.error(`\n✗ Subió +${glyphCount - glyphBaseline}. Usá un ícono de lucide, no un carácter (regla 20).`)
+  glyphHits.slice(-Math.min(15, glyphCount - glyphBaseline)).forEach(h => console.error('  ' + h))
+  failed = true
+}
+if (glyphCount < glyphBaseline) {
+  console.log(`✓ Bajó ${glyphBaseline - glyphCount}. Actualizá ${GLYPH_BASELINE_FILE} a ${glyphCount}.`)
+}
 
 if (gradientCount > gradientBaseline) {
   console.error(`\n✗ Subió +${gradientCount - gradientBaseline}. Usá <IconMedallion tone="..."> o <WidgetHeader>, no un gradiente a mano (regla 14).`)

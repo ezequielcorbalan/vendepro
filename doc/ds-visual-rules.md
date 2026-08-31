@@ -264,6 +264,23 @@ gris, se lee como suelto.
 
 Ref: `/tasaciones/nueva` — el único contenedor era el header; el resto flotaba.
 
+## 20. Un ícono es un ícono, no un carácter
+Nada de vistos, cruces ni emoji escritos dentro del texto. Van como ícono de
+lucide: escalan, heredan el color, se alinean con la línea de base y se ven
+igual en Windows, Mac y Android.
+
+- ❌ `{saved ? '✓ Guardado' : 'Guardar'}` · `label: '📱 Móvil'` · `<button>✕</button>`
+- ✅ `icon={saved ? <Check className="w-4 h-4" /> : undefined}` y el texto sin el carácter
+- ✅ `SegmentedControl` y `Tabs` tienen prop `icon` en cada opción — para eso está
+- Las flechas en prosa (→ ← ) NO son esto: son tipografía legítima
+  ("Configuración → Ayuda", "lead → contacto"). El ratchet no las cuenta.
+- Excepción: el `emoji` de un bloque de landing es contenido que carga el
+  cliente, no UI nuestra.
+
+Ref: la corrección "en el onboarding no usar emojis" la apliqué sólo en el
+onboarding y nunca la escribí, así que el resto de la app siguió con 33 casos
+sueltos. Ratchet: baseline 2.
+
 ---
 
 ## Cómo se audita
@@ -322,11 +339,11 @@ grep -rln "border-t" src/components/tasaciones src/components/marketing --includ
 
 ## Enforcement existente
 El ratchet de color (`scripts/ds-color-lint.mjs` + `scripts/.ds-color-baseline`)
-ya evita que SUBA el uso de colores Tailwind sueltos ni los medallones de
-gradiente a mano (regla 14). Mismo espíritu: cuando una pantalla se corrige acá,
+ya evita que SUBA el uso de colores Tailwind sueltos, los medallones de
+gradiente a mano (regla 14) ni los íconos escritos como carácter (regla 20). Mismo espíritu: cuando una pantalla se corrige acá,
 el baseline baja y queda trabado el retroceso.
 
-Las reglas 12 a 19 salieron del repaso visual del 31/08/2026: cada una es una
+Las reglas 12 a 20 salieron del repaso visual del 31/08/2026: cada una es una
 corrección que se pidió sobre pantalla y que, en vez de quedar en la pantalla
 donde se pidió, se movió al componente que la impone. La 12 es la que enseñó por
 qué: el header de contacto se había arreglado inline, así que el de lead siguió

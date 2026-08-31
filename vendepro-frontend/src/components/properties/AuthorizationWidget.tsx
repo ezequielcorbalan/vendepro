@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Calendar } from 'lucide-react'
+import { Calendar, Check } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { Field, Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
@@ -83,9 +83,18 @@ export default function AuthorizationWidget({
         </Alert>
       )}
 
-      <Button onClick={save} loading={saving} fullWidth className="mt-3">
-        {saved ? '✓ Guardado' : 'Guardar'}
-      </Button>
+      {/* Ni `fullWidth` ni el visto como carácter: una barra rosa a todo el
+          ancho para guardar un formulario secundario pesa más que la acción, y
+          el visto va como ícono de lucide. */}
+      <div className="mt-3 flex justify-end">
+        <Button
+          onClick={save}
+          loading={saving}
+          icon={saved ? <Check className="w-4 h-4" /> : undefined}
+        >
+          {saved ? 'Guardado' : 'Guardar'}
+        </Button>
+      </div>
     </Card>
   )
 }

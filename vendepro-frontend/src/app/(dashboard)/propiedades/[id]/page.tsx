@@ -3,9 +3,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Building2, Loader2, Phone, Mail, User, Plus, Pencil, Send, Trash2 } from 'lucide-react'
+import { ArrowLeft, Building2, Loader2, Phone, Mail, User, Plus, Pencil, Send, Trash2, MapPin } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { Card } from '@/components/ui/Card'
+import { DetailHeader, DetailMeta } from '@/components/ui/DetailHeader'
+import { IconMedallion } from '@/components/ui/IconMedallion'
 import { Heading, Text } from '@/components/ui/Typography'
 import { Button } from '@/components/ui/Button'
 import { StatusBadge } from '@/components/ui/StatusBadge'
@@ -99,21 +101,19 @@ export default function PropiedadDetailPage() {
         <ArrowLeft className="w-4 h-4" /> Volver a Propiedades
       </Link>
 
-      {/* Header (hero propio de pantalla de detalle) */}
-      <Card className="p-6 mb-6 relative overflow-hidden">
-        <div className="relative flex items-start justify-between gap-4 flex-wrap">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-card bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center flex-shrink-0 shadow-card">
-              <Building2 className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <Heading level={3} as="h1">{property.address}</Heading>
-              <Text tone="muted" className="mt-0.5">
-                {[property.neighborhood, property.city].filter(Boolean).join(' · ')}
-              </Text>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
+      {/* Header — el molde compartido (`DetailHeader`), igual que contacto y lead.
+          Era un hero propio con medallón de gradiente y cuatro acciones del mismo
+          peso, dos de ellas en rosa sólido. */}
+      <DetailHeader
+        className="mb-6"
+        avatar={
+          <IconMedallion size="xl">
+            <Building2 className="w-6 h-6" />
+          </IconMedallion>
+        }
+        title={property.address}
+        badges={
+          <>
             <StatusBadge
               label={PROPERTY_STAGES[resolveStage(stage)]?.label ?? stage}
               color={PROPERTY_STAGES[resolveStage(stage)]?.color}
@@ -123,17 +123,28 @@ export default function PropiedadDetailPage() {
               const src = getPropertySource((property as any).source)
               return src && <StatusBadge label={src.label} color={src.color} className="whitespace-nowrap" />
             })()}
-            <Link href={`/tasaciones/nueva?property_id=${id}`}
-              className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-control text-sm font-medium hover:bg-primary-hover">
-              <Plus className="w-4 h-4" /> Nueva tasación
-            </Link>
-            <Button onClick={() => setShowGenerate(true)} icon={<Send className="w-4 h-4" />}>
-              Enviar ficha de visita
+          </>
+        }
+        meta={
+          <>
+            {[property.neighborhood, property.city].filter(Boolean).length > 0 && (
+              <DetailMeta icon={<MapPin className="w-4 h-4" />}>
+                {[property.neighborhood, property.city].filter(Boolean).join(' · ')}
+              </DetailMeta>
+            )}
+            {property.property_type && (
+              <DetailMeta icon={<Building2 className="w-4 h-4" />}>
+                <span className="capitalize">{property.property_type}</span>
+              </DetailMeta>
+            )}
+          </>
+        }
+        visibleActions={2}
+        actions={
+          <>
+            <Button href={`/propiedades/${id}/editar`} variant="outline" icon={<Pencil className="w-4 h-4" />}>
+              Editar
             </Button>
-            <Link href={`/propiedades/${id}/editar`}
-              className="inline-flex items-center gap-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-control text-sm font-medium hover:bg-gray-50">
-              <Pencil className="w-4 h-4" /> Editar
-            </Link>
             <Button
               variant="outline"
               onClick={() => setShowDeleteConfirm(true)}
@@ -142,9 +153,15 @@ export default function PropiedadDetailPage() {
             >
               Eliminar
             </Button>
-          </div>
-        </div>
-      </Card>
+            <Button href={`/tasaciones/nueva?property_id=${id}`} variant="outline" icon={<Plus className="w-4 h-4" />}>
+              Nueva tasación
+            </Button>
+            <Button onClick={() => setShowGenerate(true)} icon={<Send className="w-4 h-4" />}>
+              Enviar ficha de visita
+            </Button>
+          </>
+        }
+      />
 
       {/* Widgets operativos: autorización + precio + docs */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -197,7 +214,7 @@ export default function PropiedadDetailPage() {
             {property.asking_price && (
               <div className="flex justify-between gap-2">
                 <Text as="dt" tone="muted">Precio</Text>
-                <Text as="dd" weight="medium" tone="primary">
+                <Text as="dd" weight="medium">
                   {property.currency} {Number(property.asking_price).toLocaleString('es-AR')}
                 </Text>
               </div>
@@ -213,7 +230,7 @@ export default function PropiedadDetailPage() {
               <div className="flex items-center gap-2 text-sm">
                 <User className="w-4 h-4 text-gray-400 flex-shrink-0" />
                 {property.contact_id ? (
-                  <Link href={`/contactos/${property.contact_id}`} className="text-primary hover:underline font-medium">
+                  <Link href={`/contactos/${property.contact_id}`} className="font-medium text-ink hover:text-primary">
                     {property.owner_name}
                   </Link>
                 ) : (
@@ -223,13 +240,13 @@ export default function PropiedadDetailPage() {
               {property.owner_phone && (
                 <div className="flex items-center gap-2 text-sm">
                   <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                  <a href={`tel:${property.owner_phone}`} className="text-primary hover:underline">{property.owner_phone}</a>
+                  <a href={`tel:${property.owner_phone}`} className="text-gray-600 hover:text-primary">{property.owner_phone}</a>
                 </div>
               )}
               {property.owner_email && (
                 <div className="flex items-center gap-2 text-sm">
                   <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                  <a href={`mailto:${property.owner_email}`} className="text-primary hover:underline">{property.owner_email}</a>
+                  <a href={`mailto:${property.owner_email}`} className="text-gray-600 hover:text-primary">{property.owner_email}</a>
                 </div>
               )}
             </div>

@@ -1,4 +1,5 @@
 'use client'
+import { X } from 'lucide-react'
 interface Props { data: any; onPatch: (p: Record<string, unknown>) => void }
 
 export function MarketStatsForm({ data, onPatch }: Props) {
@@ -31,7 +32,7 @@ export function MarketStatsForm({ data, onPatch }: Props) {
           {vars.map((v, i) => (
             <li key={i} className="flex gap-1">
               <input value={v} onChange={e => setVar(i, e.target.value)} placeholder="market.avg_price" className="flex-1 rounded border border-slate-300 px-2 py-1 text-xs font-mono" />
-              <button onClick={() => remove(i)} className="text-xs text-rose-500">✕</button>
+              <button onClick={() => remove(i)} aria-label="Quitar" className="text-gray-400 hover:text-danger"><X className="w-3.5 h-3.5" /></button>
             </li>
           ))}
         </ul>

@@ -49,12 +49,14 @@ export default function ReportsListWidget({ propertyId }: Props) {
         title="Reportes"
         subtitle={`${reports.length} ${reports.length === 1 ? 'reporte' : 'reportes'}`}
         action={
-          <Link
+          <Button
             href={`/propiedades/${propertyId}/reportes/nuevo`}
-            className="flex items-center gap-1 text-xs text-primary font-medium hover:underline"
+            variant="ghost"
+            size="sm"
+            icon={<Plus className="w-3 h-3" />}
           >
-            <Plus className="w-3 h-3" /> Nuevo
-          </Link>
+            Nuevo
+          </Button>
         }
       />
 

@@ -1,4 +1,5 @@
 'use client'
+import { X } from 'lucide-react'
 interface ProposalItem { icon?: string; title: string; body: string }
 interface Props { data: any; onPatch: (p: Record<string, unknown>) => void }
 
@@ -46,7 +47,7 @@ export function ProposalCommercialForm({ data, onPatch }: Props) {
             <li key={i} className="rounded border border-slate-200 p-2">
               <div className="mb-1 flex items-center justify-between">
                 <span className="text-[10px] uppercase tracking-wide text-slate-500">Punto {i + 1}</span>
-                <button onClick={() => removeItem(i)} className="text-xs text-rose-500">✕</button>
+                <button onClick={() => removeItem(i)} aria-label="Quitar" className="text-gray-400 hover:text-danger"><X className="w-3.5 h-3.5" /></button>
               </div>
               <input
                 value={item.title}

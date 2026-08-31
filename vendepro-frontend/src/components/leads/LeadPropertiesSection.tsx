@@ -265,7 +265,7 @@ export function LeadPropertiesSection({ leadId }: { leadId: string }) {
                     className="flex items-center gap-1 text-[11px] text-gray-500 hover:text-primary hover:bg-primary/5 rounded-control px-2 min-h-[44px] disabled:opacity-40"
                   >
                     <ClipboardList className="w-3 h-3" />
-                    {copiedId === item.id ? 'Link copiado ✓' : 'Ficha de visita'}
+                    {copiedId === item.id ? 'Link copiado' : 'Ficha de visita'}
                   </button>
                   <button
                     onClick={() => unlink(item.id)}

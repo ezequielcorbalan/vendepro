@@ -153,12 +153,14 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
 
   return (
     <Card>
+      {/* El porcentaje va en ink, no en primary: es una medida, no un estado. En
+          rosa y a 2xl leía como alarma, y la barra de abajo cuenta lo mismo. */}
       <WidgetHeader
         icon={<FileCheck2 className="w-4 h-4" />}
         title="Documentación"
         subtitle={`${resolvedItems} de ${totalItems} resueltos`}
         className="mb-4"
-        action={<Text size="lg" weight="bold" tone="primary" className="text-2xl">{progressPct}%</Text>}
+        action={<Text size="lg" weight="bold" className="text-2xl">{progressPct}%</Text>}
       />
 
       <ProgressBar value={progressPct} className="h-2 mb-3" />
