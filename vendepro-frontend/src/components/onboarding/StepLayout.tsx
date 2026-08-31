@@ -22,7 +22,7 @@ export function StepLayout({
   children?: ReactNode
 }) {
   return (
-    <div className="flex flex-col items-center text-center px-4 py-6 gap-5">
+    <div className="flex flex-col items-center text-center px-4 py-5 gap-4">
       <IconMedallion size="hero" shape="circle" elevated className="w-16 h-16">
         {icon}
       </IconMedallion>

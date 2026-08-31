@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import {
   Phone, MessageCircle, Users, Home, Eye, Calculator, Clock,
-  FileText, Settings, CheckCircle2, Target, Plus, Sparkles, BarChart3
+  FileText, Settings, CheckCircle2, Target, Plus, BarChart3
 } from 'lucide-react'
 import { BarChart, Bar, XAxis, ResponsiveContainer, ReferenceLine } from 'recharts'
 import { useToast } from '@/components/ui/Toast'
@@ -155,9 +155,6 @@ export default function ActividadesPage() {
             <Select value={period} onChange={e => setPeriod(e.target.value)} className="w-auto">
               {PERIOD_OPTIONS.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
             </Select>
-            <Button variant="outline" icon={<Sparkles className="w-4 h-4" />}>
-              con IA
-            </Button>
             <Button onClick={() => setShowCreate(true)} icon={<Plus className="w-4 h-4" />}>
               Registrar
             </Button>

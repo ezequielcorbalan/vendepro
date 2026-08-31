@@ -35,6 +35,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge'
 import { OperationBadge } from '@/components/ui/OperationBadge'
 import { Alert } from '@/components/ui/Alert'
 import { StatTile } from '@/components/ui/StatTile'
+import { cn } from '@/lib/utils'
 import { IconMedallion } from '@/components/ui/IconMedallion'
 import { OptionCard } from '@/components/ui/OptionCard'
 import { WidgetHeader } from '@/components/ui/WidgetHeader'
@@ -66,7 +67,7 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
 }
 
 function Row({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={`flex flex-wrap items-center gap-3 ${className ?? ''}`}>{children}</div>
+  return <div className={cn('flex flex-wrap items-center gap-3', className)}>{children}</div>
 }
 
 const SWATCHES = [
@@ -517,26 +518,26 @@ export default function DesignSystemPage() {
           </div>
         </Section>
 
-        <Section title="StatTile" hint="Tile de estadística. Con ícono: tile blanca, el tono colorea sólo la caja (KPI del dashboard). Sin ícono + tone: tiñe toda la tile (resultado semántico). Sin ícono ni tone: neutra.">
-          <Row>
+        <Section title="StatTile" hint="Tile de estadística. Con ícono: tile blanca, el tono colorea sólo la caja (KPI del dashboard). Sin ícono + tone: tiñe toda la tile (resultado semántico). Sin ícono ni tone: neutra. La tile no fija alto: toma el de su celda, así que en la grilla de la app todas las de una fila miden igual.">
+          <Row className="items-stretch">
             <StatTile icon={<Target className="w-5 h-5" />} label="Leads activos" value={128} tone="primary" href="#" className="w-40" />
             <StatTile icon={<Home className="w-5 h-5" />} label="Captaciones" value={24} tone="bg-cyan-50 text-cyan-600" href="#" className="w-40" />
             <StatTile label="Inversión total" value="USD 850.000" className="w-40" />
             <StatTile tone="success" label="Ingresos proyectados" value="USD 1.200.000" className="w-40" />
             <StatTile tone="danger" label="Margen bruto" value="USD -30.000" caption="-2.4% ROI" className="w-40" />
           </Row>
-          <Row className="mt-3">
+          <Row className="mt-3 items-stretch">
             <StatTile
               emphasis
-              tone="border-green-300 bg-green-50 text-green-700"
+              tone="border-success/30 bg-success/5 text-success"
               icon={<Eye className="w-5 h-5" />}
               label="Visualizaciones/día ∅"
               value={42}
-              badge={<StatusBadge size="sm" label="Saludable" color="bg-green-100 text-green-800" icon={<Check className="w-2.5 h-2.5" />} />}
-              className="w-52"
+              badge={<StatusBadge size="sm" label="Saludable" color="bg-success/15 text-success" icon={<Check className="w-2.5 h-2.5" />} />}
+              className="w-40"
             />
             <Text size="xs" tone="muted" className="ml-2">
-              emphasis → borde 2px + fondo teñidos con el tone (KPI destacado) · badge → slot al pie
+              emphasis → borde de 1px + fondo teñidos con el tone (KPI destacado) · badge → slot al pie
             </Text>
           </Row>
         </Section>

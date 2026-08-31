@@ -34,7 +34,7 @@ interface StatTileProps {
   caption?: string
   /** Slot al pie de la tile — un badge de estado (ej. HealthBadge del semáforo). */
   badge?: ReactNode
-  /** KPI destacado: borde de 2px y fondo teñidos con el `tone`, sin perder el ícono. */
+  /** KPI destacado: borde de 1px y fondo teñidos con el `tone`, sin perder el ícono. */
   emphasis?: boolean
   /** Si se pasa, la tile es un link. */
   href?: string

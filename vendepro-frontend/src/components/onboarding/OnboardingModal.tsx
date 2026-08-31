@@ -55,7 +55,7 @@ export default function OnboardingModal({ userName, onClose }: Props) {
       onClick={onClose}
     >
       <div
-        className={`bg-white rounded-card w-full max-w-xl h-[34rem] shadow-pop flex flex-col overflow-hidden transition-all duration-300 ${visible ? 'scale-100' : 'scale-95'}`}
+        className={`bg-white rounded-card w-full max-w-xl h-[40rem] max-h-[calc(100vh-2rem)] shadow-pop flex flex-col overflow-hidden transition-all duration-300 ${visible ? 'scale-100' : 'scale-95'}`}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -66,12 +66,18 @@ export default function OnboardingModal({ userName, onClose }: Props) {
           </Button>
         </div>
 
-        {/* El alto fijo está en el PANEL (h-[34rem]), no acá: el último paso
-            oculta el footer, así que si el alto lo llevara el contenido el modal
-            seguiría cambiando de tamaño en ese paso. El contenido toma lo que
-            sobra y scrollea si hace falta. */}
-        <div className="flex-1 min-h-0 overflow-y-auto">
-          <StepContent step={step} userName={userName} onClose={onClose} />
+        {/* El alto fijo está en el PANEL, no acá: el último paso oculta el
+            footer, así que si el alto lo llevara el contenido el modal seguiría
+            cambiando de tamaño en ese paso. El contenido toma lo que sobra.
+            40rem es el alto del paso más denso (Reportes); el
+            max-h lo acota en pantallas bajas. */}
+        <div className="flex-1 min-h-0 overflow-y-auto flex flex-col">
+          {/* `m-auto` en vez de justify-center: centra el paso corto y, cuando
+              el contenido no entra, scrollea sin recortar el borde de arriba
+              (que es lo que hace justify-center con overflow). */}
+          <div className="m-auto w-full">
+            <StepContent step={step} userName={userName} onClose={onClose} />
+          </div>
         </div>
 
         {/* Footer nav — hidden on last step (Step8 has its own CTAs) */}

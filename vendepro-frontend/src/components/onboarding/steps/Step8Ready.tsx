@@ -17,12 +17,12 @@ export default function Step8Ready({ name, onClose }: Props) {
       title={`¡Todo listo${name ? `, ${name.split(' ')[0]}` : ''}!`}
       subtitle="Ya conocés VendéPro. Empezá cargando tu primer lead o explorando el dashboard."
     >
-      <div className="flex flex-col sm:flex-row gap-3 w-full max-w-sm">
+      <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md">
         <Button
           variant="outline"
           size="lg"
           onClick={onClose}
-          className="flex-1"
+          className="flex-1 whitespace-nowrap"
         >
           Ir al Dashboard <ArrowRight className="w-4 h-4" />
         </Button>
@@ -31,9 +31,9 @@ export default function Step8Ready({ name, onClose }: Props) {
           size="lg"
           onClick={onClose}
           icon={<Users className="w-4 h-4" />}
-          className="flex-1"
+          className="flex-1 whitespace-nowrap"
         >
-          Cargar mi primer Lead
+          Cargar mi primer lead
         </Button>
       </div>
 
