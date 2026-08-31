@@ -55,6 +55,11 @@ Cada dominio agrupa entidades + tablas + use cases + endpoints + páginas:
 
 - [[Landing-publica]] — `vendepro.com.ar` (HTML estático)
 
+## 🧭 Producto
+
+- [[Roadmap-producto]] — roadmap de features candidatos (pivote: CRM gratis + módulo de marketing pago)
+- [[Roadmap-estado-implementacion]] — en qué instancia está cada proceso en el código
+
 ## 🛠️ Guías para hacer features
 
 - [[Como-agregar-endpoint]]

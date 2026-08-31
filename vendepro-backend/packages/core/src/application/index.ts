@@ -145,7 +145,6 @@ export * from './use-cases/marketing/index'
 export * from './use-cases/email-campaigns/index'
 
 // Automatizaciones de email (secuencias drip)
-export * from './use-cases/email-automations/index'
 
 // Integraciones con CRMs externos (KiteProp)
 export * from './use-cases/integrations/index'
@@ -203,3 +202,14 @@ export { HydrateTemplateBlocksUseCase } from './use-cases/appraisal-rendering/hy
 export type { HydratedBlock, HydrateInput } from './use-cases/appraisal-rendering/hydrate-template-blocks'
 export { SyncTemplateSnapshotUseCase } from './use-cases/appraisal-rendering/sync-template-snapshot'
 export { SetBlockOverridesUseCase } from './use-cases/appraisal-rendering/set-block-overrides'
+
+// Portales (feed XML ZonaProp / Argenprop)
+export * from './use-cases/portals/zonaprop-feed-mapper'
+export * from './use-cases/portals/get-portal-feed'
+
+// Automatizaciones
+export * from './use-cases/automations/run-automations-for-event'
+export * from './use-cases/automations/drain-automation-jobs'
+export * from './use-cases/automations/build-automation-context'
+export * from './use-cases/automations/manage-automations'
+export * from './use-cases/automations/generate-email-sequence'

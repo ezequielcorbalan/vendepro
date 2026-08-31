@@ -3,6 +3,11 @@
   "main": "src/index.ts",
   "compatibility_date": "2025-01-01",
   "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    // Base del sitio público: se usa para el <url> de cada aviso del feed
+    // de portales. Sin barra final.
+    "PUBLIC_BASE_URL": "https://www.marcelagenta.com"
+  },
   "routes": [
     { "pattern": "public.api.vendepro.com.ar", "custom_domain": true }
   ],

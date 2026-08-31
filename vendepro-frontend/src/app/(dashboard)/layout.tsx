@@ -1,8 +1,10 @@
 import { redirect } from 'next/navigation'
 import { getCurrentUserServer } from '@/lib/auth-server'
+import { getOrgModulesServer } from '@/lib/modules-server'
 import Sidebar from '@/components/layout/Sidebar'
 import MobileHeader from '@/components/layout/MobileHeader'
 import AIFloatingButton from '@/components/ai/AIFloatingButton'
+import { ModulesProvider } from '@/components/modules/ModulesProvider'
 import { ToastProvider } from '@/components/ui/Toast'
 import type { Profile } from '@/lib/types'
 
@@ -13,8 +15,12 @@ export default async function DashboardLayout({
 }) {
   const user = await getCurrentUserServer()
   if (!user) redirect('/login')
+  // Se resuelve acá y no en cada pantalla: el menú necesita saber qué módulos
+  // mostrar con candado antes del primer pintado.
+  const modules = await getOrgModulesServer()
 
   return (
+    <ModulesProvider value={modules}>
     <ToastProvider>
       <div className="flex min-h-screen bg-brand-light">
         {/* Desktop sidebar */}
@@ -31,5 +37,6 @@ export default async function DashboardLayout({
         <AIFloatingButton />
       </div>
     </ToastProvider>
+    </ModulesProvider>
   )
 }

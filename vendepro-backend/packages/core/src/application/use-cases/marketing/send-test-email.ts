@@ -1,6 +1,9 @@
 import type { EmailSettingsRepository } from '../../ports/repositories/email-settings-repository'
+import type { OrganizationRepository } from '../../ports/repositories/organization-repository'
 import type { EmailService } from '../../ports/services/email-service'
 import { ValidationError } from '../../../domain/errors/validation-error'
+import { renderEmailHtml, renderEmailText, VENDEPRO_BRAND } from '../../../domain/rules/email-template'
+import type { EmailBrand } from '../../../domain/rules/email-template'
 
 export interface SendTestEmailInput {
   orgId: string
@@ -16,11 +19,16 @@ export interface SendTestEmailResult {
  * Envía un email de prueba con la config de la org, para verificar
  * remitente/dominio antes de habilitar campañas. No requiere
  * enabled=true: el test es justamente el paso previo a habilitar.
+ *
+ * Sale con el mismo template base que el resto de los envíos: la prueba
+ * también sirve para ver cómo va a quedar el marco de marca.
  */
 export class SendTestEmailUseCase {
   constructor(
     private readonly settingsRepo: EmailSettingsRepository,
     private readonly emailService: EmailService,
+    /** Opcional: logo y color de la org para el encabezado del template. */
+    private readonly orgRepo?: OrganizationRepository,
   ) {}
 
   async execute(input: SendTestEmailInput): Promise<SendTestEmailResult> {
@@ -35,14 +43,20 @@ export class SendTestEmailUseCase {
     }
 
     const fromName = settings.from_name ?? 'VendéPro'
+    const brand = await this.resolveBrand(input.orgId, settings.from_name)
+    const text = `Este es un email de prueba enviado desde ${fromName} (${settings.from_email}) vía VendéPro. Si lo recibiste, la configuración de envío funciona correctamente.`
     try {
       await this.emailService.send({
         from: { email: settings.from_email, name: fromName },
         to: { email: to, name: to },
         replyTo: settings.reply_to ?? undefined,
         subject: `Email de prueba — ${fromName}`,
-        html: buildTestHtml(fromName, settings.from_email),
-        text: `Este es un email de prueba enviado desde ${fromName} (${settings.from_email}) vía VendéPro. Si lo recibiste, la configuración de envío funciona correctamente.`,
+        html: renderEmailHtml({
+          brand,
+          contentHtml: buildTestContent(fromName, settings.from_email),
+          preheader: 'Si estás leyendo esto, el envío de emails funciona.',
+        }),
+        text: renderEmailText({ brand, contentText: text }),
         tags: { kind: 'test' },
       })
       return { ok: true }
@@ -52,27 +66,36 @@ export class SendTestEmailUseCase {
       return { ok: false, error: err?.message ?? 'Error desconocido al enviar' }
     }
   }
+
+  /** Branding real de la org, para que la prueba muestre el mail tal cual sale. */
+  private async resolveBrand(orgId: string, fromName: string | null): Promise<EmailBrand> {
+    const fallback: EmailBrand = { ...VENDEPRO_BRAND, name: fromName ?? VENDEPRO_BRAND.name }
+    if (!this.orgRepo) return fallback
+    try {
+      const org = await this.orgRepo.findById(orgId)
+      if (!org) return fallback
+      return {
+        name: fromName ?? org.name,
+        logoUrl: org.logo_url,
+        color: org.brand_color,
+        accentColor: VENDEPRO_BRAND.accentColor,
+      }
+    } catch {
+      return fallback
+    }
+  }
 }
 
-function buildTestHtml(fromName: string, fromEmail: string): string {
-  return `<!DOCTYPE html>
-<html>
-  <body style="font-family: Poppins, Arial, sans-serif; background: #f7f7f8; padding: 24px;">
-    <div style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 32px; border: 1px solid #eee;">
-      <h2 style="color: #ff007c; margin: 0 0 16px;">✓ Email de prueba</h2>
-      <p style="color: #333; line-height: 1.6;">
-        Este es un email de prueba enviado desde <strong>${escapeHtml(fromName)}</strong>
-        (${escapeHtml(fromEmail)}) vía VendéPro.
-      </p>
-      <p style="color: #333; line-height: 1.6;">
-        Si lo estás leyendo, la configuración de envío funciona correctamente.
-      </p>
-      <p style="color: #999; font-size: 12px; margin-top: 24px;">
-        Enviado por VendéPro · Email marketing
-      </p>
-    </div>
-  </body>
-</html>`
+/** Sólo el contenido: el marco de marca lo pone `renderEmailHtml`. */
+function buildTestContent(fromName: string, fromEmail: string): string {
+  return `<h2 style="margin:0 0 16px;font-size:20px;color:#111827;">✓ Email de prueba</h2>
+<p style="margin:0 0 12px;">
+  Este es un email de prueba enviado desde <strong>${escapeHtml(fromName)}</strong>
+  (${escapeHtml(fromEmail)}) vía VendéPro.
+</p>
+<p style="margin:0;">
+  Si lo estás leyendo, la configuración de envío funciona correctamente.
+</p>`
 }
 
 function escapeHtml(s: string): string {

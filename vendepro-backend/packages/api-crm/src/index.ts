@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { automationsRoutes } from './automations-routes'
 import {
   corsMiddleware, errorHandler, createAuthMiddleware,
   D1LeadRepository, D1ContactRepository, D1CalendarRepository, D1ActivityRepository, D1UserRepository,
@@ -12,12 +13,11 @@ import {
   D1UserIntegrationRepository, GoogleCalendarHttpClient, buildGoogleAuthUrl,
   D1EmailSettingsRepository, D1EmailSuppressionRepository, ResendEmailService,
   D1EmailCampaignRepository, D1EmailCampaignSendRepository, D1EmailAudienceRepository,
-  D1EmailAutomationRepository, D1EmailAutomationEnrollmentRepository, D1EmailAutomationSendRepository,
-  enrollInAutomations,
   HmacUnsubscribeTokenSigner,
   JwtAuthService, CryptoIdGenerator,
   encrypt, decrypt,
   createMarketingSender, fireMarketingEvent, fireWebhookEvent, resolveAssignedAgent,
+  fireAndDrainAutomations, drainAutomationJobs,
 } from '@vendepro/infrastructure'
 import { Activity, propertyFromIncoming } from '@vendepro/core'
 import {
@@ -39,15 +39,12 @@ import {
   GetKitepropAgentsUseCase, SaveAgentMapUseCase,
   GetGoogleIntegrationUseCase, ConnectGoogleCalendarUseCase,
   DisconnectGoogleCalendarUseCase, SaveGoogleIntegrationSettingsUseCase,
-  SyncEventToGoogleUseCase,
+  SyncEventToGoogleUseCase, ListGoogleCalendarEventsUseCase,
   GetEmailSettingsUseCase, SaveEmailSettingsUseCase,
   SendTestEmailUseCase, ListEmailSuppressionsUseCase,
   CreateEmailCampaignUseCase, UpdateEmailCampaignUseCase, ListEmailCampaignsUseCase,
   GetEmailCampaignUseCase, DeleteEmailCampaignUseCase, CancelEmailCampaignUseCase,
   PreviewCampaignAudienceUseCase, QueueCampaignSendUseCase, ProcessEmailQueueUseCase,
-  CreateEmailAutomationUseCase, UpdateEmailAutomationUseCase, ListEmailAutomationsUseCase,
-  GetEmailAutomationUseCase, DeleteEmailAutomationUseCase, SetAutomationStatusUseCase,
-  EnrollSegmentUseCase, ListAutomationEnrollmentsUseCase, ProcessAutomationsUseCase,
 } from '@vendepro/core'
 import {
   CreateLandingFromTemplateUseCase, UpdateLandingBlocksUseCase, AddBlockUseCase,
@@ -73,6 +70,8 @@ type Env = {
   FRONTEND_URL?: string
   // Email marketing (Resend) — secret vía wrangler secret put / dashboard
   RESEND_API_KEY?: string
+  // Base pública para los links dentro de los emails (reportes, tasaciones, baja)
+  PUBLIC_BASE_URL?: string
 }
 type AuthVars = { Variables: { userId: string; userRole: string; orgId: string } }
 
@@ -91,6 +90,11 @@ app.use('*', async (c, next) => {
   const authService = new JwtAuthService(c.env.JWT_SECRET)
   return createAuthMiddleware(authService)(c, next)
 })
+
+// ── AUTOMATIZACIONES ───────────────────────────────────────────
+// Motor genérico: evento -> condiciones -> acciones. Módulo aparte porque
+// este archivo ya es largo.
+app.route('/', automationsRoutes as any)
 
 // ── LEADS ──────────────────────────────────────────────────────
 app.get('/leads', async (c) => {
@@ -158,17 +162,15 @@ app.post('/leads', async (c) => {
       },
     },
   })
-  // Automatizaciones: inscribe el lead en las secuencias con trigger `lead_created`.
-  await enrollInAutomations(c.env, {
+  // Automatizaciones: evento `lead.created`. Se dispara y se drena dentro del
+  // mismo request para que la bienvenida salga en el acto; el cron recoge lo
+  // diferido y lo que falle.
+  await runInBackground(c, fireAndDrainAutomations(c.env, {
     orgId: c.get('orgId'),
-    event: 'lead_created',
-    recipient: {
-      email: body.email ?? body.contact_data?.email ?? '',
-      name: body.full_name ?? body.contact_data?.full_name ?? null,
-      contact_id: result.contact_id ?? null,
-      lead_id: result.id,
-    },
-  })
+    trigger: 'lead.created',
+    entityType: 'lead',
+    entityId: result.id,
+  }))
   return c.json({ ...result, marketing: mk ?? null }, 201)
 })
 
@@ -228,20 +230,15 @@ app.post('/leads/stage', async (c) => {
       notes: body.notes ?? null,
     },
   })
-  // Automatizaciones: inscribe en secuencias con trigger `stage:<nuevo_stage>`.
-  // Reusa el lead ya leído arriba (tiene el email, que no viene en el body).
-  if (leadObj?.email) {
-    await enrollInAutomations(c.env, {
-      orgId: c.get('orgId'),
-      event: `stage:${body.stage}`,
-      recipient: {
-        email: leadObj.email,
-        name: leadObj.full_name ?? null,
-        contact_id: leadObj.contact_id ?? null,
-        lead_id: body.id,
-      },
-    })
-  }
+  // Automatizaciones: evento `lead.stage_changed`. El motor arma el contexto
+  // desde la base, así que no hace falta pasarle los datos del lead.
+  await runInBackground(c, fireAndDrainAutomations(c.env, {
+    orgId: c.get('orgId'),
+    trigger: 'lead.stage_changed',
+    entityType: 'lead',
+    entityId: body.id,
+    stage: { from: result.fromStage, to: body.stage },
+  }))
   return c.json({ ...result, marketing: mk ?? null })
 })
 
@@ -444,6 +441,7 @@ app.post('/marketing/email/test', async (c) => {
   const useCase = new SendTestEmailUseCase(
     new D1EmailSettingsRepository(c.env.DB),
     new ResendEmailService(c.env.RESEND_API_KEY),
+    new D1OrganizationRepository(c.env.DB),
   )
   const result = await useCase.execute({ orgId: c.get('orgId'), to: body.to })
   return c.json(result, result.ok ? 200 : 502)
@@ -564,99 +562,26 @@ app.post('/marketing/email/campaigns/:id/cancel', async (c) => {
   return c.json({ success: true })
 })
 
-// ── MARKETING — AUTOMATIZACIONES (secuencias drip) ─────────────
-
-function automationDeps(env: Env) {
-  return {
-    repo: new D1EmailAutomationRepository(env.DB),
-    enroll: new D1EmailAutomationEnrollmentRepository(env.DB),
-    sends: new D1EmailAutomationSendRepository(env.DB),
+/**
+ * Corre una tarea en segundo plano sin bloquear la respuesta.
+ *
+ * En el Worker usa `waitUntil`, que mantiene vivo el request hasta que termina.
+ * En los tests `app.request()` corre sin ExecutionContext y acceder a él tira,
+ * así que ahí se espera la promesa: el test ve el efecto completo y la ruta no
+ * devuelve 500.
+ */
+function runInBackground(c: any, task: Promise<unknown>): Promise<void> | void {
+  try {
+    c.executionCtx.waitUntil(task)
+  } catch {
+    return task.then(() => undefined)
   }
 }
 
-app.get('/marketing/email/automations', async (c) => {
-  const d = automationDeps(c.env)
-  const useCase = new ListEmailAutomationsUseCase(d.repo, d.enroll)
-  const list = await useCase.execute(c.get('orgId'))
-  return c.json(list)
-})
-
-app.get('/marketing/email/automations/:id', async (c) => {
-  const d = automationDeps(c.env)
-  const useCase = new GetEmailAutomationUseCase(d.repo, d.enroll, d.sends)
-  const result = await useCase.execute(c.req.param('id'), c.get('orgId'))
-  return c.json(result)
-})
-
-app.get('/marketing/email/automations/:id/enrollments', async (c) => {
-  const d = automationDeps(c.env)
-  const useCase = new ListAutomationEnrollmentsUseCase(d.enroll)
-  const list = await useCase.execute(c.req.param('id'), c.get('orgId'))
-  return c.json(list)
-})
-
-app.post('/marketing/email/automations', async (c) => {
-  const denied = requireAdmin(c); if (denied) return denied
-  const body = (await c.req.json()) as any
-  const useCase = new CreateEmailAutomationUseCase(new D1EmailAutomationRepository(c.env.DB), new CryptoIdGenerator())
-  const result = await useCase.execute({
-    orgId: c.get('orgId'),
-    userId: c.get('userId'),
-    name: body.name,
-    trigger_event: body.trigger_event ?? null,
-    steps: body.steps ?? null,
-  })
-  return c.json(result, 201)
-})
-
-app.put('/marketing/email/automations/:id', async (c) => {
-  const denied = requireAdmin(c); if (denied) return denied
-  const body = (await c.req.json()) as any
-  const useCase = new UpdateEmailAutomationUseCase(new D1EmailAutomationRepository(c.env.DB))
-  await useCase.execute({
-    id: c.req.param('id'),
-    orgId: c.get('orgId'),
-    name: body.name,
-    trigger_event: body.trigger_event,
-    steps: body.steps,
-  })
-  return c.json({ success: true })
-})
-
-app.delete('/marketing/email/automations/:id', async (c) => {
-  const denied = requireAdmin(c); if (denied) return denied
-  const d = automationDeps(c.env)
-  const useCase = new DeleteEmailAutomationUseCase(d.repo, d.enroll, d.sends)
-  await useCase.execute(c.req.param('id'), c.get('orgId'))
-  return c.json({ success: true })
-})
-
-// Activar / pausar / volver a borrador.
-app.post('/marketing/email/automations/:id/status', async (c) => {
-  const denied = requireAdmin(c); if (denied) return denied
-  const body = (await c.req.json()) as any
-  const useCase = new SetAutomationStatusUseCase(new D1EmailAutomationRepository(c.env.DB))
-  await useCase.execute(c.req.param('id'), c.get('orgId'), body.status)
-  return c.json({ success: true })
-})
-
-// Inscripción manual de un segmento en la automatización.
-app.post('/marketing/email/automations/:id/enroll', async (c) => {
-  const denied = requireAdmin(c); if (denied) return denied
-  const body = (await c.req.json()) as any
-  const useCase = new EnrollSegmentUseCase(
-    new D1EmailAutomationRepository(c.env.DB),
-    new D1EmailAutomationEnrollmentRepository(c.env.DB),
-    new D1EmailAudienceRepository(c.env.DB),
-    new CryptoIdGenerator(),
-  )
-  const result = await useCase.execute({
-    automationId: c.req.param('id'),
-    orgId: c.get('orgId'),
-    segment: body.segment,
-  })
-  return c.json(result)
-})
+// -- MARKETING -- AUTOMATIZACIONES ------------------------------
+// Las secuencias drip (`/marketing/email/automations`) se absorbieron dentro
+// del motor generico de automatizaciones: ver `automations-routes.ts` y la
+// migracion 045. Las tablas `email_automation_*` quedan como historial.
 
 // ── INTEGRACIONES CRM (KiteProp) ───────────────────────────────
 // Config sensible: TODAS las rutas (incluido el GET) son sólo admin.
@@ -915,8 +840,52 @@ app.get(GOOGLE_CALLBACK_PATH, async (c) => {
       redirectUri: googleRedirectUri(c),
     })
     return finish('ok')
-  } catch {
-    return finish('error', 'canje_fallido')
+  } catch (err: any) {
+    // Un ValidationError trae un motivo accionable (ej. faltó tildar el
+    // permiso de calendario); mostrarlo vale más que "canje_fallido".
+    const reason = typeof err?.message === 'string' && err.message.length < 200
+      ? err.message
+      : 'canje_fallido'
+    return finish('error', reason)
+  }
+})
+
+/**
+ * Eventos del Google Calendar del usuario logueado, para mostrarlos junto a
+ * los del CRM. Sólo lectura y sólo del calendario propio: el userId sale del
+ * token, nadie puede pedir la agenda de otro agente.
+ *
+ * Nunca falla con 5xx: si Google se cae, devuelve la lista vacía con el motivo
+ * y el calendario del CRM se sigue viendo igual.
+ */
+app.get('/integrations/google/events', async (c) => {
+  const { start, end } = c.req.query()
+  if (!start || !end) return c.json({ error: 'start y end son requeridos' }, 400)
+  if (!googleConfigured(c.env)) {
+    return c.json({ events: [], connected: false, reason: 'no_configurado' })
+  }
+  try {
+    const useCase = new ListGoogleCalendarEventsUseCase(
+      new D1UserIntegrationRepository(c.env.DB),
+      new D1CalendarRepository(c.env.DB),
+      googleGateway(c.env),
+      (plain) => encrypt(plain, c.env.JWT_SECRET),
+      (cipher) => decrypt(cipher, c.env.JWT_SECRET),
+    )
+    return c.json(await useCase.execute({
+      orgId: c.get('orgId'),
+      userId: c.get('userId'),
+      start,
+      end,
+    }))
+  } catch (err: any) {
+    // Se normaliza el motivo: el UI necesita distinguir "faltan permisos"
+    // (accionable: reconectar) de "Google se cayó" (esperar y reintentar).
+    const raw = String(err?.message ?? '')
+    const reason = /insufficient authentication scopes|insufficientPermissions|403/i.test(raw)
+      ? 'insufficient_scopes'
+      : (raw || 'google_error')
+    return c.json({ events: [], connected: true, reason })
   }
 })
 
@@ -1497,6 +1466,8 @@ function buildEmailQueueProcessor(env: Env) {
     new ResendEmailService(env.RESEND_API_KEY ?? ''),
     new HmacUnsubscribeTokenSigner(env.JWT_SECRET),
     env.FRONTEND_URL ?? 'https://vendepro.com.ar',
+    // Logo y color de la org para el encabezado del template base.
+    new D1OrganizationRepository(env.DB),
   )
 }
 
@@ -1509,35 +1480,14 @@ async function runEmailQueue(env: Env): Promise<void> {
   }
 }
 
-// Despachador de automatizaciones (secuencias drip). Corre en el mismo tick */5.
-function buildAutomationProcessor(env: Env) {
-  return new ProcessAutomationsUseCase(
-    new D1EmailAutomationRepository(env.DB),
-    new D1EmailAutomationEnrollmentRepository(env.DB),
-    new D1EmailAutomationSendRepository(env.DB),
-    new D1EmailSettingsRepository(env.DB),
-    new D1EmailSuppressionRepository(env.DB),
-    new ResendEmailService(env.RESEND_API_KEY ?? ''),
-    new HmacUnsubscribeTokenSigner(env.JWT_SECRET),
-    new CryptoIdGenerator(),
-    env.FRONTEND_URL ?? 'https://vendepro.com.ar',
-  )
-}
-
-async function runAutomations(env: Env): Promise<void> {
-  if (!env.RESEND_API_KEY) return
-  try {
-    await buildAutomationProcessor(env).execute()
-  } catch {
-    // el próximo tick reintenta; los fallos por email quedan en email_automation_sends
-  }
-}
-
 async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
   // Dos crons registrados en wrangler.jsonc — se distinguen por patrón.
   if (event.cron === '*/5 * * * *') {
     ctx.waitUntil(runEmailQueue(env))
-    ctx.waitUntil(runAutomations(env))
+    // Motor de automatizaciones: ejecuta las acciones diferidas y recupera las
+    // que el drenaje inline no pudo (worker evictado, Resend caído).
+    // Reemplaza al despachador de secuencias drip, absorbido en la migración 045.
+    ctx.waitUntil(drainAutomationJobs(env, { limit: 50 }))
     return
   }
   ctx.waitUntil(runKitepropAutoSync(env))

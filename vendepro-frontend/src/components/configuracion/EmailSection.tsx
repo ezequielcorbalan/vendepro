@@ -147,8 +147,13 @@ export default function EmailSection() {
           <Field label="Responder a (opcional)" hint="Las respuestas de los clientes llegan a esta casilla.">
             <Input type="email" value={replyTo} onChange={e => setReplyTo(e.target.value)} placeholder="contacto@tudominio.com.ar" />
           </Field>
-          <div className="flex items-end pb-1">
-            <Checkbox checked={enabled} onChange={setEnabled} label="Envío de emails habilitado" />
+          {/* Mismo esqueleto que Field (label + control) para que el check quede
+              en la línea del input de al lado y no colgado del hint. */}
+          <div className="flex flex-col gap-1.5">
+            <span className="text-sm font-medium invisible select-none" aria-hidden>&nbsp;</span>
+            <div className="flex items-center min-h-[42px]">
+              <Checkbox checked={enabled} onChange={setEnabled} label="Envío de emails habilitado" />
+            </div>
           </div>
         </div>
         <div className="mt-5 flex justify-end">

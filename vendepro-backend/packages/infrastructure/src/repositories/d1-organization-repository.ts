@@ -1,5 +1,5 @@
 // packages/infrastructure/src/repositories/d1-organization-repository.ts
-import { Organization, DEFAULT_SURFACE_WEIGHTS } from '@vendepro/core'
+import { Organization, DEFAULT_SURFACE_WEIGHTS, parsePlan, parseModules } from '@vendepro/core'
 import type { OrganizationRepository, SurfaceWeights } from '@vendepro/core'
 
 export class D1OrganizationRepository implements OrganizationRepository {
@@ -88,18 +88,20 @@ export class D1OrganizationRepository implements OrganizationRepository {
   async save(org: Organization): Promise<void> {
     const o = org.toObject()
     await this.db.prepare(`
-      INSERT INTO organizations (id, name, slug, logo_url, brand_color, brand_accent_color, canva_template_id, canva_report_template_id, surface_weights, owner_id, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO organizations (id, name, slug, logo_url, brand_color, brand_accent_color, canva_template_id, canva_report_template_id, surface_weights, plan, modules, owner_id, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         name=excluded.name, slug=excluded.slug, logo_url=excluded.logo_url,
         brand_color=excluded.brand_color, brand_accent_color=excluded.brand_accent_color,
         canva_template_id=excluded.canva_template_id, canva_report_template_id=excluded.canva_report_template_id,
         surface_weights=excluded.surface_weights,
+        plan=excluded.plan, modules=excluded.modules,
         owner_id=excluded.owner_id
     `).bind(
       o.id, o.name, o.slug, o.logo_url, o.brand_color, o.brand_accent_color,
       o.canva_template_id, o.canva_report_template_id,
       JSON.stringify(o.surface_weights),
+      o.plan, JSON.stringify(o.modules),
       o.owner_id, o.created_at
     ).run()
   }
@@ -126,6 +128,8 @@ export class D1OrganizationRepository implements OrganizationRepository {
       canva_template_id: row.canva_template_id ?? null,
       canva_report_template_id: row.canva_report_template_id ?? null,
       surface_weights: weights,
+      plan: parsePlan(row.plan),
+      modules: parseModules(row.modules),
       owner_id: row.owner_id ?? null,
       created_at: row.created_at,
     })

@@ -5,7 +5,7 @@ import Link from 'next/link'
 import {
   Settings, Save, Loader2, Building2, Calendar, User,
   ClipboardList, FileText, CheckCircle, XCircle, Megaphone,
-  HelpCircle, PlayCircle, KeyRound, Plug,
+  HelpCircle, PlayCircle, KeyRound, Plug, Zap,
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
@@ -148,6 +148,12 @@ export default function ConfiguracionPage() {
       subtitle: 'Metas y seguimiento',
     },
     ...(isAdmin ? [{
+      href: '/configuracion/automatizaciones',
+      icon: <Zap className="w-5 h-5" />,
+      iconColor: 'bg-primary/10 text-primary',
+      title: 'Automatizaciones',
+      subtitle: 'Emails y avisos que se disparan solos',
+    }, {
       href: '/configuracion/marketing',
       icon: <Megaphone className="w-5 h-5" />,
       iconColor: 'bg-primary/10 text-primary',

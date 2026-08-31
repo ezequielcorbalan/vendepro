@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/Button'
 import { Alert } from '@/components/ui/Alert'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { ModuleGate } from '@/components/modules/ModuleGate'
 
 type Period = 'month' | 'quarter' | 'year'
 const PERIOD_LABELS: Record<Period, string> = { month: 'Mes', quarter: 'Trimestre', year: 'Año' }
@@ -110,7 +111,7 @@ function fmtMoney(value: number, currency: string | null): string {
   }
 }
 
-export default function MarketingPage() {
+function MarketingPage() {
   const [period, setPeriod] = useState<Period>('month')
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -466,5 +467,18 @@ export default function MarketingPage() {
         </Card>
       )}
     </div>
+  )
+}
+
+/**
+ * Publicidad es parte del plan PRO. El gate va en la página y no en un layout
+ * de /marketing porque de esa carpeta cuelgan Emails y el alias viejo de
+ * automatizaciones, que son módulos distintos con su propia activación.
+ */
+export default function MarketingPageGated() {
+  return (
+    <ModuleGate module="publicidad">
+      <MarketingPage />
+    </ModuleGate>
   )
 }

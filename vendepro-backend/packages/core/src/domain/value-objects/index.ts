@@ -29,3 +29,48 @@ export {
 export type { AppraisalBlockType } from './appraisal-block-type'
 export { validateAppraisalBlocks } from './appraisal-block-schemas'
 export type { AppraisalTemplateBlock, ValidateResult } from './appraisal-block-schemas'
+
+// Automatizaciones — catálogo de triggers, acciones y variables
+export {
+  AUTOMATION_TRIGGERS,
+  TIME_BASED_TRIGGERS,
+  TRIGGER_DEFINITIONS,
+  AUTOMATION_ACTIONS,
+  PHASE_1_ACTIONS,
+  ACTION_DEFINITIONS,
+  CONDITION_OPERATORS,
+  OPERATOR_LABELS,
+  UNARY_OPERATORS,
+  VARIABLE_DEFINITIONS,
+  getTriggerDefinition,
+  getActionDefinition,
+  isTimeBasedTrigger,
+  actionChainsEvents,
+  isConditionOperator,
+  variablesForTrigger,
+} from './automation-catalog'
+export type {
+  AutomationTrigger,
+  AutomationActionType,
+  ConditionOperator,
+  EntityType,
+  TriggerDefinition,
+  ActionDefinition,
+  ConfigField,
+  VariableDefinition,
+} from './automation-catalog'
+
+// Planes y módulos comerciales por organización
+export {
+  ORG_PLANS,
+  ORG_MODULES,
+  MODULE_DEFINITIONS,
+  getModuleDefinition,
+  isOrgModule,
+  isOrgPlan,
+  parseModules,
+  parsePlan,
+  isModuleEnabled,
+  enabledModules,
+} from './org-modules'
+export type { OrgPlan, OrgModule, ModuleDefinition } from './org-modules'

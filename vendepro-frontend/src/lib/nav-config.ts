@@ -22,9 +22,10 @@ import {
   Megaphone,
   Briefcase,
   Mail,
-  Workflow,
+  Zap,
   type LucideIcon,
 } from 'lucide-react'
+import type { OrgModule } from './modules'
 
 export interface NavLink {
   href: string
@@ -42,6 +43,11 @@ export interface NavLink {
    * any child is active.
    */
   children?: NavLink[]
+  /**
+   * Módulo del plan que habilita este link. Si la org no lo tiene activado, el
+   * ítem se muestra con candado y lleva a la pantalla que explica el módulo.
+   */
+  module?: OrgModule
 }
 
 export interface NavSection {
@@ -84,13 +90,22 @@ export const menuSections: NavSection[] = [
       },
     ],
   },
+  // Toda la sección es parte del plan PRO, y cada módulo se activa a mano.
   {
     title: 'Marketing',
     links: [
-      { href: '/marketing', label: 'Publicidad', icon: Megaphone, exact: true },
-      { href: '/marketing/emails', label: 'Emails', icon: Mail },
-      { href: '/marketing/automations', label: 'Automatizaciones', icon: Workflow },
-      { href: '/landings', label: 'Landings', icon: Globe },
+      { href: '/marketing', label: 'Publicidad', icon: Megaphone, exact: true, module: 'publicidad' },
+      { href: '/marketing/emails', label: 'Emails', icon: Mail, module: 'emails' },
+      { href: '/landings', label: 'Landings', icon: Globe, module: 'landings' },
+      // La pantalla sigue viviendo bajo /configuracion (es donde se armó), pero
+      // el módulo se usa desde Marketing. `matchPaths` cubre el alias viejo.
+      {
+        href: '/configuracion/automatizaciones',
+        label: 'Automatizaciones',
+        icon: Zap,
+        matchPaths: ['/marketing/automations'],
+        module: 'automatizaciones',
+      },
     ],
   },
 ]

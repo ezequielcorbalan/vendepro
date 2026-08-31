@@ -7,8 +7,13 @@
     { "pattern": "crm.api.vendepro.com.ar", "custom_domain": true }
   ],
   "triggers": {
-    // */15: sync KiteProp · */5: despachador de campañas de email
+    // */15: sync KiteProp · */5: campañas de email + cola de automatizaciones
     "crons": ["*/15 * * * *", "*/5 * * * *"]
+  },
+  "vars": {
+    // Base pública para los links que van dentro de los emails
+    // (reportes de propiedad, tasaciones, baja de suscripción).
+    "PUBLIC_BASE_URL": "https://www.marcelagenta.com"
   },
   "d1_databases": [
     {

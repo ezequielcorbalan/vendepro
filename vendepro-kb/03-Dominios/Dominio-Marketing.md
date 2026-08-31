@@ -4,9 +4,9 @@ Integración server-side de tracking para enviar conversiones a Meta y GA4 desde
 
 ## Entidades
 
-- **`MetaIntegration`** (`domain/entities/meta-integration.ts`) — config por org
-  - `org_id` (PK)
-  - Meta: `pixel_id`, `access_token_encrypted`, `test_event_code`, `enabled`
+- **`MetaIntegration`** (`domain/entities/meta-integration.ts`) — config **por agente** (desde migración `040_meta_integration_por_agente.sql`; antes era por org)
+  - `agent_id` (PK) + `org_id`
+  - Meta: `pixel_id`, `access_token_encrypted`, `test_event_code`, `enabled`, `ad_account_id` (migración 036, para Meta Ads Insights)
   - GA4: `ga4_measurement_id`, `ga4_api_secret_encrypted`, `ga4_enabled`
   - Extra: `stape_endpoint`, `gtm_container_id`
   - Métodos: `update(patch)`, `toPublicView()` (sin tokens)
@@ -20,7 +20,7 @@ Integración server-side de tracking para enviar conversiones a Meta y GA4 desde
 
 ## Tablas D1
 
-- `meta_integration` (1 row por org)
+- `meta_integration` (1 row **por agente** — PK `agent_id` desde la migración 040; si el agente no configuró, el evento es noop)
 - `stage_event_mappings`
 - `meta_event_log` (índices por provider + entity)
 
@@ -34,11 +34,14 @@ Use case (ej. AdvanceLeadStageUseCase)
 MarketingSenderFactory.execute({ org_id, stage_key, entity_id, ... })
     ↓
 1. Busca StageEventMapping
-2. Para cada provider habilitado en MetaIntegration:
+2. Genera event_id determinístico: sha256(orgId:entityType:entityId:eventKey:YYYYMMDD)
+   (compartido con el Pixel vía dataLayer para dedup)
+3. Para cada provider habilitado en MetaIntegration:
    - Meta CAPI → MetaConversionApiHttp.sendEvent(...)
    - GA4 MP → Ga4MeasurementProtocolHttp.sendEvent(...)
-   - Stape sGTM (si tiene endpoint) → HTTP POST a stape_endpoint
-3. Loguea cada intento en meta_event_log
+   (si hay stape_endpoint, ambos providers lo usan como override del
+    endpoint destino — NO es un tercer envío separado)
+4. Loguea cada intento en meta_event_log
 ```
 
 Ver `infrastructure/src/services/marketing-sender-factory.ts` y [[Servicios-externos]].
@@ -56,8 +59,8 @@ Ver `infrastructure/src/services/marketing-sender-factory.ts` y [[Servicios-exte
 - `ListStageMappings`, `SaveStageMapping`, `DeleteStageMapping` (admin)
 - `ListMetaEventLog`
 - `SendMarketingEvent` (genérico, lo invocan los otros use cases)
-- `SendMetaConversionEvent`
-- `RetryFailedMetaEvents`
+- `SendMetaConversionEvent` (legacy Meta-only)
+- `RetryFailedMetaEvents` — ⚠️ código muerto: existe con tests pero ningún endpoint ni cron lo invoca
 
 ## Endpoints
 
@@ -69,6 +72,8 @@ Ver `infrastructure/src/services/marketing-sender-factory.ts` y [[Servicios-exte
 
 [[API-analytics]]:
 - `GET /marketing` (dashboard de marketing — leads por fuente, eventos enviados)
+- `GET /marketing/campaigns` (Meta Ads Insights live con cache 900s + match a leads por `source_detail` ≈ `campaign_name`)
+  - ⚠️ bug conocido: `api-analytics/src/index.ts:254` consulta `meta_integration WHERE org_id = ?` pero la PK es `agent_id` (migración 040) → puede mostrar la config de otro agente
 
 ## Frontend
 

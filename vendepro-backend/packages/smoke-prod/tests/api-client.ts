@@ -95,10 +95,38 @@ export async function createLead(label: string, opts: { stage?: string } = {}): 
       if (rs.status !== 200) {
         throw new Error(`createLead reaching ${opts.stage} failed at ${s}: ${JSON.stringify(rs.data)}`)
       }
-      if (s === 'presentada' && rs.data?.autoFollowup?.id) created.events.push(rs.data.autoFollowup.id)
+      if (s === 'presentada') await trackFollowupEvent(r.data.id)
     }
   }
   return r.data.id
+}
+
+/**
+ * Busca el evento de seguimiento que la automatización `seguimiento_presentada`
+ * crea al pasar el lead a "presentada".
+ *
+ * Antes venía en la respuesta de la API (`autoFollowup`); ahora lo crea el
+ * motor de automatizaciones de forma asíncrona, así que hay que buscarlo y
+ * reintentar. Es best-effort y sólo sirve para poder limpiarlo después: si la
+ * org tiene la automatización apagada, no existe y no es un error.
+ */
+export async function findFollowupEventId(leadId: string, attempts = 5): Promise<string | null> {
+  for (let i = 0; i < attempts; i++) {
+    const r = await req<any[]>('GET', 'crm', '/calendar?event_type=seguimiento')
+    if (r.status === 200 && Array.isArray(r.data)) {
+      const match = r.data.find((e) => e?.lead_id === leadId)
+      if (match?.id) return match.id as string
+    }
+    // Backoff corto: el drenaje inline suele resolver en el primer reintento.
+    await new Promise((resolve) => setTimeout(resolve, 500 * (i + 1)))
+  }
+  return null
+}
+
+/** Registra el evento de seguimiento para que el cleanup no deje huérfanos. */
+export async function trackFollowupEvent(leadId: string): Promise<void> {
+  const id = await findFollowupEventId(leadId)
+  if (id && !created.events.includes(id)) created.events.push(id)
 }
 
 export async function createProperty(opts: { leadId?: string | null; stage?: string } = {}): Promise<string> {
@@ -147,9 +175,8 @@ export async function advanceLeadStage(
   stage: string,
 ): Promise<{ status: number; data: any }> {
   const r = await req<any>('POST', 'crm', '/leads/stage', { id, stage })
-  if (r.status === 200 && stage === 'presentada' && r.data?.autoFollowup?.id) {
-    created.events.push(r.data.autoFollowup.id)
-  }
+  // El seguimiento ya no viene en la respuesta: lo crea la automatización.
+  if (r.status === 200 && stage === 'presentada') await trackFollowupEvent(id)
   return r
 }
 

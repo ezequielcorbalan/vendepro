@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import Link from 'next/link'
 import {
   Plus, X, ChevronLeft, ChevronRight, Calendar, Phone, Users, Home, Eye,
   ClipboardList, RefreshCw, FileText, FileSignature, CheckCircle2, Trash2,
@@ -9,10 +10,12 @@ import {
 import { useToast } from '@/components/ui/Toast'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { Switch } from '@/components/ui/Switch'
 import { Card, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { Alert } from '@/components/ui/Alert'
 import { Heading, Text } from '@/components/ui/Typography'
 import { Field, Input, Select, Textarea } from '@/components/ui/Input'
 import { CallButton, WhatsAppButton } from '@/components/ui/ContactButtons'
@@ -39,6 +42,22 @@ function fmtTime(s: string | null) {
   if (!s) return ''
   const d = new Date(s)
   return d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false })
+}
+
+/**
+ * Google devuelve UTC (`...Z`) para eventos con hora y `YYYY-MM-DD` para los de
+ * día completo. Los del CRM se guardan "naive" en hora local, y el calendario
+ * agrupa por `start_at.split('T')[0]`. Sin normalizar, un evento de las 23:00
+ * de Argentina (02:00 UTC) caería en el día siguiente.
+ */
+function googleToLocalNaive(iso: string, allDay: boolean): string {
+  if (!iso) return ''
+  // Día completo: la fecha ya es la correcta, no hay que convertir zona.
+  if (allDay) return iso.length === 10 ? `${iso}T00:00` : iso
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return iso
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`
 }
 
 function getET(key: string) {
@@ -97,6 +116,13 @@ export default function CalendarioPage() {
   const { toast } = useToast()
   const now = new Date()
   const [events, setEvents] = useState<any[]>([])
+  // Eventos del Google Calendar personal: sólo lectura, para ver la agenda
+  // completa sin salir del CRM.
+  const [googleEvents, setGoogleEvents] = useState<any[]>([])
+  const [googleConnected, setGoogleConnected] = useState(false)
+  const [googleReason, setGoogleReason] = useState<string | null>(null)
+  const [googleEmail, setGoogleEmail] = useState<string | null>(null)
+  const [showGoogle, setShowGoogle] = useState(true)
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<'month' | 'agenda'>('month')
   const [year, setYear] = useState(now.getFullYear())
@@ -124,17 +150,56 @@ export default function CalendarioPage() {
       .catch(() => setLoading(false))
   }
 
-  useEffect(() => { loadEvents() }, [year, month])
+  // Google va por separado: si falla o tarda, el calendario del CRM se ve igual.
+  const loadGoogleEvents = () => {
+    const start = new Date(year, month, 1).toISOString()
+    const end = new Date(year, month + 1, 0, 23, 59, 59).toISOString()
+    apiFetch('crm', `/integrations/google/events?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`)
+      .then(r => r.json() as Promise<any>)
+      .then(d => {
+        setGoogleConnected(!!d?.connected)
+        setGoogleReason(d?.reason ?? null)
+        setGoogleEmail(d?.email ?? null)
+        setGoogleEvents(
+          Array.isArray(d?.events)
+            ? d.events.map((e: any) => ({
+                id: `google-${e.id}`,
+                title: e.summary,
+                start_at: googleToLocalNaive(e.start, e.all_day),
+                end_at: googleToLocalNaive(e.end, e.all_day),
+                notes: e.description ?? null,
+                event_type: 'otro',
+                completed: 0,
+                all_day: e.all_day ? 1 : 0,
+                html_link: e.html_link,
+                __google: true,
+              }))
+            : [],
+        )
+      })
+      .catch(() => { setGoogleConnected(false); setGoogleEvents([]); setGoogleReason('error_red') })
+  }
+
+  useEffect(() => { loadEvents(); loadGoogleEvents() }, [year, month])
+
+  /** Conectado pero sin permiso de lectura: hay que volver a autorizar. */
+  const googleSinPermisos = googleConnected && googleReason === 'insufficient_scopes'
+
+  /** Lo que se muestra: los del CRM más los de Google, si el switch está activo. */
+  const visibleEvents = useMemo(
+    () => (showGoogle ? [...events, ...googleEvents] : events),
+    [events, googleEvents, showGoogle],
+  )
 
   const eventsByDay = useMemo(() => {
     const map: Record<string, any[]> = {}
-    events.forEach(ev => {
+    visibleEvents.forEach(ev => {
       const day = (ev.start_at || ev.created_at || '').split('T')[0]
       if (!map[day]) map[day] = []
       map[day].push(ev)
     })
     return map
-  }, [events])
+  }, [visibleEvents])
 
   const handlePrev = () => {
     if (month === 0) { setYear(y => y - 1); setMonth(11) }
@@ -213,9 +278,29 @@ export default function CalendarioPage() {
     <div className="space-y-4">
       <PageHeader
         title="Calendario"
-        subtitle={`${events.length} evento${events.length !== 1 ? 's' : ''} este mes`}
+        subtitle={
+          `${events.length} evento${events.length !== 1 ? 's' : ''} del CRM este mes` +
+          (googleConnected && googleEmail && !googleSinPermisos
+            // Se nombra la cuenta siempre, incluso con 0 eventos: si alguien
+            // conectó la personal en vez de la de trabajo, ver el mail es la
+            // única forma de darse cuenta de por qué el calendario está vacío.
+            ? ` · ${showGoogle ? googleEvents.length : 0} de ${googleEmail}`
+            : '')
+        }
         actions={
           <>
+            {googleConnected && (
+              <Switch
+                checked={showGoogle && !googleSinPermisos}
+                onChange={setShowGoogle}
+                disabled={googleSinPermisos}
+                label={
+                  googleSinPermisos
+                    ? 'Google (sin permisos)'
+                    : `${googleEmail ?? 'Google'} (${googleEvents.length})`
+                }
+              />
+            )}
             <SegmentedControl
               options={[{ value: 'month', label: 'Mes' }, { value: 'agenda', label: 'Agenda' }]}
               value={view}
@@ -227,6 +312,25 @@ export default function CalendarioPage() {
           </>
         }
       />
+
+      {/* Conectó la cuenta pero el consentimiento no incluyó el permiso de
+          calendario: el token existe y no sirve. Es accionable, así que se
+          dice qué pasó y cómo arreglarlo. */}
+      {googleSinPermisos && (
+        <Alert tone="warning" title="Permisos insuficientes en Google Calendar">
+          {googleEmail ? <strong>{googleEmail}</strong> : 'Tu cuenta'} está conectada, pero no autorizaste
+          el acceso al calendario, así que no podemos mostrar tus eventos. Volvé a conectarla y dejá
+          tildada la casilla de Google Calendar.
+          <div className="mt-3">
+            <Link
+              href="/configuracion/conexiones"
+              className="inline-flex items-center text-sm px-4 py-2 gap-2 rounded-control bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+            >
+              Ir a Integraciones
+            </Link>
+          </div>
+        </Alert>
+      )}
 
       {view === 'month' ? (
         <Card padded={false} className="overflow-hidden">
@@ -265,9 +369,14 @@ export default function CalendarioPage() {
                       <div className="space-y-0.5">
                         {dayEvents.slice(0, 3).map(ev => {
                           const cfg = getET(ev.event_type)
+                          // Los de Google van neutros: el color codifica el tipo
+                          // de evento del CRM, y estos no tienen tipo.
+                          const chip = ev.__google
+                            ? 'bg-gray-100 text-gray-600 border border-dashed border-gray-300'
+                            : `${cfg.bg} ${cfg.color}`
                           return (
-                            <div key={ev.id} className={`text-[10px] px-1 py-0.5 rounded truncate ${cfg.bg} ${cfg.color} ${ev.completed ? 'opacity-50' : ''}`}>
-                              {fmtTime(ev.start_at)} {ev.title}
+                            <div key={ev.id} className={`text-[10px] px-1 py-0.5 rounded truncate ${chip} ${ev.completed ? 'opacity-50' : ''}`}>
+                              {ev.all_day ? '' : `${fmtTime(ev.start_at)} `}{ev.title}
                             </div>
                           )
                         })}
@@ -289,7 +398,7 @@ export default function CalendarioPage() {
             <div className="animate-pulse space-y-3">
               {[...Array(5)].map((_, i) => <div key={i} className="h-16 bg-gray-200 rounded-card" />)}
             </div>
-          ) : events.length === 0 ? (
+          ) : visibleEvents.length === 0 ? (
             <EmptyState
               icon={<Calendar className="w-7 h-7" />}
               title="Sin eventos este mes"
@@ -301,7 +410,7 @@ export default function CalendarioPage() {
               }
             />
           ) : (
-            events
+            visibleEvents
               .sort((a, b) => (a.start_at || '').localeCompare(b.start_at || ''))
               .map(ev => {
                 const cfg = getET(ev.event_type)
@@ -309,13 +418,14 @@ export default function CalendarioPage() {
                 const isOverdue = !ev.completed && ev.start_at && new Date(ev.start_at) < now
                 return (
                   <Card key={ev.id} padded={false} className={`p-4 flex items-start gap-3 ${ev.completed ? 'opacity-60' : ''}`}>
-                    <div className={`w-9 h-9 rounded-control flex items-center justify-center shrink-0 ${cfg.bg} ${cfg.color}`}>
+                    <div className={`w-9 h-9 rounded-control flex items-center justify-center shrink-0 ${ev.__google ? 'bg-gray-100 text-gray-500' : `${cfg.bg} ${cfg.color}`}`}>
                       <Ico className="w-4 h-4" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <Text weight="medium" className={ev.completed ? 'line-through text-gray-400' : undefined}>{ev.title}</Text>
-                        {isOverdue && <StatusBadge label="VENCIDO" color="bg-danger/10 text-danger" />}
+                        {ev.__google && <StatusBadge label="Google" color="bg-gray-100 text-gray-700" />}
+                        {isOverdue && !ev.__google && <StatusBadge label="VENCIDO" color="bg-danger/10 text-danger" />}
                         {ev.completed === 1 && <CheckCircle2 className="w-4 h-4 text-success" />}
                       </div>
                       <div className="flex items-center gap-2 mt-1 text-xs text-gray-400">
@@ -327,31 +437,46 @@ export default function CalendarioPage() {
                       {ev.notes && <p className="text-xs text-gray-400 mt-1 truncate">{ev.notes}</p>}
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      {ev.lead_phone && (
+                      {/* Los de Google son externos: se ven, no se tocan. Editarlos
+                          o borrarlos desde acá borraría un evento personal del
+                          agente, que no es lo que el CRM administra. */}
+                      {ev.__google ? (
+                        ev.html_link && (
+                          <a href={ev.html_link} target="_blank" rel="noopener noreferrer"
+                            title="Abrir en Google Calendar"
+                            className="p-1.5 rounded-control hover:bg-gray-100 text-gray-400 hover:text-primary">
+                            <Link2 className="w-3.5 h-3.5" />
+                          </a>
+                        )
+                      ) : (
                         <>
-                          <CallButton phone={ev.lead_phone} iconOnly className="w-8 h-8" />
-                          <WhatsAppButton
-                            phone={ev.lead_phone} iconOnly className="w-8 h-8"
-                            message={ev.start_at ? clientInviteMessage(ev) : undefined}
-                          />
+                          {ev.lead_phone && (
+                            <>
+                              <CallButton phone={ev.lead_phone} iconOnly className="w-8 h-8" />
+                              <WhatsAppButton
+                                phone={ev.lead_phone} iconOnly className="w-8 h-8"
+                                message={ev.start_at ? clientInviteMessage(ev) : undefined}
+                              />
+                            </>
+                          )}
+                          {ev.start_at && (
+                            <button onClick={() => copyClientLink(ev)} title="Copiar link para que el cliente lo agende"
+                              className="p-1.5 rounded-control hover:bg-gray-100 text-gray-400 hover:text-primary">
+                              <Link2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          {!ev.completed && (
+                            <button onClick={() => completeEvent(ev.id)} title="Marcar como completado"
+                              className="p-1.5 rounded-control hover:bg-gray-100 text-gray-400 hover:text-success">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          <button onClick={() => deleteEvent(ev.id)} title="Eliminar evento"
+                            className="p-1.5 rounded-control hover:bg-gray-100 text-gray-400 hover:text-danger">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </>
                       )}
-                      {ev.start_at && (
-                        <button onClick={() => copyClientLink(ev)} title="Copiar link para que el cliente lo agende"
-                          className="p-1.5 rounded-control hover:bg-gray-100 text-gray-400 hover:text-primary">
-                          <Link2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                      {!ev.completed && (
-                        <button onClick={() => completeEvent(ev.id)} title="Marcar como completado"
-                          className="p-1.5 rounded-control hover:bg-gray-100 text-gray-400 hover:text-success">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                      <button onClick={() => deleteEvent(ev.id)} title="Eliminar evento"
-                        className="p-1.5 rounded-control hover:bg-gray-100 text-gray-400 hover:text-danger">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
                     </div>
                   </Card>
                 )

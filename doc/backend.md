@@ -81,8 +81,7 @@ app.post('/leads', async (c) => {
 | `JWT_SECRET` | todos excepto api-public |
 | `GROQ_API_KEY` | api-ai |
 | `ANTHROPIC_API_KEY` | api-ai, api-properties |
-| `RESEND_API_KEY` | api-crm (email marketing) |
-| `EMBLUE_API_KEY` | api-auth (password reset, legacy) |
+| `RESEND_API_KEY` | api-crm (email marketing), api-auth (password reset) |
 
 Los bindings (DB, R2) van en `wrangler.jsonc`. Los secrets se setean con `wrangler secret put`.
 

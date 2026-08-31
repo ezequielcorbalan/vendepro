@@ -257,9 +257,6 @@ export default function LeadsPage() {
       pushFromApiResponse(result, { entity_type: 'lead', entity_id: lead.id, event_name_fallback: nextStage })
       const stageLabel = getStageConfig(nextStage, lead.pipeline).label
       toast(`${lead.full_name} → ${stageLabel}`)
-      if (result.autoFollowup) {
-        toast(`Seguimiento automático creado para ${result.autoFollowup.date}`)
-      }
       loadLeads()
     } catch { toast('Error al cambiar etapa', 'error') }
   }
