@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useParams } from 'next/navigation'
 import {
   ArrowLeft, Phone, Mail, MapPin, User, Home, Loader2,
@@ -163,46 +163,30 @@ export default function ContactDetailPage() {
           </ActionGroup>
         </div>
 
-        {/* Contact data */}
-        <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {contact.phone && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span>{contact.phone}</span>
-            </div>
-          )}
-          {contact.email && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span className="truncate">{contact.email}</span>
-            </div>
-          )}
-          {contact.neighborhood && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span>{contact.neighborhood}</span>
-            </div>
-          )}
+        {/* Datos de contacto: una sola fila que envuelve, separada del título por
+            una división. Antes era una grilla de 2 columnas con 5 ítems, así que
+            la última fila quedaba con un hueco al lado y los datos parecían
+            flotar; y el origen era el único con caja, lo que lo desalineaba del
+            resto. Ahora todos los ítems se tratan igual: ícono gris + texto. */}
+        <div className="mt-5 pt-5 border-t border-gray-100 flex flex-wrap items-center gap-x-6 gap-y-2.5">
+          {contact.phone && <MetaItem icon={<Phone className="w-4 h-4" />}>{contact.phone}</MetaItem>}
+          {contact.email && <MetaItem icon={<Mail className="w-4 h-4" />}>{contact.email}</MetaItem>}
+          {contact.neighborhood && <MetaItem icon={<MapPin className="w-4 h-4" />}>{contact.neighborhood}</MetaItem>}
           {contact.agent_name && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <User className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span>Asignado a <span className="font-medium text-ink">{contact.agent_name}</span></span>
-            </div>
+            <MetaItem icon={<User className="w-4 h-4" />}>
+              Asignado a <span className="font-medium text-ink">{contact.agent_name}</span>
+            </MetaItem>
           )}
           {contact.source && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <ExternalLink className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span className="text-xs bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-md">
-                {sourceLabel(contact.source)}
-              </span>
-            </div>
-          )}
-          {contact.notes && (
-            <div className="col-span-2 text-sm text-gray-600 bg-gray-50 rounded-lg p-3 whitespace-pre-wrap">
-              {contact.notes}
-            </div>
+            <MetaItem icon={<ExternalLink className="w-4 h-4" />}>{sourceLabel(contact.source)}</MetaItem>
           )}
         </div>
+
+        {contact.notes && (
+          <Text size="sm" className="block mt-4 text-gray-600 bg-gray-50 rounded-card p-3 whitespace-pre-wrap">
+            {contact.notes}
+          </Text>
+        )}
       </Card>
 
       {/* Leads vinculados */}
@@ -302,5 +286,19 @@ export default function ContactDetailPage() {
         </div>
       )}
     </div>
+  )
+}
+
+/**
+ * Un dato del encabezado: ícono gris + texto. Los cinco datos se tratan igual
+ * para que la fila lea como una sola línea de metadatos y no como cajas
+ * sueltas de distinto peso.
+ */
+function MetaItem({ icon, children }: { icon: ReactNode; children: ReactNode }) {
+  return (
+    <span className="flex items-center gap-2 text-sm text-gray-600 min-w-0">
+      <span className="text-gray-400 shrink-0">{icon}</span>
+      <span className="truncate">{children}</span>
+    </span>
   )
 }

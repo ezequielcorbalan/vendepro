@@ -2,6 +2,7 @@
 
 import { Phone, MessageCircle } from 'lucide-react'
 import { formatWhatsApp } from '@/lib/crm-config'
+import { useInActionMenu } from '@/components/ui/action-menu'
 import { cn } from '@/lib/utils'
 
 /**
@@ -11,10 +12,16 @@ import { cn } from '@/lib/utils'
  * - CallButton: link tel:, color primario.
  * - WhatsAppButton: link wa.me (arma el número con formatWhatsApp), verde WhatsApp.
  * `iconOnly` lo vuelve un ícono cuadrado (misma decisión, otra forma).
+ *
+ * Dentro del menú de tres puntos de un `ActionGroup` se dibujan como opción:
+ * fondo transparente y texto gris, con el ícono en el color del canal para que
+ * siga reconociéndose de un vistazo.
  */
 const BASE = 'inline-flex items-center justify-center gap-1.5 rounded-control text-sm font-medium transition-opacity hover:opacity-90'
 const SHAPE = { labeled: 'px-4 py-2', icon: 'w-9 h-9' }
 const OFF = 'opacity-40 cursor-not-allowed pointer-events-none'
+// Forma de opción de menú: ocupa el ancho, alinea a la izquierda y no tiñe el fondo.
+const IN_MENU = 'w-full justify-start gap-2.5 px-2.5 py-2 text-gray-700 hover:bg-gray-100'
 
 interface ChannelProps {
   phone?: string | null
@@ -25,11 +32,16 @@ interface ChannelProps {
 }
 
 export function CallButton({ phone, onClick, iconOnly = false, className }: ChannelProps) {
-  const cls = cn(BASE, iconOnly ? SHAPE.icon : SHAPE.labeled, 'bg-primary text-white', className)
+  const inMenu = useInActionMenu()
+  const cls = cn(
+    BASE,
+    inMenu ? IN_MENU : cn(iconOnly ? SHAPE.icon : SHAPE.labeled, 'bg-primary text-white'),
+    className,
+  )
   const content = (
     <>
-      <Phone className="w-4 h-4" />
-      {!iconOnly && <span>Llamar</span>}
+      <Phone className={cn('w-4 h-4', inMenu && 'text-primary')} />
+      {(!iconOnly || inMenu) && <span>Llamar</span>}
     </>
   )
   if (!phone) {
@@ -46,11 +58,16 @@ interface WhatsAppProps extends ChannelProps {
 }
 
 export function WhatsAppButton({ phone, message, onClick, iconOnly = false, className }: WhatsAppProps) {
-  const cls = cn(BASE, iconOnly ? SHAPE.icon : SHAPE.labeled, 'bg-whatsapp text-white', className)
+  const inMenu = useInActionMenu()
+  const cls = cn(
+    BASE,
+    inMenu ? IN_MENU : cn(iconOnly ? SHAPE.icon : SHAPE.labeled, 'bg-whatsapp text-white'),
+    className,
+  )
   const content = (
     <>
-      <MessageCircle className="w-4 h-4" />
-      {!iconOnly && <span>WhatsApp</span>}
+      <MessageCircle className={cn('w-4 h-4', inMenu && 'text-whatsapp')} />
+      {(!iconOnly || inMenu) && <span>WhatsApp</span>}
     </>
   )
   if (!phone) {

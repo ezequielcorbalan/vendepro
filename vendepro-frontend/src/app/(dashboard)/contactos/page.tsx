@@ -249,7 +249,7 @@ export default function ContactosPage() {
       key: 'agent_id',
       header: 'Asignado',
       render: c => (agentNames[c.agent_id]
-        ? <span className="text-primary font-medium">{agentNames[c.agent_id]}</span>
+        ? <span className="text-gray-600 font-medium">{agentNames[c.agent_id]}</span>
         : <span className="text-gray-300">—</span>),
     },
   ], [agentNames])
@@ -466,7 +466,7 @@ export default function ContactosPage() {
                   </div>
                   <div className="flex flex-wrap items-center gap-2 mt-2">
                     <SourceBadge source={c.source} />
-                    {agentNames[c.agent_id] && <span className="text-xs text-primary font-medium">{agentNames[c.agent_id]}</span>}
+                    {agentNames[c.agent_id] && <span className="text-xs text-gray-600 font-medium">{agentNames[c.agent_id]}</span>}
                     <TagChips tags={c.tags} max={2} />
                     {c.created_at && <span className="text-xs text-gray-400 ml-auto whitespace-nowrap">{formatShortDate(c.created_at)}</span>}
                   </div>
@@ -482,24 +482,28 @@ export default function ContactosPage() {
               <span className="text-gray-500">
                 {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, visible.length)} de {visible.length}
               </span>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  onClick={() => setPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage <= 1}
-                  icon={<ChevronLeft className="w-4 h-4" />}
-                >
-                  <span className="hidden sm:inline">Anterior</span>
-                </Button>
-                <span className="px-2 text-gray-500 whitespace-nowrap">{currentPage} / {totalPages}</span>
-                <Button
-                  variant="outline"
-                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                  disabled={currentPage >= totalPages}
-                >
-                  <span className="hidden sm:inline">Siguiente</span> <ChevronRight className="w-4 h-4" />
-                </Button>
-              </div>
+              {/* Con una sola página el paginado no aporta: eran dos botones
+                  deshabilitados y un "1 / 1" ocupando lugar. */}
+              {totalPages > 1 && (
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="outline"
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage <= 1}
+                    icon={<ChevronLeft className="w-4 h-4" />}
+                  >
+                    <span className="hidden sm:inline">Anterior</span>
+                  </Button>
+                  <span className="px-2 text-gray-500 whitespace-nowrap">{currentPage} / {totalPages}</span>
+                  <Button
+                    variant="outline"
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage >= totalPages}
+                  >
+                    <span className="hidden sm:inline">Siguiente</span> <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
             </div>
           }
         />

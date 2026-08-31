@@ -4,8 +4,12 @@ import { useState } from 'react'
 import { cn } from '@/lib/utils'
 
 /**
- * Avatar del design system. Con foto usa object-cover; sin foto, iniciales
- * sobre el color primario translúcido (primary/20).
+ * Avatar del design system. Con foto usa object-cover; sin foto, iniciales en
+ * gris — el mismo neutro que el tono `neutral` de IconMedallion.
+ *
+ * El fallback no va en primary a propósito: un avatar es identidad, no estado, y
+ * en una lista de contactos una columna de círculos rosas compite con las
+ * señales que sí significan algo (etapa, urgencia, acciones).
  */
 export type AvatarSize = 'sm' | 'md' | 'lg'
 
@@ -48,7 +52,7 @@ export function Avatar({ name, src, size = 'md', className }: AvatarProps) {
     <span
       className={cn(
         'inline-flex items-center justify-center rounded-full shrink-0 font-semibold',
-        'bg-primary/20 text-primary',
+        'bg-gray-100 text-gray-600',
         SIZES[size],
         className,
       )}

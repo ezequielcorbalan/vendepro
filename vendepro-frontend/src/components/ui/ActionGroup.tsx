@@ -4,6 +4,7 @@ import { Children, Fragment, cloneElement, isValidElement, type ReactNode } from
 import { MoreVertical } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Dropdown } from '@/components/ui/Dropdown'
+import { ActionMenuContext } from '@/components/ui/action-menu'
 import { cn } from '@/lib/utils'
 
 /**
@@ -37,7 +38,9 @@ function flatten(node: ReactNode): ReactNode[] {
 
 /**
  * Dentro del menú una acción se ve como item de menú, no como botón: si es un
- * `Button` del DS se le cambia la variante; si es otra cosa se deja como está.
+ * `Button` del DS se le cambia la variante acá. Los que no son `Button`
+ * —`CallButton`, `WhatsAppButton`— se adaptan solos leyendo
+ * `ActionMenuContext`, que envuelve a todo el menú.
  */
 function asMenuItem(node: ReactNode, key: number): ReactNode {
   if (isValidElement(node) && node.type === Button) {
@@ -71,7 +74,9 @@ export function ActionGroup({ children, max = 2, className }: ActionGroupProps) 
             </Button>
           }
         >
-          {hidden.map(asMenuItem)}
+          <ActionMenuContext.Provider value={true}>
+            {hidden.map(asMenuItem)}
+          </ActionMenuContext.Provider>
         </Dropdown>
       )}
     </div>
