@@ -1,10 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { Calendar, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Calendar } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { Field, Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Card'
+import { WidgetHeader } from '@/components/ui/WidgetHeader'
+import { Alert } from '@/components/ui/Alert'
 
 interface Props {
   propertyId: string
@@ -56,13 +59,12 @@ export default function AuthorizationWidget({
   }
 
   return (
-    <div className="bg-white rounded-card border border-gray-200 shadow-card p-5 relative overflow-hidden">
-      <div className="flex items-center gap-2 mb-4">
-        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center">
-          <Calendar className="w-4.5 h-4.5 text-white" />
-        </div>
-        <h2 className="text-sm font-semibold text-ink">Autorización de venta</h2>
-      </div>
+    <Card className="relative overflow-hidden">
+      <WidgetHeader
+        icon={<Calendar className="w-4 h-4" />}
+        title="Autorización de venta"
+        className="mb-4"
+      />
 
       <div className="grid grid-cols-2 gap-3 mb-3">
         <Field label="Fecha de inicio">
@@ -74,30 +76,16 @@ export default function AuthorizationWidget({
       </div>
 
       {remainingDays !== null && (
-        <div className={`rounded-lg px-3 py-2 text-sm font-medium flex items-center gap-2 ${
-          remainingDays < 0
-            ? 'bg-red-50 text-red-700 border border-red-200'
-            : remainingDays < 15
-            ? 'bg-orange-50 text-orange-700 border border-orange-200'
-            : 'bg-brand-pink/5 text-brand-pink border border-brand-pink/20'
-        }`}>
-          {remainingDays < 0 ? (
-            <>
-              <AlertCircle className="w-4 h-4" />
-              Vencida hace {Math.abs(remainingDays)} días
-            </>
-          ) : (
-            <>
-              <CheckCircle2 className="w-4 h-4" />
-              {remainingDays} días restantes
-            </>
-          )}
-        </div>
+        <Alert tone={remainingDays < 0 ? 'danger' : remainingDays < 15 ? 'warning' : 'brand'}>
+          {remainingDays < 0
+            ? `Vencida hace ${Math.abs(remainingDays)} días`
+            : `${remainingDays} días restantes`}
+        </Alert>
       )}
 
       <Button onClick={save} loading={saving} fullWidth className="mt-3">
         {saved ? '✓ Guardado' : 'Guardar'}
       </Button>
-    </div>
+    </Card>
   )
 }
