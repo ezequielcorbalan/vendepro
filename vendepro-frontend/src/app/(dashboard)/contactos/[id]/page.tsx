@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import {
   ArrowLeft, Phone, Mail, MapPin, User, Home, Loader2,
@@ -16,7 +16,7 @@ import { Field, Input, Select, Textarea } from '@/components/ui/Input'
 import { CallButton, WhatsAppButton } from '@/components/ui/ContactButtons'
 import type { Contact } from '@/lib/types'
 
-import { ActionGroup } from '@/components/ui/ActionGroup'
+import { DetailHeader, DetailMeta } from '@/components/ui/DetailHeader'
 import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
 const CONTACT_TYPES = ['propietario', 'comprador', 'inversor', 'inquilino', 'vendedor', 'otro']
@@ -136,58 +136,54 @@ export default function ContactDetailPage() {
         <ArrowLeft className="w-4 h-4" /> Volver a contactos
       </Link>
 
-      {/* Header */}
-      <Card padded={false} className="p-5 sm:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Avatar size="lg" name={contact.full_name || '?'} />
-            <div>
-              <Heading level={3}>{contact.full_name}</Heading>
-              <Badge tone="neutral" className="mt-0.5">
-                {contactTypeLabel[contact.contact_type] ?? contact.contact_type}
-              </Badge>
-            </div>
-          </div>
-          <ActionGroup>
+      {/* Header — molde compartido con /leads/[id] (`DetailHeader`). */}
+      <DetailHeader
+        avatar={<Avatar size="lg" name={contact.full_name || '?'} />}
+        title={contact.full_name}
+        badges={
+          <Badge tone="neutral">
+            {contactTypeLabel[contact.contact_type] ?? contact.contact_type}
+          </Badge>
+        }
+        actions={
+          <>
             <Button variant="outline" onClick={openEdit} icon={<Edit3 className="w-3.5 h-3.5" />}>
               Editar
             </Button>
-            {contact.phone && <CallButton phone={contact.phone} />}
-            {contact.phone && <WhatsAppButton phone={contact.phone} />}
             <Button href={`/leads?new=1&contact_id=${contact.id}`} variant="outline" icon={<UserPlus className="w-4 h-4" />}>
               Nuevo lead
             </Button>
             <Button href={`/propiedades/nueva?contact_id=${contact.id}`} icon={<Home className="w-4 h-4" />}>
               Crear propiedad
             </Button>
-          </ActionGroup>
-        </div>
-
-        {/* Datos de contacto: una sola fila que envuelve, separada del título por
-            una división. Antes era una grilla de 2 columnas con 5 ítems, así que
-            la última fila quedaba con un hueco al lado y los datos parecían
-            flotar; y el origen era el único con caja, lo que lo desalineaba del
-            resto. Ahora todos los ítems se tratan igual: ícono gris + texto. */}
-        <div className="mt-5 pt-5 border-t border-gray-100 flex flex-wrap items-center gap-x-6 gap-y-2.5">
-          {contact.phone && <MetaItem icon={<Phone className="w-4 h-4" />}>{contact.phone}</MetaItem>}
-          {contact.email && <MetaItem icon={<Mail className="w-4 h-4" />}>{contact.email}</MetaItem>}
-          {contact.neighborhood && <MetaItem icon={<MapPin className="w-4 h-4" />}>{contact.neighborhood}</MetaItem>}
-          {contact.agent_name && (
-            <MetaItem icon={<User className="w-4 h-4" />}>
-              Asignado a <span className="font-medium text-ink">{contact.agent_name}</span>
-            </MetaItem>
-          )}
-          {contact.source && (
-            <MetaItem icon={<ExternalLink className="w-4 h-4" />}>{sourceLabel(contact.source)}</MetaItem>
-          )}
-        </div>
-
-        {contact.notes && (
-          <Text size="sm" className="block mt-4 text-gray-600 bg-gray-50 rounded-card p-3 whitespace-pre-wrap">
-            {contact.notes}
-          </Text>
-        )}
-      </Card>
+            {contact.phone && <CallButton phone={contact.phone} />}
+            {contact.phone && <WhatsAppButton phone={contact.phone} />}
+          </>
+        }
+        visibleActions={3}
+        meta={
+          <>
+            {contact.phone && <DetailMeta icon={<Phone className="w-4 h-4" />}>{contact.phone}</DetailMeta>}
+            {contact.email && <DetailMeta icon={<Mail className="w-4 h-4" />}>{contact.email}</DetailMeta>}
+            {contact.neighborhood && <DetailMeta icon={<MapPin className="w-4 h-4" />}>{contact.neighborhood}</DetailMeta>}
+            {contact.agent_name && (
+              <DetailMeta icon={<User className="w-4 h-4" />}>
+                Asignado a <span className="font-medium text-ink">{contact.agent_name}</span>
+              </DetailMeta>
+            )}
+            {contact.source && (
+              <DetailMeta icon={<ExternalLink className="w-4 h-4" />}>{sourceLabel(contact.source)}</DetailMeta>
+            )}
+          </>
+        }
+        footer={
+          contact.notes ? (
+            <Text size="sm" className="block text-gray-600 bg-gray-50 rounded-card p-3 whitespace-pre-wrap">
+              {contact.notes}
+            </Text>
+          ) : undefined
+        }
+      />
 
       {/* Leads vinculados */}
       <Card padded={false} className="p-5 sm:p-6">
@@ -286,19 +282,5 @@ export default function ContactDetailPage() {
         </div>
       )}
     </div>
-  )
-}
-
-/**
- * Un dato del encabezado: ícono gris + texto. Los cinco datos se tratan igual
- * para que la fila lea como una sola línea de metadatos y no como cajas
- * sueltas de distinto peso.
- */
-function MetaItem({ icon, children }: { icon: ReactNode; children: ReactNode }) {
-  return (
-    <span className="flex items-center gap-2 text-sm text-gray-600 min-w-0">
-      <span className="text-gray-400 shrink-0">{icon}</span>
-      <span className="truncate">{children}</span>
-    </span>
   )
 }

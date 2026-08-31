@@ -158,6 +158,87 @@ etapa (verde/azul/rosa por chip); se unificó a neutro y se reemplazó por un
 
 ---
 
+## 12. Encabezado de una pantalla de detalle
+Toda ficha (contacto, lead, propiedad) usa `DetailHeader`. No se arma a mano el
+avatar + título + badges + acciones + datos, porque cada pantalla que lo armó por
+su cuenta terminó con un diseño distinto del mismo objeto.
+
+Anatomía fija: avatar + título + badges | acciones a la derecha → división →
+datos (`DetailMeta`) → footer opcional.
+
+- ❌ `<Card><div className="flex justify-between"><Heading .../>...<div className="flex gap-2"><CallButton/><WhatsAppButton/></div></Card>`
+- ✅ `<DetailHeader avatar={<Avatar .../>} title={...} badges={...} meta={<><DetailMeta .../></>} actions={<>...</>} />`
+- Los datos van TODOS con el mismo tratamiento (ícono gris + texto). Si uno lleva
+  caja propia y el resto no, ese ítem se lee como flotando.
+- Las notas/observaciones van al `footer`, no como una celda más de los datos.
+
+Ref: `/contactos/[id]` y `/leads/[id]` tenían dos headers distintos del mismo
+objeto (uno con avatar y división, el otro con los datos en un párrafo y tres
+botones del mismo peso). No era una decisión: era que no había componente.
+
+## 13. Acciones de un encabezado: cuántas quedan a la vista
+Con más de 2 acciones aparece el menú de tres puntos (a la derecha de las
+visibles). Por default queda visible sólo la última —la principal por
+convención— y el resto va al menú.
+
+- En una ficha de trabajo de campo se sube `visibleActions` para que llamar y
+  WhatsApp no queden escondidos (`rules/ux-ui.md`: quick actions siempre
+  accesibles). En `/leads/[id]` son 3: Llamar, WhatsApp, Agendar.
+- ❌ Dos acciones del mismo color pegadas con significados distintos (un
+  `variant="success"` al lado del verde de WhatsApp).
+- ✅ Cada acción visible con un color que significa una sola cosa. Si sobra
+  color, la acción va al menú.
+- Dentro del menú TODO se ve como opción: fondo transparente, texto gris, ícono
+  a la izquierda. Los canales conservan su color sólo en el ícono. Esto lo
+  resuelve `ActionMenuContext`, no el llamador.
+
+## 14. Medallón de ícono: tono, nunca gradiente
+El gradiente de marca dejó de ser el color por default. Un medallón de ícono usa
+`IconMedallion` con un `tone` semántico.
+
+- ❌ `<div className="w-8 h-8 rounded-control bg-gradient-to-br from-brand-pink to-brand-orange"><User className="text-white" /></div>`
+- ✅ `<IconMedallion tone="primary"><User className="w-4 h-4" /></IconMedallion>`
+- Header de widget: `WidgetHeader`, que ya trae el medallón.
+- El gradiente sobrevive sólo donde es una superficie, no un color de ícono:
+  relleno de `ProgressBar`, punto activo del `StepIndicator`, placeholder de foto
+  de `PropertyCard`.
+
+## 15. Identidad no es estado
+Un dato que identifica (nombre de persona, iniciales de avatar, nombre del agente
+asignado) va en gris. El primary se reserva para acciones y estados.
+
+- ❌ `<Avatar>` con fallback `bg-primary/20 text-primary`; `<span className="text-primary">{agentName}</span>`
+- ✅ gris (`bg-gray-100 text-gray-600` / `text-gray-600`)
+- El motivo: en una lista, una columna de círculos y nombres rosas compite con
+  las señales que sí significan algo (etapa, urgencia, acción pendiente).
+
+## 16. Cards de una fila miden igual
+Dos cards lado a lado en una grilla terminan a la misma altura. La grilla ya
+estira las celdas: no hay que fijar alto, hay que NO romper el estiramiento.
+
+- ❌ `<div className="grid grid-cols-2 gap-4 items-start">` — cada card toma su alto natural y quedan desparejas.
+- ✅ `<div className="grid grid-cols-2 gap-4">`
+- Lo mismo al revés: si las cards van en un `flex`, el contenedor necesita
+  `items-stretch`.
+
+## 17. Un modal de varios pasos no cambia de tamaño
+El alto fijo va en el PANEL, no en el contenido: si lo lleva el contenido, un
+paso que oculta el footer cambia el tamaño del modal.
+
+- ✅ panel con `h-[Xrem] max-h-[calc(100vh-2rem)]`, contenido `flex-1 min-h-0 overflow-y-auto`
+- El alto se elige midiendo el paso más denso, no a ojo.
+- El contenido corto se centra con `m-auto` (no `justify-center`, que recorta
+  arriba cuando desborda).
+
+## 18. Paginado
+Con una sola página no se dibuja. Dos botones deshabilitados y un "1 / 1" no
+informan nada.
+
+- ❌ footer con `<Button disabled>Anterior</Button> 1 / 1 <Button disabled>Siguiente</Button>`
+- ✅ `{totalPages > 1 && (...)}`, dejando siempre el contador de resultados.
+
+---
+
 ## Cómo se audita
 El alcance es **toda la app**, no solo `src/app`: `src/components/**` también
 cuenta (`PropertyFilters.tsx` vive ahí y tuvo 3 de estas reglas rotas al
@@ -192,9 +273,31 @@ grep -rn 'COLOR_CLASS\[\|DOT_CLASS\[\|_CLASS\[.*\.color\]' src/app src/component
 
 # 11 — chip/botón de filtro con color inline de la categoría
 grep -rn 'style={{.*backgroundColor.*\.color' src/app src/components --include=*.tsx
+
+# 12 — fichas de detalle que todavía arman el header a mano
+grep -rln "padded={false}" src/app/\(dashboard\)/*/\[id\]/page.tsx | xargs grep -ln "DetailHeader" -L
+
+# 14 — medallones de gradiente a mano (ratchet: scripts/ds-color-lint.mjs)
+grep -rn "bg-gradient-to-br from-brand-pink" src/app src/components --include='*.tsx'
+
+# 15 — identidad teñida de primary
+grep -rn "text-primary" src/app --include='*.tsx' | grep -iE "agent|assigned|full_name|user_name"
+
+# 16 — grillas de cards con items-start
+grep -rn "grid.*items-start" src/app src/components --include='*.tsx'
+
+# 18 — paginados sin guarda de una sola página
+grep -rn "totalPages" src/app --include='*.tsx' | grep -v "totalPages > 1"
 ```
 
 ## Enforcement existente
 El ratchet de color (`scripts/ds-color-lint.mjs` + `scripts/.ds-color-baseline`)
-ya evita que SUBA el uso de colores Tailwind sueltos. Mismo espíritu: cuando una
-pantalla se corrige acá, el baseline baja y queda trabado el retroceso.
+ya evita que SUBA el uso de colores Tailwind sueltos ni los medallones de
+gradiente a mano (regla 14). Mismo espíritu: cuando una pantalla se corrige acá,
+el baseline baja y queda trabado el retroceso.
+
+Las reglas 12 a 18 salieron del repaso visual del 31/08/2026: cada una es una
+corrección que se pidió sobre pantalla y que, en vez de quedar en la pantalla
+donde se pidió, se movió al componente que la impone. La 12 es la que enseñó por
+qué: el header de contacto se había arreglado inline, así que el de lead siguió
+distinto.

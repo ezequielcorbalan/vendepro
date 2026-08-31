@@ -10,9 +10,14 @@ import { cn } from '@/lib/utils'
 /**
  * Grupo de acciones de un header, con desborde automático.
  *
- * Hasta `max` acciones van visibles. Con más, queda visible sólo la última
- * —que por convención es la principal— y el resto pasa al menú de tres puntos,
- * que va a la DERECHA de la acción visible (último elemento de la fila).
+ * Hasta `max` acciones van todas visibles. Con más, quedan visibles las
+ * últimas `keep` —por convención las principales— y el resto pasa al menú de
+ * tres puntos, que va a la DERECHA de las visibles (último de la fila).
+ *
+ * Son dos perillas porque son dos preguntas distintas: `max` es CUÁNDO aparece
+ * el menú (con más de 2 acciones un header ya no tiene jerarquía) y `keep` es
+ * CUÁNTAS sobreviven. El default (2 / 1) es el de todos los headers; una ficha
+ * que necesita los canales de contacto a la vista sube `keep`.
  *
  * El motivo: un header con cuatro botones del mismo peso no tiene acción
  * principal, y eso es peor que esconder tres detrás de un menú.
@@ -22,8 +27,10 @@ import { cn } from '@/lib/utils'
  */
 interface ActionGroupProps {
   children: ReactNode
-  /** Cuántas acciones quedan visibles antes de desbordar al menú. Default 2. */
+  /** Con más de estas acciones aparece el menú de tres puntos. Default 2. */
   max?: number
+  /** Cuántas acciones quedan visibles cuando desborda. Default 1. */
+  keep?: number
   className?: string
 }
 
@@ -54,13 +61,14 @@ function asMenuItem(node: ReactNode, key: number): ReactNode {
   return <div key={key}>{node}</div>
 }
 
-export function ActionGroup({ children, max = 2, className }: ActionGroupProps) {
+export function ActionGroup({ children, max = 2, keep = 1, className }: ActionGroupProps) {
   const items = flatten(children)
   if (items.length === 0) return null
 
   const overflows = items.length > max
-  const visible = overflows ? items.slice(-1) : items
-  const hidden = overflows ? items.slice(0, -1) : []
+  const shown = Math.max(1, Math.min(keep, items.length))
+  const visible = overflows ? items.slice(-shown) : items
+  const hidden = overflows ? items.slice(0, -shown) : []
 
   return (
     <div className={cn('flex items-center gap-2 flex-wrap shrink-0', className)}>
