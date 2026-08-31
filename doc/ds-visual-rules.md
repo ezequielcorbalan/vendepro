@@ -246,6 +246,24 @@ informan nada.
 - ❌ footer con `<Button disabled>Anterior</Button> 1 / 1 <Button disabled>Siguiente</Button>`
 - ✅ `{totalPages > 1 && (...)}`, dejando siempre el contador de resultados.
 
+## 19. El contenido va en contenedores, no flotando sobre el fondo
+El fondo de página es gris. Todo lo que es contenido —no chrome de navegación—
+vive sobre una superficie blanca. Si un bloque queda apoyado directo sobre el
+gris, se lee como suelto.
+
+- ❌ `PageHeader` en card blanca y abajo el stepper, el contenido y el footer de
+  navegación sueltos sobre el fondo, cada uno con su propio `border-t`.
+- ✅ `PageHeader` + una `Card padded={false}` que contiene progreso, contenido y
+  navegación, separados entre sí con `border-gray-100` a sangre.
+- Un wizard es UNA pieza: el paso, en qué paso estás y cómo seguís no son tres
+  cosas distintas.
+- Qué sí puede ir sobre el gris: el "Volver a X" de arriba, las tabs de sección
+  y la grilla de cards de un listado (cada card ya es su propia superficie).
+- El área de contenido lleva un `min-h`, para que el footer de navegación no
+  salte de lugar entre un paso corto y uno largo.
+
+Ref: `/tasaciones/nueva` — el único contenedor era el header; el resto flotaba.
+
 ---
 
 ## Cómo se audita
@@ -297,6 +315,9 @@ grep -rn "grid.*items-start" src/app src/components --include='*.tsx'
 
 # 18 — paginados sin guarda de una sola página
 grep -rn "totalPages" src/app --include='*.tsx' | grep -v "totalPages > 1"
+
+# 19 — footer de navegación con border-t pero sin Card que lo contenga
+grep -rln "border-t" src/components/tasaciones src/components/marketing --include='*.tsx' | xargs grep -ln "ui/Card" -L
 ```
 
 ## Enforcement existente
@@ -305,7 +326,7 @@ ya evita que SUBA el uso de colores Tailwind sueltos ni los medallones de
 gradiente a mano (regla 14). Mismo espíritu: cuando una pantalla se corrige acá,
 el baseline baja y queda trabado el retroceso.
 
-Las reglas 12 a 18 salieron del repaso visual del 31/08/2026: cada una es una
+Las reglas 12 a 19 salieron del repaso visual del 31/08/2026: cada una es una
 corrección que se pidió sobre pantalla y que, en vez de quedar en la pantalla
 donde se pidió, se movió al componente que la impone. La 12 es la que enseñó por
 qué: el header de contacto se había arreglado inline, así que el de lead siguió

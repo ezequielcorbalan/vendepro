@@ -14,6 +14,7 @@ import { APPRAISAL_BLOCK_TYPES, type AppraisalBlockType } from '../renderer/type
 import { useToast } from '@/components/ui/Toast'
 import { StepIndicator } from '@/components/ui/StepIndicator'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import type { WizardState } from './use-wizard-form'
 
@@ -178,16 +179,21 @@ export function WizardShell({ initialTemplateId, initialLeadId, existingAppraisa
         }
       />
 
-      <StepIndicator
-        steps={STEP_LABELS}
-        current={state.step}
-        onStepClick={n => goToStep(n as WizardStep)}
-        allowForward
-        className="mb-8"
-      />
+      {/* Progreso, contenido y navegación van en UNA superficie: antes el
+          stepper, el paso y el footer flotaban sueltos sobre el fondo gris, y
+          el único contenedor era el header. Un wizard es una sola pieza. */}
+      <Card padded={false}>
+        <div className="px-5 py-4 border-b border-gray-100 overflow-x-auto">
+          <StepIndicator
+            steps={STEP_LABELS}
+            current={state.step}
+            onStepClick={n => goToStep(n as WizardStep)}
+            allowForward
+          />
+        </div>
 
-      {/* Step body */}
-      <div className="min-h-[50vh]">
+        {/* Step body */}
+        <div className="min-h-[50vh] p-5">
         {state.step === 1 && (
           <StepTemplate
             selectedId={state.template_id}
@@ -245,10 +251,10 @@ export function WizardShell({ initialTemplateId, initialLeadId, existingAppraisa
             blockOverrides={state.blockOverrides}
           />
         )}
-      </div>
+        </div>
 
-      {/* Footer */}
-      <footer className="mt-8 flex justify-between gap-3 border-t border-gray-200 pt-6">
+        {/* Footer */}
+        <footer className="flex justify-between gap-3 border-t border-gray-100 px-5 py-4">
         <Button
           variant="ghost"
           onClick={() => dispatch({ type: 'back' })}
@@ -276,7 +282,8 @@ export function WizardShell({ initialTemplateId, initialLeadId, existingAppraisa
             </Button>
           </div>
         )}
-      </footer>
+        </footer>
+      </Card>
     </div>
   )
 }
