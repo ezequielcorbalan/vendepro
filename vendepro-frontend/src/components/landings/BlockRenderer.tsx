@@ -35,7 +35,7 @@ export default function BlockRenderer({ blocks, mode = 'public', selectedBlockId
             aria-label={`Bloque ${BLOCK_LABELS[block.type]}`}
           >
             {isSelected && (
-              <span className="absolute top-2 right-2 z-20 bg-brand-gradient text-white text-[10px] font-semibold px-2 py-1 rounded-control tracking-wider uppercase">
+              <span className="absolute top-2 right-2 z-20 bg-primary text-white text-[10px] font-semibold px-2 py-1 rounded-control tracking-wider uppercase">
                 {BLOCK_LABELS[block.type]} · editando
               </span>
             )}

@@ -325,8 +325,8 @@ export default function DesignSystemPage() {
 
         {/* Gradiente de marca */}
         <Section
-          title="Gradiente de marca · IconMedallion"
-          hint="El gradiente rosa→naranja es una utilidad (bg-brand-gradient en globals.css), no clases escritas a mano. IconMedallion es el patrón más repetido de la app: caja con gradiente + ícono blanco. La barra de acento se dio de baja."
+          title="IconMedallion"
+          hint="Caja con tinte de color + ícono del mismo color. Es el patrón más repetido de la app (24 usos inline antes de existir) y venía con drift: tamaños de w-7 a w-24 y radios mezclados. El `tone` usa los mismos nombres que Badge y StatTile — un solo vocabulario de tonos en todo el DS."
         >
           <div className="space-y-4">
             <Row>
@@ -335,8 +335,16 @@ export default function DesignSystemPage() {
               <IconMedallion size="lg"><Home className="w-5 h-5" /></IconMedallion>
               <IconMedallion size="xl"><Home className="w-6 h-6" /></IconMedallion>
               <IconMedallion size="lg" shape="circle"><Check className="w-5 h-5" /></IconMedallion>
-              <IconMedallion size="lg" elevated><Target className="w-5 h-5" /></IconMedallion>
-              <Text size="xs" tone="muted" className="ml-2">sm · md · lg · xl · circle · elevated</Text>
+              <Text size="xs" tone="muted" className="ml-2">sm · md · lg · xl · circle</Text>
+            </Row>
+            <Row>
+              <IconMedallion size="lg"><Home className="w-5 h-5" /></IconMedallion>
+              <IconMedallion size="lg" tone="info"><Building2 className="w-5 h-5" /></IconMedallion>
+              <IconMedallion size="lg" tone="success"><Check className="w-5 h-5" /></IconMedallion>
+              <IconMedallion size="lg" tone="warning"><Target className="w-5 h-5" /></IconMedallion>
+              <IconMedallion size="lg" tone="danger"><Trash2 className="w-5 h-5" /></IconMedallion>
+              <IconMedallion size="lg" tone="neutral"><Settings className="w-5 h-5" /></IconMedallion>
+              <Text size="xs" tone="muted" className="ml-2">primary (default) · info · success · warning · danger · neutral</Text>
             </Row>
           </div>
         </Section>

@@ -203,7 +203,7 @@ export default function EmailCampaignWizard({ campaignId }: { campaignId?: strin
               <button
                 onClick={send}
                 disabled={sending}
-                className="inline-flex items-center gap-2 bg-brand-gradient text-white text-sm font-medium px-5 py-2 rounded-control hover:opacity-90 disabled:opacity-50"
+                className="inline-flex items-center gap-2 bg-primary hover:bg-primary-hover text-white text-sm font-medium px-5 py-2 rounded-control disabled:opacity-50"
               >
                 {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 {scheduledAt ? 'Programar envío' : 'Enviar ahora'}

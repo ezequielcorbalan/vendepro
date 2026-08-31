@@ -14,8 +14,8 @@ import { cn } from '@/lib/utils'
  * clase Tailwind cruda para categorías puramente decorativas sin significado
  * de estado (ej. 'bg-cyan-50 text-cyan-600') — mismo criterio que StatusBadge.
  *
- * Para el KPI destacado (semáforo de performance): `emphasis` engrosa el borde y
- * tiñe el fondo con el `tone`, y `badge` agrega un slot debajo del label. Antes
+ * Para el KPI destacado (semáforo de performance): `emphasis` tiñe el borde (1px)
+ * y el fondo con el `tone`, y `badge` agrega un slot debajo del label. Antes
  * eso era una Card armada a mano porque StatTile no soportaba ninguna de las dos.
  */
 const TONE: Record<string, string> = {
@@ -58,7 +58,7 @@ export function StatTile({
   const tinted = (!icon && !!tone) || (emphasis && !!tone)
   const base = cn(
     'rounded-card shadow-card p-3 sm:p-4 relative overflow-hidden',
-    emphasis ? 'border-2' : 'border border-gray-200',
+    emphasis ? 'border' : 'border border-gray-200',
     emphasis && tone ? toneClasses : icon ? 'bg-white' : tinted ? toneClasses : 'bg-gray-50',
     className,
   )

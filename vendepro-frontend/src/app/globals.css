@@ -43,7 +43,7 @@
      Apuntan a la paleta genérica: cambiás la hue y se actualiza el semántico.
      Uso sugerido: bg-{estado}/10 text-{estado} para chips, text-{estado} para
      texto, bg-{estado} para sólidos. */
-  --color-success: #22c55e;  /* verde (paleta genérica) */
+  --color-success: #16a34a;  /* verde menos saturado que el 500 (era #22c55e) */
   --color-warning: #eab308;  /* amarillo */
   --color-danger: #ef4444;   /* rojo */
   --color-info: #3b82f6;     /* azul */

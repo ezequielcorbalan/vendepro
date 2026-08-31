@@ -56,7 +56,7 @@ export function Modal({ open, onClose, title, icon, danger = false, children, fo
                   <div
                     className={cn(
                       'w-9 h-9 rounded-card flex items-center justify-center shrink-0 text-white',
-                      danger ? 'bg-danger/10 !text-danger' : 'bg-brand-gradient',
+                      danger ? 'bg-danger/10 !text-danger' : 'bg-primary/10 !text-primary',
                     )}
                   >
                     {icon}

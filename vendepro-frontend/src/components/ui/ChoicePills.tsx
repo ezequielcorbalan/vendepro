@@ -7,15 +7,20 @@ import { cn } from '@/lib/utils'
  * (círculos verticales) y de SegmentedControl (cambio de vista, no selección
  * de datos): esto es para elegir UN valor o VARIOS de una lista horizontal,
  * como "Tipología", "Amenities", etc.
+ *
+ * La anatomía es la de `Tag variant="solid"` —pill con radio completo, borde y
+ * sombra suave— porque es el mismo objeto visual: un chip. La única diferencia
+ * es que estos son seleccionables, y el estado activo se tiñe con `primary`.
  */
 interface PillOption {
   value: string
   label: string
 }
 
-const PILL_BASE = 'text-sm px-3 py-2 rounded-control border transition-colors'
-const PILL_ACTIVE = 'bg-primary text-white border-primary'
-const PILL_INACTIVE = 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+// Mismas clases que Tag variant="solid": si cambia el chip, cambian los dos.
+const PILL_BASE = 'inline-flex items-center gap-1.5 rounded-full font-medium text-sm px-4 py-2 border transition-colors'
+const PILL_ACTIVE = 'bg-primary text-white border-primary shadow-card'
+const PILL_INACTIVE = 'bg-white text-ink border-gray-200 shadow-card hover:border-gray-300'
 
 interface PillRadioGroupProps {
   label?: string

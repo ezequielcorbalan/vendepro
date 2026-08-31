@@ -195,6 +195,27 @@ Los 1, 2 y 3 eran **el mismo dibujo con tres medidas distintas**.
 | Colores de dominio a `crm-config` | `VISIT_BUY_INTENTIONS` / `VISIT_SITUATIONS` / `VISIT_SOURCES` (estaban duplicados en **3** archivos), `REPORT_FRESHNESS`. |
 | **Control tri-estado de documentación** | ❌ no se crea — 1 uso (24px, tengo/no aplica/pendiente). Marcado. |
 
+### El gradiente deja de ser el color por default
+
+`IconMedallion` pasa de gradiente a **tonos**, con los mismos nombres que ya usan
+`Badge` y `StatTile` (`primary` default, `info`, `success`, `warning`, `danger`,
+`neutral`, o un par de clases crudas). Un solo vocabulario de tonos en todo el DS.
+
+Se aplicó el mismo criterio a las cajas de ícono de `Modal` y `ConfirmDialog`,
+que cumplen el mismo rol.
+
+El gradiente **sobrevive sólo en tres lugares, y en otro rol**: el relleno de
+`ProgressBar`, el dot activo del `StepIndicator`, y el placeholder de foto de
+`PropertyCard`. Ninguno es una caja de ícono ni un botón.
+
+Otros ajustes visuales de la misma pasada:
+- `--color-success`: `#22c55e` → **`#16a34a`** (el 500 era demasiado fluo). Cambia
+  en todo lo semántico: Badge, Alert, Button success, StatTile.
+- `StatTile emphasis`: el borde pasa de 2px a **1px**.
+- `ChoicePills`: pasa a la anatomía de `Tag variant="solid"` —`rounded-full`,
+  `px-4 py-2`, `shadow-card`— porque es el mismo objeto visual (un chip) y `Tag`
+  ya estaba resuelto. La única diferencia es que estos son seleccionables.
+
 ### Regla de acciones en headers (nueva)
 
 `PageHeader` pasa a ser **superficie blanca** (la misma `Card` del DS) para
