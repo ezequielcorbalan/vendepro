@@ -1,6 +1,7 @@
 'use client'
 
-import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode } from 'react'
+import Link from 'next/link'
 import { Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -43,7 +44,7 @@ const SIZES: Record<ButtonSize, string> = {
   icon: 'p-2 rounded-control',
 }
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonBaseProps {
   variant?: ButtonVariant
   size?: ButtonSize
   /** Muestra un spinner y deshabilita el botón. */
@@ -52,7 +53,22 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   icon?: ReactNode
   /** Ocupa todo el ancho disponible. */
   fullWidth?: boolean
+  className?: string
+  children?: ReactNode
 }
+
+/**
+ * Dos elementos, mismo estilo. Con `href` el botón es un `<Link>`; sin `href`,
+ * un `<button>`. Había 22 `<Link>` en 14 archivos replicando a mano el relleno,
+ * el padding y el radio de este componente, y perdiendo la variante en el
+ * camino. Un `<a>` es lo correcto cuando la acción es navegar: se puede abrir en
+ * pestaña nueva, copiar el link y prefetchear.
+ */
+type ButtonProps = ButtonBaseProps &
+  (
+    | ({ href?: undefined } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, keyof ButtonBaseProps>)
+    | ({ href: string } & Omit<AnchorHTMLAttributes<HTMLAnchorElement>, keyof ButtonBaseProps | 'href'>)
+  )
 
 export function Button({
   variant = 'primary',
@@ -60,30 +76,54 @@ export function Button({
   loading = false,
   icon,
   fullWidth = false,
-  // type='button' por default: si no, dentro de un <form> submitearía. Pasá
-  // type="submit" explícito cuando el botón deba enviar el formulario.
-  type = 'button',
   className,
   children,
-  disabled,
-  ...props
+  ...rest
 }: ButtonProps) {
-  return (
-    <button
-      type={type}
-      className={cn(
-        'inline-flex items-center justify-center font-medium transition-colors',
-        'disabled:opacity-50 disabled:cursor-not-allowed',
-        VARIANTS[variant],
-        SIZES[size],
-        fullWidth && 'w-full',
-        className,
-      )}
-      disabled={disabled || loading}
-      {...props}
-    >
+  const classes = cn(
+    'inline-flex items-center justify-center font-medium transition-colors',
+    'disabled:opacity-50 disabled:cursor-not-allowed',
+    VARIANTS[variant],
+    SIZES[size],
+    fullWidth && 'w-full',
+    className,
+  )
+  const inner = (
+    <>
       {loading ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : icon}
       {children}
+    </>
+  )
+
+  if (rest.href !== undefined) {
+    const { href, ...anchorProps } = rest
+    // Un link deshabilitado no existe en HTML: se renderiza como span inerte
+    // para no ofrecer una navegación que no va a pasar.
+    if (anchorProps['aria-disabled'] === true || loading) {
+      return (
+        <span className={cn(classes, 'opacity-50 cursor-not-allowed')} aria-disabled>
+          {inner}
+        </span>
+      )
+    }
+    return (
+      <Link href={href} className={classes} {...anchorProps}>
+        {inner}
+      </Link>
+    )
+  }
+
+  const {
+    // type='button' por default: si no, dentro de un <form> submitearía. Pasá
+    // type="submit" explícito cuando el botón deba enviar el formulario.
+    type = 'button',
+    disabled,
+    ...buttonProps
+  } = rest
+
+  return (
+    <button type={type} className={classes} disabled={disabled || loading} {...buttonProps}>
+      {inner}
     </button>
   )
 }

@@ -37,6 +37,7 @@ import { Alert } from '@/components/ui/Alert'
 import { StatTile } from '@/components/ui/StatTile'
 import { IconMedallion, BrandAccentBar } from '@/components/ui/IconMedallion'
 import { OptionCard } from '@/components/ui/OptionCard'
+import { WidgetHeader } from '@/components/ui/WidgetHeader'
 import { PillRadioGroup, PillCheckGroup } from '@/components/ui/ChoicePills'
 import { NotificationBell, NotificationPanel } from '@/components/ui/Notifications'
 import { KanbanBoard, KanbanColumn, KanbanCard } from '@/components/ui/Kanban'
@@ -313,6 +314,13 @@ export default function DesignSystemPage() {
               <Button variant="outline" size="icon" aria-label="Eliminar"><Trash2 className="w-4 h-4" /></Button>
               <Text size="xs" tone="muted" className="ml-2">size=&ldquo;icon&rdquo; — sólo ícono, sin texto</Text>
             </Row>
+            <Row>
+              <Button href="/design-system">Con href → es un &lt;a&gt;</Button>
+              <Button href="/design-system" variant="outline" icon={<Plus className="w-4 h-4" />}>Navegar</Button>
+              <Text size="xs" tone="muted" className="ml-2">
+                `href` renderiza un `&lt;Link&gt;` con el mismo estilo — se puede abrir en pestaña nueva y prefetchea
+              </Text>
+            </Row>
           </div>
         </Section>
 
@@ -496,6 +504,33 @@ export default function DesignSystemPage() {
         </Section>
 
         {/* StatTile */}
+        {/* WidgetHeader */}
+        <Section
+          title="WidgetHeader"
+          hint="El hermano de PageHeader a escala de card: medallón + título + subtítulo/badge + acción. Era el patrón más repetido DENTRO de las cards (~25 usos inline) y venía con drift: medallones de w-7/w-9/w-10, radios mezclados y hasta un gradiente distinto. Reusa CardTitle para el título."
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card>
+              <WidgetHeader
+                icon={<Target className="w-4 h-4" />}
+                title="Documentación"
+                subtitle="7 de 12 resueltos"
+                action={<Text size="lg" weight="bold" tone="primary" className="text-2xl">58%</Text>}
+              />
+              <ProgressBar value={58} className="h-2" />
+            </Card>
+            <Card>
+              <WidgetHeader
+                icon={<Home className="w-4 h-4" />}
+                title="Interesados"
+                badge={<Badge tone="primary">3</Badge>}
+                action={<Button variant="ghost" size="sm" icon={<Plus className="w-3 h-3" />}>Agregar</Button>}
+              />
+              <Text size="sm" tone="muted">size=&ldquo;sm&rdquo; · &ldquo;md&rdquo; (default) · &ldquo;lg&rdquo; cambian el medallón.</Text>
+            </Card>
+          </div>
+        </Section>
+
         <Section title="StatTile" hint="Tile de estadística. Con ícono: tile blanca, el tono colorea sólo la caja (KPI del dashboard). Sin ícono + tone: tiñe toda la tile (resultado semántico). Sin ícono ni tone: neutra.">
           <Row>
             <StatTile icon={<Target className="w-5 h-5" />} label="Leads activos" value={128} tone="primary" href="#" className="w-40" />

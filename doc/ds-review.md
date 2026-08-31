@@ -186,6 +186,15 @@ Los 1, 2 y 3 eran **el mismo dibujo con tres medidas distintas**.
 - `components/onboarding/StepIndicator.tsx` **borrado**: era una copia casi
   idéntica de `Steps`. Ahora usa el del DS.
 
+### Cuarta tanda (cerrada) — salió de migrar `components/properties`
+
+| Decisión | Datos |
+|---|---|
+| **`WidgetHeader`** nuevo | ~25 usos inline. Es `PageHeader` a escala de card: medallón + título + subtítulo/badge + acción. Venía con drift real: medallones de w-7/w-9/w-10, `rounded-lg` vs `rounded-control`, y un gradiente distinto (`to-[#ff5e3a]`). Reusa `CardTitle` para el título en vez de inventar un segundo estilo de título de card. |
+| **`Button` con `href`** | **22 usos en 14 archivos**: `<Link>` replicando a mano el relleno, padding y radio del botón. Con `href` renderiza `<Link>` con el mismo estilo; un `<a>` es lo correcto cuando la acción es navegar. Misma decisión que `Tabs.href`. Un link deshabilitado se renderiza como `<span>` inerte, porque en HTML no existe. |
+| Colores de dominio a `crm-config` | `VISIT_BUY_INTENTIONS` / `VISIT_SITUATIONS` / `VISIT_SOURCES` (estaban duplicados en **3** archivos), `REPORT_FRESHNESS`. |
+| **Control tri-estado de documentación** | ❌ no se crea — 1 uso (24px, tengo/no aplica/pendiente). Marcado. |
+
 ## Hallazgos abiertos (encontrados al migrar, no resueltos)
 
 Cosas que aparecieron migrando y que NO son decisiones de contrato pendientes,
@@ -201,7 +210,11 @@ pero conviene no perder:
 2. **`profile.full_name` viene vacío** en el layout del dashboard, así que el
    avatar del sidebar y del header caen al email (`dev@dev.com` → "D") en vez de
    mostrar las iniciales del nombre. No es del design system, pero se ve.
-3. **`Tabs` en modo ruta**: el match de ruta lo calcula quien llama, a propósito
+3. **`Badge` local que le hacía sombra al del DS** en `VisitFormsSection` (ya
+   borrado) y **otro igual en `app/r/[slug]`** (un `Tag` local con
+   `color="green"`). Ese archivo todavía no se migró; los mapas de dominio ya
+   existen en `crm-config`, así que es directo.
+4. **`Tabs` en modo ruta**: el match de ruta lo calcula quien llama, a propósito
    (a veces es exacto, a veces con `startsWith`). Si aparece un tercer patrón de
    match, evaluar si vale un helper.
 

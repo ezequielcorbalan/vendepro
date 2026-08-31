@@ -105,7 +105,7 @@ Reemplazar los usos inline por los componentes/tokens. Escala real hoy: **~101 a
   `Button variant="neutral"` (5 botones oscuros inline que nadie había marcado).
   `Card tone="dark"` e `IntegrationBadge` se decidieron **no crear** (1 uso cada
   uno). **No quedan decisiones de contrato pendientes.**
-- 🟡 **Fase 4 en curso.** `lint:ds` bajó 198 → **176**.
+- 🟡 **Fase 4 en curso.** `lint:ds` bajó 198 → **154**.
 - ✅ **`components/layout` migrado** (5 archivos que tenían cero adopción del DS
   y se ven en TODA la app): Sidebar, MobileHeader, GlobalSearch, NotificationBell
   y ActivityTabs. Cero `<button>` inline, cero `brand-pink` suelto, cero

@@ -188,6 +188,41 @@ export const SEARCH_ENTITY_TONES = {
   property: 'text-success',
 } as const
 
+// ── Ficha de visita ──────────────────────────────────────────────
+// Estaba duplicado en tres archivos (components/properties/VisitFormsSection,
+// app/r/[slug] y app/v/[slug]), cada uno con sus propias labels y colores.
+export const VISIT_BUY_INTENTIONS = {
+  compraria: { label: 'Compraría',    tone: 'success' as const },
+  tal_vez:   { label: 'Tal vez',      tone: 'warning' as const },
+  no:        { label: 'No compraría', tone: 'danger'  as const },
+} as const
+
+export type VisitBuyIntention = keyof typeof VISIT_BUY_INTENTIONS
+
+export const VISIT_SITUATIONS: Record<string, string> = {
+  mudanza: 'Mudanza',
+  primera_vivienda: 'Primera vivienda',
+  inversion: 'Inversión',
+  downsizing: 'Downsizing',
+  otro: 'Otros',
+}
+
+export const VISIT_SOURCES: Record<string, string> = {
+  argenprop: 'Argenprop',
+  mercadolibre: 'Mercado Libre',
+  zonaprop: 'Zonaprop',
+  instagram: 'Instagram',
+  recomendacion: 'Recomendación',
+  otro: 'Otros',
+}
+
+// Frescura del último reporte de una propiedad. Estaba hardcodeado con
+// orange/yellow sueltos en PropertyFilters (badge y texto).
+export const REPORT_FRESHNESS = {
+  overdue: { badge: 'bg-orange-100 text-orange-800', text: 'text-orange-600 font-medium' },
+  warning: { badge: 'bg-yellow-100 text-yellow-800', text: 'text-yellow-700' },
+} as const
+
 export const LEAD_FLAGS = {
   tasacion: { label: 'Tasación', color: 'bg-purple-100 text-purple-800' },
 } as const
