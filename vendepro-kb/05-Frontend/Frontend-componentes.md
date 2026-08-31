@@ -8,22 +8,73 @@ Todos los componentes en `src/components/`, agrupados por carpeta.
 
 ## `layout/`
 
-- **`Sidebar.tsx`** — Barra lateral con secciones del menú (usa [[Frontend-lib|nav-config.ts]]). Filtra por rol.
+- **`Sidebar.tsx`** — Barra lateral con secciones del menú (usa [[Frontend-lib|nav-config.ts]]). Filtra por rol; los ítems de módulos que la org no tiene en su plan se ven apagados y con candado.
 - **`MobileHeader.tsx`** — Header responsive con drawer
 - **`GlobalSearch.tsx`** — Búsqueda global cross-entity (usa `[[API-analytics]] /search`)
 - **`NotificationBell.tsx`** — Badge + dropdown (usa `[[API-admin]] /notifications`)
 
-## `ui/`
+## `ui/` — el design system (46 archivos)
 
-- **`Toast.tsx`** — `ToastProvider` + hook `useToast()`
-- **`PhotoGallery.tsx`** — Lightbox de fotos
-- **`ContactSelector.tsx`** — Dropdown con búsqueda de contactos
-- **`PropertySelector.tsx`** — Dropdown con búsqueda de propiedades
+> Galería viva en la ruta **`/design-system`** (pública, sin datos). Plan y
+> decisiones de contrato en `doc/ds-plan.md` y `doc/ds-review.md`.
+> Regla: color → token, texto → `Heading`/`Text`, dominio → `lib/crm-config.ts`.
+
+**Moldes de página y de card**
+- **`PageHeader`** — header estándar de TODA pantalla (título + subtítulo + acciones)
+- **`WidgetHeader`** — el equivalente a escala de card: medallón + título + subtítulo/badge + acción
+- **`Card`** (+ `CardHeader`, `CardTitle`) — superficie blanca estándar
+- **`Typography`** — `Heading` (1–4) y `Text` (size/weight/tone)
+
+**Acciones**
+- **`Button`** — `variant`: `primary | outline | ghost | neutral | success | danger`.
+  Con `href` renderiza un `<Link>` con el mismo estilo.
+- **`ContactButtons`** — `CallButton` / `WhatsAppButton` (el color del canal vive acá)
+
+**Formularios**
+- **`Input`** — `Field` + `Input` / `Textarea` / `Select` (Field propaga el error por contexto)
+- **`Choice`** — `Checkbox` / `RadioGroup` · **`ChoicePills`** — chips seleccionables
+- **`Switch`** · **`OptionCard`** — tarjeta seleccionable (`row` | `stack`)
+
+**Navegación y pasos**
+- **`Tabs`** — subrayado inferior. Con `href` en el item, navega (`<Link>`)
+- **`SegmentedControl`** — cambio de vista (soporta `icon`)
+- **`StepIndicator`** — `numbered` (canónica) | `dots` (compacta)
+- **`Progress`** — `ProgressBar`
+
+**Datos**
+- **`Table`** — `columns` + `actions` (hover-reveal) + `renderMobileCard` + `footer`
+- **`StatTile`** — KPI (con `emphasis` y `badge`) · **`Charts`** — Bar / Donut / Funnel
+- **`Timeline`** · **`Kanban`** · **`PropertyCard`**
+
+**Badges y chips**
+- **`Badge`** (tonos semánticos) · **`StatusBadge`** (genérico, color del mapa de dominio)
+- **`StageBadge`** / **`PropertyStageBadge`** / **`OperationBadge`** / **`EventChip`** — leen de `crm-config`
+- **`Tag`** · **`Avatar`** · **`IconMedallion`** (+ `BrandAccentBar`)
+
+**Superposiciones**
+- **`Modal`** · **`Drawer`** · **`Dropdown`** · **`Tooltip`** · **`Portal`** · **`useOverlay`**
+- **`useConfirm`** (+ `ConfirmDialog`, legacy a reemplazar por `Modal`)
+- **`Toast`** — `ToastProvider` + `useToast()` · **`Notifications`** — campana + panel
+
+**Estados**
+- **`Alert`** — callout con tonos `info | success | warning | danger | brand`
+- **`EmptyState`** — ícono + título + descripción + acción
+
+**Selectores de entidad**
+- **`ContactSelector`** / **`PropertySelector`** / **`LeadSelector`** — dropdown con búsqueda
+- **`PhotoGallery`** — lightbox de fotos
 
 ## `ai/`
 
 - **`AIChatPanel.tsx`** — Panel chat IA dentro de leads (puede editar el lead con IA)
 - **`AIFloatingButton.tsx`** — Botón flotante para abrir el chat (en el `(dashboard)/layout`)
+
+## `marketing/`
+
+- **`wizard/EmailCampaignWizard.tsx`** — wizard de campaña (audiencia → contenido → revisión)
+- **`GtmScript.tsx`** — inyección de Google Tag Manager
+- El builder de automatizaciones ya NO vive acá: se reescribió en
+  `app/(dashboard)/configuracion/automatizaciones/_components/`.
 
 ## `properties/`
 
