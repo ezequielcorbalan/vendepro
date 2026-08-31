@@ -10,7 +10,8 @@ import { cn } from '@/lib/utils'
  * Grupo de acciones de un header, con desborde automático.
  *
  * Hasta `max` acciones van visibles. Con más, queda visible sólo la última
- * —que por convención es la principal— y el resto pasa al menú de tres puntos.
+ * —que por convención es la principal— y el resto pasa al menú de tres puntos,
+ * que va a la DERECHA de la acción visible (último elemento de la fila).
  *
  * El motivo: un header con cuatro botones del mismo peso no tiene acción
  * principal, y eso es peor que esconder tres detrás de un menú.
@@ -60,6 +61,7 @@ export function ActionGroup({ children, max = 2, className }: ActionGroupProps) 
 
   return (
     <div className={cn('flex items-center gap-2 flex-wrap shrink-0', className)}>
+      {visible}
       {hidden.length > 0 && (
         <Dropdown
           align="right"
@@ -72,7 +74,6 @@ export function ActionGroup({ children, max = 2, className }: ActionGroupProps) 
           {hidden.map(asMenuItem)}
         </Dropdown>
       )}
-      {visible}
     </div>
   )
 }

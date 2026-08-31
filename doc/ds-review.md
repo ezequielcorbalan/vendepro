@@ -202,7 +202,7 @@ despegarse del fondo de página.
 
 Y las acciones **desbordan solas**: hasta 2 quedan visibles; con 3 o más queda
 sólo la última —la principal por convención— y el resto pasa a un menú de tres
-puntos. Es automático, quien llama no hace nada.
+puntos. Es automático, quien llama no hace nada. El menú va a la DERECHA de la acción visible.
 
 El motivo: un header con cuatro botones del mismo peso no tiene acción
 principal, y eso es peor que esconder tres detrás de un menú.
