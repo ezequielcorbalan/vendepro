@@ -1,0 +1,76 @@
+import type { ReactNode } from 'react'
+import { cn } from '@/lib/utils'
+
+/**
+ * Medallón de ícono — caja con el gradiente de marca y un ícono blanco adentro.
+ * Es el patrón más repetido de la app (24 usos inline antes de existir): título
+ * de pantalla, header de card, avatar de sección, pantallas de onboarding.
+ *
+ * Unifica el drift que había: tamaños w-7/8/9/10/12/24, radios mezclados
+ * (`rounded-lg` suelto vs `rounded-control`) y sombras distintas. El gradiente
+ * sale de la utilidad `bg-brand-gradient` (globals.css), no escrito a mano.
+ *
+ * Uso:
+ *   <IconMedallion size="lg"><Home className="w-5 h-5 text-white" /></IconMedallion>
+ *   <IconMedallion shape="circle" size="hero" elevated><Check .../></IconMedallion>
+ */
+export type IconMedallionSize = 'sm' | 'md' | 'lg' | 'xl' | 'hero'
+export type IconMedallionShape = 'control' | 'circle'
+
+// Escala en base-4. Los usos inline que caían en w-7 suben a `sm` (w-8): la
+// consistencia gana sobre el píxel exacto.
+const SIZES: Record<IconMedallionSize, string> = {
+  sm: 'w-8 h-8',
+  md: 'w-9 h-9',
+  lg: 'w-10 h-10',
+  xl: 'w-12 h-12',
+  // Pantallas de bienvenida/éxito (onboarding, estados vacíos grandes).
+  hero: 'w-24 h-24',
+}
+
+const SHAPES: Record<IconMedallionShape, string> = {
+  control: 'rounded-control',
+  circle: 'rounded-full',
+}
+
+interface IconMedallionProps {
+  children: ReactNode
+  size?: IconMedallionSize
+  shape?: IconMedallionShape
+  /** Suma `shadow-card`. Los medallones grandes suelen quererla. */
+  elevated?: boolean
+  className?: string
+}
+
+export function IconMedallion({
+  children,
+  size = 'md',
+  shape = 'control',
+  elevated = false,
+  className,
+}: IconMedallionProps) {
+  return (
+    <div
+      className={cn(
+        'bg-brand-gradient text-white flex items-center justify-center shrink-0',
+        SIZES[size],
+        SHAPES[shape],
+        elevated && 'shadow-card',
+        className,
+      )}
+      aria-hidden="true"
+    >
+      {children}
+    </div>
+  )
+}
+
+/**
+ * Barra de acento de marca — el strip fino de gradiente que corona headers,
+ * modales y paneles (10 usos inline). Va como primer hijo de la superficie.
+ *
+ * Uso:  <Card padded={false}><BrandAccentBar /><div className="p-5">…</div></Card>
+ */
+export function BrandAccentBar({ className }: { className?: string }) {
+  return <div className={cn('bg-brand-gradient-r h-1 w-full', className)} aria-hidden="true" />
+}

@@ -19,7 +19,7 @@ import AuthorizationWidget from '@/components/properties/AuthorizationWidget'
 import PriceHistoryWidget from '@/components/properties/PriceHistoryWidget'
 import DocChecklistWidget from '@/components/properties/DocChecklistWidget'
 import ReportsListWidget from '@/components/properties/ReportsListWidget'
-import { PROPERTY_STAGES, type PropertyStage } from '@/lib/crm-config'
+import { PROPERTY_STAGES, getPropertySource, type PropertyStage } from '@/lib/crm-config'
 
 // Sólo "captacion" y "con_ofertas" son slugs legacy que ya no existen como
 // clave en PROPERTY_STAGES (se renombraron a "captada"/"reservada"); el resto
@@ -125,14 +125,10 @@ export default function PropiedadDetailPage() {
               color={PROPERTY_STAGES[resolveStage(stage)]?.color}
               className="whitespace-nowrap"
             />
-            {(property as any).source === 'kiteprop' && (
-              // ds-todo: candidato a badge de origen/integración (color fuera de tokens)
-              <StatusBadge
-                label="Importada de KiteProp"
-                color="bg-indigo-50 text-indigo-600 border border-indigo-100"
-                className="whitespace-nowrap"
-              />
-            )}
+            {(() => {
+              const src = getPropertySource((property as any).source)
+              return src && <StatusBadge label={src.label} color={src.color} className="whitespace-nowrap" />
+            })()}
             <Link href={`/tasaciones/nueva?property_id=${id}`}
               className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-control text-sm font-medium hover:bg-primary-hover">
               <Plus className="w-4 h-4" /> Nueva tasación

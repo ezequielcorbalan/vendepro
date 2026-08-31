@@ -54,7 +54,7 @@ export default function AudienceStep({
             onClick={() => onChange({ source: 'contacts', contact_type: null })}
             className={`flex items-center gap-2 border rounded-card px-4 py-3 text-sm font-medium transition-colors ${
               segment.source === 'contacts'
-                ? 'border-brand-pink bg-brand-pink/5 text-brand-pink'
+                ? 'border-primary bg-primary/5 text-primary'
                 : 'border-gray-200 text-gray-600 hover:border-gray-300'
             }`}
           >
@@ -64,7 +64,7 @@ export default function AudienceStep({
             onClick={() => onChange({ source: 'leads', stages: [] })}
             className={`flex items-center gap-2 border rounded-card px-4 py-3 text-sm font-medium transition-colors ${
               segment.source === 'leads'
-                ? 'border-brand-pink bg-brand-pink/5 text-brand-pink'
+                ? 'border-primary bg-primary/5 text-primary'
                 : 'border-gray-200 text-gray-600 hover:border-gray-300'
             }`}
           >
@@ -83,7 +83,7 @@ export default function AudienceStep({
                 onClick={() => onChange({ ...segment, contact_type: t.key || null })}
                 className={`text-sm px-3 py-1.5 rounded-full border transition-colors ${
                   (segment.contact_type ?? '') === t.key
-                    ? 'border-brand-pink bg-brand-pink/5 text-brand-pink font-medium'
+                    ? 'border-primary bg-primary/5 text-primary font-medium'
                     : 'border-gray-200 text-gray-600 hover:border-gray-300'
                 }`}
               >
@@ -103,7 +103,7 @@ export default function AudienceStep({
                 onClick={() => toggleStage(s.key)}
                 className={`text-sm px-3 py-1.5 rounded-full border transition-colors ${
                   stages.includes(s.key)
-                    ? 'border-brand-pink bg-brand-pink/5 text-brand-pink font-medium'
+                    ? 'border-primary bg-primary/5 text-primary font-medium'
                     : 'border-gray-200 text-gray-600 hover:border-gray-300'
                 }`}
               >
@@ -116,7 +116,7 @@ export default function AudienceStep({
 
       {/* Conteo en vivo */}
       <div className="bg-gray-50 rounded-card p-4 flex items-center gap-3">
-        <Users className="w-5 h-5 text-brand-pink shrink-0" />
+        <Users className="w-5 h-5 text-primary shrink-0" />
         {loading ? (
           <span className="text-sm text-gray-500 inline-flex items-center gap-2">
             <Loader2 className="w-4 h-4 animate-spin" /> Calculando audiencia…

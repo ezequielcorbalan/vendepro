@@ -6,6 +6,7 @@ import { slugifyBase, isValidSlugBase, publicLandingHostPath } from '@/lib/landi
 import type { Landing } from '@/lib/landings/types'
 import { Field, Input, Textarea } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import { Heading } from '@/components/ui/Typography'
 
 export default function ConfigDrawer({
   landing,
@@ -68,10 +69,10 @@ export default function ConfigDrawer({
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h2 className="font-semibold text-ink">Configuración</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
+          <Heading level={4}>Configuración</Heading>
+          <Button variant="ghost" size="icon" aria-label="Cerrar" onClick={onClose}>
             <X className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
         <div className="flex-1 overflow-auto p-4 space-y-4">
           <Field label="Slug">

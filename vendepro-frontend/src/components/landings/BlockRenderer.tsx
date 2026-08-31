@@ -28,14 +28,14 @@ export default function BlockRenderer({ blocks, mode = 'public', selectedBlockId
         return (
           <div
             key={block.id}
-            className={`relative group transition-colors ${!block.visible ? 'opacity-50' : ''} ${isSelected ? 'ring-2 ring-brand-pink ring-offset-2' : 'hover:ring-2 hover:ring-brand-pink/30'}`}
+            className={`relative group transition-colors ${!block.visible ? 'opacity-50' : ''} ${isSelected ? 'ring-2 ring-primary ring-offset-2' : 'hover:ring-2 hover:ring-primary/30'}`}
             onClick={(e) => { e.stopPropagation(); onSelect?.(block.id) }}
             role="button"
             tabIndex={0}
             aria-label={`Bloque ${BLOCK_LABELS[block.type]}`}
           >
             {isSelected && (
-              <span className="absolute top-2 right-2 z-20 bg-gradient-to-br from-brand-pink to-brand-orange text-white text-[10px] font-semibold px-2 py-1 rounded-md tracking-wider uppercase">
+              <span className="absolute top-2 right-2 z-20 bg-brand-gradient text-white text-[10px] font-semibold px-2 py-1 rounded-control tracking-wider uppercase">
                 {BLOCK_LABELS[block.type]} · editando
               </span>
             )}

@@ -29,7 +29,6 @@ export function Dropdown({ trigger, children, align = 'left', className }: Dropd
   }, [open])
 
   const triggerEl = isValidElement(trigger)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ? cloneElement(trigger, {
         onClick: (e: MouseEvent) => { trigger.props.onClick?.(e); setOpen(o => !o) },
         'aria-haspopup': 'menu',

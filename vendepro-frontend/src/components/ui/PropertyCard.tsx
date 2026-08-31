@@ -31,7 +31,7 @@ export function PropertyCard({
       )}
     >
       <div
-        className="relative h-[150px] bg-gradient-to-br from-brand-pink to-brand-orange bg-cover bg-center"
+        className="relative h-[150px] bg-brand-gradient bg-cover bg-center"
         style={image ? { backgroundImage: `url(${image})` } : undefined}
       >
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/45" />

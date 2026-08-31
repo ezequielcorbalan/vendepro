@@ -167,6 +167,77 @@ export const DEFAULT_TAGS = {
   aliado:      { label: 'Aliado',      color: '#10b981' },
 } as const
 
+// Marcadores de un lead — NO son etapas del pipeline, son hechos que se
+// muestran como pill al lado del nombre. Estaban hardcodeados en la lista de
+// leads (pill morada "Tasación").
+// Urgencia de una notificación. Estaba hardcodeada en NotificationBell con
+// red/yellow/blue sueltos; los tonos son de dominio y viven acá.
+export const URGENCY_TONES = {
+  high:   { icon: 'text-danger',  title: 'text-danger font-medium' },
+  medium: { icon: 'text-warning', title: 'text-gray-700' },
+  low:    { icon: 'text-info',    title: 'text-gray-700' },
+} as const
+
+export type UrgencyLevel = keyof typeof URGENCY_TONES
+
+// Color del ícono de cada tipo de entidad en la búsqueda global. Estaba
+// hardcodeado con pink/blue/green sueltos en GlobalSearch.
+export const SEARCH_ENTITY_TONES = {
+  lead: 'text-primary',
+  contact: 'text-info',
+  property: 'text-success',
+} as const
+
+// ── Ficha de visita ──────────────────────────────────────────────
+// Estaba duplicado en tres archivos (components/properties/VisitFormsSection,
+// app/r/[slug] y app/v/[slug]), cada uno con sus propias labels y colores.
+export const VISIT_BUY_INTENTIONS = {
+  compraria: { label: 'Compraría',    tone: 'success' as const },
+  tal_vez:   { label: 'Tal vez',      tone: 'warning' as const },
+  no:        { label: 'No compraría', tone: 'danger'  as const },
+} as const
+
+export type VisitBuyIntention = keyof typeof VISIT_BUY_INTENTIONS
+
+export const VISIT_SITUATIONS: Record<string, string> = {
+  mudanza: 'Mudanza',
+  primera_vivienda: 'Primera vivienda',
+  inversion: 'Inversión',
+  downsizing: 'Downsizing',
+  otro: 'Otros',
+}
+
+export const VISIT_SOURCES: Record<string, string> = {
+  argenprop: 'Argenprop',
+  mercadolibre: 'Mercado Libre',
+  zonaprop: 'Zonaprop',
+  instagram: 'Instagram',
+  recomendacion: 'Recomendación',
+  otro: 'Otros',
+}
+
+// Frescura del último reporte de una propiedad. Estaba hardcodeado con
+// orange/yellow sueltos en PropertyFilters (badge y texto).
+export const REPORT_FRESHNESS = {
+  overdue: { badge: 'bg-orange-100 text-orange-800', text: 'text-orange-600 font-medium' },
+  warning: { badge: 'bg-yellow-100 text-yellow-800', text: 'text-yellow-700' },
+} as const
+
+// Estado de una landing. Estaba en un StatusBadge LOCAL de components/landings
+// que le hacía sombra al del design system.
+export const LANDING_STATUSES = {
+  draft:          { label: 'Borrador',    color: 'bg-gray-100 text-gray-700' },
+  pending_review: { label: 'En revisión', color: 'bg-amber-100 text-amber-800' },
+  published:      { label: 'Publicada',   color: 'bg-emerald-100 text-emerald-800' },
+  archived:       { label: 'Archivada',   color: 'bg-gray-200 text-gray-500' },
+} as const
+
+export const LEAD_FLAGS = {
+  tasacion: { label: 'Tasación', color: 'bg-purple-100 text-purple-800' },
+} as const
+
+export type LeadFlag = keyof typeof LEAD_FLAGS
+
 export const PROPERTY_STAGES = {
   propuesta:     { label: 'Propuesta',       color: 'bg-gray-100 text-gray-700',       dot: '#6b7280', order: 0 },
   captada:       { label: 'Captada',         color: 'bg-green-100 text-green-800',     dot: '#22c55e', order: 1 },
@@ -198,6 +269,22 @@ export const PROPERTY_REPORT_STATUS: Record<string, { label: string; color: stri
 }
 export function getReportStatus(status?: string) {
   return PROPERTY_REPORT_STATUS[status ?? ''] ?? { label: status || '—', color: 'bg-amber-100 text-amber-800' }
+}
+
+// Origen de una propiedad — de dónde vino el registro. Sólo se muestra badge
+// cuando NO es carga manual. Estaba hardcodeado en el detalle de propiedad.
+export const PROPERTY_SOURCES: Record<string, { label: string; color: string }> = {
+  kiteprop: { label: 'Importada de KiteProp', color: 'bg-indigo-50 text-indigo-600 border border-indigo-100' },
+}
+export function getPropertySource(source?: string | null) {
+  return source ? PROPERTY_SOURCES[source] ?? null : null
+}
+
+// Estados de propiedad que NO viven en el pipeline de venta (PROPERTY_STAGES):
+// alquiler es un flujo aparte, con su propia lista. Estaba hardcodeado como
+// span cyan en /alquiladas.
+export const PROPERTY_ALT_STATUSES: Record<string, { label: string; color: string }> = {
+  alquilada: { label: 'Alquilada', color: 'bg-cyan-100 text-cyan-800' },
 }
 
 export const ACTIVITY_TYPES = {

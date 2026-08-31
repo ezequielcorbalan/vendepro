@@ -26,7 +26,7 @@ export function ComparablesListForm({ data, onPatch }: Props) {
           <option value="reserved">Reservados / vendidos</option>
         </select>
       </label>
-      <p className="text-xs text-slate-400">Los comparables se cargan en cada tasación desde el paso "Competencia".</p>
+      <p className="text-xs text-slate-400">Los comparables se cargan en cada tasación desde el paso &ldquo;Competencia&rdquo;.</p>
     </div>
   )
 }

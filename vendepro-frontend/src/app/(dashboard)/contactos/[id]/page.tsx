@@ -157,7 +157,7 @@ export default function ContactDetailPage() {
             {contact.phone && (
               <WhatsAppButton phone={contact.phone} />
             )}
-            <Link href={`/leads?new=1&contact_id=${contact.id}`} className="flex items-center gap-2 text-sm bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-control transition-colors">
+            <Link href={`/leads?new=1&contact_id=${contact.id}`} className="inline-flex items-center gap-2 text-sm font-medium bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-control transition-colors">
               <UserPlus className="w-4 h-4" /> Nuevo lead
             </Link>
             <Link href={`/propiedades/nueva?contact_id=${contact.id}`} className="flex items-center gap-2 text-sm bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-control transition-colors">

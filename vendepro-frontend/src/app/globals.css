@@ -66,6 +66,29 @@
   --shadow-pop: 0 12px 32px -12px rgb(24 20 22 / 0.28);
 }
 
+/* ── Gradiente de marca ───────────────────────────────────────────
+   Fuente única del gradiente rosa→naranja. Antes estaba escrito a mano
+   (`bg-gradient-to-br from-brand-pink to-brand-orange`) en 74 lugares, con
+   drift de dirección. Ahora es una utilidad: cambiás el ángulo o los tonos acá
+   y se actualiza en toda la app.
+     bg-brand-gradient    → diagonal (medallones de ícono, superficies)
+     bg-brand-gradient-r  → horizontal (barras de acento, progreso) */
+@utility bg-brand-gradient {
+  background-image: linear-gradient(
+    to bottom right,
+    var(--color-brand-pink),
+    var(--color-brand-orange)
+  );
+}
+
+@utility bg-brand-gradient-r {
+  background-image: linear-gradient(
+    to right,
+    var(--color-brand-pink),
+    var(--color-brand-orange)
+  );
+}
+
 /* Compat Tailwind v3 → v4: el default de `border`/`divide` en v4 es
    `currentColor` (hereda el gris oscuro del texto y se ve como recuadros
    negros). Restauramos el gris claro que todo el código asume. */

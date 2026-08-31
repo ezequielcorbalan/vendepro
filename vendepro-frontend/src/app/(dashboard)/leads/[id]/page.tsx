@@ -310,9 +310,9 @@ export default function LeadDetailPage() {
           )}
           {!isBuyer && (
             <>
-              {/* ds-todo: candidato a variante "accent" (naranja de marca) — por ahora outline */}
               <Button
-                variant="outline"                icon={<FileText className="w-3.5 h-3.5" />}
+                variant="outline"
+                icon={<FileText className="w-3.5 h-3.5" />}
                 disabled={editing}
                 onClick={() => {
                   const qs = new URLSearchParams({ lead_id: leadId })
@@ -323,8 +323,9 @@ export default function LeadDetailPage() {
               >
                 Ficha de tasación
               </Button>
-              {/* ds-todo: candidato a variante "success" (verde crear) — por ahora primary */}
-              <Button                icon={<Home className="w-3.5 h-3.5" />}
+              <Button
+                variant="success"
+                icon={<Home className="w-3.5 h-3.5" />}
                 onClick={() => {
                   const qs = new URLSearchParams({ lead_id: leadId })
                   if (fichas.length > 0) qs.set('ficha_id', fichas[0].id)
@@ -725,18 +726,23 @@ export default function LeadDetailPage() {
               )}
             </p>
             <div className="space-y-2">
-              <button onClick={goCreateProperty} className="w-full px-4 py-3 bg-green-600 text-white rounded-control text-sm font-medium hover:bg-green-700 flex items-center justify-center gap-2">
-                <Home className="w-4 h-4" /> Crear propiedad vinculada
-              </button>
-              <button onClick={goCreateAppraisal} className="w-full px-4 py-3 bg-gradient-to-br from-brand-pink to-brand-orange text-white rounded-control text-sm font-medium hover:opacity-90 flex items-center justify-center gap-2">
-                <FileText className="w-4 h-4" /> Crear tasación vinculada
-              </button>
+              <Button variant="success" size="lg" fullWidth icon={<Home className="w-4 h-4" />} onClick={goCreateProperty}>
+                Crear propiedad vinculada
+              </Button>
+              <Button size="lg" fullWidth icon={<FileText className="w-4 h-4" />} onClick={goCreateAppraisal}>
+                Crear tasación vinculada
+              </Button>
               {!propModal.requireProperty && (
-                <button onClick={() => { const t = propModal.targetStage; setPropModal(null); applyStageChange(t) }} className="w-full px-4 py-3 border rounded-control text-sm text-gray-600 hover:bg-gray-50">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  fullWidth
+                  onClick={() => { const t = propModal.targetStage; setPropModal(null); applyStageChange(t) }}
+                >
                   Avanzar sin vincular
-                </button>
+                </Button>
               )}
-              <button onClick={() => setPropModal(null)} className="w-full px-4 py-2 text-sm text-gray-400">Cancelar</button>
+              <Button variant="ghost" fullWidth onClick={() => setPropModal(null)}>Cancelar</Button>
             </div>
           </div>
         </div>

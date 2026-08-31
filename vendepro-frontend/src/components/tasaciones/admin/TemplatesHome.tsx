@@ -64,7 +64,7 @@ export function TemplatesHome() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <p className="text-sm text-slate-500">{templates.length} templates</p>
-        <button onClick={() => setCreating(true)} className="flex items-center gap-1 rounded bg-gradient-to-br from-brand-pink to-brand-orange px-3 py-2 text-sm text-white">
+        <button onClick={() => setCreating(true)} className="flex items-center gap-1 rounded-control bg-primary hover:bg-primary-hover px-3 py-2 text-sm text-white">
           <Plus className="h-4 w-4" /> Crear template
         </button>
       </div>

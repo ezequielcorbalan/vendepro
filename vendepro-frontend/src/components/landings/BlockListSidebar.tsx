@@ -6,6 +6,9 @@ import { CSS } from '@dnd-kit/utilities'
 import { GripVertical, Plus, Eye, EyeOff, Trash2 } from 'lucide-react'
 import type { Block, BlockType } from '@/lib/landings/types'
 import { BLOCK_LABELS } from './blocks'
+import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/Badge'
+import { Text } from '@/components/ui/Typography'
 
 const AVAILABLE_BLOCK_TYPES: Array<{ type: BlockType; label: string; seedData: any }> = [
   { type: 'hero-split', label: 'Hero dividido', seedData: { title: 'Título', media_url: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=1200', media_side: 'right', accent_color: 'pink' } },
@@ -40,7 +43,7 @@ export default function BlockListSidebar({ blocks, selectedId, onSelect, onReord
   return (
     <aside className="bg-white border-r border-gray-200 flex flex-col overflow-hidden">
       <div className="p-3 border-b border-gray-200">
-        <h2 className="text-xs uppercase tracking-wider font-semibold text-gray-500">Bloques ({blocks.length})</h2>
+        <Text size="xs" tone="muted" weight="semibold" className="uppercase tracking-wider">Bloques ({blocks.length})</Text>
       </div>
       <div className="flex-1 overflow-auto p-2 space-y-1">
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -56,10 +59,15 @@ export default function BlockListSidebar({ blocks, selectedId, onSelect, onReord
           </SortableContext>
         </DndContext>
 
-        <button onClick={() => setShowAdd(v => !v)}
-          className="w-full text-sm text-gray-500 hover:text-brand-pink border border-dashed border-gray-300 rounded-lg py-2 mt-2 flex items-center justify-center gap-1.5">
-          <Plus className="w-4 h-4" /> Agregar bloque
-        </button>
+        <Button
+          variant="outline"
+          fullWidth
+          onClick={() => setShowAdd(v => !v)}
+          icon={<Plus className="w-4 h-4" />}
+          className="border-dashed text-gray-500 hover:text-primary mt-2"
+        >
+          Agregar bloque
+        </Button>
 
         {showAdd && (
           <div className="border border-gray-200 rounded-card p-2 bg-gray-50 space-y-1">
@@ -67,7 +75,7 @@ export default function BlockListSidebar({ blocks, selectedId, onSelect, onReord
               <button key={t.type} onClick={async () => {
                 await onAdd({ type: t.type, visible: true, data: t.seedData })
                 setShowAdd(false)
-              }} className="w-full text-left text-sm px-3 py-2 rounded-lg hover:bg-white">{t.label}</button>
+              }} className="w-full text-left text-sm px-3 py-2 rounded-control hover:bg-white">{t.label}</button>
             ))}
           </div>
         )}
@@ -85,7 +93,7 @@ function SortableBlockRow({ block, selected, onSelect, onRemove, onToggleVisibil
 
   return (
     <div ref={setNodeRef} style={style}
-      className={`group flex items-center gap-1 px-2 py-1.5 rounded-lg text-sm cursor-pointer ${selected ? 'bg-brand-pink/10 ring-1 ring-brand-pink/40' : 'hover:bg-gray-100'}`}
+      className={`group flex items-center gap-1 px-2 py-1.5 rounded-control text-sm cursor-pointer ${selected ? 'bg-primary/10 ring-1 ring-primary/40' : 'hover:bg-gray-100'}`}
       onClick={onSelect}>
       <button {...attributes} {...listeners} className="text-gray-400 cursor-grab active:cursor-grabbing" aria-label="Reordenar" onClick={e => e.stopPropagation()}>
         <GripVertical className="w-3.5 h-3.5" />
@@ -93,16 +101,16 @@ function SortableBlockRow({ block, selected, onSelect, onRemove, onToggleVisibil
       <span className={`flex-1 truncate ${block.visible ? 'text-ink' : 'text-gray-400'}`}>
         {BLOCK_LABELS[block.type]}
         {block.is_variable && (
-          <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded bg-gradient-to-br from-brand-pink to-brand-orange text-white" title="Variable por tasación">VAR</span>
+          <span className="ml-2" title="Variable por tasación"><Badge tone="primary">VAR</Badge></span>
         )}
       </span>
-      {isRequired && <span className="text-[10px] text-brand-pink" title="Requerido">◆</span>}
+      {isRequired && <span className="text-[10px] text-primary" title="Requerido">◆</span>}
       <button onClick={(e) => { e.stopPropagation(); onToggleVisibility() }} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-700" title={block.visible ? 'Ocultar' : 'Mostrar'}>
         {block.visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
       </button>
       {!isRequired && (
         <button onClick={(e) => { e.stopPropagation(); if (confirm('¿Eliminar este bloque?')) onRemove() }}
-          className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-600" title="Eliminar">
+          className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-danger" title="Eliminar">
           <Trash2 className="w-3.5 h-3.5" />
         </button>
       )}

@@ -3,6 +3,9 @@ import { useState } from 'react'
 import { Upload, Link as LinkIcon, Home } from 'lucide-react'
 import { apiFetch, getApiBase } from '@/lib/api'
 import PropertyPhotoPicker from './PropertyPhotoPicker'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
 
 interface Props {
   value: string
@@ -40,34 +43,19 @@ export default function ImageUpload({ value, onChange, allowPropertyPicker }: Pr
   return (
     <div className="space-y-2">
       {value && (
-        <img src={value} alt="" className="w-full h-28 rounded-lg object-cover" />
+        <img src={value} alt="" className="w-full h-28 rounded-control object-cover" />
       )}
 
-      <div className="flex gap-1">
-        <button
-          type="button"
-          onClick={() => setMode('upload')}
-          className={`flex-1 text-xs py-1.5 rounded-md ${mode === 'upload' ? 'bg-gray-100 text-ink' : 'text-gray-500 hover:bg-gray-50'}`}
-        >
-          <Upload className="w-3.5 h-3.5 inline mr-1" /> Subir
-        </button>
-        <button
-          type="button"
-          onClick={() => setMode('url')}
-          className={`flex-1 text-xs py-1.5 rounded-md ${mode === 'url' ? 'bg-gray-100 text-ink' : 'text-gray-500 hover:bg-gray-50'}`}
-        >
-          <LinkIcon className="w-3.5 h-3.5 inline mr-1" /> URL
-        </button>
-        {allowPropertyPicker && (
-          <button
-            type="button"
-            onClick={() => setMode('property')}
-            className={`flex-1 text-xs py-1.5 rounded-md ${mode === 'property' ? 'bg-gray-100 text-ink' : 'text-gray-500 hover:bg-gray-50'}`}
-          >
-            <Home className="w-3.5 h-3.5 inline mr-1" /> Propiedad
-          </button>
-        )}
-      </div>
+      <SegmentedControl
+        className="w-full"
+        value={mode}
+        onChange={v => setMode(v as typeof mode)}
+        options={[
+          { value: 'upload', label: 'Subir', icon: <Upload className="w-3.5 h-3.5" /> },
+          { value: 'url', label: 'URL', icon: <LinkIcon className="w-3.5 h-3.5" /> },
+          ...(allowPropertyPicker ? [{ value: 'property', label: 'Propiedad', icon: <Home className="w-3.5 h-3.5" /> }] : []),
+        ]}
+      />
 
       {mode === 'upload' && (
         <label className="block">
@@ -78,7 +66,7 @@ export default function ImageUpload({ value, onChange, allowPropertyPicker }: Pr
             disabled={uploading}
             className="hidden"
           />
-          <span className="block text-center text-xs py-2 border border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-brand-pink">
+          <span className="block text-center text-xs py-2 border border-dashed border-gray-300 rounded-control cursor-pointer hover:border-primary">
             {uploading ? 'Subiendo…' : 'Seleccionar archivo'}
           </span>
         </label>
@@ -86,31 +74,29 @@ export default function ImageUpload({ value, onChange, allowPropertyPicker }: Pr
 
       {mode === 'url' && (
         <div className="flex gap-1">
-          <input
+          <Input
             value={urlInput}
             onChange={e => setUrlInput(e.target.value)}
             placeholder="https://…"
-            className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-xs"
+            className="flex-1 px-2 py-1.5 text-xs"
           />
-          <button
-            type="button"
-            onClick={() => onChange(urlInput, 'external')}
-            className="bg-gray-900 text-white text-xs px-3 rounded-lg"
-          >
+          <Button variant="neutral" size="sm" onClick={() => onChange(urlInput, 'external')}>
             Usar
-          </button>
+          </Button>
         </div>
       )}
 
       {mode === 'property' && allowPropertyPicker && (
         <>
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
+            fullWidth
             onClick={() => setShowPicker(true)}
-            className="w-full text-xs py-2 border border-dashed border-gray-300 rounded-lg hover:border-brand-pink"
+            className="border-dashed text-xs hover:border-primary"
           >
             Elegir desde una propiedad del CRM
-          </button>
+          </Button>
           {showPicker && (
             <PropertyPhotoPicker
               onPick={(url, property_id) => {

@@ -8,7 +8,7 @@ import {
   ChevronRight, Check, Tag, Loader2
 } from 'lucide-react'
 import {
-  LEAD_SOURCES,
+  LEAD_SOURCES, LEAD_FLAGS,
   LEAD_AGENT_FINAL_STAGES, BUYER_LEAD_TERMINAL_STAGES,
   OPERATION_TYPES, getLeadChecklist,
   getLeadUrgency, getUrgencyBadge,
@@ -18,6 +18,7 @@ import type { Contact } from '@/lib/types'
 import { useToast } from '@/components/ui/Toast'
 import { useConfirm } from '@/components/ui/useConfirm'
 import { StatusBadge } from '@/components/ui/StatusBadge'
+import { Tabs } from '@/components/ui/Tabs'
 import { StageBadge } from '@/components/ui/StageBadge'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
@@ -430,24 +431,15 @@ export default function LeadsPage() {
 
       {/* Pestañas de pipeline: Vendedores | Compradores */}
       <div className="flex items-center justify-between border-b border-gray-200">
-        <div className="flex items-center gap-1">
-          {([
-            { key: 'vendedor' as const, label: 'Vendedores' },
-            { key: 'comprador' as const, label: 'Compradores' },
-          ]).map(t => (
-            <button
-              key={t.key}
-              onClick={() => switchPipeline(t.key)}
-              className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                pipeline === t.key
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+        <Tabs
+          className="border-b-0"
+          value={pipeline}
+          onChange={v => switchPipeline(v as LeadPipelineKey)}
+          items={[
+            { value: 'vendedor', label: 'Vendedores' },
+            { value: 'comprador', label: 'Compradores' },
+          ]}
+        />
         <SegmentedControl
           className="hidden sm:inline-flex mb-1"
           options={[{ value: 'list', label: 'Lista' }, { value: 'kanban', label: 'Kanban' }]}
@@ -869,8 +861,15 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
                     <X className="w-2 h-2 opacity-0 group-hover:opacity-60 transition-opacity" />
                   </button>
                 ))}
-                {/* ds-todo: StatusBadge con ícono (pill Tasación) */}
-                {hasAppraisal && <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-800 font-medium shrink-0"><Check className="w-2.5 h-2.5" /> Tasación</span>}
+                {hasAppraisal && (
+                  <StatusBadge
+                    size="sm"
+                    label={LEAD_FLAGS.tasacion.label}
+                    color={LEAD_FLAGS.tasacion.color}
+                    icon={<Check className="w-2.5 h-2.5" />}
+                    className="shrink-0"
+                  />
+                )}
               </div>
               <p className="text-xs text-gray-500 truncate mt-0.5">
                 {lead.phone && <span className="text-gray-600">{lead.phone}</span>}

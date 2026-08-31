@@ -3,6 +3,9 @@ import { useState, useEffect, useRef } from 'react'
 import { Bell, AlertTriangle, Clock, X } from 'lucide-react'
 import Link from 'next/link'
 import { apiFetch } from '@/lib/api'
+import { Button } from '@/components/ui/Button'
+import { Text } from '@/components/ui/Typography'
+import { URGENCY_TONES } from '@/lib/crm-config'
 
 type Notification = {
   id: string
@@ -46,45 +49,71 @@ export default function NotificationBell() {
 
   return (
     <div ref={ref} className="relative">
-      <button onClick={() => setOpen(!open)} className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors">
-        <Bell className={`w-5 h-5 ${hasUrgent ? 'text-red-500' : active.length > 0 ? 'text-gray-600' : 'text-gray-400'}`} />
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => setOpen(!open)}
+        aria-label="Notificaciones"
+        className="relative"
+      >
+        <Bell className={`w-5 h-5 ${hasUrgent ? 'text-danger' : active.length > 0 ? 'text-gray-600' : 'text-gray-400'}`} />
         {active.length > 0 && (
-          <span className={`absolute -top-0.5 -right-0.5 w-4 h-4 text-[9px] font-bold text-white rounded-full flex items-center justify-center ${hasUrgent ? 'bg-red-500' : 'bg-pink-500'}`}>
+          <span className={`absolute -top-0.5 -right-0.5 w-4 h-4 text-[9px] font-bold text-white rounded-full flex items-center justify-center ${hasUrgent ? 'bg-danger' : 'bg-primary'}`}>
             {active.length}
           </span>
         )}
-      </button>
+      </Button>
 
       {open && (
         <div className="absolute left-0 top-full mt-2 w-72 sm:w-80 bg-white rounded-card shadow-pop border border-gray-200 z-50 overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-            <span className="text-sm font-semibold text-ink">Notificaciones</span>
+            <Text weight="semibold">Notificaciones</Text>
             {active.length > 0 && (
-              <button onClick={() => setDismissed(new Set(notifications.map(n => n.id)))} className="text-[10px] text-gray-400 hover:text-gray-600">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setDismissed(new Set(notifications.map(n => n.id)))}
+                className="text-[10px] text-gray-400 px-1.5 py-0.5"
+              >
                 Limpiar
-              </button>
+              </Button>
             )}
           </div>
           <div className="max-h-80 overflow-y-auto">
             {active.length === 0 ? (
-              <div className="p-6 text-center text-sm text-gray-400">Sin notificaciones</div>
+              <Text size="sm" tone="muted" className="p-6 text-center">Sin notificaciones</Text>
             ) : (
+              // El botón de descartar va como HERMANO del Link, no adentro: un
+              // <button> dentro de un <a> es HTML inválido y rompe la
+              // navegación por teclado.
               active.map(n => (
-                <Link key={n.id} href={n.link} onClick={() => setOpen(false)}
-                  className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 border-b border-gray-50 transition-colors">
-                  {n.urgency === 'high' ? <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" /> :
-                   n.urgency === 'medium' ? <Clock className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" /> :
-                   <Bell className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />}
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-sm ${n.urgency === 'high' ? 'text-red-700 font-medium' : 'text-gray-700'} truncate`}>{n.title}</p>
-                    <p className="text-xs text-gray-400 truncate">{n.body}</p>
-                  </div>
-                  <button
-                    onClick={e => { e.preventDefault(); e.stopPropagation(); setDismissed(prev => new Set([...prev, n.id])) }}
-                    className="p-1 text-gray-300 hover:text-gray-500 shrink-0">
+                <div
+                  key={n.id}
+                  className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 border-b border-gray-50 transition-colors"
+                >
+                  <Link
+                    href={n.link}
+                    onClick={() => setOpen(false)}
+                    className="flex items-start gap-3 flex-1 min-w-0"
+                  >
+                    {n.urgency === 'high' ? <AlertTriangle className={`w-4 h-4 mt-0.5 shrink-0 ${URGENCY_TONES.high.icon}`} /> :
+                     n.urgency === 'medium' ? <Clock className={`w-4 h-4 mt-0.5 shrink-0 ${URGENCY_TONES.medium.icon}`} /> :
+                     <Bell className={`w-4 h-4 mt-0.5 shrink-0 ${URGENCY_TONES.low.icon}`} />}
+                    <span className="flex-1 min-w-0">
+                      <span className={`block text-sm truncate ${URGENCY_TONES[n.urgency]?.title ?? 'text-gray-700'}`}>{n.title}</span>
+                      <span className="block text-xs text-gray-400 truncate">{n.body}</span>
+                    </span>
+                  </Link>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Descartar: ${n.title}`}
+                    onClick={() => setDismissed(prev => new Set([...prev, n.id]))}
+                    className="p-1 text-gray-300 hover:text-gray-500 shrink-0"
+                  >
                     <X className="w-3 h-3" />
-                  </button>
-                </Link>
+                  </Button>
+                </div>
               ))
             )}
           </div>
