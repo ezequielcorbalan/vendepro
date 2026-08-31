@@ -4,6 +4,10 @@ import { ChevronRight, Target, CheckCircle2, Circle, XCircle } from 'lucide-reac
 import {
   getStagesForPipeline, canMoveLeadStageManually, type LeadPipelineKey,
 } from '@/lib/crm-config'
+import { Card } from '@/components/ui/Card'
+import { WidgetHeader } from '@/components/ui/WidgetHeader'
+import { Button } from '@/components/ui/Button'
+import { Text } from '@/components/ui/Typography'
 
 /** Estados terminales que se pueden setear manualmente desde el pipeline. */
 const MANUAL_TERMINAL_STAGES = ['perdido', 'invalido'] as const
@@ -41,18 +45,13 @@ export function LeadStagePipeline({ currentStage, pipeline = 'vendedor', onSelec
   const currentOrder = isTerminalLost ? 0 : isFinalized ? 999 : rawOrder
 
   return (
-    <div className="bg-white border border-gray-200 rounded-card p-4 shadow-card">
-      <div className="flex items-center justify-between gap-2 mb-3">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center">
-            <Target className="w-3.5 h-3.5 text-white" />
-          </div>
-          <p className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
-            Pipeline{pipeline === 'comprador' ? ' comprador' : ''}
-          </p>
-        </div>
-        <span className="text-[10px] text-gray-400">Clickeá una etapa para mover (incluso hacia atrás)</span>
-      </div>
+    <Card>
+      <WidgetHeader
+        size="sm"
+        icon={<Target className="w-3.5 h-3.5" />}
+        title={`Pipeline${pipeline === 'comprador' ? ' comprador' : ''}`}
+        action={<Text size="xs" tone="muted" className="text-[10px]">Clickeá una etapa para mover (incluso hacia atrás)</Text>}
+      />
 
       <div className="overflow-hidden">
         <div className="flex items-center gap-0 flex-wrap">
@@ -65,20 +64,18 @@ export function LeadStagePipeline({ currentStage, pipeline = 'vendedor', onSelec
             const isDisabled = disabled || (!isCurrent && !movable)
             return (
               <div key={s} className="flex items-center">
-                <button
+                <Button
+                  variant={isCurrent ? 'primary' : 'outline'}
+                  size="sm"
                   onClick={() => onSelect(s)}
                   disabled={isDisabled}
                   aria-current={isCurrent ? 'step' : undefined}
                   data-stage={s}
                   data-current={isCurrent ? 'true' : undefined}
                   title={!isCurrent && !movable ? 'No podés saltear a esta etapa' : undefined}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
-                    isCurrent
-                      ? 'bg-brand-pink text-white border-brand-pink'
-                      : isCompleted
-                      ? 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'
-                      : 'bg-white text-gray-400 border-gray-200 hover:border-gray-300 hover:text-gray-600'
-                  } disabled:cursor-not-allowed disabled:opacity-40`}
+                  className={`gap-1.5 rounded-full ${
+                    isCurrent ? '' : isCompleted ? 'bg-gray-100 text-gray-500 hover:bg-gray-200' : 'text-gray-400'
+                  }`}
                 >
                   {isCompleted ? (
                     <CheckCircle2 className="w-3.5 h-3.5 text-gray-400" />
@@ -88,7 +85,7 @@ export function LeadStagePipeline({ currentStage, pipeline = 'vendedor', onSelec
                     <Circle className="w-3.5 h-3.5" />
                   )}
                   {stageData.label}
-                </button>
+                </Button>
                 {!isLast && (
                   <ChevronRight className="w-3.5 h-3.5 text-gray-300 mx-0.5 shrink-0" />
                 )}
@@ -102,22 +99,20 @@ export function LeadStagePipeline({ currentStage, pipeline = 'vendedor', onSelec
           {MANUAL_TERMINAL_STAGES.map(s => {
             const isCurrent = s === currentStage
             return (
-              <button
+              <Button
                 key={s}
+                variant={isCurrent ? 'danger' : 'outline'}
+                size="sm"
                 onClick={() => onSelect(s)}
                 disabled={disabled}
                 aria-current={isCurrent ? 'step' : undefined}
                 data-stage={s}
                 data-current={isCurrent ? 'true' : undefined}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
-                  isCurrent
-                    ? 'bg-red-600 text-white border-red-600'
-                    : 'bg-white text-red-500 border-red-200 hover:bg-red-50'
-                } disabled:cursor-not-allowed`}
+                icon={<XCircle className="w-3.5 h-3.5" />}
+                className={`gap-1.5 rounded-full ${isCurrent ? '' : 'text-danger border-danger/30 hover:bg-danger/10'}`}
               >
-                <XCircle className="w-3.5 h-3.5" />
                 {config[s]?.label ?? s}
-              </button>
+              </Button>
             )
           })}
           {isFinalized && config.finalizado && (
@@ -125,7 +120,7 @@ export function LeadStagePipeline({ currentStage, pipeline = 'vendedor', onSelec
               aria-current="step"
               data-stage="finalizado"
               data-current="true"
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${config.finalizado.color} border-transparent`}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-transparent ${config.finalizado.color}`}
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
               {config.finalizado.label}
@@ -133,6 +128,6 @@ export function LeadStagePipeline({ currentStage, pipeline = 'vendedor', onSelec
           )}
         </div>
       </div>
-    </div>
+    </Card>
   )
 }

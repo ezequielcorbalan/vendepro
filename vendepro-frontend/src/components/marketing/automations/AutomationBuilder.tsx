@@ -15,6 +15,8 @@ import {
 import { Field, Input, Select, Textarea } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 
+import { Card } from '@/components/ui/Card'
+import { IconMedallion } from '@/components/ui/IconMedallion'
 const emptyStep = (delay = 72): AutomationStep => ({ delay_hours: delay, subject: '', preheader: '', html: '', text: '' })
 
 export default function AutomationBuilder({ automationId }: { automationId?: string }) {
@@ -122,7 +124,7 @@ export default function AutomationBuilder({ automationId }: { automationId?: str
   }
 
   if (loading) {
-    return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-brand-pink" /></div>
+    return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
   }
 
   const selectedTrigger = TRIGGER_OPTIONS.find(t => t.value === trigger)
@@ -134,11 +136,11 @@ export default function AutomationBuilder({ automationId }: { automationId?: str
       </Link>
 
       {/* Nombre + disparador */}
-      <div className="bg-white rounded-card border border-gray-200 shadow-card p-6 mb-5">
+<Card className="p-6 mb-5">
         <div className="flex items-center gap-3 mb-5">
-          <div className="w-10 h-10 rounded-control bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shrink-0">
-            <Workflow className="w-5 h-5 text-white" />
-          </div>
+          <IconMedallion size="lg">
+            <Workflow className="w-5 h-5" />
+          </IconMedallion>
           <input
             className="flex-1 text-lg font-semibold text-ink border-0 border-b border-transparent outline-none placeholder:text-gray-300"
             placeholder="Nombre de la automatización"
@@ -157,13 +159,13 @@ export default function AutomationBuilder({ automationId }: { automationId?: str
             {selectedTrigger.hint}. {trigger && 'También podés inscribir un segmento a mano desde el detalle.'}
           </p>
         )}
-      </div>
+      </Card>
 
       {/* Generador IA */}
-      <div className="bg-white rounded-card border border-gray-200 shadow-card p-6 mb-5">
-        <div className="border border-brand-pink/30 bg-brand-pink/[0.03] rounded-card p-4">
+<Card className="p-6 mb-5">
+        <div className="border border-primary/30 bg-primary/[0.03] rounded-card p-4">
           <div className="flex items-center gap-2 mb-3">
-            <Sparkles className="w-4 h-4 text-brand-pink" />
+            <Sparkles className="w-4 h-4 text-primary" />
             <p className="text-sm font-semibold text-ink">Generar la secuencia con IA</p>
           </div>
           <Textarea
@@ -184,7 +186,7 @@ export default function AutomationBuilder({ automationId }: { automationId?: str
             </Button>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Pasos */}
       <div className="space-y-3">
@@ -202,7 +204,7 @@ export default function AutomationBuilder({ automationId }: { automationId?: str
         ))}
         <button
           onClick={addStep}
-          className="w-full border border-dashed border-gray-300 rounded-control py-3 text-sm text-gray-500 hover:border-brand-pink hover:text-brand-pink inline-flex items-center justify-center gap-2"
+          className="w-full border border-dashed border-gray-300 rounded-control py-3 text-sm text-gray-500 hover:border-primary hover:text-primary inline-flex items-center justify-center gap-2"
         >
           <Plus className="w-4 h-4" /> Agregar email a la secuencia
         </button>
@@ -245,7 +247,7 @@ function StepCard({
           </p>
         </div>
         {onRemove && (
-          <button onClick={e => { e.stopPropagation(); onRemove() }} className="p-1.5 text-gray-300 hover:text-red-500">
+          <button onClick={e => { e.stopPropagation(); onRemove() }} className="p-1.5 text-gray-300 hover:text-danger">
             <Trash2 className="w-4 h-4" />
           </button>
         )}
@@ -277,11 +279,11 @@ function StepCard({
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="block text-xs font-medium text-gray-600">Contenido</label>
-              <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5">
-                <button onClick={() => setView('preview')} className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-md ${view === 'preview' ? 'bg-white shadow-card text-brand-pink font-medium' : 'text-gray-500'}`}>
+              <div className="flex gap-1 bg-gray-100 rounded-control p-0.5">
+                <button onClick={() => setView('preview')} className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-control ${view === 'preview' ? 'bg-white shadow-card text-primary font-medium' : 'text-gray-500'}`}>
                   <Eye className="w-3 h-3" /> Vista
                 </button>
-                <button onClick={() => setView('html')} className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-md ${view === 'html' ? 'bg-white shadow-card text-brand-pink font-medium' : 'text-gray-500'}`}>
+                <button onClick={() => setView('html')} className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-control ${view === 'html' ? 'bg-white shadow-card text-primary font-medium' : 'text-gray-500'}`}>
                   <Code className="w-3 h-3" /> HTML
                 </button>
               </div>
