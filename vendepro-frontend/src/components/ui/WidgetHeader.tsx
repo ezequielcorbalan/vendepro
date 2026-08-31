@@ -55,8 +55,14 @@ export function WidgetHeader({
 }: WidgetHeaderProps) {
   return (
     <div className={cn('flex items-start justify-between gap-3 mb-3', className)}>
-      <div className="flex items-center gap-2 min-w-0">
-        {icon && <IconMedallion size={size} tone={tone}>{icon}</IconMedallion>}
+      {/* Con subtítulo el medallón se alinea al TÍTULO, no al centro del bloque:
+          una descripción de dos o tres líneas lo dejaba flotando en el medio. */}
+      <div className={cn('flex gap-2 min-w-0', subtitle ? 'items-start' : 'items-center')}>
+        {icon && (
+          <IconMedallion size={size} tone={tone} className={subtitle ? 'mt-0.5' : undefined}>
+            {icon}
+          </IconMedallion>
+        )}
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             {/* Reusa CardTitle: el DS ya decidió cómo se ve un título de card

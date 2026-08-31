@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react'
+import { ArrowLeft, ArrowRight } from 'lucide-react'
 import { useWizardForm, canAdvance, type WizardStep } from './use-wizard-form'
 import { StepTemplate } from './steps/StepTemplate'
 import { StepProperty } from './steps/StepProperty'
@@ -13,6 +13,8 @@ import { createAppraisal, updateAppraisal, publishAppraisal, syncTemplate, addCo
 import { APPRAISAL_BLOCK_TYPES, type AppraisalBlockType } from '../renderer/types'
 import { useToast } from '@/components/ui/Toast'
 import { StepIndicator } from '@/components/ui/StepIndicator'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Button } from '@/components/ui/Button'
 import type { WizardState } from './use-wizard-form'
 
 interface Props {
@@ -160,16 +162,21 @@ export function WizardShell({ initialTemplateId, initialLeadId, existingAppraisa
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6 md:px-8 md:py-10">
-      {/* Header */}
-      <header className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-ink">{isEditMode ? 'Editar tasación' : 'Nueva tasación'}</h1>
-        <button
-          onClick={() => isEditMode ? router.push(`/tasaciones/${existingAppraisalId}/editar`) : router.back()}
-          className="text-sm text-slate-500 hover:text-slate-700"
-        >
-          {isEditMode ? 'Volver al editor' : 'Cancelar'}
-        </button>
-      </header>
+      {/* Header estándar del DS, igual que el resto de las pantallas: superficie
+          blanca, título y la acción a la derecha. Era un <h1> con clases sueltas
+          y un <button> de texto gris. */}
+      <PageHeader
+        title={isEditMode ? 'Editar tasación' : 'Nueva tasación'}
+        className="mb-6"
+        actions={
+          <Button
+            variant="ghost"
+            onClick={() => isEditMode ? router.push(`/tasaciones/${existingAppraisalId}/editar`) : router.back()}
+          >
+            {isEditMode ? 'Volver al editor' : 'Cancelar'}
+          </Button>
+        }
+      />
 
       <StepIndicator
         steps={STEP_LABELS}
@@ -241,50 +248,32 @@ export function WizardShell({ initialTemplateId, initialLeadId, existingAppraisa
       </div>
 
       {/* Footer */}
-      <footer className="mt-8 flex justify-between border-t border-slate-200 pt-6">
-        <button
+      <footer className="mt-8 flex justify-between gap-3 border-t border-gray-200 pt-6">
+        <Button
+          variant="ghost"
           onClick={() => dispatch({ type: 'back' })}
           disabled={state.step === 1}
-          className="flex items-center gap-2 rounded px-4 py-2 text-sm text-slate-600 disabled:opacity-40"
+          icon={<ArrowLeft className="w-4 h-4" />}
         >
-          <ArrowLeft className="h-4 w-4" /> Atrás
-        </button>
+          Atrás
+        </Button>
 
         {state.step < TOTAL_STEPS ? (
-          <button
-            onClick={() => dispatch({ type: 'next' })}
-            disabled={!canAdvance(state)}
-            className="flex items-center gap-2 rounded bg-gradient-to-br from-brand-pink to-brand-orange px-5 py-2 text-sm text-white disabled:opacity-40"
-          >
-            Siguiente <ArrowRight className="h-4 w-4" />
-          </button>
+          <Button onClick={() => dispatch({ type: 'next' })} disabled={!canAdvance(state)}>
+            Siguiente <ArrowRight className="w-4 h-4" />
+          </Button>
         ) : isEditMode ? (
-          <button
-            onClick={handleSaveEdit}
-            disabled={publishing}
-            className="flex items-center gap-2 rounded bg-gradient-to-br from-brand-pink to-brand-orange px-5 py-2 text-sm text-white disabled:opacity-40"
-          >
-            {publishing && <Loader2 className="h-4 w-4 animate-spin" />}
+          <Button onClick={handleSaveEdit} loading={publishing}>
             Guardar cambios
-          </button>
+          </Button>
         ) : (
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => handlePublish(false)}
-              disabled={publishing}
-              className="flex items-center gap-2 rounded border border-slate-300 bg-white px-5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40"
-            >
-              {publishing && <Loader2 className="h-4 w-4 animate-spin" />}
+            <Button variant="outline" onClick={() => handlePublish(false)} loading={publishing}>
               Guardar borrador
-            </button>
-            <button
-              onClick={() => handlePublish(true)}
-              disabled={publishing}
-              className="flex items-center gap-2 rounded bg-gradient-to-br from-brand-pink to-brand-orange px-5 py-2 text-sm text-white disabled:opacity-40"
-            >
-              {publishing && <Loader2 className="h-4 w-4 animate-spin" />}
+            </Button>
+            <Button onClick={() => handlePublish(true)} loading={publishing}>
               Publicar
-            </button>
+            </Button>
           </div>
         )}
       </footer>
