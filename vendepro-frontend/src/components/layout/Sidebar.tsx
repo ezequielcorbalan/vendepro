@@ -8,7 +8,6 @@ import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
 import { Text } from '@/components/ui/Typography'
-import { BrandAccentBar } from '@/components/ui/IconMedallion'
 import GlobalSearch from './GlobalSearch'
 import NotificationBell from './NotificationBell'
 import { menuSections, adminSection, type NavLink } from '@/lib/nav-config'
@@ -123,18 +122,8 @@ export default function Sidebar({ profile }: { profile: Profile }) {
         collapsed ? 'w-[72px]' : 'w-64',
       )}
     >
-      {!collapsed && (
-        <img
-          src="/brand/GV-27.png"
-          alt=""
-          aria-hidden="true"
-          className="absolute -bottom-12 -right-12 w-48 h-48 opacity-5 pointer-events-none"
-        />
-      )}
-
       {/* Header */}
       <div className="p-4 border-b border-gray-100 relative">
-        <BrandAccentBar className="absolute inset-x-0 top-0" />
         {collapsed ? (
           <div className="flex flex-col items-center gap-2 pt-1">
             <Button

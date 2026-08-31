@@ -1,6 +1,5 @@
 'use client'
 
-import type { ReactNode } from 'react'
 import { Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -30,13 +29,14 @@ import { cn } from '@/lib/utils'
  *   <StepIndicator steps={['Audiencia', 'Contenido', 'Revisión']} current={2} />
  *   <StepIndicator steps={STEPS} current={step} onStepClick={setStep} />
  *   <StepIndicator steps={8} current={3} variant="dots" />
+ *
+ * A propósito NO acepta ícono por paso: el círculo ya lleva el número (o el
+ * check), y sumarle un ícono al lado del label es información repetida.
  */
 export type StepIndicatorVariant = 'numbered' | 'dots'
 
 export interface StepItem {
   label: string
-  /** Ícono a la izquierda del label (lucide). */
-  icon?: ReactNode
 }
 
 interface StepIndicatorProps {
@@ -118,11 +118,10 @@ export function StepIndicator({
           const label = item.label && (
             <span
               className={cn(
-                'hidden sm:inline-flex items-center gap-1.5 text-sm whitespace-nowrap',
+                'hidden sm:inline text-sm whitespace-nowrap',
                 active ? 'text-ink font-medium' : done ? 'text-gray-600' : 'text-gray-400',
               )}
             >
-              {item.icon}
               {item.label}
             </span>
           )

@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/Button'
 import { Field, Input } from '@/components/ui/Input'
 import { Heading, Text } from '@/components/ui/Typography'
 import { Alert } from '@/components/ui/Alert'
-import { BrandAccentBar } from '@/components/ui/IconMedallion'
 import { apiFetch, setToken } from '@/lib/api'
 import { setCurrentUser } from '@/lib/auth'
 
@@ -81,7 +80,6 @@ export default function LoginPage() {
         className="absolute -bottom-24 -right-16 w-80 h-80 opacity-10 pointer-events-none"
       />
       <div className="bg-white rounded-2xl shadow-xl p-5 sm:p-8 w-full max-w-md relative z-10 border border-white/50">
-        <BrandAccentBar className="absolute inset-x-0 top-0 h-1.5 rounded-t-2xl" />
         <div className="text-center mb-6 sm:mb-8">
           <img src="/brand/logo-horizontal.png" alt="VendéPro" className="h-12 sm:h-16 mx-auto mb-3 sm:mb-4" />
           <Heading level={2}>CRM Inmobiliario</Heading>

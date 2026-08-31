@@ -64,13 +64,3 @@ export function IconMedallion({
     </div>
   )
 }
-
-/**
- * Barra de acento de marca — el strip fino de gradiente que corona headers,
- * modales y paneles (10 usos inline). Va como primer hijo de la superficie.
- *
- * Uso:  <Card padded={false}><BrandAccentBar /><div className="p-5">…</div></Card>
- */
-export function BrandAccentBar({ className }: { className?: string }) {
-  return <div className={cn('bg-brand-gradient-r h-1 w-full', className)} aria-hidden="true" />
-}

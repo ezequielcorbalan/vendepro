@@ -154,10 +154,7 @@ export default function NuevaPrefactibilidadPage() {
       </div>
 
       <StepIndicator
-        steps={steps.map(s => {
-          const Icon = s.icon
-          return { label: s.label, icon: <Icon className="w-3.5 h-3.5" /> }
-        })}
+        steps={steps.map(s => s.label)}
         current={step + 1}
         onStepClick={n => setStep(n - 1)}
         allowForward

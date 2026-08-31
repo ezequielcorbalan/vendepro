@@ -3,12 +3,12 @@
 import { useState } from 'react'
 import {
   Plus, Trash2, Search, Car, Sun, Waves, Inbox, AlertTriangle,
-  MoreVertical, Pencil, Copy, RefreshCw, HelpCircle, Settings, Building2, Target, Home,
+  MoreVertical, Pencil, Copy, HelpCircle, Settings, Building2, Target, Home,
   Zap, SlidersHorizontal, ChevronRight, Check, Eye, BarChart3, Activity,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
-import { Card, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Card, CardTitle } from '@/components/ui/Card'
 import { Input, Textarea, Select, Field } from '@/components/ui/Input'
 import { Avatar } from '@/components/ui/Avatar'
 import { StageBadge } from '@/components/ui/StageBadge'
@@ -35,7 +35,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge'
 import { OperationBadge } from '@/components/ui/OperationBadge'
 import { Alert } from '@/components/ui/Alert'
 import { StatTile } from '@/components/ui/StatTile'
-import { IconMedallion, BrandAccentBar } from '@/components/ui/IconMedallion'
+import { IconMedallion } from '@/components/ui/IconMedallion'
 import { OptionCard } from '@/components/ui/OptionCard'
 import { WidgetHeader } from '@/components/ui/WidgetHeader'
 import { PillRadioGroup, PillCheckGroup } from '@/components/ui/ChoicePills'
@@ -298,7 +298,6 @@ export default function DesignSystemPage() {
               <Button variant="primary" icon={<Plus className="w-4 h-4" />}>Nueva propiedad</Button>
               <Button variant="outline">Ver detalle</Button>
               <Button variant="ghost">Cancelar</Button>
-              <Button variant="neutral">Nuevo lead</Button>
               <Button variant="success" icon={<Check className="w-4 h-4" />}>Publicar</Button>
               <Button variant="danger" icon={<Trash2 className="w-4 h-4" />}>Eliminar</Button>
             </Row>
@@ -326,8 +325,8 @@ export default function DesignSystemPage() {
 
         {/* Gradiente de marca */}
         <Section
-          title="Gradiente de marca · IconMedallion + BrandAccentBar"
-          hint="El gradiente rosa→naranja ahora es una utilidad (bg-brand-gradient en globals.css), no clases escritas a mano. IconMedallion es el patrón más repetido de la app: caja con gradiente + ícono blanco."
+          title="Gradiente de marca · IconMedallion"
+          hint="El gradiente rosa→naranja es una utilidad (bg-brand-gradient en globals.css), no clases escritas a mano. IconMedallion es el patrón más repetido de la app: caja con gradiente + ícono blanco. La barra de acento se dio de baja."
         >
           <div className="space-y-4">
             <Row>
@@ -339,16 +338,6 @@ export default function DesignSystemPage() {
               <IconMedallion size="lg" elevated><Target className="w-5 h-5" /></IconMedallion>
               <Text size="xs" tone="muted" className="ml-2">sm · md · lg · xl · circle · elevated</Text>
             </Row>
-            <Card padded={false} className="max-w-sm overflow-hidden">
-              <BrandAccentBar />
-              <div className="p-5 flex items-center gap-3">
-                <IconMedallion size="lg"><Building2 className="w-5 h-5" /></IconMedallion>
-                <div>
-                  <Heading level={4}>Barra de acento</Heading>
-                  <Text size="xs" tone="muted">BrandAccentBar como primer hijo de la card</Text>
-                </div>
-              </div>
-            </Card>
           </div>
         </Section>
 
@@ -365,17 +354,6 @@ export default function DesignSystemPage() {
                 current={stepDemo}
                 onStepClick={setStepDemo}
                 allowForward
-              />
-            </div>
-            <div>
-              <Text size="xs" tone="muted" className="mb-2">numbered · con ícono por paso</Text>
-              <StepIndicator
-                steps={[
-                  { label: 'Terreno', icon: <Home className="w-3.5 h-3.5" /> },
-                  { label: 'Proyecto', icon: <Building2 className="w-3.5 h-3.5" /> },
-                  { label: 'Economía', icon: <Target className="w-3.5 h-3.5" /> },
-                ]}
-                current={2}
               />
             </div>
             <div>

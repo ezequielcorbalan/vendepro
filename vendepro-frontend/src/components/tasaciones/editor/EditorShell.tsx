@@ -238,7 +238,7 @@ export function EditorShell({ initial, snapshot, context }: Props) {
             </a>
           )}
           <Button
-            variant="neutral"
+            variant="outline"
             size="sm"
             onClick={handleDownloadPdf}
             disabled={pdfStatus === 'generating' || (monthlyUsed !== null && monthlyUsed >= 50)}

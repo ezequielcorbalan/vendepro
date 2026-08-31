@@ -80,7 +80,7 @@ export default function ImageUpload({ value, onChange, allowPropertyPicker }: Pr
             placeholder="https://…"
             className="flex-1 px-2 py-1.5 text-xs"
           />
-          <Button variant="neutral" size="sm" onClick={() => onChange(urlInput, 'external')}>
+          <Button variant="outline" size="sm" onClick={() => onChange(urlInput, 'external')}>
             Usar
           </Button>
         </div>

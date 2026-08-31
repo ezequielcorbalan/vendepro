@@ -43,7 +43,7 @@ export default function UnsubscribeClient({
             <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
             <h1 className="text-lg font-semibold text-ink mb-2">No pudimos procesar la baja</h1>
             <p className="text-sm text-gray-500 mb-4">Probá de nuevo en unos minutos.</p>
-            <Button variant="neutral" onClick={confirm}>
+            <Button variant="outline" onClick={confirm}>
               Reintentar
             </Button>
           </>
@@ -55,7 +55,7 @@ export default function UnsubscribeClient({
               ¿Querés dejar de recibir emails de marketing en{' '}
               <span className="font-medium text-gray-700">{email}</span>?
             </p>
-            <Button variant="neutral" size="lg" loading={status === 'working'} onClick={confirm}>
+            <Button size="lg" loading={status === 'working'} onClick={confirm}>
               Sí, darme de baja
             </Button>
           </>

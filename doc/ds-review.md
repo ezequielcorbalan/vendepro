@@ -195,6 +195,25 @@ Los 1, 2 y 3 eran **el mismo dibujo con tres medidas distintas**.
 | Colores de dominio a `crm-config` | `VISIT_BUY_INTENTIONS` / `VISIT_SITUATIONS` / `VISIT_SOURCES` (estaban duplicados en **3** archivos), `REPORT_FRESHNESS`. |
 | **Control tri-estado de documentación** | ❌ no se crea — 1 uso (24px, tengo/no aplica/pendiente). Marcado. |
 
+### Revertido por decisión de diseño (Paula)
+
+Tres cosas que se crearon con datos de uso y se dieron de baja igual. La
+distinción importa: **el dato responde "¿esto se repite?", no "¿esto debería
+existir?"** — la segunda pregunta es de diseño y no la contesta un grep.
+
+| Qué | Por qué se había creado | Por qué se dio de baja |
+|---|---|---|
+| **`Button variant="neutral"`** (oscura) | 5 botones `gray-800`/`slate-900` inline en 5 módulos | Sumaba un cuarto peso visual. En la cabecera de `contactos/[id]` convivía con dos botones rosa y uno verde: cuatro acciones al mismo nivel = ninguna es la principal. |
+| **`BrandAccentBar`** | 10 barras de gradiente inline | Decorativa, no comunica nada. Se sacó de los **8** lugares donde estaba, no sólo de los 2 que usaban el componente. |
+| **`icon` en `StepIndicator`** | `prefactibilidades` lo necesitaba | El círculo ya lleva el número (o el check); un ícono al lado del label es información repetida. |
+
+Los 5 usos de `neutral` no fueron todos al mismo reemplazo:
+- "Reintentar", "Usar", "Descargar PDF" y "Nuevo lead" → `outline` (secundarias)
+- "Sí, darme de baja" y el "Siguiente" del wizard → `primary` (son el CTA de su pantalla)
+
+La utilidad `bg-brand-gradient-r` **se queda**: la usan las barras de progreso y
+el dot activo del stepper, que son otro rol.
+
 ## Hallazgos abiertos (encontrados al migrar, no resueltos)
 
 Cosas que aparecieron migrando y que NO son decisiones de contrato pendientes,

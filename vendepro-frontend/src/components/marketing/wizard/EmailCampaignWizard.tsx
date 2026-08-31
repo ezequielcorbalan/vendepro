@@ -196,7 +196,7 @@ export default function EmailCampaignWizard({ campaignId }: { campaignId?: strin
               </button>
             )}
             {step < 3 ? (
-              <Button variant="neutral" onClick={() => setStep(step + 1)} disabled={!canNext}>
+              <Button onClick={() => setStep(step + 1)} disabled={!canNext}>
                 Siguiente <ArrowRight className="w-4 h-4" />
               </Button>
             ) : (

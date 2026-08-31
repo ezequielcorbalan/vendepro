@@ -66,7 +66,6 @@ export default function SoldPropertyPicker({
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-card shadow-pop max-w-3xl w-full overflow-hidden flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
-        <div className="bg-gradient-to-r from-brand-pink to-brand-orange h-1.5" />
         <div className="p-5 flex items-center justify-between border-b border-gray-100">
           <div className="flex items-center gap-2">
             <Database className="w-5 h-5 text-gray-600" />

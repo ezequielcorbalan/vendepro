@@ -99,7 +99,6 @@ export function SoldPropertiesPickerModal({ open, onClose, onPick }: Props) {
         className="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-card bg-white shadow-pop"
         onClick={e => e.stopPropagation()}
       >
-        <div className="bg-gradient-to-r from-brand-pink to-brand-orange h-1" />
 
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">

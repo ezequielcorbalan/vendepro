@@ -344,7 +344,6 @@ export default function LeadDetailPage() {
 
       {/* Header card */}
       <Card padded={false} className="p-5 relative overflow-hidden">
-        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-pink to-brand-orange" />
         <img
           src="/brand/GV-27.png"
           alt=""
