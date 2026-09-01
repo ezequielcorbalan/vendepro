@@ -1,4 +1,5 @@
 import { ValidationError } from '../errors/validation-error'
+import { slugify } from '../../shared/utils'
 
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
@@ -18,11 +19,5 @@ export class AgentSlug {
 
 /** Propone un slug a partir del nombre. No garantiza unicidad — eso lo hace el índice (org_id, slug). */
 export function slugifyName(fullName: string): string {
-  return fullName
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
+  return slugify(fullName)
 }
