@@ -160,7 +160,7 @@ export default function ContactDetailPage() {
               Crear propiedad
             </Button>
             {contact.phone && <CallButton phone={contact.phone} />}
-            {contact.phone && <WhatsAppButton phone={contact.phone} />}
+            {contact.phone && <WhatsAppButton phone={contact.phone} templateContext={{ name: contact.full_name }} />}
           </>
         }
         visibleActions={2}

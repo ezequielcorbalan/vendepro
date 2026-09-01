@@ -4,6 +4,7 @@ import {
   corsMiddleware, errorHandler, createAuthMiddleware,
   D1LeadRepository, D1ContactRepository, D1CalendarRepository, D1ActivityRepository, D1UserRepository,
   D1TagRepository, D1StageHistoryRepository, D1OrganizationRepository,
+  D1WhatsAppTemplateRepository,
   D1MetaIntegrationRepository, D1StageEventMappingRepository, D1MetaEventLogRepository,
   D1PropertyRepository, D1ApiTokenRepository,
   D1LeadPropertyRepository, D1PropertyLinkRepository,
@@ -27,6 +28,7 @@ import {
   GetContactsUseCase, CreateContactUseCase, UpdateContactUseCase, DeleteContactUseCase,
   GetCalendarEventsUseCase, CreateCalendarEventUseCase, ToggleEventCompleteUseCase, RescheduleEventUseCase,
   CreateLeadWithContactUseCase, GetContactDetailUseCase, CreateTagUseCase,
+  ListWhatsAppTemplatesUseCase, SaveWhatsAppTemplateUseCase, DeleteWhatsAppTemplateUseCase,
   GenerateOrgApiKeyUseCase, GetOrgApiKeyUseCase,
   GetMetaIntegrationUseCase, SaveMetaIntegrationUseCase,
   ListStageMappingsUseCase, SaveStageMappingUseCase, DeleteStageMappingUseCase,
@@ -1102,6 +1104,72 @@ app.delete('/tags', async (c) => {
   if (!id) return c.json({ error: 'id is required' }, 400)
   const repo = new D1TagRepository(c.env.DB)
   await repo.delete(id, c.get('orgId'))
+  return c.json({ success: true })
+})
+
+// ── MENSAJES PREDETERMINADOS DE WHATSAPP ───────────────────────
+// Respuestas rápidas de la org: el agente elige un texto en vez de tipearlo
+// cada vez. Leer puede cualquiera (los usa el botón de WhatsApp en todo el
+// CRM); escribir es sólo admin/owner, porque el guión es compartido.
+app.get('/whatsapp-templates', async (c) => {
+  const orgId = c.get('orgId')
+  const useCase = new ListWhatsAppTemplatesUseCase(new D1WhatsAppTemplateRepository(c.env.DB))
+  const onlyActive = c.req.query('active') === '1'
+  // El nombre de la org viaja acá porque {{inmobiliaria}} se resuelve en el
+  // frontend y /org-settings es admin-only: sin esto un agente vería el
+  // placeholder crudo dentro del mensaje.
+  const [templates, org] = await Promise.all([
+    useCase.execute(orgId, { onlyActive }),
+    new D1OrganizationRepository(c.env.DB).findById(orgId),
+  ])
+  return c.json({ org_name: org?.name ?? null, templates })
+})
+
+app.post('/whatsapp-templates', async (c) => {
+  const denied = requireAdmin(c)
+  if (denied) return denied
+  const body = (await c.req.json()) as any
+  const repo = new D1WhatsAppTemplateRepository(c.env.DB)
+  const useCase = new SaveWhatsAppTemplateUseCase(repo, new CryptoIdGenerator())
+  const result = await useCase.execute({
+    org_id: c.get('orgId'),
+    user_id: c.get('userId'),
+    name: body.name,
+    body: body.body,
+    sort_order: body.sort_order,
+    is_active: body.is_active,
+  })
+  return c.json(result, 201)
+})
+
+app.put('/whatsapp-templates/:id', async (c) => {
+  const denied = requireAdmin(c)
+  if (denied) return denied
+  const body = (await c.req.json()) as any
+  const repo = new D1WhatsAppTemplateRepository(c.env.DB)
+  const useCase = new SaveWhatsAppTemplateUseCase(repo, new CryptoIdGenerator())
+  try {
+    const result = await useCase.execute({
+      id: c.req.param('id'),
+      org_id: c.get('orgId'),
+      user_id: c.get('userId'),
+      name: body.name,
+      body: body.body,
+      sort_order: body.sort_order,
+      is_active: body.is_active,
+    })
+    return c.json(result)
+  } catch (e: any) {
+    if (e?.message === 'Mensaje no encontrado') return c.json({ error: e.message }, 404)
+    throw e
+  }
+})
+
+app.delete('/whatsapp-templates/:id', async (c) => {
+  const denied = requireAdmin(c)
+  if (denied) return denied
+  const repo = new D1WhatsAppTemplateRepository(c.env.DB)
+  await new DeleteWhatsAppTemplateUseCase(repo).execute(c.req.param('id'), c.get('orgId'))
   return c.json({ success: true })
 })
 

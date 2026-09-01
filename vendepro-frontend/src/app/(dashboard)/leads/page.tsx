@@ -30,9 +30,23 @@ import { Heading, Text } from '@/components/ui/Typography'
 import { CallButton, WhatsAppButton } from '@/components/ui/ContactButtons'
 import AIChatPanel from '@/components/ai/AIChatPanel'
 import { apiFetch } from '@/lib/api'
+import { loadStickyFilters, saveStickyFilters } from '@/lib/sticky-filters'
 import { scopeQueryString } from '@/lib/agent-scope'
 import { pushFromApiResponse } from '@/components/marketing/dataLayer'
 import { DndContext, DragOverlay, useDraggable, useDroppable, type DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
+
+/** Lo que se recuerda de la pantalla entre visitas (ver lib/sticky-filters). */
+const LEADS_FILTERS_KEY = 'vendepro:leads-filters:v1'
+
+interface StickyLeadFilters {
+  search: string
+  stage: string
+  source: string
+  operation: string
+  agent: string
+  sort: 'recent' | 'name' | 'urgency'
+  view: 'list' | 'kanban'
+}
 
 /** Etapas que cierran el trabajo del agente según el pipeline del lead. */
 function isAgentFinalStage(lead: any): boolean {
@@ -71,6 +85,12 @@ export default function LeadsPage() {
   const [sortBy, setSortBy] = useState<'recent' | 'name' | 'urgency'>(
     (['recent', 'name', 'urgency'] as const).includes(sortParam as any) ? sortParam as 'recent' | 'name' | 'urgency' : 'recent'
   )
+  // Los filtros se recuerdan por 8h (ver sticky-filters): entrar a un lead y
+  // volver no tiene que resetear lo que el agente estaba mirando. Se aplican
+  // en un efecto y no en el useState inicial porque localStorage no existe en
+  // el render del servidor y eso rompería la hidratación.
+  const [filtersRestored, setFiltersRestored] = useState(false)
+
   const [showCreate, setShowCreate] = useState(false)
   const [showAI, setShowAI] = useState(false)
   const [activeDragId, setActiveDragId] = useState<string | null>(null)
@@ -112,6 +132,38 @@ export default function LeadsPage() {
   useEffect(() => {
     apiFetch('admin', '/agents').then(r => r.json() as Promise<any>).then(d => { if (Array.isArray(d)) setAgents(d) }).catch(() => {})
   }, [])
+
+  // Restaura lo último que el agente estaba mirando. La URL gana: si venís de
+  // un link con ?stage= o ?sort= (dashboard, notificaciones), ese filtro es el
+  // que se quiso mostrar y no lo pisa el recuerdo.
+  useEffect(() => {
+    const saved = loadStickyFilters<StickyLeadFilters>(LEADS_FILTERS_KEY)
+    if (saved) {
+      // La etapa guardada puede ser de otro pipeline (vendedor ↔ comprador):
+      // si no existe en el actual se descarta, si no el filtro dejaría la
+      // lista vacía sin explicación.
+      if (!searchParams.get('stage') && saved.stage && getStagesForPipeline(pipeline).keys.includes(saved.stage)) {
+        setFilterStage(saved.stage)
+      }
+      if (!sortParam && saved.sort) setSortBy(saved.sort)
+      if (saved.search) setSearch(saved.search)
+      if (saved.source) setFilterSource(saved.source)
+      if (saved.operation) setFilterOperation(saved.operation)
+      if (saved.agent) setFilterAgent(saved.agent)
+      if (saved.view) setView(saved.view)
+    }
+    setFiltersRestored(true)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    // Recién después de restaurar: si no, el primer render guardaría los
+    // defaults encima de lo que había.
+    if (!filtersRestored) return
+    saveStickyFilters<StickyLeadFilters>(LEADS_FILTERS_KEY, {
+      search, stage: filterStage, source: filterSource,
+      operation: filterOperation, agent: filterAgent, sort: sortBy, view,
+    })
+  }, [filtersRestored, search, filterStage, filterSource, filterOperation, filterAgent, sortBy, view])
 
   const switchPipeline = (p: LeadPipelineKey) => {
     if (p === pipeline) return
@@ -913,7 +965,7 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
             <>
               <CallButton phone={lead.phone} iconOnly
                 className="flex-1 w-12 h-auto rounded-none bg-transparent text-gray-500 hover:bg-gray-50 active:bg-gray-100 hover:opacity-100 transition-colors" />
-              <WhatsAppButton phone={lead.phone} iconOnly
+              <WhatsAppButton phone={lead.phone} iconOnly templateContext={{ name: lead.full_name, address: lead.property_address || lead.neighborhood }}
                 className="flex-1 w-12 h-auto rounded-none bg-transparent text-gray-500 hover:bg-gray-50 active:bg-gray-100 border-t border-gray-100 hover:opacity-100 transition-colors" />
             </>
           ) : (
@@ -941,7 +993,7 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
           <>
             <CallButton phone={lead.phone}
               className="flex-1 rounded-none bg-transparent text-gray-600 text-xs px-0 py-2.5 hover:bg-gray-50 hover:opacity-100 transition-colors" />
-            <WhatsAppButton phone={lead.phone}
+            <WhatsAppButton phone={lead.phone} templateContext={{ name: lead.full_name, address: lead.property_address || lead.neighborhood }}
               className="flex-1 rounded-none bg-transparent text-gray-600 text-xs px-0 py-2.5 hover:bg-gray-50 hover:opacity-100 transition-colors" />
           </>
         ) : (
@@ -996,7 +1048,7 @@ function KanbanCard({ lead, onAdvance, onMoveTo }: { lead: any; onAdvance: () =>
         <div className="flex gap-0.5">{Object.entries(checklist).map(([k, v]) => <div key={k} className={`w-1.5 h-1.5 rounded-full ${v ? 'bg-green-500' : 'bg-gray-200'}`} />)}</div>
         <div className="flex gap-1">
           {lead.phone && (
-            <WhatsAppButton phone={lead.phone} iconOnly
+            <WhatsAppButton phone={lead.phone} iconOnly templateContext={{ name: lead.full_name, address: lead.property_address || lead.neighborhood }}
               className="w-7 h-7 rounded-control bg-transparent text-whatsapp hover:bg-success/10 hover:opacity-100" />
           )}
           <button onClick={() => setShowMove(!showMove)} className="p-1 rounded-control hover:bg-gray-100 text-gray-400" title="Mover a...">

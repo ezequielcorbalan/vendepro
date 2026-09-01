@@ -478,7 +478,11 @@ export default function LeadDetailPage() {
                 </Button>
               )}
               <CallButton phone={lead.phone} onClick={() => handleQuickActivity('llamada')} />
-              <WhatsAppButton phone={lead.phone} onClick={() => handleQuickActivity('whatsapp')} />
+              <WhatsAppButton
+                phone={lead.phone}
+                templateContext={{ name: lead.full_name, address: lead.property_address || lead.neighborhood }}
+                onClick={() => handleQuickActivity('whatsapp')}
+              />
               <Button href={`/calendario?lead_id=${leadId}`} variant="outline" icon={<Calendar className="w-4 h-4" />}>
                 Agendar
               </Button>
