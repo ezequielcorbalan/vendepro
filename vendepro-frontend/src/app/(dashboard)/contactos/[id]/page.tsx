@@ -136,7 +136,10 @@ export default function ContactDetailPage() {
         <ArrowLeft className="w-4 h-4" /> Volver a contactos
       </Link>
 
-      {/* Header — molde compartido con /leads/[id] (`DetailHeader`). */}
+      {/* Header — molde compartido con /leads/[id] (`DetailHeader`). Quedan
+          visibles 2 acciones: Llamar y WhatsApp, los canales de trabajo. "Crear
+          propiedad" va al menú — su rosa sólido quedaba pegado al de Llamar, dos
+          acciones del mismo peso y color una al lado de la otra (regla 13). */}
       <DetailHeader
         avatar={<Avatar size="lg" name={contact.full_name || '?'} />}
         title={contact.full_name}
@@ -160,7 +163,7 @@ export default function ContactDetailPage() {
             {contact.phone && <WhatsAppButton phone={contact.phone} />}
           </>
         }
-        visibleActions={3}
+        visibleActions={2}
         meta={
           <>
             {contact.phone && <DetailMeta icon={<Phone className="w-4 h-4" />}>{contact.phone}</DetailMeta>}

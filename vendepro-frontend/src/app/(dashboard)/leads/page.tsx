@@ -846,7 +846,10 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
       {/* Card body: en mobile es row (contenido + acciones icono), en desktop es solo contenido */}
       <div className="flex flex-1 min-w-0">
         {/* Main content — clickable */}
-        <Link href={`/leads/${lead.id}`} className="flex-1 min-w-0 px-5 py-4 flex flex-col gap-1.5">
+        {/* gap-2.5 y no 1.5: con cuatro filas de texto (nombre+badges, teléfono,
+            dirección, agente) a 6px de separación la card se leía como un bloque
+            apretado. */}
+        <Link href={`/leads/${lead.id}`} className="flex-1 min-w-0 px-5 py-4 flex flex-col gap-2.5">
           {/* Row 1: name + stage + tags (izq.) · urgencia (der., como en el kanban) */}
           <div className="flex items-start justify-between gap-2 min-w-0">
             <div className="flex-1 min-w-0">
@@ -871,7 +874,7 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
                   />
                 )}
               </div>
-              <p className="text-xs text-gray-500 truncate mt-0.5">
+              <p className="text-xs text-gray-500 truncate mt-1">
                 {lead.phone && <span className="text-gray-600">{lead.phone}</span>}
                 {lead.phone && lead.operation && <span className="text-gray-300 mx-1">·</span>}
                 {lead.operation && <span className="capitalize">{lead.operation}</span>}
@@ -889,14 +892,14 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
           )}
 
           {/* Row 2: agent + activity */}
-          <div className="flex items-center gap-2 text-[11px] text-gray-500 flex-wrap">
+          <div className="flex items-center gap-2 text-xs text-gray-500 flex-wrap">
             {lead.assigned_name && <span>{lead.assigned_name}</span>}
             {lastActivity && <><span className="text-gray-200">·</span><span>Últ: {lastActivity}</span></>}
           </div>
 
           {/* Next step band */}
           {lead.next_step && (
-            <div className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded-control mt-0.5 ${urgency === 'danger' ? 'bg-red-50 text-red-600' : urgency === 'warning' ? 'bg-amber-50 text-amber-600' : 'bg-primary/5 text-primary'}`}>
+            <div className={`flex items-center gap-1.5 text-xs px-2 py-1.5 rounded-control ${urgency === 'danger' ? 'bg-red-50 text-red-600' : urgency === 'warning' ? 'bg-amber-50 text-amber-600' : 'bg-primary/5 text-primary'}`}>
               <ArrowRight className="w-3 h-3 shrink-0" />
               <span className="truncate">{lead.next_step}</span>
               {lead.next_step_date && <span className="shrink-0 text-[10px] opacity-70">· {lead.next_step_date}</span>}

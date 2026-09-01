@@ -10,7 +10,7 @@ interface PropertyCardProps {
   title: string
   location: string
   price: string
-  /** URL de la foto; si no hay, muestra el gradiente de marca. */
+  /** URL de la foto; si no hay, queda un placeholder gris. */
   image?: string | null
   /** Badge de estado (ej. <Badge tone="success">Publicada</Badge>). */
   status?: ReactNode
@@ -31,7 +31,7 @@ export function PropertyCard({
       )}
     >
       <div
-        className="relative h-[150px] bg-brand-gradient bg-cover bg-center"
+        className="relative h-[150px] bg-gray-200 bg-cover bg-center"
         style={image ? { backgroundImage: `url(${image})` } : undefined}
       >
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/45" />

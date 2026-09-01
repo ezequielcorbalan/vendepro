@@ -39,7 +39,7 @@ export default function LandingMobileInfo({ landing }: { landing: Landing }) {
           {landing.og_image_url ? (
             <img src={landing.og_image_url} alt="" className="w-full h-40 object-cover" />
           ) : (
-            <div className="h-40 bg-primary/10 flex items-center justify-center text-gray-400">
+            <div className="h-40 bg-gray-100 flex items-center justify-center text-gray-400">
               <span className="text-xs uppercase tracking-wider">Sin preview</span>
             </div>
           )}

@@ -206,8 +206,8 @@ export default function PropertyFilters({ properties, config }: { properties: an
           return (
             <Card key={property.id} padded={false} interactive className="overflow-hidden">
               <Link href={`/propiedades/${property.id}`}>
-                <div className="h-36 bg-primary/10 flex items-center justify-center relative">
-                  <Building2 className="w-10 h-10 text-primary/30" />
+                <div className="h-36 bg-gray-100 flex items-center justify-center relative">
+                  <Building2 className="w-10 h-10 text-gray-300" />
                   {isOverdue && (
                     <div className="absolute top-2 left-2">
                       <StatusBadge label={info.days === null ? 'Sin reportes' : `Hace ${info.days}d`} color={REPORT_FRESHNESS.overdue.badge} />

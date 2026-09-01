@@ -17,7 +17,7 @@ export default function LandingCard({ landing }: { landing: Landing }) {
   return (
     <Card padded={false} interactive className="overflow-hidden">
       <Link href={`/landings/${landing.id}`} className="block">
-        <div className="h-36 bg-primary/10 flex items-center justify-center text-gray-400">
+        <div className="h-36 bg-gray-100 flex items-center justify-center text-gray-400">
           {landing.og_image_url
             ? <img src={landing.og_image_url} alt="" className="w-full h-full object-cover" />
             : <span className="text-xs uppercase tracking-wider">Sin preview</span>}
