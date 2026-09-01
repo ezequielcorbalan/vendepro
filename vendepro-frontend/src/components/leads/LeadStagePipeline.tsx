@@ -51,10 +51,15 @@ export function LeadStagePipeline({ currentStage, pipeline = 'vendedor', onSelec
         icon={<Target className="w-3.5 h-3.5" />}
         title={`Pipeline${pipeline === 'comprador' ? ' comprador' : ''}`}
         action={<Text size="xs" tone="muted" className="text-[10px]">Clickeá una etapa para mover (incluso hacia atrás)</Text>}
+        className="mb-4"
       />
 
       <div className="overflow-hidden">
-        <div className="flex items-center gap-0 flex-wrap">
+        {/* `gap-y-2` y no `gap-0`: con nueve etapas la fila envuelve casi
+            siempre, y sin separación vertical las dos líneas de pills se
+            tocaban. El gap horizontal sigue en 0 porque el separador es el
+            chevron, que ya trae su propio margen. */}
+        <div className="flex items-center gap-x-0 gap-y-2 flex-wrap">
           {stepperStages.map((s, i) => {
             const stageData = config[s]
             const isCompleted = stageData.order < currentOrder
@@ -95,7 +100,7 @@ export function LeadStagePipeline({ currentStage, pipeline = 'vendedor', onSelec
         </div>
 
         {/* Estados terminales: siempre accesibles (marcar / corregir). */}
-        <div className="flex items-center gap-2 flex-wrap mt-3 pt-3 border-t border-gray-100">
+        <div className="flex items-center gap-2 flex-wrap mt-4 pt-4 border-t border-gray-100">
           {MANUAL_TERMINAL_STAGES.map(s => {
             const isCurrent = s === currentStage
             return (
