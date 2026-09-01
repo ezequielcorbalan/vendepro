@@ -9,6 +9,13 @@ const heroBindeado = (): Block => ({
   data: { name: 'X', headline: 'X', bio: 'X', photo_url: 'https://cdn/ph.jpg', ctas: [], accent_color: 'pink' },
 } as Block)
 
+// Bloque oculto: no debe llegar a `out.blocks`. Sin el `.filter(b => b.visible)`
+// del use case, este bloque colaría en la respuesta pública.
+const heroOculto = (): Block => ({
+  id: 'b2', type: 'agent-hero', visible: false,
+  data: { name: 'Oculto', headline: 'Oculto', bio: 'Oculto', photo_url: 'https://cdn/oculto.jpg', ctas: [], accent_color: 'pink' },
+} as Block)
+
 function makeDeps() {
   const org = { id: 'o1', name: 'Marcela Genta', slug: 'marcela-genta', logo_url: 'https://cdn/logo.png', brand_color: '#ff007c', brand_accent_color: '#ff8017' }
   const profile = AgentProfile.create({
@@ -19,7 +26,7 @@ function makeDeps() {
   const landing = Landing.create({
     id: 'l1', org_id: 'o1', agent_id: 'u1', template_id: 't1',
     kind: 'agent_profile', slug_base: 'andres', slug_suffix: 'k7xm3',
-    blocks: [heroBindeado()], seo_title: 'Andrés Giunta',
+    blocks: [heroBindeado(), heroOculto()], seo_title: 'Andrés Giunta',
   })
 
   return {
@@ -43,6 +50,11 @@ describe('GetPublicAgentLandingUseCase', () => {
     expect(out.org.brand_color).toBe('#ff007c')
     expect(out.full_slug).toBe('andres-k7xm3')
     expect(out.landing_id).toBe('l1')
+    expect(out.agent.full_name).toBe('Andrés Giunta')
+    expect(out.agent.headline).toBe('Coordinador Comercial')
+    // El bloque con visible:false no debe llegar a la respuesta pública.
+    expect(out.blocks).toHaveLength(1)
+    expect(out.blocks.some(b => b.id === 'b2')).toBe(false)
   })
 
   it('404 si la org no existe', async () => {
