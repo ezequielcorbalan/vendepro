@@ -16,7 +16,12 @@
  * 4b. Radios pre-token (`rounded-lg`/`xl`). El DS tiene `rounded-control` (8px)
  *    y `rounded-card` (12px) — regla 8. Baseline 0 para lg/xl; los 2xl/3xl que
  *    quedan sí cambian de tamaño al migrar, así que se deciden a mano.
- * 4. La escala `slate`. El DS usa `gray`. El módulo de tasaciones estaba escrito
+ * 4. Overlays armados a mano: un scrim (`inset-0` con fondo translúcido) fuera
+ *    de `components/ui`. Van con `ui/Modal` o `ui/Drawer`, que traen Portal,
+ *    scroll-lock, focus-trap, devolución de foco y Esc. Ver la fase 6 en
+ *    doc/ds-plan-fase6.md; el contrato que tienen que cumplir está testeado en
+ *    components/ui/__tests__/overlay-contract.tsx.
+ * 5. La escala `slate`. El DS usa `gray`. El módulo de tasaciones estaba escrito
  *    entero en slate —258 usos— así que sus grises tenían un tinte azulado que
  *    el resto de la app no tiene. Baseline 0: ya no queda ninguno.
  *
@@ -65,12 +70,18 @@ const GLYPH_BASELINE_FILE = 'scripts/.ds-glyph-baseline'
 // la cadena "slate-" y son 30 falsos positivos.
 const SLATE_PATTERN = /(bg|text|border|ring|divide|placeholder|from|to|via|outline|decoration|accent|caret|fill|stroke)-slate-\d+/
 const SLATE_BASELINE_FILE = 'scripts/.ds-slate-baseline'
+// Scrim de overlay: `inset-0` con un fondo translúcido. NO cuenta el
+// `inset-0` transparente que sirve de atrapa-clicks de un dropdown, que es un
+// uso legítimo.
+const OVERLAY_PATTERN = /inset-0[^"'`]*(bg-(black|slate|gray|neutral|white)\/|backdrop-blur)/
+const OVERLAY_BASELINE_FILE = 'scripts/.ds-overlay-baseline'
 const RADIUS_PATTERN = /rounded-(lg|xl)\b/
 const RADIUS_BASELINE_FILE = 'scripts/.ds-radius-baseline'
 const baseline = existsSync(BASELINE_FILE) ? Number(readFileSync(BASELINE_FILE, 'utf8').trim() || '0') : 0
 const gradientBaseline = existsSync(GRADIENT_BASELINE_FILE) ? Number(readFileSync(GRADIENT_BASELINE_FILE, 'utf8').trim() || '0') : 0
 const glyphBaseline = existsSync(GLYPH_BASELINE_FILE) ? Number(readFileSync(GLYPH_BASELINE_FILE, 'utf8').trim() || '0') : 0
 const slateBaseline = existsSync(SLATE_BASELINE_FILE) ? Number(readFileSync(SLATE_BASELINE_FILE, 'utf8').trim() || '0') : 0
+const overlayBaseline = existsSync(OVERLAY_BASELINE_FILE) ? Number(readFileSync(OVERLAY_BASELINE_FILE, 'utf8').trim() || '0') : 0
 const radiusBaseline = existsSync(RADIUS_BASELINE_FILE) ? Number(readFileSync(RADIUS_BASELINE_FILE, 'utf8').trim() || '0') : 0
 
 function walk(dir) {
@@ -89,6 +100,7 @@ const hits = []
 const gradientHits = []
 const glyphHits = []
 const slateHits = []
+const overlayHits = []
 const radiusHits = []
 for (const root of ROOTS) {
   for (const file of walk(root)) {
@@ -98,6 +110,7 @@ for (const root of ROOTS) {
       if (GRADIENT_PATTERN.test(line)) gradientHits.push(`${file}:${i + 1}`)
       if (GLYPH_PATTERN.test(line) && !line.includes('emoji')) glyphHits.push(`${file}:${i + 1}`)
       if (SLATE_PATTERN.test(line)) slateHits.push(`${file}:${i + 1}`)
+      if (OVERLAY_PATTERN.test(line)) overlayHits.push(`${file}:${i + 1}`)
       if (RADIUS_PATTERN.test(line)) radiusHits.push(`${file}:${i + 1}`)
     })
   }
@@ -110,9 +123,11 @@ const gradientCount = gradientHits.length
 const glyphCount = glyphHits.length
 console.log(`DS color lint · medallones de gradiente a mano: ${gradientCount} (baseline ${gradientBaseline})`)
 const slateCount = slateHits.length
+const overlayCount = overlayHits.length
 const radiusCount = radiusHits.length
 console.log(`DS color lint · íconos escritos como carácter/emoji: ${glyphCount} (baseline ${glyphBaseline})`)
 console.log(`DS color lint · escala slate en vez de gray: ${slateCount} (baseline ${slateBaseline})`)
+console.log(`DS lint · overlays armados a mano: ${overlayCount} (baseline ${overlayBaseline})`)
 console.log(`DS color lint · radios pre-token (rounded-lg/xl): ${radiusCount} (baseline ${radiusBaseline})`)
 
 let failed = false
@@ -124,6 +139,15 @@ if (radiusCount > radiusBaseline) {
 }
 if (radiusCount < radiusBaseline) {
   console.log(`✓ Bajó ${radiusBaseline - radiusCount}. Actualizá ${RADIUS_BASELINE_FILE} a ${radiusCount}.`)
+}
+
+if (overlayCount > overlayBaseline) {
+  console.error(`\n✗ Subió +${overlayCount - overlayBaseline}. Usá <Modal> o <Drawer> del DS: traen Portal, scroll-lock, focus-trap y Esc (fase 6).`)
+  overlayHits.slice(-Math.min(15, overlayCount - overlayBaseline)).forEach(h => console.error('  ' + h))
+  failed = true
+}
+if (overlayCount < overlayBaseline) {
+  console.log(`✓ Bajó ${overlayBaseline - overlayCount}. Actualizá ${OVERLAY_BASELINE_FILE} a ${overlayCount}.`)
 }
 
 if (slateCount > slateBaseline) {

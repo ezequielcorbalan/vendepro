@@ -120,3 +120,13 @@ Reemplazar los usos inline por los componentes/tokens. Escala real hoy: **~101 a
   componentes**. Foco con cero adopción del DS: `components/layout`, las 4
   pantallas de `auth/`, y las públicas `app/v` y `app/r`.
 - Rama de trabajo: `design/ui-consistency-pass`.
+
+## Fase 6 — Estructura
+
+Las fases anteriores fueron apariencia. La 6 es la primera de estructura: que
+ningún overlay ni control se dibuje a mano cuando el DS ya lo resuelve. El plan
+completo, con inventario medido y tandas, en
+[`ds-plan-fase6.md`](./ds-plan-fase6.md).
+
+Arranca de: 18 overlays armados a mano en 17 archivos, de los que 3 cierran con
+Esc y 0 usan Portal.
