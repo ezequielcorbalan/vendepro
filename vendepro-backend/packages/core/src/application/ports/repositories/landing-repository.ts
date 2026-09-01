@@ -1,10 +1,10 @@
-import type { Landing } from '../../../domain/entities/landing'
+import type { Landing, LandingKind } from '../../../domain/entities/landing'
 import type { LandingStatusValue } from '../../../domain/value-objects/landing-status'
 
 export interface LandingFilters {
   status?: LandingStatusValue | LandingStatusValue[]
   agent_id?: string
-  kind?: 'lead_capture' | 'property'
+  kind?: LandingKind
 }
 
 export interface LandingRepository {

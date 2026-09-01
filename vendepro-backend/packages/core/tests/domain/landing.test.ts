@@ -95,4 +95,44 @@ describe('Landing', () => {
     expect(l2.published_by).toBe('admin1')
     expect(l2.published_at).toBe('2026-04-18T10:00:00Z')
   })
+
+  it('agent_profile permite cero lead-form', () => {
+    const l = Landing.create({
+      id: 'l1', org_id: 'o1', agent_id: 'a1', template_id: 't1',
+      kind: 'agent_profile',
+      slug_base: 'andres', slug_suffix: 'k7xm3',
+      blocks: [makeHero()],
+    })
+    expect(l.kind).toBe('agent_profile')
+    expect(l.blocks.length).toBe(1)
+  })
+
+  it('agent_profile permite exactamente un lead-form', () => {
+    const l = Landing.create({
+      id: 'l1', org_id: 'o1', agent_id: 'a1', template_id: 't1',
+      kind: 'agent_profile',
+      slug_base: 'andres', slug_suffix: 'k7xm3',
+      blocks: [makeHero(), makeLeadForm()],
+    })
+    expect(l.blocks.length).toBe(2)
+  })
+
+  it('agent_profile rechaza dos lead-form', () => {
+    expect(() => Landing.create({
+      id: 'l1', org_id: 'o1', agent_id: 'a1', template_id: 't1',
+      kind: 'agent_profile',
+      slug_base: 'andres', slug_suffix: 'k7xm3',
+      blocks: [makeLeadForm('f1'), makeLeadForm('f2')],
+    })).toThrow(/lead-form/i)
+  })
+
+  it('replaceBlocks en agent_profile permite quedarse sin lead-form', () => {
+    const l = Landing.create({
+      id: 'l1', org_id: 'o1', agent_id: 'a1', template_id: 't1',
+      kind: 'agent_profile',
+      slug_base: 'andres', slug_suffix: 'k7xm3',
+      blocks: [makeHero(), makeLeadForm()],
+    })
+    expect(l.replaceBlocks([makeHero()]).blocks.length).toBe(1)
+  })
 })

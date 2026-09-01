@@ -2,8 +2,9 @@ import { LandingStatus, type LandingStatusValue } from '../value-objects/landing
 import { LandingSlug } from '../value-objects/landing-slug'
 import { validateBlocks, type Block } from '../value-objects/block-schemas'
 import { ValidationError } from '../errors/validation-error'
+import { assertLeadFormInvariant } from '../rules/landing-rules'
 
-export type LandingKind = 'lead_capture' | 'property'
+export type LandingKind = 'lead_capture' | 'property' | 'agent_profile'
 
 export interface LeadRules {
   assigned_agent_id?: string
@@ -40,7 +41,7 @@ export type LandingCreateInput =
   Omit<LandingProps, 'status' | 'brand_voice' | 'lead_rules' | 'seo_title' | 'seo_description' | 'og_image_url' | 'published_version_id' | 'published_at' | 'published_by' | 'last_review_note' | 'template_type' | 'created_at' | 'updated_at'>
   & Partial<Pick<LandingProps, 'status' | 'brand_voice' | 'lead_rules' | 'seo_title' | 'seo_description' | 'og_image_url' | 'template_type' | 'created_at' | 'updated_at'>>
 
-const VALID_KINDS: LandingKind[] = ['lead_capture', 'property']
+const VALID_KINDS: LandingKind[] = ['lead_capture', 'property', 'agent_profile']
 
 export class Landing {
   private constructor(private readonly props: LandingProps) {}
@@ -54,10 +55,8 @@ export class Landing {
     // Valida blocks shape
     const v = validateBlocks(input.blocks)
     if (!v.success) throw new ValidationError(`Bloques inválidos: ${v.error}`)
-    // Invariante: exactamente un lead-form
-    const leadForms = v.data.filter(b => b.type === 'lead-form')
-    if (leadForms.length === 0) throw new ValidationError('La landing debe contener un bloque lead-form')
-    if (leadForms.length > 1) throw new ValidationError('La landing debe tener un único bloque lead-form')
+    // Invariante: cantidad de lead-form permitida según kind
+    assertLeadFormInvariant(input.kind, v.data)
 
     const now = new Date().toISOString()
     return new Landing({
@@ -120,8 +119,7 @@ export class Landing {
   replaceBlocks(blocks: Block[]): Landing {
     const v = validateBlocks(blocks)
     if (!v.success) throw new ValidationError(`Bloques inválidos: ${v.error}`)
-    const leadForms = v.data.filter(b => b.type === 'lead-form')
-    if (leadForms.length !== 1) throw new ValidationError('La landing debe tener un único bloque lead-form')
+    assertLeadFormInvariant(this.props.kind, v.data)
     return new Landing({ ...this.props, blocks: v.data, updated_at: new Date().toISOString() })
   }
 

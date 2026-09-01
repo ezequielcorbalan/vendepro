@@ -1,4 +1,7 @@
 import type { LandingStatusValue } from '../value-objects/landing-status'
+import type { LandingKind } from '../entities/landing'
+import type { Block } from '../value-objects/block-schemas'
+import { ValidationError } from '../errors/validation-error'
 
 export type Role = 'admin' | 'agent'
 
@@ -59,3 +62,18 @@ export const AI_EDITS_PER_MINUTE = 30
 
 // Auto-save throttle
 export const AUTOSAVE_THROTTLE_MS = 30_000
+
+/**
+ * Cuántos bloques lead-form admite cada kind.
+ * lead_capture y property: exactamente 1 (comportamiento histórico).
+ * agent_profile: 0 o 1 — un agente puede venderse solo con CTAs de WhatsApp.
+ */
+export function assertLeadFormInvariant(kind: LandingKind, blocks: Block[]): void {
+  const count = blocks.filter(b => b.type === 'lead-form').length
+  if (kind === 'agent_profile') {
+    if (count > 1) throw new ValidationError('La landing debe tener a lo sumo un bloque lead-form')
+    return
+  }
+  if (count === 0) throw new ValidationError('La landing debe contener un bloque lead-form')
+  if (count > 1) throw new ValidationError('La landing debe tener un único bloque lead-form')
+}
