@@ -176,15 +176,41 @@ Para los `<button>` **no** conviene un ratchet todavía: hay demasiados usos
 legítimos y el número solo no distingue. Primero clasificar (tanda 5), después
 poner baseline sobre lo que quede.
 
-## Lo que hace falta decidir antes de arrancar
+## Decisiones
 
-1. **`app/v/[slug]` y `app/u/[token]`** siguen contados por el ratchet de color
-   mientras `app/r/[slug]` se excluyó. Son el mismo caso — páginas públicas para
-   el cliente. O salen las tres o entran las tres.
-2. **Los dos pickers de propiedades** son la misma pantalla duplicada. ¿Colapsan
-   en uno?
-3. **Cuánto de `tasaciones/editor`** se considera componente local legítimo (la
-   barra flotante) y cuánto es deuda.
+Resueltas por Paula el 01/09/2026:
+
+- **Los dos pickers de propiedades se unifican** en un componente con una prop de
+  origen, en vez de migrarlos por separado. El motivo: comparten toda la
+  estructura (buscador, filtros, lista, empty state) y difieren sólo en qué API
+  llaman y qué campos muestran, así que hoy cada bug hay que arreglarlo dos veces.
+- **La barra flotante de `EditableCanvas` queda como deuda**, no como componente
+  local legítimo. Sigue contando en la tanda 5 y sigue marcada `ds-todo` como
+  candidata a `BubbleToolbar`. Cuando llegue el turno, se decide si la variante
+  entra al DS.
+
+### Pendiente de Ezequiel — ¿las páginas públicas siguen el DS?
+
+Las rutas cortas son documentos que ve el **cliente**, no la app interna:
+
+| Ruta | Qué es | Colores sueltos |
+|---|---|---|
+| `/r/[slug]` | Reporte de propiedad | 14 |
+| `/v/[slug]` | Ficha de visita | 5 |
+| `/u/[token]` | Cancelar suscripción de mails | 2 |
+| `/t/` `/f/` `/p/` `/l/` | tasación, ficha, prefactibilidad, landing | 0 |
+
+Hoy **sólo `/r/` está excluida** del ratchet de color, por decisión del
+01/09/2026. `/v/` y `/u/` son el mismo caso y siguen contadas: quedó incoherente.
+
+La pregunta de fondo es de producto, no de código: **¿estas páginas se ven como
+la app, o tienen identidad visual propia?** Los renderers de tasación
+(`tasaciones/renderer`) y las landings públicas ya están excluidos porque tienen
+identidad por org/propiedad. Si la respuesta es la misma, salen las tres y las 21
+líneas quedan como deuda anotada. Si no, hay que volver a incluir `/r/` y migrar
+las 21.
+
+**No decidir esto no bloquea la fase 6** — ninguna tanda toca esas rutas.
 
 ## Sugerencia de secuencia
 

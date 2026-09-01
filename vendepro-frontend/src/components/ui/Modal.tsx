@@ -12,6 +12,10 @@ import { useOverlay } from './useOverlay'
  * ancestros con overflow/transform), bloquea el scroll del body, atrapa el foco
  * y lo devuelve al cerrar. Cierra con Esc o click en el fondo (por mousedown+
  * mouseup, para no cerrar si soltás afuera tras seleccionar texto adentro).
+ *
+ * `padded` es el mismo prop que `Card` y `Drawer`: apagalo cuando el contenido
+ * tiene secciones a sangre — una banda de filtros con su propio borde, una lista
+ * que scrollea sola.
  */
 interface ModalProps {
   open: boolean
@@ -23,10 +27,12 @@ interface ModalProps {
   danger?: boolean
   children: ReactNode
   footer?: ReactNode
+  /** Padding estándar del cuerpo (px-6 py-4). Apagalo para contenido a sangre. */
+  padded?: boolean
   className?: string
 }
 
-export function Modal({ open, onClose, title, icon, danger = false, children, footer, className }: ModalProps) {
+export function Modal({ open, onClose, title, icon, danger = false, children, footer, padded = true, className }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null)
   const downOnScrim = useRef(false)
   useOverlay(open, onClose, panelRef)
@@ -69,7 +75,7 @@ export function Modal({ open, onClose, title, icon, danger = false, children, fo
               </button>
             </div>
           )}
-          <div className="px-6 py-4 text-sm text-gray-600">{children}</div>
+          <div className={cn('text-sm text-gray-600', padded && 'px-6 py-4')}>{children}</div>
           {footer && (
             <div className="flex items-center justify-end gap-2 px-6 py-4 bg-gray-50 border-t border-gray-100">
               {footer}
