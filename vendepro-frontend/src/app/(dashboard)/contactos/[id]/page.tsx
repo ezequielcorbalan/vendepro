@@ -155,7 +155,7 @@ export default function ContactDetailPage() {
               <CallButton phone={contact.phone} />
             )}
             {contact.phone && (
-              <WhatsAppButton phone={contact.phone} />
+              <WhatsAppButton phone={contact.phone} templateContext={{ name: contact.full_name }} />
             )}
             <Link href={`/leads?new=1&contact_id=${contact.id}`} className="flex items-center gap-2 text-sm bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-control transition-colors">
               <UserPlus className="w-4 h-4" /> Nuevo lead
