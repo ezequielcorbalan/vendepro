@@ -59,7 +59,7 @@ Aplicado ya a `Modal`, `Drawer` y `AIChatPanel` — el primer consumidor migrado
 
 ---
 
-## Tanda 1 — Pickers y modales puros
+## Tanda 1 — Pickers y modales puros ✅ HECHA
 
 **5 archivos · riesgo bajo · migración casi mecánica**
 
@@ -76,7 +76,7 @@ tokenizaron juntos en `e39b3ed`). Al migrarlos, evaluar si colapsan en un solo
 componente con una prop de origen — eso sí es una decisión de producto, no
 mecánica.
 
-## Tanda 2 — Drawers de landings
+## Tanda 2 — Drawers de landings ✅ HECHA
 
 **2 archivos · riesgo bajo**
 
@@ -166,8 +166,9 @@ Los cinco actuales miden apariencia y no detectan nada de esta fase. Sumar a
 `scripts/ds-color-lint.mjs`:
 
 **6. Overlays a mano** — hecho. `inset-0` con fondo translúcido, fuera de
-`src/components/ui`. **Baseline 19, objetivo 0.** No cuenta el `inset-0`
-transparente que sirve de atrapa-clicks de un dropdown, que es un uso legítimo.
+`src/components/ui`. **Arrancó en 19; con las tandas 1 y 2 bajó a 12.**
+Objetivo 0. No cuenta el `inset-0` transparente que sirve de atrapa-clicks de un
+dropdown, que es un uso legítimo.
 
 **7. Controles nativos** — `<input>`/`<select>`/`<textarea>` fuera de
 `src/components/ui` y de las superficies externas ya excluidas. Baseline 28.

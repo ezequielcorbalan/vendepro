@@ -1,10 +1,12 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { X, Clock, Sparkles, Save, CheckCircle2, RotateCcw } from 'lucide-react'
+import { Clock, Sparkles, Save, CheckCircle2, RotateCcw, History } from 'lucide-react'
 import { landingsApi } from '@/lib/landings/api'
 import type { LandingVersion } from '@/lib/landings/types'
 import { Button } from '@/components/ui/Button'
-import { Heading } from '@/components/ui/Typography'
+import { Drawer } from '@/components/ui/Drawer'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { Text } from '@/components/ui/Typography'
 
 const LABEL_ICON: Record<LandingVersion['label'], React.ComponentType<{ className?: string }>> = {
   'auto-save': Clock,
@@ -46,22 +48,12 @@ export default function VersionsDrawer({
   }
 
   return (
-    <div className="fixed inset-0 z-40 bg-black/40" onClick={onClose}>
-      <aside
-        className="absolute right-0 top-0 h-full w-[380px] bg-white shadow-pop flex flex-col"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <Heading level={4}>Historial de versiones</Heading>
-          <Button variant="ghost" size="icon" aria-label="Cerrar" onClick={onClose}>
-            <X className="w-4 h-4" />
-          </Button>
-        </div>
-        <div className="flex-1 overflow-auto p-3 space-y-2">
+    <Drawer open onClose={onClose} title="Historial de versiones">
+        <div className="space-y-2">
           {loading ? (
-            <p className="text-sm text-gray-500 text-center mt-8">Cargando…</p>
+            <Text size="sm" tone="muted" className="block text-center mt-8">Cargando…</Text>
           ) : versions.length === 0 ? (
-            <p className="text-sm text-gray-500 text-center mt-8">Sin versiones todavía.</p>
+            <EmptyState icon={<History className="w-6 h-6" />} title="Sin versiones todavía." />
           ) : (
             versions.map(v => {
               const Icon = LABEL_ICON[v.label]
@@ -96,7 +88,6 @@ export default function VersionsDrawer({
             })
           )}
         </div>
-      </aside>
-    </div>
+    </Drawer>
   )
 }

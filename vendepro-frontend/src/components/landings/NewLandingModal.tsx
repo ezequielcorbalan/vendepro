@@ -1,17 +1,18 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { X } from 'lucide-react'
+import { LayoutTemplate } from 'lucide-react'
 import { templatesApi, landingsApi } from '@/lib/landings/api'
 import type { LandingTemplate, LandingKind } from '@/lib/landings/types'
 import { slugifyBase, isValidSlugBase, publicLandingHostPath } from '@/lib/landings/slug'
 import { Field, Input } from '@/components/ui/Input'
+import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { OptionCard } from '@/components/ui/OptionCard'
 import { StepIndicator } from '@/components/ui/StepIndicator'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
-import { Heading, Text } from '@/components/ui/Typography'
+import { Text } from '@/components/ui/Typography'
 
 type Step = 'template' | 'name'
 
@@ -55,17 +56,19 @@ export default function NewLandingModal({ onClose, asTasacionTemplate = false }:
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-card w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-pop flex flex-col" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <div className="flex items-center gap-2">
-            <Heading level={3}>
-              {asTasacionTemplate ? 'Nueva plantilla de tasación' : 'Nueva landing'}
-            </Heading>
-            {asTasacionTemplate && <Badge tone="primary">Plantilla tasación</Badge>}
+    <Modal
+      open
+      onClose={onClose}
+      title={asTasacionTemplate ? 'Nueva plantilla de tasación' : 'Nueva landing'}
+      icon={<LayoutTemplate className="w-5 h-5" />}
+      padded={false}
+      className="max-w-4xl max-h-[90vh] flex flex-col"
+    >
+        {asTasacionTemplate && (
+          <div className="px-6 pt-3">
+            <Badge tone="primary">Plantilla tasación</Badge>
           </div>
-          <Button variant="ghost" size="icon" aria-label="Cerrar" onClick={onClose}><X className="w-5 h-5" /></Button>
-        </div>
+        )}
 
         <div className="px-6 py-3 border-b border-gray-100">
           <StepIndicator
@@ -145,7 +148,6 @@ export default function NewLandingModal({ onClose, asTasacionTemplate = false }:
             </div>
           </div>
         )}
-      </div>
-    </div>
+    </Modal>
   )
 }

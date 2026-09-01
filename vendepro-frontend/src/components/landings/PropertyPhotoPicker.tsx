@@ -1,8 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { X } from 'lucide-react'
+import { Image as ImageIcon } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
-import { Button } from '@/components/ui/Button'
+import { Modal } from '@/components/ui/Modal'
 import { CardTitle } from '@/components/ui/Card'
 import { Text } from '@/components/ui/Typography'
 
@@ -60,14 +60,16 @@ export default function PropertyPhotoPicker({
   }, [selectedId])
 
   return (
-    <div
-      className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
-      onClick={onClose}
+    <Modal
+      open
+      onClose={onClose}
+      title="Elegir una foto"
+      icon={<ImageIcon className="w-5 h-5" />}
+      padded={false}
+      className="max-w-3xl"
     >
-      <div
-        className="bg-white rounded-card shadow-pop w-full max-w-3xl max-h-[85vh] overflow-hidden flex"
-        onClick={e => e.stopPropagation()}
-      >
+      {/* Dos paneles a sangre: el alto lo pone acá y cada panel scrollea solo. */}
+      <div className="flex h-[70vh]">
         <aside className="w-60 border-r border-gray-200 overflow-auto flex-shrink-0">
           <div className="p-3 border-b border-gray-200">
             <CardTitle>Propiedades</CardTitle>
@@ -96,11 +98,8 @@ export default function PropertyPhotoPicker({
           ))}
         </aside>
         <div className="flex-1 flex flex-col min-w-0">
-          <div className="flex items-center justify-between p-3 border-b border-gray-200">
+          <div className="p-3 border-b border-gray-200">
             <CardTitle>Fotos</CardTitle>
-            <Button variant="ghost" size="icon" aria-label="Cerrar" onClick={onClose} className="p-1">
-              <X className="w-4 h-4" />
-            </Button>
           </div>
           <div className="flex-1 overflow-auto p-3 grid grid-cols-3 gap-2 content-start">
             {photos.map((ph, i) => (
@@ -124,6 +123,6 @@ export default function PropertyPhotoPicker({
           </div>
         </div>
       </div>
-    </div>
+    </Modal>
   )
 }
