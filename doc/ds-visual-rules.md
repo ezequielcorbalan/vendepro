@@ -367,7 +367,7 @@ quedan afuera del ratchet a propósito: migrarlos SÍ cambia el tamaño, así qu
 deciden a mano (quedan 16). Mismo espíritu: cuando una pantalla se corrige acá,
 el baseline baja y queda trabado el retroceso.
 
-Las reglas 12 a 22 salieron del repaso visual del 31/08/2026: cada una es una
+Las reglas 12 a 23 salieron del repaso visual del 31/08 y 01/09/2026: cada una es una
 corrección que se pidió sobre pantalla y que, en vez de quedar en la pantalla
 donde se pidió, se movió al componente que la impone. La 12 es la que enseñó por
 qué: el header de contacto se había arreglado inline, así que el de lead siguió
