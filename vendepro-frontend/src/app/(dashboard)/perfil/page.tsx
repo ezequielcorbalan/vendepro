@@ -9,6 +9,7 @@ import { Heading, Text } from '@/components/ui/Typography'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { apiFetch } from '@/lib/api'
 import { getCurrentUser, setCurrentUser } from '@/lib/auth'
+import { PerfilPublicoForm } from '@/components/perfil/PerfilPublicoForm'
 
 export default function PerfilPage() {
   const { toast } = useToast()
@@ -102,6 +103,9 @@ export default function PerfilPage() {
           </Button>
         </div>
       </Card>
+
+      {/* Perfil público (landing de agente) */}
+      <PerfilPublicoForm />
 
       {/* Password section */}
       <Card padded={false} className="p-6">
