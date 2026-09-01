@@ -45,6 +45,19 @@ export class D1LandingRepository implements LandingRepository {
     return rows.map(r => this.toEntity(r))
   }
 
+  async findPublishedByAgentAndKind(orgId: string, agentId: string, kind: LandingKind): Promise<Landing | null> {
+    const row = await this.db
+      .prepare(`
+        SELECT * FROM landings
+        WHERE org_id = ? AND agent_id = ? AND kind = ? AND status = 'published'
+        ORDER BY published_at DESC
+        LIMIT 1
+      `)
+      .bind(orgId, agentId, kind)
+      .first() as any
+    return row ? this.toEntity(row) : null
+  }
+
   async save(landing: Landing): Promise<void> {
     const o = landing.toObject()
     await this.db.prepare(`

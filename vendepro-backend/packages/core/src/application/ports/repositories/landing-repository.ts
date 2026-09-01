@@ -17,6 +17,11 @@ export interface LandingRepository {
    * landings de la org marcadas con ese template_type.
    */
   findTemplatesByType(orgId: string, templateType: string): Promise<Landing[]>
+  /**
+   * La landing publicada de un agente para un kind dado. Si hubiera más de una
+   * (no debería), devuelve la publicada más recientemente.
+   */
+  findPublishedByAgentAndKind(orgId: string, agentId: string, kind: LandingKind): Promise<Landing | null>
   save(landing: Landing): Promise<void>
   existsFullSlug(fullSlug: string): Promise<boolean>
 }
