@@ -107,11 +107,11 @@ export function StepIndicator({
           const circle = (
             <span
               className={cn(
-                'w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium shrink-0 transition-colors',
+                'w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 transition-colors',
                 done || active ? 'bg-primary text-white' : 'bg-gray-200 text-gray-500',
               )}
             >
-              {done ? <Check className="w-4 h-4" aria-hidden /> : n}
+              {done ? <Check className="w-3.5 h-3.5" aria-hidden /> : n}
             </span>
           )
 

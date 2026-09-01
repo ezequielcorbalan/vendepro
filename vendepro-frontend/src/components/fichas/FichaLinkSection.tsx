@@ -127,15 +127,17 @@ export function FichaLinkSection({
 
   return (
     <Card className={className}>
-      {/* Header del DS: medallón gris + título + descripción + acción. La
-          descripción va acotada a ancho de lectura — a todo el ancho de la card
-          quedaba una línea de texto de punta a punta. */}
+      {/* La descripción va acotada para que entre en dos líneas: a todo el ancho
+          de la card era una línea de punta a punta, y con `max-w-prose` caía en
+          tres. La acción es `outline`: es una acción de una card, no el CTA de la
+          pantalla, y en rosa sólido pesaba más que el propio contenido. */}
       <WidgetHeader
         icon={<Link2 className="w-4 h-4" />}
         title={title}
-        subtitle={<span className="block max-w-prose">{description}</span>}
+        subtitle={<span className="block max-w-[34rem]">{description}</span>}
         action={
           <Button
+            variant="outline"
             size="sm"
             onClick={generate}
             loading={generating}

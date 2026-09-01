@@ -183,7 +183,7 @@ export function WizardShell({ initialTemplateId, initialLeadId, existingAppraisa
           stepper, el paso y el footer flotaban sueltos sobre el fondo gris, y
           el único contenedor era el header. Un wizard es una sola pieza. */}
       <Card padded={false}>
-        <div className="px-5 py-4 border-b border-gray-100 overflow-x-auto">
+        <div className="px-5 pt-5 pb-4 border-b border-gray-100 overflow-x-auto">
           <StepIndicator
             steps={STEP_LABELS}
             current={state.step}
