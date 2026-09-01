@@ -195,23 +195,23 @@ export function EditorShell({ initial, snapshot, context }: Props) {
   const ctx = buildCtx({ ...state.appraisal, comparables }, orgCtx)
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3">
+    <div className="min-h-screen bg-gray-50">
+      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3">
         <div className="flex items-center gap-3">
-          <Link href="/tasaciones" className="text-slate-500"><ArrowLeft className="h-5 w-5" /></Link>
+          <Link href="/tasaciones" className="text-gray-500"><ArrowLeft className="h-5 w-5" /></Link>
           <h1 className="text-sm font-semibold">{state.appraisal.property_address}</h1>
         </div>
         <div className="flex items-center gap-3">
           <Link
             href={`/tasaciones/${state.appraisal.id}/wizard`}
-            className="flex items-center gap-2 rounded-control border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-ink"
+            className="flex items-center gap-2 rounded-control border border-gray-200 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-ink"
             title="Abrir el wizard completo de edición"
           >
             <Wand2 className="w-4 h-4" /> Edición completa
           </Link>
           <button
             onClick={() => setSidebarCollapsed(c => !c)}
-            className="hidden lg:flex items-center justify-center rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+            className="hidden lg:flex items-center justify-center rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
             title={sidebarCollapsed ? 'Mostrar panel de edición' : 'Ocultar panel de edición'}
           >
             {sidebarCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
@@ -233,7 +233,7 @@ export function EditorShell({ initial, snapshot, context }: Props) {
             </button>
           )}
           {state.appraisal.public_slug && (
-            <a href={`/t/${state.appraisal.public_slug}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-slate-600 hover:text-brand-pink">
+            <a href={`/t/${state.appraisal.public_slug}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-gray-600 hover:text-brand-pink">
               Ver pública <ExternalLink className="h-3 w-3" />
             </a>
           )}
@@ -248,7 +248,7 @@ export function EditorShell({ initial, snapshot, context }: Props) {
         </div>
       </header>
       {monthlyUsed !== null && (
-        <div className={`px-4 py-1 text-xs ${monthlyUsed >= 40 ? (monthlyUsed >= 50 ? 'text-rose-600' : 'text-amber-600') : 'text-slate-500'}`}>
+        <div className={`px-4 py-1 text-xs ${monthlyUsed >= 40 ? (monthlyUsed >= 50 ? 'text-rose-600' : 'text-amber-600') : 'text-gray-500'}`}>
           PDFs este mes: {monthlyUsed} / 50
         </div>
       )}
@@ -263,9 +263,9 @@ export function EditorShell({ initial, snapshot, context }: Props) {
       )}
 
       <div className={`grid grid-cols-1 ${!sidebarCollapsed ? 'lg:grid-cols-2' : ''}`}>
-        <div className={`border-r border-slate-200 bg-white p-6 ${sidebarCollapsed ? 'hidden' : ''}`}>
+        <div className={`border-r border-gray-200 bg-white p-6 ${sidebarCollapsed ? 'hidden' : ''}`}>
           <section>
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Datos de la propiedad</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-600">Datos de la propiedad</h2>
             <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
               <AppraisalField label="Dirección" value={state.appraisal.property_address} onChange={v => dispatch({ type: 'patch_appraisal', patch: { property_address: v } })} />
               <AppraisalField label="Barrio" value={state.appraisal.neighborhood} onChange={v => dispatch({ type: 'patch_appraisal', patch: { neighborhood: v } })} />
@@ -275,9 +275,9 @@ export function EditorShell({ initial, snapshot, context }: Props) {
               <AppraisalField label="Total m²" type="number" value={state.appraisal.total_area} onChange={v => dispatch({ type: 'patch_appraisal', patch: { total_area: v ? Number(v) : null } })} />
               <AppraisalField label="Semi m²" type="number" value={state.appraisal.semi_area} onChange={v => dispatch({ type: 'patch_appraisal', patch: { semi_area: v ? Number(v) : null } })} />
               <label className="flex flex-col gap-1">
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-gray-500">
                   Ponderada m²
-                  <span className="ml-2 font-normal text-slate-400">auto</span>
+                  <span className="ml-2 font-normal text-gray-400">auto</span>
                 </span>
                 <div
                   className="flex h-[34px] items-center rounded border border-rose-200 bg-rose-50 px-2 text-sm font-semibold text-brand-pink"
@@ -290,7 +290,7 @@ export function EditorShell({ initial, snapshot, context }: Props) {
           </section>
 
           <section className="mt-6">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Precios</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-600">Precios</h2>
             <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
               <AppraisalField label="Precio sugerido (USD)" type="number" value={state.appraisal.suggested_price} onChange={v => dispatch({ type: 'patch_appraisal', patch: { suggested_price: v ? Number(v) : null } })} />
               <AppraisalField label="Precio de prueba (USD)" type="number" value={state.appraisal.test_price} onChange={v => dispatch({ type: 'patch_appraisal', patch: { test_price: v ? Number(v) : null } })} />
@@ -300,19 +300,19 @@ export function EditorShell({ initial, snapshot, context }: Props) {
           </section>
 
           <section className="mt-6">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-600">FODA</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-600">FODA</h2>
             <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
               {(['strengths', 'weaknesses', 'opportunities', 'threats'] as const).map(k => (
                 <label key={k} className="flex flex-col gap-1">
-                  <span className="text-xs text-slate-500 capitalize">{k === 'strengths' ? 'Fortalezas' : k === 'weaknesses' ? 'Debilidades' : k === 'opportunities' ? 'Oportunidades' : 'Amenazas'}</span>
-                  <textarea rows={3} value={state.appraisal[k] ?? ''} onChange={e => dispatch({ type: 'patch_appraisal', patch: { [k]: e.target.value } })} className="rounded border border-slate-300 px-2 py-1 text-sm" />
+                  <span className="text-xs text-gray-500 capitalize">{k === 'strengths' ? 'Fortalezas' : k === 'weaknesses' ? 'Debilidades' : k === 'opportunities' ? 'Oportunidades' : 'Amenazas'}</span>
+                  <textarea rows={3} value={state.appraisal[k] ?? ''} onChange={e => dispatch({ type: 'patch_appraisal', patch: { [k]: e.target.value } })} className="rounded border border-gray-300 px-2 py-1 text-sm" />
                 </label>
               ))}
             </div>
           </section>
 
           <section className="mt-6">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Comparables</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-600">Comparables</h2>
             {compError && (
               <div className="mt-2 flex items-start gap-1 rounded border border-rose-200 bg-rose-50 px-2 py-1 text-xs text-rose-600">
                 <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />
@@ -333,8 +333,8 @@ export function EditorShell({ initial, snapshot, context }: Props) {
 
           {state.snapshot.some(b => !FREE_BLOCK_TYPES.has(b.type)) && (
             <section className="mt-6">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Bloques del template</h2>
-              <p className="mt-1 text-xs text-slate-400">Los elementos de texto, imagen y separadores se editan directo en el preview.</p>
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-600">Bloques del template</h2>
+              <p className="mt-1 text-xs text-gray-400">Los elementos de texto, imagen y separadores se editan directo en el preview.</p>
               <div className="mt-3">
                 <BlockList
                   blocks={state.snapshot.filter(b => !FREE_BLOCK_TYPES.has(b.type))}
@@ -350,9 +350,9 @@ export function EditorShell({ initial, snapshot, context }: Props) {
 
         <div className={sidebarCollapsed ? 'block' : 'hidden lg:block'}>
           <div className="sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto">
-            <div className="flex items-center gap-2 border-b border-slate-200 bg-white px-4 py-2">
-              <button onClick={() => setMode('web')} className={`rounded px-3 py-1 text-xs ${mode === 'web' ? 'bg-slate-900 text-white' : 'text-slate-500'}`}>Web</button>
-              <button onClick={() => setMode('print')} className={`rounded px-3 py-1 text-xs ${mode === 'print' ? 'bg-slate-900 text-white' : 'text-slate-500'}`}>Print</button>
+            <div className="flex items-center gap-2 border-b border-gray-200 bg-white px-4 py-2">
+              <button onClick={() => setMode('web')} className={`rounded px-3 py-1 text-xs ${mode === 'web' ? 'bg-gray-900 text-white' : 'text-gray-500'}`}>Web</button>
+              <button onClick={() => setMode('print')} className={`rounded px-3 py-1 text-xs ${mode === 'print' ? 'bg-gray-900 text-white' : 'text-gray-500'}`}>Print</button>
             </div>
             {mode === 'web' ? (
               <EditableCanvas
@@ -379,7 +379,7 @@ export function EditorShell({ initial, snapshot, context }: Props) {
       </button>
       {mobilePreviewOpen && (
         <div className="fixed inset-0 z-40 bg-white lg:hidden">
-          <button onClick={() => setMobilePreviewOpen(false)} className="absolute right-4 top-4 z-10 rounded-full bg-slate-900 px-3 py-1 text-xs text-white">Cerrar</button>
+          <button onClick={() => setMobilePreviewOpen(false)} className="absolute right-4 top-4 z-10 rounded-full bg-gray-900 px-3 py-1 text-xs text-white">Cerrar</button>
           <div className="h-full overflow-y-auto">
             <TemplateRenderer snapshot={state.snapshot} overrides={state.overrides} appraisal={ctx} mode={mode} editing />
           </div>
@@ -392,14 +392,14 @@ export function EditorShell({ initial, snapshot, context }: Props) {
 function AppraisalField({ label, value, onChange, type = 'text' }: { label: string; value: any; onChange: (v: string) => void; type?: string }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-xs text-slate-500">{label}</span>
-      <input type={type} value={value ?? ''} onChange={e => onChange(e.target.value)} className="rounded border border-slate-300 px-2 py-1 text-sm" />
+      <span className="text-xs text-gray-500">{label}</span>
+      <input type={type} value={value ?? ''} onChange={e => onChange(e.target.value)} className="rounded border border-gray-300 px-2 py-1 text-sm" />
     </label>
   )
 }
 
 function SaveStatus({ status, errorMsg, lastSavedAt, onRetry }: { status: string; errorMsg: string | null; lastSavedAt: number | null; onRetry: () => void }) {
-  if (status === 'saving') return <span className="flex items-center gap-1 text-xs text-slate-500"><Loader2 className="h-3 w-3 animate-spin" /> Guardando...</span>
+  if (status === 'saving') return <span className="flex items-center gap-1 text-xs text-gray-500"><Loader2 className="h-3 w-3 animate-spin" /> Guardando...</span>
   if (status === 'saved') return <span className="flex items-center gap-1 text-xs text-emerald-600"><CheckCircle2 className="h-3 w-3" /> Guardado</span>
   if (status === 'error') return (
     <span title={errorMsg ?? undefined} className="flex max-w-md items-center gap-1 truncate text-xs text-rose-600">
@@ -407,6 +407,6 @@ function SaveStatus({ status, errorMsg, lastSavedAt, onRetry }: { status: string
       <button onClick={onRetry} className="ml-1 shrink-0 underline">Reintentar</button>
     </span>
   )
-  if (status === 'debouncing') return <span className="text-xs text-slate-400">Cambios pendientes...</span>
+  if (status === 'debouncing') return <span className="text-xs text-gray-400">Cambios pendientes...</span>
   return null
 }

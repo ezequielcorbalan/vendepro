@@ -108,23 +108,23 @@ export function BlockAdminForm({ block, onPatchBlock, onPatchData, onRemove }: P
     }
   }
   return (
-    <div className="space-y-3 border-t border-slate-200 p-3">
+    <div className="space-y-3 border-t border-gray-200 p-3">
       <div className="flex flex-wrap items-start gap-3">
         <label className="flex flex-1 flex-col gap-1">
-          <span className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+          <span className="text-xs font-semibold uppercase tracking-wide text-gray-600">
             ¿De dónde sale el contenido?
           </span>
           <select
             value={block.binding_mode}
             onChange={e => onPatchBlock({ binding_mode: e.target.value as BindingMode })}
-            className="rounded border border-slate-300 px-2 py-1.5 text-sm"
+            className="rounded border border-gray-300 px-2 py-1.5 text-sm"
           >
             {BINDING_MODE_OPTIONS.map(m => (
               <option key={m.value} value={m.value}>{m.label}</option>
             ))}
           </select>
           {currentMode && (
-            <span className="mt-1 text-xs leading-snug text-slate-500">{currentMode.hint}</span>
+            <span className="mt-1 text-xs leading-snug text-gray-500">{currentMode.hint}</span>
           )}
         </label>
         <label className="flex items-center gap-2 pt-7 text-sm">
@@ -135,7 +135,7 @@ export function BlockAdminForm({ block, onPatchBlock, onPatchData, onRemove }: P
             onChange={e => onPatchBlock({ include_in_pdf: e.target.checked })}
           />
           <span
-            className={pdfLocked ? 'text-slate-400' : ''}
+            className={pdfLocked ? 'text-gray-400' : ''}
             title={pdfLocked ? 'Este bloque siempre se incluye en el PDF' : ''}
           >
             Incluir en PDF
@@ -149,8 +149,8 @@ export function BlockAdminForm({ block, onPatchBlock, onPatchData, onRemove }: P
         </button>
       </div>
       {canApplyDefaults && (
-        <div className="flex flex-wrap items-center gap-2 rounded border border-slate-200 bg-slate-50 px-3 py-2 text-xs">
-          <span className="text-slate-600">
+        <div className="flex flex-wrap items-center gap-2 rounded border border-gray-200 bg-gray-50 px-3 py-2 text-xs">
+          <span className="text-gray-600">
             Hay valores guardados en{' '}
             <strong className="text-ink">Bloques estáticos</strong>:
           </span>
@@ -159,13 +159,13 @@ export function BlockAdminForm({ block, onPatchBlock, onPatchData, onRemove }: P
             onClick={applyDefaults}
             disabled={applying || hasDefaults === false}
             title={hasDefaults === false ? 'Todavía no configuraste defaults para este tipo de bloque.' : undefined}
-            className="flex items-center gap-1 rounded border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 hover:border-brand-pink hover:text-brand-pink disabled:opacity-40"
+            className="flex items-center gap-1 rounded border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-gray-700 hover:border-brand-pink hover:text-brand-pink disabled:opacity-40"
           >
             {applying ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
             Aplicar valores guardados
           </button>
           {hasDefaults === false && (
-            <span className="text-slate-400">Configurarlos en Configuración → Tasaciones → Bloques estáticos.</span>
+            <span className="text-gray-400">Configurarlos en Configuración → Tasaciones → Bloques estáticos.</span>
           )}
           {applyError && <span className="text-rose-600">{applyError}</span>}
         </div>

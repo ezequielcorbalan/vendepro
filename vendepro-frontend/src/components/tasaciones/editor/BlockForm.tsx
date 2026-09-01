@@ -49,7 +49,7 @@ export function BlockForm({ block, override, onPatch, context, compact }: Props)
           case 'notary_charts': return <NotaryChartsForm {...props} compact={compact} />
           case 'zone_map': return <ZoneMapForm {...props} />
           case 'comparables_list': return <ComparablesListForm {...props} />
-          case 'price_projection': return <div className="p-3 text-xs text-slate-500">Se completa con los precios del paso &ldquo;FODA + Precios&rdquo;.</div>
+          case 'price_projection': return <div className="p-3 text-xs text-gray-500">Se completa con los precios del paso &ldquo;FODA + Precios&rdquo;.</div>
           case 'work_conditions': return <WorkConditionsForm {...props} />
           case 'video_gallery': return <VideoGalleryForm {...props} />
           case 'extra_media': return <ExtraMediaForm {...props} />
@@ -57,7 +57,7 @@ export function BlockForm({ block, override, onPatch, context, compact }: Props)
           case 'agent_contact_card': return <AgentContactCardForm {...props} />
           case 'swot':
           case 'property_data':
-            return <div className="p-3 text-xs text-slate-500">Se completa con los datos de la propiedad / FODA en el panel de arriba.</div>
+            return <div className="p-3 text-xs text-gray-500">Se completa con los datos de la propiedad / FODA en el panel de arriba.</div>
           default: return null
         }
       })()}

@@ -113,7 +113,7 @@ export function StepProperty({
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-gray-500">
         Buscá una propiedad del CRM para autocompletar los datos, o completá el formulario manualmente.
         Solo la dirección es obligatoria.
       </p>

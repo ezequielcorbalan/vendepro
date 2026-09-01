@@ -20,10 +20,10 @@ function SortableBlock({ block, isReadOnly, children }: { block: TemplateBlock; 
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: block.id, disabled: isReadOnly })
   const style = { transform: CSS.Transform.toString(transform), transition }
   return (
-    <div ref={setNodeRef} style={style} className="rounded border border-slate-200 bg-white">
+    <div ref={setNodeRef} style={style} className="rounded border border-gray-200 bg-white">
       <div className="flex items-center gap-2 px-3 py-2">
         {!isReadOnly && (
-          <button {...attributes} {...listeners} className="cursor-grab text-slate-400">
+          <button {...attributes} {...listeners} className="cursor-grab text-gray-400">
             <GripVertical className="h-4 w-4" />
           </button>
         )}
@@ -140,17 +140,17 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
     setDirty(true); setAdding(false)
   }
 
-  if (!template) return <div className="p-12 text-center text-slate-400">Cargando template...</div>
+  if (!template) return <div className="p-12 text-center text-gray-400">Cargando template...</div>
 
   const isSystem = !!template.is_system
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3">
+    <div className="min-h-screen bg-gray-50">
+      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3">
         <div className="flex items-center gap-3 min-w-0">
           <button
             onClick={() => router.push('/configuracion/tasacion')}
-            className="text-slate-500 hover:text-ink"
+            className="text-gray-500 hover:text-ink"
             aria-label="Volver a Configuración · Tasaciones"
             title="Volver a Configuración · Tasaciones"
           >
@@ -159,7 +159,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
           <h1 className="text-sm font-semibold truncate">{template.name}</h1>
         </div>
         <div className="flex items-center gap-3 text-xs">
-          {status === 'saving' && <span className="flex items-center gap-1 text-slate-500"><Loader2 className="h-3 w-3 animate-spin" /> Guardando...</span>}
+          {status === 'saving' && <span className="flex items-center gap-1 text-gray-500"><Loader2 className="h-3 w-3 animate-spin" /> Guardando...</span>}
           {status === 'saved' && !dirty && <span className="flex items-center gap-1 text-emerald-600"><CheckCircle2 className="h-3 w-3" /> Guardado</span>}
           {status === 'error' && (
             <span
@@ -169,7 +169,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
               <AlertCircle className="h-3 w-3 shrink-0" /> {errorMsg ?? 'Error al guardar'}
             </span>
           )}
-          {dirty && status !== 'saving' && status !== 'error' && <span className="text-slate-500">Cambios sin guardar</span>}
+          {dirty && status !== 'saving' && status !== 'error' && <span className="text-gray-500">Cambios sin guardar</span>}
           {!isSystem && (
             <button
               onClick={() => saveNow()}
@@ -207,10 +207,10 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2">
-        <div className="border-r border-slate-200 bg-white p-6">
+        <div className="border-r border-gray-200 bg-white p-6">
           <div className="mb-4 flex justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Bloques</h2>
-            {!isSystem && <button onClick={() => setAdding(true)} className="flex items-center gap-1 rounded border border-slate-300 px-2 py-1 text-xs"><Plus className="h-3 w-3" /> Agregar</button>}
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-600">Bloques</h2>
+            {!isSystem && <button onClick={() => setAdding(true)} className="flex items-center gap-1 rounded border border-gray-300 px-2 py-1 text-xs"><Plus className="h-3 w-3" /> Agregar</button>}
           </div>
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={blocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
@@ -247,7 +247,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-lg bg-white p-6">
             <h3 className="text-lg font-semibold">Agregar bloque</h3>
-            <p className="mt-1 text-xs text-slate-500">Elegí qué información querés sumar a la tasación.</p>
+            <p className="mt-1 text-xs text-gray-500">Elegí qué información querés sumar a la tasación.</p>
             <div className="mt-4 grid grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2">
               {APPRAISAL_BLOCK_TYPES.map(t => {
                 const meta = getBlockMeta(t)
@@ -255,15 +255,15 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
                   <button
                     key={t}
                     onClick={() => addBlock(t)}
-                    className="rounded border border-slate-300 px-3 py-2 text-left hover:border-brand-pink hover:bg-rose-50/30"
+                    className="rounded border border-gray-300 px-3 py-2 text-left hover:border-brand-pink hover:bg-rose-50/30"
                   >
                     <div className="text-sm font-medium text-ink">{meta.label}</div>
-                    <div className="mt-0.5 text-xs leading-snug text-slate-500">{meta.description}</div>
+                    <div className="mt-0.5 text-xs leading-snug text-gray-500">{meta.description}</div>
                   </button>
                 )
               })}
             </div>
-            <button onClick={() => setAdding(false)} className="mt-4 self-end rounded px-4 py-2 text-sm text-slate-600 hover:bg-slate-100">Cancelar</button>
+            <button onClick={() => setAdding(false)} className="mt-4 self-end rounded px-4 py-2 text-sm text-gray-600 hover:bg-gray-100">Cancelar</button>
           </div>
         </div>
       )}

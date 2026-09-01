@@ -58,12 +58,12 @@ export function TemplatesHome() {
     }
   }
 
-  if (templates === null) return <div className="grid grid-cols-1 gap-4 md:grid-cols-3">{Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-40 animate-pulse rounded-lg bg-slate-100" />)}</div>
+  if (templates === null) return <div className="grid grid-cols-1 gap-4 md:grid-cols-3">{Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-40 animate-pulse rounded-lg bg-gray-100" />)}</div>
 
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <p className="text-sm text-slate-500">{templates.length} templates</p>
+        <p className="text-sm text-gray-500">{templates.length} templates</p>
         <button onClick={() => setCreating(true)} className="flex items-center gap-1 rounded-control bg-primary hover:bg-primary-hover px-3 py-2 text-sm text-white">
           <Plus className="h-4 w-4" /> Crear template
         </button>
@@ -81,23 +81,23 @@ export function TemplatesHome() {
               ? (isOwn ? 'Mío' : 'Agente')
               : 'Organización'
           const badgeColor = t.is_system
-            ? 'bg-slate-100 text-slate-600'
+            ? 'bg-gray-100 text-gray-600'
             : t.agent_id
               ? (isOwn ? 'bg-pink-100 text-pink-800' : 'bg-purple-100 text-purple-800')
               : 'bg-blue-100 text-blue-800'
 
           return (
-            <article key={t.id} className={`rounded-lg border bg-white p-4 ${isOwn ? 'border-pink-200' : 'border-slate-200'}`}>
+            <article key={t.id} className={`rounded-lg border bg-white p-4 ${isOwn ? 'border-pink-200' : 'border-gray-200'}`}>
               {t.preview_image_url && <img src={t.preview_image_url} alt="" className="mb-3 aspect-video w-full rounded object-cover" />}
               <div className="flex items-center gap-2">
                 <h3 className="font-semibold truncate">{t.name}</h3>
                 <span className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full font-medium ${badgeColor}`}>{ownerBadge}</span>
               </div>
-              <p className="mt-1 text-xs text-slate-500">{t.kind} · {(t.blocks ?? []).length} bloques</p>
+              <p className="mt-1 text-xs text-gray-500">{t.kind} · {(t.blocks ?? []).length} bloques</p>
               <div className="mt-4 flex gap-2">
-                {canEdit && <button onClick={() => router.push(`/configuracion/tasacion/templates/${t.id}`)} className="flex items-center gap-1 rounded border border-slate-300 px-3 py-1 text-xs hover:bg-slate-50"><Edit className="h-3 w-3" /> Editar</button>}
-                <button onClick={() => handleDuplicate(t.id, t.name)} className="flex items-center gap-1 rounded border border-slate-300 px-3 py-1 text-xs hover:bg-slate-50"><Copy className="h-3 w-3" /> Duplicar</button>
-                {canArchive && <button onClick={() => handleArchive(t.id)} className="flex items-center gap-1 rounded border border-slate-300 px-3 py-1 text-xs hover:bg-slate-50"><Archive className="h-3 w-3" /> Archivar</button>}
+                {canEdit && <button onClick={() => router.push(`/configuracion/tasacion/templates/${t.id}`)} className="flex items-center gap-1 rounded border border-gray-300 px-3 py-1 text-xs hover:bg-gray-50"><Edit className="h-3 w-3" /> Editar</button>}
+                <button onClick={() => handleDuplicate(t.id, t.name)} className="flex items-center gap-1 rounded border border-gray-300 px-3 py-1 text-xs hover:bg-gray-50"><Copy className="h-3 w-3" /> Duplicar</button>
+                {canArchive && <button onClick={() => handleArchive(t.id)} className="flex items-center gap-1 rounded border border-gray-300 px-3 py-1 text-xs hover:bg-gray-50"><Archive className="h-3 w-3" /> Archivar</button>}
               </div>
             </article>
           )

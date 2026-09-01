@@ -101,21 +101,21 @@ export function SoldPropertiesPickerModal({ open, onClose, onPick }: Props) {
       >
 
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+        <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
           <div className="flex items-center gap-2">
             <Database className="h-5 w-5 text-gray-600" />
             <h2 className="text-lg font-semibold text-ink">Elegir desde Cierres Reales</h2>
           </div>
-          <button onClick={onClose} className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+          <button onClick={onClose} className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700">
             <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Filtros */}
-        <div className="border-b border-slate-100 bg-slate-50 px-6 py-3">
+        <div className="border-b border-gray-100 bg-gray-50 px-6 py-3">
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 z-10" />
               <Input
                 placeholder="Buscar…"
                 value={search}
@@ -142,7 +142,7 @@ export function SoldPropertiesPickerModal({ open, onClose, onPick }: Props) {
               <Loader2 className="h-7 w-7 animate-spin text-brand-pink" />
             </div>
           ) : filtered.length === 0 ? (
-            <div className="rounded-card border border-dashed border-slate-200">
+            <div className="rounded-card border border-dashed border-gray-200">
               <EmptyState
                 icon={<Database className="w-6 h-6" />}
                 title={items.length === 0
@@ -158,18 +158,18 @@ export function SoldPropertiesPickerModal({ open, onClose, onPick }: Props) {
                   <button
                     type="button"
                     onClick={() => { onPick(mapSoldPropertyToComparable(sp)); onClose() }}
-                    className="group flex w-full items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 text-left transition hover:border-brand-pink/60 hover:bg-rose-50/30"
+                    className="group flex w-full items-start gap-3 rounded-control border border-gray-200 bg-white p-3 text-left transition-colors hover:border-primary/60 hover:bg-primary/5"
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="truncate text-sm font-semibold text-ink">
                           {sp.address_approx || sp.neighborhood || sp.property_type}
                         </span>
-                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-600">
+                        <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] uppercase tracking-wide text-gray-600">
                           {sp.property_type}
                         </span>
                       </div>
-                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500">
+                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-500">
                         {sp.neighborhood && (
                           <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {sp.neighborhood}</span>
                         )}
@@ -182,7 +182,7 @@ export function SoldPropertiesPickerModal({ open, onClose, onPick }: Props) {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-slate-400">Cierre</p>
+                      <p className="text-xs text-gray-400">Cierre</p>
                       <p className="text-sm font-semibold text-ink">{formatPriceUsd(sp.closing_price_usd)}</p>
                     </div>
                   </button>

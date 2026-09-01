@@ -35,7 +35,7 @@ function ConfigTasacionInner() {
       </Link>
       <PageHeader title={isAdmin ? 'Configuración · Tasaciones' : 'Mis plantillas de tasación'} />
       {visibleTabs.length > 1 && (
-        <nav className="mt-6 border-b border-slate-200">
+        <nav className="mt-6 border-b border-gray-200">
           {visibleTabs.map(t => (
             <button
               key={t.key}
@@ -43,7 +43,7 @@ function ConfigTasacionInner() {
               className={`border-b-2 px-4 py-2 text-sm ${
                 active === t.key
                   ? 'border-primary text-primary'
-                  : 'border-transparent text-slate-500 hover:text-slate-700'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
               {t.label}

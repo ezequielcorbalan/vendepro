@@ -355,10 +355,11 @@ Están acá para que no se pierdan:
 ## Enforcement existente
 El ratchet de color (`scripts/ds-color-lint.mjs` + `scripts/.ds-color-baseline`)
 ya evita que SUBA el uso de colores Tailwind sueltos, los medallones de
-gradiente a mano (regla 14) ni los íconos escritos como carácter (regla 20). Mismo espíritu: cuando una pantalla se corrige acá,
+gradiente a mano (regla 14), los íconos escritos como carácter (regla 20) ni la
+escala `slate` (regla 21). Mismo espíritu: cuando una pantalla se corrige acá,
 el baseline baja y queda trabado el retroceso.
 
-Las reglas 12 a 20 salieron del repaso visual del 31/08/2026: cada una es una
+Las reglas 12 a 21 salieron del repaso visual del 31/08/2026: cada una es una
 corrección que se pidió sobre pantalla y que, en vez de quedar en la pantalla
 donde se pidió, se movió al componente que la impone. La 12 es la que enseñó por
 qué: el header de contacto se había arreglado inline, así que el de lead siguió

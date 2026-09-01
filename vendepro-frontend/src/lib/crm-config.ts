@@ -300,6 +300,18 @@ export const PROPERTY_ALT_STATUSES: Record<string, { label: string; color: strin
   alquilada: { label: 'Alquilada', color: 'bg-cyan-100 text-cyan-800' },
 }
 
+// Etapas viejas que siguen viniendo de la base. Vivía como mapa local en
+// app/(dashboard)/propiedades/[id], así que cualquier otra pantalla que mostrara
+// una etapa legacy caía al fallback gris.
+const LEGACY_STAGE_ALIASES: Record<string, PropertyStage> = {
+  captacion: 'captada',
+  con_ofertas: 'reservada',
+}
+
+export function resolvePropertyStage(slug: string): PropertyStage {
+  return (LEGACY_STAGE_ALIASES[slug] ?? slug) as PropertyStage
+}
+
 export const ACTIVITY_TYPES = {
   llamada:           { label: 'Llamada',              icon: 'Phone',           color: 'text-blue-600 bg-blue-50' },
   whatsapp:          { label: 'WhatsApp',             icon: 'MessageCircle',   color: 'text-green-600 bg-green-50' },

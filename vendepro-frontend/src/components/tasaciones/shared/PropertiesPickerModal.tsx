@@ -5,6 +5,7 @@ import { apiFetch } from '@/lib/api'
 import type { ComparableData } from './ComparableCard'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Input, Select } from '@/components/ui/Input'
+import { PropertyStageBadge } from '@/components/ui/PropertyStageBadge'
 
 interface PropertyLite {
   id: string
@@ -63,18 +64,6 @@ function formatDate(d: string | null | undefined): string {
   try { return new Date(d).toLocaleDateString('es-AR') } catch { return d }
 }
 
-const STAGE_LABELS: Record<string, { label: string; cls: string }> = {
-  propuesta: { label: 'Propuesta', cls: 'bg-gray-100 text-gray-600' },
-  captada: { label: 'Captada', cls: 'bg-green-100 text-green-800' },
-  captacion: { label: 'Captación', cls: 'bg-green-100 text-green-800' },
-  publicada: { label: 'Publicada', cls: 'bg-blue-100 text-blue-800' },
-  reservada: { label: 'Reservada', cls: 'bg-amber-100 text-amber-800' },
-  vendida: { label: 'Vendida', cls: 'bg-emerald-100 text-emerald-800' },
-  alquilada: { label: 'Alquilada', cls: 'bg-purple-100 text-purple-800' },
-  perdida: { label: 'Perdida', cls: 'bg-red-100 text-red-800' },
-  invalida: { label: 'Inválida', cls: 'bg-gray-100 text-gray-500' },
-}
-
 export function PropertiesPickerModal({ open, onClose, onPick }: Props) {
   const [items, setItems] = useState<PropertyLite[]>([])
   const [loading, setLoading] = useState(false)
@@ -129,21 +118,21 @@ export function PropertiesPickerModal({ open, onClose, onPick }: Props) {
       >
 
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+        <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
           <div className="flex items-center gap-2">
             <Building2 className="h-5 w-5 text-gray-600" />
             <h2 className="text-lg font-semibold text-ink">Elegir desde una propiedad cargada</h2>
           </div>
-          <button onClick={onClose} className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+          <button onClick={onClose} className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700">
             <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Filtros */}
-        <div className="border-b border-slate-100 bg-slate-50 px-6 py-3">
+        <div className="border-b border-gray-100 bg-gray-50 px-6 py-3">
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 z-10" />
               <Input
                 placeholder="Buscar dirección, barrio, dueño…"
                 value={search}
@@ -161,7 +150,7 @@ export function PropertiesPickerModal({ open, onClose, onPick }: Props) {
               <option value="perdida">Perdidas</option>
             </Select>
           </div>
-          <p className="mt-2 text-[11px] text-slate-500">
+          <p className="mt-2 text-[11px] text-gray-500">
             Las propiedades en estado <strong>vendida</strong> se agregan como cierre real;
             el resto como publicación.
           </p>
@@ -174,7 +163,7 @@ export function PropertiesPickerModal({ open, onClose, onPick }: Props) {
               <Loader2 className="h-7 w-7 animate-spin text-brand-pink" />
             </div>
           ) : filtered.length === 0 ? (
-            <div className="rounded-card border border-dashed border-slate-200">
+            <div className="rounded-card border border-dashed border-gray-200">
               <EmptyState
                 icon={<Building2 className="w-6 h-6" />}
                 title={items.length === 0
@@ -185,25 +174,23 @@ export function PropertiesPickerModal({ open, onClose, onPick }: Props) {
           ) : (
             <ul className="space-y-2">
               {filtered.map(p => {
-                const stageInfo = STAGE_LABELS[(p.commercial_stage ?? '').toLowerCase()] ?? null
+                const stage = (p.commercial_stage ?? '').toLowerCase()
                 const isVendida = (p.commercial_stage ?? '').toLowerCase() === 'vendida'
                 return (
                   <li key={p.id}>
                     <button
                       type="button"
                       onClick={() => { onPick(mapPropertyToComparable(p)); onClose() }}
-                      className="group flex w-full items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 text-left transition hover:border-brand-pink/60 hover:bg-rose-50/30"
+                      className="group flex w-full items-start gap-3 rounded-control border border-gray-200 bg-white p-3 text-left transition-colors hover:border-primary/60 hover:bg-primary/5"
                     >
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="truncate text-sm font-semibold text-ink">{p.address}</span>
-                          {stageInfo && (
-                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium whitespace-nowrap ${stageInfo.cls}`}>
-                              {stageInfo.label}
-                            </span>
+                          {stage && (
+                            <PropertyStageBadge stage={stage} className="text-[10px] px-2 py-0.5 whitespace-nowrap" />
                           )}
                         </div>
-                        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500">
+                        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-500">
                           {p.neighborhood && (
                             <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {p.neighborhood}</span>
                           )}
@@ -215,7 +202,7 @@ export function PropertiesPickerModal({ open, onClose, onPick }: Props) {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs text-slate-400">{isVendida ? 'Cierre' : 'Listado'}</p>
+                        <p className="text-xs text-gray-400">{isVendida ? 'Cierre' : 'Listado'}</p>
                         <p className="text-sm font-semibold text-ink">{formatPriceUsd(p.asking_price)}</p>
                       </div>
                     </button>

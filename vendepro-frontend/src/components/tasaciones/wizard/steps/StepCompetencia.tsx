@@ -46,7 +46,7 @@ export function StepCompetencia({
     <div className="space-y-6">
       <header>
         <h3 className="text-lg font-semibold text-ink">Comparables</h3>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-gray-500">
           Sumá hasta 5–6 referencias de la zona. Podés mezclar publicaciones (mercado activo
           de ZonaProp) y cierres reales (ventas efectivas, autorrellenadas desde tu base o
           desde una propiedad ya cargada).

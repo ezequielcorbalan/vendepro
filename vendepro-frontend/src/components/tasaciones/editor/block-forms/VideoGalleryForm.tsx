@@ -46,25 +46,25 @@ export function VideoGalleryForm({ data, onPatch }: Props) {
   return (
     <div className="space-y-3 p-3">
       <label className="flex flex-col gap-1">
-        <span className="text-xs uppercase tracking-wide text-slate-600">Título</span>
+        <span className="text-xs uppercase tracking-wide text-gray-600">Título</span>
         <input
           type="text"
           value={data.title ?? ''}
           maxLength={200}
           onChange={e => onPatch({ title: e.target.value })}
-          className="rounded border border-slate-300 px-2 py-1 text-sm"
+          className="rounded border border-gray-300 px-2 py-1 text-sm"
         />
       </label>
       <div>
         <div className="mb-1 flex items-center justify-between">
-          <span className="text-xs uppercase tracking-wide text-slate-600">Videos</span>
+          <span className="text-xs uppercase tracking-wide text-gray-600">Videos</span>
           <button onClick={add} disabled={videos.length >= MAX_ITEMS} className="text-xs text-brand-pink disabled:opacity-40">+ Agregar</button>
         </div>
         <div className="space-y-2">
           {videos.map((vid, i) => (
-            <div key={i} className="space-y-1 rounded border border-slate-200 p-2">
+            <div key={i} className="space-y-1 rounded border border-gray-200 p-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-400">Video {i + 1} · {vid.provider}</span>
+                <span className="text-xs text-gray-400">Video {i + 1} · {vid.provider}</span>
                 <button onClick={() => remove(i)} className="text-xs text-rose-500">Eliminar</button>
               </div>
               <input
@@ -72,14 +72,14 @@ export function VideoGalleryForm({ data, onPatch }: Props) {
                 placeholder="URL de YouTube, Vimeo o archivo .mp4"
                 value={vid.url}
                 onChange={e => patchItem(i, { url: e.target.value })}
-                className="w-full rounded border border-slate-300 px-2 py-1 text-xs"
+                className="w-full rounded border border-gray-300 px-2 py-1 text-xs"
               />
               <input
                 placeholder="Pie de video (opcional)"
                 value={vid.caption ?? ''}
                 maxLength={200}
                 onChange={e => patchItem(i, { caption: e.target.value })}
-                className="w-full rounded border border-slate-300 px-2 py-1 text-xs"
+                className="w-full rounded border border-gray-300 px-2 py-1 text-xs"
               />
             </div>
           ))}

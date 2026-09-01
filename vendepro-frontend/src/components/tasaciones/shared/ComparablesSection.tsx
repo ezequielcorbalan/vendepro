@@ -71,7 +71,7 @@ export function ComparablesSection<Key extends string | number>({
   return (
     <div className="space-y-5">
       {!hideHint && (hint ?? (
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-gray-500">
           Sumá comparables similares de la zona. Pueden ser <strong>publicaciones</strong>{' '}
           (mercado activo) o <strong>cierres reales</strong> (ventas efectivas) — los datos
           de cierres podés autorrellenarlos desde tu base.
@@ -104,7 +104,7 @@ export function ComparablesSection<Key extends string | number>({
         <button
           type="button"
           onClick={() => onAdd(emptyVenta())}
-          className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+          className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-600 hover:bg-gray-50"
           title="Cargar un cierre real a mano (sin tomarlo de tu base)"
         >
           <Plus className="h-4 w-4" /> Cierre manual
@@ -113,7 +113,7 @@ export function ComparablesSection<Key extends string | number>({
 
       {/* Lista */}
       {items.length === 0 ? (
-        <div className="rounded-card border border-dashed border-slate-300">
+        <div className="rounded-card border border-dashed border-gray-300">
           <EmptyState icon={<Building2 className="w-6 h-6" />} title="Todavía no agregaste comparables." />
         </div>
       ) : (

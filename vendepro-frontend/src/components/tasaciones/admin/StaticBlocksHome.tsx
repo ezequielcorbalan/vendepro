@@ -109,7 +109,7 @@ export function StaticBlocksHome() {
     return (
       <div className="space-y-3">
         {STATIC_BLOCK_TYPES.map((_, i) => (
-          <div key={i} className="h-16 animate-pulse rounded-lg bg-slate-100" />
+          <div key={i} className="h-16 animate-pulse rounded-lg bg-gray-100" />
         ))}
       </div>
     )
@@ -172,18 +172,18 @@ function StaticBlockRow({ type, row, isOpen, onToggle, onPatch, onSave }: RowPro
   }), [type, row.data])
 
   return (
-    <section className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+    <section className="overflow-hidden rounded-lg border border-gray-200 bg-white">
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-slate-50"
+        className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-gray-50"
       >
         {isOpen
-          ? <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" />
-          : <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" />}
+          ? <ChevronDown className="h-4 w-4 shrink-0 text-gray-400" />
+          : <ChevronRight className="h-4 w-4 shrink-0 text-gray-400" />}
         <div className="flex-1 min-w-0">
           <div className="text-sm font-medium text-ink">{meta.label}</div>
-          <div className="truncate text-xs text-slate-500">{meta.description}</div>
+          <div className="truncate text-xs text-gray-500">{meta.description}</div>
         </div>
         <div className="flex items-center gap-2 text-xs">
           {row.dirty && <span className="text-amber-600">Sin guardar</span>}
@@ -193,19 +193,19 @@ function StaticBlockRow({ type, row, isOpen, onToggle, onPatch, onSave }: RowPro
             </span>
           )}
           {!row.id && !row.dirty && !row.saved && (
-            <span className="text-slate-400">Sin configurar</span>
+            <span className="text-gray-400">Sin configurar</span>
           )}
         </div>
       </button>
       {isOpen && (
-        <div className="border-t border-slate-100 p-4">
+        <div className="border-t border-gray-100 p-4">
           <BlockForm
             block={fakeBlock}
             override={{}}
             onPatch={onPatch}
             context="template"
           />
-          <div className="mt-4 flex items-center justify-end gap-3 border-t border-slate-100 pt-3">
+          <div className="mt-4 flex items-center justify-end gap-3 border-t border-gray-100 pt-3">
             {row.error && (
               <span className="flex items-center gap-1 text-xs text-rose-600">
                 <AlertCircle className="h-3 w-3" /> {row.error}

@@ -30,23 +30,23 @@ export function ProposalCommercialForm({ data, onPatch }: Props) {
   return (
     <div className="space-y-3 p-3">
       <label className="flex flex-col gap-1">
-        <span className="text-xs uppercase tracking-wide text-slate-600">Título</span>
-        <input type="text" value={data.title ?? ''} onChange={e => onPatch({ title: e.target.value })} className="rounded border border-slate-300 px-2 py-1 text-sm" />
+        <span className="text-xs uppercase tracking-wide text-gray-600">Título</span>
+        <input type="text" value={data.title ?? ''} onChange={e => onPatch({ title: e.target.value })} className="rounded border border-gray-300 px-2 py-1 text-sm" />
       </label>
       <label className="flex flex-col gap-1">
-        <span className="text-xs uppercase tracking-wide text-slate-600">Subtítulo</span>
-        <input type="text" value={data.subtitle ?? ''} onChange={e => onPatch({ subtitle: e.target.value })} className="rounded border border-slate-300 px-2 py-1 text-sm" />
+        <span className="text-xs uppercase tracking-wide text-gray-600">Subtítulo</span>
+        <input type="text" value={data.subtitle ?? ''} onChange={e => onPatch({ subtitle: e.target.value })} className="rounded border border-gray-300 px-2 py-1 text-sm" />
       </label>
       <div>
         <div className="mb-1 flex items-center justify-between">
-          <span className="text-xs uppercase tracking-wide text-slate-600">Puntos destacados</span>
+          <span className="text-xs uppercase tracking-wide text-gray-600">Puntos destacados</span>
           <button onClick={addItem} disabled={items.length >= MAX_ITEMS} className="text-xs text-brand-pink disabled:opacity-40">+ Agregar</button>
         </div>
         <ul className="space-y-3">
           {items.map((item, i) => (
-            <li key={i} className="rounded border border-slate-200 p-2">
+            <li key={i} className="rounded border border-gray-200 p-2">
               <div className="mb-1 flex items-center justify-between">
-                <span className="text-[10px] uppercase tracking-wide text-slate-500">Punto {i + 1}</span>
+                <span className="text-[10px] uppercase tracking-wide text-gray-500">Punto {i + 1}</span>
                 <button onClick={() => removeItem(i)} aria-label="Quitar" className="text-gray-400 hover:text-danger"><X className="w-3.5 h-3.5" /></button>
               </div>
               <input
@@ -54,7 +54,7 @@ export function ProposalCommercialForm({ data, onPatch }: Props) {
                 onChange={e => patchItem(i, { title: e.target.value })}
                 placeholder="Título del punto"
                 maxLength={120}
-                className="mb-1 w-full rounded border border-slate-300 px-2 py-1 text-sm font-medium"
+                className="mb-1 w-full rounded border border-gray-300 px-2 py-1 text-sm font-medium"
               />
               <textarea
                 value={item.body}
@@ -62,7 +62,7 @@ export function ProposalCommercialForm({ data, onPatch }: Props) {
                 placeholder="Descripción"
                 rows={2}
                 maxLength={600}
-                className="w-full rounded border border-slate-300 px-2 py-1 text-sm"
+                className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
               />
             </li>
           ))}
@@ -70,7 +70,7 @@ export function ProposalCommercialForm({ data, onPatch }: Props) {
       </div>
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" checked={data.show_agent_signature ?? true} onChange={e => onPatch({ show_agent_signature: e.target.checked })} />
-        <span className="text-xs text-slate-600">Mostrar firma del agente</span>
+        <span className="text-xs text-gray-600">Mostrar firma del agente</span>
       </label>
     </div>
   )

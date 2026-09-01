@@ -21,19 +21,8 @@ import AuthorizationWidget from '@/components/properties/AuthorizationWidget'
 import PriceHistoryWidget from '@/components/properties/PriceHistoryWidget'
 import DocChecklistWidget from '@/components/properties/DocChecklistWidget'
 import ReportsListWidget from '@/components/properties/ReportsListWidget'
-import { PROPERTY_STAGES, getPropertySource, type PropertyStage } from '@/lib/crm-config'
-
-// Sólo "captacion" y "con_ofertas" son slugs legacy que ya no existen como
-// clave en PROPERTY_STAGES (se renombraron a "captada"/"reservada"); el resto
-// de las claves de esta pantalla ya son canónicas. Label y color salen de
-// PROPERTY_STAGES (crm-config), no se duplican acá.
-const LEGACY_STAGE_ALIASES: Record<string, PropertyStage> = {
-  captacion: 'captada',
-  con_ofertas: 'reservada',
-}
-function resolveStage(slug: string): PropertyStage {
-  return (LEGACY_STAGE_ALIASES[slug] ?? slug) as PropertyStage
-}
+import { getPropertySource } from '@/lib/crm-config'
+import { PropertyStageBadge } from '@/components/ui/PropertyStageBadge'
 
 export default function PropiedadDetailPage() {
   const params = useParams()
@@ -114,11 +103,7 @@ export default function PropiedadDetailPage() {
         title={property.address}
         badges={
           <>
-            <StatusBadge
-              label={PROPERTY_STAGES[resolveStage(stage)]?.label ?? stage}
-              color={PROPERTY_STAGES[resolveStage(stage)]?.color}
-              className="whitespace-nowrap"
-            />
+            <PropertyStageBadge stage={stage} className="whitespace-nowrap" />
             {(() => {
               const src = getPropertySource((property as any).source)
               return src && <StatusBadge label={src.label} color={src.color} className="whitespace-nowrap" />
