@@ -173,7 +173,7 @@ export type Block<T extends BlockType = BlockType> = {
   binding?: 'agent_profile'
 }
 
-export type LandingKind = 'lead_capture' | 'property'
+export type LandingKind = 'lead_capture' | 'property' | 'agent_profile'
 export type LandingStatus = 'draft' | 'pending_review' | 'published' | 'archived'
 
 export interface LeadRules {

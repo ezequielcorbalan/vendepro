@@ -1,4 +1,3 @@
-'use client'
 import { Heading, Text } from '@/components/ui/Typography'
 import { WhatsAppButton } from '@/components/ui/ContactButtons'
 import { Button } from '@/components/ui/Button'

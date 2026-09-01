@@ -23,7 +23,6 @@ import {
   D1OrgVariableRepository,
   D1EmailSuppressionRepository,
   D1PortalFeedRepository,
-  D1AgentProfileRepository,
   HmacUnsubscribeTokenSigner,
   fireMarketingEvent,
   fireWebhookEvent,
