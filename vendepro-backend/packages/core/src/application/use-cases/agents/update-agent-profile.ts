@@ -20,7 +20,7 @@ function assertValidYearsExperience(value: number | null | undefined): void {
   if (value === undefined || value === null) return
   if (!Number.isInteger(value) || value < MIN_YEARS_EXPERIENCE || value > MAX_YEARS_EXPERIENCE) {
     throw new ValidationError(
-      `años de experiencia inválido: debe ser un entero entre ${MIN_YEARS_EXPERIENCE} y ${MAX_YEARS_EXPERIENCE}`,
+      `Años de experiencia inválido: debe ser un entero entre ${MIN_YEARS_EXPERIENCE} y ${MAX_YEARS_EXPERIENCE}`,
     )
   }
 }

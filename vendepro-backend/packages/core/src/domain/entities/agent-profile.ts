@@ -143,7 +143,13 @@ export class AgentProfile {
 
   update(patch: AgentProfilePatch): AgentProfile {
     if (patch.slug !== undefined) AgentSlug.create(patch.slug)
-    return new AgentProfile({ ...this.props, ...patch, updated_at: new Date().toISOString() })
+    // Defensa en profundidad: una key presente con valor `undefined` (ej. `{ slug: undefined }`,
+    // típico de un objeto armado con `campo: body.campo` sin fallback) no debe pisar el valor
+    // persistido — para eso todos los campos limpiables de este patch son nullable (usar `null`).
+    const cleanPatch = Object.fromEntries(
+      Object.entries(patch).filter(([, value]) => value !== undefined),
+    ) as AgentProfilePatch
+    return new AgentProfile({ ...this.props, ...cleanPatch, updated_at: new Date().toISOString() })
   }
 
   toObject(): AgentProfileProps {

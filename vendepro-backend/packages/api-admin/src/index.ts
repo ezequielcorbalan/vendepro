@@ -269,7 +269,9 @@ app.put('/profile/public', async (c) => {
     userId: c.get('userId'),
     fullName: user?.full_name ?? '',
     patch: {
-      slug: body.slug,
+      // slug solo se incluye si el body lo mandó explícitamente: una key `slug: undefined`
+      // pisaría el slug persistido al hacer spread en AgentProfile.update().
+      ...(body.slug !== undefined ? { slug: body.slug } : {}),
       headline: body.headline ?? null,
       bio: body.bio ?? null,
       license: body.license ?? null,
