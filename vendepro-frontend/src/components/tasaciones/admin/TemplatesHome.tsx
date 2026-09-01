@@ -1,4 +1,5 @@
 'use client'
+import { useToast } from '@/components/ui/Toast'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Copy, Archive, Edit, User } from 'lucide-react'
@@ -10,6 +11,7 @@ import { Button } from '@/components/ui/Button'
 const KINDS = ['casa', 'depto', 'terreno', 'corporativo', 'custom'] as const
 
 export function TemplatesHome() {
+  const { toast } = useToast()
   const router = useRouter()
   const user = getCurrentUser()
   const isAdmin = user?.role === 'admin'
@@ -37,7 +39,7 @@ export function TemplatesHome() {
       const { id } = await createTemplate({ name: newName, kind: newKind, blocks: [] })
       router.push(`/configuracion/tasacion/templates/${id}`)
     } catch (e: any) {
-      alert(e?.message ?? 'Error al crear template')
+      toast(e?.message ?? 'Error al crear template', 'error')
     }
   }
   const handleDuplicate = async (id: string, name: string) => {
@@ -45,7 +47,7 @@ export function TemplatesHome() {
       const { id: newId } = await duplicateTemplate(id, { new_name: `${name} (copia)` })
       router.push(`/configuracion/tasacion/templates/${newId}`)
     } catch (e: any) {
-      alert(e?.message ?? 'Error al duplicar template')
+      toast(e?.message ?? 'Error al duplicar template', 'error')
     }
   }
   const handleArchive = async (id: string) => {
@@ -54,7 +56,7 @@ export function TemplatesHome() {
       await archiveTemplate(id)
       load()
     } catch (e: any) {
-      alert(e?.message ?? 'Error al archivar template')
+      toast(e?.message ?? 'Error al archivar template', 'error')
     }
   }
 

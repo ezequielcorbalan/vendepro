@@ -1,4 +1,5 @@
 'use client'
+import { useToast } from '@/components/ui/Toast'
 import { useState } from 'react'
 import { Upload, Link as LinkIcon, Home } from 'lucide-react'
 import { apiFetch, getApiBase } from '@/lib/api'
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export default function ImageUpload({ value, onChange, allowPropertyPicker }: Props) {
+  const { toast } = useToast()
   const [mode, setMode] = useState<'upload' | 'url' | 'property'>('upload')
   const [uploading, setUploading] = useState(false)
   const [urlInput, setUrlInput] = useState(value || '')
@@ -34,7 +36,7 @@ export default function ImageUpload({ value, onChange, allowPropertyPicker }: Pr
       const url = key ? `${getApiBase('properties')}/photo/${key}` : rawUrl
       onChange(url, 'upload')
     } catch (e: any) {
-      alert('Error subiendo imagen: ' + e.message)
+      toast('Error subiendo imagen: ' + e.message, 'error')
     } finally {
       setUploading(false)
     }

@@ -1,4 +1,5 @@
 'use client'
+import { useToast } from '@/components/ui/Toast'
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
@@ -35,6 +36,7 @@ function SortableBlock({ block, isReadOnly, children }: { block: TemplateBlock; 
 }
 
 export function TemplateEditor({ templateId }: { templateId: string }) {
+  const { toast } = useToast()
   const router = useRouter()
   const [template, setTemplate] = useState<any>(null)
   const [orgBrand, setOrgBrand] = useState<{ name?: string; logo_url?: string | null; brand_color?: string | null; brand_accent_color?: string | null } | null>(null)
@@ -191,7 +193,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
                 const { id: newId } = await duplicateTemplate(templateId, { new_name: `${template.name} (copia)` })
                 router.push(`/configuracion/tasacion/templates/${newId}`)
               } catch (e: any) {
-                alert(e?.message ?? 'Error al duplicar')
+                toast(e?.message ?? 'Error al duplicar', 'error')
               }
             }}
             className="rounded bg-amber-200 px-3 py-1 text-xs font-semibold hover:bg-amber-300"
