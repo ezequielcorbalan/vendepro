@@ -640,7 +640,10 @@ export default function DesignSystemPage() {
 
         {/* Tabs + Segmented */}
         <Section title="Tabs & Segmented" hint="Navegación por secciones y cambio de vista. Interactivos.">
-          <div className="space-y-6">
+          {/* `flex flex-col` y no `space-y`: `SegmentedControl` es inline-flex, y
+              los márgenes verticales no aplican a elementos inline — los dos
+              controles terminaban en la misma línea, pegados. */}
+          <div className="flex flex-col items-start gap-6">
             <Tabs
               value={tab}
               onChange={setTab}
