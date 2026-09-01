@@ -172,6 +172,19 @@ export const DEFAULT_TAGS = {
 // leads (pill morada "Tasación").
 // Urgencia de una notificación. Estaba hardcodeada en NotificationBell con
 // red/yellow/blue sueltos; los tonos son de dominio y viven acá.
+// ── Tasaciones ───────────────────────────────────────────────────────
+// Estaba como mapa local en app/(dashboard)/tasaciones/page.tsx, así que la
+// ficha del detalle no mostraba el estado: no tenía de dónde leerlo.
+export const APPRAISAL_STATUSES = {
+  draft:     { label: 'Borrador', color: 'bg-gray-100 text-gray-700' },
+  generated: { label: 'Generada', color: 'bg-blue-100 text-blue-800' },
+  sent:      { label: 'Enviada',  color: 'bg-green-100 text-green-800' },
+} as const
+
+export function getAppraisalStatus(status?: string | null) {
+  return APPRAISAL_STATUSES[status as keyof typeof APPRAISAL_STATUSES] ?? APPRAISAL_STATUSES.draft
+}
+
 export const URGENCY_TONES = {
   high:   { icon: 'text-danger',  title: 'text-danger font-medium' },
   medium: { icon: 'text-warning', title: 'text-gray-700' },

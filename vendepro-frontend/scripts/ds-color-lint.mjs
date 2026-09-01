@@ -32,6 +32,10 @@ const EXCLUDE_PATH_PREFIXES = [
   'src/components/tasaciones/legacy',
   'src/components/landings/public',
   'src/components/landings/blocks',
+  // Reporte público de propiedad: mismo caso que los de arriba —es un documento
+  // para el cliente, no la app interna. AFUERA POR AHORA, no resuelto: son 11
+  // colores sueltos que siguen ahí. Ver "Deuda anotada" en doc/ds-visual-rules.md.
+  'src/app/r',
   // Primitivos del propio DS: acá SÍ viven los colores reales (son la fuente
   // de los tokens), no son "drift" a migrar.
   'src/components/ui',

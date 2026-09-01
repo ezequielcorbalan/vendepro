@@ -3,9 +3,14 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Building2, ExternalLink, Ruler, Eye, TrendingUp, Shield, Pencil, Loader2 } from 'lucide-react'
+import { ArrowLeft, Building2, ExternalLink, Ruler, Eye, TrendingUp, Shield, Pencil, Loader2, MapPin, Target, User } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
+import { cn } from '@/lib/utils'
 import { Card } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { StatusBadge } from '@/components/ui/StatusBadge'
+import { DetailHeader, DetailMeta } from '@/components/ui/DetailHeader'
+import { getAppraisalStatus } from '@/lib/crm-config'
 import { Heading, Text } from '@/components/ui/Typography'
 import { Alert } from '@/components/ui/Alert'
 import { Table, type Column } from '@/components/ui/Table'
@@ -14,6 +19,12 @@ import type {
   AppraisalContext, TemplateBlock, BlockOverrides,
 } from '@/components/tasaciones/renderer/types'
 import '@/components/tasaciones/renderer/print.css'
+
+// Tonos sobre la superficie oscura de "Tasación proyectada": van en -400 porque
+// los tokens del DS están calibrados para fondo claro y sobre gray-900 no
+// contrastan. Misma decisión que la superficie: único uso en la app.
+const DARK_WARN = 'text-yellow-400' // ds-todo: sin tono del DS para fondo oscuro
+const DARK_OK = 'text-green-400' // ds-todo: sin tono del DS para fondo oscuro
 
 function parseJson<T>(v: unknown): T | null {
   if (!v) return null
@@ -133,71 +144,65 @@ export default function TasacionDetailPage() {
   const snapshot = parseJson<TemplateBlock[]>(a.template_snapshot_json) ?? []
   const hasTemplate = !!a.template_id && snapshot.length > 0
 
-  // Header compartido (aplica para ambos modos).
+  // Header compartido (aplica para ambos modos). Es el molde `DetailHeader`, el
+  // mismo de contacto, lead y propiedad. Antes era un <h1> con clases sueltas,
+  // dos <Link> con estilo de botón a mano y tres chips de colores distintos
+  // (azul para el lead, rosa para la propiedad, gris para el contacto) que en
+  // realidad son todos lo mismo: un dato del encabezado.
+  const st = getAppraisalStatus(a.status)
   const header = (
     <>
-      <div className="flex items-center gap-3 mb-6">
-        <Link href="/tasaciones" className="p-2 rounded-lg hover:bg-gray-100">
-          <ArrowLeft className="w-5 h-5 text-gray-500" />
-        </Link>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-xl sm:text-2xl font-semibold text-ink truncate">{a.property_address}</h1>
-          <p className="text-gray-500 text-sm">{a.neighborhood}, {a.city}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link
-            href={`/tasaciones/${id}/editar`}
-            className="inline-flex items-center gap-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-control text-sm font-medium hover:bg-gray-50"
-          >
-            <Pencil className="w-4 h-4" /> Editar
-          </Link>
-          {a.public_slug && (
-            <a
-              href={`/t/${a.public_slug}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-control text-sm font-medium hover:bg-primary-hover"
-            >
-              <ExternalLink className="w-4 h-4" /> Ver landing
-            </a>
-          )}
-        </div>
-      </div>
+      <Link href="/tasaciones" className="inline-flex items-center gap-1.5 text-gray-500 hover:text-gray-700 text-sm font-medium mb-4">
+        <ArrowLeft className="w-4 h-4" /> Volver a Tasaciones
+      </Link>
 
-      {(linkedLead || a.contact_name) && (
-        <div className="flex flex-wrap items-center gap-3 mb-4">
-          {linkedLead && (
-            <Link href={`/leads/${linkedLead.id}`} className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-card hover:bg-blue-100 transition-colors">
-              <span className="text-xs font-medium text-blue-700">Lead origen:</span>
-              <span className="text-sm text-blue-800 font-semibold">{linkedLead.full_name}</span>
-              {linkedLead.phone && <span className="text-xs text-blue-500">{linkedLead.phone}</span>}
-            </Link>
-          )}
-          {!linkedLead && a.contact_name && (
-            <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-card">
-              <span className="text-xs font-medium text-gray-500">Contacto:</span>
-              <span className="text-sm text-ink">{a.contact_name}</span>
-              {a.contact_phone && <span className="text-xs text-gray-500">{a.contact_phone}</span>}
-            </div>
-          )}
-        </div>
-      )}
-
-      {a.linked_property && (
-        <div className="flex flex-wrap items-center gap-3 mb-4">
-          <Link
-            href={`/propiedades/${a.linked_property.id}`}
-            className="flex items-center gap-2 px-3 py-2 bg-primary/5 border border-primary/20 rounded-card hover:bg-primary/10 transition-colors"
-          >
-            <Building2 className="w-4 h-4 text-primary" />
-            <span className="text-xs font-medium text-primary">Propiedad:</span>
-            <span className="text-sm text-ink font-semibold">{a.linked_property.address}</span>
-            {a.linked_property.neighborhood && (
-              <span className="text-xs text-gray-500">{a.linked_property.neighborhood}</span>
+      <DetailHeader
+        className="mb-6"
+        title={a.property_address}
+        badges={<StatusBadge label={st.label} color={st.color} />}
+        meta={
+          <>
+            {(a.neighborhood || a.city) && (
+              <DetailMeta icon={<MapPin className="w-4 h-4" />}>
+                {[a.neighborhood, a.city].filter(Boolean).join(', ')}
+              </DetailMeta>
             )}
-          </Link>
-        </div>
-      )}
+            {linkedLead && (
+              <DetailMeta icon={<Target className="w-4 h-4" />}>
+                Lead origen{' '}
+                <Link href={`/leads/${linkedLead.id}`} className="font-medium text-ink hover:text-primary">
+                  {linkedLead.full_name}
+                </Link>
+              </DetailMeta>
+            )}
+            {!linkedLead && a.contact_name && (
+              <DetailMeta icon={<User className="w-4 h-4" />}>
+                Contacto <span className="font-medium text-ink">{a.contact_name}</span>
+              </DetailMeta>
+            )}
+            {a.linked_property && (
+              <DetailMeta icon={<Building2 className="w-4 h-4" />}>
+                Propiedad{' '}
+                <Link href={`/propiedades/${a.linked_property.id}`} className="font-medium text-ink hover:text-primary">
+                  {a.linked_property.address}
+                </Link>
+              </DetailMeta>
+            )}
+          </>
+        }
+        actions={
+          <>
+            <Button href={`/tasaciones/${id}/editar`} variant="outline" icon={<Pencil className="w-4 h-4" />}>
+              Editar
+            </Button>
+            {a.public_slug && (
+              <Button href={`/t/${a.public_slug}`} target="_blank" rel="noopener noreferrer" icon={<ExternalLink className="w-4 h-4" />}>
+                Ver landing
+              </Button>
+            )}
+          </>
+        }
+      />
     </>
   )
 
@@ -228,6 +233,10 @@ export default function TasacionDetailPage() {
       {header}
 
       <div className="space-y-4">
+        {/* ds-todo: portada de la tasación LEGACY (aspect 794/1123 = A4). No es
+            UI de la app sino un documento para el cliente, del mismo tipo que
+            tasaciones/renderer, que está excluido del ratchet a propósito. El
+            gradiente acá es superficie, no color de ícono. */}
         <div className="bg-gradient-to-br from-brand-pink via-[#ff3d94] to-brand-orange rounded-2xl p-6 sm:p-10 text-white shadow-lg aspect-[794/1123] flex flex-col justify-between relative overflow-hidden">
           <div>
             <img src="/brand/logo-horizontal.png" alt="Logo" className="h-8 sm:h-12 brightness-0 invert mb-4" />
@@ -354,7 +363,7 @@ export default function TasacionDetailPage() {
                   <p className="text-xs text-white/60">Valor de publicación prueba</p>
                   <p className="text-xs text-white/40">Primeros 30 días</p>
                 </div>
-                <p className="text-xl sm:text-2xl font-bold text-yellow-400">
+                <p className={cn('text-xl sm:text-2xl font-bold', DARK_WARN)}>
                   USD {Number(a.test_price).toLocaleString('es-AR')}
                 </p>
               </div>
@@ -378,7 +387,7 @@ export default function TasacionDetailPage() {
                   <p className="text-xs text-white/60">Precio de cierre esperado</p>
                   <p className="text-xs text-white/40">120 días</p>
                 </div>
-                <p className="text-xl sm:text-2xl font-bold text-green-400">
+                <p className={cn('text-xl sm:text-2xl font-bold', DARK_OK)}>
                   USD {Number(a.expected_close_price).toLocaleString('es-AR')}
                 </p>
               </div>

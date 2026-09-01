@@ -66,8 +66,10 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-pink/5 via-white to-brand-orange/5 px-4 relative overflow-hidden">
-      <div className="bg-white rounded-2xl shadow-xl p-5 sm:p-8 w-full max-w-md relative z-10 border border-white/50">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 relative overflow-hidden">
+      {/* Radio y sombra de token (regla 8): eran `rounded-2xl` + `shadow-xl` +
+          un borde blanco translúcido, de antes de que existieran. */}
+      <div className="bg-white rounded-card shadow-pop p-5 sm:p-8 w-full max-w-md relative z-10 border border-gray-200">
         <div className="text-center mb-6 sm:mb-8">
           <img src="/brand/logo-horizontal.png" alt="VendéPro" className="h-12 sm:h-16 mx-auto mb-3 sm:mb-4" />
           <Heading level={2}>CRM Inmobiliario</Heading>

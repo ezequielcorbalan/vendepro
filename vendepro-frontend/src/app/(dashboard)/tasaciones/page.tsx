@@ -13,15 +13,10 @@ import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Heading, Text } from '@/components/ui/Typography'
 import { StatusBadge } from '@/components/ui/StatusBadge'
+import { getAppraisalStatus } from '@/lib/crm-config'
 import { FichaLinkSection } from '@/components/fichas/FichaLinkSection'
 
 import { Button } from '@/components/ui/Button'
-const statusLabels: Record<string, { label: string; color: string }> = {
-  draft: { label: 'Borrador', color: 'bg-gray-100 text-gray-700' },
-  generated: { label: 'Generada', color: 'bg-blue-100 text-blue-800' },
-  sent: { label: 'Enviada', color: 'bg-green-100 text-green-800' },
-}
-
 export default function TasacionesPage() {
   const { toast } = useToast()
   const [appraisals, setAppraisals] = useState<any[]>([])
@@ -109,7 +104,7 @@ export default function TasacionesPage() {
       ) : (
         <div className="grid gap-3">
           {appraisals.map((a: any) => {
-            const st = statusLabels[a.status] || statusLabels.draft
+            const st = getAppraisalStatus(a.status)
             return (
               <Card key={a.id} padded={false} className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <Link href={`/tasaciones/${a.id}`} className="min-w-0 flex-1">

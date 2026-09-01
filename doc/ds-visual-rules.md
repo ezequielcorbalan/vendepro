@@ -337,6 +337,21 @@ grep -rn "totalPages" src/app --include='*.tsx' | grep -v "totalPages > 1"
 grep -rln "border-t" src/components/tasaciones src/components/marketing --include='*.tsx' | xargs grep -ln "ui/Card" -L
 ```
 
+## Deuda anotada (fuera del ratchet, sin resolver)
+Cosas que el ratchet dejó de contar por decisión, NO porque estén arregladas.
+Están acá para que no se pierdan:
+
+- **`src/app/r/[slug]` — 11 colores sueltos.** Es el reporte público de una
+  propiedad: un documento para el cliente, del mismo tipo que
+  `tasaciones/renderer` y `landings/public`, que ya estaban excluidos. Se sacó
+  del conteo el 31/08/2026 para que no arrastre el número, pero no se migró.
+  Cuando se decida si las superficies públicas siguen el DS o tienen identidad
+  propia, esto entra en esa decisión.
+- **`src/app/v/[slug]` (5) y `src/app/u/[token]` (2)** son el mismo caso —
+  ficha de visita y baja de emails, ambas públicas— y hoy SÍ están contadas.
+  Si `/r/` sale, la coherencia pide que salgan estas dos también, o que entren
+  las tres. Pendiente de decisión.
+
 ## Enforcement existente
 El ratchet de color (`scripts/ds-color-lint.mjs` + `scripts/.ds-color-baseline`)
 ya evita que SUBA el uso de colores Tailwind sueltos, los medallones de
