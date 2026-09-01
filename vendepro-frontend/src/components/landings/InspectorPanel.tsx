@@ -33,11 +33,11 @@ function Field({ label, children, bound }: { label: string; children: React.Reac
 }
 
 function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...props} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
+  return <input {...props} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed" />
 }
 
 function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea {...props} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none min-h-[60px] resize-y disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
+  return <textarea {...props} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none min-h-[60px] resize-y disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed" />
 }
 
 export default function InspectorPanel({ block, onChange, onBlockChange }: Props) {
