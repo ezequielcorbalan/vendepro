@@ -129,7 +129,7 @@ function FromTemplateBlocks({
 
   if (error) {
     return (
-      <div className="rounded-control border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+      <div className="rounded-control border border-danger/30 bg-danger/5 p-4 text-sm text-danger">
         {error}
       </div>
     )

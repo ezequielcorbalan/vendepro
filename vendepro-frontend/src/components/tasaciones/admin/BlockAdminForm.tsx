@@ -143,7 +143,7 @@ export function BlockAdminForm({ block, onPatchBlock, onPatchData, onRemove }: P
         </label>
         <button
           onClick={onRemove}
-          className="ml-auto pt-7 text-xs text-rose-500 hover:text-rose-700"
+          className="ml-auto pt-7 text-xs text-danger hover:opacity-80"
         >
           Eliminar
         </button>
@@ -167,7 +167,7 @@ export function BlockAdminForm({ block, onPatchBlock, onPatchData, onRemove }: P
           {hasDefaults === false && (
             <span className="text-gray-400">Configurarlos en Configuración → Tasaciones → Bloques estáticos.</span>
           )}
-          {applyError && <span className="text-rose-600">{applyError}</span>}
+          {applyError && <span className="text-danger">{applyError}</span>}
         </div>
       )}
       <BlockForm block={block} override={{}} onPatch={onPatchData} context="template" />

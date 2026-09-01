@@ -269,7 +269,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
                   <button
                     key={t}
                     onClick={() => addBlock(t)}
-                    className="rounded border border-gray-300 px-3 py-2 text-left hover:border-brand-pink hover:bg-rose-50/30"
+                    className="rounded-control border border-gray-300 px-3 py-2 text-left hover:border-primary hover:bg-primary/5"
                   >
                     <div className="text-sm font-medium text-ink">{meta.label}</div>
                     <div className="mt-0.5 text-xs leading-snug text-gray-500">{meta.description}</div>

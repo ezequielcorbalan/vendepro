@@ -427,7 +427,7 @@ function InsertZone({ onInsert }: { onInsert: (type: AppraisalBlockType) => void
               <button
                 key={type}
                 onClick={() => { onInsert(type); setOpen(false) }}
-                className="flex w-24 flex-col items-center gap-1 rounded-control px-2 py-2 text-[11px] text-gray-600 hover:bg-rose-50/50 hover:text-brand-pink"
+                className="flex w-24 flex-col items-center gap-1 rounded-control px-2 py-2 text-[11px] text-gray-600 hover:bg-primary/5 hover:text-primary"
               >
                 <Icon className="h-4 w-4" />
                 {getBlockMeta(type).label}

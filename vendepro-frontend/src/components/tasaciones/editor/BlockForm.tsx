@@ -34,7 +34,7 @@ export function BlockForm({ block, override, onPatch, context, compact }: Props)
   return (
     <div>
       {isLockedInAppraisal && (
-        <div className="mx-3 mt-3 rounded border border-amber-200 bg-amber-50 px-2 py-1.5 text-[11px] text-amber-800">
+        <div className="mx-3 mt-3 rounded-control border border-warning/30 bg-warning/10 px-2 py-1.5 text-[11px] text-ink">
           Este bloque viene del template. Los cambios acá solo aplican a esta tasación (no afectan al template).
         </div>
       )}

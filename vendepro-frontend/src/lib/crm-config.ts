@@ -181,6 +181,18 @@ export const APPRAISAL_STATUSES = {
   sent:      { label: 'Enviada',  color: 'bg-green-100 text-green-800' },
 } as const
 
+// Origen de un cierre real (propiedades vendidas). Estaba inline en
+// app/(dashboard)/tasaciones/vendidas con pink/blue/amber sueltos.
+export const SOLD_ORIGINS = {
+  mine:     { label: 'Mías',     color: 'bg-primary/10 text-primary' },
+  team:     { label: 'Equipo',   color: 'bg-blue-100 text-blue-800' },
+  external: { label: 'Externos', color: 'bg-gray-100 text-gray-700' },
+} as const
+
+export function getSoldOrigin(origin?: string | null) {
+  return SOLD_ORIGINS[origin as keyof typeof SOLD_ORIGINS] ?? SOLD_ORIGINS.external
+}
+
 // Alcance de un template de tasación: de quién es y quién lo puede editar.
 // El mapa estaba inline en admin/TemplatesHome con pink/purple/blue sueltos.
 export const TEMPLATE_SCOPES = {

@@ -215,7 +215,7 @@ export function StepProperty({
           hint={`Pesos: cubierta ${Math.round(weights.covered * 100)}% / semi ${Math.round(weights.semi * 100)}% / descubierta ${Math.round(weights.uncovered * 100)}%. Editalos en Configuración.`}
         >
           <div
-            className="flex h-[42px] items-center rounded-control border border-rose-200 bg-rose-50 px-3 text-sm font-semibold text-brand-pink"
+            className="flex h-[42px] items-center rounded-control border border-primary/20 bg-primary/5 px-3 text-sm font-semibold text-primary"
             title={`${Math.round(weights.covered * 100)}% cubierta + ${Math.round(weights.semi * 100)}% semi + ${Math.round(weights.uncovered * 100)}% descubierta`}
           >
             {computedWeighted !== null ? `${computedWeighted} m²` : '—'}

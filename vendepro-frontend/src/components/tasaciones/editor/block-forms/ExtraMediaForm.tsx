@@ -50,7 +50,7 @@ export function ExtraMediaForm({ data, onPatch }: Props) {
             <div key={i} className="space-y-2 rounded border border-gray-200 p-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-gray-400">Media {i + 1}</span>
-                <button onClick={() => remove(i)} className="text-xs text-rose-500">Eliminar</button>
+                <button onClick={() => remove(i)} className="text-xs text-danger hover:opacity-80">Eliminar</button>
               </div>
               <BlockSelect
                 value={item.type}

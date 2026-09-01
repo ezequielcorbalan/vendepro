@@ -29,7 +29,7 @@ export function ServicesGridForm({ data, onPatch }: Props) {
             <div key={i} className="rounded border border-gray-200 p-2 space-y-1">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-gray-400">Servicio {i + 1}</span>
-                <button onClick={() => remove(i)} className="text-xs text-rose-500">Eliminar</button>
+                <button onClick={() => remove(i)} className="text-xs text-danger hover:opacity-80">Eliminar</button>
               </div>
               <BlockInput placeholder="Icono (emoji o nombre)" value={svc.icon ?? ''} onChange={e => setField(i, 'icon', e.target.value)} />
               <BlockInput placeholder="Nombre del servicio" value={svc.label} onChange={e => setField(i, 'label', e.target.value)} />

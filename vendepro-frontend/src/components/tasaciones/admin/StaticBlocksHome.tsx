@@ -188,9 +188,9 @@ function StaticBlockRow({ type, row, isOpen, onToggle, onPatch, onSave }: RowPro
           <div className="truncate text-xs text-gray-500">{meta.description}</div>
         </div>
         <div className="flex items-center gap-2 text-xs">
-          {row.dirty && <span className="text-amber-600">Sin guardar</span>}
+          {row.dirty && <span className="text-warning">Sin guardar</span>}
           {row.saved && !row.dirty && (
-            <span className="flex items-center gap-1 text-emerald-600">
+            <span className="flex items-center gap-1 text-success">
               <CheckCircle2 className="h-3 w-3" /> Guardado
             </span>
           )}

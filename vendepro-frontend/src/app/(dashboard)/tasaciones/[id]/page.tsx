@@ -71,7 +71,7 @@ const comparableColumns: Column<any>[] = [
       <div className="min-w-0">
         <p className="font-medium text-ink truncate max-w-[150px] sm:max-w-none">{c.address || 'Sin dirección'}</p>
         {c.zonaprop_url && (
-          <a href={c.zonaprop_url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-indigo-500 hover:underline">
+          <a href={c.zonaprop_url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-info hover:underline">
             Ver aviso →
           </a>
         )}
@@ -285,7 +285,7 @@ export default function TasacionDetailPage() {
           {(a.strengths || a.weaknesses || a.opportunities || a.threats) && (
             <div>
               <Heading level={4} className="text-sm text-gray-700 mb-3 flex items-center gap-2">
-                <Shield className="w-4 h-4 text-indigo-500" />
+                <Shield className="w-4 h-4 text-info" />
                 Análisis FODA
               </Heading>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -323,7 +323,7 @@ export default function TasacionDetailPage() {
         {comparables.length > 0 && (
           <Card className="p-5 sm:p-8">
             <Heading level={3} className="text-lg sm:text-xl mb-4 flex items-center gap-2">
-              <Eye className="w-5 h-5 text-indigo-500" />
+              <Eye className="w-5 h-5 text-info" />
               Departamentos publicados en la zona
             </Heading>
 
