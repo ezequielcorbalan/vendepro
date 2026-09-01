@@ -27,6 +27,9 @@ export * from './use-cases/contacts/delete-contact'
 export * from './use-cases/contacts/get-contact-detail'
 export * from './use-cases/contacts/create-tag'
 
+// Mensajes predeterminados de WhatsApp
+export * from './use-cases/whatsapp-templates/index'
+
 // Properties
 export * from './use-cases/properties/get-properties'
 export * from './use-cases/properties/create-property'

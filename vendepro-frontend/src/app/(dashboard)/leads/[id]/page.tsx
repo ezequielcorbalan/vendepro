@@ -474,7 +474,11 @@ export default function LeadDetailPage() {
             {/* Action buttons */}
             <div className="flex gap-2 flex-wrap">
               <CallButton phone={lead.phone} onClick={() => handleQuickActivity('llamada')} />
-              <WhatsAppButton phone={lead.phone} onClick={() => handleQuickActivity('whatsapp')} />
+              <WhatsAppButton
+                phone={lead.phone}
+                templateContext={{ name: lead.full_name, address: lead.property_address || lead.neighborhood }}
+                onClick={() => handleQuickActivity('whatsapp')}
+              />
               <Link
                 href={`/calendario?lead_id=${leadId}`}
                 className="inline-flex items-center gap-2 border border-gray-300 text-gray-700 px-4 py-2 rounded-control text-sm font-medium hover:bg-gray-50 transition-colors"
