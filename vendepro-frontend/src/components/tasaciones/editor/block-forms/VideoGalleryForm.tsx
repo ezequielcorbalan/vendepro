@@ -1,4 +1,5 @@
 'use client'
+import { BlockField, BlockInput } from './BlockField'
 
 interface Props { data: any; onPatch: (p: Record<string, unknown>) => void }
 type Provider = 'youtube' | 'vimeo' | 'r2'
@@ -45,16 +46,14 @@ export function VideoGalleryForm({ data, onPatch }: Props) {
 
   return (
     <div className="space-y-3 p-3">
-      <label className="flex flex-col gap-1">
-        <span className="text-xs uppercase tracking-wide text-gray-600">Título</span>
-        <input
+      <BlockField label="Título">
+        <BlockInput
           type="text"
           value={data.title ?? ''}
           maxLength={200}
           onChange={e => onPatch({ title: e.target.value })}
-          className="rounded border border-gray-300 px-2 py-1 text-sm"
         />
-      </label>
+      </BlockField>
       <div>
         <div className="mb-1 flex items-center justify-between">
           <span className="text-xs uppercase tracking-wide text-gray-600">Videos</span>
@@ -67,19 +66,17 @@ export function VideoGalleryForm({ data, onPatch }: Props) {
                 <span className="text-xs text-gray-400">Video {i + 1} · {vid.provider}</span>
                 <button onClick={() => remove(i)} className="text-xs text-rose-500">Eliminar</button>
               </div>
-              <input
+              <BlockInput
                 type="url"
                 placeholder="URL de YouTube, Vimeo o archivo .mp4"
                 value={vid.url}
                 onChange={e => patchItem(i, { url: e.target.value })}
-                className="w-full rounded border border-gray-300 px-2 py-1 text-xs"
               />
-              <input
+              <BlockInput
                 placeholder="Pie de video (opcional)"
                 value={vid.caption ?? ''}
                 maxLength={200}
                 onChange={e => patchItem(i, { caption: e.target.value })}
-                className="w-full rounded border border-gray-300 px-2 py-1 text-xs"
               />
             </div>
           ))}

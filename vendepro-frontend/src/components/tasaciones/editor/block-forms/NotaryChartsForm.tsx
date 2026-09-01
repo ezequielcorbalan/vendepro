@@ -1,4 +1,5 @@
 'use client'
+import { BlockField, BlockInput } from './BlockField'
 import ImageUpload from '@/components/landings/ImageUpload'
 
 interface Props { data: any; onPatch: (p: Record<string, unknown>) => void; compact?: boolean }
@@ -12,30 +13,26 @@ interface Props { data: any; onPatch: (p: Record<string, unknown>) => void; comp
 export function NotaryChartsForm({ data, onPatch, compact }: Props) {
   return (
     <div className="space-y-4 p-3">
-      <label className="flex flex-col gap-1">
-        <span className="text-xs uppercase tracking-wide text-gray-600">Título</span>
-        <input
+      <BlockField label="Título">
+        <BlockInput
           type="text"
           value={data.title ?? ''}
           maxLength={200}
           onChange={e => onPatch({ title: e.target.value })}
-          className="rounded border border-gray-300 px-2 py-1 text-sm"
         />
-      </label>
+      </BlockField>
 
       <div className={`grid grid-cols-1 gap-4 ${compact ? '' : 'md:grid-cols-2'}`}>
         <div className="space-y-2 rounded border border-gray-200 bg-gray-50/40 p-3">
-          <label className="flex flex-col gap-1">
-            <span className="text-xs uppercase tracking-wide text-gray-600">Nombre del gráfico 1</span>
-            <input
+          <BlockField label="Nombre del gráfico 1">
+            <BlockInput
               type="text"
               value={data.chart_1_label ?? ''}
               maxLength={120}
               placeholder="Ej: Ventas mensuales"
               onChange={e => onPatch({ chart_1_label: e.target.value })}
-              className="rounded border border-gray-300 px-2 py-1 text-sm"
             />
-          </label>
+          </BlockField>
           <div>
             <span className="text-xs uppercase tracking-wide text-gray-600">Imagen del gráfico 1</span>
             <div className="mt-1">
@@ -48,17 +45,15 @@ export function NotaryChartsForm({ data, onPatch, compact }: Props) {
         </div>
 
         <div className="space-y-2 rounded border border-gray-200 bg-gray-50/40 p-3">
-          <label className="flex flex-col gap-1">
-            <span className="text-xs uppercase tracking-wide text-gray-600">Nombre del gráfico 2</span>
-            <input
+          <BlockField label="Nombre del gráfico 2">
+            <BlockInput
               type="text"
               value={data.chart_2_label ?? ''}
               maxLength={120}
               placeholder="Ej: Cierres por semestre"
               onChange={e => onPatch({ chart_2_label: e.target.value })}
-              className="rounded border border-gray-300 px-2 py-1 text-sm"
             />
-          </label>
+          </BlockField>
           <div>
             <span className="text-xs uppercase tracking-wide text-gray-600">Imagen del gráfico 2</span>
             <div className="mt-1">

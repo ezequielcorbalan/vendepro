@@ -1,4 +1,5 @@
 'use client'
+import { BlockField, BlockInput } from './BlockField'
 import { X } from 'lucide-react'
 interface Props { data: any; onPatch: (p: Record<string, unknown>) => void }
 
@@ -16,10 +17,9 @@ export function FunnelChartForm({ data, onPatch }: Props) {
 
   return (
     <div className="space-y-3 p-3">
-      <label className="flex flex-col gap-1">
-        <span className="text-xs uppercase tracking-wide text-gray-600">Título</span>
-        <input type="text" value={data.title ?? ''} onChange={e => onPatch({ title: e.target.value })} className="rounded border border-gray-300 px-2 py-1 text-sm" />
-      </label>
+      <BlockField label="Título">
+        <BlockInput type="text" value={data.title ?? ''} onChange={e => onPatch({ title: e.target.value })} />
+      </BlockField>
       <div>
         <div className="mb-1 flex items-center justify-between">
           <span className="text-xs uppercase tracking-wide text-gray-600">Etapas del funnel</span>
@@ -28,9 +28,9 @@ export function FunnelChartForm({ data, onPatch }: Props) {
         <div className="space-y-2">
           {funnel.map((step, i) => (
             <div key={i} className="flex items-center gap-2">
-              <input placeholder="Etapa" value={step.label} onChange={e => setStep(i, 'label', e.target.value)} className="flex-1 rounded border border-gray-300 px-2 py-1 text-xs" />
-              <input type="number" placeholder="Valor" value={step.value ?? ''} onChange={e => setStep(i, 'value', e.target.value)} className="w-20 rounded border border-gray-300 px-2 py-1 text-xs" />
-              <input type="color" value={step.color ?? '#ff007c'} onChange={e => setStep(i, 'color', e.target.value)} className="h-7 w-7 rounded border border-gray-300 p-0.5" />
+              <BlockInput placeholder="Etapa" value={step.label} onChange={e => setStep(i, 'label', e.target.value)} className="flex-1 text-xs" />
+              <BlockInput type="number" placeholder="Valor" value={step.value ?? ''} onChange={e => setStep(i, 'value', e.target.value)} />
+              <input type="color" value={step.color ?? '#ff007c'} onChange={e => setStep(i, 'color', e.target.value)} className="h-7 w-7 rounded-control border border-gray-300 p-0.5" />
               <button onClick={() => remove(i)} aria-label="Quitar" className="text-gray-400 hover:text-danger"><X className="w-3.5 h-3.5" /></button>
             </div>
           ))}
