@@ -77,8 +77,8 @@ export default function PrefactibilidadesPage() {
               href={`/prefactibilidades/${item.id}`}
               className="flex items-center gap-4 bg-white rounded-card border border-gray-100 p-4 hover:border-primary/30 transition-colors"
             >
-              <div className="w-10 h-10 rounded-control bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Calculator className="w-5 h-5 text-primary" />
+              <div className="w-10 h-10 rounded-control bg-gray-100 flex items-center justify-center flex-shrink-0">
+                <Calculator className="w-5 h-5 text-gray-600" />
               </div>
               <div className="flex-1 min-w-0">
                 <Text weight="medium" className="truncate">{item.project_name || 'Sin nombre'}</Text>

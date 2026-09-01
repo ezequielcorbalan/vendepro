@@ -10,6 +10,15 @@ import { cn } from '@/lib/utils'
  * Para columnas numéricas usá align: 'right' (aplica tabular-nums).
  * `sortable` ordena por row[key] (string/number); la flecha usa el mismo
  * gris del texto del header, sólo cambia la opacidad activo/inactivo.
+ *
+ * Listas reales (contactos, propiedades) necesitan tres cosas más, y por no
+ * tenerlas el componente estaba adoptado en 2 de 175 archivos:
+ * - `actions` — celda final de acciones por fila, que aparece en hover del row
+ *   (en touch queda siempre visible: no hay hover donde tocar).
+ * - `renderMobileCard` — abajo de `md` la tabla se reemplaza por una lista de
+ *   cards con ESTE render. A propósito no proyecta las columnas automáticamente:
+ *   el layout mobile de una lista nunca es "las mismas celdas apiladas".
+ * - `footer` — pie dentro de la misma superficie (paginación, totales).
  */
 export interface Column<T> {
   key: string
@@ -24,6 +33,14 @@ interface TableProps<T> {
   columns: Column<T>[]
   data: T[]
   rowKey: (row: T, index: number) => string
+  /** Acciones por fila, alineadas a la derecha. Se revelan en hover del row. */
+  actions?: (row: T) => ReactNode
+  /** Render de la fila para mobile (< md). Si no se pasa, la tabla scrollea. */
+  renderMobileCard?: (row: T) => ReactNode
+  /** Pie dentro de la misma superficie — paginación, totales. */
+  footer?: ReactNode
+  /** Ancho mínimo de la tabla antes de scrollear. Default 480px. */
+  minWidth?: number
   className?: string
 }
 
@@ -37,6 +54,10 @@ export function Table<T extends object>({
   columns,
   data,
   rowKey,
+  actions,
+  renderMobileCard,
+  footer,
+  minWidth = 480,
   className,
 }: TableProps<T>) {
   const [sortKey, setSortKey] = useState<string | null>(null)
@@ -60,8 +81,9 @@ export function Table<T extends object>({
   }
 
   return (
-    <div className={cn('w-full overflow-x-auto border border-gray-200 rounded-card bg-white', className)}>
-      <table className="w-full border-collapse text-sm min-w-[480px]">
+    <div className={cn('w-full border border-gray-200 rounded-card bg-white overflow-hidden', className)}>
+      <div className={cn('w-full overflow-x-auto', renderMobileCard && 'hidden md:block')}>
+      <table className="w-full border-collapse text-sm" style={{ minWidth }}>
         <thead>
           <tr>
             {columns.map(col => (
@@ -97,11 +119,12 @@ export function Table<T extends object>({
                 )}
               </th>
             ))}
+            {actions && <th className="bg-gray-50 px-4 py-2.5 border-b border-gray-100" aria-label="Acciones" />}
           </tr>
         </thead>
         <tbody>
           {sorted.map((row, i) => (
-            <tr key={rowKey(row, i)} className="hover:bg-primary/[0.02] transition-colors">
+            <tr key={rowKey(row, i)} className="group hover:bg-primary/[0.02] transition-colors">
               {columns.map(col => (
                 <td
                   key={col.key}
@@ -113,10 +136,31 @@ export function Table<T extends object>({
                   {col.render ? col.render(row) : String((row as Record<string, unknown>)[col.key] ?? '')}
                 </td>
               ))}
+              {actions && (
+                <td className="px-4 py-3 border-b border-gray-100 last:border-b-0 text-right whitespace-nowrap">
+                  {/* En touch no hay hover: las acciones quedan visibles siempre. */}
+                  <span className="inline-flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition-opacity">
+                    {actions(row)}
+                  </span>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
       </table>
+      </div>
+
+      {renderMobileCard && (
+        <div className="md:hidden divide-y divide-gray-100">
+          {sorted.map((row, i) => (
+            <div key={rowKey(row, i)}>{renderMobileCard(row)}</div>
+          ))}
+        </div>
+      )}
+
+      {footer && (
+        <div className="border-t border-gray-100 bg-gray-50/40 px-4 py-3 text-sm">{footer}</div>
+      )}
     </div>
   )
 }

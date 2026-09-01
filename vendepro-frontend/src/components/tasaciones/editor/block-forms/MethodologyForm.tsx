@@ -1,4 +1,5 @@
 'use client'
+import { BlockField, BlockInput, BlockTextarea } from '../BlockField'
 import ImageUpload from '@/components/landings/ImageUpload'
 
 interface Props { data: any; onPatch: (p: Record<string, unknown>) => void }
@@ -8,39 +9,33 @@ export function MethodologyForm({ data, onPatch }: Props) {
 
   return (
     <div className="space-y-3 p-3">
-      <label className="flex flex-col gap-1">
-        <span className="text-xs uppercase tracking-wide text-slate-600">Título</span>
-        <input
+      <BlockField label="Título">
+        <BlockInput
           type="text"
           value={data.title ?? ''}
           maxLength={200}
           onChange={e => onPatch({ title: e.target.value })}
-          className="rounded border border-slate-300 px-2 py-1 text-sm"
         />
-      </label>
-      <label className="flex flex-col gap-1">
-        <span className="text-xs uppercase tracking-wide text-slate-600">Cuerpo</span>
-        <textarea
+      </BlockField>
+      <BlockField label="Cuerpo">
+        <BlockTextarea
           rows={5}
           value={body}
           maxLength={2000}
           onChange={e => onPatch({ body: e.target.value })}
-          className="rounded border border-slate-300 px-2 py-1 text-sm"
         />
-      </label>
-      <label className="flex flex-col gap-1">
-        <span className="text-xs uppercase tracking-wide text-slate-600">Texto destacado</span>
-        <input
+      </BlockField>
+      <BlockField label="Texto destacado">
+        <BlockInput
           type="text"
           value={data.highlight_text ?? ''}
           maxLength={400}
           placeholder="Ej: 100% métricas en cada publicación."
           onChange={e => onPatch({ highlight_text: e.target.value })}
-          className="rounded border border-slate-300 px-2 py-1 text-sm"
         />
-      </label>
+      </BlockField>
       <div className="flex flex-col gap-1">
-        <span className="text-xs uppercase tracking-wide text-slate-600">Imagen</span>
+        <span className="text-xs uppercase tracking-wide text-gray-600">Imagen</span>
         <ImageUpload
           value={data.image_url ?? ''}
           onChange={(url) => onPatch({ image_url: url })}

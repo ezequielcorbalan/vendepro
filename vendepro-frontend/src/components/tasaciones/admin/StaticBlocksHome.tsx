@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useMemo, useState } from 'react'
-import { ChevronDown, ChevronRight, CheckCircle2, Loader2, Save, AlertCircle } from 'lucide-react'
+import { ChevronDown, ChevronRight, CheckCircle2, Save, AlertCircle } from 'lucide-react'
 import type { AppraisalBlockType, TemplateBlock } from '../renderer/types'
 import { getBlockMeta } from '../renderer/block-catalog'
 import { BlockForm } from '../editor/BlockForm'
@@ -10,6 +10,8 @@ import {
   saveStaticBlockDefault,
 } from '../shared/static-block-defaults'
 import { _invalidateStaticDefaultsCache } from './BlockAdminForm'
+import { Alert } from '@/components/ui/Alert'
+import { Button } from '@/components/ui/Button'
 
 interface RowState {
   /** Datos editables del bloque. */
@@ -109,7 +111,7 @@ export function StaticBlocksHome() {
     return (
       <div className="space-y-3">
         {STATIC_BLOCK_TYPES.map((_, i) => (
-          <div key={i} className="h-16 animate-pulse rounded-lg bg-slate-100" />
+          <div key={i} className="h-16 animate-pulse rounded-card bg-gray-100" />
         ))}
       </div>
     )
@@ -117,17 +119,17 @@ export function StaticBlocksHome() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border border-amber-200 bg-amber-50/60 px-4 py-3 text-sm text-amber-900">
+      <Alert tone="info" hideIcon>
         <p>
           <strong>Bloques estáticos</strong> — definí acá el contenido fijo de tu inmobiliaria
           (portada, metodología, servicios, etc.). Los valores guardados se pueden{' '}
           <strong>aplicar a cada template</strong> desde el editor, en los bloques con modo{' '}
-          <em>"Texto fijo de la inmobiliaria"</em> o <em>"Valor por defecto editable"</em>.
+          <em>&ldquo;Texto fijo de la inmobiliaria&rdquo;</em> o <em>&ldquo;Valor por defecto editable&rdquo;</em>.
         </p>
-      </div>
+      </Alert>
 
       {loadError && (
-        <div className="flex items-start gap-2 rounded border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+        <div className="flex items-start gap-2 rounded-control border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /> {loadError}
         </div>
       )}
@@ -172,56 +174,53 @@ function StaticBlockRow({ type, row, isOpen, onToggle, onPatch, onSave }: RowPro
   }), [type, row.data])
 
   return (
-    <section className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+    <section className="overflow-hidden rounded-card border border-gray-200 bg-white">
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-slate-50"
+        className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-gray-50"
       >
         {isOpen
-          ? <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" />
-          : <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" />}
+          ? <ChevronDown className="h-4 w-4 shrink-0 text-gray-400" />
+          : <ChevronRight className="h-4 w-4 shrink-0 text-gray-400" />}
         <div className="flex-1 min-w-0">
           <div className="text-sm font-medium text-ink">{meta.label}</div>
-          <div className="truncate text-xs text-slate-500">{meta.description}</div>
+          <div className="truncate text-xs text-gray-500">{meta.description}</div>
         </div>
         <div className="flex items-center gap-2 text-xs">
-          {row.dirty && <span className="text-amber-600">Sin guardar</span>}
+          {row.dirty && <span className="text-warning">Sin guardar</span>}
           {row.saved && !row.dirty && (
-            <span className="flex items-center gap-1 text-emerald-600">
+            <span className="flex items-center gap-1 text-success">
               <CheckCircle2 className="h-3 w-3" /> Guardado
             </span>
           )}
           {!row.id && !row.dirty && !row.saved && (
-            <span className="text-slate-400">Sin configurar</span>
+            <span className="text-gray-400">Sin configurar</span>
           )}
         </div>
       </button>
       {isOpen && (
-        <div className="border-t border-slate-100 p-4">
+        <div className="border-t border-gray-100 p-4">
           <BlockForm
             block={fakeBlock}
             override={{}}
             onPatch={onPatch}
             context="template"
           />
-          <div className="mt-4 flex items-center justify-end gap-3 border-t border-slate-100 pt-3">
+          <div className="mt-4 flex items-center justify-end gap-3 border-t border-gray-100 pt-3">
             {row.error && (
-              <span className="flex items-center gap-1 text-xs text-rose-600">
+              <span className="flex items-center gap-1 text-xs text-danger">
                 <AlertCircle className="h-3 w-3" /> {row.error}
               </span>
             )}
-            <button
-              type="button"
+            <Button
               onClick={onSave}
-              disabled={!row.dirty || row.saving}
-              className="flex items-center gap-2 rounded bg-gradient-to-br from-brand-pink to-brand-orange px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
+              disabled={!row.dirty}
+              loading={row.saving}
+              icon={<Save className="h-3.5 w-3.5" />}
             >
-              {row.saving
-                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                : <Save className="h-3.5 w-3.5" />}
               {row.saving ? 'Guardando…' : 'Guardar'}
-            </button>
+            </Button>
           </div>
         </div>
       )}

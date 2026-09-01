@@ -32,14 +32,14 @@ export function BlockList({ blocks, overrides, onPatchOverride, context, openId 
         const isLocked = context === 'appraisal' && b.binding_mode !== 'tasacion' && b.binding_mode !== 'default-override'
         const open = expanded.has(b.id)
         return (
-          <div key={b.id} className="rounded border border-slate-200">
-            <button onClick={() => toggle(b.id)} className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-slate-50">
+          <div key={b.id} className="rounded border border-gray-200">
+            <button onClick={() => toggle(b.id)} className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-gray-50">
               <span className="flex items-center gap-2">
                 {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                {isLocked && <span title="Definido en el template"><Lock className="h-3 w-3 text-slate-400" /></span>}
+                {isLocked && <span title="Definido en el template"><Lock className="h-3 w-3 text-gray-400" /></span>}
                 <span className="font-medium">{getBlockMeta(b.type).label}</span>
               </span>
-              {isLocked && <span className="text-xs text-slate-400">Solo lectura</span>}
+              {isLocked && <span className="text-xs text-gray-400">Solo lectura</span>}
             </button>
             {open && (
               <BlockForm

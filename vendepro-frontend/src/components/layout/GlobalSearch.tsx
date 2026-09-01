@@ -3,7 +3,10 @@ import { useState, useRef, useEffect } from 'react'
 import { Search, User, Building2, Users, X } from 'lucide-react'
 import Link from 'next/link'
 import { apiFetch } from '@/lib/api'
-import { LEAD_STAGES, type LeadStage } from '@/lib/crm-config'
+import { LEAD_STAGES, SEARCH_ENTITY_TONES, type LeadStage } from '@/lib/crm-config'
+import { Button } from '@/components/ui/Button'
+import { StatusBadge } from '@/components/ui/StatusBadge'
+import { Text } from '@/components/ui/Typography'
 
 export default function GlobalSearch() {
   const [open, setOpen] = useState(false)
@@ -61,12 +64,16 @@ export default function GlobalSearch() {
 
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)}
-        className="flex items-center gap-2 text-gray-400 hover:text-gray-600 transition-colors w-full px-3 py-2 rounded-lg border border-gray-200 hover:border-gray-300 bg-white text-sm">
-        <Search className="w-4 h-4" />
-        <span className="flex-1 text-left">Buscar...</span>
-        <kbd className="hidden sm:inline text-[10px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-400">⌘K</kbd>
-      </button>
+      <Button
+        variant="outline"
+        fullWidth
+        onClick={() => setOpen(true)}
+        className="justify-start gap-2 text-gray-400 hover:text-gray-600 font-normal"
+        icon={<Search className="w-4 h-4" />}
+      >
+        <span className="flex-1 text-left">Buscar…</span>
+        <kbd className="hidden sm:inline text-[10px] bg-gray-100 px-1.5 py-0.5 rounded-control text-gray-400">⌘K</kbd>
+      </Button>
     )
   }
 
@@ -78,30 +85,37 @@ export default function GlobalSearch() {
           <input ref={inputRef} type="text" value={query} onChange={e => setQuery(e.target.value)}
             placeholder="Buscar leads, contactos, propiedades..."
             className="flex-1 text-sm outline-none placeholder-gray-400" />
-          {query && <button onClick={() => { setQuery(''); setResults(null) }}><X className="w-4 h-4 text-gray-400" /></button>}
-          <button onClick={close} className="text-xs text-gray-400 hover:text-gray-600">Esc</button>
+          {query && (
+            <Button variant="ghost" size="icon" aria-label="Limpiar búsqueda" onClick={() => { setQuery(''); setResults(null) }}>
+              <X className="w-4 h-4 text-gray-400" />
+            </Button>
+          )}
+          <Button variant="ghost" size="sm" onClick={close} className="text-xs text-gray-400">Esc</Button>
         </div>
 
         <div className="max-h-[60vh] overflow-y-auto">
-          {loading && <div className="p-4 text-center text-sm text-gray-400">Buscando...</div>}
-          {noResults && <div className="p-6 text-center text-sm text-gray-400">Sin resultados para &quot;{query}&quot;</div>}
+          {loading && <Text size="sm" tone="muted" className="p-4 text-center">Buscando…</Text>}
+          {noResults && <Text size="sm" tone="muted" className="p-6 text-center">Sin resultados para &ldquo;{query}&rdquo;</Text>}
 
           {hasResults && (
             <div className="py-2">
               {results.leads?.length > 0 && (
                 <div>
-                  <p className="px-4 py-1.5 text-[10px] text-gray-400 uppercase tracking-wider font-bold">Leads</p>
+                  <Text size="xs" tone="muted" weight="bold" className="px-4 py-1.5 text-[10px] uppercase tracking-wider">Leads</Text>
                   {results.leads.map((l: any) => (
                     <Link key={l.id} href={`/leads/${l.id}`} onClick={close}
                       className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 transition-colors">
-                      <User className="w-4 h-4 text-pink-500 shrink-0" />
+                      <User className={`w-4 h-4 shrink-0 ${SEARCH_ENTITY_TONES.lead}`} />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-ink truncate">{l.full_name}</p>
                         <p className="text-[10px] text-gray-400 truncate">{l.phone} · {l.operation} · {l.neighborhood}</p>
                       </div>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full shrink-0 ${LEAD_STAGES[l.stage as LeadStage]?.color || 'bg-gray-100 text-gray-600'}`}>
-                        {LEAD_STAGES[l.stage as LeadStage]?.label || l.stage}
-                      </span>
+                      <StatusBadge
+                        size="sm"
+                        className="shrink-0"
+                        label={LEAD_STAGES[l.stage as LeadStage]?.label || l.stage}
+                        color={LEAD_STAGES[l.stage as LeadStage]?.color}
+                      />
                     </Link>
                   ))}
                 </div>
@@ -109,11 +123,11 @@ export default function GlobalSearch() {
 
               {results.contacts?.length > 0 && (
                 <div>
-                  <p className="px-4 py-1.5 text-[10px] text-gray-400 uppercase tracking-wider font-bold">Contactos</p>
+                  <Text size="xs" tone="muted" weight="bold" className="px-4 py-1.5 text-[10px] uppercase tracking-wider">Contactos</Text>
                   {results.contacts.map((c: any) => (
                     <Link key={c.id} href="/contactos" onClick={close}
                       className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 transition-colors">
-                      <Users className="w-4 h-4 text-blue-500 shrink-0" />
+                      <Users className={`w-4 h-4 shrink-0 ${SEARCH_ENTITY_TONES.contact}`} />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-ink truncate">{c.full_name}</p>
                         <p className="text-[10px] text-gray-400">{c.phone} · {c.contact_type}</p>
@@ -125,11 +139,11 @@ export default function GlobalSearch() {
 
               {results.properties?.length > 0 && (
                 <div>
-                  <p className="px-4 py-1.5 text-[10px] text-gray-400 uppercase tracking-wider font-bold">Propiedades</p>
+                  <Text size="xs" tone="muted" weight="bold" className="px-4 py-1.5 text-[10px] uppercase tracking-wider">Propiedades</Text>
                   {results.properties.map((p: any) => (
                     <Link key={p.id} href={`/propiedades/${p.id}`} onClick={close}
                       className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 transition-colors">
-                      <Building2 className="w-4 h-4 text-green-500 shrink-0" />
+                      <Building2 className={`w-4 h-4 shrink-0 ${SEARCH_ENTITY_TONES.property}`} />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-ink truncate">{p.address}</p>
                         <p className="text-[10px] text-gray-400">{p.neighborhood} · {p.property_type} · {p.owner_name}</p>
@@ -142,7 +156,7 @@ export default function GlobalSearch() {
           )}
 
           {!loading && !results && query.length < 2 && (
-            <div className="p-4 text-center text-xs text-gray-400">Escribí al menos 2 caracteres para buscar</div>
+            <Text size="xs" tone="muted" className="p-4 text-center">Escribí al menos 2 caracteres para buscar</Text>
           )}
         </div>
       </div>

@@ -7,7 +7,7 @@ import {
   ArrowLeft, Phone, Edit3, Save, X, Trash2,
   User, ChevronRight, Plus, Loader2, Calendar, Activity,
   Home, FileText, MapPin, Target, StickyNote, Building2,
-  CheckCircle2, Mail, DollarSign
+  CheckCircle2, Mail, DollarSign, Clock
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { pushFromApiResponse } from '@/components/marketing/dataLayer'
@@ -23,6 +23,10 @@ import { CallButton, WhatsAppButton } from '@/components/ui/ContactButtons'
 import { Card } from '@/components/ui/Card'
 import { Heading } from '@/components/ui/Typography'
 import { StageBadge } from '@/components/ui/StageBadge'
+import { Avatar } from '@/components/ui/Avatar'
+import { DetailHeader, DetailMeta } from '@/components/ui/DetailHeader'
+import { WidgetHeader } from '@/components/ui/WidgetHeader'
+import { IconMedallion } from '@/components/ui/IconMedallion'
 import { Button } from '@/components/ui/Button'
 import { Field, Input, Select, Textarea } from '@/components/ui/Input'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -292,65 +296,27 @@ export default function LeadDetailPage() {
   return (
     <div className="space-y-4">
       {confirmDialog}
-      {/* Top bar */}
+      {/* Top bar: sólo la vuelta atrás. Las acciones viven en el encabezado,
+          igual que en /contactos/[id] — antes eran cinco botones del mismo peso
+          en una fila suelta arriba de la card. */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <Link href="/leads" className="flex items-center gap-1.5 text-gray-500 hover:text-gray-700 text-sm font-medium">
           <ArrowLeft className="w-4 h-4" /> Volver a Leads
         </Link>
-        <div className="flex items-center gap-2 flex-wrap">
-          {!editing ? (
-            <Button variant="outline" icon={<Edit3 className="w-3.5 h-3.5" />} onClick={() => setEditing(true)}>Editar</Button>
-          ) : (
-            <>
-              <Button variant="outline" aria-label="Cancelar" onClick={() => { setEditing(false); setEditForm(lead) }}>
-                <X className="w-4 h-4" />
-              </Button>
-              <Button loading={saving} icon={<Save className="w-3.5 h-3.5" />} onClick={handleSave}>Guardar</Button>
-            </>
-          )}
-          {!isBuyer && (
-            <>
-              {/* ds-todo: candidato a variante "accent" (naranja de marca) — por ahora outline */}
-              <Button
-                variant="outline"                icon={<FileText className="w-3.5 h-3.5" />}
-                disabled={editing}
-                onClick={() => {
-                  const qs = new URLSearchParams({ lead_id: leadId })
-                  if (lead?.property_address) qs.set('address', lead.property_address)
-                  if (lead?.neighborhood) qs.set('neighborhood', lead.neighborhood)
-                  router.push(`/fichas/nueva?${qs.toString()}`)
-                }}
-              >
-                Ficha de tasación
-              </Button>
-              {/* ds-todo: candidato a variante "success" (verde crear) — por ahora primary */}
-              <Button                icon={<Home className="w-3.5 h-3.5" />}
-                onClick={() => {
-                  const qs = new URLSearchParams({ lead_id: leadId })
-                  if (fichas.length > 0) qs.set('ficha_id', fichas[0].id)
-                  router.push(`/propiedades/nueva?${qs.toString()}`)
-                }}
-              >
-                Crear propiedad
-              </Button>
-            </>
-          )}
-          <Button variant="outline" size="icon" aria-label="Eliminar" onClick={handleDelete}>
-            <Trash2 className="w-4 h-4" />
-          </Button>
-        </div>
+        {editing && (
+          <div className="flex items-center gap-2">
+            <Button variant="outline" aria-label="Cancelar" onClick={() => { setEditing(false); setEditForm(lead) }}>
+              <X className="w-4 h-4" />
+            </Button>
+            <Button loading={saving} icon={<Save className="w-3.5 h-3.5" />} onClick={handleSave}>Guardar</Button>
+          </div>
+        )}
       </div>
 
-      {/* Header card */}
-      <Card padded={false} className="p-5 relative overflow-hidden">
-        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-pink to-brand-orange" />
-        <img
-          src="/brand/GV-27.png"
-          alt=""
-          aria-hidden="true"
-          className="absolute -top-8 -right-8 w-32 h-32 opacity-10 pointer-events-none"
-        />
-        {editing ? (
+      {/* Header — mismo molde que /contactos/[id] (`DetailHeader`). */}
+      {editing ? (
+        <Card padded={false} className="p-5">
+
           <div className="space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label="Nombre" htmlFor="lf-name" required>
@@ -392,28 +358,28 @@ export default function LeadDetailPage() {
               <Textarea id="lf-notes" rows={3} value={editForm.notes || ''} onChange={e => setEditForm((f: any) => ({ ...f, notes: e.target.value }))} />
             </Field>
           </div>
-        ) : (
-          <>
-            {/* Name + stage badge + contact type badge */}
-            <div className="flex items-start justify-between gap-3 mb-2">
-              <div className="flex items-center gap-2 flex-wrap">
-                <Heading level={2} as="h1">{lead.full_name}</Heading>
-                <StageBadge stage={lead.stage} pipeline={lead.pipeline} />
-                {lead.contact_id && (
-                  <Link
-                    href="/contactos"
-                    className="inline-flex items-center gap-1.5 text-xs text-gray-600 bg-gray-50 border rounded-full px-2.5 py-1 hover:bg-gray-100 transition-colors"
-                  >
-                    <User className="w-3 h-3 text-gray-400" />
-                    <span>Contacto</span>
-                    <ChevronRight className="w-3 h-3 text-gray-400" />
-                  </Link>
-                )}
-              </div>
-            </div>
-
-            {/* Tags row */}
-            <div className="flex items-center gap-1.5 flex-wrap mb-3">
+        </Card>
+      ) : (
+        <DetailHeader
+          avatar={<Avatar size="lg" name={lead.full_name || '?'} />}
+          title={lead.full_name}
+          badges={
+            <>
+              <StageBadge stage={lead.stage} pipeline={lead.pipeline} />
+              {lead.contact_id && (
+                <Link
+                  href="/contactos"
+                  className="inline-flex items-center gap-1.5 text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-full px-2.5 py-1 hover:bg-gray-100 transition-colors"
+                >
+                  <User className="w-3 h-3 text-gray-400" />
+                  <span>Contacto</span>
+                  <ChevronRight className="w-3 h-3 text-gray-400" />
+                </Link>
+              )}
+            </>
+          }
+          tags={
+            <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Etiquetas:</span>
               {lead.tags?.map((tag: any) => (
                 <button
@@ -462,47 +428,79 @@ export default function LeadDetailPage() {
                 )}
               </div>
             </div>
-
-            {/* Date + agent */}
-            <p className="text-xs text-gray-400 mb-4">
-              Creado {lead.created_at ? formatDate(lead.created_at) : '—'}
+          }
+          meta={
+            <>
+              <DetailMeta icon={<Clock className="w-4 h-4" />}>
+                Creado {lead.created_at ? formatDate(lead.created_at) : '—'}
+              </DetailMeta>
               {lead.assigned_name && (
-                <> · Asignado a <span className="font-semibold text-gray-600">{lead.assigned_name}</span></>
+                <DetailMeta icon={<User className="w-4 h-4" />}>
+                  Asignado a <span className="font-medium text-ink">{lead.assigned_name}</span>
+                </DetailMeta>
               )}
-            </p>
-
-            {/* Action buttons */}
-            <div className="flex gap-2 flex-wrap">
+            </>
+          }
+          visibleActions={3}
+          actions={
+            <>
+              <Button variant="outline" icon={<Edit3 className="w-3.5 h-3.5" />} onClick={() => setEditing(true)}>
+                Editar
+              </Button>
+              {!isBuyer && (
+                <Button
+                  variant="outline"
+                  icon={<FileText className="w-3.5 h-3.5" />}
+                  onClick={() => {
+                    const qs = new URLSearchParams({ lead_id: leadId })
+                    if (lead?.property_address) qs.set('address', lead.property_address)
+                    if (lead?.neighborhood) qs.set('neighborhood', lead.neighborhood)
+                    router.push(`/fichas/nueva?${qs.toString()}`)
+                  }}
+                >
+                  Ficha de tasación
+                </Button>
+              )}
+              <Button variant="outline" icon={<Trash2 className="w-4 h-4" />} onClick={handleDelete}>
+                Eliminar
+              </Button>
+              {!isBuyer && (
+                <Button
+                  variant="success"
+                  icon={<Home className="w-3.5 h-3.5" />}
+                  onClick={() => {
+                    const qs = new URLSearchParams({ lead_id: leadId })
+                    if (fichas.length > 0) qs.set('ficha_id', fichas[0].id)
+                    router.push(`/propiedades/nueva?${qs.toString()}`)
+                  }}
+                >
+                  Crear propiedad
+                </Button>
+              )}
               <CallButton phone={lead.phone} onClick={() => handleQuickActivity('llamada')} />
               <WhatsAppButton
                 phone={lead.phone}
                 templateContext={{ name: lead.full_name, address: lead.property_address || lead.neighborhood }}
                 onClick={() => handleQuickActivity('whatsapp')}
               />
-              <Link
-                href={`/calendario?lead_id=${leadId}`}
-                className="inline-flex items-center gap-2 border border-gray-300 text-gray-700 px-4 py-2 rounded-control text-sm font-medium hover:bg-gray-50 transition-colors"
-              >
-                <Calendar className="w-4 h-4" /> Agendar
-              </Link>
-            </div>
-          </>
-        )}
-      </Card>
+              <Button href={`/calendario?lead_id=${leadId}`} variant="outline" icon={<Calendar className="w-4 h-4" />}>
+                Agendar
+              </Button>
+            </>
+          }
+        />
+      )}
 
       {/* Pipeline */}
       <LeadStagePipeline currentStage={lead.stage} pipeline={isBuyer ? 'comprador' : 'vendedor'} onSelect={handleStageChange} disabled={editing} />
 
       {/* Two-column: Datos + Actividades */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+      {/* Sin `items-start`: en grilla las celdas se estiran solas, así las dos
+          cards de la fila terminan a la misma altura. */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Datos del lead */}
         <Card padded={false} className="p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 rounded-control bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-card">
-              <User className="w-4 h-4 text-white" />
-            </div>
-            <Heading level={4}>Datos del lead</Heading>
-          </div>
+          <WidgetHeader icon={<User className="w-4 h-4" />} title="Datos del lead" className="mb-4" />
           <div className="space-y-4">
             <div className="flex items-start gap-3">
               <User className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
@@ -590,20 +588,16 @@ export default function LeadDetailPage() {
 
         {/* Actividades */}
         <Card padded={false} className="p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-control bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-card">
-                <Activity className="w-4 h-4 text-white" />
-              </div>
-              <Heading level={4}>Actividades</Heading>
-            </div>
-            <Link
-              href={`/actividades?lead_id=${leadId}`}
-              className="flex items-center gap-1 text-xs text-brand-pink hover:underline font-medium"
-            >
-              <Plus className="w-3.5 h-3.5" /> Nueva
-            </Link>
-          </div>
+          <WidgetHeader
+            icon={<Activity className="w-4 h-4" />}
+            title="Actividades"
+            className="mb-4"
+            action={
+              <Button href={`/actividades?lead_id=${leadId}`} variant="ghost" size="sm" icon={<Plus className="w-3.5 h-3.5" />}>
+                Nueva
+              </Button>
+            }
+          />
           {activities.length === 0 ? (
             <EmptyState
               icon={<Activity className="w-6 h-6" />}
@@ -616,7 +610,7 @@ export default function LeadDetailPage() {
                 const mins = Math.floor((Date.now() - new Date(a.completed_at || a.created_at).getTime()) / 60000)
                 const timeAgo = mins < 60 ? `${mins}m` : mins < 1440 ? `${Math.floor(mins / 60)}h` : `${Math.floor(mins / 1440)}d`
                 return (
-                  <div key={a.id} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50">
+                  <div key={a.id} className="flex items-center gap-3 p-2.5 rounded-control hover:bg-gray-50">
                     <div className="w-2 h-2 bg-brand-pink rounded-full shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-gray-700 truncate">{a.description || a.activity_type}</p>
@@ -663,10 +657,10 @@ export default function LeadDetailPage() {
         ) : (
           <div className="space-y-2">
             {fichas.map((ficha: any) => (
-              <div key={ficha.id} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shrink-0">
-                  <FileText className="w-4 h-4 text-white" />
-                </div>
+              <div key={ficha.id} className="flex items-center gap-3 p-3 rounded-control border border-gray-100 hover:bg-gray-50">
+                <IconMedallion className="shrink-0">
+                  <FileText className="w-4 h-4" />
+                </IconMedallion>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-ink truncate">{ficha.address || 'Sin dirección'}</p>
                   <p className="text-xs text-gray-400">
@@ -676,7 +670,7 @@ export default function LeadDetailPage() {
                 </div>
                 <button
                   onClick={() => router.push(`/propiedades/nueva?lead_id=${leadId}&ficha_id=${ficha.id}`)}
-                  className="flex items-center gap-1 text-xs text-green-700 hover:bg-green-50 font-medium px-2 py-1 rounded-lg shrink-0"
+                  className="flex items-center gap-1 text-xs text-green-700 hover:bg-green-50 font-medium px-2 py-1 rounded-control shrink-0"
                 >
                   <Home className="w-3.5 h-3.5" /> Crear propiedad
                 </button>
@@ -696,12 +690,7 @@ export default function LeadDetailPage() {
       {/* Historial de etapas */}
       {stageHistory.length > 0 && (
         <Card padded={false} className="p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 rounded-control bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-card">
-              <Calendar className="w-4 h-4 text-white" />
-            </div>
-            <Heading level={4}>Historial de etapas</Heading>
-          </div>
+          <WidgetHeader icon={<Calendar className="w-4 h-4" />} title="Historial de etapas" className="mb-4" />
           <Timeline
             items={stageHistory.map((h: any) => ({
               label: `${h.from_stage ? getStageConfig(h.from_stage, lead.pipeline).label : '—'} → ${getStageConfig(h.to_stage, lead.pipeline).label}`,
@@ -729,18 +718,23 @@ export default function LeadDetailPage() {
               )}
             </p>
             <div className="space-y-2">
-              <button onClick={goCreateProperty} className="w-full px-4 py-3 bg-green-600 text-white rounded-control text-sm font-medium hover:bg-green-700 flex items-center justify-center gap-2">
-                <Home className="w-4 h-4" /> Crear propiedad vinculada
-              </button>
-              <button onClick={goCreateAppraisal} className="w-full px-4 py-3 bg-gradient-to-br from-brand-pink to-brand-orange text-white rounded-control text-sm font-medium hover:opacity-90 flex items-center justify-center gap-2">
-                <FileText className="w-4 h-4" /> Crear tasación vinculada
-              </button>
+              <Button variant="success" size="lg" fullWidth icon={<Home className="w-4 h-4" />} onClick={goCreateProperty}>
+                Crear propiedad vinculada
+              </Button>
+              <Button size="lg" fullWidth icon={<FileText className="w-4 h-4" />} onClick={goCreateAppraisal}>
+                Crear tasación vinculada
+              </Button>
               {!propModal.requireProperty && (
-                <button onClick={() => { const t = propModal.targetStage; setPropModal(null); applyStageChange(t) }} className="w-full px-4 py-3 border rounded-control text-sm text-gray-600 hover:bg-gray-50">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  fullWidth
+                  onClick={() => { const t = propModal.targetStage; setPropModal(null); applyStageChange(t) }}
+                >
                   Avanzar sin vincular
-                </button>
+                </Button>
               )}
-              <button onClick={() => setPropModal(null)} className="w-full px-4 py-2 text-sm text-gray-400">Cancelar</button>
+              <Button variant="ghost" fullWidth onClick={() => setPropModal(null)}>Cancelar</Button>
             </div>
           </div>
         </div>

@@ -11,6 +11,7 @@ import { Field, Input, Select } from '@/components/ui/Input'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Text } from '@/components/ui/Typography'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { OptionCard } from '@/components/ui/OptionCard'
 import { OBJECTIVE_METRICS, OBJECTIVE_TEMPLATES, PERIOD_TYPES, scaleMetrics, type ObjectiveTemplate } from '@/lib/crm-config'
 import { apiFetch } from '@/lib/api'
 
@@ -170,29 +171,20 @@ export default function MisObjetivosPage() {
             description="Podés adoptar un método probado o definir los tuyos"
             action={
               <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-                {/* ds-todo: candidato a componente "OptionCard" (tarjeta seleccionable con ícono + título + descripción) */}
-                <button
+                <OptionCard
+                  title="Método probado"
+                  description="Keller, Magnin, Agenda"
+                  icon={<Zap className="w-5 h-5" />}
+                  trailing={<ChevronRight className="w-4 h-4" />}
                   onClick={() => setMode('method')}
-                  className="flex-1 flex items-center gap-3 px-4 py-3 bg-primary/5 border border-primary/30 rounded-card text-left hover:border-primary transition-colors group"
-                >
-                  <Zap className="w-5 h-5 text-primary shrink-0" />
-                  <div>
-                    <div className="text-sm font-semibold text-ink">Método probado</div>
-                    <div className="text-xs text-gray-400">Keller, Magnin, Agenda</div>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-gray-300 ml-auto group-hover:text-primary" />
-                </button>
-                <button
+                />
+                <OptionCard
+                  title="Personalizado"
+                  description="Métrica a métrica"
+                  icon={<SlidersHorizontal className="w-5 h-5" />}
+                  trailing={<ChevronRight className="w-4 h-4" />}
                   onClick={() => setMode('custom')}
-                  className="flex-1 flex items-center gap-3 px-4 py-3 bg-gray-50 border border-gray-200 rounded-card text-left hover:border-gray-400 transition-colors group"
-                >
-                  <SlidersHorizontal className="w-5 h-5 text-gray-500 shrink-0" />
-                  <div>
-                    <div className="text-sm font-semibold text-ink">Personalizado</div>
-                    <div className="text-xs text-gray-400">Métrica a métrica</div>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-gray-300 ml-auto group-hover:text-gray-500" />
-                </button>
+                />
               </div>
             }
           />
@@ -208,20 +200,15 @@ export default function MisObjetivosPage() {
           </CardHeader>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            {/* ds-todo: candidato a componente "OptionCard" (tarjeta seleccionable de template) */}
             {(Object.entries(OBJECTIVE_TEMPLATES) as [ObjectiveTemplate, typeof OBJECTIVE_TEMPLATES[ObjectiveTemplate]][]).map(([key, tpl]) => (
-              <button
+              <OptionCard
                 key={key}
+                orientation="stack"
+                title={tpl.label}
+                description={tpl.description}
+                selected={selectedTemplate === key}
                 onClick={() => setSelectedTemplate(key)}
-                className={`text-left px-3 py-3 rounded-card border text-xs transition-all ${
-                  selectedTemplate === key
-                    ? 'border-primary bg-primary/5 text-primary'
-                    : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
-                }`}
-              >
-                <div className="font-semibold text-sm">{tpl.label}</div>
-                <div className="text-[10px] mt-0.5 text-gray-400 leading-tight">{tpl.description}</div>
-              </button>
+              />
             ))}
           </div>
 

@@ -1,7 +1,7 @@
 'use client'
 
 import {
-  createContext, useContext, useId,
+  createContext, useContext, useId, forwardRef,
   type InputHTMLAttributes, type TextareaHTMLAttributes, type SelectHTMLAttributes, type ReactNode,
 } from 'react'
 import { cn } from '@/lib/utils'
@@ -26,30 +26,43 @@ interface FieldCtx {
 }
 const FieldContext = createContext<FieldCtx>({})
 
-export function Input({ id, className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
-  const ctx = useContext(FieldContext)
-  return <input id={id ?? ctx.id} className={cn(FIELD_BASE, ctx.hasError && ERROR_CLASS, className)} {...props} />
-}
+/**
+ * `forwardRef` porque un control de formulario tiene que poder enfocarse por
+ * código (autofocus de un panel, saltar al primer campo con error). Sin esto el
+ * llamador se veía forzado a usar un `<input>` nativo y perdía el estilo, el
+ * foco y el estado de error del DS.
+ */
+export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
+  function Input({ id, className, ...props }, ref) {
+    const ctx = useContext(FieldContext)
+    return <input ref={ref} id={id ?? ctx.id} className={cn(FIELD_BASE, ctx.hasError && ERROR_CLASS, className)} {...props} />
+  },
+)
 
-export function Textarea({ id, className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  const ctx = useContext(FieldContext)
-  return (
-    <textarea
-      id={id ?? ctx.id}
-      className={cn(FIELD_BASE, 'resize-y min-h-[88px]', ctx.hasError && ERROR_CLASS, className)}
-      {...props}
-    />
-  )
-}
+export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLTextAreaElement>>(
+  function Textarea({ id, className, ...props }, ref) {
+    const ctx = useContext(FieldContext)
+    return (
+      <textarea
+        ref={ref}
+        id={id ?? ctx.id}
+        className={cn(FIELD_BASE, 'resize-y min-h-[88px]', ctx.hasError && ERROR_CLASS, className)}
+        {...props}
+      />
+    )
+  },
+)
 
-export function Select({ id, className, children, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
-  const ctx = useContext(FieldContext)
-  return (
-    <select id={id ?? ctx.id} className={cn(FIELD_BASE, 'cursor-pointer', ctx.hasError && ERROR_CLASS, className)} {...props}>
-      {children}
-    </select>
-  )
-}
+export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElement>>(
+  function Select({ id, className, children, ...props }, ref) {
+    const ctx = useContext(FieldContext)
+    return (
+      <select ref={ref} id={id ?? ctx.id} className={cn(FIELD_BASE, 'cursor-pointer', ctx.hasError && ERROR_CLASS, className)} {...props}>
+        {children}
+      </select>
+    )
+  },
+)
 
 interface FieldProps {
   label?: string

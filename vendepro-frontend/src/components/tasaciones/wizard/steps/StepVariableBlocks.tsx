@@ -129,7 +129,7 @@ function FromTemplateBlocks({
 
   if (error) {
     return (
-      <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+      <div className="rounded-control border border-danger/30 bg-danger/5 p-4 text-sm text-danger">
         {error}
       </div>
     )
@@ -137,7 +137,7 @@ function FromTemplateBlocks({
 
   if (blocks === null) {
     return (
-      <div className="flex items-center justify-center py-16 text-sm text-slate-500">
+      <div className="flex items-center justify-center py-16 text-sm text-gray-500">
         <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Cargando bloques…
       </div>
     )
@@ -145,7 +145,7 @@ function FromTemplateBlocks({
 
   if (blocks.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
+      <div className="rounded-control border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500">
         Este template no tiene bloques configurados. Continuá al siguiente paso.
       </div>
     )
@@ -159,13 +159,13 @@ function FromTemplateBlocks({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg bg-slate-50 p-4 text-sm text-slate-600">
+      <div className="rounded-control bg-gray-50 p-4 text-sm text-gray-600">
         Estos son todos los bloques del template (los que vas a ver en la previsualización).
         {editableCount > 0 ? (
           <>
             {' '}Completá los que requieran datos propios de esta tasación; los que tienen{' '}
-            <Lock className="-mt-0.5 inline h-3 w-3 text-slate-400" /> son estáticos del template y los que tienen{' '}
-            <Info className="-mt-0.5 inline h-3 w-3 text-slate-400" /> se completan automáticamente con los pasos anteriores.
+            <Lock className="-mt-0.5 inline h-3 w-3 text-gray-400" /> son estáticos del template y los que tienen{' '}
+            <Info className="-mt-0.5 inline h-3 w-3 text-gray-400" /> se completan automáticamente con los pasos anteriores.
           </>
         ) : (
           <>
@@ -175,10 +175,10 @@ function FromTemplateBlocks({
       </div>
 
       {fixedCount > 0 && (
-        <div className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-2.5">
+        <div className="flex items-center justify-between rounded-control border border-gray-200 px-4 py-2.5">
           <div>
-            <p className="text-sm font-medium text-slate-700">Ocultar bloques fijos</p>
-            <p className="text-xs text-slate-500">
+            <p className="text-sm font-medium text-gray-700">Ocultar bloques fijos</p>
+            <p className="text-xs text-gray-500">
               Muestra solo los {editableCount} bloque{editableCount === 1 ? '' : 's'} que podés
               editar acá (oculta los {fixedCount} fijos del template y los autocompletados).
             </p>
@@ -189,7 +189,7 @@ function FromTemplateBlocks({
             aria-checked={hideFixed}
             onClick={() => setHideFixed(v => !v)}
             className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none ${
-              hideFixed ? 'bg-brand-pink' : 'bg-slate-200'
+              hideFixed ? 'bg-brand-pink' : 'bg-gray-200'
             }`}
           >
             <span
@@ -203,7 +203,7 @@ function FromTemplateBlocks({
 
       <div className="space-y-2">
         {hideFixed && editableCount === 0 && (
-          <p className="rounded-lg border border-dashed border-slate-200 px-4 py-3 text-center text-xs text-slate-400">
+          <p className="rounded-control border border-dashed border-gray-200 px-4 py-3 text-center text-xs text-gray-400">
             Este template no tiene bloques editables. Desactivá el switch para ver los fijos.
           </p>
         )}
@@ -214,22 +214,22 @@ function FromTemplateBlocks({
           if (cat === 'editable') {
             const open = expanded.has(b.id)
             return (
-              <div key={b.id} className="rounded-lg border border-slate-200">
+              <div key={b.id} className="rounded-control border border-gray-200">
                 <button
                   type="button"
                   onClick={() => toggleExpanded(b.id)}
-                  className="flex w-full items-start gap-3 px-3 py-2.5 text-left hover:bg-slate-50"
+                  className="flex w-full items-start gap-3 px-3 py-2.5 text-left hover:bg-gray-50"
                 >
                   {open
-                    ? <ChevronDown className="mt-1 h-4 w-4 shrink-0 text-slate-400" />
-                    : <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-slate-400" />}
+                    ? <ChevronDown className="mt-1 h-4 w-4 shrink-0 text-gray-400" />
+                    : <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-gray-400" />}
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-ink">{meta.label}</p>
-                    <p className="text-xs text-slate-500">{meta.description}</p>
+                    <p className="text-xs text-gray-500">{meta.description}</p>
                   </div>
                 </button>
                 {open && (
-                  <div className="border-t border-slate-200">
+                  <div className="border-t border-gray-200">
                     <BlockForm
                       block={b}
                       override={overrides[b.id] ?? {}}
@@ -247,15 +247,15 @@ function FromTemplateBlocks({
           return (
             <div
               key={b.id}
-              className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5"
+              className="flex items-start gap-3 rounded-control border border-gray-200 bg-gray-50 px-3 py-2.5"
             >
               {isStatic
-                ? <Lock className="mt-1 h-4 w-4 shrink-0 text-slate-400" />
-                : <Info className="mt-1 h-4 w-4 shrink-0 text-slate-400" />}
+                ? <Lock className="mt-1 h-4 w-4 shrink-0 text-gray-400" />
+                : <Info className="mt-1 h-4 w-4 shrink-0 text-gray-400" />}
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-slate-700">{meta.label}</p>
-                <p className="text-xs text-slate-500">{meta.description}</p>
-                <p className="mt-1 text-[11px] italic text-slate-400">
+                <p className="text-sm font-medium text-gray-700">{meta.label}</p>
+                <p className="text-xs text-gray-500">{meta.description}</p>
+                <p className="mt-1 text-[11px] italic text-gray-400">
                   {isStatic ? 'Definido en el template (no se edita acá).' : autoFillNote(b)}
                 </p>
               </div>
@@ -297,7 +297,7 @@ function FromScratchBlocks({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg bg-slate-50 p-4 text-sm text-slate-600">
+      <div className="rounded-control bg-gray-50 p-4 text-sm text-gray-600">
         Elegí los bloques que querés incluir en esta tasación. Podés tildar los que necesites y
         completar su contenido acá mismo, o ajustarlos después en el editor.
       </div>
@@ -319,8 +319,8 @@ function FromScratchBlocks({
           return (
             <div
               key={type}
-              className={`rounded-lg border ${
-                included ? 'border-brand-pink/40 bg-brand-pink/[0.03]' : 'border-slate-200'
+              className={`rounded-control border ${
+                included ? 'border-brand-pink/40 bg-brand-pink/[0.03]' : 'border-gray-200'
               }`}
             >
               <div className="flex items-start gap-3 px-3 py-2.5">
@@ -341,20 +341,20 @@ function FromScratchBlocks({
                 >
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-ink">{meta.label}</p>
-                    <p className="text-xs text-slate-500">{meta.description}</p>
+                    <p className="text-xs text-gray-500">{meta.description}</p>
                     {included && autoNote && (
-                      <p className="mt-1 text-[11px] italic text-slate-400">{autoNote}</p>
+                      <p className="mt-1 text-[11px] italic text-gray-400">{autoNote}</p>
                     )}
                   </div>
                   {included && (
                     isOpen
-                      ? <ChevronDown className="mt-1 h-4 w-4 shrink-0 text-slate-400" />
-                      : <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-slate-400" />
+                      ? <ChevronDown className="mt-1 h-4 w-4 shrink-0 text-gray-400" />
+                      : <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-gray-400" />
                   )}
                 </button>
               </div>
               {included && isOpen && (
-                <div className="border-t border-slate-200">
+                <div className="border-t border-gray-200">
                   <BlockForm
                     block={syntheticBlock}
                     override={{}}
@@ -369,7 +369,7 @@ function FromScratchBlocks({
       </div>
 
       {includedTypes.size === 0 && (
-        <p className="rounded-lg border border-dashed border-slate-200 px-4 py-3 text-center text-xs text-slate-400">
+        <p className="rounded-control border border-dashed border-gray-200 px-4 py-3 text-center text-xs text-gray-400">
           Aún no elegiste ningún bloque. Podés continuar igual y agregarlos después en el editor.
         </p>
       )}

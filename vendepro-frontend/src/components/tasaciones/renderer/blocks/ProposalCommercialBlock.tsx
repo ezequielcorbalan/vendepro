@@ -7,7 +7,7 @@ export function ProposalCommercialBlock({ data, ...attrs }: Props) {
 
   return (
     <section {...attrs} className="bg-white px-6 py-16 md:px-12 md:py-24">
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-6xl">
         <p
           className="text-xs font-semibold uppercase tracking-[0.2em] md:text-sm"
           style={{ color: 'var(--brand-color, #ff007c)' }}
@@ -26,11 +26,11 @@ export function ProposalCommercialBlock({ data, ...attrs }: Props) {
             Sin items configurados todavía.
           </div>
         ) : (
-          <div className="mt-12 grid grid-cols-1 gap-6 md:mt-16 md:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-12 grid grid-cols-1 gap-6 md:mt-16 md:grid-cols-2 xl:grid-cols-4">
             {items.map((it, i) => (
               <article
                 key={i}
-                className="relative rounded-3xl bg-[#f2f2f2] p-6 transition-shadow hover:shadow-md md:p-8"
+                className="relative rounded-3xl bg-[#f2f2f2] p-6 transition-shadow hover:shadow-md"
               >
                 <span
                   className="absolute -top-3 left-6 inline-flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white"
@@ -39,7 +39,7 @@ export function ProposalCommercialBlock({ data, ...attrs }: Props) {
                   {i + 1}
                 </span>
                 <h3
-                  className="text-xs font-bold uppercase tracking-[0.18em]"
+                  className="text-xs font-bold uppercase tracking-[0.14em] break-words"
                   style={{ color: 'var(--brand-color, #ff007c)' }}
                 >
                   {it.title}

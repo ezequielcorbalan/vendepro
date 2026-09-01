@@ -8,7 +8,7 @@ import { CSS } from '@dnd-kit/utilities'
 import {
   GripVertical, Trash2, Plus, Lock, AlignLeft, AlignCenter, AlignRight,
   Heading1, Heading2, Heading3, Type, Image as ImageIcon, Images, Minus, Quote, Link2, AlertTriangle,
-  PaintBucket,
+  PaintBucket, Space,
 } from 'lucide-react'
 import { hydrateBlocks } from '../renderer/hydrate-blocks'
 import { BlockRenderer } from '../renderer/BlockRenderer'
@@ -139,7 +139,7 @@ export function EditableCanvas({
             )
           })}
           {snapshot.length === 0 && (
-            <div className="flex flex-col items-center justify-center px-8 py-24 text-center text-slate-400">
+            <div className="flex flex-col items-center justify-center px-8 py-24 text-center text-gray-400">
               <Plus className="mb-2 h-8 w-8" />
               <p className="text-sm">Agregá tu primer elemento con el botón <span className="font-medium">+</span> de arriba.</p>
             </div>
@@ -185,17 +185,17 @@ function SortableBlock({
           {...attributes}
           {...listeners}
           onClick={(e) => e.stopPropagation()}
-          className="cursor-grab rounded bg-white/90 p-1 text-slate-500 shadow-pop hover:text-ink active:cursor-grabbing"
+          className="cursor-grab rounded bg-white/90 p-1 text-gray-500 shadow-pop hover:text-ink active:cursor-grabbing"
           title="Arrastrar para reordenar"
           aria-label="Reordenar bloque"
         >
           <GripVertical className="h-4 w-4" />
         </button>
-        <span className="rounded bg-white/90 px-2 py-0.5 text-[10px] font-medium text-slate-500 shadow-pop">
+        <span className="rounded bg-white/90 px-2 py-0.5 text-[10px] font-medium text-gray-500 shadow-pop">
           {getBlockMeta(block.type).label}
         </span>
         {!isFree && (
-          <span className="flex items-center gap-0.5 rounded bg-white/90 px-1.5 py-0.5 text-[10px] text-slate-400 shadow-pop" title="Bloque del template">
+          <span className="flex items-center gap-0.5 rounded bg-white/90 px-1.5 py-0.5 text-[10px] text-gray-400 shadow-pop" title="Bloque del template">
             <Lock className="h-3 w-3" /> template
           </span>
         )}
@@ -206,14 +206,14 @@ function SortableBlock({
         {!isFree && onEditStructured && (
           <button
             onClick={(e) => { e.stopPropagation(); onEditStructured() }}
-            className="rounded bg-white/90 px-2 py-1 text-[11px] font-medium text-slate-600 shadow-pop hover:text-brand-pink"
+            className="rounded bg-white/90 px-2 py-1 text-[11px] font-medium text-gray-600 shadow-pop hover:text-brand-pink"
           >
             Editar campos
           </button>
         )}
         <button
           onClick={(e) => { e.stopPropagation(); if (confirm('¿Eliminar este bloque de la tasación?')) onRemove() }}
-          className="rounded bg-white/90 p-1 text-slate-400 shadow-pop hover:text-rose-600"
+          className="rounded bg-white/90 p-1 text-gray-400 shadow-pop hover:text-danger"
           title="Eliminar bloque"
           aria-label="Eliminar bloque"
         >
@@ -229,7 +229,7 @@ function SortableBlock({
       )}
 
       {incomplete && (
-        <div className="flex items-center gap-1.5 bg-amber-50 px-4 py-1 text-[11px] text-amber-800">
+        <div className="flex items-center gap-1.5 bg-warning/10 px-4 py-1 text-[11px] text-warning">
           <AlertTriangle className="h-3 w-3 shrink-0" />
           No se va a publicar{missingLabel ? ` — falta ${missingLabel}.` : ' porque faltan datos.'}
         </div>
@@ -246,7 +246,7 @@ function BackgroundColorButton({ value, onChange }: { value: string | null; onCh
     <div className="relative">
       <button
         onClick={(e) => { e.stopPropagation(); setOpen(o => !o) }}
-        className="rounded bg-white/90 p-1 text-slate-400 shadow-pop hover:text-slate-700"
+        className="rounded bg-white/90 p-1 text-gray-400 shadow-pop hover:text-gray-700"
         title="Color de fondo"
         aria-label="Color de fondo del bloque"
       >
@@ -255,16 +255,16 @@ function BackgroundColorButton({ value, onChange }: { value: string | null; onCh
       {open && (
         <>
           <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-6 z-30 flex items-center gap-2 rounded-control border border-slate-200 bg-white p-2 shadow-pop" onClick={(e) => e.stopPropagation()}>
+          <div className="absolute right-0 top-6 z-30 flex items-center gap-2 rounded-control border border-gray-200 bg-white p-2 shadow-pop" onClick={(e) => e.stopPropagation()}>
             <input
               type="color"
               value={value ?? '#ffffff'}
               onChange={(e) => onChange(e.target.value)}
-              className="h-7 w-7 rounded border border-slate-300 p-0.5"
+              className="h-7 w-7 rounded border border-gray-300 p-0.5"
               aria-label="Elegir color de fondo"
             />
             {value && (
-              <button onClick={() => { onChange(null); setOpen(false) }} className="text-xs text-slate-500 hover:text-rose-600">
+              <button onClick={() => { onChange(null); setOpen(false) }} className="text-xs text-gray-500 hover:text-danger">
                 Quitar
               </button>
             )}
@@ -277,8 +277,12 @@ function BackgroundColorButton({ value, onChange }: { value: string | null; onCh
 
 function FreeBlockToolbar({ block, onPatch }: { block: TemplateBlock; onPatch: (patch: Record<string, unknown>) => void }) {
   const d = block.data as any
-  const wrap = 'flex items-center gap-0.5 rounded-lg border border-slate-200 bg-white px-1 py-1 shadow-md'
-  const btn = (active: boolean) => `rounded p-1 ${active ? 'bg-brand-pink/10 text-brand-pink' : 'text-slate-500 hover:bg-slate-100'}`
+  // Barra flotante de edición inline (el "bubble toolbar" del canvas). No hay
+// equivalente en el DS y es el único uso en la app, así que vive acá con los
+// tokens del DS.
+// ds-todo: candidato a componente "BubbleToolbar" si un segundo editor lo pide.
+const wrap = 'flex items-center gap-0.5 rounded-card border border-gray-200 bg-white px-1 py-1 shadow-pop'
+  const btn = (active: boolean) => `rounded p-1 ${active ? 'bg-brand-pink/10 text-brand-pink' : 'text-gray-500 hover:bg-gray-100'}`
 
   switch (block.type) {
     case 'heading':
@@ -288,7 +292,7 @@ function FreeBlockToolbar({ block, onPatch }: { block: TemplateBlock; onPatch: (
             const Icon = lvl === 1 ? Heading1 : lvl === 2 ? Heading2 : Heading3
             return <button key={lvl} className={btn((d.level ?? 2) === lvl)} onClick={() => onPatch({ level: lvl })} title={`Título ${lvl}`} aria-label={`Título nivel ${lvl}`} aria-pressed={(d.level ?? 2) === lvl}><Icon className="h-4 w-4" /></button>
           })}
-          <span className="mx-1 h-4 w-px bg-slate-200" />
+          <span className="mx-1 h-4 w-px bg-gray-200" />
           <AlignButtons value={d.align ?? 'left'} onChange={(align) => onPatch({ align })} />
         </div>
       )
@@ -300,14 +304,14 @@ function FreeBlockToolbar({ block, onPatch }: { block: TemplateBlock; onPatch: (
               <span className="px-1 text-[11px] capitalize">{w === 'medium' ? 'S' : w === 'wide' ? 'M' : 'L'}</span>
             </button>
           ))}
-          <span className="mx-1 h-4 w-px bg-slate-200" />
+          <span className="mx-1 h-4 w-px bg-gray-200" />
           <AlignButtons value={d.align ?? 'center'} onChange={(align) => onPatch({ align })} />
         </div>
       )
     case 'gallery':
       return (
         <div className={wrap}>
-          <span className="px-1 text-[11px] text-slate-400">Columnas</span>
+          <span className="px-1 text-[11px] text-gray-400">Columnas</span>
           {[2, 3, 4].map(c => (
             <button key={c} className={btn((d.columns ?? 3) === c)} onClick={() => onPatch({ columns: c })} title={`${c} columnas`} aria-label={`${c} columnas`} aria-pressed={(d.columns ?? 3) === c}>
               <span className="px-1 text-[11px]">{c}</span>
@@ -319,8 +323,8 @@ function FreeBlockToolbar({ block, onPatch }: { block: TemplateBlock; onPatch: (
       return (
         <div className={wrap}>
           <button className={btn((d.style ?? 'line') === 'line')} onClick={() => onPatch({ style: 'line' })} title="Línea"><Minus className="h-4 w-4" /></button>
-          <button className={btn((d.style ?? 'line') === 'space')} onClick={() => onPatch({ style: 'space' })} title="Espacio"><span className="px-1 text-[11px]">␣</span></button>
-          <span className="mx-1 h-4 w-px bg-slate-200" />
+          <button className={btn((d.style ?? 'line') === 'space')} onClick={() => onPatch({ style: 'space' })} title="Espacio"><Space className="h-4 w-4" /></button>
+          <span className="mx-1 h-4 w-px bg-gray-200" />
           {(['sm', 'md', 'lg'] as const).map(s => (
             <button key={s} className={btn((d.size ?? 'md') === s)} onClick={() => onPatch({ size: s })} title={s}><span className="px-1 text-[11px] uppercase">{s}</span></button>
           ))}
@@ -352,7 +356,7 @@ function FreeBlockToolbar({ block, onPatch }: { block: TemplateBlock; onPatch: (
 }
 
 function AlignButtons({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const btn = (active: boolean) => `rounded p-1 ${active ? 'bg-brand-pink/10 text-brand-pink' : 'text-slate-500 hover:bg-slate-100'}`
+  const btn = (active: boolean) => `rounded p-1 ${active ? 'bg-brand-pink/10 text-brand-pink' : 'text-gray-500 hover:bg-gray-100'}`
   return (
     <>
       <button className={btn(value === 'left')} onClick={() => onChange('left')} title="Izquierda" aria-label="Alinear a la izquierda" aria-pressed={value === 'left'}><AlignLeft className="h-4 w-4" /></button>
@@ -409,7 +413,7 @@ function InsertZone({ onInsert }: { onInsert: (type: AppraisalBlockType) => void
       <div className={`pointer-events-none absolute inset-x-6 top-1/2 h-px -translate-y-1/2 transition-colors ${open ? 'bg-brand-pink/30' : 'bg-transparent group-hover/insert:bg-brand-pink/30'}`} />
       <button
         onClick={() => setOpen(o => !o)}
-        className={`z-10 flex h-5 w-5 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 shadow-pop transition-opacity hover:border-brand-pink hover:text-brand-pink ${open ? 'opacity-100' : 'opacity-0 group-hover/insert:opacity-100 focus:opacity-100'}`}
+        className={`z-10 flex h-5 w-5 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 shadow-pop transition-opacity hover:border-brand-pink hover:text-brand-pink ${open ? 'opacity-100' : 'opacity-0 group-hover/insert:opacity-100 focus:opacity-100'}`}
         title="Insertar elemento aquí"
         aria-label="Insertar elemento"
       >
@@ -418,12 +422,12 @@ function InsertZone({ onInsert }: { onInsert: (type: AppraisalBlockType) => void
       {open && (
         <>
           <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
-          <div className="absolute top-6 z-30 flex flex-wrap gap-1 rounded-card border border-slate-200 bg-white p-2 shadow-pop">
+          <div className="absolute top-6 z-30 flex flex-wrap gap-1 rounded-card border border-gray-200 bg-white p-2 shadow-pop">
             {PALETTE.map(({ type, icon: Icon }) => (
               <button
                 key={type}
                 onClick={() => { onInsert(type); setOpen(false) }}
-                className="flex w-24 flex-col items-center gap-1 rounded-lg px-2 py-2 text-[11px] text-slate-600 hover:bg-rose-50/50 hover:text-brand-pink"
+                className="flex w-24 flex-col items-center gap-1 rounded-control px-2 py-2 text-[11px] text-gray-600 hover:bg-primary/5 hover:text-primary"
               >
                 <Icon className="h-4 w-4" />
                 {getBlockMeta(type).label}

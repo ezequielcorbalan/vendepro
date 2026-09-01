@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Plus, ClipboardList, MapPin, ExternalLink, Pencil, Trash2, Database, Download, Loader2 } from 'lucide-react'
+import { Plus, ClipboardList, MapPin, ExternalLink, Pencil, Trash2, Database, Download, Loader2, Settings } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { scopeQueryString } from '@/lib/agent-scope'
 import { useToast } from '@/components/ui/Toast'
@@ -13,14 +13,10 @@ import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Heading, Text } from '@/components/ui/Typography'
 import { StatusBadge } from '@/components/ui/StatusBadge'
+import { getAppraisalStatus } from '@/lib/crm-config'
 import { FichaLinkSection } from '@/components/fichas/FichaLinkSection'
 
-const statusLabels: Record<string, { label: string; color: string }> = {
-  draft: { label: 'Borrador', color: 'bg-gray-100 text-gray-700' },
-  generated: { label: 'Generada', color: 'bg-blue-100 text-blue-800' },
-  sent: { label: 'Enviada', color: 'bg-green-100 text-green-800' },
-}
-
+import { Button } from '@/components/ui/Button'
 export default function TasacionesPage() {
   const { toast } = useToast()
   const [appraisals, setAppraisals] = useState<any[]>([])
@@ -70,18 +66,18 @@ export default function TasacionesPage() {
         subtitle="Tasaciones profesionales para propietarios"
         actions={
           <>
-            <Link href="/configuracion/tasacion" className="border border-gray-300 text-gray-700 px-4 py-2.5 rounded-control text-sm font-medium hover:bg-gray-50">
+            <Button href="/configuracion/tasacion" variant="outline" icon={<Settings className="w-4 h-4" />}>
               Configurar
-            </Link>
-            <Link href="/tasaciones/vendidas" className="border border-gray-300 text-gray-700 px-4 py-2.5 rounded-control text-sm font-medium hover:bg-gray-50 flex items-center gap-2">
-              <Database className="w-4 h-4" /> Cierres reales
-            </Link>
-            <Link href="/prefactibilidades/nueva" className="border border-gray-300 text-gray-700 px-4 py-2.5 rounded-control text-sm font-medium hover:bg-gray-50 flex items-center gap-2">
-              <Plus className="w-4 h-4" /> Prefactibilidad
-            </Link>
-            <Link href="/tasaciones/nueva" className="bg-primary text-white px-4 py-2.5 rounded-control text-sm font-medium hover:bg-primary-hover flex items-center gap-2">
-              <Plus className="w-4 h-4" /> Nueva tasación
-            </Link>
+            </Button>
+            <Button href="/tasaciones/vendidas" variant="outline" icon={<Database className="w-4 h-4" />}>
+              Cierres reales
+            </Button>
+            <Button href="/prefactibilidades/nueva" variant="outline" icon={<Plus className="w-4 h-4" />}>
+              Prefactibilidad
+            </Button>
+            <Button href="/tasaciones/nueva" icon={<Plus className="w-4 h-4" />}>
+              Nueva tasación
+            </Button>
           </>
         }
       />
@@ -108,7 +104,7 @@ export default function TasacionesPage() {
       ) : (
         <div className="grid gap-3">
           {appraisals.map((a: any) => {
-            const st = statusLabels[a.status] || statusLabels.draft
+            const st = getAppraisalStatus(a.status)
             return (
               <Card key={a.id} padded={false} className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <Link href={`/tasaciones/${a.id}`} className="min-w-0 flex-1">
@@ -141,7 +137,7 @@ export default function TasacionesPage() {
                   <Link href={`/tasaciones/${a.id}`} className="p-2 border rounded-control hover:bg-gray-50 text-gray-500" title="Editar">
                     <Pencil className="w-4 h-4" />
                   </Link>
-                  <button onClick={() => handleDelete(a.id)} className="p-2 border rounded-control hover:bg-red-50 hover:border-red-200 text-gray-400 hover:text-red-500" title="Eliminar">
+                  <button onClick={() => handleDelete(a.id)} className="p-2 border rounded-control hover:bg-danger/5 hover:border-danger/30 text-gray-400 hover:text-danger" title="Eliminar">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>

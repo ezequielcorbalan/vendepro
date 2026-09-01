@@ -1,10 +1,16 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { TrendingDown, TrendingUp, DollarSign, Plus, X } from 'lucide-react'
+import { TrendingDown, TrendingUp, DollarSign, Plus } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { Field, Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Card'
+import { WidgetHeader } from '@/components/ui/WidgetHeader'
+import { StatTile } from '@/components/ui/StatTile'
+import { Modal } from '@/components/ui/Modal'
+import { Alert } from '@/components/ui/Alert'
+import { Text } from '@/components/ui/Typography'
 
 interface PriceChange {
   id: string
@@ -77,31 +83,28 @@ export default function PriceHistoryWidget({
 
   return (
     <>
-      <div className="bg-white rounded-card border border-gray-200 shadow-card p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center">
-              <DollarSign className="w-4.5 h-4.5 text-white" />
-            </div>
-            <h2 className="text-sm font-semibold text-ink">Historial de precio</h2>
-          </div>
-          <button
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-1 text-xs text-brand-pink font-medium hover:underline"
-          >
-            <Plus className="w-3 h-3" /> Ajustar
-          </button>
-        </div>
+      <Card>
+        <WidgetHeader
+          icon={<DollarSign className="w-4 h-4" />}
+          title="Historial de precio"
+          className="mb-4"
+          action={
+            <Button variant="ghost" size="sm" onClick={() => setShowModal(true)} icon={<Plus className="w-3 h-3" />}>
+              Ajustar
+            </Button>
+          }
+        />
 
-        <div className="bg-gradient-to-br from-brand-pink/5 to-brand-orange/5 rounded-card p-4 mb-3 border border-brand-pink/20">
-          <p className="text-xs text-gray-500">Precio actual</p>
-          <p className="text-2xl font-bold bg-gradient-to-br from-brand-pink to-brand-orange bg-clip-text text-transparent">
-            {currentPrice ? `${currency} ${Number(currentPrice).toLocaleString('es-AR')}` : 'Sin precio'}
-          </p>
-        </div>
+        {/* Sin `tone`: la tile teñida es para resultados con significado
+            (margen positivo/negativo). Un precio es un dato. */}
+        <StatTile
+          label="Precio actual"
+          value={currentPrice ? `${currency} ${Number(currentPrice).toLocaleString('es-AR')}` : 'Sin precio'}
+          className="mb-3"
+        />
 
         {history.length === 0 ? (
-          <p className="text-xs text-gray-400 text-center py-2">Sin cambios de precio registrados</p>
+          <Text size="xs" tone="muted" className="text-center py-2">Sin cambios de precio registrados</Text>
         ) : (
           <div className="space-y-2">
             {history.slice(0, 5).map((h, i) => {
@@ -110,11 +113,11 @@ export default function PriceHistoryWidget({
               return (
                 <div key={h.id} className="flex items-center justify-between text-xs border-b border-gray-100 pb-1.5">
                   <div>
-                    <p className="font-medium text-gray-700">USD {Number(h.price_usd).toLocaleString('es-AR')}</p>
-                    <p className="text-gray-400">{new Date(h.changed_at).toLocaleDateString('es-AR')}{h.reason ? ` · ${h.reason}` : ''}</p>
+                    <Text size="xs" weight="medium">USD {Number(h.price_usd).toLocaleString('es-AR')}</Text>
+                    <Text size="xs" tone="muted">{new Date(h.changed_at).toLocaleDateString('es-AR')}{h.reason ? ` · ${h.reason}` : ''}</Text>
                   </div>
                   {delta !== null && delta !== 0 && (
-                    <span className={`flex items-center gap-0.5 font-medium ${delta > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <span className={`flex items-center gap-0.5 font-medium ${delta > 0 ? 'text-success' : 'text-danger'}`}>
                       {delta > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                       {delta > 0 ? '+' : ''}{delta.toFixed(1)}%
                     </span>
@@ -124,68 +127,52 @@ export default function PriceHistoryWidget({
             })}
           </div>
         )}
-      </div>
+      </Card>
 
-      {showModal && (
-        <div
-          className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
-          onClick={() => setShowModal(false)}
-        >
-          <div
-            className="bg-white rounded-card shadow-pop max-w-md w-full overflow-hidden"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="bg-gradient-to-r from-brand-pink to-brand-orange h-1.5" />
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-ink">Ajustar precio</h3>
-                <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-700">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="space-y-3">
-                <Field label="Nuevo precio (USD)">
-                  <Input
-                    type="number"
-                    value={newPrice}
-                    onChange={e => setNewPrice(e.target.value)}
-                    placeholder="0"
-                  />
-                  {(() => {
-                    const parsed = parseFloat(newPrice)
-                    if (!currentPrice || !parsed || parsed <= 0) return null
-                    const delta = ((parsed - currentPrice) / currentPrice) * 100
-                    if (delta === 0) return null
-                    return (
-                      <p className={`mt-1 flex items-center gap-0.5 text-[11px] font-medium ${delta > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {delta > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                        {delta > 0 ? '+' : ''}{delta.toFixed(1)}% respecto del precio actual
-                      </p>
-                    )
-                  })()}
-                </Field>
-                <Field label="Motivo (opcional)">
-                  <Input
-                    type="text"
-                    value={reason}
-                    onChange={e => setReason(e.target.value)}
-                    placeholder="Ej: Ajuste de mercado"
-                  />
-                </Field>
-              </div>
-
-              {error && (
-                <p className="mt-3 text-xs text-danger bg-danger/10 border border-danger/20 rounded-control px-3 py-2">{error}</p>
-              )}
-
-              <Button onClick={submitChange} disabled={!newPrice} loading={saving} fullWidth className="mt-5">
-                Guardar ajuste
-              </Button>
-            </div>
-          </div>
+      <Modal
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        title="Ajustar precio"
+        icon={<DollarSign className="w-4 h-4" />}
+        footer={
+          <Button onClick={submitChange} disabled={!newPrice} loading={saving} fullWidth>
+            Guardar ajuste
+          </Button>
+        }
+      >
+        <div className="space-y-3">
+          <Field label="Nuevo precio (USD)">
+            <Input
+              type="number"
+              value={newPrice}
+              onChange={e => setNewPrice(e.target.value)}
+              placeholder="0"
+            />
+            {(() => {
+              const parsed = parseFloat(newPrice)
+              if (!currentPrice || !parsed || parsed <= 0) return null
+              const delta = ((parsed - currentPrice) / currentPrice) * 100
+              if (delta === 0) return null
+              return (
+                <p className={`mt-1 flex items-center gap-0.5 text-[11px] font-medium ${delta > 0 ? 'text-success' : 'text-danger'}`}>
+                  {delta > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                  {delta > 0 ? '+' : ''}{delta.toFixed(1)}% respecto del precio actual
+                </p>
+              )
+            })()}
+          </Field>
+          <Field label="Motivo (opcional)">
+            <Input
+              type="text"
+              value={reason}
+              onChange={e => setReason(e.target.value)}
+              placeholder="Ej: Ajuste de mercado"
+            />
+          </Field>
         </div>
-      )}
+
+        {error && <Alert tone="danger" className="mt-3">{error}</Alert>}
+      </Modal>
     </>
   )
 }

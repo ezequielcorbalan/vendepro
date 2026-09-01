@@ -1,4 +1,5 @@
 'use client'
+import { Badge } from '@/components/ui/Badge'
 import { useRef, useState } from 'react'
 import {
   X, Sparkles, ImageIcon, Loader2, ChevronDown, ChevronUp,
@@ -126,9 +127,13 @@ export function ComparableCard({
     if (file && file.type.startsWith('image/')) handleFile(file)
   }
 
-  const kindPill = isVenta
-    ? <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">Cierre real</span>
-    : <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold text-brand-pink">Publicación</span>
+  // Un cierre real es un dato consolidado (success); una publicación es un
+  // precio pedido, todavía no un hecho (primary).
+  const kindPill = (
+    <Badge tone={isVenta ? 'success' : 'primary'} className="text-[10px] px-2 py-0.5 font-semibold">
+      {isVenta ? 'Cierre real' : 'Publicación'}
+    </Badge>
+  )
 
   const summaryPrice = isVenta
     ? formatPriceUsd(comparable.closing_price_usd)
@@ -136,7 +141,7 @@ export function ComparableCard({
   const summaryAddress = comparable.address || `Comparable ${index + 1}`
 
   return (
-    <article className="rounded-card border border-slate-200 bg-white">
+    <article className="rounded-card border border-gray-200 bg-white">
       {/* Header colapsable (siempre visible) */}
       <header className="flex items-center gap-2 px-4 py-3">
         <button
@@ -146,12 +151,12 @@ export function ComparableCard({
           aria-expanded={!collapsed}
         >
           {collapsed
-            ? <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" />
-            : <ChevronUp className="h-4 w-4 shrink-0 text-slate-400" />}
+            ? <ChevronDown className="h-4 w-4 shrink-0 text-gray-400" />
+            : <ChevronUp className="h-4 w-4 shrink-0 text-gray-400" />}
           {kindPill}
           <span className="truncate text-sm font-semibold text-ink">{summaryAddress}</span>
           {summaryPrice && (
-            <span className="ml-auto whitespace-nowrap text-xs font-semibold text-slate-700">
+            <span className="ml-auto whitespace-nowrap text-xs font-semibold text-gray-700">
               {summaryPrice}
             </span>
           )}
@@ -165,7 +170,7 @@ export function ComparableCard({
               onClick={onMoveUp}
               disabled={!canMoveUp}
               title="Subir"
-              className="rounded p-1 text-slate-400 hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent"
+              className="rounded p-1 text-gray-400 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent"
             >
               <ArrowUp className="h-3.5 w-3.5" />
             </button>
@@ -176,7 +181,7 @@ export function ComparableCard({
               onClick={onMoveDown}
               disabled={!canMoveDown}
               title="Bajar"
-              className="rounded p-1 text-slate-400 hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent"
+              className="rounded p-1 text-gray-400 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent"
             >
               <ArrowDown className="h-3.5 w-3.5" />
             </button>
@@ -185,7 +190,7 @@ export function ComparableCard({
             type="button"
             onClick={onRemove}
             title="Eliminar"
-            className="rounded p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-500"
+            className="rounded-control p-1 text-gray-400 hover:bg-danger/5 hover:text-danger"
           >
             <X className="h-4 w-4" />
           </button>
@@ -194,9 +199,9 @@ export function ComparableCard({
 
       {/* Body — solo si está expandido */}
       {!collapsed && (
-        <div className="border-t border-slate-100 px-5 py-4">
+        <div className="border-t border-gray-100 px-5 py-4">
           {fromSoldProperty && (
-            <p className="mb-3 flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-1.5 text-[11px] text-emerald-700">
+            <p className="mb-3 flex items-center gap-1.5 rounded-control bg-success/10 px-3 py-1.5 text-[11px] text-success">
               <Database className="h-3 w-3" />
               Datos extraídos de tu base de Cierres Reales.
             </p>
@@ -224,24 +229,24 @@ export function ComparableCard({
               onDrop={handleDrop}
               onClick={() => fileRef.current?.click()}
               className={`flex cursor-pointer flex-col items-center justify-center gap-1 rounded-card border-2 border-dashed px-4 py-6 text-center transition ${
-                highlight ? 'border-brand-pink bg-rose-50' : 'border-slate-300 hover:border-brand-pink/60'
+                highlight ? 'border-primary bg-primary/5' : 'border-gray-300 hover:border-primary/60'
               }`}
             >
               {extracting ? (
                 <>
-                  <Loader2 className="h-6 w-6 animate-spin text-brand-pink" />
-                  <p className="text-sm font-medium text-slate-700">Analizando captura con IA...</p>
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  <p className="text-sm font-medium text-gray-700">Analizando captura con IA...</p>
                 </>
               ) : previewUrl ? (
                 <>
                   <img src={previewUrl} alt="" className="max-h-32 rounded" />
                   {extracted ? (
-                    <p className="mt-2 text-xs text-emerald-600">
+                    <p className="mt-2 text-xs text-success">
                       <Sparkles className="mr-1 inline h-3 w-3" />
                       Datos extraídos. Pegá otra para reemplazar.
                     </p>
                   ) : error ? (
-                    <p className="mt-2 text-xs text-rose-500">
+                    <p className="mt-2 text-xs text-danger">
                       No se pudo extraer. Pegá otra captura para reintentar.
                     </p>
                   ) : null}
@@ -249,12 +254,12 @@ export function ComparableCard({
               ) : (
                 <>
                   <Sparkles className="h-6 w-6 text-brand-pink" />
-                  <p className="text-sm font-medium text-slate-700">
+                  <p className="text-sm font-medium text-gray-700">
                     {isVenta
                       ? 'Pegá un screenshot del cierre (Ctrl+V)'
                       : 'Click acá y pegá screenshot (Ctrl+V)'}
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-gray-500">
                     <ImageIcon className="mr-1 inline h-3 w-3" /> O subí una imagen
                     {isVenta && ' — el precio detectado se asigna a "Precio de cierre"'}
                   </p>
@@ -272,7 +277,7 @@ export function ComparableCard({
                 }}
               />
             </div>
-            {error && <p className="text-xs text-rose-500">{error}</p>}
+            {error && <p className="text-xs text-danger">{error}</p>}
 
             {/* Campos */}
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">

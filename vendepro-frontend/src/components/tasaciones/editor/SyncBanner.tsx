@@ -32,10 +32,10 @@ export function SyncBanner({ appraisalId, templateId, templateSyncedAt, onSynced
   }
 
   return (
-    <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+    <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-warning/30 bg-warning/10 px-4 py-3 text-sm text-ink">
       <AlertCircle className="h-4 w-4" />
       <span>El template <strong>{templateName}</strong> fue actualizado. Tu tasación todavía usa la versión anterior.</span>
-      <button onClick={handleSync} disabled={syncing} className="ml-auto flex items-center gap-1 rounded bg-amber-600 px-3 py-1 text-white disabled:opacity-50">
+      <button onClick={handleSync} disabled={syncing} className="ml-auto flex items-center gap-1 rounded-control bg-warning px-3 py-1 text-white disabled:opacity-50">
         {syncing && <Loader2 className="h-3 w-3 animate-spin" />} Actualizar mi tasación
       </button>
     </div>

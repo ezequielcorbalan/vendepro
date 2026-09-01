@@ -16,6 +16,9 @@ import { Field, Input, Select, Textarea } from '@/components/ui/Input'
 import { CallButton, WhatsAppButton } from '@/components/ui/ContactButtons'
 import type { Contact } from '@/lib/types'
 
+import { DetailHeader, DetailMeta } from '@/components/ui/DetailHeader'
+import { Avatar } from '@/components/ui/Avatar'
+import { Badge } from '@/components/ui/Badge'
 const CONTACT_TYPES = ['propietario', 'comprador', 'inversor', 'inquilino', 'vendedor', 'otro']
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -133,80 +136,57 @@ export default function ContactDetailPage() {
         <ArrowLeft className="w-4 h-4" /> Volver a contactos
       </Link>
 
-      {/* Header */}
-      <Card padded={false} className="p-5 sm:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-pink-100 flex items-center justify-center flex-shrink-0">
-              <User className="w-6 h-6 text-brand-pink" />
-            </div>
-            <div>
-              <Heading level={3}>{contact.full_name}</Heading>
-              <span className="inline-block mt-0.5 text-xs font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                {contactTypeLabel[contact.contact_type] ?? contact.contact_type}
-              </span>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
+      {/* Header — molde compartido con /leads/[id] (`DetailHeader`). Quedan
+          visibles 2 acciones: Llamar y WhatsApp, los canales de trabajo. "Crear
+          propiedad" va al menú — su rosa sólido quedaba pegado al de Llamar, dos
+          acciones del mismo peso y color una al lado de la otra (regla 13). */}
+      <DetailHeader
+        avatar={<Avatar size="lg" name={contact.full_name || '?'} />}
+        title={contact.full_name}
+        badges={
+          <Badge tone="neutral">
+            {contactTypeLabel[contact.contact_type] ?? contact.contact_type}
+          </Badge>
+        }
+        actions={
+          <>
             <Button variant="outline" onClick={openEdit} icon={<Edit3 className="w-3.5 h-3.5" />}>
               Editar
             </Button>
-            {contact.phone && (
-              <CallButton phone={contact.phone} />
+            <Button href={`/leads?new=1&contact_id=${contact.id}`} variant="outline" icon={<UserPlus className="w-4 h-4" />}>
+              Nuevo lead
+            </Button>
+            <Button href={`/propiedades/nueva?contact_id=${contact.id}`} icon={<Home className="w-4 h-4" />}>
+              Crear propiedad
+            </Button>
+            {contact.phone && <CallButton phone={contact.phone} />}
+            {contact.phone && <WhatsAppButton phone={contact.phone} templateContext={{ name: contact.full_name }} />}
+          </>
+        }
+        visibleActions={2}
+        meta={
+          <>
+            {contact.phone && <DetailMeta icon={<Phone className="w-4 h-4" />}>{contact.phone}</DetailMeta>}
+            {contact.email && <DetailMeta icon={<Mail className="w-4 h-4" />}>{contact.email}</DetailMeta>}
+            {contact.neighborhood && <DetailMeta icon={<MapPin className="w-4 h-4" />}>{contact.neighborhood}</DetailMeta>}
+            {contact.agent_name && (
+              <DetailMeta icon={<User className="w-4 h-4" />}>
+                Asignado a <span className="font-medium text-ink">{contact.agent_name}</span>
+              </DetailMeta>
             )}
-            {contact.phone && (
-              <WhatsAppButton phone={contact.phone} templateContext={{ name: contact.full_name }} />
+            {contact.source && (
+              <DetailMeta icon={<ExternalLink className="w-4 h-4" />}>{sourceLabel(contact.source)}</DetailMeta>
             )}
-            <Link href={`/leads?new=1&contact_id=${contact.id}`} className="flex items-center gap-2 text-sm bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-control transition-colors">
-              <UserPlus className="w-4 h-4" /> Nuevo lead
-            </Link>
-            <Link href={`/propiedades/nueva?contact_id=${contact.id}`} className="flex items-center gap-2 text-sm bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-control transition-colors">
-              <Home className="w-4 h-4" /> Crear propiedad
-            </Link>
-          </div>
-        </div>
-
-        {/* Contact data */}
-        <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {contact.phone && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span>{contact.phone}</span>
-            </div>
-          )}
-          {contact.email && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span className="truncate">{contact.email}</span>
-            </div>
-          )}
-          {contact.neighborhood && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span>{contact.neighborhood}</span>
-            </div>
-          )}
-          {contact.agent_name && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <User className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span>Asignado a <span className="font-medium text-ink">{contact.agent_name}</span></span>
-            </div>
-          )}
-          {contact.source && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <ExternalLink className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span className="text-xs bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-md">
-                {sourceLabel(contact.source)}
-              </span>
-            </div>
-          )}
-          {contact.notes && (
-            <div className="col-span-2 text-sm text-gray-600 bg-gray-50 rounded-lg p-3 whitespace-pre-wrap">
+          </>
+        }
+        footer={
+          contact.notes ? (
+            <Text size="sm" className="block text-gray-600 bg-gray-50 rounded-card p-3 whitespace-pre-wrap">
               {contact.notes}
-            </div>
-          )}
-        </div>
-      </Card>
+            </Text>
+          ) : undefined
+        }
+      />
 
       {/* Leads vinculados */}
       <Card padded={false} className="p-5 sm:p-6">
@@ -222,7 +202,7 @@ export default function ContactDetailPage() {
         ) : (
           <div className="space-y-2">
             {contact.leads.map(lead => (
-              <Link key={lead.id} href={`/leads/${lead.id}`} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-colors group">
+              <Link key={lead.id} href={`/leads/${lead.id}`} className="flex items-center justify-between p-3 rounded-control border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-colors group">
                 <div>
                   <p className="text-sm font-medium text-ink">{lead.full_name}</p>
                   <p className="text-xs text-gray-500 mt-0.5">{STAGE_LABELS[lead.stage] ?? lead.stage}</p>
@@ -248,7 +228,7 @@ export default function ContactDetailPage() {
         ) : (
           <div className="space-y-2">
             {contact.properties.map(prop => (
-              <Link key={prop.id} href={`/propiedades/${prop.id}`} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-colors group">
+              <Link key={prop.id} href={`/propiedades/${prop.id}`} className="flex items-center justify-between p-3 rounded-control border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-colors group">
                 <div>
                   <p className="text-sm font-medium text-ink">{prop.address}</p>
                   <p className="text-xs text-gray-500 mt-0.5">

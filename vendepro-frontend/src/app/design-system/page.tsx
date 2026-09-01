@@ -3,11 +3,12 @@
 import { useState } from 'react'
 import {
   Plus, Trash2, Search, Car, Sun, Waves, Inbox, AlertTriangle,
-  MoreVertical, Pencil, Copy, RefreshCw, HelpCircle, Settings, Building2, Target, Home,
+  MoreVertical, Pencil, Copy, HelpCircle, Settings, Building2, Target, Home,
+  Zap, SlidersHorizontal, ChevronRight, Check, Eye, BarChart3, Activity,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
-import { Card, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Card, CardTitle } from '@/components/ui/Card'
 import { Input, Textarea, Select, Field } from '@/components/ui/Input'
 import { Avatar } from '@/components/ui/Avatar'
 import { StageBadge } from '@/components/ui/StageBadge'
@@ -24,7 +25,8 @@ import { Dropdown, DropdownItem, DropdownSeparator } from '@/components/ui/Dropd
 import { Table, type Column } from '@/components/ui/Table'
 import { Drawer } from '@/components/ui/Drawer'
 import { Timeline } from '@/components/ui/Timeline'
-import { ProgressBar, Steps } from '@/components/ui/Progress'
+import { ProgressBar } from '@/components/ui/Progress'
+import { StepIndicator } from '@/components/ui/StepIndicator'
 import { Heading, Text } from '@/components/ui/Typography'
 import { CallButton, WhatsAppButton } from '@/components/ui/ContactButtons'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -33,6 +35,10 @@ import { StatusBadge } from '@/components/ui/StatusBadge'
 import { OperationBadge } from '@/components/ui/OperationBadge'
 import { Alert } from '@/components/ui/Alert'
 import { StatTile } from '@/components/ui/StatTile'
+import { cn } from '@/lib/utils'
+import { IconMedallion } from '@/components/ui/IconMedallion'
+import { OptionCard } from '@/components/ui/OptionCard'
+import { WidgetHeader } from '@/components/ui/WidgetHeader'
 import { PillRadioGroup, PillCheckGroup } from '@/components/ui/ChoicePills'
 import { NotificationBell, NotificationPanel } from '@/components/ui/Notifications'
 import { KanbanBoard, KanbanColumn, KanbanCard } from '@/components/ui/Kanban'
@@ -61,7 +67,7 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
 }
 
 function Row({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={`flex flex-wrap items-center gap-3 ${className ?? ''}`}>{children}</div>
+  return <div className={cn('flex flex-wrap items-center gap-3', className)}>{children}</div>
 }
 
 const SWATCHES = [
@@ -145,6 +151,9 @@ export default function DesignSystemPage() {
   const [op, setOp] = useState('venta')
   const [modalOpen, setModalOpen] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [optMode, setOptMode] = useState('method')
+  const [segIcon, setSegIcon] = useState('config')
+  const [stepDemo, setStepDemo] = useState(3)
 
   return (
     <div className="min-h-screen bg-brand-light">
@@ -290,6 +299,7 @@ export default function DesignSystemPage() {
               <Button variant="primary" icon={<Plus className="w-4 h-4" />}>Nueva propiedad</Button>
               <Button variant="outline">Ver detalle</Button>
               <Button variant="ghost">Cancelar</Button>
+              <Button variant="success" icon={<Check className="w-4 h-4" />}>Publicar</Button>
               <Button variant="danger" icon={<Trash2 className="w-4 h-4" />}>Eliminar</Button>
             </Row>
             <Row>
@@ -302,8 +312,95 @@ export default function DesignSystemPage() {
             <Row>
               <Button variant="ghost" size="icon" aria-label="Eliminar"><Trash2 className="w-4 h-4" /></Button>
               <Button variant="outline" size="icon" aria-label="Eliminar"><Trash2 className="w-4 h-4" /></Button>
-              <Text size="xs" tone="muted" className="ml-2">size="icon" — sólo ícono, sin texto</Text>
+              <Text size="xs" tone="muted" className="ml-2">size=&ldquo;icon&rdquo; — sólo ícono, sin texto</Text>
             </Row>
+            <Row>
+              <Button href="/design-system">Con href → es un &lt;a&gt;</Button>
+              <Button href="/design-system" variant="outline" icon={<Plus className="w-4 h-4" />}>Navegar</Button>
+              <Text size="xs" tone="muted" className="ml-2">
+                `href` renderiza un `&lt;Link&gt;` con el mismo estilo — se puede abrir en pestaña nueva y prefetchea
+              </Text>
+            </Row>
+          </div>
+        </Section>
+
+        {/* Gradiente de marca */}
+        <Section
+          title="IconMedallion"
+          hint="Caja con tinte de color + ícono del mismo color. Es el patrón más repetido de la app (24 usos inline antes de existir) y venía con drift: tamaños de w-7 a w-24 y radios mezclados. El `tone` usa los mismos nombres que Badge y StatTile — un solo vocabulario de tonos en todo el DS. El default es `neutral`: un ícono de encabezado no se tiñe de marca (regla 3), el color se pide."
+        >
+          <div className="space-y-4">
+            <Row>
+              <IconMedallion size="sm"><Home className="w-4 h-4" /></IconMedallion>
+              <IconMedallion size="md"><Home className="w-4 h-4" /></IconMedallion>
+              <IconMedallion size="lg"><Home className="w-5 h-5" /></IconMedallion>
+              <IconMedallion size="xl"><Home className="w-6 h-6" /></IconMedallion>
+              <IconMedallion size="lg" shape="circle"><Check className="w-5 h-5" /></IconMedallion>
+              <Text size="xs" tone="muted" className="ml-2">sm · md · lg · xl · circle</Text>
+            </Row>
+            <Row>
+              <IconMedallion size="lg"><Home className="w-5 h-5" /></IconMedallion>
+              <IconMedallion size="lg" tone="info"><Building2 className="w-5 h-5" /></IconMedallion>
+              <IconMedallion size="lg" tone="success"><Check className="w-5 h-5" /></IconMedallion>
+              <IconMedallion size="lg" tone="warning"><Target className="w-5 h-5" /></IconMedallion>
+              <IconMedallion size="lg" tone="danger"><Trash2 className="w-5 h-5" /></IconMedallion>
+              <IconMedallion size="lg" tone="neutral"><Settings className="w-5 h-5" /></IconMedallion>
+              <Text size="xs" tone="muted" className="ml-2">primary (default) · info · success · warning · danger · neutral</Text>
+            </Row>
+          </div>
+        </Section>
+
+        {/* StepIndicator */}
+        <Section
+          title="StepIndicator"
+          hint="Fuente única para “en qué paso estás”. Antes había SEIS diseños distintos para esto (tres de ellos el mismo dibujo con tres medidas). Variante `numbered` (canónica: número + label + hecho) y `dots` (compacta, para cuando no hay lugar para labels: header de un modal, página pública). El check de “hecho” va en primary, no en verde."
+        >
+          <div className="space-y-6">
+            <div>
+              <Text size="xs" tone="muted" className="mb-2">numbered · clickeable hacia atrás</Text>
+              <StepIndicator
+                steps={['Período', 'Métricas', 'Contenido', 'Competencia', 'Publicar']}
+                current={stepDemo}
+                onStepClick={setStepDemo}
+                allowForward
+              />
+            </div>
+            <div>
+              <Text size="xs" tone="muted" className="mb-2">dots · sin labels, con contador</Text>
+              <StepIndicator variant="dots" steps={8} current={3} />
+            </div>
+          </div>
+        </Section>
+
+        {/* OptionCard */}
+        <Section
+          title="OptionCard"
+          hint="Tarjeta seleccionable — “elegí una de estas opciones”. Es un botón con forma de card. orientation=&quot;row&quot; para 2–3 opciones con ícono y chevron; &quot;stack&quot; para grillas de templates."
+        >
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-3 max-w-md">
+              <OptionCard
+                title="Método probado"
+                description="Keller, Magnin, Agenda"
+                icon={<Zap className="w-5 h-5" />}
+                trailing={<ChevronRight className="w-4 h-4" />}
+                selected={optMode === 'method'}
+                onClick={() => setOptMode('method')}
+              />
+              <OptionCard
+                title="Personalizado"
+                description="Métrica a métrica"
+                icon={<SlidersHorizontal className="w-5 h-5" />}
+                trailing={<ChevronRight className="w-4 h-4" />}
+                selected={optMode === 'custom'}
+                onClick={() => setOptMode('custom')}
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 max-w-2xl">
+              <OptionCard orientation="stack" title="Keller" description="4 métricas base" selected={optMode === 'keller'} onClick={() => setOptMode('keller')} />
+              <OptionCard orientation="stack" title="Magnin" description="Foco en captación" selected={optMode === 'magnin'} onClick={() => setOptMode('magnin')} />
+              <OptionCard orientation="stack" title="Agenda" description="Actividad diaria" disabled />
+            </div>
           </div>
         </Section>
 
@@ -351,7 +448,7 @@ export default function DesignSystemPage() {
             {LEAD_STAGE_KEYS.slice(0, 4).map(stage => (
               <StageBadge key={stage} stage={stage} size="sm" />
             ))}
-            <Text size="xs" tone="muted" className="ml-2">size="sm"</Text>
+            <Text size="xs" tone="muted" className="ml-2">size=&ldquo;sm&rdquo;</Text>
           </Row>
         </Section>
 
@@ -389,18 +486,59 @@ export default function DesignSystemPage() {
           <Row className="mt-3">
             <StatusBadge label="Generada" color="bg-blue-100 text-blue-700" size="sm" />
             <StatusBadge label="Enviada" color="bg-green-100 text-green-700" size="sm" />
-            <Text size="xs" tone="muted" className="ml-2">size="sm"</Text>
+            <Text size="xs" tone="muted" className="ml-2">size=&ldquo;sm&rdquo;</Text>
           </Row>
         </Section>
 
         {/* StatTile */}
-        <Section title="StatTile" hint="Tile de estadística. Con ícono: tile blanca, el tono colorea sólo la caja (KPI del dashboard). Sin ícono + tone: tiñe toda la tile (resultado semántico). Sin ícono ni tone: neutra.">
-          <Row>
+        {/* WidgetHeader */}
+        <Section
+          title="WidgetHeader"
+          hint="El hermano de PageHeader a escala de card: medallón + título + subtítulo/badge + acción. Era el patrón más repetido DENTRO de las cards (~25 usos inline) y venía con drift: medallones de w-7/w-9/w-10, radios mezclados y hasta un gradiente distinto. Reusa CardTitle para el título."
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card>
+              <WidgetHeader
+                icon={<Target className="w-4 h-4" />}
+                title="Documentación"
+                subtitle="7 de 12 resueltos"
+                action={<Text size="lg" weight="bold" tone="primary" className="text-2xl">58%</Text>}
+              />
+              <ProgressBar value={58} className="h-2" />
+            </Card>
+            <Card>
+              <WidgetHeader
+                icon={<Home className="w-4 h-4" />}
+                title="Interesados"
+                badge={<Badge tone="primary">3</Badge>}
+                action={<Button variant="ghost" size="sm" icon={<Plus className="w-3 h-3" />}>Agregar</Button>}
+              />
+              <Text size="sm" tone="muted">size=&ldquo;sm&rdquo; · &ldquo;md&rdquo; (default) · &ldquo;lg&rdquo; cambian el medallón.</Text>
+            </Card>
+          </div>
+        </Section>
+
+        <Section title="StatTile" hint="Tile de estadística. Con ícono: tile blanca, el tono colorea sólo la caja (KPI del dashboard). Sin ícono + tone: tiñe toda la tile (resultado semántico). Sin ícono ni tone: neutra. La tile no fija alto: toma el de su celda, así que en la grilla de la app todas las de una fila miden igual.">
+          <Row className="items-stretch">
             <StatTile icon={<Target className="w-5 h-5" />} label="Leads activos" value={128} tone="primary" href="#" className="w-40" />
             <StatTile icon={<Home className="w-5 h-5" />} label="Captaciones" value={24} tone="bg-cyan-50 text-cyan-600" href="#" className="w-40" />
             <StatTile label="Inversión total" value="USD 850.000" className="w-40" />
             <StatTile tone="success" label="Ingresos proyectados" value="USD 1.200.000" className="w-40" />
             <StatTile tone="danger" label="Margen bruto" value="USD -30.000" caption="-2.4% ROI" className="w-40" />
+          </Row>
+          <Row className="mt-3 items-stretch">
+            <StatTile
+              emphasis
+              tone="border-success/30 bg-success/5 text-success"
+              icon={<Eye className="w-5 h-5" />}
+              label="Visualizaciones/día ∅"
+              value={42}
+              badge={<StatusBadge size="sm" label="Saludable" color="bg-success/15 text-success" icon={<Check className="w-2.5 h-2.5" />} />}
+              className="w-40"
+            />
+            <Text size="xs" tone="muted" className="ml-2">
+              emphasis → borde de 1px + fondo teñidos con el tone (KPI destacado) · badge → slot al pie
+            </Text>
           </Row>
         </Section>
 
@@ -502,7 +640,10 @@ export default function DesignSystemPage() {
 
         {/* Tabs + Segmented */}
         <Section title="Tabs & Segmented" hint="Navegación por secciones y cambio de vista. Interactivos.">
-          <div className="space-y-6">
+          {/* `flex flex-col` y no `space-y`: `SegmentedControl` es inline-flex, y
+              los márgenes verticales no aplican a elementos inline — los dos
+              controles terminaban en la misma línea, pegados. */}
+          <div className="flex flex-col items-start gap-6">
             <Tabs
               value={tab}
               onChange={setTab}
@@ -521,6 +662,16 @@ export default function DesignSystemPage() {
                 { value: 'semana', label: 'Semana' },
                 { value: 'dia', label: 'Día' },
                 { value: 'agenda', label: 'Agenda' },
+              ]}
+            />
+            {/* Con ícono — simétrico con Tabs, que ya lo soportaba. */}
+            <SegmentedControl
+              value={segIcon}
+              onChange={setSegIcon}
+              options={[
+                { value: 'config', label: 'Configuración', icon: <Settings className="w-3.5 h-3.5" /> },
+                { value: 'mappings', label: 'Mapeo', icon: <BarChart3 className="w-3.5 h-3.5" /> },
+                { value: 'log', label: 'Log', icon: <Activity className="w-3.5 h-3.5" /> },
               ]}
             />
           </div>
@@ -617,11 +768,44 @@ export default function DesignSystemPage() {
         </Section>
 
         {/* Table */}
-        <Section title="Tabla" hint="Data-driven, con columnas tipadas y celdas custom.">
+        <Section
+          title="Tabla"
+          hint="Data-driven, con columnas tipadas y celdas custom. `actions` agrega la celda de acciones por fila (aparece en hover en desktop, siempre visible en touch), `renderMobileCard` reemplaza la tabla por cards abajo de md, y `footer` mete la paginación dentro de la misma superficie."
+        >
           <Table
             rowKey={r => r.id as string}
             columns={PROP_COLUMNS}
             data={PROP_ROWS}
+            actions={r => (
+              <>
+                <button className="text-gray-300 hover:text-danger p-1.5" title={`Eliminar ${r.propiedad}`}>
+                  <Trash2 className="w-4 h-4" />
+                </button>
+                <button className="text-gray-400 hover:text-primary p-1.5" title="Ver detalle">
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </>
+            )}
+            renderMobileCard={r => (
+              <div className="p-4 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <Text weight="semibold" className="truncate">{r.propiedad}</Text>
+                  <Text size="xs" tone="muted">{r.vistas} vistas/día</Text>
+                </div>
+                {r.estado === 'publicada'
+                  ? <Badge tone="success">Publicada</Badge>
+                  : <Badge tone="warning">En revisión</Badge>}
+              </div>
+            )}
+            footer={
+              <div className="flex items-center justify-between">
+                <Text size="sm" tone="muted">1–3 de 3</Text>
+                <div className="flex items-center gap-1">
+                  <Button variant="outline" size="sm" disabled>Anterior</Button>
+                  <Button variant="outline" size="sm" disabled>Siguiente</Button>
+                </div>
+              </div>
+            }
           />
         </Section>
 
@@ -637,7 +821,6 @@ export default function DesignSystemPage() {
               ]}
             />
             <div className="flex flex-col gap-6">
-              <Steps total={5} current={3} />
               <div className="flex flex-col gap-1.5 max-w-xs">
                 <div className="flex justify-between text-xs text-gray-500">
                   <span>Perfil completo</span><span>70%</span>
@@ -670,17 +853,22 @@ export default function DesignSystemPage() {
         </Section>
 
         {/* Notificaciones */}
-        <Section title="Notificaciones" hint="Campana con punto de sin-leer + panel.">
+        <Section title="Notificaciones" hint="Campana con contador + panel. Es lo que usa la sidebar: `layout/NotificationBell` sólo trae los datos (fetch, polling, descartadas) y la forma sale de acá. La urgencia define ícono y color del título, desde URGENCY_TONES.">
           <div className="flex flex-wrap items-start gap-6">
-            <NotificationBell hasUnread />
+            <NotificationBell count={3} urgent />
+            <NotificationBell count={2} />
+            <NotificationBell />
+            <NotificationBell count={12} variant="outline" />
             <NotificationPanel
-              onMarkAllRead={() => {}}
+              action={{ label: 'Limpiar', onClick: () => {} }}
+              onDismiss={() => {}}
               items={[
-                { id: '1', text: <>Nuevo lead asignado: <b>Juan Pérez</b></>, time: 'Hace 5 min', unread: true },
-                { id: '2', text: 'Tasación de Tigre vence hoy', time: 'Hace 1 h', unread: true },
-                { id: '3', text: 'Propiedad publicada en portales', time: 'Ayer' },
+                { id: '1', title: 'Tasación de Tigre vence hoy', body: 'Marcela Genta · sin presentar', href: '#', urgency: 'high' },
+                { id: '2', title: 'Lead sin contactar hace 26 h', body: 'Juan Pérez · Depto Palermo', href: '#', urgency: 'medium' },
+                { id: '3', title: 'Propiedad publicada en portales', body: 'Av. Cabildo 2200', href: '#', urgency: 'low' },
               ]}
             />
+            <NotificationPanel items={[]} />
           </div>
         </Section>
 
