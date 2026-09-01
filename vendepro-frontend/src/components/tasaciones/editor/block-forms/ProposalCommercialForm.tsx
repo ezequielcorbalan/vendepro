@@ -1,5 +1,5 @@
 'use client'
-import { BlockField, BlockInput, BlockTextarea } from './BlockField'
+import { BlockField, BlockInput, BlockTextarea } from '../BlockField'
 import { X } from 'lucide-react'
 import { Checkbox } from '@/components/ui/Choice'
 interface ProposalItem { icon?: string; title: string; body: string }

@@ -1,5 +1,5 @@
 'use client'
-import { BlockField, BlockInput, BlockTextarea } from './BlockField'
+import { BlockField, BlockInput, BlockTextarea } from '../BlockField'
 interface Props { data: any; onPatch: (p: Record<string, unknown>) => void }
 
 export function CtaWhatsappForm({ data, onPatch }: Props) {

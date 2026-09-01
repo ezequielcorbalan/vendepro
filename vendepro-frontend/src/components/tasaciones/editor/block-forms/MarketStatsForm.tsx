@@ -1,5 +1,5 @@
 'use client'
-import { BlockField, BlockInput, BlockTextarea } from './BlockField'
+import { BlockField, BlockInput, BlockTextarea } from '../BlockField'
 import { X } from 'lucide-react'
 interface Props { data: any; onPatch: (p: Record<string, unknown>) => void }
 

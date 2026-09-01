@@ -1,5 +1,5 @@
 'use client'
-import { BlockField, BlockInput } from './BlockField'
+import { BlockField, BlockInput } from '../BlockField'
 interface Props { data: any; onPatch: (p: Record<string, unknown>) => void }
 
 interface Service { icon?: string; label: string; description?: string }

@@ -5,7 +5,9 @@ import { Input, Textarea, Select } from '@/components/ui/Input'
 import { cn } from '@/lib/utils'
 
 /**
- * Molde de un campo de formulario de bloque de tasación.
+ * Molde de un campo del editor de tasación. Lo usan los 17 formularios de
+ * bloque y el panel de datos de `EditorShell`, que tenía su propio
+ * `AppraisalField` con la misma cadena de clases.
  *
  * Los 17 formularios repetían la misma estructura a mano —`<label>` + `<span>`
  * con la etiqueta en minúsculas altas + un `<input>` nativo con la misma cadena

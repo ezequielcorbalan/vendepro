@@ -1,5 +1,5 @@
 'use client'
-import { BlockField, BlockInput } from './BlockField'
+import { BlockField, BlockInput } from '../BlockField'
 import ImageUpload from '@/components/landings/ImageUpload'
 
 interface Props { data: any; onPatch: (p: Record<string, unknown>) => void; compact?: boolean }
