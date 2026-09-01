@@ -123,4 +123,143 @@ describe('bloques de agente', () => {
       data: { title: 'x' },
     }).success).toBe(false)
   })
+
+  // === agent-hero: límites de CTAs ===
+  it('agent-hero acepta exactamente 3 CTAs', () => {
+    const tres = Array.from({ length: 3 }, () => ({ label: 'x', href: 'https://x', style: 'primary' }))
+    expect(validateBlock({ ...hero, data: { ...hero.data, ctas: tres } }).success).toBe(true)
+  })
+
+  it('agent-hero rechaza accent_color inválido', () => {
+    expect(validateBlock({ ...hero, data: { ...hero.data, accent_color: 'blue' } }).success).toBe(false)
+  })
+
+  it('agent-hero rechaza CTA con style inválido', () => {
+    const ctaBad = [{ label: 'x', href: 'https://x', style: 'invalid' }]
+    expect(validateBlock({ ...hero, data: { ...hero.data, ctas: ctaBad } }).success).toBe(false)
+  })
+
+  // === agent-credentials: límites ===
+  it('agent-credentials: zones acepta 12 y rechaza 13', () => {
+    const cred12 = {
+      id: 'b2', type: 'agent-credentials', visible: true,
+      data: {
+        zones: Array.from({ length: 12 }, (_, i) => `Zone${i}`),
+        specialties: ['Residencial'],
+        stats: [{ label: 'x', value: 'y' }],
+      },
+    }
+    const cred13 = {
+      id: 'b2', type: 'agent-credentials', visible: true,
+      data: {
+        zones: Array.from({ length: 13 }, (_, i) => `Zone${i}`),
+        specialties: ['Residencial'],
+        stats: [{ label: 'x', value: 'y' }],
+      },
+    }
+    expect(validateBlock(cred12).success).toBe(true)
+    expect(validateBlock(cred13).success).toBe(false)
+  })
+
+  it('agent-credentials: specialties acepta 8 y rechaza 9', () => {
+    const cred8 = {
+      id: 'b2', type: 'agent-credentials', visible: true,
+      data: {
+        zones: ['Z1'],
+        specialties: Array.from({ length: 8 }, (_, i) => `Spec${i}`),
+        stats: [{ label: 'x', value: 'y' }],
+      },
+    }
+    const cred9 = {
+      id: 'b2', type: 'agent-credentials', visible: true,
+      data: {
+        zones: ['Z1'],
+        specialties: Array.from({ length: 9 }, (_, i) => `Spec${i}`),
+        stats: [{ label: 'x', value: 'y' }],
+      },
+    }
+    expect(validateBlock(cred8).success).toBe(true)
+    expect(validateBlock(cred9).success).toBe(false)
+  })
+
+  it('agent-credentials: stats acepta 4 y rechaza 5', () => {
+    const cred4 = {
+      id: 'b2', type: 'agent-credentials', visible: true,
+      data: {
+        zones: ['Z1'],
+        specialties: ['S1'],
+        stats: Array.from({ length: 4 }, (_, i) => ({ label: `l${i}`, value: `v${i}` })),
+      },
+    }
+    const cred5 = {
+      id: 'b2', type: 'agent-credentials', visible: true,
+      data: {
+        zones: ['Z1'],
+        specialties: ['S1'],
+        stats: Array.from({ length: 5 }, (_, i) => ({ label: `l${i}`, value: `v${i}` })),
+      },
+    }
+    expect(validateBlock(cred4).success).toBe(true)
+    expect(validateBlock(cred5).success).toBe(false)
+  })
+
+  it('agent-credentials: years_experience acepta 0 y 70, rechaza -1 y 71', () => {
+    const mk = (yrs: number) => ({
+      id: 'b2', type: 'agent-credentials', visible: true,
+      data: {
+        years_experience: yrs,
+        zones: ['Z1'],
+        specialties: ['S1'],
+        stats: [{ label: 'x', value: 'y' }],
+      },
+    })
+    expect(validateBlock(mk(0)).success).toBe(true)
+    expect(validateBlock(mk(70)).success).toBe(true)
+    expect(validateBlock(mk(-1)).success).toBe(false)
+    expect(validateBlock(mk(71)).success).toBe(false)
+  })
+
+  it('agent-credentials rechaza years_experience no-entero', () => {
+    expect(validateBlock({
+      id: 'b2', type: 'agent-credentials', visible: true,
+      data: {
+        years_experience: 12.5,
+        zones: ['Z1'],
+        specialties: ['S1'],
+        stats: [{ label: 'x', value: 'y' }],
+      },
+    }).success).toBe(false)
+  })
+
+  // === faq: límite superior ===
+  it('faq: acepta 12 items y rechaza 13', () => {
+    const mk = (n: number) => ({
+      id: 'b3', type: 'faq', visible: true,
+      data: { title: 'FAQ', items: Array.from({ length: n }, (_, i) => ({ question: `q${i}`, answer: `a${i}` })) },
+    })
+    expect(validateBlock(mk(12)).success).toBe(true)
+    expect(validateBlock(mk(13)).success).toBe(false)
+  })
+
+  // === cta-whatsapp: campos requeridos aislados ===
+  it('cta-whatsapp exige title (aislado)', () => {
+    expect(validateBlock({
+      id: 'b4', type: 'cta-whatsapp', visible: true,
+      data: { phone: '+549', button_label: 'Click' },
+    }).success).toBe(false)
+  })
+
+  it('cta-whatsapp exige phone (aislado)', () => {
+    expect(validateBlock({
+      id: 'b4', type: 'cta-whatsapp', visible: true,
+      data: { title: 'Vende', button_label: 'Click' },
+    }).success).toBe(false)
+  })
+
+  it('cta-whatsapp exige button_label (aislado)', () => {
+    expect(validateBlock({
+      id: 'b4', type: 'cta-whatsapp', visible: true,
+      data: { title: 'Vende', phone: '+549' },
+    }).success).toBe(false)
+  })
 })
