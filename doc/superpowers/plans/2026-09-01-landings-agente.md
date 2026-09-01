@@ -19,8 +19,25 @@
 - Toda entidad lleva `id` TEXT PK, `org_id`, `created_at`, `updated_at`. Fechas ISO en UTC.
 - Toda query filtra por `org_id`.
 - Frontend: Server Components por defecto, `'use client'` solo si hay hooks/interactividad. Todo `await res.json()` casteado `as any`. Imports específicos de `lucide-react`, sin barrel.
-- UI nueva: usar el design system de `src/components/ui` (Button, Card, Input/Field, Heading, Text…). Nunca `<h1>`/`<p>`/`<button>` con clases sueltas. Colores por token, nunca Tailwind suelto. WhatsApp/llamada con `WhatsAppButton`/`CallButton` de `ui/ContactButtons`.
 - Marca: `#ff007c` (pink), `#ff8017` (orange), fuente Poppins.
+
+### Design system — obligatorio en TODA task de frontend (T11, T12, T13)
+
+Fuente: `.claude/CLAUDE.md` y la checklist de `doc/ds-visual-rules.md`. Estas reglas
+no son sugerencias: cada una salió de un ajuste ya aplicado en Dashboard/Leads/
+Contactos, con su commit de referencia.
+
+- **Componentes**: usar los de `src/components/ui` (Button, Badge, Card, Input/Field/Select/Textarea, Avatar, Heading, Text, Tabs, Modal, Alert, EmptyState, StatTile…). No recrear con `<div>`/`<button>` + clases.
+- **Texto**: `Heading` (level 1–4) y `Text` (size/weight/tone). Nunca `<h1>`/`<p>` con clases sueltas. Títulos de sección (Heading 2) en semibold.
+- **Color**: tokens semánticos — `primary` (hoy = brand-pink, definido en `globals.css:19`), `success/warning/danger/info/neutral`. Preferir `text-primary` sobre `text-brand-pink`: si mañana cambia el color de marca, el token semántico sigue valiendo. Nunca un color Tailwind suelto para estado (`bg-emerald-100`).
+- **Regla 1 — tamaño de botón**: default (`md`). `size="sm"` solo en contexto denso (card de kanban, fila de tabla, input chico).
+- **Regla 3 — íconos de encabezado**: `text-gray-600`, no `text-primary`. El rosa se reserva para CTAs y estados activos, no para decorar títulos. Excepción: íconos de integraciones externas (verde de WhatsApp, azul de Meta).
+- **Regla 8 — radio y sombra**: `rounded-card` + `shadow-card` para superficies; `rounded-control` para inputs/botones; `rounded-full` para pills/avatares; `shadow-pop` para flotantes. **Nunca** `rounded-xl`, `shadow-sm` ni `shadow-lg` sueltos.
+- **Regla 9 — nada a mano**: sin `<input>` nativo, sin callouts con color suelto, sin empty states armados con `<div>`. Van `Input`, `Alert tone="..."`, `EmptyState`.
+- **Grises**: la app usa la escala `gray` (`border-gray-200`, `bg-gray-50`, `text-gray-600`), no `neutral`.
+- **Canales de contacto**: WhatsApp/llamada **siempre** con `WhatsAppButton`/`CallButton` de `ui/ContactButtons`. Nunca armar el link `wa.me`/`tel:` a mano.
+- **Al terminar cualquier task de frontend**: correr el skill `ui-ux-pro-max` sobre las pantallas nuevas y aplicar lo que devuelva. Es requisito del proyecto para todo trabajo de UI.
+- Si algo no encaja en una variante existente, usar la más cercana y marcarlo `{/* ds-todo: candidato a variante "X" */}`. **No** crear variantes nuevas sobre la marcha.
 - Regla #1 del proyecto: el feature no está terminado hasta que la KB lo refleja (Task 12).
 
 ---
@@ -1653,6 +1670,8 @@ git commit -m "feat(landings-agente): template de sistema Perfil de agente (migr
 - Create: `vendepro-frontend/src/app/a/[org]/[slug]/page.tsx`, `loading.tsx`, `not-found.tsx`
 - Modify: `vendepro-frontend/src/lib/landings/public-api.ts` (agregar `getPublicAgentLanding`)
 - Modify: `vendepro-frontend/src/middleware.ts:17` (`PUBLIC_PREFIXES`)
+- Modify: `vendepro-frontend/src/app/l/[slug]/page.tsx` (canónica, Step 7)
+- Modify: `vendepro-backend/packages/core/src/application/use-cases/landings/get-public-landing.ts` (devolver `kind` y `agent_public_path`, Step 7) — **es el único toque de backend de esta task**; requiere inyectarle el `AgentProfileRepository` (Task 3) y actualizar la construcción del use case en `packages/api-public/src/index.ts`
 
 **Interfaces:**
 - Consumes: el endpoint `GET /a/:orgSlug/:agentSlug` (Task 9) y los tipos de bloque (Task 5).
@@ -1674,7 +1693,9 @@ import { WhatsAppButton } from '@/components/ui/ContactButtons'
 import { Button } from '@/components/ui/Button'
 
 export default function AgentHeroBlock({ data }: { data: any; mode?: 'public' | 'editor' }) {
-  const accent = data.accent_color === 'orange' ? 'text-brand-orange' : data.accent_color === 'dark' ? 'text-ink' : 'text-brand-pink'
+  // `accent_color` es del dato del bloque (pink|orange|dark), no un estado de UI.
+  // Se mapea a tokens; `primary` es el token semántico del rosa de marca.
+  const accent = data.accent_color === 'orange' ? 'text-brand-orange' : data.accent_color === 'dark' ? 'text-ink' : 'text-primary'
   return (
     <section className="relative w-full overflow-hidden bg-white">
       {data.background_image_url && (
@@ -1749,7 +1770,7 @@ export default function FaqBlock({ data }: { data: any; mode?: 'public' | 'edito
       {data.title && <Heading level={2} weight="semibold" className="mb-6">{data.title}</Heading>}
       <div className="flex flex-col gap-3">
         {data.items.map((item: any, i: number) => (
-          <details key={i} className="group rounded-card border border-neutral-200 p-4">
+          <details key={i} className="group rounded-card border border-gray-200 p-4">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-4">
               <Text size="sm" weight="semibold" as="span">{item.question}</Text>
               <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-open:rotate-180" />
@@ -1771,7 +1792,7 @@ import { WhatsAppButton } from '@/components/ui/ContactButtons'
 
 export default function CtaWhatsappBlock({ data }: { data: any; mode?: 'public' | 'editor' }) {
   return (
-    <section className="bg-neutral-50 px-6 py-14">
+    <section className="bg-gray-50 px-6 py-14">
       <div className="mx-auto flex max-w-3xl flex-col items-center gap-4 text-center">
         <Heading level={2} weight="semibold">{data.title}</Heading>
         {data.subtitle && <Text size="base" tone="muted">{data.subtitle}</Text>}
@@ -1906,7 +1927,20 @@ Expected: build OK, con `/a/[org]/[slug]` en la lista de rutas.
 
 Luego levantar en local (`npx next dev`) y abrir `/a/<org>/<slug>` con un perfil de prueba: debe renderizar sin redirigir a login.
 
-- [ ] **Step 10: Commit**
+- [ ] **Step 10: Pasar la revisión de UI**
+
+Estos 4 bloques son la cara pública del feature — lo que ve un comprador que
+entra desde la bio de Instagram del agente. Correr el skill `ui-ux-pro-max`
+sobre ellos y aplicar lo que devuelva.
+
+Antes de dar por cerrada la task, verificar contra `doc/ds-visual-rules.md`:
+- Radio y sombra por token (`rounded-card`/`shadow-card`/`rounded-control`/`rounded-full`), nunca `rounded-xl`/`shadow-sm`/`shadow-lg` sueltos (regla 8).
+- Escala `gray`, no `neutral`.
+- `WhatsAppButton` de `ui/ContactButtons` en el CTA — nunca un `wa.me` a mano.
+- `Heading`/`Text` en vez de tags con clases sueltas.
+- Responsive real: 1 columna en mobile, sin scroll horizontal, imágenes con `object-cover` y aspecto fijo.
+
+- [ ] **Step 11: Commit**
 
 ```bash
 git add vendepro-frontend/src/lib/landings/ vendepro-frontend/src/components/landings/ vendepro-frontend/src/app/a/ vendepro-frontend/src/app/l/ vendepro-frontend/src/middleware.ts
@@ -2012,6 +2046,20 @@ En `InspectorPanel.tsx`, para cada campo del bloque seleccionado, llamar
 - mostrar debajo, con `Text size="xs" tone="muted"`, el aviso: **"Se sincroniza con tu perfil público. Editalo en Perfil."**,
 - incluir un link a `/perfil`.
 
+> **Excepción de design system que aplica acá — leer antes de tocar el archivo.**
+> `landings/InspectorPanel.tsx` está **explícitamente listado como excepción** en
+> la regla 9 de `doc/ds-visual-rules.md`: es un panel de edición denso (columna
+> de ~340px) donde `Input`/`Field` del DS (densidad `px-4 py-2.5`) rompen el
+> layout compacto, y por eso usa inputs a mano más chicos con su propia
+> abstracción local. **No "corrijas" esos inputs a `Input` del DS** — romperías
+> el panel y estarías violando la regla, no cumpliéndola. Seguí la abstracción
+> local que ya exista en el archivo (`inputClass` o similar) y mantené la
+> consistencia con los campos vecinos.
+>
+> La misma excepción cubre `landings/ImageUpload.tsx` y `landings/AIChatPanel.tsx`,
+> que comparten esa columna. **No** aplica a `PerfilPublicoForm` (Task 12), que
+> es un formulario de página completa y sí va con `Input`/`Field` del DS.
+
 - [ ] **Step 3: Verificar que la IA no pisa los campos bindeados**
 
 El endpoint `POST /landings/:id/edit-block` de api-ai reescribe el `data` del
@@ -2039,6 +2087,14 @@ Luego, en local: abrir el editor de una landing creada con el template de
 agente, seleccionar el bloque `agent-hero` y confirmar que nombre, headline,
 bio y foto están deshabilitados con el aviso, mientras que los CTAs y el color
 de acento siguen editables.
+
+- [ ] **Step 5b: Pasar la revisión de UI**
+
+Correr el skill `ui-ux-pro-max` sobre el panel modificado y aplicar lo que
+devuelva, **respetando la excepción de densidad del Step 2** (si la revisión
+sugiere migrar los inputs del inspector al `Input` del DS, esa sugerencia no
+aplica acá — dejalo anotado y seguí). Es requisito del proyecto para todo
+trabajo de UI.
 
 - [ ] **Step 6: Commit**
 
