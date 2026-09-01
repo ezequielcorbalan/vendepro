@@ -67,7 +67,10 @@ export function resolveAgentBindings(
     const data: Record<string, unknown> = { ...(block.data as Record<string, unknown>) }
     for (const [field, path] of Object.entries(map)) {
       const value = readSource(path, ctx)
-      if (!isEmpty(value)) data[field] = value
+      // Los arrays de AgentProfile (zones, specialties, stats) vienen por
+      // referencia de los getters de la entidad — clonamos para que nadie
+      // pueda mutar el estado interno del perfil a través del bloque resuelto.
+      if (!isEmpty(value)) data[field] = Array.isArray(value) ? [...value] : value
     }
 
     const candidate = { ...block, data }

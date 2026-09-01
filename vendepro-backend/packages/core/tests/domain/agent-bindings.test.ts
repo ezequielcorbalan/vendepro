@@ -61,11 +61,30 @@ describe('resolveAgentBindings', () => {
     expect((b.data as any).phone).toBe('+5491130045087')
   })
 
-  it('no rompe si el merge produciría algo inválido: devuelve el bloque original', () => {
-    const malo = { ...heroBindeado(), data: { ...(heroBindeado().data as any) } } as Block
-    const userSinNombre = { ...user, full_name: '' }
-    const [b] = resolveAgentBindings([malo], { user: userSinNombre, profile })
-    expect((b.data as any).name).toBe('PLACEHOLDER')
+  it('no rompe si el merge produciría algo inválido: devuelve el bloque original completo', () => {
+    // photo_url NO vacío (pasa la regla 2) pero inválido para el .url() del
+    // schema de agent-hero — este es el único camino que ejerce la regla 3:
+    // el candidato mergeado falla `validateBlock` y se descarta.
+    const original = heroBindeado()
+    const userFotoInvalida = { ...user, photo_url: 'not-a-url' }
+    const [b] = resolveAgentBindings([original], { user: userFotoInvalida, profile })
+    expect(b).toEqual(original)
+  })
+
+  it('con datos válidos sí devuelve el candidato mergeado (contraste con el caso anterior)', () => {
+    const original = heroBindeado()
+    const [b] = resolveAgentBindings([original], { user, profile })
+    expect(b).not.toEqual(original)
+    expect((b.data as any).photo_url).toBe('https://cdn/andres.jpg')
+  })
+
+  it('conserva el valor del bloque cuando el perfil tiene null en un campo sin prefijo user.', () => {
+    const sinBio = AgentProfile.create({
+      user_id: 'u1', org_id: 'o1', slug: 'andres-giunta',
+      headline: 'Coordinador Comercial', bio: null,
+    })
+    const [b] = resolveAgentBindings([heroBindeado()], { user, profile: sinBio })
+    expect((b.data as any).bio).toBe('PLACEHOLDER')
   })
 
   it('no muta los bloques de entrada', () => {
