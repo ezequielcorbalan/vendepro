@@ -1,7 +1,10 @@
 'use client'
-import type { Block, HeroData, HeroSplitData, LeadFormData, FeaturesGridData, AmenitiesChipsData, GalleryData, BenefitsListData, FooterData } from '@/lib/landings/types'
+import Link from 'next/link'
+import type { Block, HeroData, HeroSplitData, LeadFormData, FeaturesGridData, AmenitiesChipsData, GalleryData, BenefitsListData, FooterData, AgentHeroData, AgentHeroCta, AgentCredentialsData, CtaWhatsappData } from '@/lib/landings/types'
+import { isBoundField } from '@/lib/landings/agent-bindings'
 import { BLOCK_LABELS } from './blocks'
 import ImageUpload from './ImageUpload'
+import { Text } from '@/components/ui/Typography'
 
 interface Props {
   block: Block
@@ -9,21 +12,32 @@ interface Props {
   onBlockChange?: (patch: Partial<Pick<Block, 'is_variable' | 'visible'>>) => void
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+/** Aviso que reemplaza la edición de un campo bindeado al perfil del agente (ver `lib/landings/agent-bindings.ts`). */
+function BoundNotice() {
+  return (
+    <Text size="xs" tone="muted">
+      Se sincroniza con tu perfil público.{' '}
+      <Link href="/perfil" className="text-brand-pink hover:underline">Editalo en Perfil.</Link>
+    </Text>
+  )
+}
+
+function Field({ label, children, bound }: { label: string; children: React.ReactNode; bound?: boolean }) {
   return (
     <div className="space-y-1.5">
       <label className="block text-xs uppercase tracking-wider font-semibold text-gray-500">{label}</label>
       {children}
+      {bound && <BoundNotice />}
     </div>
   )
 }
 
 function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...props} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none" />
+  return <input {...props} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
 }
 
 function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea {...props} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none min-h-[60px] resize-y" />
+  return <textarea {...props} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none min-h-[60px] resize-y disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
 }
 
 export default function InspectorPanel({ block, onChange, onBlockChange }: Props) {
@@ -59,7 +73,10 @@ export default function InspectorPanel({ block, onChange, onBlockChange }: Props
       {block.type === 'gallery' && <GalleryFields data={block.data as GalleryData} onChange={onChange} />}
       {block.type === 'benefits-list' && <BenefitsFields data={block.data as BenefitsListData} onChange={onChange} />}
       {block.type === 'lead-form' && <LeadFormFields data={block.data as LeadFormData} onChange={onChange} />}
-      {block.type === 'footer' && <FooterFields data={block.data as FooterData} onChange={onChange} />}
+      {block.type === 'footer' && <FooterFields data={block.data as FooterData} onChange={onChange} binding={block.binding} />}
+      {block.type === 'agent-hero' && <AgentHeroFields data={block.data as AgentHeroData} onChange={onChange} binding={block.binding} />}
+      {block.type === 'agent-credentials' && <AgentCredentialsFields data={block.data as AgentCredentialsData} onChange={onChange} binding={block.binding} />}
+      {block.type === 'cta-whatsapp' && <CtaWhatsappFields data={block.data as CtaWhatsappData} onChange={onChange} binding={block.binding} />}
     </div>
   )
 }
@@ -199,16 +216,133 @@ function LeadFormFields({ data, onChange }: { data: LeadFormData; onChange: (p: 
   )
 }
 
-function FooterFields({ data, onChange }: { data: FooterData; onChange: (p: Partial<FooterData>) => void }) {
+function FooterFields({ data, onChange, binding }: { data: FooterData; onChange: (p: Partial<FooterData>) => void; binding?: Block['binding'] }) {
+  const bPhone = isBoundField('footer', 'phone', binding)
+  const bInstagram = isBoundField('footer', 'instagram', binding)
+  const bRegistration = isBoundField('footer', 'agency_registration', binding)
   return (
     <>
       <Field label="Nombre inmobiliaria"><TextInput value={data.agency_name ?? ''} onChange={e => onChange({ agency_name: e.target.value })} /></Field>
-      <Field label="Matrícula"><TextInput value={data.agency_registration ?? ''} onChange={e => onChange({ agency_registration: e.target.value })} /></Field>
-      <Field label="Teléfono"><TextInput value={data.phone ?? ''} onChange={e => onChange({ phone: e.target.value })} /></Field>
+      <Field label="Matrícula" bound={bRegistration}><TextInput value={data.agency_registration ?? ''} disabled={bRegistration} onChange={e => onChange({ agency_registration: e.target.value })} /></Field>
+      <Field label="Teléfono" bound={bPhone}><TextInput value={data.phone ?? ''} disabled={bPhone} onChange={e => onChange({ phone: e.target.value })} /></Field>
       <Field label="Email"><TextInput type="email" value={data.email ?? ''} onChange={e => onChange({ email: e.target.value })} /></Field>
       <Field label="WhatsApp"><TextInput value={data.whatsapp ?? ''} onChange={e => onChange({ whatsapp: e.target.value })} /></Field>
-      <Field label="Instagram"><TextInput value={data.instagram ?? ''} onChange={e => onChange({ instagram: e.target.value })} /></Field>
+      <Field label="Instagram" bound={bInstagram}><TextInput value={data.instagram ?? ''} disabled={bInstagram} onChange={e => onChange({ instagram: e.target.value })} /></Field>
       <Field label="Disclaimer"><TextArea value={data.disclaimer ?? ''} onChange={e => onChange({ disclaimer: e.target.value })} /></Field>
+    </>
+  )
+}
+
+function AgentHeroFields({ data, onChange, binding }: { data: AgentHeroData; onChange: (p: Partial<AgentHeroData>) => void; binding?: Block['binding'] }) {
+  const bName = isBoundField('agent-hero', 'name', binding)
+  const bHeadline = isBoundField('agent-hero', 'headline', binding)
+  const bBio = isBoundField('agent-hero', 'bio', binding)
+  const bPhoto = isBoundField('agent-hero', 'photo_url', binding)
+  const bBackground = isBoundField('agent-hero', 'background_image_url', binding)
+
+  const updateCta = (idx: number, patch: Partial<AgentHeroCta>) => {
+    const ctas = data.ctas.map((c, i) => i === idx ? { ...c, ...patch } : c)
+    onChange({ ctas })
+  }
+
+  return (
+    <>
+      <Field label="Nombre" bound={bName}><TextInput value={data.name} disabled={bName} onChange={e => onChange({ name: e.target.value })} /></Field>
+      <Field label="Headline" bound={bHeadline}><TextInput value={data.headline ?? ''} disabled={bHeadline} onChange={e => onChange({ headline: e.target.value })} /></Field>
+      <Field label="Bio" bound={bBio}><TextArea value={data.bio ?? ''} disabled={bBio} onChange={e => onChange({ bio: e.target.value })} /></Field>
+      <Field label="Foto" bound={bPhoto}>
+        {bPhoto ? (
+          <div className="flex items-center gap-2">
+            {data.photo_url && <img src={data.photo_url} alt="" className="w-12 h-12 rounded-full object-cover" />}
+          </div>
+        ) : (
+          <ImageUpload value={data.photo_url} onChange={(url) => onChange({ photo_url: url })} />
+        )}
+      </Field>
+      <Field label="Imagen de fondo (opcional)" bound={bBackground}>
+        {bBackground ? (
+          data.background_image_url ? <img src={data.background_image_url} alt="" className="w-full h-16 rounded-lg object-cover" /> : null
+        ) : (
+          <ImageUpload value={data.background_image_url ?? ''} onChange={(url) => onChange({ background_image_url: url })} />
+        )}
+      </Field>
+      <Field label="Color de acento">
+        <select value={data.accent_color} onChange={e => onChange({ accent_color: e.target.value as AgentHeroData['accent_color'] })} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+          <option value="pink">Rosa</option>
+          <option value="orange">Naranja</option>
+          <option value="dark">Oscuro</option>
+        </select>
+      </Field>
+      <Field label="CTAs">
+        <div className="space-y-2">
+          {data.ctas.map((cta, i) => (
+            <div key={i} className="border border-gray-200 rounded-lg p-3 space-y-2 bg-gray-50">
+              <TextInput placeholder="Label" value={cta.label} onChange={e => updateCta(i, { label: e.target.value })} />
+              <TextInput placeholder="Link (URL, #ancla o teléfono si es WhatsApp)" value={cta.href} onChange={e => updateCta(i, { href: e.target.value })} />
+              <select value={cta.style} onChange={e => updateCta(i, { style: e.target.value as AgentHeroCta['style'] })} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                <option value="primary">Primario</option>
+                <option value="secondary">Secundario</option>
+                <option value="whatsapp">WhatsApp</option>
+              </select>
+              <button onClick={() => onChange({ ctas: data.ctas.filter((_, j) => j !== i) })} className="text-xs text-red-500 hover:underline">Quitar</button>
+            </div>
+          ))}
+          <button onClick={() => onChange({ ctas: [...data.ctas, { label: '', href: '', style: 'primary' }] })} className="text-xs text-brand-pink hover:underline">+ Agregar CTA</button>
+        </div>
+      </Field>
+    </>
+  )
+}
+
+function AgentCredentialsFields({ data, onChange, binding }: { data: AgentCredentialsData; onChange: (p: Partial<AgentCredentialsData>) => void; binding?: Block['binding'] }) {
+  const bLicense = isBoundField('agent-credentials', 'license', binding)
+  const bYears = isBoundField('agent-credentials', 'years_experience', binding)
+  const bZones = isBoundField('agent-credentials', 'zones', binding)
+  const bSpecialties = isBoundField('agent-credentials', 'specialties', binding)
+  const bStats = isBoundField('agent-credentials', 'stats', binding)
+
+  return (
+    <>
+      <Field label="Título"><TextInput value={data.title ?? ''} onChange={e => onChange({ title: e.target.value })} /></Field>
+      <Field label="Matrícula" bound={bLicense}><TextInput value={data.license ?? ''} disabled={bLicense} onChange={e => onChange({ license: e.target.value })} /></Field>
+      <Field label="Años de experiencia" bound={bYears}>
+        <TextInput type="number" min={0} disabled={bYears} value={data.years_experience ?? ''} onChange={e => onChange({ years_experience: e.target.value === '' ? undefined : Number(e.target.value) })} />
+      </Field>
+      <Field label="Zonas (separadas por coma)" bound={bZones}>
+        <TextInput disabled={bZones} value={data.zones.join(', ')} onChange={e => onChange({ zones: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} />
+      </Field>
+      <Field label="Especialidades (separadas por coma)" bound={bSpecialties}>
+        <TextInput disabled={bSpecialties} value={data.specialties.join(', ')} onChange={e => onChange({ specialties: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} />
+      </Field>
+      <Field label="Stats (ej: 120 propiedades vendidas)" bound={bStats}>
+        {bStats ? (
+          <p className="text-xs text-gray-400">{data.stats.length > 0 ? data.stats.map(s => `${s.value} ${s.label}`).join(' · ') : 'Sin datos cargados en el perfil.'}</p>
+        ) : (
+          <div className="space-y-2">
+            {data.stats.map((s, i) => (
+              <div key={i} className="flex gap-2">
+                <TextInput placeholder="Valor" className="!w-20" value={s.value} onChange={e => { const stats = [...data.stats]; stats[i] = { ...s, value: e.target.value }; onChange({ stats }) }} />
+                <TextInput placeholder="Label" value={s.label} onChange={e => { const stats = [...data.stats]; stats[i] = { ...s, label: e.target.value }; onChange({ stats }) }} />
+                <button onClick={() => onChange({ stats: data.stats.filter((_, j) => j !== i) })} className="text-xs text-red-500 hover:underline">Quitar</button>
+              </div>
+            ))}
+            <button onClick={() => onChange({ stats: [...data.stats, { label: '', value: '' }] })} className="text-xs text-brand-pink hover:underline">+ Agregar stat</button>
+          </div>
+        )}
+      </Field>
+    </>
+  )
+}
+
+function CtaWhatsappFields({ data, onChange, binding }: { data: CtaWhatsappData; onChange: (p: Partial<CtaWhatsappData>) => void; binding?: Block['binding'] }) {
+  const bPhone = isBoundField('cta-whatsapp', 'phone', binding)
+  return (
+    <>
+      <Field label="Título"><TextInput value={data.title} onChange={e => onChange({ title: e.target.value })} /></Field>
+      <Field label="Subtítulo"><TextArea value={data.subtitle ?? ''} onChange={e => onChange({ subtitle: e.target.value })} /></Field>
+      <Field label="Teléfono de WhatsApp" bound={bPhone}><TextInput value={data.phone} disabled={bPhone} onChange={e => onChange({ phone: e.target.value })} /></Field>
+      <Field label="Mensaje predefinido"><TextArea value={data.message_template ?? ''} onChange={e => onChange({ message_template: e.target.value })} /></Field>
+      <Field label="Label del botón"><TextInput value={data.button_label} onChange={e => onChange({ button_label: e.target.value })} /></Field>
     </>
   )
 }

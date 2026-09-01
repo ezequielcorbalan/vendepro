@@ -74,9 +74,9 @@ export default function NewLandingModal({ onClose, asTasacionTemplate = false }:
         {step === 'template' && (
           <div className="flex-1 overflow-auto p-6">
             <div className="flex gap-2 mb-4">
-              {(['all', 'lead_capture', 'property'] as const).map(k => (
+              {(['all', 'lead_capture', 'property', 'agent_profile'] as const).map(k => (
                 <button key={k} onClick={() => setKindFilter(k)} className={`px-3 py-1.5 rounded-full text-sm ${kindFilter === k ? 'bg-brand-pink text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
-                  {k === 'all' ? 'Todos' : k === 'lead_capture' ? 'Captación' : 'Propiedad'}
+                  {kindLabel(k)}
                 </button>
               ))}
             </div>
@@ -92,7 +92,7 @@ export default function NewLandingModal({ onClose, asTasacionTemplate = false }:
                     </div>
                     <div className="p-4">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-600">{t.kind === 'lead_capture' ? 'Captación' : 'Propiedad'}</span>
+                        <span className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-600">{kindLabel(t.kind)}</span>
                       </div>
                       <h3 className="font-semibold text-ink mb-1">{t.name}</h3>
                       {t.description && <p className="text-sm text-gray-600 line-clamp-2">{t.description}</p>}
@@ -135,4 +135,11 @@ export default function NewLandingModal({ onClose, asTasacionTemplate = false }:
       </div>
     </div>
   )
+}
+
+function kindLabel(kind: LandingKind | 'all'): string {
+  if (kind === 'all') return 'Todos'
+  if (kind === 'lead_capture') return 'Captación'
+  if (kind === 'property') return 'Propiedad'
+  return 'Mi perfil de agente'
 }

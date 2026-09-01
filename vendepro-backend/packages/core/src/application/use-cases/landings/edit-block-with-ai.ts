@@ -49,6 +49,11 @@ export class EditBlockWithAIUseCase {
       const block = landing.blocks.find(b => b.id === input.blockId)
       if (!block) throw new NotFoundError('Block', input.blockId)
 
+      // No importa si la IA pisa un campo bindeado (block.binding === 'agent_profile',
+      // ver agent-bindings.ts): esto solo devuelve una propuesta, no persiste. Y aunque
+      // el frontend la acepte y la guarde tal cual, la página pública de agente vuelve a
+      // resolver esos campos desde el perfil en cada lectura — ver comentario en
+      // packages/api-ai/src/index.ts.
       const res = await this.ai.editLandingBlock({
         blockType: block.type,
         blockData: block.data as Record<string, unknown>,

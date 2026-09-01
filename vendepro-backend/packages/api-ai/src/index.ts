@@ -105,6 +105,14 @@ app.post('/extract-image', async (c) => {
   }
 })
 
+// Este endpoint solo genera y devuelve una propuesta (EditBlockWithAIUseCase no
+// persiste nada). El frontend recién escribe el `data` propuesto cuando el
+// agente acepta (ver AIChatPanel.tsx → accept()), sin filtrar campos bindeados.
+// Eso está bien: si el bloque tiene binding='agent_profile', el valor que la
+// IA haya pisado en un campo bindeado (ver AGENT_BINDINGS) queda igual
+// sobreescrito por el perfil del agente en la lectura pública
+// (resolveAgentBindings, invocado desde GetPublicAgentLandingUseCase). No hace
+// falta lógica extra acá — el binding se resuelve en lectura, no en escritura.
 app.post('/landings/:id/edit-block', async (c) => {
   const body = (await c.req.json()) as any
   const landings = new D1LandingRepository(c.env.DB)
