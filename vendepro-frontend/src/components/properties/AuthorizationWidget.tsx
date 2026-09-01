@@ -83,11 +83,11 @@ export default function AuthorizationWidget({
         </Alert>
       )}
 
-      {/* Ni `fullWidth` ni el visto como carácter: una barra rosa a todo el
-          ancho para guardar un formulario secundario pesa más que la acción, y
-          el visto va como ícono de lucide. */}
+      {/* Secundario: el primary de la pantalla es el CTA del encabezado, no el
+          guardar de cada card. Y ni `fullWidth` ni el visto como carácter. */}
       <div className="mt-3 flex justify-end">
         <Button
+          variant="outline"
           onClick={save}
           loading={saving}
           icon={saved ? <Check className="w-4 h-4" /> : undefined}

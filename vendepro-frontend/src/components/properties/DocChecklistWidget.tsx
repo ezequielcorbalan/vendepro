@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { FileCheck2, Check, X, Circle, FolderOpen, Plus, ExternalLink, Trash2 } from 'lucide-react'
+import { FileCheck2, Check, X, FolderOpen, Plus, ExternalLink, Trash2 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
@@ -203,7 +203,7 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
               placeholder="https://drive.google.com/..."
               className="flex-1"
             />
-            <Button size="sm" onClick={saveCloudUrl}>Guardar</Button>
+            <Button variant="outline" size="sm" onClick={saveCloudUrl}>Guardar</Button>
             <Button
               variant="ghost" size="icon" aria-label="Cancelar"
               onClick={() => { setShowCloudInput(false); setCloudInput('') }}
@@ -247,9 +247,15 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
                 >
                   <Trash2 className="w-3 h-3" />
                 </button>
-                {/* ds-todo: candidato a control "tri-estado" (tengo / no aplica /
-                    pendiente) en 24px. Único uso en la app, así que por ahora son
-                    tres botones nativos con los colores tokenizados. */}
+                {/* Dos estados explícitos, no tres. Había un tercer botón
+                    ("Pendiente", un círculo) que no hacía nada que estos dos no
+                    hicieran: los dos son toggle, así que clickear el activo ya
+                    vuelve a pendiente. Y como pendiente es el estado inicial, el
+                    círculo aparecía resaltado en cada fila sin tocar: 16 círculos
+                    grises que no informaban nada.
+                    ds-todo: candidato a un control de par toggle en 24px. Único
+                    uso en la app, así que por ahora son dos botones nativos con
+                    los colores tokenizados. */}
                 <button
                   onClick={() => updateStatus(doc.key, s === 'done' ? 'pending' : 'done')}
                   title="Tengo el documento"
@@ -267,15 +273,6 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
                   }`}
                 >
                   <X className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => updateStatus(doc.key, 'pending')}
-                  title="Pendiente"
-                  className={`w-6 h-6 rounded-md flex items-center justify-center transition-all ${
-                    s === 'pending' ? 'bg-gray-300 text-gray-600' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
-                  }`}
-                >
-                  <Circle className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
@@ -305,7 +302,7 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
               placeholder="Ej: Aprobación banco hipotecario"
               className="flex-1"
             />
-            <Button size="sm" onClick={addCustomDoc} disabled={!customInput.trim()}>Agregar</Button>
+            <Button variant="outline" size="sm" onClick={addCustomDoc} disabled={!customInput.trim()}>Agregar</Button>
             <Button
               variant="ghost" size="icon" aria-label="Cancelar"
               onClick={() => { setShowCustomInput(false); setCustomInput('') }}

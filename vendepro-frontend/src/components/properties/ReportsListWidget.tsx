@@ -67,7 +67,7 @@ export default function ReportsListWidget({ propertyId }: Props) {
           icon={<FileBarChart className="w-6 h-6" />}
           title="No hay reportes para esta propiedad"
           action={
-            <Button href={`/propiedades/${propertyId}/reportes/nuevo`}>
+            <Button href={`/propiedades/${propertyId}/reportes/nuevo`} variant="outline">
               Crear el primer reporte
             </Button>
           }
