@@ -417,23 +417,17 @@ export default function ContactosPage() {
           rowKey={c => c.id}
           minWidth={900}
           columns={contactColumns}
+          rowHref={c => `/contactos/${c.id}`}
           actions={c => (
-            <>
-              <button
-                onClick={() => handleDelete(c.id)}
-                className="text-gray-300 hover:text-danger p-1.5"
-                title="Eliminar"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-              <Link
-                href={`/contactos/${c.id}`}
-                className="inline-block text-gray-400 hover:text-primary p-1.5 align-middle"
-                title="Ver detalle"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </Link>
-            </>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleDelete(c.id)}
+              aria-label={`Eliminar ${c.full_name}`}
+              className="text-gray-300 hover:text-danger"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
           )}
           renderMobileCard={c => {
             const t = typeLabels[c.contact_type] || typeLabels.otro

@@ -770,21 +770,17 @@ export default function DesignSystemPage() {
         {/* Table */}
         <Section
           title="Tabla"
-          hint="Data-driven, con columnas tipadas y celdas custom. `actions` agrega la celda de acciones por fila (aparece en hover en desktop, siempre visible en touch), `renderMobileCard` reemplaza la tabla por cards abajo de md, y `footer` mete la paginación dentro de la misma superficie."
+          hint="Data-driven, con columnas tipadas y celdas custom. `actions` agrega la celda de acciones por fila (aparece en hover en desktop, siempre visible en touch) — SÓLO para acciones secundarias. Si la fila se abre, eso va en `rowHref`: la fila entera navega y el chevron queda siempre visible, porque esconder la única señal de «acá se entra» detrás de un hover deja la tabla sin affordance. `renderMobileCard` reemplaza la tabla por cards abajo de md, y `footer` mete la paginación dentro de la misma superficie."
         >
           <Table
             rowKey={r => r.id as string}
             columns={PROP_COLUMNS}
             data={PROP_ROWS}
+            rowHref={() => '#'}
             actions={r => (
-              <>
-                <button className="text-gray-300 hover:text-danger p-1.5" title={`Eliminar ${r.propiedad}`}>
-                  <Trash2 className="w-4 h-4" />
-                </button>
-                <button className="text-gray-400 hover:text-primary p-1.5" title="Ver detalle">
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </>
+              <button className="text-gray-300 hover:text-danger p-1.5" title={`Eliminar ${r.propiedad}`}>
+                <Trash2 className="w-4 h-4" />
+              </button>
             )}
             renderMobileCard={r => (
               <div className="p-4 flex items-center justify-between gap-3">
