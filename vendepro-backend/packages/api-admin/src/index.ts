@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
-import { corsMiddleware, errorHandler, createAuthMiddleware, D1UserRepository, D1ObjectiveRepository, D1TemplateBlockRepository, JwtAuthService, CryptoIdGenerator, D1RoleRepository, D1NotificationRepository, D1OrganizationRepository, D1AppraisalTemplateRepository, D1OrgVariableRepository } from '@vendepro/infrastructure'
-import { CreateAgentUseCase, GetAgentsUseCase, GetDeletedAgentsUseCase, UpdateAgentUseCase, DeleteAgentUseCase, RestoreAgentUseCase, SetObjectivesUseCase, UpdateAgentRoleUseCase, GetRolesUseCase, GetOrgSettingsUseCase, UpdateOrgSettingsUseCase, GetUserProfileUseCase, UpdateUserProfileUseCase, GetUserNotificationsUseCase, ListAppraisalTemplatesUseCase, GetAppraisalTemplateUseCase, CreateAppraisalTemplateUseCase, UpdateAppraisalTemplateUseCase, DuplicateAppraisalTemplateUseCase, ArchiveAppraisalTemplateUseCase, ListOrgVariablesUseCase, CreateOrgVariableUseCase, UpdateOrgVariableUseCase, DeleteOrgVariableUseCase, MODULE_DEFINITIONS } from '@vendepro/core'
+import { corsMiddleware, errorHandler, createAuthMiddleware, D1UserRepository, D1ObjectiveRepository, D1TemplateBlockRepository, JwtAuthService, CryptoIdGenerator, D1RoleRepository, D1NotificationRepository, D1OrganizationRepository, D1AppraisalTemplateRepository, D1OrgVariableRepository, D1AgentProfileRepository } from '@vendepro/infrastructure'
+import { CreateAgentUseCase, GetAgentsUseCase, GetDeletedAgentsUseCase, UpdateAgentUseCase, DeleteAgentUseCase, RestoreAgentUseCase, SetObjectivesUseCase, UpdateAgentRoleUseCase, GetRolesUseCase, GetOrgSettingsUseCase, UpdateOrgSettingsUseCase, GetUserProfileUseCase, UpdateUserProfileUseCase, GetUserNotificationsUseCase, ListAppraisalTemplatesUseCase, GetAppraisalTemplateUseCase, CreateAppraisalTemplateUseCase, UpdateAppraisalTemplateUseCase, DuplicateAppraisalTemplateUseCase, ArchiveAppraisalTemplateUseCase, ListOrgVariablesUseCase, CreateOrgVariableUseCase, UpdateOrgVariableUseCase, DeleteOrgVariableUseCase, MODULE_DEFINITIONS, GetAgentProfileUseCase, UpdateAgentProfileUseCase } from '@vendepro/core'
 
 type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket }
 type AuthVars = { Variables: { userId: string; userRole: string; orgId: string } }
@@ -246,6 +246,48 @@ app.put('/profile', async (c) => {
     photo_url: body.photo_url ?? null,
   })
   return c.json({ success: true })
+})
+
+// ── PERFIL PÚBLICO DE AGENTE (landing /a/:orgSlug/:agentSlug) ──
+app.get('/profile/public', async (c) => {
+  const uc = new GetAgentProfileUseCase(new D1AgentProfileRepository(c.env.DB))
+  const user = await new D1UserRepository(c.env.DB).findProfileById(c.get('userId'))
+  const profile = await uc.execute({
+    orgId: c.get('orgId'),
+    userId: c.get('userId'),
+    fullName: user?.full_name ?? '',
+  })
+  return c.json(profile.toObject())
+})
+
+app.put('/profile/public', async (c) => {
+  const body = (await c.req.json()) as any
+  const user = await new D1UserRepository(c.env.DB).findProfileById(c.get('userId'))
+  const uc = new UpdateAgentProfileUseCase(new D1AgentProfileRepository(c.env.DB))
+  const profile = await uc.execute({
+    orgId: c.get('orgId'),
+    userId: c.get('userId'),
+    fullName: user?.full_name ?? '',
+    patch: {
+      slug: body.slug,
+      headline: body.headline ?? null,
+      bio: body.bio ?? null,
+      license: body.license ?? null,
+      years_experience: body.years_experience ?? null,
+      zones: body.zones ?? [],
+      specialties: body.specialties ?? [],
+      whatsapp: body.whatsapp ?? null,
+      instagram: body.instagram ?? null,
+      tiktok: body.tiktok ?? null,
+      youtube: body.youtube ?? null,
+      linkedin: body.linkedin ?? null,
+      website: body.website ?? null,
+      cover_image_url: body.cover_image_url ?? null,
+      stats: body.stats ?? [],
+      is_public: body.is_public ?? false,
+    },
+  })
+  return c.json(profile.toObject())
 })
 
 app.get('/notifications', async (c) => {

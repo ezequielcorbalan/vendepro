@@ -135,6 +135,10 @@ export * from './use-cases/ai/extract-lead-from-image'
 // Landings
 export * from './use-cases/landings/index'
 
+// Perfiles públicos de agente (landing /a/:orgSlug/:agentSlug)
+export * from './use-cases/agents/update-agent-profile'
+export * from './use-cases/agents/get-agent-profile'
+
 // Property Visit Forms (Ficha de Visita)
 export * from './use-cases/visit-forms/index'
 

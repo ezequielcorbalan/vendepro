@@ -26,6 +26,7 @@ import {
   HmacUnsubscribeTokenSigner,
   fireMarketingEvent,
   fireWebhookEvent,
+  D1AgentProfileRepository,
 } from '@vendepro/infrastructure'
 import {
   GetPublicReportUseCase,
@@ -46,6 +47,7 @@ import {
   propertyFromIncoming,
   buildLeadProperty,
   GetPortalFeedUseCase,
+  GetPublicAgentLandingUseCase,
 } from '@vendepro/core'
 
 type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket; PUBLIC_BASE_URL?: string }
@@ -535,6 +537,21 @@ app.post('/public/leads', async (c) => {
   })
 
   return c.json({ ...result, marketing: mk ?? null }, 201)
+})
+
+// ── LANDING PÚBLICA DE AGENTE ───────────────────────────────────
+app.get('/a/:orgSlug/:agentSlug', async (c) => {
+  const uc = new GetPublicAgentLandingUseCase(
+    new D1OrganizationRepository(c.env.DB),
+    new D1AgentProfileRepository(c.env.DB),
+    new D1UserRepository(c.env.DB),
+    new D1LandingRepository(c.env.DB),
+  )
+  const data = await uc.execute({
+    orgSlug: c.req.param('orgSlug'),
+    agentSlug: c.req.param('agentSlug'),
+  })
+  return c.json(data)
 })
 
 // ── PUBLIC LANDINGS ───────────────────────────────────────────
