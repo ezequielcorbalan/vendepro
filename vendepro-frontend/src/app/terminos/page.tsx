@@ -14,7 +14,7 @@ export default function TerminosPage() {
       <nav className="border-b border-gray-100 bg-white">
         <div className="max-w-3xl mx-auto px-4 sm:px-8 flex items-center h-16">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center">
+            <div className="w-7 h-7 rounded-control bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center">
               <span className="text-white font-black text-[10px] tracking-tight">VP</span>
             </div>
             <span className="font-bold text-ink">Vendé<span className="text-brand-pink">Pro</span></span>

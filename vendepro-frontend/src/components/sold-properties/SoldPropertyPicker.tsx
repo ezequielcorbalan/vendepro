@@ -86,7 +86,7 @@ export default function SoldPropertyPicker({
                 <button
                   key={o}
                   onClick={() => setFilters(f => ({ ...f, origin: o }))}
-                  className={`px-3 py-1 rounded-lg text-xs font-medium ${
+                  className={`px-3 py-1 rounded-control text-xs font-medium ${
                     active ? 'bg-brand-pink/10 text-brand-pink' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
@@ -149,7 +149,7 @@ export default function SoldPropertyPicker({
                         : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50'
                     }`}
                   >
-                    <div className="w-12 h-12 rounded-lg bg-gray-100 flex-shrink-0 overflow-hidden flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-control bg-gray-100 flex-shrink-0 overflow-hidden flex items-center justify-center">
                       {sp.photos[0] ? <img src={sp.photos[0]} alt="" className="w-full h-full object-cover" /> : <MapPin className="w-5 h-5 text-gray-300" />}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -197,13 +197,13 @@ export default function SoldPropertyPicker({
             {maxSelect && selected.size >= maxSelect ? ` (máx ${maxSelect})` : ''}
           </p>
           <div className="flex gap-2">
-            <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg">
+            <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-control">
               Cancelar
             </button>
             <button
               onClick={() => onPick(chosen)}
               disabled={chosen.length === 0}
-              className="px-5 py-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white text-sm font-medium rounded-lg hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-5 py-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white text-sm font-medium rounded-control hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {ctaLabel} ({chosen.length})
             </button>

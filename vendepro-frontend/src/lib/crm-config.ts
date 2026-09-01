@@ -181,6 +181,23 @@ export const APPRAISAL_STATUSES = {
   sent:      { label: 'Enviada',  color: 'bg-green-100 text-green-800' },
 } as const
 
+// Alcance de un template de tasación: de quién es y quién lo puede editar.
+// El mapa estaba inline en admin/TemplatesHome con pink/purple/blue sueltos.
+export const TEMPLATE_SCOPES = {
+  sistema:      { label: 'Sistema',      color: 'bg-gray-100 text-gray-700' },
+  propio:       { label: 'Mío',          color: 'bg-primary/10 text-primary' },
+  agente:       { label: 'Agente',       color: 'bg-purple-100 text-purple-800' },
+  organizacion: { label: 'Organización', color: 'bg-blue-100 text-blue-800' },
+} as const
+
+export type TemplateScope = keyof typeof TEMPLATE_SCOPES
+
+export function getTemplateScope(t: { is_system?: boolean; agent_id?: string | null }, currentUserId?: string): TemplateScope {
+  if (t.is_system) return 'sistema'
+  if (!t.agent_id) return 'organizacion'
+  return t.agent_id === currentUserId ? 'propio' : 'agente'
+}
+
 export function getAppraisalStatus(status?: string | null) {
   return APPRAISAL_STATUSES[status as keyof typeof APPRAISAL_STATUSES] ?? APPRAISAL_STATUSES.draft
 }

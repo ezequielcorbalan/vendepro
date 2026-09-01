@@ -129,7 +129,7 @@ function FromTemplateBlocks({
 
   if (error) {
     return (
-      <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+      <div className="rounded-control border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
         {error}
       </div>
     )
@@ -145,7 +145,7 @@ function FromTemplateBlocks({
 
   if (blocks.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500">
+      <div className="rounded-control border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500">
         Este template no tiene bloques configurados. Continuá al siguiente paso.
       </div>
     )
@@ -159,7 +159,7 @@ function FromTemplateBlocks({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg bg-gray-50 p-4 text-sm text-gray-600">
+      <div className="rounded-control bg-gray-50 p-4 text-sm text-gray-600">
         Estos son todos los bloques del template (los que vas a ver en la previsualización).
         {editableCount > 0 ? (
           <>
@@ -175,7 +175,7 @@ function FromTemplateBlocks({
       </div>
 
       {fixedCount > 0 && (
-        <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2.5">
+        <div className="flex items-center justify-between rounded-control border border-gray-200 px-4 py-2.5">
           <div>
             <p className="text-sm font-medium text-gray-700">Ocultar bloques fijos</p>
             <p className="text-xs text-gray-500">
@@ -203,7 +203,7 @@ function FromTemplateBlocks({
 
       <div className="space-y-2">
         {hideFixed && editableCount === 0 && (
-          <p className="rounded-lg border border-dashed border-gray-200 px-4 py-3 text-center text-xs text-gray-400">
+          <p className="rounded-control border border-dashed border-gray-200 px-4 py-3 text-center text-xs text-gray-400">
             Este template no tiene bloques editables. Desactivá el switch para ver los fijos.
           </p>
         )}
@@ -214,7 +214,7 @@ function FromTemplateBlocks({
           if (cat === 'editable') {
             const open = expanded.has(b.id)
             return (
-              <div key={b.id} className="rounded-lg border border-gray-200">
+              <div key={b.id} className="rounded-control border border-gray-200">
                 <button
                   type="button"
                   onClick={() => toggleExpanded(b.id)}
@@ -247,7 +247,7 @@ function FromTemplateBlocks({
           return (
             <div
               key={b.id}
-              className="flex items-start gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5"
+              className="flex items-start gap-3 rounded-control border border-gray-200 bg-gray-50 px-3 py-2.5"
             >
               {isStatic
                 ? <Lock className="mt-1 h-4 w-4 shrink-0 text-gray-400" />
@@ -297,7 +297,7 @@ function FromScratchBlocks({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg bg-gray-50 p-4 text-sm text-gray-600">
+      <div className="rounded-control bg-gray-50 p-4 text-sm text-gray-600">
         Elegí los bloques que querés incluir en esta tasación. Podés tildar los que necesites y
         completar su contenido acá mismo, o ajustarlos después en el editor.
       </div>
@@ -319,7 +319,7 @@ function FromScratchBlocks({
           return (
             <div
               key={type}
-              className={`rounded-lg border ${
+              className={`rounded-control border ${
                 included ? 'border-brand-pink/40 bg-brand-pink/[0.03]' : 'border-gray-200'
               }`}
             >
@@ -369,7 +369,7 @@ function FromScratchBlocks({
       </div>
 
       {includedTypes.size === 0 && (
-        <p className="rounded-lg border border-dashed border-gray-200 px-4 py-3 text-center text-xs text-gray-400">
+        <p className="rounded-control border border-dashed border-gray-200 px-4 py-3 text-center text-xs text-gray-400">
           Aún no elegiste ningún bloque. Podés continuar igual y agregarlos después en el editor.
         </p>
       )}

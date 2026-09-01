@@ -606,7 +606,7 @@ export default function LeadDetailPage() {
                 const mins = Math.floor((Date.now() - new Date(a.completed_at || a.created_at).getTime()) / 60000)
                 const timeAgo = mins < 60 ? `${mins}m` : mins < 1440 ? `${Math.floor(mins / 60)}h` : `${Math.floor(mins / 1440)}d`
                 return (
-                  <div key={a.id} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50">
+                  <div key={a.id} className="flex items-center gap-3 p-2.5 rounded-control hover:bg-gray-50">
                     <div className="w-2 h-2 bg-brand-pink rounded-full shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-gray-700 truncate">{a.description || a.activity_type}</p>
@@ -653,7 +653,7 @@ export default function LeadDetailPage() {
         ) : (
           <div className="space-y-2">
             {fichas.map((ficha: any) => (
-              <div key={ficha.id} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
+              <div key={ficha.id} className="flex items-center gap-3 p-3 rounded-control border border-gray-100 hover:bg-gray-50">
                 <IconMedallion className="shrink-0">
                   <FileText className="w-4 h-4" />
                 </IconMedallion>
@@ -666,7 +666,7 @@ export default function LeadDetailPage() {
                 </div>
                 <button
                   onClick={() => router.push(`/propiedades/nueva?lead_id=${leadId}&ficha_id=${ficha.id}`)}
-                  className="flex items-center gap-1 text-xs text-green-700 hover:bg-green-50 font-medium px-2 py-1 rounded-lg shrink-0"
+                  className="flex items-center gap-1 text-xs text-green-700 hover:bg-green-50 font-medium px-2 py-1 rounded-control shrink-0"
                 >
                   <Home className="w-3.5 h-3.5" /> Crear propiedad
                 </button>

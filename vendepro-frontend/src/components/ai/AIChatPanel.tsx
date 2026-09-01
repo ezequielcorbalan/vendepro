@@ -200,7 +200,7 @@ export default function AIChatPanel(_props: {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-brand-pink/5 to-brand-orange/5 shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="bg-brand-pink rounded-lg p-1.5">
+            <div className="bg-brand-pink rounded-control p-1.5">
               <Sparkles size={16} className="text-white" />
             </div>
             <div>
@@ -208,7 +208,7 @@ export default function AIChatPanel(_props: {
               <p className="text-xs text-gray-500">Groq · {mode === 'image' ? 'llama-4-scout (visión)' : 'llama3-8b'}</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition-colors">
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1 rounded-control hover:bg-gray-100 transition-colors">
             <X size={18} />
           </button>
         </div>

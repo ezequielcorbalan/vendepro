@@ -202,7 +202,7 @@ export default function ContactDetailPage() {
         ) : (
           <div className="space-y-2">
             {contact.leads.map(lead => (
-              <Link key={lead.id} href={`/leads/${lead.id}`} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-colors group">
+              <Link key={lead.id} href={`/leads/${lead.id}`} className="flex items-center justify-between p-3 rounded-control border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-colors group">
                 <div>
                   <p className="text-sm font-medium text-ink">{lead.full_name}</p>
                   <p className="text-xs text-gray-500 mt-0.5">{STAGE_LABELS[lead.stage] ?? lead.stage}</p>
@@ -228,7 +228,7 @@ export default function ContactDetailPage() {
         ) : (
           <div className="space-y-2">
             {contact.properties.map(prop => (
-              <Link key={prop.id} href={`/propiedades/${prop.id}`} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-colors group">
+              <Link key={prop.id} href={`/propiedades/${prop.id}`} className="flex items-center justify-between p-3 rounded-control border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-colors group">
                 <div>
                   <p className="text-sm font-medium text-ink">{prop.address}</p>
                   <p className="text-xs text-gray-500 mt-0.5">

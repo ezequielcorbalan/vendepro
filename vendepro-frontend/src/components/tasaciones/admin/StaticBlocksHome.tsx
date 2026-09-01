@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useMemo, useState } from 'react'
-import { ChevronDown, ChevronRight, CheckCircle2, Loader2, Save, AlertCircle } from 'lucide-react'
+import { ChevronDown, ChevronRight, CheckCircle2, Save, AlertCircle } from 'lucide-react'
 import type { AppraisalBlockType, TemplateBlock } from '../renderer/types'
 import { getBlockMeta } from '../renderer/block-catalog'
 import { BlockForm } from '../editor/BlockForm'
@@ -10,6 +10,8 @@ import {
   saveStaticBlockDefault,
 } from '../shared/static-block-defaults'
 import { _invalidateStaticDefaultsCache } from './BlockAdminForm'
+import { Alert } from '@/components/ui/Alert'
+import { Button } from '@/components/ui/Button'
 
 interface RowState {
   /** Datos editables del bloque. */
@@ -109,7 +111,7 @@ export function StaticBlocksHome() {
     return (
       <div className="space-y-3">
         {STATIC_BLOCK_TYPES.map((_, i) => (
-          <div key={i} className="h-16 animate-pulse rounded-lg bg-gray-100" />
+          <div key={i} className="h-16 animate-pulse rounded-card bg-gray-100" />
         ))}
       </div>
     )
@@ -117,17 +119,17 @@ export function StaticBlocksHome() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border border-amber-200 bg-amber-50/60 px-4 py-3 text-sm text-amber-900">
+      <Alert tone="info" hideIcon>
         <p>
           <strong>Bloques estáticos</strong> — definí acá el contenido fijo de tu inmobiliaria
           (portada, metodología, servicios, etc.). Los valores guardados se pueden{' '}
           <strong>aplicar a cada template</strong> desde el editor, en los bloques con modo{' '}
           <em>&ldquo;Texto fijo de la inmobiliaria&rdquo;</em> o <em>&ldquo;Valor por defecto editable&rdquo;</em>.
         </p>
-      </div>
+      </Alert>
 
       {loadError && (
-        <div className="flex items-start gap-2 rounded border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+        <div className="flex items-start gap-2 rounded-control border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /> {loadError}
         </div>
       )}
@@ -172,7 +174,7 @@ function StaticBlockRow({ type, row, isOpen, onToggle, onPatch, onSave }: RowPro
   }), [type, row.data])
 
   return (
-    <section className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+    <section className="overflow-hidden rounded-card border border-gray-200 bg-white">
       <button
         type="button"
         onClick={onToggle}
@@ -207,21 +209,18 @@ function StaticBlockRow({ type, row, isOpen, onToggle, onPatch, onSave }: RowPro
           />
           <div className="mt-4 flex items-center justify-end gap-3 border-t border-gray-100 pt-3">
             {row.error && (
-              <span className="flex items-center gap-1 text-xs text-rose-600">
+              <span className="flex items-center gap-1 text-xs text-danger">
                 <AlertCircle className="h-3 w-3" /> {row.error}
               </span>
             )}
-            <button
-              type="button"
+            <Button
               onClick={onSave}
-              disabled={!row.dirty || row.saving}
-              className="flex items-center gap-2 rounded bg-gradient-to-br from-brand-pink to-brand-orange px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
+              disabled={!row.dirty}
+              loading={row.saving}
+              icon={<Save className="h-3.5 w-3.5" />}
             >
-              {row.saving
-                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                : <Save className="h-3.5 w-3.5" />}
               {row.saving ? 'Guardando…' : 'Guardar'}
-            </button>
+            </Button>
           </div>
         </div>
       )}

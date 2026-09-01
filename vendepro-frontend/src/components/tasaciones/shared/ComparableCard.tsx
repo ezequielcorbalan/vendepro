@@ -196,7 +196,7 @@ export function ComparableCard({
       {!collapsed && (
         <div className="border-t border-gray-100 px-5 py-4">
           {fromSoldProperty && (
-            <p className="mb-3 flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-1.5 text-[11px] text-emerald-700">
+            <p className="mb-3 flex items-center gap-1.5 rounded-control bg-emerald-50 px-3 py-1.5 text-[11px] text-emerald-700">
               <Database className="h-3 w-3" />
               Datos extraídos de tu base de Cierres Reales.
             </p>

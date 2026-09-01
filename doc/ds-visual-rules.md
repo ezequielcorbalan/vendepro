@@ -354,9 +354,17 @@ Están acá para que no se pierdan:
 
 ## Enforcement existente
 El ratchet de color (`scripts/ds-color-lint.mjs` + `scripts/.ds-color-baseline`)
-ya evita que SUBA el uso de colores Tailwind sueltos, los medallones de
-gradiente a mano (regla 14), los íconos escritos como carácter (regla 20) ni la
-escala `slate` (regla 21). Mismo espíritu: cuando una pantalla se corrige acá,
+ya evita que SUBA nada de esto: colores Tailwind sueltos, medallones de
+gradiente a mano (regla 14), íconos escritos como carácter (regla 20), la escala
+`slate` (regla 21) y los radios pre-token `rounded-lg`/`xl` (regla 8).
+
+**El contador de color estaba mal medido hasta el 31/08/2026.** Sólo miraba
+emerald/green/red/blue/amber/yellow, y eso dejaba afuera 58 casos: `rose-500` es
+un segundo rojo, `pink-*` un segundo primary, y además purple/cyan/orange/indigo.
+El patrón ahora cubre toda la paleta menos los neutros, así que el número saltó
+de 94 a 152 sin que nadie hubiera escrito una línea nueva. Los 2xl/3xl del radio
+quedan afuera del ratchet a propósito: migrarlos SÍ cambia el tamaño, así que se
+deciden a mano (quedan 16). Mismo espíritu: cuando una pantalla se corrige acá,
 el baseline baja y queda trabado el retroceso.
 
 Las reglas 12 a 21 salieron del repaso visual del 31/08/2026: cada una es una

@@ -167,7 +167,7 @@ export default function WebhooksSection({ onCountChange }: { onCountChange?: (n:
         </p>
         <button
           onClick={() => setShowCreate(true)}
-          className="shrink-0 flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90"
+          className="shrink-0 flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2.5 rounded-control text-sm font-medium hover:opacity-90"
         >
           <Plus className="w-4 h-4" /> Nuevo webhook
         </button>
@@ -198,7 +198,7 @@ export default function WebhooksSection({ onCountChange }: { onCountChange?: (n:
             <div key={w.id} className={`bg-white border rounded-card p-4 space-y-3 ${w.is_active ? '' : 'opacity-70'}`}>
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-2 min-w-0">
-                  <div className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center ${w.is_active ? 'bg-pink-50 text-brand-pink' : 'bg-gray-100 text-gray-400'}`}>
+                  <div className={`shrink-0 w-9 h-9 rounded-control flex items-center justify-center ${w.is_active ? 'bg-pink-50 text-brand-pink' : 'bg-gray-100 text-gray-400'}`}>
                     <WebhookIcon className="w-4 h-4" />
                   </div>
                   <div className="min-w-0">
@@ -233,20 +233,20 @@ export default function WebhooksSection({ onCountChange }: { onCountChange?: (n:
 
               {/* Secret */}
               <div className="flex items-center gap-2">
-                <code className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-mono text-gray-600 truncate">
+                <code className="flex-1 bg-gray-50 border border-gray-200 rounded-control px-3 py-1.5 text-xs font-mono text-gray-600 truncate">
                   {revealedSecret === w.id ? w.secret : '••••••••••••••••••••••••'}
                 </code>
                 <button
                   onClick={() => setRevealedSecret(revealedSecret === w.id ? null : w.id)}
                   aria-label={revealedSecret === w.id ? 'Ocultar secret' : 'Mostrar secret'}
-                  className="shrink-0 w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-50"
+                  className="shrink-0 w-9 h-9 flex items-center justify-center rounded-control text-gray-400 hover:text-gray-700 hover:bg-gray-50"
                 >
                   {revealedSecret === w.id ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
                 <button
                   onClick={() => copyText(w.secret, `secret-${w.id}`)}
                   aria-label="Copiar secret"
-                  className="shrink-0 w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-50"
+                  className="shrink-0 w-9 h-9 flex items-center justify-center rounded-control text-gray-400 hover:text-gray-700 hover:bg-gray-50"
                 >
                   {copiedKey === `secret-${w.id}` ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
                 </button>
@@ -259,14 +259,14 @@ export default function WebhooksSection({ onCountChange }: { onCountChange?: (n:
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => toggleDeliveries(w)}
-                    className="flex items-center gap-1 px-2.5 h-9 rounded-lg text-xs font-medium text-gray-500 hover:text-ink hover:bg-gray-50"
+                    className="flex items-center gap-1 px-2.5 h-9 rounded-control text-xs font-medium text-gray-500 hover:text-ink hover:bg-gray-50"
                   >
                     Entregas {openDeliveries === w.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                   </button>
                   <button
                     onClick={() => handleTest(w)}
                     disabled={testingId === w.id}
-                    className="flex items-center gap-1.5 px-2.5 h-9 rounded-lg text-xs font-medium text-brand-pink hover:bg-pink-50 disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-2.5 h-9 rounded-control text-xs font-medium text-brand-pink hover:bg-pink-50 disabled:opacity-50"
                   >
                     {testingId === w.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
                     Probar
@@ -275,7 +275,7 @@ export default function WebhooksSection({ onCountChange }: { onCountChange?: (n:
                     onClick={() => handleDelete(w)}
                     title="Eliminar webhook"
                     aria-label={`Eliminar webhook ${w.name || w.url}`}
-                    className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50"
+                    className="w-9 h-9 flex items-center justify-center rounded-control text-gray-400 hover:text-red-500 hover:bg-red-50"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>

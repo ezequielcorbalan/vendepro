@@ -452,7 +452,7 @@ export default function MarketingConfigPage() {
           ) : (
             <div className="space-y-2">
               {mappings.map((m, i) => (
-                <div key={i} className="grid grid-cols-[1.4fr_1fr_1fr_auto_auto] items-center gap-2 border border-gray-100 rounded-xl p-2">
+                <div key={i} className="grid grid-cols-[1.4fr_1fr_1fr_auto_auto] items-center gap-2 border border-gray-100 rounded-card p-2">
                   <Select
                     value={m.stage_key}
                     onChange={e => { const n = [...mappings]; n[i] = { ...m, stage_key: e.target.value }; setMappings(n) }}
@@ -551,7 +551,7 @@ export default function MarketingConfigPage() {
                   e.status === 'failed' ? 'danger' :
                   'neutral'
                 return (
-                  <div key={e.id} className="flex items-center justify-between border border-gray-100 rounded-lg px-3 py-2 text-xs">
+                  <div key={e.id} className="flex items-center justify-between border border-gray-100 rounded-control px-3 py-2 text-xs">
                     <div className="flex items-center gap-3 min-w-0">
                       <Badge tone={statusTone} className="whitespace-nowrap">{e.status}</Badge>
                       {e.provider && (

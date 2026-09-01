@@ -397,7 +397,7 @@ export default function NuevoReporte() {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <Heading level={4}>Métricas por portal</Heading>
-              <label className="inline-flex items-center gap-2 text-sm bg-brand-orange/10 text-brand-orange px-3 py-2 rounded-lg cursor-pointer hover:bg-brand-orange/20 transition-colors">
+              <label className="inline-flex items-center gap-2 text-sm bg-brand-orange/10 text-brand-orange px-3 py-2 rounded-control cursor-pointer hover:bg-brand-orange/20 transition-colors">
                 <FileText className="w-4 h-4" />
                 {extractingPdf ? 'Extrayendo PDF...' : 'Importar PDF KiteProp'}
                 <input
@@ -410,14 +410,14 @@ export default function NuevoReporte() {
               </label>
             </div>
             {extractingPdf && (
-              <div className="flex items-center gap-2 text-sm text-brand-gray bg-brand-light p-3 rounded-lg">
+              <div className="flex items-center gap-2 text-sm text-brand-gray bg-brand-light p-3 rounded-control">
                 <Loader2 className="w-4 h-4 animate-spin" />
                 Analizando PDF de KiteProp con IA... Esto puede tomar unos segundos.
               </div>
             )}
 
             {metricsList.map((metrics, idx) => (
-              <div key={idx} className="border border-gray-200 rounded-lg p-4 space-y-4">
+              <div key={idx} className="border border-gray-200 rounded-control p-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <Select
                     value={metrics.source}
@@ -535,7 +535,7 @@ export default function NuevoReporte() {
             <Text tone="muted">Agregá links de propiedades similares que son competencia directa en la zona.</Text>
 
             {competitors.map((comp, idx) => (
-              <div key={idx} className="border border-gray-200 rounded-lg p-4 space-y-3">
+              <div key={idx} className="border border-gray-200 rounded-control p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-gray-700">Propiedad {idx + 1}</span>
                   <div className="flex items-center gap-2">
@@ -564,7 +564,7 @@ export default function NuevoReporte() {
                   </div>
                 )}
                 <div
-                  className="border-2 border-dashed border-gray-200 rounded-lg p-2 text-center text-xs text-gray-400 cursor-pointer hover:border-indigo-300"
+                  className="border-2 border-dashed border-gray-200 rounded-control p-2 text-center text-xs text-gray-400 cursor-pointer hover:border-indigo-300"
                   onPaste={(e) => {
                     const items = e.clipboardData?.items
                     if (!items) return
@@ -656,7 +656,7 @@ export default function NuevoReporte() {
                     <img
                       src={URL.createObjectURL(photo)}
                       alt=""
-                      className="w-full h-32 object-cover rounded-lg"
+                      className="w-full h-32 object-cover rounded-control"
                     />
                     <button
                       onClick={() => setPhotos((prev) => prev.filter((_, idx) => idx !== i))}
@@ -675,7 +675,7 @@ export default function NuevoReporte() {
         {step === 6 && (
           <div className="space-y-4">
             <Heading level={4}>Revisá y publicá</Heading>
-            <div className="bg-brand-light rounded-lg p-4 space-y-3 text-sm">
+            <div className="bg-brand-light rounded-control p-4 space-y-3 text-sm">
               <Text as="p"><strong>Período:</strong> {periodLabel} ({periodStart} a {periodEnd})</Text>
               <Text as="p"><strong>Portales:</strong> {metricsList.map(m => m.source).join(', ')}</Text>
               <Text as="p"><strong>Métricas cargadas:</strong>{' '}

@@ -83,28 +83,28 @@ export function ComparablesSection<Key extends string | number>({
         <button
           type="button"
           onClick={() => onAdd(emptyPublicacion())}
-          className="flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange px-3 py-2 text-sm font-medium text-white hover:opacity-90"
+          className="flex items-center gap-1.5 rounded-control bg-gradient-to-br from-brand-pink to-brand-orange px-3 py-2 text-sm font-medium text-white hover:opacity-90"
         >
           <Plus className="h-4 w-4" /> Agregar publicación
         </button>
         <button
           type="button"
           onClick={() => setSoldPickerOpen(true)}
-          className="flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-100"
+          className="flex items-center gap-1.5 rounded-control border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-100"
         >
           <Database className="h-4 w-4" /> Desde Cierres Reales
         </button>
         <button
           type="button"
           onClick={() => setPropsPickerOpen(true)}
-          className="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100"
+          className="flex items-center gap-1.5 rounded-control border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100"
         >
           <Building2 className="h-4 w-4" /> Desde una propiedad
         </button>
         <button
           type="button"
           onClick={() => onAdd(emptyVenta())}
-          className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-600 hover:bg-gray-50"
+          className="flex items-center gap-1.5 rounded-control border border-gray-200 bg-white px-3 py-2 text-sm text-gray-600 hover:bg-gray-50"
           title="Cargar un cierre real a mano (sin tomarlo de tu base)"
         >
           <Plus className="h-4 w-4" /> Cierre manual

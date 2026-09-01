@@ -70,7 +70,7 @@ export default function ActiveListingsTable({ data }: Props) {
     <div className="rounded-card border border-gray-200 overflow-hidden shadow-card bg-gradient-to-br from-white via-white to-pink-50/30">
       <div className="px-4 sm:px-5 py-4 bg-gradient-to-r from-white to-pink-50/40 border-b border-gray-100">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center" aria-hidden="true">
+          <div className="w-8 h-8 rounded-control bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center" aria-hidden="true">
             <Home className="w-4 h-4 text-white" />
           </div>
           <h2 className="font-semibold text-ink">Mis avisos activos</h2>
