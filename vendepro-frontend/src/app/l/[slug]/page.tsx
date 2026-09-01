@@ -17,6 +17,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: landing.seo_description ?? undefined,
       images: landing.og_image_url ? [landing.og_image_url] : undefined,
     },
+    // Landing de perfil de agente: también es alcanzable por /a/<org>/<agente>.
+    // Evita SEO duplicado apuntando la canónica a esa ruta cuando existe.
+    alternates: landing.kind === 'agent_profile' && landing.agent_public_path
+      ? { canonical: landing.agent_public_path }
+      : undefined,
     robots: 'index, follow',
   }
 }

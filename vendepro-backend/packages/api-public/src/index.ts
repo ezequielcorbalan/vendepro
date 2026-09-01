@@ -23,6 +23,7 @@ import {
   D1OrgVariableRepository,
   D1EmailSuppressionRepository,
   D1PortalFeedRepository,
+  D1AgentProfileRepository,
   HmacUnsubscribeTokenSigner,
   fireMarketingEvent,
   fireWebhookEvent,
@@ -558,7 +559,9 @@ app.get('/a/:orgSlug/:agentSlug', async (c) => {
 app.get('/l/:slug', async (c) => {
   const landings = new D1LandingRepository(c.env.DB)
   const versions = new D1LandingVersionRepository(c.env.DB)
-  const uc = new GetPublicLandingUseCase(landings, versions)
+  const orgs = new D1OrganizationRepository(c.env.DB)
+  const agentProfiles = new D1AgentProfileRepository(c.env.DB)
+  const uc = new GetPublicLandingUseCase(landings, versions, orgs, agentProfiles)
   const view = await uc.execute({ fullSlug: c.req.param('slug') })
   c.header('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=3600')
   return c.json({ landing: view })

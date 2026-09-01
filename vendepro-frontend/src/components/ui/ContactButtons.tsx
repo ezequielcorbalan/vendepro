@@ -43,14 +43,16 @@ export function CallButton({ phone, onClick, iconOnly = false, className }: Chan
 interface WhatsAppProps extends ChannelProps {
   /** Texto pre-cargado en el chat. */
   message?: string
+  /** Etiqueta del botón (ej. el `button_label` configurable de un bloque de landing). Default: "WhatsApp". */
+  label?: string
 }
 
-export function WhatsAppButton({ phone, message, onClick, iconOnly = false, className }: WhatsAppProps) {
+export function WhatsAppButton({ phone, message, onClick, iconOnly = false, className, label }: WhatsAppProps) {
   const cls = cn(BASE, iconOnly ? SHAPE.icon : SHAPE.labeled, 'bg-whatsapp text-white', className)
   const content = (
     <>
       <MessageCircle className="w-4 h-4" />
-      {!iconOnly && <span>WhatsApp</span>}
+      {!iconOnly && <span>{label || 'WhatsApp'}</span>}
     </>
   )
   if (!phone) {

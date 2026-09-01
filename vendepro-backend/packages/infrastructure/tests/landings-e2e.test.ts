@@ -14,6 +14,8 @@ import {
   D1LandingVersionRepository,
   D1LandingEventRepository,
   D1LeadRepository,
+  D1OrganizationRepository,
+  D1AgentProfileRepository,
   CryptoIdGenerator,
 } from '@vendepro/infrastructure'
 
@@ -46,6 +48,8 @@ describe('landings e2e happy path', () => {
       versions: new D1LandingVersionRepository(env.DB),
       events: new D1LandingEventRepository(env.DB),
       leads: new D1LeadRepository(env.DB),
+      orgs: new D1OrganizationRepository(env.DB),
+      agentProfiles: new D1AgentProfileRepository(env.DB),
       idGen: new CryptoIdGenerator(),
     }
 
@@ -66,10 +70,11 @@ describe('landings e2e happy path', () => {
     expect(versionId).toBeDefined()
 
     // 4. GET público
-    const view = await new GetPublicLandingUseCase(repos.landings, repos.versions)
+    const view = await new GetPublicLandingUseCase(repos.landings, repos.versions, repos.orgs, repos.agentProfiles)
       .execute({ fullSlug })
     expect(view.blocks.length).toBeGreaterThan(0)
     expect(view.kind).toBe('property')
+    expect(view.agent_public_path).toBeNull()
 
     // 5. Submit lead
     const submit = await new SubmitLeadFromLandingUseCase(repos.landings, repos.events, repos.leads, repos.idGen)

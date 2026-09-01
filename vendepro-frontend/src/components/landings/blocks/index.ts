@@ -6,6 +6,10 @@ import GalleryBlock from './GalleryBlock'
 import BenefitsListBlock from './BenefitsListBlock'
 import LeadFormBlock from './LeadFormBlock'
 import FooterBlock from './FooterBlock'
+import AgentHeroBlock from './AgentHeroBlock'
+import AgentCredentialsBlock from './AgentCredentialsBlock'
+import FaqBlock from './FaqBlock'
+import CtaWhatsappBlock from './CtaWhatsappBlock'
 import type { BlockType } from '@/lib/landings/types'
 import type { ComponentType } from 'react'
 
@@ -18,6 +22,10 @@ export const BLOCK_COMPONENTS: Record<BlockType, ComponentType<any>> = {
   'benefits-list': BenefitsListBlock,
   'lead-form': LeadFormBlock,
   'footer': FooterBlock,
+  'agent-hero': AgentHeroBlock,
+  'agent-credentials': AgentCredentialsBlock,
+  'faq': FaqBlock,
+  'cta-whatsapp': CtaWhatsappBlock,
 }
 
 export const BLOCK_LABELS: Record<BlockType, string> = {
@@ -29,6 +37,13 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
   'benefits-list': 'Beneficios',
   'lead-form': 'Formulario',
   'footer': 'Footer',
+  'agent-hero': 'Hero de agente',
+  'agent-credentials': 'Credenciales',
+  'faq': 'Preguntas frecuentes',
+  'cta-whatsapp': 'CTA WhatsApp',
 }
 
-export { HeroBlock, HeroSplitBlock, FeaturesGridBlock, AmenitiesChipsBlock, GalleryBlock, BenefitsListBlock, LeadFormBlock, FooterBlock }
+export {
+  HeroBlock, HeroSplitBlock, FeaturesGridBlock, AmenitiesChipsBlock, GalleryBlock, BenefitsListBlock, LeadFormBlock, FooterBlock,
+  AgentHeroBlock, AgentCredentialsBlock, FaqBlock, CtaWhatsappBlock,
+}
