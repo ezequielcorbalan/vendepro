@@ -15,6 +15,8 @@ export { LandingSlug, generateSlugSuffix, SLUG_SUFFIX_ALPHABET } from './landing
 export type { LandingSlugProps } from './landing-slug'
 export { AgentSlug, slugifyName } from './agent-slug'
 export * from './block-schemas'
+export { AGENT_BINDINGS, resolveAgentBindings } from './agent-bindings'
+export type { AgentBindingUser } from './agent-bindings'
 export { BINDING_MODES, assertBindingMode } from './appraisal-binding-mode'
 export type { BindingMode } from './appraisal-binding-mode'
 export {
