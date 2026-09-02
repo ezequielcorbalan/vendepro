@@ -489,3 +489,49 @@ HTTP 200: quien instrumente "cuántos timeouts tuvimos" filtrando por `reason ==
 
 **Fix**: distinguir el `AbortError` en el catch y devolver `reason: 'timeout'`. Es el
 mismo bloque que hay que tocar por V.10, así que van juntos.
+
+---
+
+# Benchmark de Gemini — 2026-09-02
+
+Corrido con los **prompts reales de producción** sobre un aviso sintético con 8
+trampas (precio en ARS sin tipo de cambio, tres precios USD distractores en
+"propiedades similares", antigüedad como año de construcción, visitas totales en
+vez de diarias, superficies distractoras).
+
+| Modelo | PNG | JPEG | ms prom | USD/1000 llamadas |
+|---|---|---|---|---|
+| `gemini-3.1-flash-lite` | 7/8 | 7/8 | 6207 | 0,57 |
+| **`gemini-3.5-flash-lite`** | **8/8** | 7/8 | **2403** | 0,79 |
+| `gemini-3.8-flash` | 8/8 | JSON truncado | 8579 | 1,56 |
+| `gemini-3.5-flash` | 7/8 | 7/8 | 11000 | 3,42 |
+
+**Elegido: `gemini-3.5-flash-lite`** — mismo puntaje que los grandes, 3-4× más
+rápido y 4× más barato que `3.5-flash`. `3.8-flash` empata en calidad pero
+devolvió el JSON cortado en 1 de 2 corridas.
+
+Sobre imágenes limpias el mismo modelo ya había dado 8/8 en comparable, 5/5 en
+métricas (PNG y JPEG), 9/9 en la campaña de email y 3/3 en la secuencia. Cubre
+las 6 features con un solo modelo, contra los dos que hacían falta en Groq
+(`qwen3.8` visión + `compound-mini` texto), y con la mitad de tokens por imagen.
+
+## 🔴 B.1 · El campo `age` está sistemáticamente mal, en TODOS los modelos
+
+El aviso dice "Año de construcción: 1998". En 2026 la antigüedad es **28**.
+Cuatro de cinco modelos respondieron **26** — calcularon con **2024**, o sea con
+su propio corte de entrenamiento. `gemini-3.8-flash` fue el único que devolvió
+`null`, negándose a inventar.
+
+**No es un problema del modelo, es del prompt**: `extractComparableFromScreenshot`
+pide `"age": antiguedad en anos (numero)`, y ningún LLM sabe en qué año estamos.
+En una herramienta de tasación, una antigüedad con 2 años de error entra
+directo al cálculo de valor.
+
+**Fix (independiente del proveedor)**: que el prompt pida
+`"construction_year": año de construcción` y que la antigüedad se calcule en
+código con la fecha real. Aplica igual a Groq, a Gemini o a cualquiera.
+
+Nota metodológica: la primera versión de este benchmark puntuaba `age: 26` como
+correcto y `null` como error, o sea premiaba el dato malo y penalizaba la
+respuesta prudente. Corregido antes de sacar conclusiones — por eso `3.8-flash`
+figuraba 0/8 en la primera corrida.
