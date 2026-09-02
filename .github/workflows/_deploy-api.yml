@@ -13,6 +13,8 @@ on:
         required: true
       CLOUDFLARE_ACCOUNT_ID:
         required: true
+      ANTHROPIC_API_KEY:
+        required: false
       GROQ_API_KEY:
         required: false
       RESEND_API_KEY:
@@ -80,16 +82,27 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
         run: |
-          if [ -n "$GROQ_API_KEY" ]; then
-            printf '%s' "$GROQ_API_KEY" | npx wrangler secret put GROQ_API_KEY
-          fi
+          # sync <NOMBRE> <valor>: sube el secret si tiene valor y, si no, lo dice.
+          # El silencio era el problema: ANTHROPIC_API_KEY estuvo AUSENTE del worker
+          # vendepro-api-ai (verificado con `wrangler secret list` el 2026-09-02),
+          # con las 4 features de IA de Anthropic caidas en produccion y todos los
+          # deploys en verde, porque un secret vacio simplemente se salteaba.
+          sync() {
+            if [ -n "$2" ]; then
+              printf '%s' "$2" | npx wrangler secret put "$1"
+            else
+              echo "::warning::$1 no esta seteado en los secrets del repo — se saltea el sync. Si esta API lo necesita, la feature va a fallar en runtime."
+            fi
+          }
+          # Extraccion de metricas/comparables e IA de emails: api-ai.
+          sync ANTHROPIC_API_KEY "$ANTHROPIC_API_KEY"
+          sync GROQ_API_KEY "$GROQ_API_KEY"
           # Envio de emails: api-auth (recuperar contrasena) y api-crm (marketing).
-          if [ -n "$RESEND_API_KEY" ]; then
-            printf '%s' "$RESEND_API_KEY" | npx wrangler secret put RESEND_API_KEY
-          fi
+          sync RESEND_API_KEY "$RESEND_API_KEY"
 
   smoke:
     name: Production smoke (${{ inputs.api_name }})
