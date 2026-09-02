@@ -52,6 +52,10 @@ vendepro-frontend/.next/
 .agents/
 skills-lock.json
 .claude/settings.local.json
+.claude/scheduled_tasks.lock
 .worktrees/
-.worktrees/
+.claude/worktrees/
 .superpowers/
+
+# cache de turbo
+.turbo/
