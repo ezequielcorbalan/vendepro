@@ -1,16 +1,27 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { Bell, AlertTriangle, Clock, X } from 'lucide-react'
-import Link from 'next/link'
 import { apiFetch } from '@/lib/api'
+import { Z } from '@/lib/z'
+import {
+  NotificationBell as BellButton,
+  NotificationPanel,
+  type NotificationItem,
+} from '@/components/ui/Notifications'
+import type { UrgencyLevel } from '@/lib/crm-config'
 
+/**
+ * Campana de la sidebar. Sólo datos y estado: qué trae la API, cada cuánto se
+ * refresca, qué está descartado y si el panel está abierto. Cómo se ve lo define
+ * el design system (`ui/Notifications`) — antes esto tenía su propia copia del
+ * botón y del panel dibujados a mano.
+ */
 type Notification = {
   id: string
   type: string
   title: string
   body: string
   link: string
-  urgency: 'high' | 'medium' | 'low'
+  urgency: UrgencyLevel
 }
 
 export default function NotificationBell() {
@@ -42,52 +53,30 @@ export default function NotificationBell() {
   }, [])
 
   const active = notifications.filter(n => !dismissed.has(n.id))
-  const hasUrgent = active.some(n => n.urgency === 'high')
+  const items: NotificationItem[] = active.map(n => ({
+    id: n.id,
+    title: n.title,
+    body: n.body,
+    href: n.link,
+    urgency: n.urgency,
+  }))
 
   return (
     <div ref={ref} className="relative">
-      <button onClick={() => setOpen(!open)} className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors">
-        <Bell className={`w-5 h-5 ${hasUrgent ? 'text-red-500' : active.length > 0 ? 'text-gray-600' : 'text-gray-400'}`} />
-        {active.length > 0 && (
-          <span className={`absolute -top-0.5 -right-0.5 w-4 h-4 text-[9px] font-bold text-white rounded-full flex items-center justify-center ${hasUrgent ? 'bg-red-500' : 'bg-pink-500'}`}>
-            {active.length}
-          </span>
-        )}
-      </button>
+      <BellButton
+        count={active.length}
+        urgent={active.some(n => n.urgency === 'high')}
+        onClick={() => setOpen(o => !o)}
+      />
 
       {open && (
-        <div className="absolute left-0 top-full mt-2 w-72 sm:w-80 bg-white rounded-card shadow-pop border border-gray-200 z-50 overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-            <span className="text-sm font-semibold text-ink">Notificaciones</span>
-            {active.length > 0 && (
-              <button onClick={() => setDismissed(new Set(notifications.map(n => n.id)))} className="text-[10px] text-gray-400 hover:text-gray-600">
-                Limpiar
-              </button>
-            )}
-          </div>
-          <div className="max-h-80 overflow-y-auto">
-            {active.length === 0 ? (
-              <div className="p-6 text-center text-sm text-gray-400">Sin notificaciones</div>
-            ) : (
-              active.map(n => (
-                <Link key={n.id} href={n.link} onClick={() => setOpen(false)}
-                  className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 border-b border-gray-50 transition-colors">
-                  {n.urgency === 'high' ? <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" /> :
-                   n.urgency === 'medium' ? <Clock className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" /> :
-                   <Bell className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />}
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-sm ${n.urgency === 'high' ? 'text-red-700 font-medium' : 'text-gray-700'} truncate`}>{n.title}</p>
-                    <p className="text-xs text-gray-400 truncate">{n.body}</p>
-                  </div>
-                  <button
-                    onClick={e => { e.preventDefault(); e.stopPropagation(); setDismissed(prev => new Set([...prev, n.id])) }}
-                    className="p-1 text-gray-300 hover:text-gray-500 shrink-0">
-                    <X className="w-3 h-3" />
-                  </button>
-                </Link>
-              ))
-            )}
-          </div>
+        <div className="absolute left-0 top-full mt-2" style={{ zIndex: Z.dropdown }}>
+          <NotificationPanel
+            items={items}
+            action={{ label: 'Limpiar', onClick: () => setDismissed(new Set(notifications.map(n => n.id))) }}
+            onDismiss={id => setDismissed(prev => new Set([...prev, id]))}
+            onItemClick={() => setOpen(false)}
+          />
         </div>
       )}
     </div>

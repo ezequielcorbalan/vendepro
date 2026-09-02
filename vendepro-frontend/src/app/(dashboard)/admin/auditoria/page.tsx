@@ -99,7 +99,7 @@ export default function AuditoriaPage() {
 
                 return (
                   <div key={r.id} className="px-4 py-3 flex items-start gap-3 hover:bg-gray-50/50">
-                    <div className={`flex-shrink-0 p-1.5 rounded-lg ${cfg.color}`}>
+                    <div className={`flex-shrink-0 p-1.5 rounded-control ${cfg.color}`}>
                       <Icon className="w-3.5 h-3.5" />
                     </div>
                     <div className="flex-1 min-w-0">

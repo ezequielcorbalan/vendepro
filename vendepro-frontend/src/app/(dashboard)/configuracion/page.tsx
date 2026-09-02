@@ -5,7 +5,7 @@ import Link from 'next/link'
 import {
   Settings, Save, Loader2, Building2, Calendar, User,
   ClipboardList, FileText, CheckCircle, XCircle, Megaphone,
-  HelpCircle, PlayCircle, KeyRound, Plug, Zap,
+  HelpCircle, PlayCircle, KeyRound, Plug, Zap, MessageCircle,
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
@@ -148,6 +148,12 @@ export default function ConfiguracionPage() {
       subtitle: 'Metas y seguimiento',
     },
     ...(isAdmin ? [{
+      href: '/configuracion/whatsapp',
+      icon: <MessageCircle className="w-5 h-5" />,
+      iconColor: 'bg-whatsapp/10 text-whatsapp',
+      title: 'Mensajes de WhatsApp',
+      subtitle: 'Textos predeterminados para el equipo',
+    }, {
       href: '/configuracion/automatizaciones',
       icon: <Zap className="w-5 h-5" />,
       iconColor: 'bg-primary/10 text-primary',

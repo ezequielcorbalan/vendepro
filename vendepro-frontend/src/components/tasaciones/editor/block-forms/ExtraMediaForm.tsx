@@ -1,4 +1,5 @@
 'use client'
+import { BlockField, BlockInput, BlockSelect } from '../BlockField'
 import ImageUpload from '@/components/landings/ImageUpload'
 
 interface Props { data: any; onPatch: (p: Record<string, unknown>) => void }
@@ -31,36 +32,33 @@ export function ExtraMediaForm({ data, onPatch }: Props) {
 
   return (
     <div className="space-y-3 p-3">
-      <label className="flex flex-col gap-1">
-        <span className="text-xs uppercase tracking-wide text-slate-600">Título</span>
-        <input
+      <BlockField label="Título">
+        <BlockInput
           type="text"
           value={data.title ?? ''}
           maxLength={200}
           onChange={e => onPatch({ title: e.target.value })}
-          className="rounded border border-slate-300 px-2 py-1 text-sm"
         />
-      </label>
+      </BlockField>
       <div>
         <div className="mb-1 flex items-center justify-between">
-          <span className="text-xs uppercase tracking-wide text-slate-600">Archivos multimedia</span>
+          <span className="text-xs uppercase tracking-wide text-gray-600">Archivos multimedia</span>
           <button onClick={add} disabled={media.length >= MAX_ITEMS} className="text-xs text-brand-pink disabled:opacity-40">+ Agregar</button>
         </div>
         <div className="space-y-2">
           {media.map((item, i) => (
-            <div key={i} className="space-y-2 rounded border border-slate-200 p-2">
+            <div key={i} className="space-y-2 rounded border border-gray-200 p-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-400">Media {i + 1}</span>
-                <button onClick={() => remove(i)} className="text-xs text-rose-500">Eliminar</button>
+                <span className="text-xs text-gray-400">Media {i + 1}</span>
+                <button onClick={() => remove(i)} className="text-xs text-danger hover:opacity-80">Eliminar</button>
               </div>
-              <select
+              <BlockSelect
                 value={item.type}
                 onChange={e => patchItem(i, { type: e.target.value as 'image' | 'video' })}
-                className="w-full rounded border border-slate-300 px-2 py-1 text-xs"
               >
                 <option value="image">Imagen</option>
                 <option value="video">Video</option>
-              </select>
+              </BlockSelect>
               {item.type === 'image' ? (
                 <ImageUpload
                   value={item.url}
@@ -68,20 +66,18 @@ export function ExtraMediaForm({ data, onPatch }: Props) {
                   allowPropertyPicker
                 />
               ) : (
-                <input
+                <BlockInput
                   type="url"
                   placeholder="URL del video"
                   value={item.url}
                   onChange={e => patchItem(i, { url: e.target.value })}
-                  className="w-full rounded border border-slate-300 px-2 py-1 text-xs"
                 />
               )}
-              <input
+              <BlockInput
                 placeholder="Pie de foto (opcional)"
                 value={item.caption ?? ''}
                 maxLength={200}
                 onChange={e => patchItem(i, { caption: e.target.value })}
-                className="w-full rounded border border-slate-300 px-2 py-1 text-xs"
               />
             </div>
           ))}

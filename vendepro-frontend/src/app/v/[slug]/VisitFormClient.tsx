@@ -159,7 +159,7 @@ export default function VisitFormClient({ slug, apiPublic, data }: Props) {
                 más información.
               </p>
               {p.address && (
-                <div className="mt-6 p-4 rounded-xl bg-gray-50 border border-gray-100 text-left">
+                <div className="mt-6 p-4 rounded-card bg-gray-50 border border-gray-100 text-left">
                   <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
                     <Home className="w-4 h-4" />
                     Propiedad visitada
@@ -321,7 +321,7 @@ export default function VisitFormClient({ slug, apiPublic, data }: Props) {
           </Card>
 
           {error && (
-            <div className="bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl px-4 py-3">
+            <div className="bg-red-50 border border-red-100 text-red-700 text-sm rounded-card px-4 py-3">
               {error}
             </div>
           )}
@@ -329,7 +329,7 @@ export default function VisitFormClient({ slug, apiPublic, data }: Props) {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full bg-gradient-to-br from-brand-pink to-brand-orange hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm"
+            className="w-full bg-gradient-to-br from-brand-pink to-brand-orange hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-4 rounded-card transition-colors flex items-center justify-center gap-2 shadow-sm"
           >
             {submitting ? (
               <>
@@ -412,7 +412,7 @@ function StarRating({ value, onChange }: { value: number; onChange: (v: number) 
             key={n}
             type="button"
             onClick={() => onChange(value === n ? 0 : n)}
-            className={`w-12 h-12 rounded-xl border flex items-center justify-center transition-colors ${
+            className={`w-12 h-12 rounded-card border flex items-center justify-center transition-colors ${
               active
                 ? 'bg-yellow-50 border-yellow-300'
                 : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
@@ -442,7 +442,7 @@ function ChoiceButton({
     <button
       type="button"
       onClick={onClick}
-      className={`py-3 px-4 rounded-xl border text-sm font-medium transition-colors ${
+      className={`py-3 px-4 rounded-card border text-sm font-medium transition-colors ${
         active
           ? 'bg-brand-pink border-brand-pink text-white'
           : 'bg-white border-gray-200 text-gray-700 hover:border-brand-pink/50 hover:bg-[#fff0f6]/40'

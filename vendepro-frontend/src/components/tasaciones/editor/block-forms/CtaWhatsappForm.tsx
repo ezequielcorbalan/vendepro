@@ -1,4 +1,5 @@
 'use client'
+import { BlockField, BlockInput, BlockTextarea } from '../BlockField'
 interface Props { data: any; onPatch: (p: Record<string, unknown>) => void }
 
 export function CtaWhatsappForm({ data, onPatch }: Props) {
@@ -7,41 +8,36 @@ export function CtaWhatsappForm({ data, onPatch }: Props) {
   const preFilled = data.pre_filled_message ?? data.message ?? ''
   return (
     <div className="space-y-3 p-3">
-      <label className="flex flex-col gap-1">
-        <span className="text-xs uppercase tracking-wide text-slate-600">Texto del CTA</span>
-        <input
+      <BlockField label="Texto del CTA">
+        <BlockInput
           type="text"
           value={text}
           maxLength={200}
           placeholder="¿Hablamos por WhatsApp?"
           onChange={e => onPatch({ text: e.target.value })}
-          className="rounded border border-slate-300 px-2 py-1 text-sm"
         />
-      </label>
+      </BlockField>
       <label className="flex flex-col gap-1">
-        <span className="text-xs uppercase tracking-wide text-slate-600">Teléfono (con código de país)</span>
-        <input
+        <span className="text-xs uppercase tracking-wide text-gray-600">Teléfono (con código de país)</span>
+        <BlockInput
           type="tel"
           value={data.phone ?? ''}
           minLength={6}
           maxLength={30}
           placeholder="5491158574005"
           onChange={e => onPatch({ phone: e.target.value })}
-          className="rounded border border-slate-300 px-2 py-1 text-sm"
         />
-        <span className="text-[11px] text-slate-500">Sin signos ni espacios. Ej: 5491158574005</span>
+        <span className="text-[11px] text-gray-500">Sin signos ni espacios. Ej: 5491158574005</span>
       </label>
-      <label className="flex flex-col gap-1">
-        <span className="text-xs uppercase tracking-wide text-slate-600">Mensaje pre-cargado (opcional)</span>
-        <textarea
+      <BlockField label="Mensaje pre-cargado (opcional)">
+        <BlockTextarea
           rows={2}
           value={preFilled}
           maxLength={500}
           placeholder="Hola, me interesa la tasación de…"
           onChange={e => onPatch({ pre_filled_message: e.target.value })}
-          className="rounded border border-slate-300 px-2 py-1 text-sm"
         />
-      </label>
+      </BlockField>
     </div>
   )
 }

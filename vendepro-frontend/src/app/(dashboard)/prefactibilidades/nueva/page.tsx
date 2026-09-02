@@ -16,6 +16,7 @@ import { Field, Input, Textarea } from '@/components/ui/Input'
 import { Heading, Text } from '@/components/ui/Typography'
 import { Alert } from '@/components/ui/Alert'
 import { Tag } from '@/components/ui/Tag'
+import { StepIndicator } from '@/components/ui/StepIndicator'
 
 const steps = [
   { label: 'Terreno', icon: MapPin },
@@ -152,24 +153,13 @@ export default function NuevaPrefactibilidadPage() {
         </div>
       </div>
 
-      {/* Steps nav */}
-      {/* ds-todo: candidato a variante "Stepper" (pills de pasos con ícono; SegmentedControl no soporta íconos) */}
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-        {steps.map((s, i) => {
-          const Icon = s.icon
-          return (
-            <button
-              key={i}
-              onClick={() => setStep(i)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-control text-xs font-medium whitespace-nowrap ${
-                step === i ? 'bg-primary text-white' : 'bg-white text-gray-500 border border-gray-200'
-              }`}
-            >
-              <Icon className="w-3.5 h-3.5" /> {s.label}
-            </button>
-          )
-        })}
-      </div>
+      <StepIndicator
+        steps={steps.map(s => s.label)}
+        current={step + 1}
+        onStepClick={n => setStep(n - 1)}
+        allowForward
+        className="mb-6"
+      />
 
       <Card className="p-5 sm:p-6">
 

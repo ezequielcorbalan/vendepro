@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 /**
@@ -20,6 +21,8 @@ interface StatusBadgeProps {
   color?: string
   /** 'sm' para contextos densos (kanban, tablas). Default 'md'. */
   size?: StatusBadgeSize
+  /** Ícono chico a la izquierda del label (ej. un check de "ya tiene tasación"). */
+  icon?: ReactNode
   className?: string
 }
 
@@ -30,16 +33,17 @@ const SIZE: Record<StatusBadgeSize, string> = {
   md: 'text-xs px-2.5 py-1',
 }
 
-export function StatusBadge({ label, color, size = 'md', className }: StatusBadgeProps) {
+export function StatusBadge({ label, color, size = 'md', icon, className }: StatusBadgeProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center font-medium rounded-full',
+        'inline-flex items-center gap-1 font-medium rounded-full',
         SIZE[size],
         color ?? FALLBACK,
         className,
       )}
     >
+      {icon}
       {label}
     </span>
   )

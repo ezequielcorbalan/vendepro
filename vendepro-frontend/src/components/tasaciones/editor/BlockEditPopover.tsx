@@ -13,10 +13,10 @@ interface Props {
 
 export function BlockEditPopover({ block, override, onPatch, onClose }: Props) {
   return (
-    <div className="w-80 rounded-card border border-slate-200 bg-white shadow-pop" onClick={(e) => e.stopPropagation()}>
-      <div className="flex items-center justify-between border-b border-slate-100 px-3 py-2">
-        <span className="text-xs font-semibold text-slate-700">{getBlockMeta(block.type).label}</span>
-        <button onClick={onClose} className="rounded p-0.5 text-slate-400 hover:text-slate-700" aria-label="Cerrar edición">
+    <div className="w-80 rounded-card border border-gray-200 bg-white shadow-pop" onClick={(e) => e.stopPropagation()}>
+      <div className="flex items-center justify-between border-b border-gray-100 px-3 py-2">
+        <span className="text-xs font-semibold text-gray-700">{getBlockMeta(block.type).label}</span>
+        <button onClick={onClose} className="rounded p-0.5 text-gray-400 hover:text-gray-700" aria-label="Cerrar edición">
           <X className="h-4 w-4" />
         </button>
       </div>

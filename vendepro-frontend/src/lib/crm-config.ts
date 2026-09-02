@@ -167,6 +167,119 @@ export const DEFAULT_TAGS = {
   aliado:      { label: 'Aliado',      color: '#10b981' },
 } as const
 
+// Marcadores de un lead — NO son etapas del pipeline, son hechos que se
+// muestran como pill al lado del nombre. Estaban hardcodeados en la lista de
+// leads (pill morada "Tasación").
+// Urgencia de una notificación. Estaba hardcodeada en NotificationBell con
+// red/yellow/blue sueltos; los tonos son de dominio y viven acá.
+// ── Tasaciones ───────────────────────────────────────────────────────
+// Estaba como mapa local en app/(dashboard)/tasaciones/page.tsx, así que la
+// ficha del detalle no mostraba el estado: no tenía de dónde leerlo.
+export const APPRAISAL_STATUSES = {
+  draft:     { label: 'Borrador', color: 'bg-gray-100 text-gray-700' },
+  generated: { label: 'Generada', color: 'bg-blue-100 text-blue-800' },
+  sent:      { label: 'Enviada',  color: 'bg-green-100 text-green-800' },
+} as const
+
+// Origen de un cierre real (propiedades vendidas). Estaba inline en
+// app/(dashboard)/tasaciones/vendidas con pink/blue/amber sueltos.
+export const SOLD_ORIGINS = {
+  mine:     { label: 'Mías',     color: 'bg-primary/10 text-primary' },
+  team:     { label: 'Equipo',   color: 'bg-blue-100 text-blue-800' },
+  external: { label: 'Externos', color: 'bg-gray-100 text-gray-700' },
+} as const
+
+export function getSoldOrigin(origin?: string | null) {
+  return SOLD_ORIGINS[origin as keyof typeof SOLD_ORIGINS] ?? SOLD_ORIGINS.external
+}
+
+// Alcance de un template de tasación: de quién es y quién lo puede editar.
+// El mapa estaba inline en admin/TemplatesHome con pink/purple/blue sueltos.
+export const TEMPLATE_SCOPES = {
+  sistema:      { label: 'Sistema',      color: 'bg-gray-100 text-gray-700' },
+  propio:       { label: 'Mío',          color: 'bg-primary/10 text-primary' },
+  agente:       { label: 'Agente',       color: 'bg-purple-100 text-purple-800' },
+  organizacion: { label: 'Organización', color: 'bg-blue-100 text-blue-800' },
+} as const
+
+export type TemplateScope = keyof typeof TEMPLATE_SCOPES
+
+export function getTemplateScope(t: { is_system?: boolean; agent_id?: string | null }, currentUserId?: string): TemplateScope {
+  if (t.is_system) return 'sistema'
+  if (!t.agent_id) return 'organizacion'
+  return t.agent_id === currentUserId ? 'propio' : 'agente'
+}
+
+export function getAppraisalStatus(status?: string | null) {
+  return APPRAISAL_STATUSES[status as keyof typeof APPRAISAL_STATUSES] ?? APPRAISAL_STATUSES.draft
+}
+
+export const URGENCY_TONES = {
+  high:   { icon: 'text-danger',  title: 'text-danger font-medium' },
+  medium: { icon: 'text-warning', title: 'text-gray-700' },
+  low:    { icon: 'text-info',    title: 'text-gray-700' },
+} as const
+
+export type UrgencyLevel = keyof typeof URGENCY_TONES
+
+// Color del ícono de cada tipo de entidad en la búsqueda global. Estaba
+// hardcodeado con pink/blue/green sueltos en GlobalSearch.
+export const SEARCH_ENTITY_TONES = {
+  lead: 'text-primary',
+  contact: 'text-info',
+  property: 'text-success',
+} as const
+
+// ── Ficha de visita ──────────────────────────────────────────────
+// Estaba duplicado en tres archivos (components/properties/VisitFormsSection,
+// app/r/[slug] y app/v/[slug]), cada uno con sus propias labels y colores.
+export const VISIT_BUY_INTENTIONS = {
+  compraria: { label: 'Compraría',    tone: 'success' as const },
+  tal_vez:   { label: 'Tal vez',      tone: 'warning' as const },
+  no:        { label: 'No compraría', tone: 'danger'  as const },
+} as const
+
+export type VisitBuyIntention = keyof typeof VISIT_BUY_INTENTIONS
+
+export const VISIT_SITUATIONS: Record<string, string> = {
+  mudanza: 'Mudanza',
+  primera_vivienda: 'Primera vivienda',
+  inversion: 'Inversión',
+  downsizing: 'Downsizing',
+  otro: 'Otros',
+}
+
+export const VISIT_SOURCES: Record<string, string> = {
+  argenprop: 'Argenprop',
+  mercadolibre: 'Mercado Libre',
+  zonaprop: 'Zonaprop',
+  instagram: 'Instagram',
+  recomendacion: 'Recomendación',
+  otro: 'Otros',
+}
+
+// Frescura del último reporte de una propiedad. Estaba hardcodeado con
+// orange/yellow sueltos en PropertyFilters (badge y texto).
+export const REPORT_FRESHNESS = {
+  overdue: { badge: 'bg-orange-100 text-orange-800', text: 'text-orange-600 font-medium' },
+  warning: { badge: 'bg-yellow-100 text-yellow-800', text: 'text-yellow-700' },
+} as const
+
+// Estado de una landing. Estaba en un StatusBadge LOCAL de components/landings
+// que le hacía sombra al del design system.
+export const LANDING_STATUSES = {
+  draft:          { label: 'Borrador',    color: 'bg-gray-100 text-gray-700' },
+  pending_review: { label: 'En revisión', color: 'bg-amber-100 text-amber-800' },
+  published:      { label: 'Publicada',   color: 'bg-emerald-100 text-emerald-800' },
+  archived:       { label: 'Archivada',   color: 'bg-gray-200 text-gray-500' },
+} as const
+
+export const LEAD_FLAGS = {
+  tasacion: { label: 'Tasación', color: 'bg-purple-100 text-purple-800' },
+} as const
+
+export type LeadFlag = keyof typeof LEAD_FLAGS
+
 export const PROPERTY_STAGES = {
   propuesta:     { label: 'Propuesta',       color: 'bg-gray-100 text-gray-700',       dot: '#6b7280', order: 0 },
   captada:       { label: 'Captada',         color: 'bg-green-100 text-green-800',     dot: '#22c55e', order: 1 },
@@ -198,6 +311,34 @@ export const PROPERTY_REPORT_STATUS: Record<string, { label: string; color: stri
 }
 export function getReportStatus(status?: string) {
   return PROPERTY_REPORT_STATUS[status ?? ''] ?? { label: status || '—', color: 'bg-amber-100 text-amber-800' }
+}
+
+// Origen de una propiedad — de dónde vino el registro. Sólo se muestra badge
+// cuando NO es carga manual. Estaba hardcodeado en el detalle de propiedad.
+export const PROPERTY_SOURCES: Record<string, { label: string; color: string }> = {
+  kiteprop: { label: 'Importada de KiteProp', color: 'bg-indigo-50 text-indigo-600 border border-indigo-100' },
+}
+export function getPropertySource(source?: string | null) {
+  return source ? PROPERTY_SOURCES[source] ?? null : null
+}
+
+// Estados de propiedad que NO viven en el pipeline de venta (PROPERTY_STAGES):
+// alquiler es un flujo aparte, con su propia lista. Estaba hardcodeado como
+// span cyan en /alquiladas.
+export const PROPERTY_ALT_STATUSES: Record<string, { label: string; color: string }> = {
+  alquilada: { label: 'Alquilada', color: 'bg-cyan-100 text-cyan-800' },
+}
+
+// Etapas viejas que siguen viniendo de la base. Vivía como mapa local en
+// app/(dashboard)/propiedades/[id], así que cualquier otra pantalla que mostrara
+// una etapa legacy caía al fallback gris.
+const LEGACY_STAGE_ALIASES: Record<string, PropertyStage> = {
+  captacion: 'captada',
+  con_ofertas: 'reservada',
+}
+
+export function resolvePropertyStage(slug: string): PropertyStage {
+  return (LEGACY_STAGE_ALIASES[slug] ?? slug) as PropertyStage
 }
 
 export const ACTIVITY_TYPES = {

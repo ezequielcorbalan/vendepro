@@ -1,6 +1,7 @@
 'use client'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { Smartphone, Monitor, Sparkles } from 'lucide-react'
 import type { Landing, Block } from '@/lib/landings/types'
 import { landingsApi } from '@/lib/landings/api'
 import { getCurrentUser } from '@/lib/auth'
@@ -128,8 +129,8 @@ export default function LandingEditorPage() {
           <div className="flex gap-2 justify-center items-center p-2 border-b border-gray-200 bg-white">
             <SegmentedControl
               options={[
-                { value: 'mobile', label: '📱 Móvil' },
-                { value: 'desktop', label: '💻 Desktop' },
+                { value: 'mobile', label: 'Móvil', icon: <Smartphone className="w-3.5 h-3.5" /> },
+                { value: 'desktop', label: 'Desktop', icon: <Monitor className="w-3.5 h-3.5" /> },
               ]}
               value={viewport}
               onChange={(v) => setViewport(v as 'mobile' | 'desktop')}
@@ -153,7 +154,7 @@ export default function LandingEditorPage() {
           <Tabs
             items={[
               { value: 'inspector', label: 'Inspector' },
-              { value: 'ai', label: '✨ Chat IA' },
+              { value: 'ai', label: 'Chat IA', icon: <Sparkles className="w-3.5 h-3.5" /> },
             ]}
             value={rightTab}
             onChange={(v) => setRightTab(v as 'inspector' | 'ai')}

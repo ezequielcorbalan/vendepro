@@ -11,7 +11,10 @@ import { Input, Select } from '@/components/ui/Input'
 import { Alert } from '@/components/ui/Alert'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { REPORT_FRESHNESS } from '@/lib/crm-config'
 import { Card } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { Heading, Text } from '@/components/ui/Typography'
 
 const REPORT_DEADLINE_DAYS = 20
 
@@ -201,18 +204,18 @@ export default function PropertyFilters({ properties, config }: { properties: an
           const opStages = stagesForType(config, property.operation_type_id ?? 1)
 
           return (
-            <div key={property.id} className="bg-white border border-gray-200 rounded-card shadow-card hover:shadow-md transition-shadow overflow-hidden">
+            <Card key={property.id} padded={false} interactive className="overflow-hidden">
               <Link href={`/propiedades/${property.id}`}>
-                <div className="h-36 bg-gradient-to-br from-brand-pink/10 to-brand-orange/10 flex items-center justify-center relative">
-                  <Building2 className="w-10 h-10 text-brand-pink/30" />
+                <div className="h-36 bg-gray-100 flex items-center justify-center relative">
+                  <Building2 className="w-10 h-10 text-gray-300" />
                   {isOverdue && (
                     <div className="absolute top-2 left-2">
-                      <StatusBadge label={info.days === null ? 'Sin reportes' : `Hace ${info.days}d`} color="bg-orange-100 text-orange-800" />
+                      <StatusBadge label={info.days === null ? 'Sin reportes' : `Hace ${info.days}d`} color={REPORT_FRESHNESS.overdue.badge} />
                     </div>
                   )}
                   {isWarning && !isOverdue && (
                     <div className="absolute top-2 left-2">
-                      <StatusBadge label={`Hace ${info.days}d`} color="bg-yellow-100 text-yellow-800" />
+                      <StatusBadge label={`Hace ${info.days}d`} color={REPORT_FRESHNESS.warning.badge} />
                     </div>
                   )}
                 </div>
@@ -239,7 +242,7 @@ export default function PropertyFilters({ properties, config }: { properties: an
                         {opStages.map(s => (
                           <button key={s.id}
                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); changeStage(property.id, s.id) }}
-                            className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 flex items-center gap-2 ${property.commercial_stage_id === s.id ? 'font-semibold text-brand-pink' : 'text-gray-700'}`}
+                            className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 flex items-center gap-2 ${property.commercial_stage_id === s.id ? 'font-semibold text-primary' : 'text-gray-700'}`}
                           >
                             <span className="w-1.5 h-1.5 rounded-full shrink-0" style={stageDotStyle(s.color)} />
                             {s.label}
@@ -258,16 +261,16 @@ export default function PropertyFilters({ properties, config }: { properties: an
                 </div>
 
                 <Link href={`/propiedades/${property.id}`}>
-                  <h3 className="font-semibold text-ink mb-0.5 hover:text-brand-pink transition-colors leading-snug">{property.address}</h3>
-                  <p className="text-xs text-gray-500">
+                  <Heading level={4} className="mb-0.5 hover:text-primary transition-colors leading-snug">{property.address}</Heading>
+                  <Text size="xs" tone="muted">
                     {[property.neighborhood, property.property_type, opType?.label].filter(Boolean).join(' · ')}
-                  </p>
+                  </Text>
                   {property.asking_price && (
-                    <p className="text-sm font-semibold text-brand-pink mt-1">{property.currency} {Number(property.asking_price).toLocaleString('es-AR')}</p>
+                    <Text size="sm" weight="semibold" tone="primary" className="mt-1">{property.currency} {Number(property.asking_price).toLocaleString('es-AR')}</Text>
                   )}
-                  {property.agent_name && <p className="text-xs text-gray-400 mt-0.5">Agente: {property.agent_name}</p>}
+                  {property.agent_name && <Text size="xs" tone="muted" className="mt-0.5">Agente: {property.agent_name}</Text>}
                   {info.days !== null && (
-                    <p className={`text-xs mt-0.5 ${isOverdue ? 'text-orange-600 font-medium' : isWarning ? 'text-yellow-700' : 'text-gray-400'}`}>
+                    <p className={`text-xs mt-0.5 ${isOverdue ? REPORT_FRESHNESS.overdue.text : isWarning ? REPORT_FRESHNESS.warning.text : 'text-gray-400'}`}>
                       Último reporte: hace {info.days}d{info.isExternal ? ' (ext)' : ''}
                     </p>
                   )}
@@ -275,23 +278,23 @@ export default function PropertyFilters({ properties, config }: { properties: an
 
                 <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-2">
                   <Link href={`/propiedades/${property.id}/reportes/nuevo`}
-                    className="text-xs text-brand-pink font-medium hover:underline shrink-0">
+                    className="text-xs text-primary font-medium hover:underline shrink-0">
                     + Reporte
                   </Link>
-                  <button
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleExternal(property.id, externalMarked) }}
-                    className={`text-xs flex items-center gap-1 px-2 py-0.5 rounded-full transition-colors ml-auto ${
-                      externalMarked
-                        ? 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100'
-                        : 'bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100'
+                    icon={externalMarked ? <CheckCircle2 className="w-3 h-3" /> : <Check className="w-3 h-3" />}
+                    className={`text-xs rounded-full px-2 py-0.5 ml-auto ${
+                      externalMarked ? 'bg-success/10 text-success border-success/30' : 'text-gray-500'
                     }`}
                   >
-                    {externalMarked ? <CheckCircle2 className="w-3 h-3" /> : <Check className="w-3 h-3" />}
                     {externalMarked ? 'Ext.' : 'Hecho fuera'}
-                  </button>
+                  </Button>
                 </div>
               </div>
-            </div>
+            </Card>
           )
         })}
       </div>

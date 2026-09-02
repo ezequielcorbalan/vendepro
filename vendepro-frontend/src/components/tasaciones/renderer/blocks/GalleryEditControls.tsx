@@ -1,4 +1,5 @@
 'use client'
+import { useToast } from '@/components/ui/Toast'
 import { useState } from 'react'
 import { ImagePlus, Loader2 } from 'lucide-react'
 import { apiFetch, getApiBase } from '@/lib/api'
@@ -10,6 +11,7 @@ interface Props {
 // Sube varias imágenes de una (input multiple) a la API `properties`
 // (/upload-photo → {key,url}) y devuelve las URLs para agregarlas a la galería.
 export function GalleryEditControls({ onAdd }: Props) {
+  const { toast } = useToast()
   const [uploading, setUploading] = useState(false)
 
   async function handleFiles(e: React.ChangeEvent<HTMLInputElement>) {
@@ -27,7 +29,7 @@ export function GalleryEditControls({ onAdd }: Props) {
       }))
       onAdd(uploaded)
     } catch (err: any) {
-      alert('Error subiendo imágenes: ' + (err?.message ?? 'desconocido'))
+      toast('Error subiendo imágenes: ' + (err?.message ?? 'desconocido'), 'error')
     } finally {
       setUploading(false)
       e.target.value = '' // permite volver a elegir los mismos archivos

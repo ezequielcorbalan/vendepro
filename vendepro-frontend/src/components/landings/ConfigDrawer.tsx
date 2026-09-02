@@ -1,11 +1,13 @@
 'use client'
 import { useState } from 'react'
-import { X, Save } from 'lucide-react'
+import { Save } from 'lucide-react'
 import { landingsApi } from '@/lib/landings/api'
 import { slugifyBase, isValidSlugBase, publicLandingHostPath } from '@/lib/landings/slug'
 import type { Landing } from '@/lib/landings/types'
 import { Field, Input, Textarea } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import { Drawer } from '@/components/ui/Drawer'
+import { Alert } from '@/components/ui/Alert'
 
 export default function ConfigDrawer({
   landing,
@@ -62,18 +64,18 @@ export default function ConfigDrawer({
   }
 
   return (
-    <div className="fixed inset-0 z-40 bg-black/40" onClick={onClose}>
-      <aside
-        className="absolute right-0 top-0 h-full w-[460px] bg-white shadow-pop flex flex-col"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h2 className="font-semibold text-ink">Configuración</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-        <div className="flex-1 overflow-auto p-4 space-y-4">
+    <Drawer
+      open
+      onClose={onClose}
+      title="Configuración"
+      width="w-[460px]"
+      footer={
+        <Button onClick={save} loading={saving} fullWidth icon={<Save className="w-4 h-4" />}>
+          Guardar
+        </Button>
+      }
+    >
+        <div className="space-y-4">
           <Field label="Slug">
             <Input value={slugBase} onChange={e => setSlugBase(e.target.value)} />
             <p className="text-xs text-gray-500 mt-1">
@@ -109,14 +111,8 @@ export default function ConfigDrawer({
             </p>
           </Field>
 
-          {error && <p className="text-sm text-danger">{error}</p>}
+          {error && <Alert tone="danger">{error}</Alert>}
         </div>
-        <div className="p-4 border-t border-gray-200">
-          <Button onClick={save} loading={saving} fullWidth icon={<Save className="w-4 h-4" />}>
-            Guardar
-          </Button>
-        </div>
-      </aside>
-    </div>
+    </Drawer>
   )
 }

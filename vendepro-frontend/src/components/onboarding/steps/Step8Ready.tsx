@@ -1,5 +1,9 @@
-import { ArrowRight, Users } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+'use client'
+
+import { ArrowRight, Users, Rocket } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
+import { Text } from '@/components/ui/Typography'
+import { StepLayout } from '../StepLayout'
 
 interface Props {
   name: string
@@ -7,43 +11,36 @@ interface Props {
 }
 
 export default function Step8Ready({ name, onClose }: Props) {
-  const router = useRouter()
-
   return (
-    <div className="flex flex-col items-center text-center px-4 py-6 gap-6">
-      <div className="w-24 h-24 rounded-full bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shadow-lg shadow-pink-200">
-        <span className="text-4xl">🚀</span>
-      </div>
-      <div className="space-y-2">
-        <h2 className="text-2xl font-bold text-ink">
-          ¡Todo listo{name ? `, ${name.split(' ')[0]}` : ''}!
-        </h2>
-        <p className="text-gray-500 text-sm max-w-sm">
-          Ya conocés VendéPro. Empezá cargando tu primer lead o explorando el dashboard.
-        </p>
-      </div>
-
-      <div className="flex flex-col sm:flex-row gap-3 w-full max-w-sm">
-        <button
+    <StepLayout
+      icon={<Rocket className="w-7 h-7" />}
+      title={`¡Todo listo${name ? `, ${name.split(' ')[0]}` : ''}!`}
+      subtitle="Ya conocés VendéPro. Empezá cargando tu primer lead o explorando el dashboard."
+    >
+      <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md">
+        <Button
+          variant="outline"
+          size="lg"
           onClick={onClose}
-          className="flex-1 flex items-center justify-center gap-2 border border-gray-200 text-gray-700 px-4 py-3 rounded-control text-sm font-medium hover:bg-gray-50 transition-colors"
+          className="flex-1 whitespace-nowrap"
         >
-          Ir al Dashboard
-          <ArrowRight className="w-4 h-4" />
-        </button>
-        <button
-          onClick={() => { onClose(); router.push('/leads') }}
-          className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-brand-pink to-brand-orange text-white px-4 py-3 rounded-control text-sm font-semibold hover:opacity-90 transition-opacity shadow-md shadow-pink-200"
+          Ir al Dashboard <ArrowRight className="w-4 h-4" />
+        </Button>
+        <Button
+          href="/leads"
+          size="lg"
+          onClick={onClose}
+          icon={<Users className="w-4 h-4" />}
+          className="flex-1 whitespace-nowrap"
         >
-          <Users className="w-4 h-4" />
-          Cargar mi primer Lead
-        </button>
+          Cargar mi primer lead
+        </Button>
       </div>
 
-      <p className="text-xs text-gray-400">
+      <Text size="xs" tone="muted">
         Podés volver a ver este tutorial desde{' '}
         <span className="text-gray-500 font-medium">Configuración → Ayuda</span>
-      </p>
-    </div>
+      </Text>
+    </StepLayout>
   )
 }

@@ -11,6 +11,10 @@ import { LEAD_PROPERTY_STATUSES } from '@/lib/crm-config'
 import type { LeadPropertyItem } from '@/lib/types'
 import { Input } from '@/components/ui/Input'
 
+import { Card } from '@/components/ui/Card'
+import { WidgetHeader } from '@/components/ui/WidgetHeader'
+import { Button } from '@/components/ui/Button'
+import { Text } from '@/components/ui/Typography'
 const STATUS_ACTIONS: Array<{ status: keyof typeof LEAD_PROPERTY_STATUSES; label: string; icon: any }> = [
   { status: 'visita_agendada', label: 'Visita agendada', icon: CalendarPlus },
   { status: 'visitada', label: 'Visitada', icon: Eye },
@@ -136,22 +140,23 @@ export function LeadPropertiesSection({ leadId }: { leadId: string }) {
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-card p-4 shadow-card">
-      <div className="flex items-center justify-between gap-2 mb-3">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center">
-            <Building2 className="w-3.5 h-3.5 text-white" />
-          </div>
-          <p className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Propiedades de interés</p>
-        </div>
-        <button
-          onClick={() => setShowSearch(v => !v)}
-          className="flex items-center gap-1 text-xs font-medium text-brand-pink hover:text-pink-700 min-h-[44px] px-2"
-        >
-          {showSearch ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
-          {showSearch ? 'Cancelar' : 'Vincular propiedad'}
-        </button>
-      </div>
+    <Card>
+      <WidgetHeader
+        size="sm"
+        icon={<Building2 className="w-3.5 h-3.5" />}
+        title="Propiedades de interés"
+        action={
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowSearch(v => !v)}
+            icon={showSearch ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+            className="text-xs text-primary min-h-[44px]"
+          >
+            {showSearch ? 'Cancelar' : 'Vincular propiedad'}
+          </Button>
+        }
+      />
 
       {showSearch && (
         <div className="mb-3">
@@ -165,7 +170,7 @@ export function LeadPropertiesSection({ leadId }: { leadId: string }) {
               className="pl-9"
             />
           </div>
-          {searching && <p className="text-xs text-gray-400 mt-2">Buscando…</p>}
+          {searching && <Text size="xs" tone="muted" className="mt-2">Buscando…</Text>}
           {!searching && results.length > 0 && (
             <div className="mt-2 border border-gray-100 rounded-card divide-y divide-gray-100 overflow-hidden">
               {results.map(r => (
@@ -173,7 +178,7 @@ export function LeadPropertiesSection({ leadId }: { leadId: string }) {
                   key={r.id}
                   onClick={() => linkProperty(r.id)}
                   disabled={busyId === 'link'}
-                  className="w-full text-left px-3 py-2.5 text-sm hover:bg-pink-50 disabled:opacity-50"
+                  className="w-full text-left px-3 py-2.5 text-sm hover:bg-primary/5 disabled:opacity-50"
                 >
                   <span className="font-medium text-ink">{r.address}</span>
                   {r.neighborhood && <span className="text-gray-400"> · {r.neighborhood}</span>}
@@ -182,7 +187,7 @@ export function LeadPropertiesSection({ leadId }: { leadId: string }) {
             </div>
           )}
           {!searching && query.trim().length >= 2 && results.length === 0 && (
-            <p className="text-xs text-gray-400 mt-2">Sin resultados en el stock.</p>
+            <Text size="xs" tone="muted" className="mt-2">Sin resultados en el stock.</Text>
           )}
         </div>
       )}
@@ -192,12 +197,12 @@ export function LeadPropertiesSection({ leadId }: { leadId: string }) {
           <Loader2 className="w-5 h-5 animate-spin" />
         </div>
       ) : error ? (
-        <p className="text-sm text-red-500 py-3">{error}</p>
+        <Text size="sm" tone="danger" className="py-3">{error}</Text>
       ) : items.length === 0 ? (
-        <p className="text-sm text-gray-400 py-3">
+        <Text size="sm" tone="muted" className="py-3">
           Sin propiedades vinculadas todavía. Las consultas de portales las vinculan
           automáticamente; también podés vincular una propiedad del stock.
-        </p>
+        </Text>
       ) : (
         <div className="space-y-2">
           {items.map(item => {
@@ -212,7 +217,7 @@ export function LeadPropertiesSection({ leadId }: { leadId: string }) {
                     <div className="flex items-center gap-2 flex-wrap">
                       <Link
                         href={`/propiedades/${item.property_id}`}
-                        className="text-sm font-semibold text-ink hover:text-brand-pink truncate"
+                        className="text-sm font-semibold text-ink hover:text-primary truncate"
                       >
                         {item.property_address}
                       </Link>
@@ -247,7 +252,7 @@ export function LeadPropertiesSection({ leadId }: { leadId: string }) {
                       key={a.status}
                       onClick={() => updateStatus(item.id, a.status)}
                       disabled={busy}
-                      className="flex items-center gap-1 text-[11px] text-gray-500 hover:text-brand-pink hover:bg-pink-50 rounded-lg px-2 min-h-[44px] disabled:opacity-40"
+                      className="flex items-center gap-1 text-[11px] text-gray-500 hover:text-primary hover:bg-primary/5 rounded-control px-2 min-h-[44px] disabled:opacity-40"
                     >
                       <a.icon className="w-3 h-3" />
                       {a.label}
@@ -257,15 +262,15 @@ export function LeadPropertiesSection({ leadId }: { leadId: string }) {
                     onClick={() => generateVisitForm(item)}
                     disabled={busy}
                     title="Genera el link de la ficha de visita y lo copia al portapapeles"
-                    className="flex items-center gap-1 text-[11px] text-gray-500 hover:text-brand-pink hover:bg-pink-50 rounded-lg px-2 min-h-[44px] disabled:opacity-40"
+                    className="flex items-center gap-1 text-[11px] text-gray-500 hover:text-primary hover:bg-primary/5 rounded-control px-2 min-h-[44px] disabled:opacity-40"
                   >
                     <ClipboardList className="w-3 h-3" />
-                    {copiedId === item.id ? 'Link copiado ✓' : 'Ficha de visita'}
+                    {copiedId === item.id ? 'Link copiado' : 'Ficha de visita'}
                   </button>
                   <button
                     onClick={() => unlink(item.id)}
                     disabled={busy}
-                    className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg px-2 min-h-[44px] ml-auto disabled:opacity-40"
+                    className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-danger hover:bg-danger/5 rounded-control px-2 min-h-[44px] ml-auto disabled:opacity-40"
                   >
                     <Trash2 className="w-3 h-3" />
                     Quitar
@@ -276,6 +281,6 @@ export function LeadPropertiesSection({ leadId }: { leadId: string }) {
           })}
         </div>
       )}
-    </div>
+    </Card>
   )
 }

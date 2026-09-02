@@ -10,6 +10,8 @@ import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
 import { Input as DSInput, Select as DSSelect, Textarea as DSTextarea } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import { Drawer } from '@/components/ui/Drawer'
+import { Tabs } from '@/components/ui/Tabs'
 
 type Mode = 'text' | 'image'
 type Step = 'input' | 'review' | 'done'
@@ -193,54 +195,40 @@ export default function AIChatPanel(_props: {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-
-      <div className="relative w-full max-w-md bg-white shadow-pop flex flex-col h-full overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-brand-pink/5 to-brand-orange/5 shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="bg-brand-pink rounded-lg p-1.5">
-              <Sparkles size={16} className="text-white" />
-            </div>
-            <div>
-              <p className="font-semibold text-ink text-sm">Asistente IA</p>
-              <p className="text-xs text-gray-500">Groq · {mode === 'image' ? 'llama-4-scout (visión)' : 'llama3-8b'}</p>
-            </div>
+    <Drawer
+      open
+      onClose={() => onClose?.()}
+      width="w-full max-w-md"
+      padded={false}
+      /* El header propio: medallón + nombre + modelo. El ícono usa el token
+         `bg-brand-gradient`, el MISMO que el botón flotante que abre el panel,
+         así el objeto se reconoce como el mismo abierto y cerrado. */
+      header={
+        <div className="flex items-center gap-2.5">
+          <div className="bg-brand-gradient rounded-full p-1.5 text-white">
+            <Sparkles size={16} />
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition-colors">
-            <X size={18} />
-          </button>
+          <div>
+            <p className="font-semibold text-ink text-sm">Asistente IA</p>
+            <p className="text-xs text-gray-500">Groq · {mode === 'image' ? 'llama-4-scout (visión)' : 'llama3-8b'}</p>
+          </div>
         </div>
-
-        {/* Mode tabs — only shown during input step */}
+      }
+    >
+        {/* Elegir entre texto e imagen es navegación entre vistas del paso, así
+            que son `Tabs` del DS y no dos botones con un borde inferior a mano. */}
         {step === 'input' && (
-          <div className="flex border-b border-gray-100 shrink-0">
-            <button
-              onClick={() => setMode('text')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors ${
-                mode === 'text'
-                  ? 'text-brand-pink border-b-2 border-brand-pink'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <Type size={13} /> Texto
-            </button>
-            <button
-              onClick={() => setMode('image')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors ${
-                mode === 'image'
-                  ? 'text-brand-pink border-b-2 border-brand-pink'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <FileImage size={13} /> Imagen
-            </button>
-          </div>
+          <Tabs
+            value={mode}
+            onChange={v => setMode(v as 'text' | 'image')}
+            items={[
+              { value: 'text', label: 'Texto', icon: <Type size={13} /> },
+              { value: 'image', label: 'Imagen', icon: <FileImage size={13} /> },
+            ]}
+          />
         )}
 
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto p-5">
+        <div className="p-5">
 
           {/* ── Texto: input ── */}
           {step === 'input' && mode === 'text' && (
@@ -250,13 +238,15 @@ export default function AIChatPanel(_props: {
                 <p className="text-xs text-gray-500 mb-3">
                   WhatsApp, mail, nota — la IA extrae nombre, teléfono, email, barrio y más.
                 </p>
-                <textarea
+                {/* Textarea del DS: el de antes traía `focus:outline-none`, o sea
+                    que se comía el anillo de foco del teclado. */}
+                <DSTextarea
                   ref={textareaRef}
                   value={text}
                   onChange={e => setText(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) extract() }}
                   placeholder={'Ej: "Hola, quiero vender mi depto en Palermo. Soy Marcos García, te dejo mi número: 11-5534-2210"'}
-                  className="w-full h-48 border border-gray-200 rounded-control p-3.5 text-sm resize-none focus:outline-none placeholder:text-gray-400"
+                  className="h-48 resize-none"
                 />
               </div>
               <div className="bg-gray-50 rounded-card p-3.5 space-y-1.5">
@@ -299,12 +289,9 @@ export default function AIChatPanel(_props: {
                       className="w-full max-h-64 object-contain bg-gray-50"
                     />
                   </div>
-                  <button
-                    onClick={() => setImageData(null)}
-                    className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
-                  >
-                    <X size={12} /> Cambiar imagen
-                  </button>
+                  <Button variant="ghost" size="sm" onClick={() => setImageData(null)} icon={<X size={12} />}>
+                    Cambiar imagen
+                  </Button>
                 </div>
               )}
               <div className="bg-blue-50 rounded-card p-3.5 space-y-1">
@@ -377,12 +364,9 @@ export default function AIChatPanel(_props: {
                   {fields.full_name} fue agregado al pipeline de leads.
                 </p>
               </div>
-              <button
-                onClick={reset}
-                className="text-brand-pink text-sm font-medium hover:underline flex items-center gap-1.5 mt-2"
-              >
-                <Plus size={14} /> Crear otro lead
-              </button>
+              <Button variant="ghost" size="sm" onClick={reset} icon={<Plus size={14} />} className="mt-2">
+                Crear otro lead
+              </Button>
             </div>
           )}
         </div>
@@ -418,7 +402,6 @@ export default function AIChatPanel(_props: {
             </Button>
           )}
         </div>
-      </div>
-    </div>
+    </Drawer>
   )
 }

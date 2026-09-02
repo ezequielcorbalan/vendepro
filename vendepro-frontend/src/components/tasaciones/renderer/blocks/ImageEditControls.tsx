@@ -1,4 +1,5 @@
 'use client'
+import { useToast } from '@/components/ui/Toast'
 import { useState } from 'react'
 import { Upload, Link as LinkIcon } from 'lucide-react'
 import { apiFetch, getApiBase } from '@/lib/api'
@@ -12,6 +13,7 @@ interface Props {
 // Sube a la API `properties` (/upload-photo → {key,url}) y prefiere el proxy
 // público /photo/{key} del mismo worker (mismo patrón que landings/ImageUpload).
 export function ImageEditControls({ onUploaded, compact }: Props) {
+  const { toast } = useToast()
   const [uploading, setUploading] = useState(false)
   const [mode, setMode] = useState<'upload' | 'url'>('upload')
   const [urlInput, setUrlInput] = useState('')
@@ -28,7 +30,7 @@ export function ImageEditControls({ onUploaded, compact }: Props) {
       const { key, url: rawUrl } = (await res.json()) as any
       onUploaded(key ? `${getApiBase('properties')}/photo/${key}` : rawUrl)
     } catch (err: any) {
-      alert('Error subiendo imagen: ' + (err?.message ?? 'desconocido'))
+      toast('Error subiendo imagen: ' + (err?.message ?? 'desconocido'), 'error')
     } finally {
       setUploading(false)
     }

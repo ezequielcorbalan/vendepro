@@ -6,11 +6,15 @@ import Link from 'next/link'
 import { ArrowLeft, ArrowRight, Loader2, Save, Send, Mail } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
+import { StepIndicator } from '@/components/ui/StepIndicator'
 import { type CampaignSegment, parseSegment } from '@/lib/email-campaigns'
 import AudienceStep, { type AudiencePreview } from './AudienceStep'
 import ContentStep, { type CampaignContent } from './ContentStep'
 import ReviewStep from './ReviewStep'
+import { Button } from '@/components/ui/Button'
 
+import { Card } from '@/components/ui/Card'
+import { IconMedallion } from '@/components/ui/IconMedallion'
 const STEPS = [
   { n: 1, label: 'Audiencia' },
   { n: 2, label: 'Contenido' },
@@ -120,7 +124,7 @@ export default function EmailCampaignWizard({ campaignId }: { campaignId?: strin
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-brand-pink" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -134,11 +138,11 @@ export default function EmailCampaignWizard({ campaignId }: { campaignId?: strin
       </Link>
 
       {/* Nombre + stepper */}
-      <div className="bg-white rounded-card border border-gray-200 shadow-card p-6 mb-5">
+<Card className="p-6 mb-5">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-control bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center shrink-0">
-            <Mail className="w-5 h-5 text-white" />
-          </div>
+          <IconMedallion size="lg">
+            <Mail className="w-5 h-5" />
+          </IconMedallion>
           <input
             className="flex-1 text-lg font-semibold text-ink border-0 border-b border-transparent outline-none placeholder:text-gray-300"
             placeholder="Nombre de la campaña (interno)"
@@ -146,32 +150,15 @@ export default function EmailCampaignWizard({ campaignId }: { campaignId?: strin
             onChange={e => setName(e.target.value)}
           />
         </div>
-        <div className="flex items-center gap-2">
-          {STEPS.map((s, i) => (
-            <div key={s.n} className="flex items-center gap-2">
-              {i > 0 && <div className="w-8 h-px bg-gray-200" />}
-              <button
-                onClick={() => s.n < step && setStep(s.n)}
-                className={`flex items-center gap-1.5 text-sm ${
-                  s.n === step ? 'text-brand-pink font-semibold'
-                  : s.n < step ? 'text-gray-600 hover:text-ink'
-                  : 'text-gray-300'
-                }`}
-              >
-                <span className={`w-5 h-5 rounded-full text-xs flex items-center justify-center ${
-                  s.n === step ? 'bg-brand-pink text-white'
-                  : s.n < step ? 'bg-gray-200 text-gray-600'
-                  : 'bg-gray-100 text-gray-300'
-                }`}>{s.n}</span>
-                {s.label}
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
+        <StepIndicator
+          steps={STEPS.map(s => s.label)}
+          current={step}
+          onStepClick={setStep}
+        />
+      </Card>
 
       {/* Paso actual */}
-      <div className="bg-white rounded-card border border-gray-200 shadow-card p-6">
+<Card className="p-6">
         {step === 1 && (
           <AudienceStep segment={segment} onChange={setSegment} preview={preview} onPreview={setPreview} />
         )}
@@ -203,24 +190,20 @@ export default function EmailCampaignWizard({ campaignId }: { campaignId?: strin
             {step > 1 && (
               <button
                 onClick={() => setStep(step - 1)}
-                className="text-sm text-gray-600 px-4 py-2 rounded-lg border border-gray-200 hover:border-gray-300"
+                className="text-sm text-gray-600 px-4 py-2 rounded-control border border-gray-200 hover:border-gray-300"
               >
                 Atrás
               </button>
             )}
             {step < 3 ? (
-              <button
-                onClick={() => setStep(step + 1)}
-                disabled={!canNext}
-                className="inline-flex items-center gap-2 bg-gray-800 text-white text-sm font-medium px-4 py-2 rounded-lg hover:opacity-90 disabled:opacity-40"
-              >
+              <Button onClick={() => setStep(step + 1)} disabled={!canNext}>
                 Siguiente <ArrowRight className="w-4 h-4" />
-              </button>
+              </Button>
             ) : (
               <button
                 onClick={send}
                 disabled={sending}
-                className="inline-flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white text-sm font-medium px-5 py-2 rounded-lg hover:opacity-90 disabled:opacity-50"
+                className="inline-flex items-center gap-2 bg-primary hover:bg-primary-hover text-white text-sm font-medium px-5 py-2 rounded-control disabled:opacity-50"
               >
                 {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 {scheduledAt ? 'Programar envío' : 'Enviar ahora'}
@@ -228,7 +211,7 @@ export default function EmailCampaignWizard({ campaignId }: { campaignId?: strin
             )}
           </div>
         </div>
-      </div>
+      </Card>
     </div>
   )
 }

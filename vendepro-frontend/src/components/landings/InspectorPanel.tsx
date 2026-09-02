@@ -4,6 +4,8 @@ import type { Block, HeroData, HeroSplitData, LeadFormData, FeaturesGridData, Am
 import { isBoundField } from '@/lib/landings/agent-bindings'
 import { BLOCK_LABELS } from './blocks'
 import ImageUpload from './ImageUpload'
+import { Input, Textarea, Select } from '@/components/ui/Input'
+import { Button } from '@/components/ui/Button'
 import { Text } from '@/components/ui/Typography'
 
 interface Props {
@@ -32,28 +34,26 @@ function Field({ label, children, bound }: { label: string; children: React.Reac
   )
 }
 
-function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...props} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed" />
-}
-
-function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea {...props} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none min-h-[60px] resize-y disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed" />
-}
+// `TextInput`/`TextArea` eran wrappers locales que duplicaban los controles del
+// design system. Se mantienen los nombres para no tocar los ~20 usos de abajo,
+// pero ahora son los del DS.
+const TextInput = Input
+const TextArea = Textarea
 
 export default function InspectorPanel({ block, onChange, onBlockChange }: Props) {
   const isVariable = block.is_variable === true
   return (
     <div className="p-4 space-y-4">
       <div>
-        <p className="text-xs uppercase tracking-wider font-semibold text-brand-pink">Block · {block.type}</p>
+        <Text size="xs" tone="primary" weight="semibold" className="uppercase tracking-wider">Block · {block.type}</Text>
         <p className="text-sm text-ink font-medium">{BLOCK_LABELS[block.type]}</p>
       </div>
 
       {onBlockChange && (
-        <label className="flex items-start gap-2.5 p-3 rounded-lg border border-gray-200 bg-gray-50 cursor-pointer hover:border-brand-pink/40 transition-colors">
+        <label className="flex items-start gap-2.5 p-3 rounded-control border border-gray-200 bg-gray-50 cursor-pointer hover:border-primary/40 transition-colors">
           <input
             type="checkbox"
-            className="mt-0.5 w-4 h-4 accent-brand-pink cursor-pointer"
+            className="mt-0.5 w-4 h-4 accent-primary cursor-pointer"
             checked={isVariable}
             onChange={(e) => onBlockChange({ is_variable: e.target.checked })}
           />
@@ -104,17 +104,17 @@ function HeroSplitFields({ data, onChange }: { data: HeroSplitData; onChange: (p
       <Field label="Subtítulo"><TextArea value={data.subtitle ?? ''} onChange={e => onChange({ subtitle: e.target.value })} /></Field>
       <Field label="Imagen"><ImageUpload value={data.media_url} onChange={(url) => onChange({ media_url: url })} /></Field>
       <Field label="Lado de la imagen">
-        <select value={data.media_side} onChange={e => onChange({ media_side: e.target.value as 'left' | 'right' })} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+        <Select value={data.media_side} onChange={e => onChange({ media_side: e.target.value as 'left' | 'right' })}>
           <option value="left">Izquierda</option>
           <option value="right">Derecha</option>
-        </select>
+        </Select>
       </Field>
       <Field label="Acento">
-        <select value={data.accent_color} onChange={e => onChange({ accent_color: e.target.value as 'pink' | 'orange' | 'dark' })} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+        <Select value={data.accent_color} onChange={e => onChange({ accent_color: e.target.value as 'pink' | 'orange' | 'dark' })}>
           <option value="pink">Rosa</option>
           <option value="orange">Naranja</option>
           <option value="dark">Oscuro</option>
-        </select>
+        </Select>
       </Field>
     </>
   )
@@ -129,13 +129,13 @@ function FeaturesFields({ data, onChange }: { data: FeaturesGridData; onChange: 
     <>
       <Field label="Título"><TextInput value={data.title ?? ''} onChange={e => onChange({ title: e.target.value })} /></Field>
       <Field label="Columnas">
-        <select value={data.columns} onChange={e => onChange({ columns: Number(e.target.value) as 3 | 4 })} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+        <Select value={data.columns} onChange={e => onChange({ columns: Number(e.target.value) as 3 | 4 })}>
           <option value={3}>3</option><option value={4}>4</option>
-        </select>
+        </Select>
       </Field>
       <div className="space-y-3">
         {data.items.map((it, i) => (
-          <div key={i} className="border border-gray-200 rounded-lg p-3 space-y-2 bg-gray-50">
+          <div key={i} className="border border-gray-200 rounded-control p-3 space-y-2 bg-gray-50">
             <TextInput placeholder="Ícono (nombre de lucide, ej: Star)" value={it.icon} onChange={e => updateItem(i, { icon: e.target.value })} />
             <TextInput placeholder="Título" value={it.title} onChange={e => updateItem(i, { title: e.target.value })} />
             <TextArea placeholder="Texto" value={it.text} onChange={e => updateItem(i, { text: e.target.value })} />
@@ -166,18 +166,18 @@ function GalleryFields({ data, onChange }: { data: GalleryData; onChange: (p: Pa
   return (
     <>
       <Field label="Layout">
-        <select value={data.layout} onChange={e => onChange({ layout: e.target.value as GalleryData['layout'] })} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+        <Select value={data.layout} onChange={e => onChange({ layout: e.target.value as GalleryData['layout'] })}>
           <option value="grid">Grid</option>
           <option value="mosaic">Mosaico</option>
           <option value="carousel">Carrusel</option>
-        </select>
+        </Select>
       </Field>
       <Field label="Imágenes">
         <div className="space-y-2">
           {data.images.map((img, i) => (
             <div key={i} className="flex gap-2 items-center">
-              <img src={img.url} alt="" className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
-              <button onClick={() => onChange({ images: data.images.filter((_, j) => j !== i) })} className="text-xs text-red-500 hover:underline">Quitar</button>
+              <img src={img.url} alt="" className="w-12 h-12 rounded-control object-cover flex-shrink-0" />
+              <Button variant="ghost" size="sm" onClick={() => onChange({ images: data.images.filter((_, j) => j !== i) })} className="text-xs text-danger px-0">Quitar</Button>
             </div>
           ))}
           <ImageUpload value="" allowPropertyPicker onChange={(url, source, property_id) => onChange({ images: [...data.images, { url, source: source ?? 'upload', property_id }] })} />
@@ -193,7 +193,7 @@ function BenefitsFields({ data, onChange }: { data: BenefitsListData; onChange: 
       <Field label="Título"><TextInput value={data.title ?? ''} onChange={e => onChange({ title: e.target.value })} /></Field>
       <div className="space-y-3">
         {data.items.map((it, i) => (
-          <div key={i} className="border border-gray-200 rounded-lg p-3 space-y-2 bg-gray-50">
+          <div key={i} className="border border-gray-200 rounded-control p-3 space-y-2 bg-gray-50">
             <TextInput placeholder="Título del beneficio" value={it.title} onChange={e => { const items = [...data.items]; items[i] = { ...it, title: e.target.value }; onChange({ items }) }} />
             <TextArea placeholder="Descripción" value={it.description ?? ''} onChange={e => { const items = [...data.items]; items[i] = { ...it, description: e.target.value }; onChange({ items }) }} />
           </div>
@@ -261,29 +261,29 @@ function AgentHeroFields({ data, onChange, binding }: { data: AgentHeroData; onC
       </Field>
       <Field label="Imagen de fondo (opcional)" bound={bBackground}>
         {bBackground ? (
-          data.background_image_url ? <img src={data.background_image_url} alt="" className="w-full h-16 rounded-lg object-cover" /> : null
+          data.background_image_url ? <img src={data.background_image_url} alt="" className="w-full h-16 rounded-control object-cover" /> : null
         ) : (
           <ImageUpload value={data.background_image_url ?? ''} onChange={(url) => onChange({ background_image_url: url })} />
         )}
       </Field>
       <Field label="Color de acento">
-        <select value={data.accent_color} onChange={e => onChange({ accent_color: e.target.value as AgentHeroData['accent_color'] })} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+        <Select value={data.accent_color} onChange={e => onChange({ accent_color: e.target.value as AgentHeroData['accent_color'] })}>
           <option value="pink">Rosa</option>
           <option value="orange">Naranja</option>
           <option value="dark">Oscuro</option>
-        </select>
+        </Select>
       </Field>
       <Field label="CTAs">
         <div className="space-y-2">
           {data.ctas.map((cta, i) => (
-            <div key={i} className="border border-gray-200 rounded-lg p-3 space-y-2 bg-gray-50">
+            <div key={i} className="border border-gray-200 rounded-control p-3 space-y-2 bg-gray-50">
               <TextInput placeholder="Label" value={cta.label} onChange={e => updateCta(i, { label: e.target.value })} />
               <TextInput placeholder="Link (URL, #ancla o teléfono si es WhatsApp)" value={cta.href} onChange={e => updateCta(i, { href: e.target.value })} />
-              <select value={cta.style} onChange={e => updateCta(i, { style: e.target.value as AgentHeroCta['style'] })} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+              <Select value={cta.style} onChange={e => updateCta(i, { style: e.target.value as AgentHeroCta['style'] })}>
                 <option value="primary">Primario</option>
                 <option value="secondary">Secundario</option>
                 <option value="whatsapp">WhatsApp</option>
-              </select>
+              </Select>
               <button onClick={() => onChange({ ctas: data.ctas.filter((_, j) => j !== i) })} className="text-xs text-red-500 hover:underline">Quitar</button>
             </div>
           ))}
