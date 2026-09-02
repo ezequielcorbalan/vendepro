@@ -471,3 +471,21 @@ Mapa completo de cómo se manifiesta hoy una key faltante:
 distintos, sin relación. Ya hizo que un grep buscara el manejo de error en el archivo
 equivocado y concluyera que no existía. El bug V.4 de `useOverlay` es el de
 `components/ai/`; el manejo correcto de `status` es el de `components/landings/`.
+
+## V.11 · `reason: 'timeout'` es una variante muerta — y eso deja G.3 sin medir
+
+`ai-service.ts:29` y `:33` declaran el union
+`reason: 'schema_mismatch' | 'provider_error' | 'timeout'`, pero **`'timeout'` no se
+emite nunca**: `grep -c "reason: 'timeout'"` sobre `groq-ai-service.ts` da **0**. El
+`AbortController` de `callGroq` (15 s) y el de `extractLeadFromImage` (20 s) tiran
+`AbortError`, que cae en el `catch` genérico y sale como `provider_error` con el detalle
+del abort.
+
+**Por qué importa**: el riesgo G.3 de este mismo informe —`compound` es un sistema
+agéntico que puede decidir hacer búsqueda web y pasarse de los timeouts— **no es
+medible con lo que hay**. Si pasa en producción llega como `provider_error` y con
+HTTP 200: quien instrumente "cuántos timeouts tuvimos" filtrando por `reason ===
+'timeout'` cuenta cero para siempre, y filtrando por status HTTP tampoco lo ve.
+
+**Fix**: distinguir el `AbortError` en el catch y devolver `reason: 'timeout'`. Es el
+mismo bloque que hay que tocar por V.10, así que van juntos.
