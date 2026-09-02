@@ -4,6 +4,7 @@ import { ArrowLeft, ExternalLink, Copy, Check, Monitor } from 'lucide-react'
 import { useState } from 'react'
 import type { Landing } from '@/lib/landings/types'
 import { publicLandingUrl, publicLandingHostPath } from '@/lib/landings/slug'
+import { landingKindLabel } from '@/lib/landings/kind-label'
 import StatusBadge from './StatusBadge'
 import { Alert } from '@/components/ui/Alert'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -11,7 +12,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 export default function LandingMobileInfo({ landing }: { landing: Landing }) {
   const [copied, setCopied] = useState(false)
   const url = publicLandingUrl(landing.full_slug)
-  const kindLabel = landing.kind === 'lead_capture' ? 'Captación de leads' : 'Propiedad'
+  const kindLabel = landingKindLabel(landing.kind)
 
   async function copyUrl() {
     try {

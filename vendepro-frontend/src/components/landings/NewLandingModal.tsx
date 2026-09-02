@@ -5,6 +5,7 @@ import { X, ChevronRight, Loader2 } from 'lucide-react'
 import { templatesApi, landingsApi } from '@/lib/landings/api'
 import type { LandingTemplate, LandingKind } from '@/lib/landings/types'
 import { slugifyBase, isValidSlugBase, publicLandingHostPath } from '@/lib/landings/slug'
+import { landingKindLabel } from '@/lib/landings/kind-label'
 import { Field, Input } from '@/components/ui/Input'
 
 type Step = 'template' | 'name'
@@ -137,9 +138,9 @@ export default function NewLandingModal({ onClose, asTasacionTemplate = false }:
   )
 }
 
+// Único lugar que conoce la opción 'all' (no es parte del dominio, es del
+// filtro de este modal) — el resto del mapeo lo resuelve landingKindLabel,
+// compartido con LandingCard y LandingMobileInfo.
 function kindLabel(kind: LandingKind | 'all'): string {
-  if (kind === 'all') return 'Todos'
-  if (kind === 'lead_capture') return 'Captación'
-  if (kind === 'property') return 'Propiedad'
-  return 'Mi perfil de agente'
+  return kind === 'all' ? 'Todos' : landingKindLabel(kind)
 }

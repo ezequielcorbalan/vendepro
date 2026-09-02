@@ -3,11 +3,12 @@ import Link from 'next/link'
 import { ExternalLink } from 'lucide-react'
 import type { Landing } from '@/lib/landings/types'
 import { publicLandingUrl, publicLandingHostPath } from '@/lib/landings/slug'
+import { landingKindLabel } from '@/lib/landings/kind-label'
 import StatusBadge from './StatusBadge'
 
 export default function LandingCard({ landing }: { landing: Landing }) {
   const publicUrl = publicLandingUrl(landing.full_slug)
-  const kindLabel = landing.kind === 'lead_capture' ? 'Captación' : 'Propiedad'
+  const kindLabel = landingKindLabel(landing.kind)
   const isTasacionTemplate = landing.template_type === 'tasacion'
 
   return (
