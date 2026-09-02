@@ -85,7 +85,7 @@ export class GroqAIService implements AIService {
     return data.text ?? ''
   }
 
-  async extractMetricsFromScreenshot(_imageBase64: string): Promise<Record<string, unknown>> {
+  async extractMetricsFromScreenshot(_imageBase64: string, _mimeType?: string): Promise<Record<string, unknown>> {
     // Se sigue delegando en AnthropicAIService: el modelo de visión de Groq
     // (ver GROQ_MODELS.vision) no está calibrado para estas extracciones.
     throw new Error('Use AnthropicAIService for screenshot analysis')

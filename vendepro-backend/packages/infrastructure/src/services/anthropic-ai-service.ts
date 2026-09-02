@@ -1,6 +1,8 @@
 import type { AIService, LeadIntent, ComparablePropertyData } from '@vendepro/core'
 
 // Tipos de imagen que acepta la API de visión de Anthropic.
+import { providerError } from './provider-error'
+
 const ANTHROPIC_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp'])
 
 function normalizeImageMediaType(mimeType?: string): string {
@@ -10,17 +12,15 @@ function normalizeImageMediaType(mimeType?: string): string {
 }
 
 function anthropicError(status: number, body: string): Error & { statusCode: number } {
-  // 4xx de Anthropic suele ser culpa del input (imagen inválida/grande): lo
-  // propagamos tal cual para que el front muestre algo accionable. 5xx/errores
-  // de red los marcamos como 502 (upstream caído), no como 500 nuestro.
-  const statusCode = status >= 400 && status < 500 ? status : 502
-  const msg = statusCode === 502
-    ? 'El servicio de IA no está disponible en este momento. Probá de nuevo en unos minutos.'
-    : 'No se pudo procesar la imagen. Probá con otra captura (formato JPG/PNG/WEBP).'
-  const err = new Error(`${msg} [anthropic ${status}: ${body.slice(0, 300)}]`) as Error & { statusCode: number }
-  err.statusCode = statusCode
-  return err
+  // El mapeo de status vive en `provider-error.ts`, compartido con el resto de
+  // los adapters de IA. Lo importante: 401/403 NUNCA salen como 401/403 propios,
+  // porque `apiFetch` desloguea al usuario ante cualquier 401.
+  return providerError(status, body, {
+    provider: 'anthropic',
+    inputMessage: 'No se pudo procesar la imagen. Probá con otra captura (formato JPG/PNG/WEBP).',
+  })
 }
+
 
 export class AnthropicAIService implements AIService {
   constructor(private readonly apiKey: string) {}
@@ -37,7 +37,13 @@ export class AnthropicAIService implements AIService {
     throw new Error('Use GroqAIService for audio transcription')
   }
 
-  async extractMetricsFromScreenshot(imageBase64: string): Promise<Record<string, unknown>> {
+  async extractMetricsFromScreenshot(imageBase64: string, mimeType: string = 'image/png'): Promise<Record<string, unknown>> {
+    const mediaType = normalizeImageMediaType(mimeType)
+    if (!ANTHROPIC_IMAGE_TYPES.has(mediaType)) {
+      const err = new Error(`Formato de imagen no soportado (${mediaType}). Usá JPG, PNG, GIF o WEBP.`) as Error & { statusCode: number }
+      err.statusCode = 400
+      throw err
+    }
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -54,11 +60,11 @@ export class AnthropicAIService implements AIService {
             content: [
               {
                 type: 'image',
-                source: { type: 'base64', media_type: 'image/png', data: imageBase64 },
+                source: { type: 'base64', media_type: mediaType, data: imageBase64 },
               },
               {
                 type: 'text',
-                text: 'Extrae las métricas de este portal inmobiliario (impresiones, visitas, consultas, llamadas, posición). Devuelve SOLO un JSON con campos: impressions, portal_visits, inquiries, phone_calls, ranking_position.',
+                text: 'Extrae las métricas de este portal inmobiliario. Devuelve SOLO un JSON con estos campos, usando null en los que no aparezcan: impressions (impresiones), portal_visits (visitas al aviso), inquiries (consultas), phone_calls (llamadas), whatsapp (contactos por WhatsApp), ranking_position (posición en el ranking).',
               },
             ],
           },
@@ -66,7 +72,14 @@ export class AnthropicAIService implements AIService {
       }),
     })
 
-    if (!response.ok) throw new Error(`Anthropic API error: ${response.status}`)
+    if (!response.ok) {
+      // Antes era un `new Error` pelado, sin statusCode ni cuerpo: el 401 de la
+      // key faltante se perdía dos veces y salía como un 500 mudo. El hermano
+      // extractComparableFromScreenshot ya usaba este camino.
+      const body = await response.text().catch(() => '')
+      console.error(`[AnthropicAIService] extractMetrics failed: ${response.status} ${body.slice(0, 500)}`)
+      throw anthropicError(response.status, body)
+    }
     const data = await response.json() as any
     const content = data.content?.[0]?.text ?? '{}'
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, type RefObject } from 'react'
+import { useEffect, useRef, type RefObject } from 'react'
 
 const FOCUSABLE = 'a[href],button:not([disabled]),textarea:not([disabled]),input:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])'
 
@@ -10,6 +10,17 @@ const FOCUSABLE = 'a[href],button:not([disabled]),textarea:not([disabled]),input
  * devolución del foco al elemento previo al cerrar.
  */
 export function useOverlay(open: boolean, onClose: () => void, panelRef: RefObject<HTMLElement | null>) {
+  // `onClose` va por ref y NO en las deps del efecto. La mayoría de los
+  // consumidores lo pasan como arrow inline (`onClose={() => algo()}`), que
+  // cambia de identidad en cada render: con `onClose` en las deps, CADA tecla
+  // tipeada dentro del panel re-corría el efecto, y su cleanup + re-run movían
+  // el foco al primer focusable (típicamente el botón "Cerrar"). Resultado: el
+  // primer caracter entraba al input, el resto iban al botón, y el primer
+  // espacio lo activaba cerrando el panel. Ver el chequeo `dejaTipearAdentro`
+  // del contrato de overlay.
+  const onCloseRef = useRef(onClose)
+  useEffect(() => { onCloseRef.current = onClose })
+
   useEffect(() => {
     if (!open) return
     const prevActive = document.activeElement as HTMLElement | null
@@ -25,7 +36,7 @@ export function useOverlay(open: boolean, onClose: () => void, panelRef: RefObje
     ;(first ?? panel)?.focus()
 
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { onClose(); return }
+      if (e.key === 'Escape') { onCloseRef.current(); return }
       if (e.key !== 'Tab' || !panel) return
       const els = focusables()
       if (els.length === 0) { e.preventDefault(); return }
@@ -41,5 +52,5 @@ export function useOverlay(open: boolean, onClose: () => void, panelRef: RefObje
       document.body.style.overflow = prevOverflow
       prevActive?.focus?.()
     }
-  }, [open, onClose, panelRef])
+  }, [open, panelRef])
 }

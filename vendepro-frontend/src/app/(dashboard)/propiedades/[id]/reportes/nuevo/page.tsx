@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { ArrowLeft, ArrowRight, Upload, Check, Loader2, FileText, Link2, Trash2, Clipboard } from 'lucide-react'
 import type { MetricSource, ExtractedMetrics } from '@/lib/types'
 import { apiFetch } from '@/lib/api'
+import { fileToBase64 } from '@/components/tasaciones/shared/extract-comparable'
 import { Alert } from '@/components/ui/Alert'
 import { Field, Input, Textarea, Select } from '@/components/ui/Input'
 import { Heading, Text } from '@/components/ui/Typography'
@@ -234,20 +235,24 @@ export default function NuevoReporte() {
     setError('')
 
     try {
-      const formData = new FormData()
-      formData.append('screenshot', file)
-      formData.append('source', metricsList[index].source)
+      // JSON con la imagen en base64, igual que /extract-comparable y
+      // /extract-image. Antes iba como multipart con el campo `screenshot`,
+      // pero la ruta hace `c.req.json()`: reventaba parseando y devolvia 500
+      // sin llegar nunca al proveedor.
+      const { base64, mimeType } = await fileToBase64(file)
 
       const response = await apiFetch('ai', '/extract-metrics', {
         method: 'POST',
-        body: formData,
+        body: JSON.stringify({ imageBase64: base64, mimeType }),
       })
 
+      const payload = (await response.json().catch(() => ({}))) as any
       if (!response.ok) {
-        throw new Error('Error al extraer datos')
+        throw new Error(payload?.error || `Error al extraer datos (HTTP ${response.status})`)
       }
 
-      const extracted: ExtractedMetrics = await response.json()
+      // La ruta responde `{ metrics }`, no los campos planos.
+      const extracted: ExtractedMetrics = payload.metrics ?? {}
 
       setMetricsList((prev) => {
         const updated = [...prev]
@@ -263,7 +268,13 @@ export default function NuevoReporte() {
         return updated
       })
     } catch (err) {
-      setError('No se pudieron extraer los datos del screenshot. Cargalos manualmente.')
+      // El catch mudo de antes ocultó tres bugs de contrato durante meses: el
+      // usuario leia "cargalos manualmente" y asumia que la IA no habia podido
+      // con SU captura.
+      console.error('[extract-metrics] fallo la extraccion:', err)
+      setError(
+        `No se pudieron extraer los datos del screenshot. Cargalos manualmente. (${(err as Error)?.message ?? 'error desconocido'})`,
+      )
     } finally {
       setExtracting(false)
     }

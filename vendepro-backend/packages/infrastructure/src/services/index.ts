@@ -1,5 +1,6 @@
 export * from './jwt-auth-service'
 export * from './groq-ai-service'
+export * from './provider-error'
 export * from './anthropic-ai-service'
 export * from './r2-storage-service'
 export * from './crypto-id-generator'

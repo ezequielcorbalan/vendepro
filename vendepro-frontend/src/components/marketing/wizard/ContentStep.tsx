@@ -56,6 +56,10 @@ export default function ContentStep({
       setView('preview')
       toast('Borrador generado — revisalo y editá lo que quieras')
     } catch (e: any) {
+      // Sin este log la consola sale limpia aunque el endpoint este caido, y
+      // diagnosticar obliga a mirar la red. Paso con la ANTHROPIC_API_KEY
+      // faltante: cuatro features muertas y cero rastro en consola.
+      console.error('[generate-email-campaign] fallo la generacion:', e)
       toast(e?.message || 'Error generando con IA', 'error')
     }
     setGenerating(false)

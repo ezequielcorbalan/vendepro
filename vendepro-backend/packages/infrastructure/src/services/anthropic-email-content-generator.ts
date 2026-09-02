@@ -1,3 +1,4 @@
+import { providerError } from './provider-error'
 import type {
   EmailContentGenerator, GenerateEmailContentInput, GeneratedEmailContent,
   GenerateSequenceInput, GeneratedSequenceStep,
@@ -72,7 +73,11 @@ ${input.brief}`
     })
 
     if (!response.ok) {
-      throw new Error(`Anthropic API error: ${response.status}`)
+      // `Error` pelado antes: sin statusCode, la ruta no podia traducirlo y el
+      // usuario veia el literal "Internal server error" de Hono.
+      const body = await response.text().catch(() => '')
+      console.error(`[AnthropicEmailContentGenerator] ${response.status} ${body.slice(0, 500)}`)
+      throw providerError(response.status, body, { provider: 'anthropic' })
     }
 
     const data = (await response.json()) as any
@@ -133,7 +138,11 @@ ${input.brief}`
     })
 
     if (!response.ok) {
-      throw new Error(`Anthropic API error: ${response.status}`)
+      // `Error` pelado antes: sin statusCode, la ruta no podia traducirlo y el
+      // usuario veia el literal "Internal server error" de Hono.
+      const body = await response.text().catch(() => '')
+      console.error(`[AnthropicEmailContentGenerator] ${response.status} ${body.slice(0, 500)}`)
+      throw providerError(response.status, body, { provider: 'anthropic' })
     }
 
     const data = (await response.json()) as any

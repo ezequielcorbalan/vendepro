@@ -26,8 +26,18 @@ app.post('/extract-metrics', async (c) => {
   const body = (await c.req.json()) as any
   const ai = new AnthropicAIService(c.env.ANTHROPIC_API_KEY)
   const useCase = new ExtractPropertyMetricsUseCase(ai)
-  const metrics = await useCase.execute({ imageBase64: body.imageBase64 || body.image })
-  return c.json({ metrics })
+  try {
+    const metrics = await useCase.execute({
+      imageBase64: body.imageBase64 || body.image || '',
+      mimeType: body.mimeType,
+    })
+    return c.json({ metrics })
+  } catch (e: any) {
+    // Mismo patron que extract-comparable: sin esto cualquier fallo del
+    // proveedor salia como un 500 mudo y el front mostraba "cargalos a mano".
+    if (typeof e?.statusCode === 'number') return c.json({ error: e.message }, e.statusCode)
+    throw e
+  }
 })
 
 app.post('/extract-entity', async (c) => {
@@ -66,14 +76,19 @@ app.post('/generate-email-campaign', async (c) => {
   const useCase = new GenerateEmailCampaignContentUseCase(
     new AnthropicEmailContentGenerator(c.env.ANTHROPIC_API_KEY),
   )
-  const content = await useCase.execute({
-    brief: body.brief ?? '',
-    kind: body.kind,
-    orgName: org?.name ?? null,
-    audienceDescription: body.audience_description ?? null,
-    brandColor: org?.brand_color ?? null,
-  })
-  return c.json(content)
+  try {
+    const content = await useCase.execute({
+      brief: body.brief ?? '',
+      kind: body.kind,
+      orgName: org?.name ?? null,
+      audienceDescription: body.audience_description ?? null,
+      brandColor: org?.brand_color ?? null,
+    })
+    return c.json(content)
+  } catch (e: any) {
+    if (typeof e?.statusCode === 'number') return c.json({ error: e.message }, e.statusCode)
+    throw e
+  }
 })
 
 // Genera una secuencia coordinada de emails (automatización drip) con IA.
@@ -83,14 +98,19 @@ app.post('/generate-email-sequence', async (c) => {
   const useCase = new GenerateAutomationSequenceUseCase(
     new AnthropicEmailContentGenerator(c.env.ANTHROPIC_API_KEY),
   )
-  const steps = await useCase.execute({
-    brief: body.brief ?? '',
-    stepCount: body.step_count ?? 3,
-    orgName: org?.name ?? null,
-    audienceDescription: body.audience_description ?? null,
-    brandColor: org?.brand_color ?? null,
-  })
-  return c.json({ steps })
+  try {
+    const steps = await useCase.execute({
+      brief: body.brief ?? '',
+      stepCount: body.step_count ?? 3,
+      orgName: org?.name ?? null,
+      audienceDescription: body.audience_description ?? null,
+      brandColor: org?.brand_color ?? null,
+    })
+    return c.json({ steps })
+  } catch (e: any) {
+    if (typeof e?.statusCode === 'number') return c.json({ error: e.message }, e.statusCode)
+    throw e
+  }
 })
 
 app.post('/extract-image', async (c) => {

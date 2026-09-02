@@ -84,6 +84,10 @@ export function GenerateSequence({ onGenerated, hasActions }: GenerateSequencePr
       setOpen(false)
       toast('Secuencia generada — revisá y editá cada email antes de activarla')
     } catch (e: any) {
+      // Sin este log la consola sale limpia aunque el endpoint este caido, y
+      // diagnosticar obliga a mirar la red. Paso con la ANTHROPIC_API_KEY
+      // faltante: cuatro features muertas y cero rastro en consola.
+      console.error('[generate-email-sequence] fallo la generacion:', e)
       toast(e?.message || 'Error generando con IA', 'error')
     }
     setGenerating(false)
