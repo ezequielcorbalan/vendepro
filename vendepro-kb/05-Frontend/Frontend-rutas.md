@@ -123,7 +123,7 @@ Layout: `(dashboard)/layout.tsx` (Server, valida cookie con `getCurrentUserServe
 | `/configuracion/objetivos` | `configuracion/objetivos/page.tsx` |
 | `/configuracion/tasacion` | `configuracion/tasacion/page.tsx` |
 | `/configuracion/tasacion/templates/[id]` | `configuracion/tasacion/templates/[id]/page.tsx` |
-| `/perfil` | `perfil/page.tsx` |
+| `/perfil` | `perfil/page.tsx` — incluye la sección "Perfil público" (`PerfilPublicoForm.tsx`, [[Dominio-Landings]]) |
 | `/perfil/tasaciones` | `perfil/tasaciones/page.tsx` |
 | `/perfil/objetivos` | `perfil/objetivos/page.tsx` |
 
@@ -141,18 +141,19 @@ Layout: `(dashboard)/layout.tsx` (Server, valida cookie con `getCurrentUserServe
 | URL | Archivo | Consume | Propósito |
 |---|---|---|---|
 | `/l/[slug]` | `l/[slug]/page.tsx` | [[API-public]] | Landing pública |
+| `/a/[org]/[slug]` | `a/[org]/[slug]/page.tsx` | [[API-public]] | Landing pública de perfil de agente (`kind=agent_profile`), `revalidate=60`. Distinta de `/l/[slug]`: URL propia `/a/<orgSlug>/<agentSlug>` en vez de `full_slug` |
 | `/r/[slug]` | `r/[slug]/page.tsx` | [[API-public]] | Reporte de propiedad |
 | `/t/[slug]` | `t/[slug]/page.tsx` | [[API-public]] | Tasación |
 | `/v/[slug]` | `v/[slug]/page.tsx` + `VisitFormClient.tsx` | [[API-public]] | Formulario visita |
 | `/p/[slug]` | `p/[slug]/page.tsx` | [[API-public]] | Prefactibilidad |
 | `/terminos` | `terminos/page.tsx` | — | Estática |
 
-Soporte: `l/[slug]/loading.tsx`, `not-found.tsx`.
+Soporte: `l/[slug]/loading.tsx`, `not-found.tsx`; `a/[org]/[slug]/loading.tsx`, `not-found.tsx`.
 
 ## Middleware (`src/middleware.ts`)
 
 - Rewriting de subdominios `*.landings.vendepro.com.ar` → `/l/[slug]`
-- Rutas siempre públicas (no chequea cookie): `/login`, `/register`, `/terminos`, `/r/*`, `/t/*`, `/v/*`, `/p/*`, `/l/*`, `/_next`, `/api/`
+- Rutas siempre públicas (no chequea cookie): `/login`, `/register`, `/terminos`, `/r/*`, `/t/*`, `/v/*`, `/p/*`, `/l/*`, `/a/*`, `/_next`, `/api/`
 - Sin cookie `vendepro_token` → redirect a `/login?redirect=<path>`
 
 ## Root
@@ -165,6 +166,6 @@ Soporte: `l/[slug]/loading.tsx`, `not-found.tsx`.
 
 - **4** auth
 - **~35** dashboard
-- **5** públicas dinámicas
+- **6** públicas dinámicas (suma `/a/[org]/[slug]`)
 - **1** públicas estáticas
-- = **~45 rutas**
+- = **~46 rutas**

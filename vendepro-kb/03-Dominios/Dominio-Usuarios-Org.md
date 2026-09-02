@@ -37,6 +37,26 @@ Catálogo (4 roles fijos en `roles` table):
 | 3 | supervisor | Supervisor |
 | 4 | agent | Agente |
 
+### `AgentProfile` (`domain/entities/agent-profile.ts`)
+Perfil público del agente para su landing personal (Feature 07, ver [[Dominio-Landings]] § Perfil de agente). Tabla `agent_profiles`, **1:1 con `users`** (PK = `user_id`, no un id propio).
+
+Campos (20 columnas, migración `048_agent_profiles.sql`):
+- `user_id` (PK, FK a `users.id` ON DELETE CASCADE), `org_id`, `slug` (`UNIQUE (org_id, slug)`)
+- `headline`, `bio`, `license` (matrícula), `years_experience`
+- `zones` / `specialties` (arrays, persistidos como `zones_json`/`specialties_json` TEXT)
+- `whatsapp`, `instagram`, `tiktok`, `youtube`, `linkedin`, `website`
+- `cover_image_url`, `stats` (array `{label, value}`, `stats_json`)
+- **`is_public`** `INTEGER DEFAULT 0` — **kill-switch**: la landing pública (`GetPublicAgentLandingUseCase`) devuelve 404 mientras esté en 0, aunque el perfil ya tenga datos cargados y la landing esté publicada.
+- `created_at`, `updated_at`
+
+**No duplica** `photo_url`, `phone` ni `email` — esos siguen viniendo de `users` (evita desincronización entre el perfil de auth y el de marketing; el binding vivo los lee con prefijo `user.` desde `agent-bindings.ts`).
+
+`update()` (`AgentProfile.update`) filtra las keys con valor `undefined` antes del spread: `null` en el patch borra el campo, `undefined` lo deja como está — necesario para que `PUT /profile/public` pueda mandar un patch parcial sin pisar lo no enviado.
+
+Repo: puerto `AgentProfileRepository` (`findByUserId`/`findByOrgAndSlug`/`existsSlug`/`save`) + adapter `D1AgentProfileRepository` (upsert de las 20 columnas; el `ON CONFLICT DO UPDATE` omite `user_id`, `created_at` y `org_id` — esos no cambian tras el insert inicial).
+
+**Deuda**: la validación de `years_experience` (entero 0-70) vive en `UpdateAgentProfileUseCase`, no en el dominio (`AgentProfile.create`/`.update()` no la revalidan) — solo protege ese entry point. Si mañana aparece otro caller de la entidad, no la hereda.
+
 ### `PasswordResetToken`
 Token temporal de reset (TTL 1h). Ver [[Auth-flow]].
 
@@ -69,6 +89,7 @@ Permite que cada org tenga sus propios datos de mercado, costos notariales, etc.
 - `roles` (catálogo, 4 rows)
 - `password_reset_tokens`
 - `org_variables`
+- `agent_profiles` (mig 048) — 1:1 con `users`, ver arriba
 
 Ver [[DB-overview]].
 
@@ -78,6 +99,7 @@ Ver [[DB-overview]].
 - Agentes: `GetAgents`, `CreateAgent`, `UpdateAgentRole`
 - Roles: `GetRoles`
 - Perfil: `GetUserProfile`, `UpdateUserProfile`
+- Perfil público (agente): `GetAgentProfile`, `UpdateAgentProfile`
 - Org: `GetOrgSettings`, `UpdateOrgSettings`
 - API key: `GenerateOrgApiKey`, `GetOrgApiKey`
 - Org variables: `CreateOrgVariable`, `ListOrgVariables`, `UpdateOrgVariable`, `DeleteOrgVariable`
@@ -85,12 +107,14 @@ Ver [[DB-overview]].
 ## Endpoints
 
 [[API-auth]]: auth y reset
-[[API-admin]]: agentes, roles, profile, org-settings, org-variables, notifications
+[[API-admin]]: agentes, roles, profile, `profile/public` (perfil de agente), org-settings, org-variables, notifications
+
+El *consumo* público del perfil (`GET /a/:orgSlug/:agentSlug`) vive en [[API-public]] y está documentado en [[Dominio-Landings]] — el perfil en sí es de este dominio, la landing que lo muestra es del dominio Landings.
 
 ## Frontend
 
 - `/login`, `/register`, `/forgot-password`, `/reset-password`
-- `/perfil`
+- `/perfil` (incluye la sección "Perfil público" — `PerfilPublicoForm.tsx`, ver [[Dominio-Landings]])
 - `/configuracion`
 - `/admin/agentes`, `/admin/agentes/nuevo`
 - `/admin/auditoria`
@@ -101,3 +125,4 @@ Ver [[DB-overview]].
 - [[Auth-flow]]
 - [[Dominio-Objetivos]]
 - [[Dominio-Tasaciones]] (org_variables se usan en bloques)
+- [[Dominio-Landings]] (`agent_profiles` alimenta la landing pública `/a/<org>/<agente>` vía binding vivo)

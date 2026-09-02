@@ -16,7 +16,7 @@
 | 04 · Conversiones custom Google Ads | 🔴 | Cero código Google Ads; `stage_event_mappings` no es multi-provider. |
 | 05 · CAPI depurado + Tokko | 🟡 | `leads.pipeline` vendedor/comprador existe (manual); sin clasificador, sin `lead_sources`, sin Tokko. KiteProp sí está en producción. |
 | 06 · Red compartida de cierres | 🟠 | `sold_properties.shared_with_network` existe pero es un flag muerto: sin UI, sin query cross-org, sin karma. |
-| 07 · Landings por agente | 🔴 | No existe el kind `agent_profile`; el stack de landings donde apoyarse está 🟢. |
+| 07 · Landings por agente | 🟢 | Perfil + landing `/a/<org>/<agente>` con binding vivo en producción; propiedades activas, testimonios y descargables quedan fuera del MVP. |
 | 08 · Landings por propiedad | 🔴 | El kind `property` es solo un estilo; `landings` no tiene `property_id`, sin UTM builder ni QR. |
 | 09 · Automatizaciones de email | 🟡 | Motor v2 en producción (bienvenida y nurture andan); **follow-up por inactividad no corre** — falta el barrido cron. |
 | 10 · Agente conversacional IA | 🔴 | Cero código de WhatsApp/IG/Messenger, sin tablas conversations/messages. |
@@ -126,14 +126,24 @@ Todo el núcleo está en producción con backend + UI:
 
 ## 02 · Prio 2
 
-### Feature 07 — Landings por agente 🔴 · Feature 08 — Landings por propiedad 🔴
+### Feature 07 — Landings por agente 🟢
 
-El **stack de landings donde apoyarse está 🟢 en producción**: tablas (010), 3 templates seedeados, editor completo (bloques, IA edit-block, versiones, flujo draft→review→published), `RecordLandingEventUseCase` + `SubmitLeadFromLandingUseCase` públicos con Meta/GA4 wired, analytics. Gateado por módulo `landings` del plan PRO.
+El **stack de landings donde apoyarse está 🟢 en producción**: tablas (010), editor completo (bloques, IA edit-block, versiones, flujo draft→review→published), `RecordLandingEventUseCase` + `SubmitLeadFromLandingUseCase` públicos con Meta/GA4 wired, analytics. Gateado por módulo `landings` del plan PRO.
 
-Lo que falta es exactamente lo que dice el roadmap:
-- Kinds hoy: solo `'lead_capture' | 'property'` (`core/src/domain/entities/landing.ts:6`). Ni `agent_profile` ni `property_landing`.
-- El kind `property` es solo un **estilo**: `landings` no tiene `property_id` — sin vínculo a propiedad real, sin sync de datos ni fotos (se eligen a mano), sin UTM builder, sin QR, sin bloques lightbox/tour-360/mapa.
-- Para agente: `landings.agent_id` existe y atribuye eventos/leads, pero no hay template de perfil, slug por agente ni sync de sus propiedades.
+**Implementado** (23 commits, rama `feat/landings-agente`):
+- Kind `agent_profile` (`core/src/domain/entities/landing.ts:7`), con invariante de lead-form relajada a 0..1 (`landing-rules.ts:71-79`) — los otros kinds siguen exigiendo exactamente 1.
+- Tabla `agent_profiles` 1:1 con `users` (migración 048) + template de sistema `tpl_agent_profile_v1` (migración 049, 9 bloques) → landing_templates pasa de 3 a 4 seeds globales.
+- 4 bloques nuevos (`agent-hero`, `agent-credentials`, `faq`, `cta-whatsapp`) — de 8 a 12 tipos de bloque totales.
+- **Binding vivo**: los bloques marcados `binding: 'agent_profile'` se rellenan con los datos del perfil en la lectura pública (no al crear la landing) — a diferencia del `binding_mode` de tasaciones, que snapshotea. El agente edita `/perfil` una vez y la landing se actualiza sola.
+- `GetPublicAgentLandingUseCase` sirve `GET /a/:orgSlug/:agentSlug` con 5 puertas (org → perfil público → usuario activo y de la misma org → landing publicada → bindings resueltos).
+- Frontend: ruta pública `/a/[org]/[slug]` (revalidate 60), sección "Perfil público" en `/perfil`, campos bindeados read-only en el editor de landings.
+- Detalle completo: [[Dominio-Landings]] § Perfil de agente, [[Dominio-Usuarios-Org]] § AgentProfile.
+
+**Fuera del MVP a propósito** (Fase 2): propiedades activas del agente en vivo (sync con `properties`), testimonios, descargables. El template las deja como huecos de contenido editorial manual (`features-grid`/`benefits-list`/`gallery` genéricos), no como bloques dedicados.
+
+### Feature 08 — Landings por propiedad 🔴
+
+El kind `property` es solo un **estilo**: `landings` no tiene `property_id` — sin vínculo a propiedad real, sin sync de datos ni fotos (se eligen a mano), sin UTM builder, sin QR, sin bloques lightbox/tour-360/mapa. No tocado por el trabajo de Feature 07.
 
 ### Feature 09 — Automatizaciones de email 🟡
 
@@ -197,6 +207,7 @@ Nada en el código (esperado: el roadmap dice "se planifican, no se codean todav
 
 - [[Dominio-Marketing]] dice `meta_integration` "1 row por org" y describe un envío sGTM separado — ambos obsoletos tras la migración 040 (config por agente) y el diseño actual (Stape es override de endpoint, no tercer envío).
 - `doc/backend.md:85` lista `EMBLUE_API_KEY` para api-auth — legacy retirado, hoy es `RESEND_API_KEY`.
+- [[DB-overview]] § "Migrations en orden": la tabla se corta en la migración 020 y dice "51 tablas en 24 migrations", pero `migrations_v2/` tiene hoy 58 archivos hasta la 049 (confirmado al documentar Feature 07). El gap 021-047 no está listado — quedó así desde antes de este feature, backfillarlo es trabajo aparte.
 
 ## Relacionado
 
