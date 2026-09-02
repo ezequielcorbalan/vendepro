@@ -210,7 +210,8 @@ export default function AIChatPanel(_props: {
           </div>
           <div>
             <p className="font-semibold text-ink text-sm">Asistente IA</p>
-            <p className="text-xs text-gray-500">Groq · {mode === 'image' ? 'llama-4-scout (visión)' : 'llama3-8b'}</p>
+            {/* Los nombres siguen a GROQ_MODELS en infrastructure/src/services/groq-ai-service.ts. */}
+            <p className="text-xs text-gray-500">Groq · {mode === 'image' ? 'qwen3.8 (visión)' : 'compound-mini'}</p>
           </div>
         </div>
       }

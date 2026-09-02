@@ -167,7 +167,16 @@ Extraé los datos del contrato del archivo y devolvé SOLO un JSON válido con e
 }
 Solo incluí campos con datos concretos. No inventes valores.`
 
-/** AI contract extraction — uses Groq (image: llama-4-scout vision, text: llama-3.3-70b) */
+/**
+ * AI contract extraction con Groq. Los modelos viven acá arriba porque el
+ * catálogo de Groq se mueve: los `llama-*` que usaba esta ruta ya no existen
+ * (`model_not_found`). `groq/compound` no acepta imágenes, así que la visión va
+ * por `qwen/qwen3.8-27b`. Mismo criterio que
+ * `infrastructure/src/services/groq-ai-service.ts` — si cambia uno, cambia el otro.
+ */
+const GROQ_VISION_MODEL = 'qwen/qwen3.8-27b'
+const GROQ_TEXT_MODEL = 'groq/compound'
+
 r.post('/extract-from-file', async (c) => {
   try {
     const formData = await c.req.formData()
@@ -183,7 +192,7 @@ r.post('/extract-from-file', async (c) => {
     let extracted: any = {}
 
     if (isImage) {
-      // Vision model — same as api-ai extractLeadFromImage
+      // Visión — mismo modelo que api-ai extractLeadFromImage
       const base64 = btoa(String.fromCharCode(...new Uint8Array(bytes)))
       const controller = new AbortController()
       const timeout = setTimeout(() => controller.abort(), 20_000)
@@ -193,7 +202,7 @@ r.post('/extract-from-file', async (c) => {
           signal: controller.signal,
           headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+            model: GROQ_VISION_MODEL,
             messages: [{
               role: 'user',
               content: [
@@ -214,7 +223,7 @@ r.post('/extract-from-file', async (c) => {
         clearTimeout(timeout)
       }
     } else {
-      // Text/PDF — decode as UTF-8 text then send to llama-3.3-70b
+      // Text/PDF — decode as UTF-8 text then send to the text model
       const text = new TextDecoder('utf-8', { fatal: false }).decode(bytes)
         .replace(/[^\x20-\x7E\n\r\táéíóúüñÁÉÍÓÚÜÑ]/g, ' ')
         .slice(0, 12000) // stay within token limit
@@ -227,7 +236,7 @@ r.post('/extract-from-file', async (c) => {
           signal: controller.signal,
           headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            model: 'llama-3.3-70b-versatile',
+            model: GROQ_TEXT_MODEL,
             messages: [
               { role: 'system', content: EXTRACTION_SYSTEM_PROMPT },
               { role: 'user', content: `Contrato a analizar:\n\n${text}` },
