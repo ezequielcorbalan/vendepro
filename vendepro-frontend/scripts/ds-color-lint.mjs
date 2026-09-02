@@ -36,6 +36,7 @@
  * landings/public, landings/blocks. Ver doc/ds-visual-rules.md.
  */
 import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
 import { join } from 'node:path'
 
 const ROOTS = ['src/app', 'src/components']
@@ -117,72 +118,106 @@ for (const root of ROOTS) {
 }
 
 const count = hits.length
-console.log(`DS color lint · colores Tailwind sueltos en ${ROOTS.join(' + ')}: ${count} (baseline ${baseline})`)
 
 const gradientCount = gradientHits.length
 const glyphCount = glyphHits.length
-console.log(`DS color lint · medallones de gradiente a mano: ${gradientCount} (baseline ${gradientBaseline})`)
 const slateCount = slateHits.length
 const overlayCount = overlayHits.length
 const radiusCount = radiusHits.length
-console.log(`DS color lint · íconos escritos como carácter/emoji: ${glyphCount} (baseline ${glyphBaseline})`)
-console.log(`DS color lint · escala slate en vez de gray: ${slateCount} (baseline ${slateBaseline})`)
-console.log(`DS lint · overlays armados a mano: ${overlayCount} (baseline ${overlayBaseline})`)
-console.log(`DS color lint · radios pre-token (rounded-lg/xl): ${radiusCount} (baseline ${radiusBaseline})`)
 
-let failed = false
+/**
+ * Archivos que cambió esta rama respecto de main. Sirve para señalar al culpable
+ * de verdad cuando un contador sube.
+ *
+ * La versión anterior mostraba `hits.slice(-N)` —los últimos N hits en orden de
+ * recorrido— y eso NO son los nuevos: cuando el ratchet de color subió +2 por dos
+ * `text-red-500` en landings/InspectorPanel, el reporte apuntó a
+ * reports/NeighborhoodBenchmarkTable y sold-properties/SoldPropertyForm, que no
+ * habían cambiado. Un guard que señala mal al culpable hace perder más tiempo del
+ * que ahorra.
+ */
+function archivosTocados() {
+  const git = (...args) => {
+    const r = spawnSync('git', args, { encoding: 'utf8' })
+    return r.status === 0 ? r.stdout.trim() : null
+  }
+  const encontrados = new Set()
+  const sumar = out => {
+    if (!out) return
+    for (const f of out.split('\n')) {
+      if (f.startsWith('vendepro-frontend/src/') || f.startsWith('vendepro-frontend/scripts/')) {
+        encontrados.add(f.replace(/^vendepro-frontend\//, ''))
+      }
+    }
+  }
 
-if (radiusCount > radiusBaseline) {
-  console.error(`\n✗ Subió +${radiusCount - radiusBaseline}. Usá \`rounded-control\` (8px) o \`rounded-card\` (12px) — regla 8.`)
-  radiusHits.slice(-Math.min(15, radiusCount - radiusBaseline)).forEach(h => console.error('  ' + h))
-  failed = true
+  // UNA sola base, la primera que resuelva. Unir varias es un error: el `main`
+  // local puede estar muy atrasado y entonces `main...HEAD` devuelve cientos de
+  // archivos, con lo cual "los hits de tu rama" pasa a ser "todos los hits".
+  const base = ['origin/main', 'main'].find(b => git('rev-parse', '--verify', '--quiet', b))
+  if (base) sumar(git('diff', '--name-only', `${base}...HEAD`))
+
+  // Y lo que está sin commitear: si sólo mirara lo commiteado, no vería el
+  // archivo que estás editando ahora, que es justo cuando el linter tiene que
+  // ayudarte.
+  sumar(git('diff', '--name-only', 'HEAD'))
+  sumar(git('diff', '--name-only', '--cached'))
+
+  return encontrados.size > 0 ? encontrados : null
 }
-if (radiusCount < radiusBaseline) {
-  console.log(`✓ Bajó ${radiusBaseline - radiusCount}. Actualizá ${RADIUS_BASELINE_FILE} a ${radiusCount}.`)
+const TOCADOS = archivosTocados()
+
+/** Un ratchet: informa, y falla sólo si el contador SUBE del baseline. */
+function ratchet({ etiqueta, hits, baseline, archivo, sugerencia }) {
+  const count = hits.length
+  console.log(`DS lint · ${etiqueta}: ${count} (baseline ${baseline})`)
+  if (count > baseline) {
+    console.error(`\n✗ ${etiqueta} subió +${count - baseline}. ${sugerencia}`)
+    const enTuDiff = TOCADOS ? hits.filter(h => TOCADOS.has(h.split(':')[0])) : []
+    if (enTuDiff.length > 0) {
+      console.error('  Hits en archivos que tocó esta rama:')
+      enTuDiff.slice(0, 15).forEach(h => console.error('    ' + h))
+      if (enTuDiff.length > 15) console.error(`    …y ${enTuDiff.length - 15} más`)
+    } else {
+      console.error(TOCADOS
+        ? '  Ningún hit cae en un archivo de esta rama — puede venir de un merge. Todos los hits actuales:'
+        : '  (sin base de comparación git; todos los hits actuales)')
+      hits.slice(0, 15).forEach(h => console.error('    ' + h))
+      if (hits.length > 15) console.error(`    …y ${hits.length - 15} más`)
+    }
+    return true
+  }
+  if (count < baseline) {
+    console.log(`✓ Bajó ${baseline - count}. Actualizá ${archivo} a ${count}.`)
+  }
+  return false
 }
 
-if (overlayCount > overlayBaseline) {
-  console.error(`\n✗ Subió +${overlayCount - overlayBaseline}. Usá <Modal> o <Drawer> del DS: traen Portal, scroll-lock, focus-trap y Esc (fase 6).`)
-  overlayHits.slice(-Math.min(15, overlayCount - overlayBaseline)).forEach(h => console.error('  ' + h))
-  failed = true
-}
-if (overlayCount < overlayBaseline) {
-  console.log(`✓ Bajó ${overlayBaseline - overlayCount}. Actualizá ${OVERLAY_BASELINE_FILE} a ${overlayCount}.`)
-}
+const resultados = [
+  ratchet({
+    etiqueta: 'colores Tailwind sueltos', hits, baseline, archivo: BASELINE_FILE,
+    sugerencia: 'Usá tokens/componentes del DS (primary, success/danger/info, Badge, Alert, StageBadge…), no color Tailwind suelto.',
+  }),
+  ratchet({
+    etiqueta: 'medallones de gradiente a mano', hits: gradientHits, baseline: gradientBaseline, archivo: GRADIENT_BASELINE_FILE,
+    sugerencia: 'Usá <IconMedallion tone="..."> o <WidgetHeader>, no un gradiente a mano (regla 14).',
+  }),
+  ratchet({
+    etiqueta: 'íconos escritos como carácter/emoji', hits: glyphHits, baseline: glyphBaseline, archivo: GLYPH_BASELINE_FILE,
+    sugerencia: 'Usá un ícono de lucide, no un carácter (regla 20).',
+  }),
+  ratchet({
+    etiqueta: 'escala slate en vez de gray', hits: slateHits, baseline: slateBaseline, archivo: SLATE_BASELINE_FILE,
+    sugerencia: 'El DS usa la escala `gray`, no `slate` (regla 21).',
+  }),
+  ratchet({
+    etiqueta: 'overlays armados a mano', hits: overlayHits, baseline: overlayBaseline, archivo: OVERLAY_BASELINE_FILE,
+    sugerencia: 'Usá <Modal> o <Drawer> del DS: traen Portal, scroll-lock, focus-trap y Esc (fase 6).',
+  }),
+  ratchet({
+    etiqueta: 'radios pre-token (rounded-lg/xl)', hits: radiusHits, baseline: radiusBaseline, archivo: RADIUS_BASELINE_FILE,
+    sugerencia: 'Usá `rounded-control` (8px) o `rounded-card` (12px) — regla 8.',
+  }),
+]
 
-if (slateCount > slateBaseline) {
-  console.error(`\n✗ Subió +${slateCount - slateBaseline}. El DS usa la escala \`gray\`, no \`slate\`.`)
-  slateHits.slice(-Math.min(15, slateCount - slateBaseline)).forEach(h => console.error('  ' + h))
-  failed = true
-}
-if (slateCount < slateBaseline) {
-  console.log(`✓ Bajó ${slateBaseline - slateCount}. Actualizá ${SLATE_BASELINE_FILE} a ${slateCount}.`)
-}
-
-if (glyphCount > glyphBaseline) {
-  console.error(`\n✗ Subió +${glyphCount - glyphBaseline}. Usá un ícono de lucide, no un carácter (regla 20).`)
-  glyphHits.slice(-Math.min(15, glyphCount - glyphBaseline)).forEach(h => console.error('  ' + h))
-  failed = true
-}
-if (glyphCount < glyphBaseline) {
-  console.log(`✓ Bajó ${glyphBaseline - glyphCount}. Actualizá ${GLYPH_BASELINE_FILE} a ${glyphCount}.`)
-}
-
-if (gradientCount > gradientBaseline) {
-  console.error(`\n✗ Subió +${gradientCount - gradientBaseline}. Usá <IconMedallion tone="..."> o <WidgetHeader>, no un gradiente a mano (regla 14).`)
-  gradientHits.slice(-Math.min(15, gradientCount - gradientBaseline)).forEach(h => console.error('  ' + h))
-  failed = true
-}
-if (gradientCount < gradientBaseline) {
-  console.log(`✓ Bajó ${gradientBaseline - gradientCount}. Actualizá ${GRADIENT_BASELINE_FILE} a ${gradientCount}.`)
-}
-
-if (count > baseline) {
-  console.error(`\n✗ Subió +${count - baseline}. Usá tokens/componentes del DS (primary, success/danger/info, Badge, Alert, StageBadge, OperationBadge…), no color Tailwind suelto.`)
-  hits.slice(-Math.min(15, count - baseline)).forEach(h => console.error('  ' + h))
-  failed = true
-}
-if (count < baseline) {
-  console.log(`✓ Bajó ${baseline - count}. Actualizá ${BASELINE_FILE} a ${count} para trabar el avance.`)
-}
-process.exit(failed ? 1 : 0)
+process.exit(resultados.some(Boolean) ? 1 : 0)
