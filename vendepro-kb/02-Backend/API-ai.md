@@ -15,9 +15,9 @@ Worker que envuelve LLMs (Anthropic + Groq) para tareas específicas.
 | Método | Path | Use case | Provider |
 |---|---|---|---|
 | POST | `/extract-metrics` | ExtractPropertyMetricsUseCase | **Anthropic** Claude haiku 4.5 — `{imageBase64 \| image}` → métricas de portal |
-| POST | `/extract-entity` | ExtractLeadFromTextUseCase | **Groq** llama3-8b — `{text}` → campos de lead |
-| POST | `/extract-image` | ExtractLeadFromImageUseCase | **Groq** llama-4-scout — `{imageBase64, mimeType}` → campos de lead |
-| POST | `/landings/:id/edit-block` | EditBlockWithAIUseCase | **Groq** llama-3.3-70b — `{prompt, scope, blockId}` → bloque modificado |
+| POST | `/extract-entity` | ExtractLeadFromTextUseCase | **Groq** `compound-mini` — `{text}` → campos de lead |
+| POST | `/extract-image` | ExtractLeadFromImageUseCase | **Groq** `qwen3.8-27b` (visión) — `{imageBase64, mimeType}` → campos de lead |
+| POST | `/landings/:id/edit-block` | EditBlockWithAIUseCase | **Groq** `compound` — `{prompt, scope, blockId}` → bloque modificado |
 
 ## Casos de uso
 
@@ -28,7 +28,7 @@ Agente sube screenshot de Zonaprop / Argenprop / MercadoLibre. Claude haiku extr
 Agente pega texto de WhatsApp o screenshot del cliente. El use case devuelve `LeadIntent`: nombre, teléfono, email, barrio, tipo propiedad, operación, presupuesto, timing. El frontend lo usa para pre-llenar el formulario de nuevo lead.
 
 ### `/landings/:id/edit-block` (Groq)
-Agente edita una landing y escribe "haceme un copy más urgente para el hero". Groq llama-3.3-70b recibe el bloque actual y el prompt, devuelve el bloque actualizado validado contra el schema Zod del tipo (ver `domain/value-objects/block-schemas.ts`). Si falla la validación → error `schema_mismatch`. Hay rate limit: **30 ediciones IA por minuto** (constante `AI_EDITS_PER_MINUTE` en `domain/rules/landing-rules.ts`).
+Agente edita una landing y escribe "haceme un copy más urgente para el hero". Groq `compound` recibe el bloque actual y el prompt, devuelve el bloque actualizado validado contra el schema Zod del tipo (ver `domain/value-objects/block-schemas.ts`). Si falla la validación → error `schema_mismatch`. Hay rate limit: **30 ediciones IA por minuto** (constante `AI_EDITS_PER_MINUTE` en `domain/rules/landing-rules.ts`).
 
 ## Servicios
 

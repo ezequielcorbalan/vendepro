@@ -31,10 +31,26 @@ Adaptadores en `packages/infrastructure/src/services/` que envuelven dependencia
 
 ## Groq — `groq-ai-service.ts`
 
-- Modelos:
-  - `llama3-8b-8192` → extracción de leads de texto
-  - `llama-3.3-70b-versatile` → edición de bloques de landings con IA
-  - `meta-llama/llama-4-scout-17b-16e-instruct` → extracción multimodal (imagen → lead)
+- Modelos (constante `GROQ_MODELS` arriba del servicio — un solo lugar donde tocarlos):
+  - `groq/compound-mini` → extracción de leads de texto
+  - `groq/compound` → edición de bloques de landings con IA (texto + JSON)
+  - `qwen/qwen3.8-27b` → extracción multimodal (imagen → lead)
+  - `whisper-large-v3` → transcripción de audio
+
+> ⚠️ **El catálogo de Groq se mueve y rompe en silencio.** Los tres `llama-*`
+> anteriores (`llama3-8b-8192`, `llama-3.3-70b-versatile`,
+> `meta-llama/llama-4-scout-17b-16e-instruct`) fueron **retirados**: la API
+> responde `model_not_found` y las tres features quedaron caídas sin que nada
+> avisara. Al rotar la key, chequear con
+> `curl https://api.groq.com/openai/v1/models -H "Authorization: Bearer $GROQ_API_KEY"`
+> que los modelos del código sigan en la lista.
+>
+> **`groq/compound` y `groq/compound-mini` no tienen visión**: son sistemas
+> agénticos que exigen `messages[].content` como string y responden
+> `"messages[0].content must be a string"` ante un array con `image_url`. Por eso
+> la visión va por `qwen/qwen3.8-27b` y no por compound. Tampoco honran siempre
+> `response_format: json_object` (a veces devuelven el JSON en un bloque
+> markdown); el regex de `safeParseJson` lo tolera.
 - Métodos:
   - `extractLeadIntent(text)` → parsea texto a `LeadIntent`
   - `extractLeadFromImage(imageBase64, mimeType)` → idem desde imagen (Zonaprop screenshot, etc.)
