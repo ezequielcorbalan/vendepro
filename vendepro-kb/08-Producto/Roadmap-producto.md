@@ -3,6 +3,7 @@
 > **Fuente**: artifact "VendéPro Roadmap" (v1 · borrador, preparado por Gastón, para revisión del dev lead) — cargado al KB el 2026-08-29.
 > **Estado de review**: pendiente — cada feature debe marcarse como `Viable / Complejo / Bloqueante / Duda / Ya está`.
 > **Estado de implementación en código**: ver [[Roadmap-estado-implementacion]].
+> **Traducción a lenguaje de venta**: ver [[Catalogo-Modulos-Vendibles]] y [[Estrategia-Comercial]].
 
 ---
 
@@ -136,3 +137,4 @@ El artifact numera los features de forma implícita; en este KB se usa: 01-06 (P
 - [[Roadmap-estado-implementacion]] — en qué instancia está cada proceso en el código
 - [[Dominio-Marketing]] · [[Dominio-Tasaciones]] · [[Dominio-Landings]] · [[Dominio-Leads]]
 - [[Servicios-externos]]
+- [[Catalogo-Modulos-Vendibles]] — este roadmap traducido a lenguaje de venta, módulo por módulo · [[Estrategia-Comercial]]
