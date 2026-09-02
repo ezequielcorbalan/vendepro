@@ -426,3 +426,48 @@ usuario la va a "arreglar" pegando un documento completo. Pega apenas se restabl
 6. **V.5** — `estimated_value` no debe mandar `NaN`.
 7. Recién con 0–6 hechos se pueden probar 3.2, 3.3, la calidad de extracción del
    comparable, y V.7/V.8/V.9.
+
+## V.10 · la cuarta forma de fallar: HTTP 200 con el error adentro
+
+`/landings/:id/edit-block` no tira: `EditBlockWithAIUseCase` devuelve un union
+(`{status:'ok'|'error'}`) y la ruta hace `return c.json(result)` **sin mirar
+`result.status`** (`api-ai/src/index.ts:129`). Los tres motivos del union
+(`provider_error`, `schema_mismatch`, `timeout`) salen como **200 OK**.
+
+Verificado que el frontend **sí lo maneja**: `components/landings/AIChatPanel.tsx:42-43`
+chequea `r.status === 'error'` y muestra `friendlyError(r.reason)`. O sea que **no** es
+un fallo silencioso para el usuario, como se reportó en un primer momento.
+
+**Pero el mensaje miente, y esa es la parte grave.** Para `provider_error` dice:
+
+> *"La IA está temporalmente saturada. Reintentá en un momento."*
+
+Si la causa real es una key faltante o un modelo retirado, eso es un diagnóstico
+confiadamente equivocado: invita a reintentar algo que no va a andar nunca. Es peor que
+un 500 mudo, porque el 500 al menos no afirma nada.
+
+Lo que sí es cierto del reporte original: **el 200 lo hace invisible a cualquier
+monitoreo por status** — logs, métricas, smoke tests y alertas. Es el G.4 del informe
+("rompe en silencio") con otra causa y el mismo disfraz.
+
+**Consecuencia para el diseño del fix**: un guard que mire el status HTTP de la
+respuesta no ve este caso. El chequeo de key tiene que ir **al construir el servicio**
+(`AnthropicAIService` y `GroqAIService` tienen los dos el constructor vacío), que corta
+antes del try/catch del use case y cubre las cuatro formas de fallar de una.
+
+Mapa completo de cómo se manifiesta hoy una key faltante:
+
+| Ruta | Proveedor | Sale | Qué ve el usuario |
+|---|---|---|---|
+| `/extract-metrics` | Anthropic | 500 mudo | "cargalos manualmente" |
+| `/generate-email-campaign` · `/generate-email-sequence` | Anthropic | 500 mudo | "Internal server error" |
+| `/extract-comparable` | Anthropic | 401 | **lo deslogean** |
+| `/landings/:id/edit-block` | Groq | **200 OK** | "la IA está saturada, reintentá" (falso) |
+
+### Nota al pasar: hay DOS `AIChatPanel.tsx`
+
+`components/ai/AIChatPanel.tsx` (extracción de leads, botón flotante) y
+`components/landings/AIChatPanel.tsx` (editor de bloques). Mismo nombre, componentes
+distintos, sin relación. Ya hizo que un grep buscara el manejo de error en el archivo
+equivocado y concluyera que no existía. El bug V.4 de `useOverlay` es el de
+`components/ai/`; el manejo correcto de `status` es el de `components/landings/`.
