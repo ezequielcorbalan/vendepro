@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { cleanup } from '@testing-library/react'
+import { render, screen, cleanup } from '@testing-library/react'
 import { Modal } from '../Modal'
 import { overlayContract } from './overlay-contract'
 
@@ -64,4 +64,94 @@ describe('Modal · contrato de overlay', () => {
   it('devuelve el foco al disparador al cerrar', contrato.devuelveElFoco)
   it('se monta en un Portal, no en el árbol local', contrato.seMontaEnPortal)
   it('es un diálogo modal accesible', contrato.esDialogoModal)
+})
+
+describe('Modal · sheet', () => {
+  /**
+   * `sheet` salió de seis overlays idénticos armados a mano. Lo que importa no es
+   * cómo se ve sino que el layout cambie en el breakpoint: pegado abajo en móvil,
+   * centrado en desktop. Si esas clases se pierden, los seis quedan como diálogo
+   * centrado en un teléfono, que es peor para trabajo de campo.
+   */
+  it('pega el panel abajo en móvil y lo centra en desktop', () => {
+    render(<Modal open onClose={() => {}} title="T" sheet>cuerpo</Modal>)
+    const scrim = screen.getByRole('dialog').parentElement!
+    expect(scrim.className).toMatch(/items-end/)
+    expect(scrim.className).toMatch(/sm:items-center/)
+  })
+
+  it('redondea sólo arriba en móvil y vuelve al radio de card en desktop', () => {
+    render(<Modal open onClose={() => {}} title="T" sheet>cuerpo</Modal>)
+    const panel = screen.getByRole('dialog')
+    expect(panel.className).toMatch(/rounded-t-2xl/)
+    expect(panel.className).toMatch(/sm:rounded-card/)
+  })
+
+  it('sin `sheet` sigue centrado, como antes', () => {
+    render(<Modal open onClose={() => {}} title="T">cuerpo</Modal>)
+    const scrim = screen.getByRole('dialog').parentElement!
+    expect(scrim.className).toMatch(/items-center/)
+    expect(scrim.className).not.toMatch(/items-end/)
+    expect(screen.getByRole('dialog').className).not.toMatch(/rounded-t-2xl/)
+  })
+
+  it('cumple el contrato de overlay igual que el modal centrado', () => {
+    const c = overlayContract(onClose => (
+      <Modal open onClose={onClose} title="T" sheet>cuerpo</Modal>
+    ))
+    c.cierraConEsc()
+    c.bloqueaYRestauraElScroll()
+    c.mueveElFocoAdentro()
+    c.seMontaEnPortal()
+  })
+})
+
+describe('Modal · un formulario largo no se corta', () => {
+  /**
+   * El panel tiene `overflow-hidden`, así que si el cuerpo no scrollea por su
+   * cuenta el contenido que no entra queda RECORTADO, no oculto-pero-alcanzable:
+   * en un teléfono el final de un formulario se vuelve inalcanzable y no hay
+   * forma de darse cuenta mirando una captura. Esto pasó migrando el modal de
+   * "Nuevo lead": puse el `overflow-y-auto` en un nieto del panel, donde el
+   * `flex` no llega.
+   *
+   * jsdom no calcula layout, así que lo que se puede afirmar es la estructura,
+   * que es justamente lo que estaba mal: quién scrollea y quién queda afuera.
+   */
+  function abrirLargo() {
+    render(
+      <Modal open onClose={() => {}} title="Nuevo lead" footer={<button>Crear</button>}>
+        {Array.from({ length: 60 }, (_, i) => <p key={i}>campo {i}</p>)}
+      </Modal>,
+    )
+    return screen.getByRole('dialog')
+  }
+
+  it('acota el panel al alto de la pantalla y lo apila en columna', () => {
+    const panel = abrirLargo()
+    expect(panel.className).toMatch(/max-h-\[90vh\]/)
+    expect(panel.className).toMatch(/flex-col/)
+  })
+
+  it('el cuerpo scrollea y puede encogerse dentro del flex', () => {
+    const panel = abrirLargo()
+    const cuerpo = screen.getByText('campo 0').parentElement!
+    expect(cuerpo.parentElement).toBe(panel)
+    expect(cuerpo.className).toMatch(/overflow-y-auto/)
+    // Sin `min-h-0` un hijo de flex no baja de su tamaño de contenido y el
+    // overflow-y-auto no llega a activarse nunca.
+    expect(cuerpo.className).toMatch(/min-h-0/)
+  })
+
+  it('el encabezado y el footer quedan afuera del área que scrollea', () => {
+    const panel = abrirLargo()
+    const cuerpo = screen.getByText('campo 0').parentElement!
+    const titulo = screen.getByRole('heading', { name: 'Nuevo lead' })
+    const boton = screen.getByRole('button', { name: 'Crear' })
+    expect(cuerpo.contains(titulo)).toBe(false)
+    expect(cuerpo.contains(boton)).toBe(false)
+    // y no se encogen cuando el cuerpo empuja
+    expect(titulo.closest('div')!.parentElement!.className).toMatch(/shrink-0/)
+    expect(boton.parentElement!.className).toMatch(/shrink-0/)
+  })
 })

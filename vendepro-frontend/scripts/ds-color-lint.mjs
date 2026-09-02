@@ -78,12 +78,20 @@ const OVERLAY_PATTERN = /inset-0[^"'`]*(bg-(black|slate|gray|neutral|white)\/|ba
 const OVERLAY_BASELINE_FILE = 'scripts/.ds-overlay-baseline'
 const RADIUS_PATTERN = /rounded-(lg|xl)\b/
 const RADIUS_BASELINE_FILE = 'scripts/.ds-radius-baseline'
+// `Text` del DS sin importar. Es el único componente cuyo nombre choca con un
+// global del DOM (`declare var Text` en lib.dom), así que olvidar el import NO
+// falla en `tsc --noEmit`: falla en el navegador, al renderizar. Pasó una vez
+// migrando un overlay de leads y el chequeo estaba verde.
+const TEXT_USE_PATTERN = /<Text[\s>/]/
+const TEXT_IMPORT_PATTERN = /^\s*import\s[^;]*\bText\b/m
+const TEXT_BASELINE_FILE = 'scripts/.ds-text-import-baseline'
 const baseline = existsSync(BASELINE_FILE) ? Number(readFileSync(BASELINE_FILE, 'utf8').trim() || '0') : 0
 const gradientBaseline = existsSync(GRADIENT_BASELINE_FILE) ? Number(readFileSync(GRADIENT_BASELINE_FILE, 'utf8').trim() || '0') : 0
 const glyphBaseline = existsSync(GLYPH_BASELINE_FILE) ? Number(readFileSync(GLYPH_BASELINE_FILE, 'utf8').trim() || '0') : 0
 const slateBaseline = existsSync(SLATE_BASELINE_FILE) ? Number(readFileSync(SLATE_BASELINE_FILE, 'utf8').trim() || '0') : 0
 const overlayBaseline = existsSync(OVERLAY_BASELINE_FILE) ? Number(readFileSync(OVERLAY_BASELINE_FILE, 'utf8').trim() || '0') : 0
 const radiusBaseline = existsSync(RADIUS_BASELINE_FILE) ? Number(readFileSync(RADIUS_BASELINE_FILE, 'utf8').trim() || '0') : 0
+const textBaseline = existsSync(TEXT_BASELINE_FILE) ? Number(readFileSync(TEXT_BASELINE_FILE, 'utf8').trim() || '0') : 0
 
 function walk(dir) {
   let out = []
@@ -103,9 +111,16 @@ const glyphHits = []
 const slateHits = []
 const overlayHits = []
 const radiusHits = []
+const textHits = []
 for (const root of ROOTS) {
   for (const file of walk(root)) {
-    readFileSync(file, 'utf8').split('\n').forEach((line, i) => {
+    const fuente = readFileSync(file, 'utf8')
+    // Este chequeo es por archivo, no por línea: lo que falta es el import.
+    if (TEXT_USE_PATTERN.test(fuente) && !TEXT_IMPORT_PATTERN.test(fuente)) {
+      const linea = fuente.split('\n').findIndex(l => TEXT_USE_PATTERN.test(l)) + 1
+      textHits.push(`${file}:${linea}`)
+    }
+    fuente.split('\n').forEach((line, i) => {
       if (line.includes('ds-todo')) return
       if (PATTERN.test(line)) hits.push(`${file}:${i + 1}`)
       if (GRADIENT_PATTERN.test(line)) gradientHits.push(`${file}:${i + 1}`)
@@ -217,6 +232,10 @@ const resultados = [
   ratchet({
     etiqueta: 'radios pre-token (rounded-lg/xl)', hits: radiusHits, baseline: radiusBaseline, archivo: RADIUS_BASELINE_FILE,
     sugerencia: 'Usá `rounded-control` (8px) o `rounded-card` (12px) — regla 8.',
+  }),
+  ratchet({
+    etiqueta: '<Text> sin importar (rompe en runtime, no en tsc)', hits: textHits, baseline: textBaseline, archivo: TEXT_BASELINE_FILE,
+    sugerencia: "Importá Text de '@/components/ui/Typography'. Sin el import tomás el `Text` del DOM y la pantalla explota al renderizar.",
   }),
 ]
 

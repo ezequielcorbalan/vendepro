@@ -352,11 +352,72 @@ Están acá para que no se pierdan:
   Si `/r/` sale, la coherencia pide que salgan estas dos también, o que entren
   las tres. Pendiente de decisión.
 
+## 24. Un componente del DS que se llama igual que un global del DOM se importa siempre
+
+`Text` es el único caso hoy, y es traicionero: `lib.dom` declara un
+`var Text` (el nodo de texto), así que si usás `<Text>` sin importarlo,
+`tsc --noEmit` pasa **verde** y la pantalla explota al renderizar en el
+navegador. No hay error de tipos que te avise.
+
+❌
+```tsx
+import { Heading } from '@/components/ui/Typography'
+// ...
+<Text size="sm" tone="muted">No tiene propiedad vinculada</Text>  // tsc OK, runtime roto
+```
+
+✅
+```tsx
+import { Heading, Text } from '@/components/ui/Typography'
+```
+
+Auditoría: el ratchet lo mira por archivo (usa `<Text` y ningún `import` lo
+nombra) y está trabado en **0**. Salió de la migración del overlay de
+`leads/[id]` el 02/09/2026, donde `tsc` dio verde con el import faltante.
+
+
+## 25. Dentro de un `Modal` no se arma un header ni un footer pegajoso a mano
+
+El panel del `Modal` ya es una columna acotada al 90% del alto de la pantalla:
+el encabezado y el `footer` quedan fijos y **el cuerpo scrollea solo**. Los
+overlays a mano resolvían eso con `sticky top-0` / `sticky bottom-0` adentro del
+contenido, y al migrarlos hay que sacarlo: duplicado, el header pegajoso viaja
+con el scroll del cuerpo y se ve doble borde.
+
+❌
+```tsx
+<Modal open onClose={cerrar}>
+  <div className="sticky top-0 bg-white border-b">…</div>
+  <div className="p-4">…campos…</div>
+  <div className="sticky bottom-0 border-t">…botones…</div>
+</Modal>
+```
+
+✅
+```tsx
+<Modal open onClose={cerrar} title="Nuevo lead" footer={<><Button …/><Button …/></>}>
+  …campos…
+</Modal>
+```
+
+Y no intentes acotar el alto desde afuera: un `flex flex-col` en el `className`
+del panel no llega al contenido, porque `children` va envuelto en el div del
+cuerpo. Ese fue el bug: el `overflow-y-auto` quedó en un nieto, y como el panel
+tiene `overflow-hidden`, un formulario largo **se recortaba** — en un teléfono el
+final del form quedaba inalcanzable, y en una captura se veía perfecto.
+
+Auditoría: `src/components/ui/__tests__/overlay-contract.test.tsx`, bloque
+"un formulario largo no se corta" — tres aserciones que fallan sobre el `Modal`
+de antes del arreglo (02/09/2026).
+
+
 ## Enforcement existente
 El ratchet de color (`scripts/ds-color-lint.mjs` + `scripts/.ds-color-baseline`)
 ya evita que SUBA nada de esto: colores Tailwind sueltos, medallones de
 gradiente a mano (regla 14), íconos escritos como carácter (regla 20), la escala
-`slate` (regla 21) y los radios pre-token `rounded-lg`/`xl` (regla 8).
+`slate` (regla 21), los radios pre-token `rounded-lg`/`xl` (regla 8), los
+overlays armados a mano (fase 6) y `<Text>` sin importar (regla 24). Son siete
+ratchets, cada uno con su archivo de baseline en `scripts/.ds-*-baseline`.
 
 **El contador de color estaba mal medido hasta el 31/08/2026.** Sólo miraba
 emerald/green/red/blue/amber/yellow, y eso dejaba afuera 58 casos: `rose-500` es
@@ -367,7 +428,7 @@ quedan afuera del ratchet a propósito: migrarlos SÍ cambia el tamaño, así qu
 deciden a mano (quedan 16). Mismo espíritu: cuando una pantalla se corrige acá,
 el baseline baja y queda trabado el retroceso.
 
-Las reglas 12 a 23 salieron del repaso visual del 31/08 y 01/09/2026: cada una es una
+Las reglas 12 a 25 salieron del repaso visual del 31/08 y 01/09/2026: cada una es una
 corrección que se pidió sobre pantalla y que, en vez de quedar en la pantalla
 donde se pidió, se movió al componente que la impone. La 12 es la que enseñó por
 qué: el header de contacto se había arreglado inline, así que el de lead siguió

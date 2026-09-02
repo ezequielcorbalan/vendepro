@@ -150,6 +150,7 @@ export default function DesignSystemPage() {
   const [email, setEmail] = useState(true)
   const [op, setOp] = useState('venta')
   const [modalOpen, setModalOpen] = useState(false)
+  const [sheetOpen, setSheetOpen] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [optMode, setOptMode] = useState('method')
   const [segIcon, setSegIcon] = useState('config')
@@ -730,6 +731,30 @@ export default function DesignSystemPage() {
           >
             Vas a publicar “Depto 2 amb · Palermo” en todos los portales conectados.
             Podés despublicarla cuando quieras.
+          </Modal>
+        </Section>
+
+        {/* Modal sheet */}
+        <Section
+          title="Modal · sheet"
+          hint="Mismo diálogo pegado abajo en el teléfono y centrado en desktop. Es el molde de las pantallas de trabajo de campo (leads, calendario, contactos): la mano llega al pulgar, no al centro de la pantalla. Angostá la ventana para verlo."
+        >
+          <Button variant="outline" onClick={() => setSheetOpen(true)}>Abrir sheet</Button>
+          <Modal
+            open={sheetOpen}
+            sheet
+            onClose={() => setSheetOpen(false)}
+            title="Avanzar a tasación"
+            icon={<AlertTriangle className="w-4 h-4" />}
+            footer={
+              <>
+                <Button variant="ghost" onClick={() => setSheetOpen(false)}>Cancelar</Button>
+                <Button onClick={() => setSheetOpen(false)}>Avanzar</Button>
+              </>
+            }
+          >
+            En móvil sale desde abajo con las esquinas de arriba redondeadas; arriba de
+            640px es el mismo modal centrado de siempre.
           </Modal>
         </Section>
 
