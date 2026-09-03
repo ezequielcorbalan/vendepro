@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/Button'
 import { Field, Input, Select, Textarea } from '@/components/ui/Input'
 import { CallButton, WhatsAppButton } from '@/components/ui/ContactButtons'
 import type { Contact } from '@/lib/types'
+import { getStageConfig } from '@/lib/crm-config'
 
 import { DetailHeader, DetailMeta } from '@/components/ui/DetailHeader'
 import { Avatar } from '@/components/ui/Avatar'
@@ -29,16 +30,6 @@ const SOURCE_LABELS: Record<string, string> = {
 }
 const sourceLabel = (s: string) => SOURCE_LABELS[s.toLowerCase()] ?? (s.charAt(0).toUpperCase() + s.slice(1))
 
-const STAGE_LABELS: Record<string, string> = {
-  nuevo: 'Nuevo',
-  contactado: 'Contactado',
-  calificado: 'Calificado',
-  visita: 'Visita',
-  propuesta: 'Propuesta',
-  negociacion: 'Negociación',
-  cerrado: 'Cerrado',
-  perdido: 'Perdido',
-}
 
 const STATUS_LABELS: Record<string, string> = {
   active: 'Activa',
@@ -205,7 +196,7 @@ export default function ContactDetailPage() {
               <Link key={lead.id} href={`/leads/${lead.id}`} className="flex items-center justify-between p-3 rounded-control border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-colors group">
                 <div>
                   <p className="text-sm font-medium text-ink">{lead.full_name}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{STAGE_LABELS[lead.stage] ?? lead.stage}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{getStageConfig(lead.stage, (lead as any).pipeline).label}</p>
                 </div>
                 <ExternalLink className="w-3.5 h-3.5 text-gray-300 group-hover:text-gray-500" />
               </Link>

@@ -34,6 +34,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { Timeline } from '@/components/ui/Timeline'
 import { LeadStagePipeline } from '@/components/leads/LeadStagePipeline'
 import { LeadPropertiesSection } from '@/components/leads/LeadPropertiesSection'
+import { MarkNotCapturedModal, type NotCapturedResult } from '@/components/leads/MarkNotCapturedModal'
 import { FichaLinkSection } from '@/components/fichas/FichaLinkSection'
 
 // Etapas en las que conviene tener una propiedad/tasación vinculada: si el lead
@@ -56,6 +57,8 @@ export default function LeadDetailPage() {
   const [editForm, setEditForm] = useState<any>({})
   const [propModal, setPropModal] = useState<{ targetStage: string; requireProperty: boolean } | null>(null)
   const [showReservaModal, setShowReservaModal] = useState(false)
+  // Cierre "no captado" (vendedor): motivo + cuándo recontactar.
+  const [showNotCaptured, setShowNotCaptured] = useState(false)
   const [orgTags, setOrgTags] = useState<any[]>([])
   const [showTagPicker, setShowTagPicker] = useState(false)
   const [tagsLoading, setTagsLoading] = useState(false)
@@ -131,7 +134,7 @@ export default function LeadDetailPage() {
       return
     }
     if (stage === 'finalizado') {
-      toast('Finalizado se asigna automáticamente cuando la propiedad se vende', 'warning')
+      toast('Vendido se asigna automáticamente cuando la propiedad se vende', 'warning')
       return
     }
     // Captado requiere una propiedad vinculada (bloqueante).
@@ -163,13 +166,19 @@ export default function LeadDetailPage() {
       })
       if (!confirmed) return
     }
+    // "No captado" (vendedor) tiene su propio modal: además del motivo hay que
+    // elegir cuándo se retoma. Ver MarkNotCapturedModal / confirmNotCaptured.
+    if (stage === 'perdido' && !isBuyer) {
+      setShowNotCaptured(true)
+      return
+    }
     try {
       if (stage === 'perdido' || stage === 'invalido') {
         const { confirmed, reason } = await askConfirm({
           title: stage === 'perdido' ? 'Marcar lead como perdido' : 'Marcar lead como inválido',
           message: stage === 'perdido'
             ? '¿Por qué se pierde este lead?'
-            : 'Ej: propiedad no apta, datos duplicados, fake, etc.',
+            : 'Sale del pipeline y no entra al circuito de recontacto. Ej: dato falso o duplicado, propiedad no apta, o alguien a quien no le vas a dar seguimiento.',
           confirmLabel: stage === 'perdido' ? 'Marcar perdido' : 'Marcar inválido',
           variant: 'danger',
           requireReason: true,
@@ -203,6 +212,41 @@ export default function LeadDetailPage() {
       }
       loadLead()
     } catch { toast('Error al cambiar etapa', 'error') }
+  }
+
+  /**
+   * Cierra el lead como no captado y le agenda el recontacto. Espejo de
+   * `confirmNotCaptured` en la lista: dos llamadas porque `/leads/stage` no
+   * toca el próximo paso y `PUT /leads` no mueve la etapa.
+   */
+  const confirmNotCaptured = async ({ reason, recontactDate }: NotCapturedResult) => {
+    setSaving(true)
+    try {
+      const r = await apiFetch('crm', '/leads/stage', {
+        method: 'POST',
+        body: JSON.stringify({ id: leadId, stage: 'perdido', notes: reason || 'Sin motivo especificado', override: true }),
+      })
+      pushFromApiResponse(await r.json().catch(() => ({})), { entity_type: 'lead', entity_id: leadId, event_name_fallback: 'perdido' })
+      setShowNotCaptured(false)
+
+      if (recontactDate) {
+        try {
+          await apiFetch('crm', '/leads', {
+            method: 'PUT',
+            body: JSON.stringify({ id: leadId, next_step: 'Recontactar (no captado)', next_step_date: recontactDate }),
+          })
+          toast(`No captado · recontactar el ${formatDate(recontactDate)}`, 'warning')
+        } catch {
+          toast('Lead marcado como no captado, pero no se pudo guardar la fecha de recontacto', 'warning')
+        }
+      } else {
+        toast('Lead marcado como no captado', 'warning')
+      }
+      loadLead()
+    } catch {
+      toast('Error al marcar como no captado', 'error')
+    }
+    setSaving(false)
   }
 
   const handleRemoveTag = async (tagId: string) => {
@@ -297,6 +341,13 @@ export default function LeadDetailPage() {
   return (
     <div className="space-y-4">
       {confirmDialog}
+      <MarkNotCapturedModal
+        open={showNotCaptured}
+        leadName={lead?.full_name}
+        saving={saving}
+        onClose={() => setShowNotCaptured(false)}
+        onConfirm={confirmNotCaptured}
+      />
       {/* Top bar: sólo la vuelta atrás. Las acciones viven en el encabezado,
           igual que en /contactos/[id] — antes eran cinco botones del mismo peso
           en una fila suelta arriba de la card. */}
