@@ -29,10 +29,18 @@ describe('classifyGoogleEventType', () => {
     expect(classifyGoogleEventType('Firma boleto Rivadavia')).toBe('firma')
   })
 
-  it('separa la visita de captación de la de comprador', () => {
-    expect(classifyGoogleEventType('Visita Lavalle 2060')).toBe('visita_captacion')
+  it('trata "visita" como alguien yendo a ver una propiedad', () => {
+    // Es el caso de lejos más frecuente en la agenda: el comprador que va a
+    // conocer la propiedad.
+    expect(classifyGoogleEventType('Visita Lavalle 2060')).toBe('visita_comprador')
     expect(classifyGoogleEventType('Visita de comprador en Cabildo')).toBe('visita_comprador')
     expect(classifyGoogleEventType('Mostrar propiedad a los Pérez')).toBe('visita_comprador')
+  })
+
+  it('reconoce la captación cuando se la nombra', () => {
+    expect(classifyGoogleEventType('Visita de captación Rivadavia 4820')).toBe('visita_captacion')
+    expect(classifyGoogleEventType('Captación depto Belgrano')).toBe('visita_captacion')
+    expect(classifyGoogleEventType('Captar PH Villa Urquiza')).toBe('visita_captacion')
   })
 
   it('cae en "otro" cuando el título no dice nada del negocio', () => {

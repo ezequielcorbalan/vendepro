@@ -430,7 +430,8 @@ export default function ConfiguracionPage() {
             {[
               ['"llamada"', 'Llamada'],
               ['"reunión"', 'Reunión'],
-              ['"visita"', 'Visita'],
+              ['"visita"', 'Visita de comprador'],
+              ['"captación"', 'Visita de captación'],
               ['"tasación"', 'Tasación'],
               ['"seguimiento"', 'Seguimiento'],
               ['"firma"', 'Firma'],

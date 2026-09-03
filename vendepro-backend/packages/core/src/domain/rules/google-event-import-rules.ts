@@ -26,9 +26,12 @@ export function normalizeForMatch(text: string): string {
  * `visita_comprador` y no en la regla genérica de visita.
  */
 const KEYWORD_RULES: Array<{ type: EventTypeValue; keywords: string[] }> = [
-  // Antes que `visita` a secas, si no se la come la regla genérica.
-  { type: 'visita_comprador', keywords: ['visita comprador', 'visita de comprador', 'muestra', 'mostrar propiedad'] },
-  { type: 'visita_captacion', keywords: ['visita captacion', 'visita de captacion', 'visita'] },
+  // La captación va primero porque su texto contiene la palabra "visita" y si
+  // no se la comería la regla de abajo.
+  { type: 'visita_captacion', keywords: ['visita captacion', 'visita de captacion', 'captacion', 'captar'] },
+  // "Visita" a secas es alguien yendo a VER una propiedad — el caso de lejos
+  // más común en la agenda. La captación se escribe explícita.
+  { type: 'visita_comprador', keywords: ['visita', 'muestra', 'mostrar propiedad'] },
   { type: 'tasacion', keywords: ['tasacion', 'tasar', 'valuacion'] },
   { type: 'firma', keywords: ['firma', 'escritura', 'boleto'] },
   { type: 'llamada', keywords: ['llamada', 'llamar', 'telefono'] },
