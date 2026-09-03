@@ -493,3 +493,77 @@ export function variablesForTrigger(triggerKey: string): VariableDefinition[] {
   const scopes = new Set(def.scopes)
   return VARIABLE_DEFINITIONS.filter((v) => scopes.has(v.scope))
 }
+
+// ── Categorías de recetas ─────────────────────────────────────
+
+/**
+ * Agrupa las recetas del catálogo por momento del negocio, que es como las
+ * busca la inmobiliaria ("¿qué tengo para tasaciones?"). Agrupar por entidad
+ * no sirve: el 70% de las recetas cuelga de `lead` y la galería vuelve a ser
+ * una lista plana.
+ *
+ * El orden del array es el orden en que se muestran las secciones.
+ */
+export const RECIPE_CATEGORIES = [
+  {
+    key: 'entrada_leads',
+    label: 'Entrada de leads',
+    description: 'Lo que pasa apenas entra una consulta nueva.',
+  },
+  {
+    key: 'alertas',
+    label: 'Alertas y SLA',
+    description: 'Avisos cuando algo se está pasando de tiempo.',
+  },
+  {
+    key: 'tasacion',
+    label: 'Tasación',
+    description: 'Acompañamiento del propietario mientras se tasa la propiedad.',
+  },
+  {
+    key: 'captacion',
+    label: 'Captación',
+    description: 'Del lead calificado a la propiedad captada.',
+  },
+  {
+    key: 'propiedades',
+    label: 'Propiedades publicadas',
+    description: 'Seguimiento de la propiedad ya en comercialización.',
+  },
+  {
+    key: 'otras',
+    label: 'Otras',
+    description: 'Recetas que todavía no se clasificaron.',
+  },
+] as const
+
+export type RecipeCategory = (typeof RECIPE_CATEGORIES)[number]['key']
+
+/** Cajón de las recetas sin clasificar. Siempre va última en la galería. */
+export const DEFAULT_RECIPE_CATEGORY: RecipeCategory = 'otras'
+
+/**
+ * `template_key` → categoría. Las recetas viven en el seed SQL (044), pero la
+ * categoría es metadata de presentación: no cambia el motor y no justifica una
+ * migración cada vez que se reordena la galería, así que se declara acá junto
+ * al resto del catálogo.
+ *
+ * Una receta que falte cae en "Otras" — el test del seed lo marca.
+ */
+const RECIPE_CATEGORY_BY_TEMPLATE: Record<string, RecipeCategory> = {
+  lead_bienvenida: 'entrada_leads',
+  lead_portal: 'entrada_leads',
+  sla_contacto_24h: 'alertas',
+  lead_frio_7d: 'alertas',
+  tasacion_en_curso: 'tasacion',
+  seguimiento_presentada: 'tasacion',
+  email_post_tasacion: 'tasacion',
+  lead_calificado_visita: 'captacion',
+  lead_captado: 'captacion',
+  propiedad_publicada: 'propiedades',
+  publicacion_por_vencer: 'propiedades',
+}
+
+export function categoryForTemplate(templateKey: string): RecipeCategory {
+  return RECIPE_CATEGORY_BY_TEMPLATE[templateKey] ?? DEFAULT_RECIPE_CATEGORY
+}

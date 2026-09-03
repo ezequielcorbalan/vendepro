@@ -149,7 +149,8 @@ El kind `property` es solo un **estilo**: `landings` no tiene `property_id` — 
 
 **Más avanzado de lo que el roadmap sugiere** — hubo dos generaciones:
 - v1 (`email_automations`, migración 039) fue **absorbida y retirada** (migración 045).
-- v2 🟢: motor genérico (`automations`, `automation_actions`, `automation_runs`, `automation_jobs` con cola durable, migraciones 043-046), 9 recetas de sistema seedeadas, UI completa (`configuracion/automatizaciones/` con editor + generación de secuencia por IA), dry-run `:id/test`.
+- v2 🟢: motor genérico (`automations`, `automation_actions`, `automation_runs`, `automation_jobs` con cola durable, migraciones 043-046), **11** recetas de sistema seedeadas, UI completa (`configuracion/automatizaciones/` con editor + generación de secuencia por IA), dry-run `:id/test`.
+- Galería de recetas agrupada por momento del negocio (`RECIPE_CATEGORIES` en `automation-catalog.ts` → `meta.recipe_categories` + `category` en cada `CatalogItem`): 5 secciones (entrada de leads, alertas y SLA, tasación, captación, propiedades), buscador por nombre/disparador/acción, filtro por categoría, y las ya activadas ocultas detrás de un switch. La categoría es metadata de presentación: vive en el catálogo declarativo, no en la base.
 
 **Los 3 casos del roadmap**:
 | Caso | Estado |
