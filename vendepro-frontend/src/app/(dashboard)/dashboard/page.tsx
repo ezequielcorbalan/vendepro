@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { LEAD_STAGES, LEAD_PIPELINE_STAGES, EVENT_TYPES, getStageConfig } from '@/lib/crm-config'
 import { apiFetch } from '@/lib/api'
+import { scopeQueryString, isAdminOrSupervisor } from '@/lib/agent-scope'
 import { getCurrentUser, isOnboardingDone, markOnboardingDone } from '@/lib/auth'
 import OnboardingModal from '@/components/onboarding/OnboardingModal'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -75,6 +76,12 @@ export default function DashboardCRM() {
   const [period, setPeriod] = useState<string>('all')
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [onboardingUser, setOnboardingUser] = useState('')
+  // KPIs por agente: los pide sólo la inmobiliaria. Un agente ve sus propios
+  // números en el resto del dashboard, ya acotados por agent_id.
+  const [team, setTeam] = useState<any[]>([])
+  // Se resuelve en el efecto (localStorage no existe en el render del
+  // servidor) para no romper la hidratación.
+  const [isOrgView, setIsOrgView] = useState(false)
 
   useEffect(() => {
     const user = getCurrentUser()
@@ -88,12 +95,25 @@ export default function DashboardCRM() {
     // Skeleton solo en la primera carga; al cambiar el período del funnel se
     // actualiza sin parpadear el resto del dashboard.
     if (!data) setLoading(true)
-    apiFetch('analytics', `/dashboard?period=${period}`)
+    // El scope hace que un agente vea SUS números y no los de la inmobiliaria
+    // entera. Es el mismo helper que ya usa Leads; el dashboard no lo llamaba.
+    const scope = scopeQueryString()
+    apiFetch('analytics', `/dashboard${scope}${scope ? '&' : '?'}period=${period}`)
       .then(r => r.json() as Promise<any>)
       .then(d => { setData(d); setLoading(false) })
       .catch(() => setLoading(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [period])
+
+  useEffect(() => {
+    const orgView = isAdminOrSupervisor()
+    setIsOrgView(orgView)
+    if (!orgView) return
+    apiFetch('analytics', '/team-stats')
+      .then(r => r.json() as Promise<any>)
+      .then(d => { if (Array.isArray(d)) setTeam(d) })
+      .catch(() => {})
+  }, [])
 
   if (loading) {
     return (
@@ -119,7 +139,7 @@ export default function DashboardCRM() {
     )
   }
 
-  const { leads, overdueLeads, tasaciones, activity, weeklyActivity, todayEvents, pendingFollowups, agentPerformance, funnel, conversionRate, recentActivities, pipelineBreakdown } = data
+  const { leads, overdueLeads, tasaciones, activity, weeklyActivity, todayEvents, pendingFollowups, funnel, conversionRate, recentActivities, pipelineBreakdown } = data
 
   // La API devuelve pipelineBreakdown con las claves crudas de etapa
   // (nuevo, asignado, presentada, invalido, finalizado…). Se usa como
@@ -296,48 +316,47 @@ export default function DashboardCRM() {
           )}
         </Card>
 
+        {/* Equipo: la inmobiliaria ve el KPI de cada agente; un agente ve su
+            propio pipeline (el resto del dashboard ya viene acotado a él). */}
         <Card className="p-4 sm:p-5">
           <Heading level={4} as="h2" className="mb-3 flex items-center gap-2">
-            <Users className="w-4 h-4 text-gray-600" /> Equipo
+            <Users className="w-4 h-4 text-gray-600" /> {isOrgView ? 'Equipo' : 'Mi pipeline'}
           </Heading>
-          {agentPerformance && agentPerformance.length > 0 ? (
+          {isOrgView && team.length > 0 ? (
             <div className="space-y-3">
-              {agentPerformance.map((agent: any) => {
-                const convRate = agent.total_leads > 0
-                  ? Math.round((agent.captados / agent.total_leads) * 100)
-                  : 0
-                return (
-                  <div key={agent.id} className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-700 truncate">{agent.full_name}</span>
-                      <span className="text-xs text-gray-400">{agent.actividad_mes} act.</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                      <span>{agent.total_leads} leads</span>
-                      <span>·</span>
-                      <span>{agent.captados} capt.</span>
-                      <span>·</span>
-                      <span className={convRate >= 20 ? 'text-green-600' : convRate >= 10 ? 'text-yellow-600' : 'text-red-500'}>
-                        {convRate}% conv.
-                      </span>
-                    </div>
-                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-pink-500 to-orange-400 rounded-full transition-all"
-                        style={{ width: `${Math.min(convRate * 2, 100)}%` }}
-                      />
-                    </div>
+              {team.map((agent: any) => (
+                <Link key={agent.id} href={`/leads?agent=${agent.id}`} className="block space-y-1 group">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm text-gray-700 truncate group-hover:text-primary">{agent.full_name}</span>
+                    <span className="text-xs text-gray-400 shrink-0">{agent.actividad_mes} act.</span>
                   </div>
-                )
-              })}
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <span>{agent.total_leads} leads</span>
+                    <span>·</span>
+                    <span>{agent.captados} capt.</span>
+                    <span>·</span>
+                    <span className={agent.conversion >= 20 ? 'text-success' : agent.conversion >= 10 ? 'text-warning' : 'text-danger'}>
+                      {agent.conversion}% conv.
+                    </span>
+                  </div>
+                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-brand-pink to-brand-orange rounded-full transition-all"
+                      style={{ width: `${Math.min(agent.conversion * 2, 100)}%` }}
+                    />
+                  </div>
+                </Link>
+              ))}
             </div>
           ) : (
             <div className="space-y-3">
-              <Text tone="muted">Pipeline personal</Text>
+              <Text tone="muted">
+                {isOrgView ? 'Todavía no hay leads asignados a agentes' : 'Leads de captación asignados a vos'}
+              </Text>
               <div className="grid grid-cols-2 gap-2 text-center">
                 <div className="bg-blue-100 text-blue-800 rounded-control p-2">
                   <p className="text-xl font-bold">{leads?.total || 0}</p>
-                  <p className="text-xs font-normal">Mis leads</p>
+                  <p className="text-xs font-normal">{isOrgView ? 'Leads de la inmobiliaria' : 'Mis leads'}</p>
                 </div>
                 <div className={`rounded-control p-2 ${LEAD_STAGES.captado.color}`}>
                   <p className="text-xl font-bold">{leads?.captados || 0}</p>

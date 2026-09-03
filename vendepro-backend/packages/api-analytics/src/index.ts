@@ -8,6 +8,7 @@ import {
   GetTodayEventsUseCase,
   GetPendingFollowupsUseCase,
   GetAgentStatsUseCase,
+  GetTeamStatsUseCase,
   SearchEntitiesUseCase,
   ExportLeadsUseCase,
   GetListingsPerformanceUseCase,
@@ -79,7 +80,8 @@ app.get('/dashboard', async (c) => {
     new GetAppraisalStatsUseCase(new D1AppraisalRepository(db)).execute(orgId),
     new GetActivityStatsUseCase(new D1ActivityRepository(db)).execute(orgId, agent_id),
     new GetTodayEventsUseCase(new D1CalendarRepository(db)).execute(orgId),
-    new GetPendingFollowupsUseCase(new D1LeadRepository(db)).execute(orgId),
+    // Pipeline explícito: antes traía vendedores y compradores juntos.
+    new GetPendingFollowupsUseCase(new D1LeadRepository(db)).execute(orgId, 'vendedor'),
   ])
 
   const sb = base.stageBreakdown
@@ -110,7 +112,9 @@ app.get('/dashboard', async (c) => {
     recentActivities: activity.recent,
     todayEvents,
     pendingFollowups,
-    agentPerformance: [],
+    // `agentPerformance` salía de acá siempre vacío. Los KPIs por agente ahora
+    // viven en GET /team-stats, que el dashboard pide aparte y sólo si el
+    // usuario es de la inmobiliaria.
     funnel,
     conversionRate,
     pipelineBreakdown: sb,
@@ -130,6 +134,25 @@ app.get('/search', async (c) => {
   ).execute(orgId, q, 5)
 
   return c.json(results)
+})
+
+// ── KPIs DEL EQUIPO ───────────────────────────────────────────
+// La inmobiliaria ve los números de cada agente; un agente ve sólo los
+// propios, y para eso ya tiene /dashboard?agent_id= y /agent-stats.
+// Reemplaza el `agentPerformance: []` fijo que hacía que la tarjeta "Equipo"
+// del dashboard nunca pudiera mostrar nada.
+app.get('/team-stats', async (c) => {
+  const role = c.get('userRole')
+  if (role !== 'admin' && role !== 'owner' && role !== 'supervisor') {
+    return c.json({ error: 'Sin permisos (sólo la inmobiliaria ve el equipo)' }, 403)
+  }
+  const db = c.env.DB
+  const stats = await new GetTeamStatsUseCase(
+    new D1UserRepository(db),
+    new D1LeadRepository(db),
+    new D1ActivityRepository(db),
+  ).execute(c.get('orgId'))
+  return c.json(stats)
 })
 
 app.get('/agent-stats', async (c) => {

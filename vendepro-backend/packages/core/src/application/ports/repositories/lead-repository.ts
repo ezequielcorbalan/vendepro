@@ -14,7 +14,11 @@ export interface LeadRepository {
   save(lead: Lead): Promise<void>
   delete(id: string, orgId: string): Promise<void>
   searchByName(orgId: string, query: string, limit: number): Promise<Array<{ id: string; full_name: string }>>
-  findPendingFollowups(orgId: string, now: string, limit: number): Promise<Array<{ id: string; full_name: string; next_step: string | null; next_step_date: string | null; stage: string }>>
+  /**
+   * Leads con próximo paso vencido. El pipeline es obligatorio: sin él, los
+   * compradores se colaban en el dashboard de vendedores.
+   */
+  findPendingFollowups(orgId: string, now: string, limit: number, pipeline: 'vendedor' | 'comprador'): Promise<Array<{ id: string; full_name: string; next_step: string | null; next_step_date: string | null; stage: string; pipeline: string }>>
   /** Returns raw rows with assigned_name via JOIN — acceptable for CSV export outside domain types */
   exportAllWithAssignedName(orgId: string): Promise<Array<Record<string, unknown>>>
   /**

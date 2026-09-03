@@ -120,6 +120,7 @@ export * from './use-cases/dashboard/get-activity-stats'
 export * from './use-cases/dashboard/get-today-events'
 export * from './use-cases/dashboard/get-pending-followups'
 export * from './use-cases/dashboard/get-agent-stats'
+export * from './use-cases/dashboard/get-team-stats'
 
 // Analytics
 export * from './use-cases/analytics/get-listings-performance'

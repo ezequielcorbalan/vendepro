@@ -983,10 +983,17 @@ app.post('/calendar', async (c) => {
   return c.json({ ...result, google }, 201)
 })
 
+// Tildar un evento registra la actividad comercial correspondiente (reunión,
+// visita, tasación…) y destildarlo la da de baja: el agente carga la agenda
+// una sola vez y las métricas de performance se llenan solas.
 app.put('/calendar/complete', async (c) => {
   const { id } = c.req.query()
   const repo = new D1CalendarRepository(c.env.DB)
-  const useCase = new ToggleEventCompleteUseCase(repo)
+  const useCase = new ToggleEventCompleteUseCase(
+    repo,
+    new D1ActivityRepository(c.env.DB),
+    new CryptoIdGenerator(),
+  )
   const result = await useCase.execute(id, c.get('orgId'))
   return c.json(result)
 })
