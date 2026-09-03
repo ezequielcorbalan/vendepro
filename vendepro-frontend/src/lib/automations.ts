@@ -66,6 +66,15 @@ export interface CatalogItem {
   action_labels: string[]
   activated: boolean
   available: boolean
+  /** Sección de la galería. El label y el orden salen de `meta.recipe_categories`. */
+  category: string
+}
+
+/** Sección de la galería de recetas, declarada por el backend. */
+export interface RecipeCategoryMeta {
+  key: string
+  label: string
+  description: string
 }
 
 export interface ConfigField {
@@ -106,6 +115,7 @@ export interface AutomationsMeta {
   variables: Array<{ key: string; label: string; scope: string; example: string }>
   stages: { lead: string[]; property: string[] }
   dedupe_scopes: Array<{ value: string; label: string; help: string }>
+  recipe_categories: RecipeCategoryMeta[]
 }
 
 export interface RunActionResult {

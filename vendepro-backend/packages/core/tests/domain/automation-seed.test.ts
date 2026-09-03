@@ -6,6 +6,8 @@ import { AutomationAction } from '../../src/domain/entities/automation-action'
 import {
   getTriggerDefinition,
   getActionDefinition,
+  categoryForTemplate,
+  DEFAULT_RECIPE_CATEGORY,
 } from '../../src/domain/value-objects/automation-catalog'
 import { extractTokens } from '../../src/domain/rules/automation-interpolation'
 import { variablesForTrigger } from '../../src/domain/value-objects/automation-catalog'
@@ -183,6 +185,17 @@ describe('seed del catálogo de recetas', () => {
           ).toBe(true)
         }
       }
+    }
+  })
+
+  it('cada receta tiene una categoría asignada en la galería', () => {
+    // Sin esto, una receta nueva se seedea y cae en "Otras", al fondo de la
+    // galería, sin que nadie se entere hasta verla en producción.
+    for (const row of automationRows) {
+      expect(
+        categoryForTemplate(row.template_key),
+        `${row.template_key}: falta en el mapa de categorías del catálogo`,
+      ).not.toBe(DEFAULT_RECIPE_CATEGORY)
     }
   })
 
