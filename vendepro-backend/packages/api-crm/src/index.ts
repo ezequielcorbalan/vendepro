@@ -40,6 +40,7 @@ import {
   TestKitepropConnectionUseCase, SyncKitepropContactsUseCase,
   GetKitepropAgentsUseCase, SaveAgentMapUseCase,
   GetGoogleIntegrationUseCase, ConnectGoogleCalendarUseCase,
+  ImportGoogleCalendarEventsUseCase,
   DisconnectGoogleCalendarUseCase, SaveGoogleIntegrationSettingsUseCase,
   SyncEventToGoogleUseCase, ListGoogleCalendarEventsUseCase,
   GetEmailSettingsUseCase, SaveEmailSettingsUseCase,
@@ -891,6 +892,51 @@ app.get('/integrations/google/events', async (c) => {
   }
 })
 
+/**
+ * Importa al CRM los eventos que el agente agendó en su Google Calendar,
+ * tipificados por palabra clave y vinculados al lead o contacto que nombre el
+ * título. Es la dirección que faltaba: el trabajo de campo se agenda en el
+ * calendario del teléfono, y hasta acá no llegaba al CRM.
+ *
+ * Idempotente por `google_event_id`, así que se puede reintentar sin duplicar.
+ */
+app.post('/integrations/google/import', async (c) => {
+  if (!googleConfigured(c.env)) {
+    return c.json({ imported: 0, skipped: 0, linked: 0, connected: false, reason: 'no_configurado' })
+  }
+  // Ventana por defecto: los últimos 30 días y los próximos 90. Hacia atrás
+  // alcanza para recuperar lo reciente sin arrastrar años de historia; hacia
+  // adelante cubre la agenda que ya está cargada.
+  const now = new Date()
+  const start = c.req.query('start') ?? new Date(now.getTime() - 30 * 86400_000).toISOString()
+  const end = c.req.query('end') ?? new Date(now.getTime() + 90 * 86400_000).toISOString()
+
+  try {
+    const useCase = new ImportGoogleCalendarEventsUseCase(
+      new D1UserIntegrationRepository(c.env.DB),
+      new D1CalendarRepository(c.env.DB),
+      new D1LeadRepository(c.env.DB),
+      new D1ContactRepository(c.env.DB),
+      googleGateway(c.env),
+      new CryptoIdGenerator(),
+      (plain) => encrypt(plain, c.env.JWT_SECRET),
+      (cipher) => decrypt(cipher, c.env.JWT_SECRET),
+    )
+    return c.json(await useCase.execute({
+      orgId: c.get('orgId'),
+      userId: c.get('userId'),
+      start,
+      end,
+    }))
+  } catch (err: any) {
+    const raw = String(err?.message ?? '')
+    const reason = /insufficient authentication scopes|insufficientPermissions|403/i.test(raw)
+      ? 'insufficient_scopes'
+      : (raw || 'google_error')
+    return c.json({ imported: 0, skipped: 0, linked: 0, connected: true, reason }, 502)
+  }
+})
+
 app.delete('/integrations/google', async (c) => {
   const useCase = new DisconnectGoogleCalendarUseCase(
     new D1UserIntegrationRepository(c.env.DB),
@@ -983,10 +1029,17 @@ app.post('/calendar', async (c) => {
   return c.json({ ...result, google }, 201)
 })
 
+// Tildar un evento registra la actividad comercial correspondiente (reunión,
+// visita, tasación…) y destildarlo la da de baja: el agente carga la agenda
+// una sola vez y las métricas de performance se llenan solas.
 app.put('/calendar/complete', async (c) => {
   const { id } = c.req.query()
   const repo = new D1CalendarRepository(c.env.DB)
-  const useCase = new ToggleEventCompleteUseCase(repo)
+  const useCase = new ToggleEventCompleteUseCase(
+    repo,
+    new D1ActivityRepository(c.env.DB),
+    new CryptoIdGenerator(),
+  )
   const result = await useCase.execute(id, c.get('orgId'))
   return c.json(result)
 })

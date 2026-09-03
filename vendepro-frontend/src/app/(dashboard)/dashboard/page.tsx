@@ -8,11 +8,15 @@ import {
 } from 'lucide-react'
 import { LEAD_STAGES, LEAD_PIPELINE_STAGES, EVENT_TYPES, getStageConfig } from '@/lib/crm-config'
 import { apiFetch } from '@/lib/api'
+import { cn } from '@/lib/utils'
+import { AgentSelector, type AgentOption } from '@/components/ui/AgentSelector'
+import { scopeQueryString, isAdminOrSupervisor } from '@/lib/agent-scope'
 import { getCurrentUser, isOnboardingDone, markOnboardingDone } from '@/lib/auth'
 import OnboardingModal from '@/components/onboarding/OnboardingModal'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
 import { StatTile } from '@/components/ui/StatTile'
+import { ProgressBar } from '@/components/ui/Progress'
 import { Heading, Text } from '@/components/ui/Typography'
 import { Alert } from '@/components/ui/Alert'
 import { Select } from '@/components/ui/Input'
@@ -75,6 +79,16 @@ export default function DashboardCRM() {
   const [period, setPeriod] = useState<string>('all')
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [onboardingUser, setOnboardingUser] = useState('')
+  // KPIs por agente: los pide sólo la inmobiliaria. Un agente ve sus propios
+  // números en el resto del dashboard, ya acotados por agent_id.
+  const [team, setTeam] = useState<any[]>([])
+  // Se resuelve en el efecto (localStorage no existe en el render del
+  // servidor) para no romper la hidratación.
+  const [isOrgView, setIsOrgView] = useState(false)
+  // Agente que la inmobiliaria está mirando; null = todos. Un agente no ve el
+  // selector y su dashboard ya viene acotado a él por `scopeQueryString`.
+  const [viewedAgent, setViewedAgent] = useState<string | null>(null)
+  const [agents, setAgents] = useState<AgentOption[]>([])
 
   useEffect(() => {
     const user = getCurrentUser()
@@ -88,12 +102,33 @@ export default function DashboardCRM() {
     // Skeleton solo en la primera carga; al cambiar el período del funnel se
     // actualiza sin parpadear el resto del dashboard.
     if (!data) setLoading(true)
-    apiFetch('analytics', `/dashboard?period=${period}`)
+    // Dos scopes distintos que terminan en el mismo parámetro:
+    //  - un agente queda acotado a sí mismo (scopeQueryString, igual que Leads),
+    //  - la inmobiliaria elige a quién mirar con el selector.
+    const agentId = viewedAgent ?? new URLSearchParams(scopeQueryString().slice(1)).get('agent_id')
+    const scope = agentId ? `?agent_id=${agentId}&` : '?'
+    apiFetch('analytics', `/dashboard${scope}period=${period}`)
       .then(r => r.json() as Promise<any>)
       .then(d => { setData(d); setLoading(false) })
       .catch(() => setLoading(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [period])
+  }, [period, viewedAgent])
+
+  useEffect(() => {
+    const orgView = isAdminOrSupervisor()
+    setIsOrgView(orgView)
+    if (!orgView) return
+    apiFetch('analytics', '/team-stats')
+      .then(r => r.json() as Promise<any>)
+      .then(d => { if (Array.isArray(d)) setTeam(d) })
+      .catch(() => {})
+    // La lista completa del equipo, no sólo quienes tienen leads: para mirar a
+    // alguien recién incorporado hay que poder encontrarlo en el buscador.
+    apiFetch('admin', '/agents')
+      .then(r => r.json() as Promise<any>)
+      .then(d => { if (Array.isArray(d)) setAgents(d) })
+      .catch(() => {})
+  }, [])
 
   if (loading) {
     return (
@@ -119,7 +154,7 @@ export default function DashboardCRM() {
     )
   }
 
-  const { leads, overdueLeads, tasaciones, activity, weeklyActivity, todayEvents, pendingFollowups, agentPerformance, funnel, conversionRate, recentActivities, pipelineBreakdown } = data
+  const { leads, overdueLeads, tasaciones, activity, weeklyActivity, todayEvents, pendingFollowups, funnel, conversionRate, recentActivities, pipelineBreakdown } = data
 
   // La API devuelve pipelineBreakdown con las claves crudas de etapa
   // (nuevo, asignado, presentada, invalido, finalizado…). Se usa como
@@ -128,6 +163,10 @@ export default function DashboardCRM() {
   const ACTIVE_STAGES = ['nuevo', 'asignado', 'contactado', 'calificado', 'en_tasacion', 'presentada', 'seguimiento']
   const activeLeads = ACTIVE_STAGES.reduce((sum, s) => sum + (sb[s] || 0), 0)
   const captaciones = sb['captado'] || 0
+
+  const viewedAgentName = viewedAgent
+    ? agents.find(a => a.id === viewedAgent)?.full_name ?? 'este agente'
+    : null
 
   const last7 = [...Array(7)].map((_, i) => {
     const d = new Date()
@@ -149,13 +188,36 @@ export default function DashboardCRM() {
     <div className="space-y-5 sm:space-y-6">
       <PageHeader
         title="Dashboard CRM"
-        subtitle="Resumen ejecutivo del negocio"
+        subtitle={viewedAgentName ? `Cómo viene ${viewedAgentName}` : 'Resumen ejecutivo del negocio'}
         actions={
-          <Link href="/leads" className="bg-primary text-white px-4 py-2 rounded-control text-sm font-medium hover:bg-primary-hover inline-flex items-center gap-2">
-            <Users className="w-4 h-4" /> <span className="hidden sm:inline">Ver leads</span>
-          </Link>
+          <div className="flex items-center gap-2">
+            {isOrgView && agents.length > 0 && (
+              <AgentSelector agents={agents} value={viewedAgent} onChange={setViewedAgent} />
+            )}
+            <Link href="/leads" className="bg-primary text-white px-4 py-2 rounded-control text-sm font-medium hover:bg-primary-hover inline-flex items-center gap-2">
+              <Users className="w-4 h-4" /> <span className="hidden sm:inline">Ver leads</span>
+            </Link>
+          </div>
         }
       />
+
+      {/* Mirando a una persona: se avisa de forma explícita, porque los mismos
+          KPIs con otro alcance se leen mal si no queda claro de quién son. */}
+      {viewedAgentName && (
+        <Alert tone="brand" title={`Estás viendo el dashboard de ${viewedAgentName}`} className="p-3">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <Link href={`/mi-performance?agent=${viewedAgent}`} className="text-sm text-primary hover:underline">
+              Ver su performance completa →
+            </Link>
+            <Link href={`/leads?agent=${viewedAgent}`} className="text-sm text-primary hover:underline">
+              Ver sus leads →
+            </Link>
+            <button onClick={() => setViewedAgent(null)} className="text-sm text-gray-500 hover:text-ink">
+              Volver a toda la inmobiliaria
+            </button>
+          </div>
+        </Alert>
+      )}
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <StatTile icon={<Users className="w-5 h-5" />} label="Leads activos" value={activeLeads} tone="bg-blue-50 text-blue-600" href="/leads" />
@@ -182,7 +244,9 @@ export default function DashboardCRM() {
               </Alert>
             </Link>
           )}
-          {todayEvents && todayEvents.length > 0 && (
+          {/* La agenda del día es de toda la org, no del agente que se está
+              mirando: mostrarla ahí sería un número que no es suyo. */}
+          {!viewedAgentName && todayEvents && todayEvents.length > 0 && (
             <Link href="/calendario" className="block">
               <Alert tone="info" title={`${todayEvents.length} evento${todayEvents.length > 1 ? 's' : ''} hoy`} className="h-full p-3 transition-opacity hover:opacity-85">
                 Calendario del día
@@ -241,7 +305,12 @@ export default function DashboardCRM() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
+      {/* Mirando a otra persona se ocultan su agenda del día y su feed de
+          actividad: para saber cómo viene alcanza con los números agregados
+          (leads, conversión, cuánta actividad). El detalle de a qué hora tiene
+          cada cosa y qué hizo hace veinte minutos es su día, no una métrica. */}
+      <div className={cn('grid grid-cols-1 gap-4 sm:gap-5', viewedAgentName ? 'lg:grid-cols-2' : 'lg:grid-cols-3')}>
+        {!viewedAgentName && (
         <Card className="p-4 sm:p-5">
           <Heading level={4} as="h2" className="mb-3 flex items-center gap-2">
             <CalendarDays className="w-4 h-4 text-gray-600" /> Hoy
@@ -269,6 +338,7 @@ export default function DashboardCRM() {
             <Text tone="muted">Sin eventos programados</Text>
           )}
         </Card>
+        )}
 
         <Card className="p-4 sm:p-5">
           <Heading level={4} as="h2" className="mb-3 flex items-center gap-2">
@@ -296,48 +366,54 @@ export default function DashboardCRM() {
           )}
         </Card>
 
+        {/* Equipo: la inmobiliaria ve el KPI de cada agente; un agente ve su
+            propio pipeline (el resto del dashboard ya viene acotado a él). */}
         <Card className="p-4 sm:p-5">
           <Heading level={4} as="h2" className="mb-3 flex items-center gap-2">
-            <Users className="w-4 h-4 text-gray-600" /> Equipo
+            <Users className="w-4 h-4 text-gray-600" /> {isOrgView ? 'Equipo' : 'Mi pipeline'}
           </Heading>
-          {agentPerformance && agentPerformance.length > 0 ? (
+          {isOrgView && team.length > 0 ? (
             <div className="space-y-3">
-              {agentPerformance.map((agent: any) => {
-                const convRate = agent.total_leads > 0
-                  ? Math.round((agent.captados / agent.total_leads) * 100)
-                  : 0
-                return (
-                  <div key={agent.id} className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-700 truncate">{agent.full_name}</span>
-                      <span className="text-xs text-gray-400">{agent.actividad_mes} act.</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                      <span>{agent.total_leads} leads</span>
-                      <span>·</span>
-                      <span>{agent.captados} capt.</span>
-                      <span>·</span>
-                      <span className={convRate >= 20 ? 'text-green-600' : convRate >= 10 ? 'text-yellow-600' : 'text-red-500'}>
-                        {convRate}% conv.
-                      </span>
-                    </div>
-                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-pink-500 to-orange-400 rounded-full transition-all"
-                        style={{ width: `${Math.min(convRate * 2, 100)}%` }}
-                      />
-                    </div>
+              {team.map((agent: any) => (
+                <button
+                  key={agent.id}
+                  type="button"
+                  // Clickear a alguien abre SU dashboard: es lo que uno quiere
+                  // hacer después de ver el ranking y algo le llama la atención.
+                  onClick={() => setViewedAgent(agent.id)}
+                  className="w-full text-left space-y-1 group"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className={cn('text-sm truncate group-hover:text-primary', viewedAgent === agent.id ? 'text-primary font-medium' : 'text-gray-700')}>
+                      {agent.full_name}
+                    </span>
+                    <span className="text-xs text-gray-400 shrink-0">{agent.actividad_mes} act.</span>
                   </div>
-                )
-              })}
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <span>{agent.total_leads} leads</span>
+                    <span>·</span>
+                    <span>{agent.captados} capt.</span>
+                    <span>·</span>
+                    <span className={agent.conversion >= 20 ? 'text-success' : agent.conversion >= 10 ? 'text-warning' : 'text-danger'}>
+                      {agent.conversion}% conv.
+                    </span>
+                  </div>
+                  {/* La barra llega al tope en 50% de conversión: entre 0 y 50
+                      es donde se juega la comparación real entre agentes, y
+                      escalar sobre 100 dejaría todas las barras casi vacías. */}
+                  <ProgressBar value={Math.min(agent.conversion * 2, 100)} />
+                </button>
+              ))}
             </div>
           ) : (
             <div className="space-y-3">
-              <Text tone="muted">Pipeline personal</Text>
+              <Text tone="muted">
+                {isOrgView ? 'Todavía no hay leads asignados a agentes' : 'Leads de captación asignados a vos'}
+              </Text>
               <div className="grid grid-cols-2 gap-2 text-center">
                 <div className="bg-blue-100 text-blue-800 rounded-control p-2">
                   <p className="text-xl font-bold">{leads?.total || 0}</p>
-                  <p className="text-xs font-normal">Mis leads</p>
+                  <p className="text-xs font-normal">{isOrgView ? 'Leads de la inmobiliaria' : 'Mis leads'}</p>
                 </div>
                 <div className={`rounded-control p-2 ${LEAD_STAGES.captado.color}`}>
                   <p className="text-xl font-bold">{leads?.captados || 0}</p>
@@ -349,7 +425,7 @@ export default function DashboardCRM() {
         </Card>
       </div>
 
-      {recentActivities && recentActivities.length > 0 && (
+      {!viewedAgentName && recentActivities && recentActivities.length > 0 && (
         <Card className="p-4 sm:p-5">
           <div className="flex items-center justify-between mb-3">
             <Heading level={4} as="h2" className="flex items-center gap-2">

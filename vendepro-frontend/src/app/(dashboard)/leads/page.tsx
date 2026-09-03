@@ -61,6 +61,29 @@ function formatShortDate(dateStr: string): string {
   return isNaN(d.getTime()) ? dateStr : d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })
 }
 
+/**
+ * Registra la actividad al usar un canal de contacto desde la lista.
+ *
+ * Antes esto sólo pasaba desde la ficha del lead, así que el trabajo hecho
+ * desde la lista —que es donde el agente pasa el día— no quedaba en ninguna
+ * parte: el dashboard mostraba 0 actividades con 68 leads contactados.
+ *
+ * Best-effort a propósito: el chat o la llamada ya se abrieron: si el registro
+ * falla no hay nada que el agente pueda hacer al respecto, y un error acá sólo
+ * lo interrumpiría.
+ */
+function logContactActivity(lead: any, type: 'llamada' | 'whatsapp') {
+  apiFetch('crm', '/activities', {
+    method: 'POST',
+    body: JSON.stringify({
+      activity_type: type,
+      lead_id: lead.id,
+      contact_id: lead.contact_id || null,
+      description: `${type === 'llamada' ? 'Llamada' : 'WhatsApp'} a ${lead.full_name}`,
+    }),
+  }).catch(() => {})
+}
+
 function timeAgo(dateStr: string): string {
   const diff = (Date.now() - new Date(dateStr).getTime()) / 60000
   if (diff < 60) return `${Math.floor(diff)}m`
@@ -86,7 +109,9 @@ export default function LeadsPage() {
   const [filterStage, setFilterStage] = useState<string>(searchParams.get('stage') || '')
   const [filterSource, setFilterSource] = useState('')
   const [filterOperation, setFilterOperation] = useState('')
-  const [filterAgent, setFilterAgent] = useState('')
+  // `?agent=` permite linkear desde la tarjeta Equipo del dashboard a los
+  // leads de un agente, igual que `?stage=` linkea a una etapa.
+  const [filterAgent, setFilterAgent] = useState(searchParams.get('agent') || '')
   const [agents, setAgents] = useState<any[]>([])
   const sortParam = searchParams.get('sort')
   const [sortBy, setSortBy] = useState<'recent' | 'name' | 'urgency'>(
@@ -161,7 +186,7 @@ export default function LeadsPage() {
       if (saved.search) setSearch(saved.search)
       if (saved.source) setFilterSource(saved.source)
       if (saved.operation) setFilterOperation(saved.operation)
-      if (saved.agent) setFilterAgent(saved.agent)
+      if (!searchParams.get('agent') && saved.agent) setFilterAgent(saved.agent)
       if (saved.view) setView(saved.view)
     }
     setFiltersRestored(true)
@@ -1073,9 +1098,9 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
         <div className="flex sm:hidden flex-col border-l border-gray-100 shrink-0" onClick={e => e.stopPropagation()}>
           {lead.phone ? (
             <>
-              <CallButton phone={lead.phone} iconOnly
+              <CallButton phone={lead.phone} iconOnly onClick={() => logContactActivity(lead, 'llamada')}
                 className="flex-1 w-12 h-auto rounded-none bg-transparent text-gray-500 hover:bg-gray-50 active:bg-gray-100 hover:opacity-100 transition-colors" />
-              <WhatsAppButton phone={lead.phone} iconOnly templateContext={{ name: lead.full_name, address: lead.property_address || lead.neighborhood }}
+              <WhatsAppButton phone={lead.phone} iconOnly templateContext={{ name: lead.full_name, address: lead.property_address || lead.neighborhood }} onClick={() => logContactActivity(lead, 'whatsapp')}
                 className="flex-1 w-12 h-auto rounded-none bg-transparent text-gray-500 hover:bg-gray-50 active:bg-gray-100 border-t border-gray-100 hover:opacity-100 transition-colors" />
             </>
           ) : (
@@ -1101,9 +1126,9 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
       <div className="hidden sm:flex border-t border-gray-100 divide-x divide-gray-100" onClick={e => e.stopPropagation()}>
         {lead.phone ? (
           <>
-            <CallButton phone={lead.phone}
+            <CallButton phone={lead.phone} onClick={() => logContactActivity(lead, 'llamada')}
               className="flex-1 rounded-none bg-transparent text-gray-600 text-xs px-0 py-2.5 hover:bg-gray-50 hover:opacity-100 transition-colors" />
-            <WhatsAppButton phone={lead.phone} templateContext={{ name: lead.full_name, address: lead.property_address || lead.neighborhood }}
+            <WhatsAppButton phone={lead.phone} templateContext={{ name: lead.full_name, address: lead.property_address || lead.neighborhood }} onClick={() => logContactActivity(lead, 'whatsapp')}
               className="flex-1 rounded-none bg-transparent text-gray-600 text-xs px-0 py-2.5 hover:bg-gray-50 hover:opacity-100 transition-colors" />
           </>
         ) : (
@@ -1158,7 +1183,7 @@ function KanbanCard({ lead, onAdvance, onMoveTo }: { lead: any; onAdvance: () =>
         <div className="flex gap-0.5">{Object.entries(checklist).map(([k, v]) => <div key={k} className={`w-1.5 h-1.5 rounded-full ${v ? 'bg-green-500' : 'bg-gray-200'}`} />)}</div>
         <div className="flex gap-1">
           {lead.phone && (
-            <WhatsAppButton phone={lead.phone} iconOnly templateContext={{ name: lead.full_name, address: lead.property_address || lead.neighborhood }}
+            <WhatsAppButton phone={lead.phone} iconOnly templateContext={{ name: lead.full_name, address: lead.property_address || lead.neighborhood }} onClick={() => logContactActivity(lead, 'whatsapp')}
               className="w-7 h-7 rounded-control bg-transparent text-whatsapp hover:bg-success/10 hover:opacity-100" />
           )}
           <Button variant="ghost" size="icon" onClick={() => setShowMove(!showMove)} aria-label="Mover a otra etapa" className="p-1 text-gray-400">
