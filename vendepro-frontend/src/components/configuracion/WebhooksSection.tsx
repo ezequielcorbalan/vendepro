@@ -12,6 +12,8 @@ import type { Webhook, WebhookDelivery } from '@/lib/types'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/Button'
 import { Field, Input } from '@/components/ui/Input'
+import { Modal } from '@/components/ui/Modal'
+import { Text } from '@/components/ui/Typography'
 import { Checkbox } from '@/components/ui/Choice'
 
 const EVENT_KEYS = Object.keys(WEBHOOK_EVENTS) as WebhookEventKey[]
@@ -315,20 +317,31 @@ export default function WebhooksSection({ onCountChange }: { onCountChange?: (n:
 
       {/* Modal crear */}
       {showCreate && (
-        <div
-          className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
-          onClick={() => setShowCreate(false)}
+        <Modal
+          open
+          sheet
+          onClose={() => setShowCreate(false)}
+          title="Nuevo webhook"
+          icon={<Plus className="w-5 h-5" />}
+          footer={
+            <>
+              <Button variant="outline" onClick={() => setShowCreate(false)}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleCreate}
+                disabled={!urlValid || events.length === 0}
+                loading={saving}
+                icon={<Plus className="w-4 h-4" />}
+              >
+                Crear webhook
+              </Button>
+            </>
+          }
         >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="new-webhook-title"
-            className="bg-white w-full sm:max-w-md sm:rounded-card rounded-t-2xl p-5"
-            onClick={e => e.stopPropagation()}
-            onKeyDown={e => { if (e.key === 'Escape') setShowCreate(false) }}
-          >
-            <h3 id="new-webhook-title" className="font-semibold text-ink mb-1">Nuevo webhook</h3>
-            <p className="text-sm text-gray-500 mb-4">Vamos a hacer un POST a esta URL cada vez que ocurra un evento seleccionado.</p>
+            <Text size="sm" tone="muted" className="block mb-4">
+              Vamos a hacer un POST a esta URL cada vez que ocurra un evento seleccionado.
+            </Text>
 
             <Field label="Nombre" htmlFor="webhook-name">
               <Input
@@ -340,9 +353,12 @@ export default function WebhooksSection({ onCountChange }: { onCountChange?: (n:
             </Field>
 
             <Field label="URL" required htmlFor="webhook-url" className="mt-3">
+              {/* ds-todo: candidato a prop "initialFocus" en Modal — el autoFocus
+                  que tenía este campo no sirve adentro del Modal: useOverlay
+                  enfoca el primer focusable del panel, que es la X del
+                  encabezado. */}
               <Input
                 id="webhook-url"
-                autoFocus
                 placeholder="https://tu-n8n.com/webhook/vendepro"
                 value={url}
                 onChange={e => setUrl(e.target.value)}
@@ -350,37 +366,20 @@ export default function WebhooksSection({ onCountChange }: { onCountChange?: (n:
               />
             </Field>
 
-            <p className="block text-sm font-medium text-gray-700 mb-1 mt-3">
-              Eventos <span className="text-brand-pink">*</span>
-            </p>
-            <div className="space-y-2">
-              {EVENT_KEYS.map(key => (
-                <Checkbox
-                  key={key}
-                  checked={events.includes(key)}
-                  onChange={checked => setEvents(checked ? [...events, key] : events.filter(x => x !== key))}
-                  label={`${WEBHOOK_EVENTS[key].label} — ${WEBHOOK_EVENTS[key].description}`}
-                  className="items-start"
-                />
-              ))}
-            </div>
-
-            <div className="flex gap-2 mt-5">
-              <Button variant="outline" fullWidth onClick={() => setShowCreate(false)}>
-                Cancelar
-              </Button>
-              <Button
-                fullWidth
-                onClick={handleCreate}
-                disabled={!urlValid || events.length === 0}
-                loading={saving}
-                icon={<Plus className="w-4 h-4" />}
-              >
-                Crear webhook
-              </Button>
-            </div>
-          </div>
-        </div>
+            <Field label="Eventos" required className="mt-3">
+              <div className="space-y-2">
+                {EVENT_KEYS.map(key => (
+                  <Checkbox
+                    key={key}
+                    checked={events.includes(key)}
+                    onChange={checked => setEvents(checked ? [...events, key] : events.filter(x => x !== key))}
+                    label={`${WEBHOOK_EVENTS[key].label} — ${WEBHOOK_EVENTS[key].description}`}
+                    className="items-start"
+                  />
+                ))}
+              </div>
+            </Field>
+        </Modal>
       )}
     </div>
   )
