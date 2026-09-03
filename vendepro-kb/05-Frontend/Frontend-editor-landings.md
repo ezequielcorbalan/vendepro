@@ -20,7 +20,7 @@ components/landings/
 ├── ImageUpload.tsx             # uploader con R2
 ├── PropertyPhotoPicker.tsx     # picker de fotos de propiedad
 │
-├── blocks/                     # editores específicos (8 tipos)
+├── blocks/                     # componentes de render público (12 tipos)
 │   ├── HeroBlock.tsx
 │   ├── HeroSplitBlock.tsx
 │   ├── FeaturesGridBlock.tsx
@@ -28,13 +28,11 @@ components/landings/
 │   ├── GalleryBlock.tsx
 │   ├── BenefitsListBlock.tsx
 │   ├── LeadFormBlock.tsx       # invariante: name + phone
-│   └── FooterBlock.tsx
-│
-├── renderer/                   # renderer para landings públicas + previews
-│   ├── BlockRenderer.tsx
-│   ├── TemplateRenderer.tsx
-│   ├── blocks/*.tsx            # 25+ renderers (incluye los de tasaciones)
-│   └── __tests__/blocks-smoke.test.tsx
+│   ├── FooterBlock.tsx
+│   ├── AgentHeroBlock.tsx      # perfil de agente — usa DS (Heading/Text/Card/Button)
+│   ├── AgentCredentialsBlock.tsx
+│   ├── FaqBlock.tsx
+│   └── CtaWhatsappBlock.tsx    # usa WhatsAppButton de ui/ContactButtons
 │
 ├── public/
 │   ├── PublicLandingShell.tsx  # wrapper /l/[slug]
@@ -44,9 +42,11 @@ components/landings/
     └── AnalyticsDashboard.tsx  # dashboard de eventos
 ```
 
+> Corrección respecto de una versión anterior de este doc: no existe un subárbol `renderer/` aparte — `blocks/` es el único set de componentes de bloque, usados tanto por el editor (`mode="editor"`) como por la landing pública (`mode="public"`) vía `BlockRenderer.tsx` (nivel raíz de `components/landings/`).
+
 ## Bloques
 
-Schemas Zod en backend (`domain/value-objects/block-schemas.ts`). 8 tipos:
+Schemas Zod en backend (`domain/value-objects/block-schemas.ts`). 12 tipos:
 
 | Tipo | Propósito |
 |---|---|
@@ -56,8 +56,16 @@ Schemas Zod en backend (`domain/value-objects/block-schemas.ts`). 8 tipos:
 | `amenities-chips` | chips de amenities |
 | `gallery` | galería de fotos |
 | `benefits-list` | lista vertical de beneficios |
-| `lead-form` | **invariante**: debe haber 1 y solo 1 por landing, debe pedir name + phone |
+| `lead-form` | **invariante**: 1 y solo 1 en `lead_capture`/`property`; 0 o 1 en `agent_profile` — debe pedir name + phone |
 | `footer` | footer custom |
+| `agent-hero` | foto, headline, bio y hasta 3 CTAs del agente |
+| `agent-credentials` | matrícula, años de experiencia, zonas, especialidades, stats |
+| `faq` | 2 a 12 preguntas/respuestas |
+| `cta-whatsapp` | CTA de WhatsApp con `message_template` |
+
+Los últimos 4 son de [[Dominio-Landings]] § Perfil de agente (Feature 07). Un bloque puede llevar `binding: 'agent_profile'` (hoy: `agent-hero`, `agent-credentials`, `cta-whatsapp`, `footer`) — en ese caso sus campos bindeados salen **read-only** en `InspectorPanel`, reemplazados por un aviso ("Se sincroniza con tu perfil público. Editalo en Perfil.") con link a `/perfil`. El editor solo muestra/propone; quien resuelve el binding con datos reales es `resolveAgentBindings` en la lectura pública (nunca en el editor ni en la IA de edición).
+
+`InspectorPanel.tsx` suma 3 editores de campos para estos tipos (`AgentHeroFields`, `AgentCredentialsFields`, `CtaWhatsappFields`, funciones internas del mismo archivo) — mismo patrón que los editores preexistentes. `InspectorPanel.tsx` (junto con `ImageUpload.tsx` y `AIChatPanel.tsx`) es una **excepción explícita** a la regla 9 del design system (`doc/ds-visual-rules.md:161-168`): panel denso de ~340px donde `Input`/`Field` del DS de densidad estándar rompen el layout, así que usa una abstracción local (`inputClass`/inputs a mano) consistente entre todos sus campos. La excepción **no** cubre `PerfilPublicoForm.tsx` — es formulario de página completa, y sí usa `Input`/`Field` del DS.
 
 ## Flujo del editor
 
@@ -100,6 +108,7 @@ ConfigDrawer permite editar:
 
 - `/l/<full_slug>` (en frontend)
 - Subdomain: `<full_slug>.landings.vendepro.com.ar` (Next middleware reescribe)
+- `agent_profile` tiene además su propia familia de URL: `/a/<orgSlug>/<agentSlug>` (no pasa por `full_slug`). Ver [[Dominio-Landings]] § Perfil de agente y [[Frontend-rutas]].
 
 ## Analytics
 
@@ -114,7 +123,9 @@ ConfigDrawer permite editar:
 ## Relacionados
 
 - [[Dominio-Landings]]
+- [[Dominio-Usuarios-Org]] (`agent_profiles`, perfil público en `/perfil`)
 - [[API-crm]] (CRUD + versions + publish)
 - [[API-ai]] (edit-block)
-- [[API-public]] (público + submit + event)
+- [[API-public]] (público + submit + event + `/a/:orgSlug/:agentSlug`)
+- [[API-admin]] (`/profile/public`)
 - [[Frontend-editor-tasaciones]] (comparten algunos renderers)

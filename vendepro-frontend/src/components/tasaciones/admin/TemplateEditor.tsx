@@ -1,4 +1,5 @@
 'use client'
+import { useToast } from '@/components/ui/Toast'
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
@@ -13,6 +14,9 @@ import { MOCK_APPRAISAL } from './MOCK_APPRAISAL'
 import type { TemplateBlock, AppraisalBlockType } from '../renderer/types'
 import { APPRAISAL_BLOCK_TYPES, WEB_ONLY_TYPES } from '../renderer/types'
 import { getBlockMeta } from '../renderer/block-catalog'
+import { Button } from '@/components/ui/Button'
+import { Alert } from '@/components/ui/Alert'
+import { Heading, Text } from '@/components/ui/Typography'
 
 const DEBOUNCE_MS = 2000
 
@@ -20,10 +24,10 @@ function SortableBlock({ block, isReadOnly, children }: { block: TemplateBlock; 
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: block.id, disabled: isReadOnly })
   const style = { transform: CSS.Transform.toString(transform), transition }
   return (
-    <div ref={setNodeRef} style={style} className="rounded border border-slate-200 bg-white">
+    <div ref={setNodeRef} style={style} className="rounded border border-gray-200 bg-white">
       <div className="flex items-center gap-2 px-3 py-2">
         {!isReadOnly && (
-          <button {...attributes} {...listeners} className="cursor-grab text-slate-400">
+          <button {...attributes} {...listeners} className="cursor-grab text-gray-400">
             <GripVertical className="h-4 w-4" />
           </button>
         )}
@@ -35,6 +39,7 @@ function SortableBlock({ block, isReadOnly, children }: { block: TemplateBlock; 
 }
 
 export function TemplateEditor({ templateId }: { templateId: string }) {
+  const { toast } = useToast()
   const router = useRouter()
   const [template, setTemplate] = useState<any>(null)
   const [orgBrand, setOrgBrand] = useState<{ name?: string; logo_url?: string | null; brand_color?: string | null; brand_accent_color?: string | null } | null>(null)
@@ -140,77 +145,86 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
     setDirty(true); setAdding(false)
   }
 
-  if (!template) return <div className="p-12 text-center text-slate-400">Cargando template...</div>
+  if (!template) return <div className="p-12 text-center text-gray-400">Cargando template...</div>
 
   const isSystem = !!template.is_system
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3">
+    <div className="min-h-screen bg-gray-50">
+      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3">
         <div className="flex items-center gap-3 min-w-0">
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => router.push('/configuracion/tasacion')}
-            className="text-slate-500 hover:text-ink"
             aria-label="Volver a Configuración · Tasaciones"
-            title="Volver a Configuración · Tasaciones"
           >
             <ArrowLeft className="h-5 w-5" />
-          </button>
-          <h1 className="text-sm font-semibold truncate">{template.name}</h1>
+          </Button>
+          <Heading level={4} as="h1" className="truncate">{template.name}</Heading>
         </div>
         <div className="flex items-center gap-3 text-xs">
-          {status === 'saving' && <span className="flex items-center gap-1 text-slate-500"><Loader2 className="h-3 w-3 animate-spin" /> Guardando...</span>}
-          {status === 'saved' && !dirty && <span className="flex items-center gap-1 text-emerald-600"><CheckCircle2 className="h-3 w-3" /> Guardado</span>}
+          {status === 'saving' && <span className="flex items-center gap-1 text-gray-500"><Loader2 className="h-3 w-3 animate-spin" /> Guardando...</span>}
+          {status === 'saved' && !dirty && <span className="flex items-center gap-1 text-success"><CheckCircle2 className="h-3 w-3" /> Guardado</span>}
           {status === 'error' && (
             <span
               title={errorMsg ?? undefined}
-              className="flex max-w-md items-center gap-1 truncate text-rose-600"
+              className="flex max-w-md items-center gap-1 truncate text-danger"
             >
               <AlertCircle className="h-3 w-3 shrink-0" /> {errorMsg ?? 'Error al guardar'}
             </span>
           )}
-          {dirty && status !== 'saving' && status !== 'error' && <span className="text-slate-500">Cambios sin guardar</span>}
+          {dirty && status !== 'saving' && status !== 'error' && <span className="text-gray-500">Cambios sin guardar</span>}
           {!isSystem && (
-            <button
+            <Button
+              size="sm"
               onClick={() => saveNow()}
-              disabled={status === 'saving'}
-              className="flex items-center gap-1 rounded bg-gradient-to-br from-brand-pink to-brand-orange px-3 py-1.5 text-xs font-medium text-white disabled:opacity-40"
+              loading={status === 'saving'}
+              icon={<Save className="h-3 w-3" />}
             >
-              <Save className="h-3 w-3" /> Guardar cambios
-            </button>
+              Guardar cambios
+            </Button>
           )}
         </div>
       </header>
 
       {isSystem && (
-        <div className="flex items-center gap-4 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <Alert tone="warning" className="mx-4 mt-4">
+          <span className="flex flex-wrap items-center gap-3">
           <span>Template del sistema (solo lectura).</span>
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={async () => {
               try {
                 const { id: newId } = await duplicateTemplate(templateId, { new_name: `${template.name} (copia)` })
                 router.push(`/configuracion/tasacion/templates/${newId}`)
               } catch (e: any) {
-                alert(e?.message ?? 'Error al duplicar')
+                toast(e?.message ?? 'Error al duplicar', 'error')
               }
             }}
-            className="rounded bg-amber-200 px-3 py-1 text-xs font-semibold hover:bg-amber-300"
           >
             Duplicar para editar
-          </button>
-          <button onClick={() => router.push('/configuracion/tasacion')} className="ml-auto underline">Volver</button>
-        </div>
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => router.push('/configuracion/tasacion')}>Volver</Button>
+          </span>
+        </Alert>
       )}
 
-      <div className="bg-rose-50 px-4 py-2 text-xs text-rose-800">
-        Cambios afectan tasaciones nuevas. Las existentes ven banner con opción de actualizar.
-      </div>
+      {/* Era una banda rosa a sangre: es un aviso, así que va como Alert. */}
+      <Alert tone="info" className="mx-4 mt-4">
+        Los cambios afectan a las tasaciones nuevas. Las existentes ven un banner con la opción de actualizar.
+      </Alert>
 
       <div className="grid grid-cols-1 lg:grid-cols-2">
-        <div className="border-r border-slate-200 bg-white p-6">
+        <div className="border-r border-gray-200 bg-white p-6">
           <div className="mb-4 flex justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Bloques</h2>
-            {!isSystem && <button onClick={() => setAdding(true)} className="flex items-center gap-1 rounded border border-slate-300 px-2 py-1 text-xs"><Plus className="h-3 w-3" /> Agregar</button>}
+            <Text as="h2" size="sm" weight="semibold" className="uppercase tracking-wide text-gray-600">Bloques</Text>
+            {!isSystem && (
+              <Button variant="outline" size="sm" onClick={() => setAdding(true)} icon={<Plus className="h-3 w-3" />}>
+                Agregar
+              </Button>
+            )}
           </div>
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={blocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
@@ -245,9 +259,9 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
 
       {adding && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-lg bg-white p-6">
+          <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-card bg-white p-6">
             <h3 className="text-lg font-semibold">Agregar bloque</h3>
-            <p className="mt-1 text-xs text-slate-500">Elegí qué información querés sumar a la tasación.</p>
+            <p className="mt-1 text-xs text-gray-500">Elegí qué información querés sumar a la tasación.</p>
             <div className="mt-4 grid grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2">
               {APPRAISAL_BLOCK_TYPES.map(t => {
                 const meta = getBlockMeta(t)
@@ -255,15 +269,15 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
                   <button
                     key={t}
                     onClick={() => addBlock(t)}
-                    className="rounded border border-slate-300 px-3 py-2 text-left hover:border-brand-pink hover:bg-rose-50/30"
+                    className="rounded-control border border-gray-300 px-3 py-2 text-left hover:border-primary hover:bg-primary/5"
                   >
                     <div className="text-sm font-medium text-ink">{meta.label}</div>
-                    <div className="mt-0.5 text-xs leading-snug text-slate-500">{meta.description}</div>
+                    <div className="mt-0.5 text-xs leading-snug text-gray-500">{meta.description}</div>
                   </button>
                 )
               })}
             </div>
-            <button onClick={() => setAdding(false)} className="mt-4 self-end rounded px-4 py-2 text-sm text-slate-600 hover:bg-slate-100">Cancelar</button>
+            <button onClick={() => setAdding(false)} className="mt-4 self-end rounded px-4 py-2 text-sm text-gray-600 hover:bg-gray-100">Cancelar</button>
           </div>
         </div>
       )}

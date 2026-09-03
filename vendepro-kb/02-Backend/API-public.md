@@ -41,6 +41,7 @@ Usado por integraciones externas (formularios en otros sitios, scripts de captur
 | GET | `/l/:slug` | GetPublicLandingUseCase (slug = `full_slug` = `slug_base-slug_suffix`) |
 | POST | `/l/:slug/submit` | SubmitLeadFromLandingUseCase + marketing event `landing_lead_submitted` |
 | POST | `/l/:slug/event` | RecordLandingEventUseCase (pageview, cta_click, form_start, form_submit) |
+| GET | `/a/:orgSlug/:agentSlug` | GetPublicAgentLandingUseCase — landing personal del agente, 5 puertas de acceso (org → perfil `is_public` → usuario activo de la misma org → landing publicada `kind=agent_profile` → bindings resueltos), ver [[Dominio-Landings]] |
 
 ### Descarga de PDFs (JWT-gated)
 
@@ -56,3 +57,7 @@ El token corto se genera al pedir el PDF de una tasación y permite descargarlo 
 - Multi-tenant funciona porque cada recurso tiene su `org_id` propio.
 - El cliente potencial (visitor) puede ser identificado vía `visitorId` (cookie del frontend) y `ga4_client_id` para attribution.
 - Submit de formularios dispara eventos a Meta CAPI + GA4 si la org tiene la integración habilitada.
+
+## Deuda: typecheck no es gate en este paquete
+
+`packages/api-public` arrastra **~89 errores de typecheck preexistentes**, ajenos a cualquier feature puntual — no relacionados con landings ni con `agent_profiles`. Importa porque explica cómo un import duplicado pudo sobrevivir sin feedback durante el desarrollo de Feature 07 (landings de agente): el typecheck de este paquete no está limpio, así que no corre como gate ni en CI ni en el flujo de desarrollo local. La regla del proyecto ("tests SIEMPRE deben pasar antes de mergear", [[Reglas-criticas]]) se refiere a la suite de Vitest, no a `tsc` — este paquete es la excepción donde ambas cosas divergen. El import duplicado puntual que motivó esta nota ya está corregido; la deuda de fondo (los ~89 errores) sigue sin resolver.

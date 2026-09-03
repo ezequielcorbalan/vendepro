@@ -9,4 +9,4 @@
 - Never trust client-side role claims
 - Validate permissions before mutations
 - Don't expose internal IDs or sensitive data in public routes
-- ANTHROPIC_API_KEY stored as Cloudflare Worker secret
+- GEMINI_API_KEY stored as Cloudflare Worker secret, synced by CI from the repo secret

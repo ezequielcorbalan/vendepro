@@ -5,7 +5,8 @@ import { Link2, Copy, Check, Archive, ArchiveRestore, Loader2 } from 'lucide-rea
 import { apiFetch } from '@/lib/api'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { Heading, Text } from '@/components/ui/Typography'
+import { Text } from '@/components/ui/Typography'
+import { WidgetHeader } from '@/components/ui/WidgetHeader'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { WhatsAppButton } from '@/components/ui/ContactButtons'
 import { useToast } from '@/components/ui/Toast'
@@ -126,22 +127,28 @@ export function FichaLinkSection({
 
   return (
     <Card className={className}>
-      <div className="flex items-start justify-between gap-3 mb-1">
-        <Heading level={4} className="flex items-center gap-2">
-          <Link2 className="w-4 h-4 text-gray-600" /> {title}
-        </Heading>
-        <Button
-          size="sm"
-          onClick={generate}
-          loading={generating}
-          icon={<Link2 className="w-3.5 h-3.5" />}
-        >
-          {isOpen ? 'Obtener link' : 'Generar link'}
-        </Button>
-      </div>
-      <Text size="xs" tone="muted">{description}</Text>
+      {/* La descripción va acotada para que entre en dos líneas: a todo el ancho
+          de la card era una línea de punta a punta, y con `max-w-prose` caía en
+          tres. La acción es `outline`: es una acción de una card, no el CTA de la
+          pantalla, y en rosa sólido pesaba más que el propio contenido. */}
+      <WidgetHeader
+        icon={<Link2 className="w-4 h-4" />}
+        title={title}
+        subtitle={<span className="block max-w-[34rem]">{description}</span>}
+        action={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={generate}
+            loading={generating}
+            icon={<Link2 className="w-3.5 h-3.5" />}
+          >
+            {isOpen ? 'Obtener link' : 'Generar link'}
+          </Button>
+        }
+      />
 
-      <div className="mt-4">
+      <div>
         {loading ? (
           <div className="flex items-center gap-2 py-4">
             <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
@@ -161,11 +168,13 @@ export function FichaLinkSection({
               return (
                 <div
                   key={link.id}
-                  className="flex flex-wrap items-center gap-2 p-3 rounded-control border border-gray-100 hover:bg-gray-50"
+                  className="flex flex-wrap items-center gap-x-3 gap-y-2 p-3 rounded-control border border-gray-200 hover:bg-gray-50"
                 >
                   <div className="flex-1 min-w-0">
-                    <Text size="xs" className="font-mono truncate">{url}</Text>
-                    <Text size="xs" tone="muted">
+                    {/* La URL es el dato, el estado es la aclaración: iban las dos
+                        en `xs` y no había jerarquía entre ellas. */}
+                    <Text size="sm" className="block font-mono truncate">{url}</Text>
+                    <Text size="xs" tone="muted" className="block mt-0.5">
                       {link.archived_at
                         ? 'Archivado'
                         : used

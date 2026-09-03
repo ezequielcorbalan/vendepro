@@ -62,7 +62,14 @@
       "Bash(npx -y tsx .claude/skills/tasacion-template-creator/scripts/validate-blocks.ts vendepro-backend/migrations_v2/018_appraisal_templates_seed.sql)",
       "Bash(npx -y tsx .claude/skills/tasacion-template-creator/scripts/validate-blocks.ts \"C:/Users/wiisy/AppData/Local/Temp/claude/C--Users-wiisy-proyectos-vendepro/6b4054db-2394-4616-91e2-73018589fc32/scratchpad/bad-blocks.json\")",
       "Bash(echo \"EXIT_CODE=$?\")",
-      "Bash(git check-ignore *)"
+      "Bash(git check-ignore *)",
+      "Bash(git merge *)",
+      "Bash(git branch *)",
+      "Bash(python -c \"import sys,json; [print\\(f\\\\\"{r['conclusion'] or r['status']:12} {r['name']}\\\\\"\\) for r in json.load\\(sys.stdin\\)]\")",
+      "Bash(xargs wc -l)",
+      "Bash(xargs head -50)",
+      "Bash(git fetch *)",
+      "Bash(git merge-base *)"
     ]
   }
 }

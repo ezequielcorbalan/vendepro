@@ -10,6 +10,10 @@ export type BlockType =
   | 'benefits-list'
   | 'lead-form'
   | 'footer'
+  | 'agent-hero'
+  | 'agent-credentials'
+  | 'faq'
+  | 'cta-whatsapp'
 
 export interface CtaData { label: string; href: string }
 
@@ -87,6 +91,54 @@ export interface FooterData {
   disclaimer?: string
 }
 
+export interface AgentHeroCta {
+  label: string
+  href: string
+  style: 'primary' | 'secondary' | 'whatsapp'
+}
+
+export interface AgentHeroData {
+  name: string
+  headline?: string
+  bio?: string
+  photo_url: string
+  background_image_url?: string
+  ctas: AgentHeroCta[]
+  accent_color: 'pink' | 'orange' | 'dark'
+}
+
+export interface AgentCredentialsStat {
+  label: string
+  value: string
+}
+
+export interface AgentCredentialsData {
+  title?: string
+  license?: string
+  years_experience?: number
+  zones: string[]
+  specialties: string[]
+  stats: AgentCredentialsStat[]
+}
+
+export interface FaqItem {
+  question: string
+  answer: string
+}
+
+export interface FaqData {
+  title?: string
+  items: FaqItem[]
+}
+
+export interface CtaWhatsappData {
+  title: string
+  subtitle?: string
+  phone: string
+  message_template?: string
+  button_label: string
+}
+
 export type BlockDataMap = {
   'hero': HeroData
   'hero-split': HeroSplitData
@@ -96,6 +148,10 @@ export type BlockDataMap = {
   'benefits-list': BenefitsListData
   'lead-form': LeadFormData
   'footer': FooterData
+  'agent-hero': AgentHeroData
+  'agent-credentials': AgentCredentialsData
+  'faq': FaqData
+  'cta-whatsapp': CtaWhatsappData
 }
 
 export type Block<T extends BlockType = BlockType> = {
@@ -109,9 +165,15 @@ export type Block<T extends BlockType = BlockType> = {
    * el contenido es fijo y se hereda de la plantilla.
    */
   is_variable?: boolean
+  /**
+   * Marca que este bloque se rellena en la lectura pública con los datos del
+   * perfil del agente (ver `agent-bindings.ts` en el backend). Los campos
+   * bindeados son read-only en el editor.
+   */
+  binding?: 'agent_profile'
 }
 
-export type LandingKind = 'lead_capture' | 'property'
+export type LandingKind = 'lead_capture' | 'property' | 'agent_profile'
 export type LandingStatus = 'draft' | 'pending_review' | 'published' | 'archived'
 
 export interface LeadRules {

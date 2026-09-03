@@ -16,6 +16,7 @@ Leer `doc/architecture.md` para entender la arquitectura hexagonal.
 
 ## Reglas críticas
 
+- **Regla #1 — KB primero**: antes de implementar cualquier feature, consultar la KB (`vendepro-kb/`, arrancar por `00-Indice/MOC.md` y `08-Producto/Roadmap-estado-implementacion.md`) para saber qué existe y en qué instancia está. Al terminar un feature, documentarlo en la KB: actualizar el dominio afectado (`03-Dominios/`) y el estado en `08-Producto/`. Un feature no está terminado hasta que la KB lo refleja.
 - El backend NO es Next.js — es Hono sobre Cloudflare Workers
 - El frontend NO tiene rutas API propias — todo va a las APIs externas
 - Nunca tocar `vendepro-mg-salt-2026` ni `reportes-mg-db` (recursos CF existentes)

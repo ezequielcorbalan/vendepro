@@ -8,7 +8,7 @@ import {
   ChevronRight, Check, Tag, Loader2
 } from 'lucide-react'
 import {
-  LEAD_SOURCES,
+  LEAD_SOURCES, LEAD_FLAGS,
   LEAD_AGENT_FINAL_STAGES, BUYER_LEAD_TERMINAL_STAGES,
   OPERATION_TYPES, getLeadChecklist,
   getLeadUrgency, getUrgencyBadge,
@@ -18,6 +18,7 @@ import type { Contact } from '@/lib/types'
 import { useToast } from '@/components/ui/Toast'
 import { useConfirm } from '@/components/ui/useConfirm'
 import { StatusBadge } from '@/components/ui/StatusBadge'
+import { Tabs } from '@/components/ui/Tabs'
 import { StageBadge } from '@/components/ui/StageBadge'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
@@ -507,24 +508,15 @@ export default function LeadsPage() {
 
       {/* Pestañas de pipeline: Vendedores | Compradores */}
       <div className="flex items-center justify-between border-b border-gray-200">
-        <div className="flex items-center gap-1">
-          {([
-            { key: 'vendedor' as const, label: 'Vendedores' },
-            { key: 'comprador' as const, label: 'Compradores' },
-          ]).map(t => (
-            <button
-              key={t.key}
-              onClick={() => switchPipeline(t.key)}
-              className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                pipeline === t.key
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+        <Tabs
+          className="border-b-0"
+          value={pipeline}
+          onChange={v => switchPipeline(v as LeadPipelineKey)}
+          items={[
+            { value: 'vendedor', label: 'Vendedores' },
+            { value: 'comprador', label: 'Compradores' },
+          ]}
+        />
         <SegmentedControl
           className="hidden sm:inline-flex mb-1"
           options={[{ value: 'list', label: 'Lista' }, { value: 'kanban', label: 'Kanban' }]}
@@ -561,7 +553,14 @@ export default function LeadsPage() {
           <option value="">Agente: todos</option>
           {agents.map(a => <option key={a.id} value={a.id}>{a.full_name}</option>)}
         </Select>
-        <button onClick={() => { setFilterStage(''); setFilterSource(''); setFilterOperation(''); setFilterAgent('') }} className="text-xs text-gray-500 hover:text-primary shrink-0">Limpiar</button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => { setFilterStage(''); setFilterSource(''); setFilterOperation(''); setFilterAgent('') }}
+          className="shrink-0 text-gray-500 px-0"
+        >
+          Limpiar
+        </Button>
       </div>
 
       {/* Content */}
@@ -668,7 +667,9 @@ export default function LeadsPage() {
                   {createStep === 1 ? 'Paso 1 de 2 — Contacto' : 'Paso 2 de 2 — Pipeline'}
                 </p>
               </div>
-              <button onClick={closeCreateModal} className="p-1 hover:bg-gray-100 rounded-control"><X className="w-5 h-5" /></button>
+              <Button variant="ghost" size="icon" aria-label="Cerrar" onClick={closeCreateModal}>
+                <X className="w-5 h-5" />
+              </Button>
             </div>
 
             {/* PASO 1: Contacto */}
@@ -751,12 +752,15 @@ export default function LeadsPage() {
                         </Select>
                       </div>
                     ) : (
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        fullWidth
                         onClick={() => { setShowNewContactForm(true); setContactSearch(''); setContactResults([]) }}
-                        className="w-full text-sm text-primary hover:underline text-left px-1"
+                        className="justify-start px-1"
                       >
                         + Crear contacto nuevo
-                      </button>
+                      </Button>
                     )}
                   </>
                 )}
@@ -861,6 +865,21 @@ export default function LeadsPage() {
 
 // ── helpers LeadCard ──
 // ── LeadCard (List view) ──
+/**
+ * La card de lead termina en una barra de acciones a sangre: celdas iguales,
+ * separadas por un divide, cada una ocupando lo mismo. `CallButton` y
+ * `WhatsAppButton` ya vivían ahí con este override; el resto eran `<button>` a
+ * mano con la cadena repetida. La clase se define una vez para las dos barras
+ * (la de íconos en mobile y la de texto en desktop).
+ *
+ * `p-0`/`px-0` no es cosmético: el padding de `Button` cuenta para el ancho
+ * mínimo del flex, así que sin esto las celdas de texto quedaban 32px más anchas
+ * que las de `CallButton`/`WhatsAppButton` y la barra dejaba de estar repartida
+ * en partes iguales. Medido.
+ */
+const CELDA_ICONO = 'flex-1 w-12 rounded-none border-t border-gray-100 p-0 text-gray-500'
+const CELDA_TEXTO = 'flex-1 rounded-none px-0 py-2.5 text-xs font-medium text-gray-600'
+
 function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any; onAdvance: () => void; onLost: () => void; onDelete: () => void; onRefresh: () => void }) {
   const urgency = getLeadUrgency(lead)
   const lastActivity = lead.last_activity_at ? timeAgo(lead.last_activity_at) : null
@@ -931,7 +950,10 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
       {/* Card body: en mobile es row (contenido + acciones icono), en desktop es solo contenido */}
       <div className="flex flex-1 min-w-0">
         {/* Main content — clickable */}
-        <Link href={`/leads/${lead.id}`} className="flex-1 min-w-0 px-5 py-4 flex flex-col gap-1.5">
+        {/* gap-2.5 y no 1.5: con cuatro filas de texto (nombre+badges, teléfono,
+            dirección, agente) a 6px de separación la card se leía como un bloque
+            apretado. */}
+        <Link href={`/leads/${lead.id}`} className="flex-1 min-w-0 px-5 py-4 flex flex-col gap-2.5">
           {/* Row 1: name + stage + tags (izq.) · urgencia (der., como en el kanban) */}
           <div className="flex items-start justify-between gap-2 min-w-0">
             <div className="flex-1 min-w-0">
@@ -946,10 +968,17 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
                     <X className="w-2 h-2 opacity-0 group-hover:opacity-60 transition-opacity" />
                   </button>
                 ))}
-                {/* ds-todo: StatusBadge con ícono (pill Tasación) */}
-                {hasAppraisal && <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-800 font-medium shrink-0"><Check className="w-2.5 h-2.5" /> Tasación</span>}
+                {hasAppraisal && (
+                  <StatusBadge
+                    size="sm"
+                    label={LEAD_FLAGS.tasacion.label}
+                    color={LEAD_FLAGS.tasacion.color}
+                    icon={<Check className="w-2.5 h-2.5" />}
+                    className="shrink-0"
+                  />
+                )}
               </div>
-              <p className="text-xs text-gray-500 truncate mt-0.5">
+              <p className="text-xs text-gray-500 truncate mt-1">
                 {lead.phone && <span className="text-gray-600">{lead.phone}</span>}
                 {lead.phone && lead.operation && <span className="text-gray-300 mx-1">·</span>}
                 {lead.operation && <span className="capitalize">{lead.operation}</span>}
@@ -967,14 +996,14 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
           )}
 
           {/* Row 2: agent + activity */}
-          <div className="flex items-center gap-2 text-[11px] text-gray-500 flex-wrap">
+          <div className="flex items-center gap-2 text-xs text-gray-500 flex-wrap">
             {lead.assigned_name && <span>{lead.assigned_name}</span>}
             {lastActivity && <><span className="text-gray-200">·</span><span>Últ: {lastActivity}</span></>}
           </div>
 
           {/* Next step band */}
           {lead.next_step && (
-            <div className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded-control mt-0.5 ${urgency === 'danger' ? 'bg-red-50 text-red-600' : urgency === 'warning' ? 'bg-amber-50 text-amber-600' : 'bg-primary/5 text-primary'}`}>
+            <div className={`flex items-center gap-1.5 text-xs px-2 py-1.5 rounded-control ${urgency === 'danger' ? 'bg-red-50 text-red-600' : urgency === 'warning' ? 'bg-amber-50 text-amber-600' : 'bg-primary/5 text-primary'}`}>
               <ArrowRight className="w-3 h-3 shrink-0" />
               <span className="truncate">{lead.next_step}</span>
               {lead.next_step_date && <span className="shrink-0 text-[10px] opacity-70">· {lead.next_step_date}</span>}
@@ -997,16 +1026,16 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
             </div>
           )}
           {!isAgentFinalStage(lead) && (
-            <button onClick={onAdvance} className="flex-1 w-12 flex items-center justify-center text-gray-500 hover:bg-gray-50 active:bg-gray-100 border-t border-gray-100 transition-colors">
+            <Button variant="ghost" onClick={onAdvance} aria-label="Avanzar de etapa" className={CELDA_ICONO}>
               <ArrowRight className="w-5 h-5" />
-            </button>
+            </Button>
           )}
-          <button onClick={openTagPicker} className="flex-1 w-12 flex items-center justify-center text-gray-400 hover:bg-gray-50 border-t border-gray-100 transition-colors">
+          <Button variant="ghost" onClick={openTagPicker} aria-label="Etiquetar" className={CELDA_ICONO}>
             <Tag className="w-4 h-4" />
-          </button>
-          <button onClick={onDelete} className="flex-1 w-12 flex items-center justify-center text-gray-300 hover:text-danger hover:bg-danger/10 border-t border-gray-100 transition-colors">
+          </Button>
+          <Button variant="ghost" onClick={onDelete} aria-label="Eliminar lead" className={`${CELDA_ICONO} text-gray-300 hover:text-danger hover:bg-danger/10`}>
             <Trash2 className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -1023,16 +1052,16 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
           <span className="flex-1 flex items-center justify-center py-2.5 text-xs text-gray-300">Sin teléfono</span>
         )}
         {!isAgentFinalStage(lead) && (
-          <button onClick={onAdvance} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">
-            <ArrowRight className="w-3.5 h-3.5" /> Avanzar
-          </button>
+          <Button variant="ghost" onClick={onAdvance} icon={<ArrowRight className="w-3.5 h-3.5" />} className={CELDA_TEXTO}>
+            Avanzar
+          </Button>
         )}
-        <button onClick={openTagPicker} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">
-          <Tag className="w-3.5 h-3.5" /> Etiquetar
-        </button>
-        <button onClick={onDelete} className="px-4 flex items-center justify-center text-gray-300 hover:text-danger hover:bg-danger/10 transition-colors">
+        <Button variant="ghost" onClick={openTagPicker} icon={<Tag className="w-3.5 h-3.5" />} className={CELDA_TEXTO}>
+          Etiquetar
+        </Button>
+        <Button variant="ghost" onClick={onDelete} aria-label="Eliminar lead" className="shrink-0 rounded-none px-4 text-gray-300 hover:text-danger hover:bg-danger/10">
           <Trash2 className="w-3.5 h-3.5" />
-        </button>
+        </Button>
       </div>
     </div>
   )
@@ -1074,10 +1103,12 @@ function KanbanCard({ lead, onAdvance, onMoveTo }: { lead: any; onAdvance: () =>
             <WhatsAppButton phone={lead.phone} iconOnly templateContext={{ name: lead.full_name, address: lead.property_address || lead.neighborhood }} onClick={() => logContactActivity(lead, 'whatsapp')}
               className="w-7 h-7 rounded-control bg-transparent text-whatsapp hover:bg-success/10 hover:opacity-100" />
           )}
-          <button onClick={() => setShowMove(!showMove)} className="p-1 rounded-control hover:bg-gray-100 text-gray-400" title="Mover a...">
+          <Button variant="ghost" size="icon" onClick={() => setShowMove(!showMove)} aria-label="Mover a otra etapa" className="p-1 text-gray-400">
             <ChevronDown className="w-3.5 h-3.5" />
-          </button>
-          <button onClick={onAdvance} className="p-1 rounded-control hover:bg-primary/10 text-primary" title="Avanzar"><ArrowRight className="w-3.5 h-3.5" /></button>
+          </Button>
+          <Button variant="ghost" size="icon" onClick={onAdvance} aria-label="Avanzar de etapa" className="p-1 text-primary hover:bg-primary/10">
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Button>
         </div>
       </div>
       {/* Move to dropdown */}

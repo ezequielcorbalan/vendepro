@@ -84,6 +84,48 @@ const FooterDataSchema = z.object({
   disclaimer: z.string().max(500).optional(),
 })
 
+const AgentHeroDataSchema = z.object({
+  name: z.string().min(1).max(120),
+  headline: z.string().max(160).optional(),
+  bio: z.string().max(1200).optional(),
+  photo_url: z.string().url(),
+  background_image_url: z.string().url().optional(),
+  ctas: z.array(z.object({
+    label: z.string().min(1).max(40),
+    href: z.string().min(1),
+    style: z.enum(['primary', 'secondary', 'whatsapp']),
+  })).max(3),
+  accent_color: z.enum(['pink', 'orange', 'dark']),
+})
+
+const AgentCredentialsDataSchema = z.object({
+  title: z.string().max(200).optional(),
+  license: z.string().max(80).optional(),
+  years_experience: z.number().int().min(0).max(70).optional(),
+  zones: z.array(z.string().min(1).max(60)).max(12),
+  specialties: z.array(z.string().min(1).max(60)).max(8),
+  stats: z.array(z.object({
+    label: z.string().min(1).max(60),
+    value: z.string().min(1).max(30),
+  })).max(4),
+})
+
+const FaqDataSchema = z.object({
+  title: z.string().max(200).optional(),
+  items: z.array(z.object({
+    question: z.string().min(1).max(200),
+    answer: z.string().min(1).max(1200),
+  })).min(2).max(12),
+})
+
+const CtaWhatsappDataSchema = z.object({
+  title: z.string().min(1).max(200),
+  subtitle: z.string().max(300).optional(),
+  phone: z.string().min(1).max(40),
+  message_template: z.string().max(300).optional(),
+  button_label: z.string().min(1).max(40),
+})
+
 // === Registry ===
 
 export const BLOCK_TYPES = [
@@ -95,6 +137,10 @@ export const BLOCK_TYPES = [
   'benefits-list',
   'lead-form',
   'footer',
+  'agent-hero',
+  'agent-credentials',
+  'faq',
+  'cta-whatsapp',
 ] as const
 
 export type BlockType = typeof BLOCK_TYPES[number]
@@ -108,6 +154,10 @@ export const BLOCK_DATA_SCHEMAS: Record<BlockType, z.ZodTypeAny> = {
   'benefits-list': BenefitsListDataSchema,
   'lead-form': LeadFormDataSchema,
   'footer': FooterDataSchema,
+  'agent-hero': AgentHeroDataSchema,
+  'agent-credentials': AgentCredentialsDataSchema,
+  'faq': FaqDataSchema,
+  'cta-whatsapp': CtaWhatsappDataSchema,
 }
 
 // === Envelope schemas ===
@@ -122,6 +172,10 @@ export const BlockSchema = z.discriminatedUnion('type', BLOCK_TYPES.map((t) =>
     // comparativos), los demás son fijos para todas las copias. No se valida
     // en endpoints — el frontend escribe/lee este flag.
     is_variable: z.boolean().optional(),
+    // Marca que este bloque se rellena en la lectura pública con los datos del
+    // perfil del agente (ver agent-bindings.ts). Los campos bindeados son
+    // read-only en el editor.
+    binding: z.literal('agent_profile').optional(),
     data: BLOCK_DATA_SCHEMAS[t],
   })
 ) as any)

@@ -1,46 +1,32 @@
-import { Building2 } from 'lucide-react'
+import { Building2, Camera, Globe, Eye, Briefcase } from 'lucide-react'
+import { PropertyStageBadge } from '@/components/ui/PropertyStageBadge'
+import { StepLayout, StepBullets } from '../StepLayout'
 
 export default function Step5Propiedades() {
   return (
-    <div className="flex flex-col items-center text-center px-4 py-6 gap-5">
-      <div className="w-16 h-16 rounded-control bg-green-100 flex items-center justify-center">
-        <Building2 className="w-8 h-8 text-green-600" />
-      </div>
-      <div className="space-y-1">
-        <h2 className="text-2xl font-bold text-ink">Gestión de propiedades</h2>
-        <p className="text-gray-500 text-sm max-w-sm">
-          Una vez captada la propiedad, la gestionás desde documentación hasta la venta o alquiler.
-        </p>
-      </div>
-
-      {/* Pipeline mini */}
+    <StepLayout
+      icon={<Building2 className="w-7 h-7" />}
+      title="Gestión de propiedades"
+      subtitle="Una vez captada la propiedad, la gestionás desde documentación hasta la venta o alquiler."
+    >
+      {/* Los colores de cada etapa salen de crm-config vía PropertyStageBadge. */}
       <div className="flex items-center gap-1.5 flex-wrap justify-center">
-        {[
-          { label: 'Captada', color: 'bg-blue-100 text-blue-800' },
-          { label: 'Publicada', color: 'bg-green-100 text-green-800' },
-          { label: 'Reservada', color: 'bg-orange-100 text-orange-800' },
-          { label: 'Vendida', color: 'bg-pink-100 text-pink-800' },
-        ].map((s, i, arr) => (
-          <div key={s.label} className="flex items-center gap-1.5">
-            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${s.color}`}>{s.label}</span>
+        {(['captada', 'publicada', 'reservada', 'vendida'] as const).map((stage, i, arr) => (
+          <div key={stage} className="flex items-center gap-1.5">
+            <PropertyStageBadge stage={stage} />
             {i < arr.length - 1 && <span className="text-gray-300 text-xs">→</span>}
           </div>
         ))}
       </div>
 
-      <div className="w-full max-w-sm space-y-3 text-left">
-        {[
-          ['📸', 'Cargá fotos, fichas técnicas y documentación requerida'],
-          ['🌐', 'Creá landing pages personalizadas para cada propiedad con un clic'],
-          ['👁️', 'Registrá visitas de compradores y vinculalas a contactos'],
-          ['💼', 'Gestioná ofertas, reservas y condiciones finales de la operación'],
-        ].map(([icon, text]) => (
-          <div key={text} className="flex items-start gap-3 p-3 bg-gray-50 rounded-card">
-            <span className="text-lg leading-none mt-0.5">{icon}</span>
-            <p className="text-sm text-gray-700">{text}</p>
-          </div>
-        ))}
-      </div>
-    </div>
+      <StepBullets
+        items={[
+          [<Camera key="a" className="w-4 h-4" />, 'Cargá fotos, fichas técnicas y documentación requerida'],
+          [<Globe key="b" className="w-4 h-4" />, 'Creá landing pages personalizadas para cada propiedad con un clic'],
+          [<Eye key="c" className="w-4 h-4" />, 'Registrá visitas de compradores y vinculalas a contactos'],
+          [<Briefcase key="d" className="w-4 h-4" />, 'Gestioná ofertas, reservas y condiciones finales de la operación'],
+        ]}
+      />
+    </StepLayout>
   )
 }

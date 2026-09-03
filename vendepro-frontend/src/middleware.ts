@@ -22,6 +22,7 @@ const PUBLIC_PREFIXES = [
   '/f/',   // fichas de tasación que completa el propietario
   '/p/',   // public prefactibilidades
   '/l/',   // landings públicas
+  '/a/',   // landings públicas de perfil de agente (/a/[org]/[slug])
   '/u/',   // baja de emails de marketing (unsubscribe)
   '/_next',
   '/favicon',

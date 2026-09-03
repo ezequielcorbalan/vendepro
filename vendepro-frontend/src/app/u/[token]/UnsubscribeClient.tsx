@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { MailX, CheckCircle2, Loader2, XCircle } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
 
 export default function UnsubscribeClient({
   token,
@@ -42,12 +43,9 @@ export default function UnsubscribeClient({
             <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
             <h1 className="text-lg font-semibold text-ink mb-2">No pudimos procesar la baja</h1>
             <p className="text-sm text-gray-500 mb-4">Probá de nuevo en unos minutos.</p>
-            <button
-              onClick={confirm}
-              className="inline-flex items-center gap-2 bg-gray-800 text-white text-sm font-medium px-4 py-2 rounded-lg hover:opacity-90"
-            >
+            <Button variant="outline" onClick={confirm}>
               Reintentar
-            </button>
+            </Button>
           </>
         ) : (
           <>
@@ -57,14 +55,9 @@ export default function UnsubscribeClient({
               ¿Querés dejar de recibir emails de marketing en{' '}
               <span className="font-medium text-gray-700">{email}</span>?
             </p>
-            <button
-              onClick={confirm}
-              disabled={status === 'working'}
-              className="inline-flex items-center gap-2 bg-gray-800 text-white text-sm font-medium px-5 py-2.5 rounded-lg hover:opacity-90 disabled:opacity-50"
-            >
-              {status === 'working' && <Loader2 className="w-4 h-4 animate-spin" />}
+            <Button size="lg" loading={status === 'working'} onClick={confirm}>
               Sí, darme de baja
-            </button>
+            </Button>
           </>
         )}
       </div>

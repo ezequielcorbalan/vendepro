@@ -619,7 +619,7 @@ function VisitFormCard({ vf }: { vf: any }) {
       </div>
 
       {vf.observations && (
-        <p className="mt-2 text-sm text-gray-600 italic">"{vf.observations}"</p>
+        <p className="mt-2 text-sm text-gray-600 italic">&ldquo;{vf.observations}&rdquo;</p>
       )}
     </div>
   )

@@ -16,7 +16,7 @@ Reglas que vienen de `CLAUDE.md` + `.claude/rules/` + convenciones observadas. *
   - **Frontend**: Cloudflare Pages (push a `vendepro-frontend/` en main)
   - **Migrations**: workflow `migrate.yml` al pushear `migrations_v2/**` a main
   - **Casos especiales**: Cloudflare Dashboard
-- Tests SIEMPRE deben pasar antes de mergear a main
+- Tests SIEMPRE deben pasar antes de mergear a main — esto es la suite de Vitest, no `tsc`. Excepción conocida: `packages/api-public` arrastra ~89 errores de typecheck preexistentes y no corre como gate. Ver [[API-public]] § Deuda.
 - Ver [[Deploy]] para flujo completo
 
 ## Auth & seguridad

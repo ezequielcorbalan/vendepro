@@ -89,7 +89,44 @@ Reemplazar los usos inline por los componentes/tokens. Escala real hoy: **~101 a
 5. Seguís.
 
 ## Estado actual (resumen)
-- ✅ Foundations de **color** y **tipografía** en tokens/componentes.
+- ✅ Foundations de **color**, **tipografía**, **radios** y **sombras** en tokens.
 - ✅ **Todos los componentes** construidos y con color tokenizado.
-- 🟡 Falta: tokenizar **radios/sombras**, **revisar con rúbrica** + **congelar APIs** (Fases 1–3), y después **migrar** (Fase 4).
-- ⏳ Nada commiteado aún (rama `design/ui-consistency-pass`).
+- ✅ **Tanda de decisiones de variantes cerrada** — ver la tabla en [`ds-review.md`](./ds-review.md).
+  Salieron: `IconMedallion`, `BrandAccentBar`, `OptionCard`, la utilidad
+  `bg-brand-gradient`, `Button variant="success"`, `icon` en `SegmentedControl` y
+  `StatusBadge`, `emphasis`/`badge` en `StatTile`.
+- ✅ **Segunda tanda cerrada**: el gradiente deja de ser relleno de botón (se
+  aplana a `primary`; quedan 0 botones con gradiente) y `Table` se extiende con
+  `actions` / `renderMobileCard` / `footer` / `minWidth`.
+- ✅ **Tercera tanda cerrada — las decisiones de diseño.** No eran tres steppers
+  sino **seis**: se unificaron en `ui/StepIndicator` (`numbered` canónica +
+  `dots` compacta), el "hecho" quedó en rosa y no verde, y se borró la copia
+  duplicada de `components/onboarding/StepIndicator`. Salió además
+  `Button variant="neutral"` (5 botones oscuros inline que nadie había marcado).
+  `Card tone="dark"` e `IntegrationBadge` se decidieron **no crear** (1 uso cada
+  uno). **No quedan decisiones de contrato pendientes.**
+- 🟡 **Fase 4 en curso.** `lint:ds` bajó 198 → **154**.
+- ✅ **`components/layout` migrado** (5 archivos que tenían cero adopción del DS
+  y se ven en TODA la app): Sidebar, MobileHeader, GlobalSearch, NotificationBell
+  y ActivityTabs. Cero `<button>` inline, cero `brand-pink` suelto, cero
+  `rounded-lg` (el drift del token de radio). `Tabs` ganó `href` porque había
+  **tres copias a mano** del componente sólo porque no sabía navegar. Migradas: las 4 pantallas de `auth/` (que tenían
+  cero adopción), `contactos` (primera lista real sobre `Table`), y los 9 sitios
+  que estaban marcados con `ds-todo`.
+- ⚠️ **Ojo con el orden de la Fase 4**: el 64% de los botones y el 73% del color
+  inline NO están en `src/app/` sino en `src/components/<feature>/`
+  (`tasaciones/editor`, `landings`, `properties`, `marketing/wizard`, `layout`).
+  Migrar "por pantalla" no mueve la aguja. Conviene ir **por carpeta de
+  componentes**. Foco con cero adopción del DS: `components/layout`, las 4
+  pantallas de `auth/`, y las públicas `app/v` y `app/r`.
+- Rama de trabajo: `design/ui-consistency-pass`.
+
+## Fase 6 — Estructura
+
+Las fases anteriores fueron apariencia. La 6 es la primera de estructura: que
+ningún overlay ni control se dibuje a mano cuando el DS ya lo resuelve. El plan
+completo, con inventario medido y tandas, en
+[`ds-plan-fase6.md`](./ds-plan-fase6.md).
+
+Arranca de: 18 overlays armados a mano en 17 archivos, de los que 3 cierran con
+Esc y 0 usan Portal.

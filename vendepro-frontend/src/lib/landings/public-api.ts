@@ -5,12 +5,19 @@ const PUBLIC_BASE = process.env.NEXT_PUBLIC_API_PUBLIC_URL ?? 'https://public.ap
 export interface PublicLandingView {
   id: string
   full_slug: string
-  kind: 'lead_capture' | 'property'
+  kind: 'lead_capture' | 'property' | 'agent_profile'
   blocks: any[]     // Block[] — reusa types/types.ts si importás
   seo_title: string | null
   seo_description: string | null
   og_image_url: string | null
   published_at: string
+  /**
+   * `/a/<orgSlug>/<agentSlug>` cuando `kind === 'agent_profile'` y el agente
+   * tiene perfil público con slug asignado. `null` en cualquier otro caso —
+   * lo usa `/l/[slug]` para emitir el `<link rel="canonical">` hacia `/a/...`
+   * y no duplicar SEO entre ambas rutas.
+   */
+  agent_public_path: string | null
 }
 
 export async function getPublicLanding(slug: string): Promise<PublicLandingView | null> {
@@ -19,6 +26,33 @@ export async function getPublicLanding(slug: string): Promise<PublicLandingView 
   if (!res.ok) throw new Error(`api-public ${res.status}`)
   const { landing } = (await res.json()) as any
   return landing
+}
+
+export interface PublicAgentLandingView {
+  landing_id: string
+  full_slug: string
+  blocks: any[]      // Block[] — ya resueltos por el backend (binding de agent_profile aplicado)
+  seo_title: string | null
+  seo_description: string | null
+  og_image_url: string | null
+  org: {
+    name: string
+    logo_url: string | null
+    brand_color: string | null
+    brand_accent_color: string | null
+  }
+  agent: {
+    full_name: string
+    photo_url: string | null
+    headline: string | null
+  }
+}
+
+export async function getPublicAgentLanding(orgSlug: string, agentSlug: string): Promise<PublicAgentLandingView | null> {
+  const res = await fetch(`${PUBLIC_BASE}/a/${encodeURIComponent(orgSlug)}/${encodeURIComponent(agentSlug)}`, { next: { revalidate: 60 } })
+  if (res.status === 404) return null
+  if (!res.ok) throw new Error(`api-public ${res.status}`)
+  return (await res.json()) as PublicAgentLandingView
 }
 
 export interface SubmitInput {

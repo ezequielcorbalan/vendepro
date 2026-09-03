@@ -19,6 +19,7 @@ import { Badge } from '@/components/ui/Badge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Modal } from '@/components/ui/Modal'
 import { Alert } from '@/components/ui/Alert'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
 
 const EVENT_KEY_GROUPS: { label: string; keys: { key: string; label: string }[] }[] = [
   {
@@ -280,8 +281,6 @@ export default function MarketingConfigPage() {
 
       {/* Header propio (hero con ícono degradado + imagen decorativa) — se deja como está */}
       <div className="bg-white rounded-card border border-gray-200 shadow-card p-6 mb-6 relative overflow-hidden">
-        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-pink to-brand-orange" />
-        <img src="/brand/GV-27.png" alt="" aria-hidden="true" className="absolute -top-8 -right-8 w-32 h-32 opacity-10 pointer-events-none" />
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-control bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center">
             <Megaphone className="w-6 h-6 text-white" />
@@ -293,33 +292,18 @@ export default function MarketingConfigPage() {
         </div>
       </div>
 
-      {/* Tabs con ícono por item + lista condicional por rol — no mapea 1:1 a
-          Tabs/SegmentedControl (sin soporte de ícono). ds-todo: candidato a
-          variante "SegmentedControl con ícono" cuando se decida en tanda. */}
-      <div className="flex gap-1 mb-5 bg-gray-100 rounded-xl p-1 max-w-fit">
-        {([
-          { id: 'config', label: 'Configuración', icon: Settings },
-          // Mapeos (funnel de la org) y Email son admin-only.
-          ...(isAdmin ? [{ id: 'mappings', label: 'Mapeo de eventos', icon: BarChart3 }] as const : []),
-          { id: 'log', label: 'Log de eventos', icon: Activity },
-          ...(isAdmin ? [{ id: 'email', label: 'Email', icon: Mail }] as const : []),
-        ] as { id: 'config' | 'mappings' | 'log' | 'email'; label: string; icon: typeof Settings }[]).map(t => {
-          const Icon = t.icon
-          return (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                tab === t.id
-                  ? 'bg-white text-brand-pink shadow-sm'
-                  : 'text-gray-600 hover:text-ink'
-              }`}
-            >
-              <Icon className="w-3.5 h-3.5" /> {t.label}
-            </button>
-          )
-        })}
-      </div>
+      {/* Mapeos (funnel de la org) y Email son admin-only. */}
+      <SegmentedControl
+        className="mb-5"
+        value={tab}
+        onChange={v => setTab(v as typeof tab)}
+        options={[
+          { value: 'config', label: 'Configuración', icon: <Settings className="w-3.5 h-3.5" /> },
+          ...(isAdmin ? [{ value: 'mappings', label: 'Mapeo de eventos', icon: <BarChart3 className="w-3.5 h-3.5" /> }] : []),
+          { value: 'log', label: 'Log de eventos', icon: <Activity className="w-3.5 h-3.5" /> },
+          ...(isAdmin ? [{ value: 'email', label: 'Email', icon: <Mail className="w-3.5 h-3.5" /> }] : []),
+        ]}
+      />
 
       {tab === 'config' && (
         <Card className="space-y-4">
@@ -468,7 +452,7 @@ export default function MarketingConfigPage() {
           ) : (
             <div className="space-y-2">
               {mappings.map((m, i) => (
-                <div key={i} className="grid grid-cols-[1.4fr_1fr_1fr_auto_auto] items-center gap-2 border border-gray-100 rounded-xl p-2">
+                <div key={i} className="grid grid-cols-[1.4fr_1fr_1fr_auto_auto] items-center gap-2 border border-gray-100 rounded-card p-2">
                   <Select
                     value={m.stage_key}
                     onChange={e => { const n = [...mappings]; n[i] = { ...m, stage_key: e.target.value }; setMappings(n) }}
@@ -567,7 +551,7 @@ export default function MarketingConfigPage() {
                   e.status === 'failed' ? 'danger' :
                   'neutral'
                 return (
-                  <div key={e.id} className="flex items-center justify-between border border-gray-100 rounded-lg px-3 py-2 text-xs">
+                  <div key={e.id} className="flex items-center justify-between border border-gray-100 rounded-control px-3 py-2 text-xs">
                     <div className="flex items-center gap-3 min-w-0">
                       <Badge tone={statusTone} className="whitespace-nowrap">{e.status}</Badge>
                       {e.provider && (

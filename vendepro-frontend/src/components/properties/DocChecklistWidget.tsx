@@ -1,10 +1,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { FileCheck2, Check, X, Circle, FolderOpen, Plus, ExternalLink, Trash2 } from 'lucide-react'
+import { FileCheck2, Check, X, FolderOpen, Plus, ExternalLink, Trash2 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Card'
+import { WidgetHeader } from '@/components/ui/WidgetHeader'
+import { ProgressBar } from '@/components/ui/Progress'
+import { Alert } from '@/components/ui/Alert'
+import { Text } from '@/components/ui/Typography'
 
 type DocState = 'done' | 'na' | 'pending'
 
@@ -147,57 +152,47 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
   }
 
   return (
-    <div className="bg-white rounded-card border border-gray-200 shadow-card p-5">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center">
-            <FileCheck2 className="w-4.5 h-4.5 text-white" />
-          </div>
-          <div>
-            <h2 className="text-sm font-semibold text-ink">Documentación</h2>
-            <p className="text-xs text-gray-500">{resolvedItems} de {totalItems} resueltos</p>
-          </div>
-        </div>
-        <div className="text-right">
-          <p className="text-2xl font-bold bg-gradient-to-br from-brand-pink to-brand-orange bg-clip-text text-transparent">
-            {progressPct}%
-          </p>
-        </div>
-      </div>
+    <Card>
+      {/* El porcentaje va en ink, no en primary: es una medida, no un estado. En
+          rosa y a 2xl leía como alarma, y la barra de abajo cuenta lo mismo. */}
+      <WidgetHeader
+        icon={<FileCheck2 className="w-4 h-4" />}
+        title="Documentación"
+        subtitle={`${resolvedItems} de ${totalItems} resueltos`}
+        className="mb-4"
+        action={<Text size="lg" weight="bold" className="text-2xl">{progressPct}%</Text>}
+      />
 
-      <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-3">
-        <div
-          className="h-full bg-gradient-to-r from-brand-pink to-brand-orange transition-all"
-          style={{ width: `${progressPct}%` }}
-        />
-      </div>
+      <ProgressBar value={progressPct} className="h-2 mb-3" />
 
       {daysRemaining !== null && daysRemaining > 0 && resolvedItems < totalItems && (
-        <div className="text-xs text-warning bg-warning/10 border border-warning/30 rounded-control px-3 py-1.5 mb-3">
+        <Alert tone="warning" className="mb-3">
           <b>{daysRemaining} días</b> para completar · Meta: 15 días desde captación
-        </div>
+        </Alert>
       )}
 
       {/* Cloud folder link */}
       <div className="mb-3">
         {data.cloud_url && !showCloudInput ? (
-          <div className="flex items-center justify-between bg-gradient-to-br from-brand-pink/5 to-brand-orange/5 border border-brand-pink/20 rounded-lg px-3 py-2">
+          <div className="flex items-center justify-between bg-primary/5 border border-primary/20 rounded-control px-3 py-2">
             <a
               href={data.cloud_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 text-sm text-brand-pink font-medium hover:underline truncate"
+              className="flex items-center gap-2 text-sm text-primary font-medium hover:underline truncate"
             >
               <FolderOpen className="w-4 h-4 flex-shrink-0" />
               <span className="truncate">Abrir carpeta de documentos</span>
               <ExternalLink className="w-3 h-3 flex-shrink-0" />
             </a>
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => { setCloudInput(data.cloud_url || ''); setShowCloudInput(true) }}
-              className="text-xs text-gray-400 hover:text-gray-600 ml-2"
+              className="text-xs text-gray-400 ml-2"
             >
               Editar
-            </button>
+            </Button>
           </div>
         ) : showCloudInput ? (
           <div className="flex gap-2">
@@ -208,7 +203,7 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
               placeholder="https://drive.google.com/..."
               className="flex-1"
             />
-            <Button size="sm" onClick={saveCloudUrl}>Guardar</Button>
+            <Button variant="outline" size="sm" onClick={saveCloudUrl}>Guardar</Button>
             <Button
               variant="ghost" size="icon" aria-label="Cancelar"
               onClick={() => { setShowCloudInput(false); setCloudInput('') }}
@@ -217,12 +212,16 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
             </Button>
           </div>
         ) : (
-          <button
+          <Button
+            variant="outline"
+            size="sm"
+            fullWidth
             onClick={() => { setCloudInput(''); setShowCloudInput(true) }}
-            className="flex items-center gap-2 text-xs text-gray-500 hover:text-brand-pink border border-dashed border-gray-300 hover:border-brand-pink rounded-lg px-3 py-2 w-full transition-colors"
+            icon={<FolderOpen className="w-3.5 h-3.5" />}
+            className="justify-start border-dashed text-gray-500 hover:text-primary hover:border-primary"
           >
-            <FolderOpen className="w-3.5 h-3.5" /> Agregar link a carpeta en la nube (Drive, OneDrive...)
-          </button>
+            Agregar link a carpeta en la nube (Drive, OneDrive…)
+          </Button>
         )}
       </div>
 
@@ -231,7 +230,7 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
           const s = data.status[doc.key] ?? 'pending'
           const isCustom = customDocs.some(c => c.key === doc.key)
           return (
-            <div key={doc.key} className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-gray-50 group">
+            <div key={doc.key} className="flex items-center justify-between py-1.5 px-2 rounded-control hover:bg-gray-50 group">
               <span className={`text-sm flex-1 ${
                 s === 'done' ? 'text-gray-700' :
                 s === 'na' ? 'text-gray-400 line-through' :
@@ -244,15 +243,24 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
                 <button
                   onClick={() => isCustom ? removeCustomDoc(doc.key) : hideDefaultDoc(doc.key)}
                   title="Eliminar item"
-                  className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity p-1"
+                  className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-danger transition-opacity p-1"
                 >
                   <Trash2 className="w-3 h-3" />
                 </button>
+                {/* Dos estados explícitos, no tres. Había un tercer botón
+                    ("Pendiente", un círculo) que no hacía nada que estos dos no
+                    hicieran: los dos son toggle, así que clickear el activo ya
+                    vuelve a pendiente. Y como pendiente es el estado inicial, el
+                    círculo aparecía resaltado en cada fila sin tocar: 16 círculos
+                    grises que no informaban nada.
+                    ds-todo: candidato a un control de par toggle en 24px. Único
+                    uso en la app, así que por ahora son dos botones nativos con
+                    los colores tokenizados. */}
                 <button
                   onClick={() => updateStatus(doc.key, s === 'done' ? 'pending' : 'done')}
                   title="Tengo el documento"
                   className={`w-6 h-6 rounded-md flex items-center justify-center transition-all ${
-                    s === 'done' ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-400 hover:bg-green-100'
+                    s === 'done' ? 'bg-success text-white' : 'bg-gray-100 text-gray-400 hover:bg-success/20'
                   }`}
                 >
                   <Check className="w-3.5 h-3.5" />
@@ -261,19 +269,10 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
                   onClick={() => updateStatus(doc.key, s === 'na' ? 'pending' : 'na')}
                   title="No aplica"
                   className={`w-6 h-6 rounded-md flex items-center justify-center transition-all ${
-                    s === 'na' ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-400 hover:bg-red-100'
+                    s === 'na' ? 'bg-danger text-white' : 'bg-gray-100 text-gray-400 hover:bg-danger/20'
                   }`}
                 >
                   <X className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => updateStatus(doc.key, 'pending')}
-                  title="Pendiente"
-                  className={`w-6 h-6 rounded-md flex items-center justify-center transition-all ${
-                    s === 'pending' ? 'bg-gray-300 text-gray-600' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
-                  }`}
-                >
-                  <Circle className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
@@ -284,12 +283,9 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
       {/* Restaurar items eliminados */}
       {hidden.length > 0 && (
         <div className="mt-2">
-          <button
-            onClick={restoreAllHidden}
-            className="text-xs text-gray-400 hover:text-brand-pink hover:underline"
-          >
+          <Button variant="ghost" size="sm" onClick={restoreAllHidden} className="text-xs text-gray-400 hover:text-primary px-0">
             Restaurar {hidden.length} {hidden.length === 1 ? 'item eliminado' : 'items eliminados'}
-          </button>
+          </Button>
         </div>
       )}
 
@@ -306,7 +302,7 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
               placeholder="Ej: Aprobación banco hipotecario"
               className="flex-1"
             />
-            <Button size="sm" onClick={addCustomDoc} disabled={!customInput.trim()}>Agregar</Button>
+            <Button variant="outline" size="sm" onClick={addCustomDoc} disabled={!customInput.trim()}>Agregar</Button>
             <Button
               variant="ghost" size="icon" aria-label="Cancelar"
               onClick={() => { setShowCustomInput(false); setCustomInput('') }}
@@ -315,16 +311,13 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
             </Button>
           </div>
         ) : (
-          <button
-            onClick={() => setShowCustomInput(true)}
-            className="flex items-center gap-1 text-xs text-brand-pink font-medium hover:underline"
-          >
-            <Plus className="w-3 h-3" /> Agregar documento custom
-          </button>
+          <Button variant="ghost" size="sm" onClick={() => setShowCustomInput(true)} icon={<Plus className="w-3 h-3" />} className="text-xs text-primary px-0">
+            Agregar documento custom
+          </Button>
         )}
       </div>
 
-      {saving && <p className="text-xs text-gray-400 text-center mt-2">Guardando...</p>}
-    </div>
+      {saving && <Text size="xs" tone="muted" className="text-center mt-2">Guardando…</Text>}
+    </Card>
   )
 }

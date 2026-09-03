@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Heading, Text } from '@/components/ui/Typography'
 import { PillRadioGroup, PillCheckGroup } from '@/components/ui/ChoicePills'
 import { Alert } from '@/components/ui/Alert'
-import { Steps } from '@/components/ui/Progress'
+import { StepIndicator } from '@/components/ui/StepIndicator'
 import {
   QUESTIONS,
   questionsFor,
@@ -222,7 +222,7 @@ export default function FichaPublicaClient({ slug, apiPublic, data }: Props) {
       <Card>
         <div className="flex items-center justify-between gap-3 mb-1">
           <Heading level={3}>{stepTitle(currentStep, type)}</Heading>
-          <Steps total={steps.length} current={stepIndex + 1} />
+          <StepIndicator variant="dots" steps={steps.length} current={stepIndex + 1} />
         </div>
         <Text size="xs" tone="muted">
           Todo lo que completes ahora nos ahorra tiempo el día de la tasación.

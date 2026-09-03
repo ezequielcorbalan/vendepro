@@ -79,6 +79,15 @@ Worker para gestión administrativa: agentes, objetivos, perfil, configuración 
 | GET | `/profile` | GetUserProfileUseCase |
 | PUT | `/profile` | UpdateUserProfileUseCase (`{full_name, phone, photo_url}`) |
 
+### Perfil público de agente — [[Dominio-Landings]] · [[Dominio-Usuarios-Org]]
+
+Alimenta la landing pública `/a/:orgSlug/:agentSlug` (`api-public`).
+
+| Método | Path | Use case |
+|---|---|---|
+| GET | `/profile/public` | GetAgentProfileUseCase — si el agente no tiene fila en `agent_profiles` todavía, devuelve un `AgentProfile` vacío sin persistir (slug propuesto con `slugifyName(full_name)`), para que la UI tenga qué mostrar. Se persiste recién en el primer PUT |
+| PUT | `/profile/public` | UpdateAgentProfileUseCase — el frontend (`PerfilPublicoForm.tsx`) manda el set completo de campos editables, no un patch parcial. `years_experience` se valida entero 0..70 acá (no en el dominio) |
+
 ### Notifications — [[Dominio-Notificaciones]]
 
 | Método | Path | Use case |

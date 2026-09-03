@@ -135,7 +135,7 @@ export function StepReview({ templateId, property, details, comparables, customB
   return (
     <div className="space-y-6">
       {/* Hint sobre las dos acciones del footer */}
-      <div className="rounded-card border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-600">
+      <div className="rounded-card border border-gray-200 bg-gray-50 px-5 py-4 text-sm text-gray-600">
         Revisá la previsualización y elegí abajo:{' '}
         <span className="font-medium text-ink">Guardar borrador</span> deja la tasación
         privada (sólo accesible desde el editor); <span className="font-medium text-ink">Publicar</span>{' '}
@@ -144,17 +144,17 @@ export function StepReview({ templateId, property, details, comparables, customB
 
       {/* Preview */}
       <div>
-        <h3 className="mb-3 text-sm font-semibold text-slate-700">Previsualización</h3>
+        <h3 className="mb-3 text-sm font-semibold text-gray-700">Previsualización</h3>
 
         {loading && (
-          <div className="flex items-center gap-2 py-8 text-slate-400">
+          <div className="flex items-center gap-2 py-8 text-gray-400">
             <Loader2 className="h-5 w-5 animate-spin" />
             <span className="text-sm">Cargando plantilla…</span>
           </div>
         )}
 
         {error && (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="rounded-control border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
             {error}
           </div>
         )}
@@ -162,7 +162,7 @@ export function StepReview({ templateId, property, details, comparables, customB
         {!loading && !error && snapshot !== null && (
           <>
             {snapshot.length === 0 ? (
-              <div className="rounded-card border border-dashed border-slate-200 bg-slate-50">
+              <div className="rounded-card border border-dashed border-gray-200 bg-gray-50">
                 <EmptyState
                   icon={<FileText className="w-6 h-6" />}
                   title={templateId
@@ -171,7 +171,7 @@ export function StepReview({ templateId, property, details, comparables, customB
                 />
               </div>
             ) : (
-              <div className="overflow-hidden rounded-card border border-slate-200 bg-white">
+              <div className="overflow-hidden rounded-card border border-gray-200 bg-white">
                 <TemplateRenderer
                   snapshot={snapshot}
                   overrides={blockOverrides}

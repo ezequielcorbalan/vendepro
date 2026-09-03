@@ -294,7 +294,7 @@ export default function SoldPropertyForm({ initial, onCancel, onSaved }: Props) 
           ) : (
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-2">
               {photos.map(url => (
-                <div key={url} className="relative group aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                <div key={url} className="relative group aspect-square bg-gray-100 rounded-control overflow-hidden">
                   <img src={url} alt="" className="w-full h-full object-cover" />
                   <button
                     type="button"

@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
-import StepIndicator from './StepIndicator'
+import { StepIndicator } from '@/components/ui/StepIndicator'
 import Step1Welcome from './steps/Step1Welcome'
 import Step2Pipeline from './steps/Step2Pipeline'
 import Step3Leads from './steps/Step3Leads'
@@ -11,6 +11,7 @@ import Step6Calendario from './steps/Step6Calendario'
 import Step7Reportes from './steps/Step7Reportes'
 import Step8Ready from './steps/Step8Ready'
 
+import { Button } from '@/components/ui/Button'
 const TOTAL_STEPS = 8
 
 interface Props {
@@ -54,42 +55,45 @@ export default function OnboardingModal({ userName, onClose }: Props) {
       onClick={onClose}
     >
       <div
-        className={`bg-white rounded-card w-full max-w-xl shadow-pop flex flex-col overflow-hidden transition-all duration-300 ${visible ? 'scale-100' : 'scale-95'}`}
+        className={`bg-white rounded-card w-full max-w-xl h-[40rem] max-h-[calc(100vh-2rem)] shadow-pop flex flex-col overflow-hidden transition-all duration-300 ${visible ? 'scale-100' : 'scale-95'}`}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <StepIndicator total={TOTAL_STEPS} current={step} />
-          <button
-            onClick={onClose}
-            className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            Omitir
-            <X className="w-3.5 h-3.5" />
-          </button>
+          <StepIndicator variant="dots" steps={TOTAL_STEPS} current={step} />
+          <Button variant="ghost" size="sm" onClick={onClose} className="text-xs text-gray-400">
+            Omitir <X className="w-3.5 h-3.5" />
+          </Button>
         </div>
 
-        {/* Content — scrollable */}
-        <div className="overflow-y-auto max-h-[70vh]">
-          <StepContent step={step} userName={userName} onClose={onClose} />
+        {/* El alto fijo está en el PANEL, no acá: el último paso oculta el
+            footer, así que si el alto lo llevara el contenido el modal seguiría
+            cambiando de tamaño en ese paso. El contenido toma lo que sobra.
+            40rem es el alto del paso más denso (Reportes); el
+            max-h lo acota en pantallas bajas. */}
+        <div className="flex-1 min-h-0 overflow-y-auto flex flex-col">
+          {/* `m-auto` en vez de justify-center: centra el paso corto y, cuando
+              el contenido no entra, scrollea sin recortar el borde de arriba
+              (que es lo que hace justify-center con overflow). */}
+          <div className="m-auto w-full">
+            <StepContent step={step} userName={userName} onClose={onClose} />
+          </div>
         </div>
 
         {/* Footer nav — hidden on last step (Step8 has its own CTAs) */}
         {!isLast && (
           <div className="flex items-center justify-between px-5 py-4 border-t border-gray-100 bg-gray-50/50">
-            <button
+            <Button
+              variant="ghost"
               onClick={goPrev}
               disabled={step === 1}
-              className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              icon={<ChevronLeft className="w-4 h-4" />}
             >
-              <ChevronLeft className="w-4 h-4" /> Anterior
-            </button>
-            <button
-              onClick={goNext}
-              className="flex items-center gap-1.5 bg-gradient-to-r from-brand-pink to-brand-orange text-white px-5 py-2 rounded-control text-sm font-semibold hover:opacity-90 transition-opacity"
-            >
+              Anterior
+            </Button>
+            <Button onClick={goNext}>
               Siguiente <ChevronRight className="w-4 h-4" />
-            </button>
+            </Button>
           </div>
         )}
       </div>

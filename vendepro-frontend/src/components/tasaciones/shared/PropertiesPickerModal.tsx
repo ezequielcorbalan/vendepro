@@ -1,10 +1,12 @@
 'use client'
-import { useEffect, useMemo, useState } from 'react'
-import { Search, Loader2, Building2, MapPin, Calendar, X } from 'lucide-react'
+import { Building2, MapPin, Calendar } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
+import { PropertyStageBadge } from '@/components/ui/PropertyStageBadge'
 import type { ComparableData } from './ComparableCard'
-import { EmptyState } from '@/components/ui/EmptyState'
-import { Input, Select } from '@/components/ui/Input'
+import {
+  ComparablePickerModal, formatPriceUsd, formatPickerDate,
+  type ComparableSource,
+} from './ComparablePickerModal'
 
 interface PropertyLite {
   id: string
@@ -53,180 +55,61 @@ export function mapPropertyToComparable(p: PropertyLite): ComparableData {
   }
 }
 
-function formatPriceUsd(n: number | null | undefined): string {
-  if (typeof n !== 'number') return '—'
-  return `USD ${n.toLocaleString('es-AR')}`
-}
-
-function formatDate(d: string | null | undefined): string {
-  if (!d) return '—'
-  try { return new Date(d).toLocaleDateString('es-AR') } catch { return d }
-}
-
-const STAGE_LABELS: Record<string, { label: string; cls: string }> = {
-  propuesta: { label: 'Propuesta', cls: 'bg-gray-100 text-gray-600' },
-  captada: { label: 'Captada', cls: 'bg-green-100 text-green-800' },
-  captacion: { label: 'Captación', cls: 'bg-green-100 text-green-800' },
-  publicada: { label: 'Publicada', cls: 'bg-blue-100 text-blue-800' },
-  reservada: { label: 'Reservada', cls: 'bg-amber-100 text-amber-800' },
-  vendida: { label: 'Vendida', cls: 'bg-emerald-100 text-emerald-800' },
-  alquilada: { label: 'Alquilada', cls: 'bg-purple-100 text-purple-800' },
-  perdida: { label: 'Perdida', cls: 'bg-red-100 text-red-800' },
-  invalida: { label: 'Inválida', cls: 'bg-gray-100 text-gray-500' },
+/** Sólo lo propio de esta fuente: la pantalla vive en ComparablePickerModal. */
+const fuente: ComparableSource<PropertyLite> = {
+  title: 'Elegir desde una propiedad cargada',
+  icon: <Building2 className="w-5 h-5" />,
+  searchPlaceholder: 'Buscar dirección, barrio, dueño…',
+  filters: [{
+    key: 'stage',
+    placeholder: 'Estado: cualquiera',
+    kind: 'select',
+    options: [
+      { value: 'propuesta', label: 'Propuestas' },
+      { value: 'captada', label: 'Captadas' },
+      { value: 'publicada', label: 'Publicadas' },
+      { value: 'reservada', label: 'Reservadas' },
+      { value: 'vendida', label: 'Solo vendidas (cierres reales)' },
+      { value: 'perdida', label: 'Perdidas' },
+    ],
+  }],
+  hint: (
+    <>
+      Las propiedades en estado <strong>vendida</strong> se agregan como cierre real;
+      el resto como publicación.
+    </>
+  ),
+  load: async () => {
+    const data = (await (await apiFetch('properties', '/properties')).json()) as any
+    return Array.isArray(data) ? data : Array.isArray(data?.properties) ? data.properties : []
+  },
+  rowKey: p => p.id,
+  searchable: p => [p.address, p.neighborhood, p.property_type, p.owner_name, p.agent_name]
+    .filter(Boolean).join(' '),
+  matches: (p, f) => !f.stage || (p.commercial_stage ?? '').toLowerCase() === f.stage,
+  toRow: p => {
+    const stage = (p.commercial_stage ?? '').toLowerCase()
+    const isVendida = stage === 'vendida'
+    return {
+      title: p.address,
+      badge: stage
+        ? <PropertyStageBadge stage={stage} className="text-[10px] px-2 py-0.5 whitespace-nowrap" />
+        : undefined,
+      meta: [
+        p.neighborhood && <><MapPin className="h-3 w-3" /> {p.neighborhood}</>,
+        p.property_type,
+        typeof p.size_m2 === 'number' && `${p.size_m2} m²`,
+        isVendida && p.updated_at && <><Calendar className="h-3 w-3" /> {formatPickerDate(p.updated_at)}</>,
+      ].filter(Boolean) as React.ReactNode[],
+      amountLabel: isVendida ? 'Cierre' : 'Listado',
+      amount: formatPriceUsd(p.asking_price),
+    }
+  },
+  toComparable: mapPropertyToComparable,
+  emptyTitle: 'No tenés propiedades cargadas todavía.',
+  emptyFiltered: 'Ninguna propiedad coincide con los filtros.',
 }
 
 export function PropertiesPickerModal({ open, onClose, onPick }: Props) {
-  const [items, setItems] = useState<PropertyLite[]>([])
-  const [loading, setLoading] = useState(false)
-  const [search, setSearch] = useState('')
-  const [stage, setStage] = useState<string>('')
-
-  // Reset filtros al abrir.
-  useEffect(() => {
-    if (!open) return
-    setSearch('')
-    setStage('')
-  }, [open])
-
-  // Carga al abrir.
-  useEffect(() => {
-    if (!open) return
-    setLoading(true)
-    apiFetch('properties', '/properties')
-      .then(r => r.json())
-      .then((data: any) => {
-        const list: PropertyLite[] = Array.isArray(data)
-          ? data
-          : Array.isArray(data?.properties) ? data.properties : []
-        setItems(list)
-      })
-      .catch(() => setItems([]))
-      .finally(() => setLoading(false))
-  }, [open])
-
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    return items.filter(p => {
-      if (stage && (p.commercial_stage ?? '').toLowerCase() !== stage) return false
-      if (!q) return true
-      const haystack = [
-        p.address, p.neighborhood, p.property_type, p.owner_name, p.agent_name,
-      ].filter(Boolean).join(' ').toLowerCase()
-      return haystack.includes(q)
-    })
-  }, [items, search, stage])
-
-  if (!open) return null
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-      onClick={onClose}
-    >
-      <div
-        className="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-card bg-white shadow-pop"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="bg-gradient-to-r from-brand-pink to-brand-orange h-1" />
-
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-          <div className="flex items-center gap-2">
-            <Building2 className="h-5 w-5 text-gray-600" />
-            <h2 className="text-lg font-semibold text-ink">Elegir desde una propiedad cargada</h2>
-          </div>
-          <button onClick={onClose} className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Filtros */}
-        <div className="border-b border-slate-100 bg-slate-50 px-6 py-3">
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" />
-              <Input
-                placeholder="Buscar dirección, barrio, dueño…"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Select value={stage} onChange={e => setStage(e.target.value)}>
-              <option value="">Estado: cualquiera</option>
-              <option value="propuesta">Propuestas</option>
-              <option value="captada">Captadas</option>
-              <option value="publicada">Publicadas</option>
-              <option value="reservada">Reservadas</option>
-              <option value="vendida">Solo vendidas (cierres reales)</option>
-              <option value="perdida">Perdidas</option>
-            </Select>
-          </div>
-          <p className="mt-2 text-[11px] text-slate-500">
-            Las propiedades en estado <strong>vendida</strong> se agregan como cierre real;
-            el resto como publicación.
-          </p>
-        </div>
-
-        {/* Lista */}
-        <div className="flex-1 overflow-y-auto p-4">
-          {loading ? (
-            <div className="flex items-center justify-center py-16">
-              <Loader2 className="h-7 w-7 animate-spin text-brand-pink" />
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="rounded-card border border-dashed border-slate-200">
-              <EmptyState
-                icon={<Building2 className="w-6 h-6" />}
-                title={items.length === 0
-                  ? 'No tenés propiedades cargadas todavía.'
-                  : 'Ninguna propiedad coincide con los filtros.'}
-              />
-            </div>
-          ) : (
-            <ul className="space-y-2">
-              {filtered.map(p => {
-                const stageInfo = STAGE_LABELS[(p.commercial_stage ?? '').toLowerCase()] ?? null
-                const isVendida = (p.commercial_stage ?? '').toLowerCase() === 'vendida'
-                return (
-                  <li key={p.id}>
-                    <button
-                      type="button"
-                      onClick={() => { onPick(mapPropertyToComparable(p)); onClose() }}
-                      className="group flex w-full items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 text-left transition hover:border-brand-pink/60 hover:bg-rose-50/30"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="truncate text-sm font-semibold text-ink">{p.address}</span>
-                          {stageInfo && (
-                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium whitespace-nowrap ${stageInfo.cls}`}>
-                              {stageInfo.label}
-                            </span>
-                          )}
-                        </div>
-                        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500">
-                          {p.neighborhood && (
-                            <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {p.neighborhood}</span>
-                          )}
-                          {p.property_type && <span>{p.property_type}</span>}
-                          {typeof p.size_m2 === 'number' && <span>{p.size_m2} m²</span>}
-                          {isVendida && p.updated_at && (
-                            <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {formatDate(p.updated_at)}</span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs text-slate-400">{isVendida ? 'Cierre' : 'Listado'}</p>
-                        <p className="text-sm font-semibold text-ink">{formatPriceUsd(p.asking_price)}</p>
-                      </div>
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
-          )}
-        </div>
-      </div>
-    </div>
-  )
+  return <ComparablePickerModal open={open} onClose={onClose} onPick={onPick} source={fuente} />
 }

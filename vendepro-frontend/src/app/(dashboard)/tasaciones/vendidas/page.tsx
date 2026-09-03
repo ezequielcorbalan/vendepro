@@ -21,12 +21,7 @@ import {
   listSoldProperties, deleteSoldProperty,
 } from '@/lib/sold-properties/api'
 import SoldPropertyForm from '@/components/sold-properties/SoldPropertyForm'
-
-const ORIGIN_LABELS: Record<string, { label: string; cls: string }> = {
-  mine: { label: 'Mías', cls: 'bg-pink-100 text-pink-800' },
-  team: { label: 'Equipo', cls: 'bg-blue-100 text-blue-800' },
-  external: { label: 'Externos', cls: 'bg-amber-100 text-amber-800' },
-}
+import { getSoldOrigin } from '@/lib/crm-config'
 
 function formatPrice(n: number | null | undefined): string {
   if (typeof n !== 'number') return '—'
@@ -224,7 +219,7 @@ export default function SoldPropertiesPage() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {items.map(sp => {
-            const origin = ORIGIN_LABELS[sp.origin] ?? ORIGIN_LABELS.external
+            const origin = getSoldOrigin(sp.origin)
             const discount = sp.listing_price_usd && sp.closing_price_usd
               ? Math.round((1 - sp.closing_price_usd / sp.listing_price_usd) * 1000) / 10
               : null
@@ -251,7 +246,7 @@ export default function SoldPropertiesPage() {
                         </Text>
                       )}
                     </div>
-                    <StatusBadge label={origin.label} color={origin.cls} className="whitespace-nowrap" />
+                    <StatusBadge label={origin.label} color={origin.color} className="whitespace-nowrap" />
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-xs mb-3">

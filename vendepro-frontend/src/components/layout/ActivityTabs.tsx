@@ -1,42 +1,25 @@
 'use client'
 
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Activity, TrendingUp } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { Tabs } from '@/components/ui/Tabs'
 
 // Pestañas que unifican "Actividad" (registro/supervisión) y "Mi Performance"
 // (analytics personal) bajo un solo item del menú, sin fusionar sus lógicas.
 const TABS = [
-  { href: '/actividades', label: 'Registro', icon: Activity },
-  { href: '/mi-performance', label: 'Mi Performance', icon: TrendingUp },
+  { href: '/actividades', label: 'Registro', icon: <Activity className="w-4 h-4" /> },
+  { href: '/mi-performance', label: 'Mi Performance', icon: <TrendingUp className="w-4 h-4" /> },
 ]
 
 export default function ActivityTabs() {
   const pathname = usePathname()
+  const active = TABS.find(t => pathname === t.href || pathname.startsWith(t.href + '/'))
+
   return (
-    <div className="flex gap-1 border-b border-gray-200 -mt-1" role="tablist" aria-label="Actividad">
-      {TABS.map((t) => {
-        const active = pathname === t.href || pathname.startsWith(t.href + '/')
-        const Icon = t.icon
-        return (
-          <Link
-            key={t.href}
-            href={t.href}
-            role="tab"
-            aria-selected={active}
-            className={cn(
-              'flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors',
-              active
-                ? 'border-brand-pink text-brand-pink'
-                : 'border-transparent text-gray-500 hover:text-ink hover:border-gray-300'
-            )}
-          >
-            <Icon className="w-4 h-4" aria-hidden="true" />
-            {t.label}
-          </Link>
-        )
-      })}
-    </div>
+    <Tabs
+      className="-mt-1"
+      value={active?.href ?? ''}
+      items={TABS.map(t => ({ value: t.href, href: t.href, label: t.label, icon: t.icon }))}
+    />
   )
 }

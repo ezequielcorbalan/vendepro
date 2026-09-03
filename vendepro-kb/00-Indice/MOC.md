@@ -55,6 +55,19 @@ Cada dominio agrupa entidades + tablas + use cases + endpoints + páginas:
 
 - [[Landing-publica]] — `vendepro.com.ar` (HTML estático)
 
+## 🧭 Producto
+
+- [[Roadmap-producto]] — roadmap de features candidatos (pivote: CRM gratis + módulo de marketing pago)
+- [[Roadmap-estado-implementacion]] — en qué instancia está cada proceso en el código
+
+## 💼 Ventas y storytelling
+
+- [[Estrategia-Comercial]] — estrategia comercial completa: 2 segmentos de cliente, propuesta de valor, objeciones, oferta actual, filosofía de "vender la visión, construir con demanda real"
+- [[Catalogo-Modulos-Vendibles]] — el roadmap de producto traducido a lenguaje de venta, módulo por módulo, con estado real de cada feature
+- [[Guion-Venta-Segmento1-SinCRM]] — guión para inmobiliarias sin sistema (Excel/WhatsApp)
+- [[Guion-Venta-Segmento2-ConCRM]] — guión para inmobiliarias que ya usan otro CRM (Tokko Broker u otro)
+- [[Deck-Segmento1-Contenido]] · [[Deck-Segmento2-Contenido]] — contenido de los decks de presentación (los .pptx entregados viven fuera del vault, en `ventas-storytelling/`)
+
 ## 🛠️ Guías para hacer features
 
 - [[Como-agregar-endpoint]]

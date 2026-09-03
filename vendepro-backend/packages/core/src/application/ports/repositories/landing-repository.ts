@@ -1,10 +1,10 @@
-import type { Landing } from '../../../domain/entities/landing'
+import type { Landing, LandingKind } from '../../../domain/entities/landing'
 import type { LandingStatusValue } from '../../../domain/value-objects/landing-status'
 
 export interface LandingFilters {
   status?: LandingStatusValue | LandingStatusValue[]
   agent_id?: string
-  kind?: 'lead_capture' | 'property'
+  kind?: LandingKind
 }
 
 export interface LandingRepository {
@@ -17,6 +17,11 @@ export interface LandingRepository {
    * landings de la org marcadas con ese template_type.
    */
   findTemplatesByType(orgId: string, templateType: string): Promise<Landing[]>
+  /**
+   * La landing publicada de un agente para un kind dado. Si hubiera más de una
+   * (no debería), devuelve la publicada más recientemente.
+   */
+  findPublishedByAgentAndKind(orgId: string, agentId: string, kind: LandingKind): Promise<Landing | null>
   save(landing: Landing): Promise<void>
   existsFullSlug(fullSlug: string): Promise<boolean>
 }

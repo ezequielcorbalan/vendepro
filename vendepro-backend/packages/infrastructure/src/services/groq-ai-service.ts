@@ -5,6 +5,30 @@ interface GroqMessage {
   content: string
 }
 
+/**
+ * Modelos de Groq, en un solo lugar porque el catálogo se mueve.
+ *
+ * Los `llama-*` que usaba este servicio (`llama3-8b-8192`,
+ * `llama-3.3-70b-versatile`, `meta-llama/llama-4-scout-17b-16e-instruct`) ya no
+ * están en el catálogo de la cuenta: la API responde `model_not_found`.
+ * Verificado contra `GET /openai/v1/models` el 2026-09-02.
+ *
+ * `groq/compound` y `groq/compound-mini` NO aceptan imágenes — con un
+ * `messages[].content` en formato array devuelven
+ * `"messages[0].content must be a string"`. Por eso la visión va por
+ * `qwen/qwen3.8-27b`, el único del catálogo actual que las acepta.
+ */
+const GROQ_MODELS = {
+  /** Texto + JSON (edición de bloques y de landings enteras con IA). */
+  text: 'groq/compound',
+  /** Extracción corta y barata (intención de un lead desde texto libre). */
+  textFast: 'groq/compound-mini',
+  /** Visión. `compound` no la soporta; ver el comentario de arriba. */
+  vision: 'qwen/qwen3.8-27b',
+  /** Transcripción de audio — sigue disponible, sin cambios. */
+  transcription: 'whisper-large-v3',
+} as const
+
 export class GroqAIService implements AIService {
   constructor(private readonly apiKey: string) {}
 
@@ -21,7 +45,7 @@ export class GroqAIService implements AIService {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'llama3-8b-8192',
+        model: GROQ_MODELS.textFast,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: text },
@@ -47,7 +71,7 @@ export class GroqAIService implements AIService {
   async transcribeAudio(audioBuffer: ArrayBuffer, mimeType: string): Promise<string> {
     const formData = new FormData()
     formData.append('file', new Blob([audioBuffer], { type: mimeType }), 'audio.webm')
-    formData.append('model', 'whisper-large-v3')
+    formData.append('model', GROQ_MODELS.transcription)
     formData.append('language', 'es')
 
     const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
@@ -61,13 +85,14 @@ export class GroqAIService implements AIService {
     return data.text ?? ''
   }
 
-  async extractMetricsFromScreenshot(_imageBase64: string): Promise<Record<string, unknown>> {
-    // Groq doesn't support vision — this falls through to AnthropicAIService
+  async extractMetricsFromScreenshot(_imageBase64: string, _mimeType?: string): Promise<Record<string, unknown>> {
+    // Se sigue delegando en AnthropicAIService: el modelo de visión de Groq
+    // (ver GROQ_MODELS.vision) no está calibrado para estas extracciones.
     throw new Error('Use AnthropicAIService for screenshot analysis')
   }
 
   async extractComparableFromScreenshot(_imageBase64: string, _mimeType?: string): Promise<import('@vendepro/core').ComparablePropertyData> {
-    // Groq doesn't support vision — this falls through to AnthropicAIService
+    // Ídem extractMetricsFromScreenshot: se delega en AnthropicAIService.
     throw new Error('Use AnthropicAIService for comparable extraction')
   }
 
@@ -168,7 +193,7 @@ Pedido del usuario: ${input.prompt}`
         signal: controller.signal,
         headers: { 'Authorization': `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+          model: GROQ_MODELS.vision,
           messages: [{
             role: 'user',
             content: [
@@ -208,7 +233,7 @@ Solo incluí campos con datos concretos que veas claramente. No inventes nada.`,
         signal: controller.signal,
         headers: { 'Authorization': `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
+          model: GROQ_MODELS.text,
           messages: [
             { role: 'system', content: system },
             { role: 'user', content: user },

@@ -1,4 +1,5 @@
 'use client'
+import { Button } from '@/components/ui/Button'
 import { useState } from 'react'
 import { Plus, Database, Building2 } from 'lucide-react'
 import { ComparableCard, type ComparableData } from './ComparableCard'
@@ -71,49 +72,41 @@ export function ComparablesSection<Key extends string | number>({
   return (
     <div className="space-y-5">
       {!hideHint && (hint ?? (
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-gray-500">
           Sumá comparables similares de la zona. Pueden ser <strong>publicaciones</strong>{' '}
           (mercado activo) o <strong>cierres reales</strong> (ventas efectivas) — los datos
           de cierres podés autorrellenarlos desde tu base.
         </p>
       ))}
 
-      {/* Botones de agregar */}
+      {/* Cuatro maneras de agregar un comparable. Antes eran cuatro botones de
+          cuatro colores distintos —gradiente, verde, azul y gris— como si cada
+          uno significara algo diferente: son la misma acción con distinta
+          fuente. Una principal y tres secundarias; lo que distingue a cada una
+          es el ícono. */}
       <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={() => onAdd(emptyPublicacion())}
-          className="flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-brand-pink to-brand-orange px-3 py-2 text-sm font-medium text-white hover:opacity-90"
-        >
-          <Plus className="h-4 w-4" /> Agregar publicación
-        </button>
-        <button
-          type="button"
-          onClick={() => setSoldPickerOpen(true)}
-          className="flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-100"
-        >
-          <Database className="h-4 w-4" /> Desde Cierres Reales
-        </button>
-        <button
-          type="button"
-          onClick={() => setPropsPickerOpen(true)}
-          className="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100"
-        >
-          <Building2 className="h-4 w-4" /> Desde una propiedad
-        </button>
-        <button
-          type="button"
+        <Button onClick={() => onAdd(emptyPublicacion())} icon={<Plus className="h-4 w-4" />}>
+          Agregar publicación
+        </Button>
+        <Button variant="outline" onClick={() => setSoldPickerOpen(true)} icon={<Database className="h-4 w-4" />}>
+          Desde Cierres Reales
+        </Button>
+        <Button variant="outline" onClick={() => setPropsPickerOpen(true)} icon={<Building2 className="h-4 w-4" />}>
+          Desde una propiedad
+        </Button>
+        <Button
+          variant="outline"
           onClick={() => onAdd(emptyVenta())}
-          className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+          icon={<Plus className="h-4 w-4" />}
           title="Cargar un cierre real a mano (sin tomarlo de tu base)"
         >
-          <Plus className="h-4 w-4" /> Cierre manual
-        </button>
+          Cierre manual
+        </Button>
       </div>
 
       {/* Lista */}
       {items.length === 0 ? (
-        <div className="rounded-card border border-dashed border-slate-300">
+        <div className="rounded-card border border-dashed border-gray-300">
           <EmptyState icon={<Building2 className="w-6 h-6" />} title="Todavía no agregaste comparables." />
         </div>
       ) : (

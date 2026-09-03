@@ -18,12 +18,13 @@ SQLite gestionado por Cloudflare D1. 51 tablas en 24 migrations (`migrations_v2/
 
 ## Tablas por dominio
 
-### 🔐 Auth & Users (5 tablas) — [[Dominio-Usuarios-Org]]
+### 🔐 Auth & Users (6 tablas) — [[Dominio-Usuarios-Org]]
 - `organizations` — orgs multi-tenant (multi-tenant root)
 - `users` — agentes y admins
 - `roles` — catálogo (owner|admin|supervisor|agent)
 - `password_reset_tokens` — TTL 1h
 - `org_variables` — variables configurables por org (para templates de tasación)
+- `agent_profiles` (mig 048) — perfil público del agente, 1:1 con `users` (PK = `user_id`), `UNIQUE (org_id, slug)`, kill-switch `is_public`. Alimenta la landing `/a/<org>/<agente>` — ver [[Dominio-Landings]]
 
 ### 👤 CRM — Leads & Contacts (5 tablas) — [[Dominio-Leads]] [[Dominio-Contactos]] [[Dominio-Tags]]
 - `leads` (24 columnas, índices por stage + assigned + created)
@@ -54,8 +55,8 @@ SQLite gestionado por Cloudflare D1. 51 tablas en 24 migrations (`migrations_v2/
 - `prefactibilidades` (~50 campos)
 
 ### 🎨 Landings (4 tablas) — [[Dominio-Landings]]
-- `landing_templates` (con 3 seeds globales)
-- `landings`
+- `landing_templates` (4 seeds globales tras la mig 049: `emprendimiento_premium`, `propiedad_clasica`, `captacion_rapida`, `tpl_agent_profile_v1`)
+- `landings` (kind `lead_capture` | `property` | `agent_profile`)
 - `landing_versions` (audit + rollback)
 - `landing_events` (pageview, cta_click, form_start, form_submit)
 
@@ -111,6 +112,14 @@ SQLite gestionado por Cloudflare D1. 51 tablas en 24 migrations (`migrations_v2/
 | 020 | reports_backfill_public_slug | backfill slugs |
 
 > **Nota**: hay números duplicados (002, 003, 017, 018) por trabajo paralelo. El workflow `migrate.yml` aplica las que falten en orden alfabético.
+
+> ⚠️ **Esta tabla está desactualizada**: se corta en la migración 020, pero `migrations_v2/` tiene hoy 58 archivos hasta la 049. Las dos más recientes, para este feature:
+> | # | Nombre | Resumen |
+> |---|---|---|
+> | 048 | agent_profiles | Tabla `agent_profiles`, 1:1 con `users`, `UNIQUE (org_id, slug)`, kill-switch `is_public` |
+> | 049 | landing_template_agent_profile | Template de sistema `tpl_agent_profile_v1` (org_id NULL), 9 bloques, `INSERT OR IGNORE` idempotente |
+>
+> Backfillar 021-047 en esta tabla queda fuera del alcance de este feature — ver [[Roadmap-estado-implementacion]] § KB desactualizado.
 
 ## Casos especiales
 

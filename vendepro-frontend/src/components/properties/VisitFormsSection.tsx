@@ -6,8 +6,6 @@ import {
   MessageSquare,
   ClipboardList,
   Star,
-  ThumbsUp,
-  ThumbsDown,
   Archive,
   ArchiveRestore,
   Trash2,
@@ -17,6 +15,14 @@ import {
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { Card } from '@/components/ui/Card'
+import { WidgetHeader } from '@/components/ui/WidgetHeader'
+import { Badge } from '@/components/ui/Badge'
+import { StatusBadge } from '@/components/ui/StatusBadge'
+import { Button } from '@/components/ui/Button'
+import { Alert } from '@/components/ui/Alert'
+import { Text } from '@/components/ui/Typography'
+import { VISIT_BUY_INTENTIONS, VISIT_SITUATIONS, VISIT_SOURCES, type VisitBuyIntention } from '@/lib/crm-config'
 
 type BuyIntention = 'compraria' | 'tal_vez' | 'no' | null
 
@@ -39,23 +45,6 @@ interface VisitForm {
   deleted_at: string | null
   sent_at: string
   created_at: string
-}
-
-const SOURCE_LABEL: Record<string, string> = {
-  argenprop: 'Argenprop',
-  mercadolibre: 'Mercado Libre',
-  zonaprop: 'Zonaprop',
-  instagram: 'Instagram',
-  recomendacion: 'Recomendación',
-  otro: 'Otros',
-}
-
-const SITUATION_LABEL: Record<string, string> = {
-  mudanza: 'Mudanza',
-  primera_vivienda: 'Primera vivienda',
-  inversion: 'Inversión',
-  downsizing: 'Downsizing',
-  otro: 'Otros',
 }
 
 export function VisitFormsSection({
@@ -134,63 +123,42 @@ export function VisitFormsSection({
   }
 
   return (
-    <div className="bg-white rounded-card shadow-card border border-gray-100 p-6">
-      {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-control bg-gradient-to-br from-brand-pink to-[#ff5e3a] flex items-center justify-center text-white">
-            <ClipboardList className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-base font-semibold text-ink">Fichas de visita</h2>
-              <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                {submitted.length}
-              </span>
-            </div>
-            <p className="text-xs text-gray-500 mt-0.5">
-              Compartí el link con los visitantes para que completen su ficha después de la visita.
-            </p>
-          </div>
-        </div>
-
-        {publicLink && (
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleWhatsApp}
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 px-3 py-1.5 rounded-lg transition-colors"
-            >
-              <MessageSquare className="w-4 h-4" />
+    <Card>
+      <WidgetHeader
+        size="lg"
+        icon={<ClipboardList className="w-5 h-5" />}
+        title="Fichas de visita"
+        badge={<Badge tone="neutral">{submitted.length}</Badge>}
+        subtitle="Compartí el link con los visitantes para que completen su ficha después de la visita."
+        className="mb-4"
+        action={publicLink ? (
+          <>
+            <Button variant="outline" size="sm" onClick={handleWhatsApp} icon={<MessageSquare className="w-4 h-4" />}>
               WhatsApp
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handleCopy}
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 px-3 py-1.5 rounded-lg transition-colors"
+              icon={copied ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
             >
-              {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
               {copied ? 'Copiado' : 'Copiar link'}
-            </button>
-          </div>
-        )}
-      </div>
+            </Button>
+          </>
+        ) : undefined}
+      />
 
       {/* Toggle archived */}
       <div className="flex justify-end mb-3">
-        <button
-          type="button"
-          onClick={() => setShowArchived((v) => !v)}
-          className="text-xs text-gray-500 hover:text-gray-700"
-        >
+        <Button variant="ghost" size="sm" onClick={() => setShowArchived((v) => !v)} className="text-xs text-gray-500">
           {showArchived ? 'Ocultar archivadas' : 'Ver archivadas'}
-        </button>
+        </Button>
       </div>
 
       {/* List */}
       {loading ? (
         <div className="py-10 flex items-center justify-center">
-          <Loader2 className="w-6 h-6 animate-spin text-brand-pink" />
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
         </div>
       ) : submitted.length === 0 ? (
         <div className="border-2 border-dashed border-gray-200 rounded-card">
@@ -213,7 +181,7 @@ export function VisitFormsSection({
           ))}
         </div>
       )}
-    </div>
+    </Card>
   )
 }
 
@@ -239,78 +207,72 @@ function SubmittedCard({
             <h3 className="font-semibold text-ink truncate">
               {item.visitor_name || 'Visitante'}
             </h3>
-            {archived && (
-              <span className="text-[10px] uppercase tracking-wide font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
-                Archivada
-              </span>
-            )}
+            {archived && <StatusBadge size="sm" label="Archivada" />}
           </div>
-          <div className="text-xs text-gray-500 ml-6">
+          <Text size="xs" tone="muted" className="ml-6">
             {item.submitted_at ? formatDate(item.submitted_at) : '—'}
-          </div>
+          </Text>
         </div>
 
         <div className="flex items-center gap-3 flex-shrink-0">
           {item.rating !== null && <Stars value={item.rating} />}
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="icon"
             disabled={busy}
             onClick={onArchive}
+            aria-label={archived ? 'Desarchivar' : 'Archivar'}
             title={archived ? 'Desarchivar' : 'Archivar'}
-            className="p-1.5 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+            className="p-1.5 text-gray-400"
           >
             {archived ? <ArchiveRestore className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
             disabled={busy}
             onClick={onDelete}
+            aria-label="Borrar"
             title="Borrar"
-            className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-50"
+            className="p-1.5 text-gray-400 hover:text-danger"
           >
             <Trash2 className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Liked / Disliked */}
       <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
         {item.liked && (
-          <div className="rounded-lg bg-green-50/60 border border-green-100 px-3 py-2">
-            <div className="flex items-center gap-1.5 text-xs font-medium text-green-700 mb-1">
-              <ThumbsUp className="w-3.5 h-3.5" /> Le gustó
-            </div>
-            <p className="text-sm text-gray-700 whitespace-pre-wrap">{item.liked}</p>
-          </div>
+          <Alert tone="success" title="Le gustó">
+            <span className="whitespace-pre-wrap">{item.liked}</span>
+          </Alert>
         )}
         {item.disliked && (
-          <div className="rounded-lg bg-red-50/60 border border-red-100 px-3 py-2">
-            <div className="flex items-center gap-1.5 text-xs font-medium text-red-700 mb-1">
-              <ThumbsDown className="w-3.5 h-3.5" /> No le gustó
-            </div>
-            <p className="text-sm text-gray-700 whitespace-pre-wrap">{item.disliked}</p>
-          </div>
+          <Alert tone="danger" title="No le gustó">
+            <span className="whitespace-pre-wrap">{item.disliked}</span>
+          </Alert>
         )}
       </div>
 
       {/* Badges row */}
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
-        {item.buy_intention === 'compraria' && (
-          <Badge color="green">Compraría</Badge>
+        {item.buy_intention && VISIT_BUY_INTENTIONS[item.buy_intention as VisitBuyIntention] && (
+          <Badge tone={VISIT_BUY_INTENTIONS[item.buy_intention as VisitBuyIntention].tone}>
+            {VISIT_BUY_INTENTIONS[item.buy_intention as VisitBuyIntention].label}
+          </Badge>
         )}
-        {item.buy_intention === 'no' && <Badge color="red">No compraría</Badge>}
-        {item.buy_intention === 'tal_vez' && <Badge color="amber">Tal vez</Badge>}
         {item.situation && (
-          <Badge color="gray">{SITUATION_LABEL[item.situation] ?? item.situation}</Badge>
+          <Badge tone="neutral">{VISIT_SITUATIONS[item.situation] ?? item.situation}</Badge>
         )}
         {item.source && (
-          <Badge color="orange">Vía: {SOURCE_LABEL[item.source] ?? item.source}</Badge>
+          <Badge tone="info">Vía: {VISIT_SOURCES[item.source] ?? item.source}</Badge>
         )}
       </div>
 
       {/* Observations */}
       {item.observations && (
-        <p className="mt-2 text-sm text-gray-600 italic">"{item.observations}"</p>
+        <Text size="sm" tone="muted" className="mt-2 italic">&ldquo;{item.observations}&rdquo;</Text>
       )}
     </div>
   )
@@ -323,32 +285,11 @@ function Stars({ value }: { value: number }) {
         <Star
           key={n}
           className={`w-4 h-4 ${
-            n <= value ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200 fill-gray-100'
+            n <= value ? 'text-warning fill-warning' : 'text-gray-200 fill-gray-100'
           }`}
         />
       ))}
     </div>
-  )
-}
-
-function Badge({
-  color,
-  children,
-}: {
-  color: 'green' | 'red' | 'amber' | 'gray' | 'orange'
-  children: React.ReactNode
-}) {
-  const cls = {
-    green: 'bg-green-100 text-green-800 border-green-200',
-    red: 'bg-red-100 text-red-800 border-red-200',
-    amber: 'bg-amber-100 text-amber-800 border-amber-200',
-    gray: 'bg-gray-100 text-gray-700 border-gray-200',
-    orange: 'bg-orange-100 text-orange-800 border-orange-200',
-  }[color]
-  return (
-    <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${cls}`}>
-      {children}
-    </span>
   )
 }
 

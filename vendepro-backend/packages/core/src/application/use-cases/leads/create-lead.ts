@@ -2,6 +2,7 @@ import type { LeadRepository } from '../../ports/repositories/lead-repository'
 import type { IdGenerator } from '../../ports/id-generator'
 import type { LeadPipeline } from '../../../domain/value-objects/lead-stage'
 import { Lead } from '../../../domain/entities/lead'
+import { parseMoneyOrNull } from '../../../shared/utils'
 
 export interface CreateLeadInput {
   org_id: string
@@ -49,7 +50,7 @@ export class CreateLeadUseCase {
       stage: 'nuevo',
       assigned_to: input.assigned_to ?? null,
       notes: input.notes ?? null,
-      estimated_value: input.estimated_value ? parseFloat(String(input.estimated_value)) : null,
+      estimated_value: parseMoneyOrNull(input.estimated_value),
       budget: input.budget ?? null,
       timing: input.timing ?? null,
       personas_trabajo: null,

@@ -51,3 +51,4 @@ export {
   VENDEPRO_BRAND,
 } from './email-template'
 export type { EmailBrand, RenderEmailHtmlInput, RenderEmailTextInput } from './email-template'
+export * from './email-deliverability'
