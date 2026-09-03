@@ -155,10 +155,26 @@ app.get('/team-stats', async (c) => {
   return c.json(stats)
 })
 
+// Performance de un agente. Por defecto la del usuario logueado; la
+// inmobiliaria puede pedir la de cualquiera con ?agent_id=, para ver cómo
+// viene alguien del equipo. Un agente que intente pedir la de otro recibe la
+// suya: el permiso se resuelve en el servidor y no en el navegador.
 app.get('/agent-stats', async (c) => {
   const db = c.env.DB
   const orgId = c.get('orgId')
-  const agentId = c.get('userId')
+  const role = c.get('userRole')
+  const canSeeOthers = role === 'admin' || role === 'owner' || role === 'supervisor'
+  const requested = c.req.query('agent_id')
+
+  // El id pedido tiene que ser de la propia org: `findProfileById` busca por
+  // id sin filtrar organización, así que sin este chequeo un admin podría
+  // leer el nombre de un usuario de otra inmobiliaria pasando su id.
+  let agentId = c.get('userId')
+  if (canSeeOthers && requested && requested !== agentId) {
+    const target = await new D1UserRepository(db).findById(requested, orgId)
+    if (!target) return c.json({ error: 'Agente no encontrado' }, 404)
+    agentId = requested
+  }
 
   const stats = await new GetAgentStatsUseCase(
     new D1UserRepository(db),

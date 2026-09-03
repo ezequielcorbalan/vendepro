@@ -8,6 +8,8 @@ import {
 } from 'lucide-react'
 import { LEAD_STAGES, LEAD_PIPELINE_STAGES, EVENT_TYPES, getStageConfig } from '@/lib/crm-config'
 import { apiFetch } from '@/lib/api'
+import { cn } from '@/lib/utils'
+import { AgentSelector, type AgentOption } from '@/components/ui/AgentSelector'
 import { scopeQueryString, isAdminOrSupervisor } from '@/lib/agent-scope'
 import { getCurrentUser, isOnboardingDone, markOnboardingDone } from '@/lib/auth'
 import OnboardingModal from '@/components/onboarding/OnboardingModal'
@@ -82,6 +84,10 @@ export default function DashboardCRM() {
   // Se resuelve en el efecto (localStorage no existe en el render del
   // servidor) para no romper la hidratación.
   const [isOrgView, setIsOrgView] = useState(false)
+  // Agente que la inmobiliaria está mirando; null = todos. Un agente no ve el
+  // selector y su dashboard ya viene acotado a él por `scopeQueryString`.
+  const [viewedAgent, setViewedAgent] = useState<string | null>(null)
+  const [agents, setAgents] = useState<AgentOption[]>([])
 
   useEffect(() => {
     const user = getCurrentUser()
@@ -95,15 +101,17 @@ export default function DashboardCRM() {
     // Skeleton solo en la primera carga; al cambiar el período del funnel se
     // actualiza sin parpadear el resto del dashboard.
     if (!data) setLoading(true)
-    // El scope hace que un agente vea SUS números y no los de la inmobiliaria
-    // entera. Es el mismo helper que ya usa Leads; el dashboard no lo llamaba.
-    const scope = scopeQueryString()
-    apiFetch('analytics', `/dashboard${scope}${scope ? '&' : '?'}period=${period}`)
+    // Dos scopes distintos que terminan en el mismo parámetro:
+    //  - un agente queda acotado a sí mismo (scopeQueryString, igual que Leads),
+    //  - la inmobiliaria elige a quién mirar con el selector.
+    const agentId = viewedAgent ?? new URLSearchParams(scopeQueryString().slice(1)).get('agent_id')
+    const scope = agentId ? `?agent_id=${agentId}&` : '?'
+    apiFetch('analytics', `/dashboard${scope}period=${period}`)
       .then(r => r.json() as Promise<any>)
       .then(d => { setData(d); setLoading(false) })
       .catch(() => setLoading(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [period])
+  }, [period, viewedAgent])
 
   useEffect(() => {
     const orgView = isAdminOrSupervisor()
@@ -112,6 +120,12 @@ export default function DashboardCRM() {
     apiFetch('analytics', '/team-stats')
       .then(r => r.json() as Promise<any>)
       .then(d => { if (Array.isArray(d)) setTeam(d) })
+      .catch(() => {})
+    // La lista completa del equipo, no sólo quienes tienen leads: para mirar a
+    // alguien recién incorporado hay que poder encontrarlo en el buscador.
+    apiFetch('admin', '/agents')
+      .then(r => r.json() as Promise<any>)
+      .then(d => { if (Array.isArray(d)) setAgents(d) })
       .catch(() => {})
   }, [])
 
@@ -149,6 +163,10 @@ export default function DashboardCRM() {
   const activeLeads = ACTIVE_STAGES.reduce((sum, s) => sum + (sb[s] || 0), 0)
   const captaciones = sb['captado'] || 0
 
+  const viewedAgentName = viewedAgent
+    ? agents.find(a => a.id === viewedAgent)?.full_name ?? 'este agente'
+    : null
+
   const last7 = [...Array(7)].map((_, i) => {
     const d = new Date()
     d.setDate(d.getDate() - (6 - i))
@@ -169,13 +187,36 @@ export default function DashboardCRM() {
     <div className="space-y-5 sm:space-y-6">
       <PageHeader
         title="Dashboard CRM"
-        subtitle="Resumen ejecutivo del negocio"
+        subtitle={viewedAgentName ? `Cómo viene ${viewedAgentName}` : 'Resumen ejecutivo del negocio'}
         actions={
-          <Link href="/leads" className="bg-primary text-white px-4 py-2 rounded-control text-sm font-medium hover:bg-primary-hover inline-flex items-center gap-2">
-            <Users className="w-4 h-4" /> <span className="hidden sm:inline">Ver leads</span>
-          </Link>
+          <div className="flex items-center gap-2">
+            {isOrgView && agents.length > 0 && (
+              <AgentSelector agents={agents} value={viewedAgent} onChange={setViewedAgent} />
+            )}
+            <Link href="/leads" className="bg-primary text-white px-4 py-2 rounded-control text-sm font-medium hover:bg-primary-hover inline-flex items-center gap-2">
+              <Users className="w-4 h-4" /> <span className="hidden sm:inline">Ver leads</span>
+            </Link>
+          </div>
         }
       />
+
+      {/* Mirando a una persona: se avisa de forma explícita, porque los mismos
+          KPIs con otro alcance se leen mal si no queda claro de quién son. */}
+      {viewedAgentName && (
+        <Alert tone="brand" title={`Estás viendo el dashboard de ${viewedAgentName}`} className="p-3">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <Link href={`/mi-performance?agent=${viewedAgent}`} className="text-sm text-primary hover:underline">
+              Ver su performance completa →
+            </Link>
+            <Link href={`/leads?agent=${viewedAgent}`} className="text-sm text-primary hover:underline">
+              Ver sus leads →
+            </Link>
+            <button onClick={() => setViewedAgent(null)} className="text-sm text-gray-500 hover:text-ink">
+              Volver a toda la inmobiliaria
+            </button>
+          </div>
+        </Alert>
+      )}
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <StatTile icon={<Users className="w-5 h-5" />} label="Leads activos" value={activeLeads} tone="bg-blue-50 text-blue-600" href="/leads" />
@@ -202,7 +243,9 @@ export default function DashboardCRM() {
               </Alert>
             </Link>
           )}
-          {todayEvents && todayEvents.length > 0 && (
+          {/* La agenda del día es de toda la org, no del agente que se está
+              mirando: mostrarla ahí sería un número que no es suyo. */}
+          {!viewedAgentName && todayEvents && todayEvents.length > 0 && (
             <Link href="/calendario" className="block">
               <Alert tone="info" title={`${todayEvents.length} evento${todayEvents.length > 1 ? 's' : ''} hoy`} className="h-full p-3 transition-opacity hover:opacity-85">
                 Calendario del día
@@ -261,7 +304,12 @@ export default function DashboardCRM() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
+      {/* Mirando a otra persona se ocultan su agenda del día y su feed de
+          actividad: para saber cómo viene alcanza con los números agregados
+          (leads, conversión, cuánta actividad). El detalle de a qué hora tiene
+          cada cosa y qué hizo hace veinte minutos es su día, no una métrica. */}
+      <div className={cn('grid grid-cols-1 gap-4 sm:gap-5', viewedAgentName ? 'lg:grid-cols-2' : 'lg:grid-cols-3')}>
+        {!viewedAgentName && (
         <Card className="p-4 sm:p-5">
           <Heading level={4} as="h2" className="mb-3 flex items-center gap-2">
             <CalendarDays className="w-4 h-4 text-gray-600" /> Hoy
@@ -289,6 +337,7 @@ export default function DashboardCRM() {
             <Text tone="muted">Sin eventos programados</Text>
           )}
         </Card>
+        )}
 
         <Card className="p-4 sm:p-5">
           <Heading level={4} as="h2" className="mb-3 flex items-center gap-2">
@@ -325,9 +374,18 @@ export default function DashboardCRM() {
           {isOrgView && team.length > 0 ? (
             <div className="space-y-3">
               {team.map((agent: any) => (
-                <Link key={agent.id} href={`/leads?agent=${agent.id}`} className="block space-y-1 group">
+                <button
+                  key={agent.id}
+                  type="button"
+                  // Clickear a alguien abre SU dashboard: es lo que uno quiere
+                  // hacer después de ver el ranking y algo le llama la atención.
+                  onClick={() => setViewedAgent(agent.id)}
+                  className="w-full text-left space-y-1 group"
+                >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm text-gray-700 truncate group-hover:text-primary">{agent.full_name}</span>
+                    <span className={cn('text-sm truncate group-hover:text-primary', viewedAgent === agent.id ? 'text-primary font-medium' : 'text-gray-700')}>
+                      {agent.full_name}
+                    </span>
                     <span className="text-xs text-gray-400 shrink-0">{agent.actividad_mes} act.</span>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -345,7 +403,7 @@ export default function DashboardCRM() {
                       style={{ width: `${Math.min(agent.conversion * 2, 100)}%` }}
                     />
                   </div>
-                </Link>
+                </button>
               ))}
             </div>
           ) : (
@@ -368,7 +426,7 @@ export default function DashboardCRM() {
         </Card>
       </div>
 
-      {recentActivities && recentActivities.length > 0 && (
+      {!viewedAgentName && recentActivities && recentActivities.length > 0 && (
         <Card className="p-4 sm:p-5">
           <div className="flex items-center justify-between mb-3">
             <Heading level={4} as="h2" className="flex items-center gap-2">
