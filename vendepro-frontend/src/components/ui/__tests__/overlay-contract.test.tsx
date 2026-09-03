@@ -54,8 +54,8 @@ describe('el contrato de overlay detecta un overlay armado a mano', () => {
 })
 
 describe('Modal · contrato de overlay', () => {
-  const contrato = overlayContract(onClose => (
-    <Modal open onClose={onClose} title="Publicar">cuerpo</Modal>
+  const contrato = overlayContract((onClose, body) => (
+    <Modal open onClose={onClose} title="Publicar">{body ?? 'cuerpo'}</Modal>
   ))
 
   it('cierra con Escape', contrato.cierraConEsc)
@@ -64,6 +64,7 @@ describe('Modal · contrato de overlay', () => {
   it('devuelve el foco al disparador al cerrar', contrato.devuelveElFoco)
   it('se monta en un Portal, no en el árbol local', contrato.seMontaEnPortal)
   it('es un diálogo modal accesible', contrato.esDialogoModal)
+  it('deja tipear adentro', contrato.dejaTipearAdentro)
 })
 
 describe('Modal · sheet', () => {
@@ -96,13 +97,17 @@ describe('Modal · sheet', () => {
   })
 
   it('cumple el contrato de overlay igual que el modal centrado', () => {
-    const c = overlayContract(onClose => (
-      <Modal open onClose={onClose} title="T" sheet>cuerpo</Modal>
+    const c = overlayContract((onClose, body) => (
+      <Modal open onClose={onClose} title="T" sheet>{body ?? 'cuerpo'}</Modal>
     ))
     c.cierraConEsc()
     c.bloqueaYRestauraElScroll()
     c.mueveElFocoAdentro()
     c.seMontaEnPortal()
+    // Los 6 overlays que estrenaron `sheet` son todos formularios, así que éste
+    // es el chequeo que más importa acá: sin el fix de `useOverlay` (onClose por
+    // ref) el foco se iba del input en la primera tecla.
+    c.dejaTipearAdentro()
   })
 })
 
