@@ -1,6 +1,6 @@
 import { expect, vi } from 'vitest'
 import { render, screen, cleanup, fireEvent } from '@testing-library/react'
-import type { ReactElement } from 'react'
+import { useState, type ReactElement, type ReactNode } from 'react'
 
 /**
  * Contrato de overlay: las cinco cosas que un panel modal tiene que hacer y que
@@ -18,7 +18,14 @@ import type { ReactElement } from 'react'
  * vive en un solo lugar, migrar deja de depender de que alguien se acuerde de
  * probar las cinco cosas a mano.
  */
-export function overlayContract(renderOverlay: (onClose: () => void) => ReactElement) {
+export function overlayContract(
+  /**
+   * `body` es opcional y sólo lo usa `dejaTipearAdentro`, que necesita meter un
+   * input adentro del panel. Los demás chequeos lo dejan en `undefined` y el
+   * consumidor renderiza su cuerpo por defecto.
+   */
+  renderOverlay: (onClose: () => void, body?: ReactNode) => ReactElement,
+) {
   return {
     /** 1. Cierra con Esc. Es el que más faltaba: un panel que atrapa la
      *     atención y no se puede cerrar con el teclado. */
@@ -89,6 +96,57 @@ export function overlayContract(renderOverlay: (onClose: () => void) => ReactEle
         container.contains(dialog),
         'el overlay se montó en el árbol local en vez de un Portal',
       ).toBe(false)
+      cleanup()
+    },
+
+    /** 6. Se puede TIPEAR en un input de adentro sin perder el foco.
+     *
+     *     El bug que motivó este chequeo: `useOverlay` tenía `onClose` en las
+     *     deps del efecto, y casi todos los consumidores lo pasan como arrow
+     *     inline. Identidad nueva en cada render ⇒ cada tecla re-corría el
+     *     focus-trap ⇒ el foco saltaba al primer focusable del panel (el botón
+     *     "Cerrar") ⇒ el primer espacio lo activaba y cerraba el panel. En el
+     *     panel de IA quedaba escrita una sola letra.
+     *
+     *     Ninguno de los otros cinco chequeos lo detecta: todos miran un solo
+     *     render. Éste necesita escribir MÁS DE UN caracter, porque el primero
+     *     siempre entra. */
+    dejaTipearAdentro() {
+      const onClose = vi.fn()
+
+      // El harness reproduce las DOS condiciones del bug real, y las dos hacen
+      // falta: (a) estado que cambia con cada tecla, así el overlay re-renderiza;
+      // (b) `onClose` pasado como arrow INLINE, que en cada render es una función
+      // nueva. Con `onClose` en las deps del efecto, (b) invalidaba el efecto y
+      // (a) lo disparaba. Si el harness pasara una referencia estable, el test
+      // pasaría incluso con el bug puesto.
+      function Harness() {
+        const [valor, setValor] = useState('')
+        return renderOverlay(
+          () => onClose(),
+          <textarea
+            aria-label="campo"
+            value={valor}
+            onChange={e => setValor(e.target.value)}
+          />,
+        )
+      }
+
+      render(<Harness />)
+      const input = screen.getByRole('textbox') as HTMLTextAreaElement
+      input.focus()
+
+      for (const ch of 'hola mundo') {
+        fireEvent.keyDown(document, { key: ch === ' ' ? ' ' : ch })
+        fireEvent.change(input, { target: { value: input.value + ch } })
+      }
+
+      expect(input.value, 'se perdieron caracteres al tipear dentro del overlay').toBe('hola mundo')
+      expect(
+        document.activeElement,
+        'el foco se escapó del input mientras se tipeaba (focus-trap re-corriendo por render)',
+      ).toBe(input)
+      expect(onClose, 'el overlay se cerró solo mientras se tipeaba').not.toHaveBeenCalled()
       cleanup()
     },
 

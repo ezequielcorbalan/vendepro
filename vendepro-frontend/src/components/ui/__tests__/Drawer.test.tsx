@@ -5,9 +5,9 @@ import { overlayContract } from './overlay-contract'
 
 afterEach(cleanup)
 
-const contrato = overlayContract(onClose => (
+const contrato = overlayContract((onClose, body) => (
   <Drawer open onClose={onClose} title="Configuración">
-    <p>cuerpo</p>
+    {body ?? <p>cuerpo</p>}
   </Drawer>
 ))
 
@@ -17,6 +17,7 @@ describe('Drawer · contrato de overlay', () => {
   it('mueve el foco adentro del panel al abrir', contrato.mueveElFocoAdentro)
   it('devuelve el foco al disparador al cerrar', contrato.devuelveElFoco)
   it('se monta en un Portal, no en el árbol local', contrato.seMontaEnPortal)
+  it('deja tipear adentro sin perder el foco ni cerrarse', contrato.dejaTipearAdentro)
   it('es un diálogo modal accesible', contrato.esDialogoModal)
 })
 

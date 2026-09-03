@@ -48,7 +48,7 @@ export interface AIService {
   extractLeadIntent(text: string): Promise<LeadIntent>
   extractLeadFromImage(imageBase64: string, mimeType?: string): Promise<LeadIntent>
   transcribeAudio(audioBuffer: ArrayBuffer, mimeType: string): Promise<string>
-  extractMetricsFromScreenshot(imageBase64: string): Promise<Record<string, unknown>>
+  extractMetricsFromScreenshot(imageBase64: string, mimeType?: string): Promise<Record<string, unknown>>
   extractComparableFromScreenshot(imageBase64: string, mimeType?: string): Promise<ComparablePropertyData>
 
   editLandingBlock(input: EditBlockInput): Promise<EditBlockResult>

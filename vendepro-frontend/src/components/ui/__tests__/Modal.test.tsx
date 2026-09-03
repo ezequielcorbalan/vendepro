@@ -1,8 +1,19 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen, cleanup, fireEvent } from '@testing-library/react'
 import { Modal } from '../Modal'
+import { overlayContract } from './overlay-contract'
 
 afterEach(cleanup)
+
+const contrato = overlayContract((onClose, body) => (
+  <Modal open onClose={onClose} title="Publicar">
+    {body ?? <p>cuerpo</p>}
+  </Modal>
+))
+
+describe('Modal · contrato de overlay', () => {
+  it('deja tipear adentro sin perder el foco ni cerrarse', contrato.dejaTipearAdentro)
+})
 
 describe('Modal', () => {
   it('no renderiza nada cuando open=false', () => {

@@ -1,3 +1,4 @@
+import { isUndeliverableEmail } from '@vendepro/core'
 import type { EmailService, SendEmailInput } from '@vendepro/core'
 
 const RESEND_API_URL = 'https://api.resend.com'
@@ -8,6 +9,12 @@ export class ResendEmailService implements EmailService {
   constructor(private readonly apiKey: string) {}
 
   async send(input: SendEmailInput): Promise<void> {
+    // Puerta unica de salida: filtrar aca cubre automatizaciones, campanas,
+    // emails de prueba y recuperacion de contrasena de una sola vez.
+    if (isUndeliverableEmail(input.to?.email)) {
+      console.warn(`[ResendEmailService] omitido: ${input.to?.email} es un dominio reservado, no entregable`)
+      return
+    }
     const headers: Record<string, string> = {
       'Authorization': `Bearer ${this.apiKey}`,
       'Content-Type': 'application/json',
@@ -25,6 +32,11 @@ export class ResendEmailService implements EmailService {
   }
 
   async sendBatch(inputs: SendEmailInput[]): Promise<void> {
+    const omitidos = inputs.filter(i => isUndeliverableEmail(i.to?.email))
+    if (omitidos.length > 0) {
+      console.warn(`[ResendEmailService] batch: ${omitidos.length} de ${inputs.length} omitidos por dominio reservado`)
+      inputs = inputs.filter(i => !isUndeliverableEmail(i.to?.email))
+    }
     if (inputs.length === 0) return
     if (inputs.length > RESEND_BATCH_LIMIT) {
       throw new Error(`Resend batch admite hasta ${RESEND_BATCH_LIMIT} emails por request (recibidos: ${inputs.length})`)
