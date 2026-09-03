@@ -35,6 +35,7 @@
 Todo el núcleo está en producción con backend + UI:
 
 - **Leads**: 6 use cases (`core/src/application/use-cases/leads/`), etapas (`LEAD_STAGES` 10 etapas + `TAG_PIPELINES` en `core/src/shared/crm-config.ts`), historial en `stage_history`, pipelines separados vendedor/comprador (`leads.pipeline`, migración 039).
+- **Cierre de leads 🟢 (03-sep-2026)**: los cerrados salen del pipeline también en la vista Lista (antes solo del kanban), con toggle "Cerrados (N)". `perdido` se muestra como **"No captado"** y `finalizado` como **"Vendido"** — labels, las claves no cambian (ver [[Estados]] §1). Cerrar un no captado abre `MarkNotCapturedModal` (motivo + cuándo recontactar → `next_step_date`) y dispara la automatización `recontacto_no_captado`, que agenda tareas a 30 y 120 días (migración **050**, activa por org). Pendiente operativo: aplicar la migración 050 y deployar el frontend.
 - **Contactos, calendario, actividades, tags, objetivos, visit forms**: en producción (`api-crm`, `api-properties`, `api-admin`).
 - **Google Calendar** 🟢: espejo unidireccional VendéPro→Google + lectura solo-visualización (`use-cases/integrations/`, `api-crm/src/index.ts:725-900`). Pendiente operativo: secrets `GOOGLE_CLIENT_ID/SECRET` y publicar el consent screen.
 - **KiteProp** 🟢: sync manual + cron `*/15` + backfill + enrich + mapeo de agentes + UI (`configuracion/conexiones`). Habla MCP JSON-RPC (`infrastructure/src/services/kiteprop-mcp-client.ts`).
@@ -149,7 +150,7 @@ El kind `property` es solo un **estilo**: `landings` no tiene `property_id` — 
 
 **Más avanzado de lo que el roadmap sugiere** — hubo dos generaciones:
 - v1 (`email_automations`, migración 039) fue **absorbida y retirada** (migración 045).
-- v2 🟢: motor genérico (`automations`, `automation_actions`, `automation_runs`, `automation_jobs` con cola durable, migraciones 043-046), **11** recetas de sistema seedeadas, UI completa (`configuracion/automatizaciones/` con editor + generación de secuencia por IA), dry-run `:id/test`.
+- v2 🟢: motor genérico (`automations`, `automation_actions`, `automation_runs`, `automation_jobs` con cola durable, migraciones 043-046), **12** recetas de sistema seedeadas —11 en la 044 más `recontacto_no_captado` en la 050—, UI completa (`configuracion/automatizaciones/` con editor + generación de secuencia por IA), dry-run `:id/test`.
 - Galería de recetas agrupada por momento del negocio (`RECIPE_CATEGORIES` en `automation-catalog.ts` → `meta.recipe_categories` + `category` en cada `CatalogItem`): 5 secciones (entrada de leads, alertas y SLA, tasación, captación, propiedades), buscador por nombre/disparador/acción, filtro por categoría, y las ya activadas ocultas detrás de un switch. La categoría es metadata de presentación: vive en el catálogo declarativo, no en la base.
 
 **Los 3 casos del roadmap**:

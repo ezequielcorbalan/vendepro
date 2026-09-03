@@ -7,6 +7,8 @@
  * formateadores — lo que el design system pide centralizar en `lib`.
  */
 
+import { getAnyStageLabel } from './crm-config'
+
 // ── Tipos que devuelve la API ─────────────────────────────────
 
 export type DedupeScope = 'daily' | 'once' | 'always'
@@ -252,8 +254,7 @@ export function fmtDateTime(iso: string | null): string {
 
 /** Etapas legibles: 'en_tasacion' → 'En tasación'. */
 export function stageLabel(stage: string): string {
-  const withSpaces = stage.replace(/_/g, ' ')
-  return withSpaces.charAt(0).toUpperCase() + withSpaces.slice(1)
+  return getAnyStageLabel(stage)
 }
 
 /** Resumen de una automatización en una línea, para la card de la lista. */

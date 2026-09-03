@@ -560,6 +560,8 @@ const RECIPE_CATEGORY_BY_TEMPLATE: Record<string, RecipeCategory> = {
   email_post_tasacion: 'tasacion',
   lead_calificado_visita: 'captacion',
   lead_captado: 'captacion',
+  // El otro final de la captación: no se captó, y se reintenta en unos meses.
+  recontacto_no_captado: 'captacion',
   propiedad_publicada: 'propiedades',
   publicacion_por_vencer: 'propiedades',
 }
