@@ -76,7 +76,7 @@ borde, una lista que scrollea sola).
 
 > **Trampa:** el panel ya es una columna acotada al 90% del alto de pantalla, con
 > encabezado y `footer` fijos y el cuerpo scrolleando solo. No armes un
-> `sticky top-0`/`sticky bottom-0` adentro del contenido (regla 25), y no intentes
+> `sticky top-0`/`sticky bottom-0` adentro del contenido (regla 24), y no intentes
 > acotar el alto desde el `className` del panel: `children` va envuelto en el div
 > del cuerpo, así que un `flex flex-col` de afuera no llega y el contenido se
 > recorta en silencio.
@@ -199,12 +199,6 @@ consumidor pone los datos; la forma sale de acá.
 **`Heading`** (`level` 1–4) y **`Text`** (`size`/`weight`/`tone`) — nunca `<h1>` ni
 `<p>` con clases sueltas. Los títulos de sección (Heading 2) van en semibold. Los
 dos salen de `@/components/ui/Typography`.
-
-> **Trampa, y `tsc` no te avisa:** `Text` choca con el `Text` global del DOM (el
-> nodo de texto, declarado en `lib.dom`). Si lo usás sin importarlo,
-> `tsc --noEmit` pasa verde y la pantalla explota recién al renderizar. Pasó
-> migrando un overlay de `leads/[id]`. Hay un ratchet trabado en 0 que lo caza
-> (regla 24), pero si ves un `<Text>` en una pantalla nueva, mirá el import.
 
 **`EmptyState`** — lista vacía: ícono + título + descripción + acción.
 
