@@ -16,6 +16,7 @@ import OnboardingModal from '@/components/onboarding/OnboardingModal'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
 import { StatTile } from '@/components/ui/StatTile'
+import { ProgressBar } from '@/components/ui/Progress'
 import { Heading, Text } from '@/components/ui/Typography'
 import { Alert } from '@/components/ui/Alert'
 import { Select } from '@/components/ui/Input'
@@ -397,12 +398,10 @@ export default function DashboardCRM() {
                       {agent.conversion}% conv.
                     </span>
                   </div>
-                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-brand-pink to-brand-orange rounded-full transition-all"
-                      style={{ width: `${Math.min(agent.conversion * 2, 100)}%` }}
-                    />
-                  </div>
+                  {/* La barra llega al tope en 50% de conversión: entre 0 y 50
+                      es donde se juega la comparación real entre agentes, y
+                      escalar sobre 100 dejaría todas las barras casi vacías. */}
+                  <ProgressBar value={Math.min(agent.conversion * 2, 100)} />
                 </button>
               ))}
             </div>
