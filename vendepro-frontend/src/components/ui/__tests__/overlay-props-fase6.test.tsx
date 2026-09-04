@@ -2,6 +2,8 @@ import { describe, it, expect, afterEach } from 'vitest'
 import { render, screen, cleanup } from '@testing-library/react'
 import { Modal } from '../Modal'
 import { Drawer } from '../Drawer'
+import { Button } from '../Button'
+import { PillCheckGroup } from '../ChoicePills'
 
 afterEach(cleanup)
 
@@ -85,5 +87,40 @@ describe('Modal · el cuerpo crece pero no colapsa', () => {
     const cuerpo = screen.getByText('cuerpo')
     expect(cuerpo.className).toMatch(/\bgrow\b/)
     expect(cuerpo.className).not.toMatch(/flex-1/)
+  })
+})
+
+describe('Button · el alto lo define el botón, no la fila', () => {
+  /**
+   * Un contenedor `flex items-stretch` estiraba el botón hasta el alto de su
+   * vecino: medido en /configuracion/api, el bloque del token medía 2178px en
+   * ventana angosta y el botón se iba con él. `h-fit` no es `auto`, así que
+   * `align-items: stretch` deja de aplicarle.
+   *
+   * No se fija un alto POR TAMAÑO a propósito: hay ~15 botones en la app cuyo
+   * alto sale de un `py-*` propio y todos cambiarían de tamaño.
+   */
+  it('trae h-fit en la base', () => {
+    render(<Button>Copiar</Button>)
+    expect(screen.getByRole('button', { name: 'Copiar' }).className).toMatch(/\bh-fit\b/)
+  })
+
+  it('no impone un alto por tamaño, así que un py- propio sigue mandando', () => {
+    render(<Button size="sm" className="py-3">Alto</Button>)
+    const c = screen.getByRole('button', { name: 'Alto' }).className
+    expect(c).toMatch(/\bpy-3\b/)
+    expect(c).not.toMatch(/\bh-(7|8|9|10)\b/)
+  })
+})
+
+describe('ChoicePills · size', () => {
+  it('por default mantiene el tamaño de siempre', () => {
+    render(<PillCheckGroup options={[{ value: 'a', label: 'A' }]} value={[]} onChange={() => {}} />)
+    expect(screen.getByRole('button', { name: 'A' }).className).toMatch(/px-4 py-2/)
+  })
+
+  it('con size="sm" iguala al Button size="sm" para convivir en la misma fila', () => {
+    render(<PillCheckGroup size="sm" options={[{ value: 'a', label: 'A' }]} value={[]} onChange={() => {}} />)
+    expect(screen.getByRole('button', { name: 'A' }).className).toMatch(/text-xs px-3 py-1\.5/)
   })
 })

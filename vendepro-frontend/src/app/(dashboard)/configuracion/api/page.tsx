@@ -244,11 +244,12 @@ export default function ConfiguracionApiPage() {
 
       {/* Token recién creado — visible una sola vez, por encima de las tabs */}
       {newToken && (
-        <Alert tone="warning" title={`Token “${newToken.name}” creado`} className="[&>div]:flex-1">
-          <p>
+        <Card>
+          <Heading level={4}>Token “{newToken.name}” creado</Heading>
+          <Text size="sm" tone="muted" className="mt-1 block">
             Copialo ahora: por seguridad <strong>no vas a poder verlo de nuevo</strong>. Ya lo dejamos cargado en <em>Prueba en vivo</em>.
-          </p>
-          <div className="mt-3 flex items-stretch gap-2">
+          </Text>
+          <div className="mt-3 flex items-start gap-2">
             <code className="flex-1 bg-white border border-gray-200 rounded-control px-3 py-2 text-xs font-mono text-gray-700 break-all">
               {newToken.token}
             </code>
@@ -264,7 +265,7 @@ export default function ConfiguracionApiPage() {
           <Button variant="ghost" onClick={() => setNewToken(null)} className="mt-2 -ml-3">
             Ya lo guardé, ocultar
           </Button>
-        </Alert>
+        </Card>
       )}
 
       {/* Tabs */}

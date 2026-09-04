@@ -294,6 +294,7 @@ export default function ObjetivosConfigPage() {
                   grupo, y acá la etiqueta ya está arriba. ds-todo: candidato a
                   que PillCheckGroup acepte aria-labelledby. */}
               <PillCheckGroup
+                size="sm"
                 options={agents.map(a => ({ value: a.id, label: a.full_name }))}
                 value={batchAgents}
                 onChange={setBatchAgents}

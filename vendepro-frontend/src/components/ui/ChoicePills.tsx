@@ -23,7 +23,17 @@ interface PillOption {
 }
 
 // Mismas clases que Tag variant="solid": si cambia el chip, cambian los dos.
-const PILL_BASE = 'inline-flex items-center gap-1.5 rounded-full font-medium text-sm px-4 py-2 border transition-colors'
+const PILL_BASE = 'inline-flex items-center gap-1.5 rounded-full font-medium border transition-colors'
+/**
+ * `sm` existe porque hay filas donde el chip conviven con un `Button size="sm"`
+ * (el "Todos" de objetivos) y con el tamaño único quedaban de alturas distintas
+ * en la misma fila. Los dos miden 28px.
+ */
+const PILL_SIZES = {
+  md: 'text-sm px-4 py-2',
+  sm: 'text-xs px-3 py-1.5',
+} as const
+type PillSize = keyof typeof PILL_SIZES
 const PILL_ACTIVE = 'bg-primary/10 text-primary border-primary shadow-card'
 const PILL_INACTIVE = 'bg-white text-ink border-gray-200 shadow-card hover:border-gray-300'
 
@@ -34,11 +44,13 @@ interface PillRadioGroupProps {
   options: PillOption[]
   value: string
   onChange: (value: string) => void
+  /** Tamaño del chip. Default 'md'. */
+  size?: PillSize
   className?: string
 }
 
 /** Selección única. */
-export function PillRadioGroup({ label, hint, options, value, onChange, className }: PillRadioGroupProps) {
+export function PillRadioGroup({ label, hint, options, value, onChange, size = 'md', className }: PillRadioGroupProps) {
   return (
     <div className={className}>
       {label && <p className="block text-sm font-medium text-gray-700 mb-1.5">{label}</p>}
@@ -51,7 +63,7 @@ export function PillRadioGroup({ label, hint, options, value, onChange, classNam
             role="radio"
             aria-checked={value === o.value}
             onClick={() => onChange(o.value)}
-            className={cn(PILL_BASE, value === o.value ? PILL_ACTIVE : PILL_INACTIVE)}
+            className={cn(PILL_BASE, PILL_SIZES[size], value === o.value ? PILL_ACTIVE : PILL_INACTIVE)}
           >
             {o.label}
           </button>
@@ -68,11 +80,13 @@ interface PillCheckGroupProps {
   options: PillOption[]
   value: string[]
   onChange: (value: string[]) => void
+  /** Tamaño del chip. Default 'md'. */
+  size?: PillSize
   className?: string
 }
 
 /** Selección múltiple. */
-export function PillCheckGroup({ label, hint, options, value, onChange, className }: PillCheckGroupProps) {
+export function PillCheckGroup({ label, hint, options, value, onChange, size = 'md', className }: PillCheckGroupProps) {
   const toggle = (v: string) => onChange(value.includes(v) ? value.filter(x => x !== v) : [...value, v])
   return (
     <div className={className}>
@@ -86,7 +100,7 @@ export function PillCheckGroup({ label, hint, options, value, onChange, classNam
             type="button"
             aria-pressed={value.includes(o.value)}
             onClick={() => toggle(o.value)}
-            className={cn(PILL_BASE, value.includes(o.value) ? PILL_ACTIVE : PILL_INACTIVE)}
+            className={cn(PILL_BASE, PILL_SIZES[size], value.includes(o.value) ? PILL_ACTIVE : PILL_INACTIVE)}
           >
             {o.label}
           </button>

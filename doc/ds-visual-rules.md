@@ -412,6 +412,35 @@ antes y después (0px → 8px de aire).
 Auditoría: `overlay-contract.test.tsx`, bloque "Modal · sheet".
 
 
+## 26. El alto de un botón lo define el botón, no su fila
+
+`Button` trae `h-fit`. Sin eso, un contenedor `flex items-stretch` lo estira
+hasta el alto de su vecino: medido en `/configuracion/api`, el bloque del token
+mide 82px en desktop y 2178px en ventana angosta, y el botón "Copiar" se iba con
+él en vez de quedarse en sus 36px.
+
+❌ `<div className="flex items-stretch">` + un `Button` sin alto propio
+✅ Lo trae el componente: `h-fit` no es `auto`, así que `align-items: stretch`
+   deja de aplicarle.
+
+**No se fija un alto por tamaño** (`h-9` para md, etc.) a propósito: hay ~15
+botones en la app cuyo alto sale de un `py-*` propio —`py-3` en el wizard de
+campañas, `py-1` en formularios densos— y todos cambiarían de tamaño. Medido
+antes de decidir.
+
+Auditoría: `overlay-props-fase6.test.tsx`, bloque "el alto lo define el botón".
+
+## 27. Un chip y un botón en la misma fila tienen que medir igual
+
+`PillRadioGroup`/`PillCheckGroup` tienen `size`, con el default en el tamaño
+histórico (`px-4 py-2 text-sm`). Existe porque el "Todos" de una fila de chips
+es un `Button size="sm"` —no es una opción del grupo, es un seleccionar-todo— y
+con un único tamaño de pill quedaban 28px contra 40px en la misma fila.
+
+Ojo: el `className` de esos grupos va al CONTENEDOR, no a los pills, así que
+desde la pantalla no se puede corregir el tamaño. Por eso es un prop.
+
+
 ## Enforcement existente
 El ratchet de color (`scripts/ds-color-lint.mjs` + `scripts/.ds-color-baseline`)
 ya evita que SUBA nada de esto: colores Tailwind sueltos, medallones de
@@ -449,7 +478,7 @@ quedan afuera del ratchet a propósito: migrarlos SÍ cambia el tamaño, así qu
 deciden a mano (quedan 16). Mismo espíritu: cuando una pantalla se corrige acá,
 el baseline baja y queda trabado el retroceso.
 
-Las reglas 12 a 25 salieron del repaso visual del 31/08 y 01/09/2026: cada una es una
+Las reglas 12 a 27 salieron del repaso visual del 31/08 y 01/09/2026: cada una es una
 corrección que se pidió sobre pantalla y que, en vez de quedar en la pantalla
 donde se pidió, se movió al componente que la impone. La 12 es la que enseñó por
 qué: el header de contacto se había arreglado inline, así que el de lead siguió
