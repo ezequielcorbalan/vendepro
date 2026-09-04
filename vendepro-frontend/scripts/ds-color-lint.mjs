@@ -52,6 +52,9 @@ import { spawnSync } from 'node:child_process'
 import { join } from 'node:path'
 
 const ROOTS = ['src/app', 'src/components']
+// `src/components/ui` está excluido de los patrones de COLOR (acá viven los
+// colores reales del DS), pero se recorre igual para el chequeo de overlays.
+const ROOTS_SOLO_OVERLAY = ['src/components/ui']
 const EXCLUDE_DIR_NAMES = new Set(['design-system', '__tests__'])
 const EXCLUDE_PATH_PREFIXES = [
   'src/components/tasaciones/renderer',
@@ -85,9 +88,16 @@ const SLATE_PATTERN = /(bg|text|border|ring|divide|placeholder|from|to|via|outli
 const SLATE_BASELINE_FILE = 'scripts/.ds-slate-baseline'
 // Scrim de overlay: `inset-0` con un fondo translúcido. NO cuenta el
 // `inset-0` transparente que sirve de atrapa-clicks de un dropdown, que es un
-// uso legítimo.
+// uso legítimo. Tampoco pide `fixed`, porque hay scrims que son `absolute`
+// dentro de un padre `fixed` (así era el patrón del panel de IA). Por eso hace
+// falta descartar los tintes de hover sobre una card: `group-hover:bg-black/20`
+// encima de una foto matchea igual y no es un overlay — apareció en
+// PhotoGallery al abrir el chequeo a `components/ui`.
 const OVERLAY_PATTERN = /inset-0[^"'`]*(bg-(black|slate|gray|neutral|white)\/|backdrop-blur)/
 const OVERLAY_BASELINE_FILE = 'scripts/.ds-overlay-baseline'
+const ES_OVERLAY_DEL_DS = /src\/components\/ui\/(Modal|Drawer)\.tsx$/
+/** Un tinte que aparece al pasar el mouse por una card no es un scrim. */
+const esScrim = line => OVERLAY_PATTERN.test(line) && !line.includes('group-hover:bg-')
 const RADIUS_PATTERN = /rounded-(lg|xl)\b/
 const RADIUS_BASELINE_FILE = 'scripts/.ds-radius-baseline'
 const NATIVE_BUTTON_PATTERN = /<button\b/
@@ -103,13 +113,13 @@ const radiusBaseline = existsSync(RADIUS_BASELINE_FILE) ? Number(readFileSync(RA
 const buttonBaseline = existsSync(BUTTON_BASELINE_FILE) ? Number(readFileSync(BUTTON_BASELINE_FILE, 'utf8').trim() || '0') : 0
 const inputBaseline = existsSync(INPUT_BASELINE_FILE) ? Number(readFileSync(INPUT_BASELINE_FILE, 'utf8').trim() || '0') : 0
 
-function walk(dir) {
+function walk(dir, { ignorarExclusiones = false } = {}) {
   let out = []
   for (const entry of readdirSync(dir)) {
     if (EXCLUDE_DIR_NAMES.has(entry)) continue
     const p = join(dir, entry)
-    if (EXCLUDE_PATH_PREFIXES.some(prefix => p.startsWith(prefix))) continue
-    if (statSync(p).isDirectory()) out = out.concat(walk(p))
+    if (!ignorarExclusiones && EXCLUDE_PATH_PREFIXES.some(prefix => p.startsWith(prefix))) continue
+    if (statSync(p).isDirectory()) out = out.concat(walk(p, { ignorarExclusiones }))
     else if (p.endsWith('.tsx')) out.push(p)
   }
   return out
@@ -134,7 +144,13 @@ for (const root of ROOTS) {
       if (GRADIENT_PATTERN.test(line)) gradientHits.push(`${file}:${i + 1}`)
       if (GLYPH_PATTERN.test(line) && !line.includes('emoji')) glyphHits.push(`${file}:${i + 1}`)
       if (SLATE_PATTERN.test(line)) slateHits.push(`${file}:${i + 1}`)
-      if (OVERLAY_PATTERN.test(line)) overlayHits.push(`${file}:${i + 1}`)
+      // El scrim SÍ se cuenta dentro de `components/ui`, salvo en los dos
+      // componentes que son el overlay del DS. La exclusión general de `ui`
+      // tiene sentido para colores (acá viven los reales) pero no para
+      // comportamiento: `ConfirmDialog` armaba el suyo a mano y el contador no
+      // lo veía, justo en el componente que el DS manda usar para confirmar
+      // algo destructivo.
+      if (esScrim(line) && !ES_OVERLAY_DEL_DS.test(file)) overlayHits.push(`${file}:${i + 1}`)
       if (RADIUS_PATTERN.test(line)) radiusHits.push(`${file}:${i + 1}`)
       if (NATIVE_BUTTON_PATTERN.test(line)) buttonHits.push(`${file}:${i + 1}`)
       if (NATIVE_INPUT_PATTERN.test(line)) inputHits.push(`${file}:${i + 1}`)
@@ -197,6 +213,20 @@ const TOCADOS = archivosTocados()
  *   marcador queda a 2 o 3 líneas — y los renglones del medio de un comentario
  *   JSX no empiezan con `*`, así que no se pueden reconocer por el prefijo.
  */
+// Segunda pasada, sólo overlays: recorre `src/components/ui` (excluido de los
+// patrones de color) para que un scrim a mano ahí adentro no quede invisible.
+for (const root of ROOTS_SOLO_OVERLAY) {
+  for (const file of walk(root, { ignorarExclusiones: true })) {
+    if (ES_OVERLAY_DEL_DS.test(file)) continue
+    const lineas = readFileSync(file, 'utf8').split('\n')
+    const { comentario, exenta } = analizarComentarios(lineas)
+    lineas.forEach((line, i) => {
+      if (comentario.has(i) || exenta.has(i) || line.includes('ds-todo')) return
+      if (esScrim(line)) overlayHits.push(`${file}:${i + 1}`)
+    })
+  }
+}
+
 function analizarComentarios(lineas) {
   const comentario = new Set()
   const exenta = new Set()

@@ -427,9 +427,18 @@ que el DS no tenía, y por eso mismo estaban armados a mano — `Drawer side="le
 onboarding perdió su fade de entrada: ningún overlay del DS tiene transición, y
 meterle una toca todos los overlays de la app, así que se decidió aparte.
 
-Ojo con la exclusión: el ratchet no mira `src/components/ui`, que tiene sentido
-para colores pero no para overlays — `ConfirmDialog` arma el suyo a mano y el
-contador no lo ve.
+**Cerrado el 04/09/2026.** El chequeo de overlays ahora SÍ mira
+`src/components/ui`, salvo `Modal.tsx` y `Drawer.tsx`, que son el overlay del DS.
+La exclusión general de `ui` tiene sentido para colores (ahí viven los reales)
+pero no para comportamiento: `ConfirmDialog` armaba el suyo a mano y el contador
+no lo veía, justo en el componente que el DS manda usar antes de borrar algo.
+Migrado a `Modal` y puesto bajo `overlayContract`: 5 de sus 10 tests fallan
+sobre la versión de antes.
+
+De paso, ese `ConfirmDialog` tenía un bug que nadie había visto: copió el
+medallón del `Modal` y le dejó `text-white` sobre `bg-primary/10`, o sea **un
+ícono blanco sobre rosa claro**. Es el ejemplo exacto de por qué copiar el markup
+de un componente del DS es peor que usarlo.
 
 **El contador de color estaba mal medido hasta el 31/08/2026.** Sólo miraba
 emerald/green/red/blue/amber/yellow, y eso dejaba afuera 58 casos: `rose-500` es

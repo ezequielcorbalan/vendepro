@@ -24,6 +24,7 @@ import { Tooltip } from '@/components/ui/Tooltip'
 import { Dropdown, DropdownItem, DropdownSeparator } from '@/components/ui/Dropdown'
 import { Table, type Column } from '@/components/ui/Table'
 import { Drawer } from '@/components/ui/Drawer'
+import { useConfirm } from '@/components/ui/useConfirm'
 import { Timeline } from '@/components/ui/Timeline'
 import { ProgressBar } from '@/components/ui/Progress'
 import { StepIndicator } from '@/components/ui/StepIndicator'
@@ -154,6 +155,8 @@ export default function DesignSystemPage() {
   const [navOpen, setNavOpen] = useState(false)
   const [topOpen, setTopOpen] = useState(false)
   const [headerOpen, setHeaderOpen] = useState(false)
+  const [ultimaConfirmacion, setUltimaConfirmacion] = useState('')
+  const { confirmDialog, askConfirm } = useConfirm()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [optMode, setOptMode] = useState('method')
   const [segIcon, setSegIcon] = useState('config')
@@ -918,6 +921,32 @@ export default function DesignSystemPage() {
             El slot recibe el encabezado; la X la sigue poniendo el Modal, igual que
             en el Drawer. El `title` queda como nombre accesible del diálogo.
           </Modal>
+        </Section>
+
+        {/* ConfirmDialog */}
+        <Section
+          title="ConfirmDialog · useConfirm"
+          hint="Confirmación antes de algo destructivo, con motivo opcional. Reemplaza a `confirm()`/`prompt()` nativos manteniendo el flujo imperativo: `const { confirmed, reason } = await askConfirm({...})`. Se apoya en Modal, así que trae Portal, scroll-lock, focus-trap, devolución de foco y Esc — hasta el 04/09/2026 armaba su overlay a mano y no tenía nada de eso."
+        >
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={async () => {
+              const r = await askConfirm({ title: 'Publicar propiedad', message: 'Se va a publicar en todos los portales conectados.' })
+              setUltimaConfirmacion(r.confirmed ? 'Confirmado' : 'Cancelado')
+            }}>Confirmar algo común</Button>
+            <Button variant="outline" onClick={async () => {
+              const r = await askConfirm({
+                title: 'Eliminar lead',
+                message: 'Esta acción no se puede deshacer.\n¿Por qué lo estás descartando?',
+                variant: 'danger',
+                confirmLabel: 'Eliminar',
+                requireReason: true,
+                reasonPlaceholder: 'Motivo',
+              })
+              setUltimaConfirmacion(r.confirmed ? `Eliminado — motivo: ${r.reason || '(vacío)'}` : 'Cancelado')
+            }}>Destructivo, con motivo</Button>
+          </div>
+          {ultimaConfirmacion && <Text size="sm" tone="muted">Resultado: {ultimaConfirmacion}</Text>}
+          {confirmDialog}
         </Section>
 
         {/* Notificaciones */}
