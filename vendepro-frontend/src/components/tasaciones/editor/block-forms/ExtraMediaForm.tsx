@@ -1,6 +1,7 @@
 'use client'
 import { BlockField, BlockInput, BlockSelect } from '../BlockField'
 import ImageUpload from '@/components/landings/ImageUpload'
+import { Button } from '@/components/ui/Button'
 
 interface Props { data: any; onPatch: (p: Record<string, unknown>) => void }
 interface MediaItem { url: string; type: 'image' | 'video'; caption?: string }
@@ -43,14 +44,14 @@ export function ExtraMediaForm({ data, onPatch }: Props) {
       <div>
         <div className="mb-1 flex items-center justify-between">
           <span className="text-xs uppercase tracking-wide text-gray-600">Archivos multimedia</span>
-          <button onClick={add} disabled={media.length >= MAX_ITEMS} className="text-xs text-brand-pink disabled:opacity-40">+ Agregar</button>
+          <Button variant="ghost" size="sm" onClick={add} disabled={media.length >= MAX_ITEMS} className="p-0 text-xs text-brand-pink disabled:opacity-40">+ Agregar</Button>
         </div>
         <div className="space-y-2">
           {media.map((item, i) => (
             <div key={i} className="space-y-2 rounded border border-gray-200 p-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-gray-400">Media {i + 1}</span>
-                <button onClick={() => remove(i)} className="text-xs text-danger hover:opacity-80">Eliminar</button>
+                <Button variant="ghost" size="sm" onClick={() => remove(i)} className="p-0 text-xs text-danger hover:opacity-80">Eliminar</Button>
               </div>
               <BlockSelect
                 value={item.type}

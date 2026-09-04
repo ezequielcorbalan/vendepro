@@ -339,7 +339,7 @@ export default function ContactosPage() {
           <option value="name">Nombre: A → Z</option>
         </Select>
         {activeFilterCount > 0 && (
-          <button onClick={clearFilters} className="text-xs text-gray-500 hover:text-primary shrink-0">Limpiar</button>
+          <Button variant="ghost" size="sm" onClick={clearFilters} className="p-0 text-xs text-gray-500 hover:text-primary shrink-0">Limpiar</Button>
         )}
       </div>
 
@@ -407,7 +407,7 @@ export default function ContactosPage() {
             icon={<BookUser className="w-7 h-7" />}
             title={search || filterType || activeFilterCount > 0 ? 'Sin resultados' : 'No hay contactos todavía'}
             action={
-              <button onClick={() => setShowForm(true)} className="text-primary text-sm hover:underline">Agregar el primer contacto</button>
+              <Button variant="ghost" size="sm" onClick={() => setShowForm(true)} className="p-0 text-primary text-sm hover:underline">Agregar el primer contacto</Button>
             }
           />
         </Card>
@@ -465,9 +465,9 @@ export default function ContactosPage() {
                     {c.created_at && <span className="text-xs text-gray-400 ml-auto whitespace-nowrap">{formatShortDate(c.created_at)}</span>}
                   </div>
                 </div>
-                <button onClick={() => handleDelete(c.id)} className="text-gray-300 hover:text-danger p-1 flex-shrink-0">
+                <Button variant="ghost" size="icon" onClick={() => handleDelete(c.id)} className="text-gray-300 hover:text-danger p-1 flex-shrink-0">
                   <Trash2 className="w-4 h-4" />
-                </button>
+                </Button>
               </div>
             )
           }}

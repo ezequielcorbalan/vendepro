@@ -6,6 +6,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Input, Select } from '@/components/ui/Input'
 import { EmptyState } from '@/components/ui/EmptyState'
 import type { ComparableData } from './ComparableCard'
+import { Button } from '@/components/ui/Button'
 
 /**
  * Modal para elegir un comparable de alguna fuente.
@@ -183,7 +184,7 @@ export function ComparablePickerModal<T>({ open, onClose, onPick, source }: Prop
               const row = source.toRow(item)
               return (
                 <li key={source.rowKey(item)}>
-                  <button
+                  <Button variant="outline" size="sm"
                     type="button"
                     onClick={() => { onPick(source.toComparable(item)); onClose() }}
                     className="group flex w-full items-start gap-3 rounded-control border border-gray-200 bg-white p-3 text-left transition-colors hover:border-primary/60 hover:bg-primary/5"
@@ -203,7 +204,7 @@ export function ComparablePickerModal<T>({ open, onClose, onPick, source }: Prop
                       <p className="text-xs text-gray-400">{row.amountLabel}</p>
                       <p className="text-sm font-semibold text-ink">{row.amount}</p>
                     </div>
-                  </button>
+                  </Button>
                 </li>
               )
             })}

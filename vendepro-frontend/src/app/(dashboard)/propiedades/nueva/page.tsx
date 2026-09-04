@@ -340,9 +340,9 @@ export default function NuevaPropiedadPage() {
                       <Text weight="medium">{selectedContact.full_name}</Text>
                       <Text size="xs" tone="muted">{selectedContact.contact_type}{selectedContact.phone ? ` · ${selectedContact.phone}` : ''}</Text>
                     </div>
-                    <button type="button" onClick={clearContact} className="text-gray-400 hover:text-gray-600">
+                    <Button variant="ghost" size="icon" type="button" onClick={clearContact} className="p-0 text-gray-400 hover:text-gray-600">
                       <X className="w-4 h-4" />
-                    </button>
+                    </Button>
                   </div>
                 ) : (
                   <div className="relative">
@@ -359,7 +359,7 @@ export default function NuevaPropiedadPage() {
                     {contactResults.length > 0 && (
                       <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-control shadow-pop">
                         {contactResults.map(c => (
-                          <button
+                          <Button variant="ghost" size="sm"
                             key={c.id}
                             type="button"
                             onClick={() => selectContact(c)}
@@ -369,27 +369,27 @@ export default function NuevaPropiedadPage() {
                               <Text weight="medium">{c.full_name}</Text>
                               <Text size="xs" tone="muted">{c.contact_type}{c.phone ? ` · ${c.phone}` : ''}</Text>
                             </div>
-                          </button>
+                          </Button>
                         ))}
-                        <button
+                        <Button variant="ghost" size="sm"
                           type="button"
                           onClick={() => { setShowNewContactForm(true); setContactResults([]) }}
                           className="w-full text-left px-4 py-2.5 hover:bg-gray-50 flex items-center gap-2 text-primary border-t border-gray-100"
                         >
                           <UserPlus className="w-4 h-4" />
                           <span className="text-sm">Crear nuevo contacto</span>
-                        </button>
+                        </Button>
                       </div>
                     )}
                     {contactSearch.trim() && contactResults.length === 0 && !showNewContactForm && (
-                      <button
+                      <Button variant="ghost" size="sm"
                         type="button"
                         onClick={() => setShowNewContactForm(true)}
-                        className="mt-1 flex items-center gap-2 text-sm text-primary hover:underline"
+                        className="p-0 mt-1 flex items-center gap-2 text-sm text-primary hover:underline"
                       >
                         <UserPlus className="w-4 h-4" />
                         No encontrado — crear nuevo contacto
-                      </button>
+                      </Button>
                     )}
                   </div>
                 )}

@@ -412,6 +412,49 @@ antes y después (0px → 8px de aire).
 Auditoría: `overlay-contract.test.tsx`, bloque "Modal · sheet".
 
 
+## 26. El alto de un botón lo define el botón, no su fila
+
+`Button` trae `h-fit`. Sin eso, un contenedor `flex items-stretch` lo estira
+hasta el alto de su vecino: medido en `/configuracion/api`, el bloque del token
+mide 82px en desktop y 2178px en ventana angosta, y el botón "Copiar" se iba con
+él en vez de quedarse en sus 36px.
+
+❌ `<div className="flex items-stretch">` + un `Button` sin alto propio
+✅ Lo trae el componente: `h-fit` no es `auto`, así que `align-items: stretch`
+   deja de aplicarle.
+
+**No se fija un alto por tamaño** (`h-9` para md, etc.) a propósito: hay ~15
+botones en la app cuyo alto sale de un `py-*` propio —`py-3` en el wizard de
+campañas, `py-1` en formularios densos— y todos cambiarían de tamaño. Medido
+antes de decidir.
+
+Auditoría: `overlay-props-fase6.test.tsx`, bloque "el alto lo define el botón".
+
+## 27. Un chip y un botón en la misma fila tienen que medir igual
+
+`PillRadioGroup`/`PillCheckGroup` tienen `size`, con el default en el tamaño
+histórico (`px-4 py-2 text-sm`). Existe porque el "Todos" de una fila de chips
+es un `Button size="sm"` —no es una opción del grupo, es un seleccionar-todo— y
+con un único tamaño de pill quedaban 28px contra 40px en la misma fila.
+
+Ojo: el `className` de esos grupos va al CONTENEDOR, no a los pills, así que
+desde la pantalla no se puede corregir el tamaño. Por eso es un prop.
+
+
+## 28. Dos cosas fijas no pueden compartir la misma esquina
+
+El toast vive en `bottom-24 right-4`, no en `bottom-4`, porque el botón flotante
+de IA está en `bottom-6 right-6` y montado en el layout del dashboard — o sea en
+TODAS las pantallas. Con los dos abajo a la derecha el mensaje quedaba tapado a
+la mitad.
+
+**El z-index no era el problema**: el toast es `z-[100]` y el botón `z-40`, así
+que el orden ya estaba bien. El problema es que ocupaban el mismo lugar. Cuando
+algo fijo se tapa, mirá primero la posición y después la capa.
+
+Auditoría: `overlay-props-fase6.test.tsx`, bloque "no lo tapa el botón flotante".
+
+
 ## Enforcement existente
 El ratchet de color (`scripts/ds-color-lint.mjs` + `scripts/.ds-color-baseline`)
 ya evita que SUBA nada de esto: colores Tailwind sueltos, medallones de
@@ -427,9 +470,18 @@ que el DS no tenía, y por eso mismo estaban armados a mano — `Drawer side="le
 onboarding perdió su fade de entrada: ningún overlay del DS tiene transición, y
 meterle una toca todos los overlays de la app, así que se decidió aparte.
 
-Ojo con la exclusión: el ratchet no mira `src/components/ui`, que tiene sentido
-para colores pero no para overlays — `ConfirmDialog` arma el suyo a mano y el
-contador no lo ve.
+**Cerrado el 04/09/2026.** El chequeo de overlays ahora SÍ mira
+`src/components/ui`, salvo `Modal.tsx` y `Drawer.tsx`, que son el overlay del DS.
+La exclusión general de `ui` tiene sentido para colores (ahí viven los reales)
+pero no para comportamiento: `ConfirmDialog` armaba el suyo a mano y el contador
+no lo veía, justo en el componente que el DS manda usar antes de borrar algo.
+Migrado a `Modal` y puesto bajo `overlayContract`: 5 de sus 10 tests fallan
+sobre la versión de antes.
+
+De paso, ese `ConfirmDialog` tenía un bug que nadie había visto: copió el
+medallón del `Modal` y le dejó `text-white` sobre `bg-primary/10`, o sea **un
+ícono blanco sobre rosa claro**. Es el ejemplo exacto de por qué copiar el markup
+de un componente del DS es peor que usarlo.
 
 **El contador de color estaba mal medido hasta el 31/08/2026.** Sólo miraba
 emerald/green/red/blue/amber/yellow, y eso dejaba afuera 58 casos: `rose-500` es
@@ -440,7 +492,7 @@ quedan afuera del ratchet a propósito: migrarlos SÍ cambia el tamaño, así qu
 deciden a mano (quedan 16). Mismo espíritu: cuando una pantalla se corrige acá,
 el baseline baja y queda trabado el retroceso.
 
-Las reglas 12 a 25 salieron del repaso visual del 31/08 y 01/09/2026: cada una es una
+Las reglas 12 a 28 salieron del repaso visual del 31/08 y 01/09/2026: cada una es una
 corrección que se pidió sobre pantalla y que, en vez de quedar en la pantalla
 donde se pidió, se movió al componente que la impone. La 12 es la que enseñó por
 qué: el header de contacto se había arreglado inline, así que el de lead siguió

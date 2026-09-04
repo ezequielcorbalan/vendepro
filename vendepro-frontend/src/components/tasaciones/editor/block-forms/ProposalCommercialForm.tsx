@@ -2,6 +2,7 @@
 import { BlockField, BlockInput, BlockTextarea } from '../BlockField'
 import { X } from 'lucide-react'
 import { Checkbox } from '@/components/ui/Choice'
+import { Button } from '@/components/ui/Button'
 interface ProposalItem { icon?: string; title: string; body: string }
 interface Props { data: any; onPatch: (p: Record<string, unknown>) => void }
 
@@ -40,14 +41,14 @@ export function ProposalCommercialForm({ data, onPatch }: Props) {
       <div>
         <div className="mb-1 flex items-center justify-between">
           <span className="text-xs uppercase tracking-wide text-gray-600">Puntos destacados</span>
-          <button onClick={addItem} disabled={items.length >= MAX_ITEMS} className="text-xs text-brand-pink disabled:opacity-40">+ Agregar</button>
+          <Button variant="ghost" size="sm" onClick={addItem} disabled={items.length >= MAX_ITEMS} className="p-0 text-xs text-brand-pink disabled:opacity-40">+ Agregar</Button>
         </div>
         <ul className="space-y-3">
           {items.map((item, i) => (
             <li key={i} className="rounded border border-gray-200 p-2">
               <div className="mb-1 flex items-center justify-between">
                 <span className="text-[10px] uppercase tracking-wide text-gray-500">Punto {i + 1}</span>
-                <button onClick={() => removeItem(i)} aria-label="Quitar" className="text-gray-400 hover:text-danger"><X className="w-3.5 h-3.5" /></button>
+                <Button variant="ghost" size="icon" onClick={() => removeItem(i)} aria-label="Quitar" className="p-0 text-gray-400 hover:text-danger"><X className="w-3.5 h-3.5" /></Button>
               </div>
               <BlockInput
                 value={item.title}

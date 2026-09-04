@@ -115,9 +115,9 @@ export default function ObjetivosPage() {
                 </div>
                 <div className="flex items-center gap-1">
                   <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${obj.semaforo.color}`}>{obj.semaforo.label}</span>
-                  <button onClick={() => handleDelete(obj.id)} className="p-1 text-gray-300 hover:text-red-500">
+                  <Button variant="ghost" size="icon" onClick={() => handleDelete(obj.id)} className="p-1 text-gray-300 hover:text-red-500">
                     <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  </Button>
                 </div>
               </div>
               <div className="flex items-end justify-between mb-2">

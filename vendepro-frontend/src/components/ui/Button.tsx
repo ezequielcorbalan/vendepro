@@ -76,7 +76,12 @@ export function Button({
   ...rest
 }: ButtonProps) {
   const classes = cn(
-    'inline-flex items-center justify-center font-medium transition-colors',
+    // `h-fit` para que el alto lo defina el botón y no la fila: un contenedor
+    // `items-stretch` estiraba el botón hasta el alto de su vecino (medido: 86px
+    // en el bloque del token de /configuracion/api, contra 36 normales). No se
+    // fija un alto por tamaño a propósito: hay ~15 botones cuyo alto viene de un
+    // `py-*` propio, y todos cambiarían de tamaño.
+    'inline-flex h-fit items-center justify-center font-medium transition-colors',
     'disabled:opacity-50 disabled:cursor-not-allowed',
     VARIANTS[variant],
     SIZES[size],

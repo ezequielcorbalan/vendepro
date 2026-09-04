@@ -21,6 +21,18 @@
  *    scroll-lock, focus-trap, devolución de foco y Esc. Ver la fase 6 en
  *    doc/ds-plan-fase6.md; el contrato que tienen que cumplir está testeado en
  *    components/ui/__tests__/overlay-contract.tsx.
+ * 6. Botones nativos (`<button>`) fuera de `components/ui`. Va `ui/Button`, que
+ *    trae variantes, tamaños, `loading`, `icon`, `fullWidth` y, con `href`, un
+ *    `<Link>`. Un `<button>` con clases sueltas se ve parecido y no comparte
+ *    nada: por eso hay 3 alturas de botón distintas en la app.
+ * 7. Inputs nativos (`<input>`/`<select>`/`<textarea>`) fuera de
+ *    `components/ui`. Van con `ui/Field` + `Input`/`Select`/`Textarea`, que
+ *    asocian el label solo, propagan el estado de error y aceptan `ref`.
+ *
+ *    Estos dos entraron el 04/09/2026 para CERRAR el alcance de la migración:
+ *    eran las únicas dos categorías sin ratchet, o sea las únicas por donde el
+ *    plan podía seguir creciendo. Su baseline es el número de ese día.
+ *
  * 5. La escala `slate`. El DS usa `gray`. El módulo de tasaciones estaba escrito
  *    entero en slate —258 usos— así que sus grises tenían un tinte azulado que
  *    el resto de la app no tiene. Baseline 0: ya no queda ninguno.
@@ -40,6 +52,9 @@ import { spawnSync } from 'node:child_process'
 import { join } from 'node:path'
 
 const ROOTS = ['src/app', 'src/components']
+// `src/components/ui` está excluido de los patrones de COLOR (acá viven los
+// colores reales del DS), pero se recorre igual para el chequeo de overlays.
+const ROOTS_SOLO_OVERLAY = ['src/components/ui']
 const EXCLUDE_DIR_NAMES = new Set(['design-system', '__tests__'])
 const EXCLUDE_PATH_PREFIXES = [
   'src/components/tasaciones/renderer',
@@ -73,25 +88,38 @@ const SLATE_PATTERN = /(bg|text|border|ring|divide|placeholder|from|to|via|outli
 const SLATE_BASELINE_FILE = 'scripts/.ds-slate-baseline'
 // Scrim de overlay: `inset-0` con un fondo translúcido. NO cuenta el
 // `inset-0` transparente que sirve de atrapa-clicks de un dropdown, que es un
-// uso legítimo.
+// uso legítimo. Tampoco pide `fixed`, porque hay scrims que son `absolute`
+// dentro de un padre `fixed` (así era el patrón del panel de IA). Por eso hace
+// falta descartar los tintes de hover sobre una card: `group-hover:bg-black/20`
+// encima de una foto matchea igual y no es un overlay — apareció en
+// PhotoGallery al abrir el chequeo a `components/ui`.
 const OVERLAY_PATTERN = /inset-0[^"'`]*(bg-(black|slate|gray|neutral|white)\/|backdrop-blur)/
 const OVERLAY_BASELINE_FILE = 'scripts/.ds-overlay-baseline'
+const ES_OVERLAY_DEL_DS = /src\/components\/ui\/(Modal|Drawer)\.tsx$/
+/** Un tinte que aparece al pasar el mouse por una card no es un scrim. */
+const esScrim = line => OVERLAY_PATTERN.test(line) && !line.includes('group-hover:bg-')
 const RADIUS_PATTERN = /rounded-(lg|xl)\b/
 const RADIUS_BASELINE_FILE = 'scripts/.ds-radius-baseline'
+const NATIVE_BUTTON_PATTERN = /<button\b/
+const BUTTON_BASELINE_FILE = 'scripts/.ds-button-baseline'
+const NATIVE_INPUT_PATTERN = /<(input|select|textarea)\b/
+const INPUT_BASELINE_FILE = 'scripts/.ds-input-baseline'
 const baseline = existsSync(BASELINE_FILE) ? Number(readFileSync(BASELINE_FILE, 'utf8').trim() || '0') : 0
 const gradientBaseline = existsSync(GRADIENT_BASELINE_FILE) ? Number(readFileSync(GRADIENT_BASELINE_FILE, 'utf8').trim() || '0') : 0
 const glyphBaseline = existsSync(GLYPH_BASELINE_FILE) ? Number(readFileSync(GLYPH_BASELINE_FILE, 'utf8').trim() || '0') : 0
 const slateBaseline = existsSync(SLATE_BASELINE_FILE) ? Number(readFileSync(SLATE_BASELINE_FILE, 'utf8').trim() || '0') : 0
 const overlayBaseline = existsSync(OVERLAY_BASELINE_FILE) ? Number(readFileSync(OVERLAY_BASELINE_FILE, 'utf8').trim() || '0') : 0
 const radiusBaseline = existsSync(RADIUS_BASELINE_FILE) ? Number(readFileSync(RADIUS_BASELINE_FILE, 'utf8').trim() || '0') : 0
+const buttonBaseline = existsSync(BUTTON_BASELINE_FILE) ? Number(readFileSync(BUTTON_BASELINE_FILE, 'utf8').trim() || '0') : 0
+const inputBaseline = existsSync(INPUT_BASELINE_FILE) ? Number(readFileSync(INPUT_BASELINE_FILE, 'utf8').trim() || '0') : 0
 
-function walk(dir) {
+function walk(dir, { ignorarExclusiones = false } = {}) {
   let out = []
   for (const entry of readdirSync(dir)) {
     if (EXCLUDE_DIR_NAMES.has(entry)) continue
     const p = join(dir, entry)
-    if (EXCLUDE_PATH_PREFIXES.some(prefix => p.startsWith(prefix))) continue
-    if (statSync(p).isDirectory()) out = out.concat(walk(p))
+    if (!ignorarExclusiones && EXCLUDE_PATH_PREFIXES.some(prefix => p.startsWith(prefix))) continue
+    if (statSync(p).isDirectory()) out = out.concat(walk(p, { ignorarExclusiones }))
     else if (p.endsWith('.tsx')) out.push(p)
   }
   return out
@@ -103,16 +131,29 @@ const glyphHits = []
 const slateHits = []
 const overlayHits = []
 const radiusHits = []
+const buttonHits = []
+const inputHits = []
 for (const root of ROOTS) {
   for (const file of walk(root)) {
-    readFileSync(file, 'utf8').split('\n').forEach((line, i) => {
+    const lineas = readFileSync(file, 'utf8').split('\n')
+    const { comentario, exenta } = analizarComentarios(lineas)
+    lineas.forEach((line, i) => {
+      if (comentario.has(i) || exenta.has(i)) return
       if (line.includes('ds-todo')) return
       if (PATTERN.test(line)) hits.push(`${file}:${i + 1}`)
       if (GRADIENT_PATTERN.test(line)) gradientHits.push(`${file}:${i + 1}`)
       if (GLYPH_PATTERN.test(line) && !line.includes('emoji')) glyphHits.push(`${file}:${i + 1}`)
       if (SLATE_PATTERN.test(line)) slateHits.push(`${file}:${i + 1}`)
-      if (OVERLAY_PATTERN.test(line)) overlayHits.push(`${file}:${i + 1}`)
+      // El scrim SÍ se cuenta dentro de `components/ui`, salvo en los dos
+      // componentes que son el overlay del DS. La exclusión general de `ui`
+      // tiene sentido para colores (acá viven los reales) pero no para
+      // comportamiento: `ConfirmDialog` armaba el suyo a mano y el contador no
+      // lo veía, justo en el componente que el DS manda usar para confirmar
+      // algo destructivo.
+      if (esScrim(line) && !ES_OVERLAY_DEL_DS.test(file)) overlayHits.push(`${file}:${i + 1}`)
       if (RADIUS_PATTERN.test(line)) radiusHits.push(`${file}:${i + 1}`)
+      if (NATIVE_BUTTON_PATTERN.test(line)) buttonHits.push(`${file}:${i + 1}`)
+      if (NATIVE_INPUT_PATTERN.test(line)) inputHits.push(`${file}:${i + 1}`)
     })
   }
 }
@@ -161,6 +202,61 @@ function archivosTocados() {
 const TOCADOS = archivosTocados()
 
 /** Un ratchet: informa, y falla sólo si el contador SUBE del baseline. */
+/**
+ * Analiza los comentarios de un archivo y devuelve dos conjuntos de índices:
+ *
+ * - `comentario`: líneas que son comentario. Un docblock que EXPLICA la deuda
+ *   ("antes era un `<input>` nativo") no es deuda, y contarlo infla el número.
+ * - `exenta`: la primera línea de código después de un comentario que contiene
+ *   `ds-todo`. Hace falta porque la convención de CLAUDE.md es un comentario
+ *   JSX arriba del elemento, y si la explicación ocupa varios renglones el
+ *   marcador queda a 2 o 3 líneas — y los renglones del medio de un comentario
+ *   JSX no empiezan con `*`, así que no se pueden reconocer por el prefijo.
+ */
+// Segunda pasada, sólo overlays: recorre `src/components/ui` (excluido de los
+// patrones de color) para que un scrim a mano ahí adentro no quede invisible.
+for (const root of ROOTS_SOLO_OVERLAY) {
+  for (const file of walk(root, { ignorarExclusiones: true })) {
+    if (ES_OVERLAY_DEL_DS.test(file)) continue
+    const lineas = readFileSync(file, 'utf8').split('\n')
+    const { comentario, exenta } = analizarComentarios(lineas)
+    lineas.forEach((line, i) => {
+      if (comentario.has(i) || exenta.has(i) || line.includes('ds-todo')) return
+      if (esScrim(line)) overlayHits.push(`${file}:${i + 1}`)
+    })
+  }
+}
+
+function analizarComentarios(lineas) {
+  const comentario = new Set()
+  const exenta = new Set()
+  let dentroDeBloque = false
+  let marcadorPendiente = false
+
+  lineas.forEach((linea, i) => {
+    const abre = linea.includes('/*')
+    const cierra = linea.includes('*/')
+    const esLinea = /^\s*\/\//.test(linea)
+    // `{/*` (comentario JSX) abre con la llave ADELANTE del `/*`, así que la
+    // apertura hay que reconocerla con la llave opcional o no matchea nunca.
+    const abreAlPrincipio = /^\s*\{?\s*\/\*/.test(linea)
+    const esComentario = dentroDeBloque || esLinea || abreAlPrincipio
+
+    if (esComentario) {
+      comentario.add(i)
+      if (linea.includes('ds-todo')) marcadorPendiente = true
+      if (dentroDeBloque && cierra) dentroDeBloque = false
+      else if (abre && !cierra) dentroDeBloque = true
+      return
+    }
+    if (abre && !cierra) dentroDeBloque = true
+    if (linea.trim() === '') return
+    if (marcadorPendiente) { exenta.add(i); marcadorPendiente = false }
+  })
+
+  return { comentario, exenta }
+}
+
 function ratchet({ etiqueta, hits, baseline, archivo, sugerencia }) {
   const count = hits.length
   console.log(`DS lint · ${etiqueta}: ${count} (baseline ${baseline})`)
@@ -210,6 +306,14 @@ const resultados = [
   ratchet({
     etiqueta: 'radios pre-token (rounded-lg/xl)', hits: radiusHits, baseline: radiusBaseline, archivo: RADIUS_BASELINE_FILE,
     sugerencia: 'Usá `rounded-control` (8px) o `rounded-card` (12px) — regla 8.',
+  }),
+  ratchet({
+    etiqueta: 'botones nativos (<button>)', hits: buttonHits, baseline: buttonBaseline, archivo: BUTTON_BASELINE_FILE,
+    sugerencia: 'Usá <Button> del DS (variant/size/loading/icon/href). Si de verdad no encaja, marcá la línea con ds-todo.',
+  }),
+  ratchet({
+    etiqueta: 'inputs nativos (<input>/<select>/<textarea>)', hits: inputHits, baseline: inputBaseline, archivo: INPUT_BASELINE_FILE,
+    sugerencia: 'Usá <Field> + <Input>/<Select>/<Textarea> del DS. Si no encaja, marcá la línea con ds-todo.',
   }),
 ]
 

@@ -126,20 +126,20 @@ export default function TasacionesPage() {
                       <ExternalLink className="w-4 h-4" />
                     </a>
                   )}
-                  <button
+                  <Button variant="ghost" size="icon"
                     onClick={() => handleDownloadPdf(a.id)}
                     disabled={pdfLoading.has(a.id)}
                     className="p-2 border rounded-control hover:bg-gray-50 text-gray-500 disabled:opacity-50 disabled:cursor-wait"
                     title="Descargar PDF"
                   >
                     {pdfLoading.has(a.id) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                  </button>
+                  </Button>
                   <Link href={`/tasaciones/${a.id}`} className="p-2 border rounded-control hover:bg-gray-50 text-gray-500" title="Editar">
                     <Pencil className="w-4 h-4" />
                   </Link>
-                  <button onClick={() => handleDelete(a.id)} className="p-2 border rounded-control hover:bg-danger/5 hover:border-danger/30 text-gray-400 hover:text-danger" title="Eliminar">
+                  <Button variant="ghost" size="icon" onClick={() => handleDelete(a.id)} className="p-2 border rounded-control hover:bg-danger/5 hover:border-danger/30 text-gray-400 hover:text-danger" title="Eliminar">
                     <Trash2 className="w-4 h-4" />
-                  </button>
+                  </Button>
                 </div>
               </Card>
             )

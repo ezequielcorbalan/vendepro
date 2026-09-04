@@ -337,9 +337,9 @@ export default function CalendarioPage() {
         <Card padded={false} className="overflow-hidden">
           {/* Nav */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-            <button onClick={handlePrev} aria-label="Mes anterior" className="p-2 hover:bg-gray-100 rounded-control"><ChevronLeft className="w-5 h-5" /></button>
+            <Button variant="ghost" size="icon" onClick={handlePrev} aria-label="Mes anterior" className="p-2 hover:bg-gray-100 rounded-control"><ChevronLeft className="w-5 h-5" /></Button>
             <Heading level={4} as="h2">{MONTH_NAMES[month]} {year}</Heading>
-            <button onClick={handleNext} aria-label="Mes siguiente" className="p-2 hover:bg-gray-100 rounded-control"><ChevronRight className="w-5 h-5" /></button>
+            <Button variant="ghost" size="icon" onClick={handleNext} aria-label="Mes siguiente" className="p-2 hover:bg-gray-100 rounded-control"><ChevronRight className="w-5 h-5" /></Button>
           </div>
 
           {/* Day headers */}
@@ -461,21 +461,21 @@ export default function CalendarioPage() {
                             </>
                           )}
                           {ev.start_at && (
-                            <button onClick={() => copyClientLink(ev)} title="Copiar link para que el cliente lo agende"
+                            <Button variant="ghost" size="icon" onClick={() => copyClientLink(ev)} title="Copiar link para que el cliente lo agende"
                               className="p-1.5 rounded-control hover:bg-gray-100 text-gray-400 hover:text-primary">
                               <Link2 className="w-3.5 h-3.5" />
-                            </button>
+                            </Button>
                           )}
                           {!ev.completed && (
-                            <button onClick={() => completeEvent(ev.id)} title="Marcar como completado"
+                            <Button variant="ghost" size="icon" onClick={() => completeEvent(ev.id)} title="Marcar como completado"
                               className="p-1.5 rounded-control hover:bg-gray-100 text-gray-400 hover:text-success">
                               <CheckCircle2 className="w-3.5 h-3.5" />
-                            </button>
+                            </Button>
                           )}
-                          <button onClick={() => deleteEvent(ev.id)} title="Eliminar evento"
+                          <Button variant="ghost" size="icon" onClick={() => deleteEvent(ev.id)} title="Eliminar evento"
                             className="p-1.5 rounded-control hover:bg-gray-100 text-gray-400 hover:text-danger">
                             <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          </Button>
                         </>
                       )}
                     </div>
@@ -493,7 +493,7 @@ export default function CalendarioPage() {
             <CardTitle>
               {new Date(selectedDate + 'T12:00:00').toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}
             </CardTitle>
-            <button onClick={() => setSelectedDate(null)} aria-label="Cerrar" className="p-1 hover:bg-gray-100 rounded-control"><X className="w-4 h-4 text-gray-400" /></button>
+            <Button variant="ghost" size="icon" onClick={() => setSelectedDate(null)} aria-label="Cerrar" className="p-1 hover:bg-gray-100 rounded-control"><X className="w-4 h-4 text-gray-400" /></Button>
           </div>
           <div className="space-y-2">
             {selectedEvents.map(ev => {
@@ -506,17 +506,17 @@ export default function CalendarioPage() {
                     <p className="text-xs text-gray-400">{fmtTime(ev.start_at)}{ev.lead_name ? ` · ${ev.lead_name}` : ''}</p>
                   </div>
                   {ev.start_at && (
-                    <button onClick={() => copyClientLink(ev)} title="Copiar link para que el cliente lo agende"
-                      className="text-gray-400 hover:text-primary">
+                    <Button variant="ghost" size="icon" onClick={() => copyClientLink(ev)} title="Copiar link para que el cliente lo agende"
+                      className="p-0 text-gray-400 hover:text-primary">
                       <Link2 className="w-4 h-4" />
-                    </button>
+                    </Button>
                   )}
                   {ev.completed === 1 && <CheckCircle2 className="w-4 h-4 text-success" />}
                   {!ev.completed && (
-                    <button onClick={() => completeEvent(ev.id)} title="Marcar como completado"
-                      className="text-gray-400 hover:text-success">
+                    <Button variant="ghost" size="icon" onClick={() => completeEvent(ev.id)} title="Marcar como completado"
+                      className="p-0 text-gray-400 hover:text-success">
                       <CheckCircle2 className="w-4 h-4" />
-                    </button>
+                    </Button>
                   )}
                 </div>
               )

@@ -23,13 +23,13 @@ function Section({ title, icon: Icon, children, defaultOpen = false }: { title: 
   const [open, setOpen] = useState(defaultOpen)
   return (
     <Card padded={false} className="overflow-hidden">
-      <button type="button" onClick={() => setOpen(!open)} className="w-full flex items-center justify-between px-4 py-3.5 text-left">
+      <Button variant="ghost" size="icon" type="button" onClick={() => setOpen(!open)} className="w-full flex items-center justify-between px-4 py-3.5 text-left">
         <div className="flex items-center gap-2.5">
           <Icon className="w-4 h-4 text-gray-600" />
           <CardTitle>{title}</CardTitle>
         </div>
         {open ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
-      </button>
+      </Button>
       {open && <div className="px-4 pb-4 space-y-3 border-t border-gray-50">{children}</div>}
     </Card>
   )

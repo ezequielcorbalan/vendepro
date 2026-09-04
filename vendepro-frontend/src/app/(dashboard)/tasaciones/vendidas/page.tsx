@@ -130,7 +130,7 @@ export default function SoldPropertiesPage() {
           const active = (filters.origin ?? 'all') === o
           const labels = { all: 'Todos', mine: 'Míos', team: 'Equipo', external: 'Externos' }
           return (
-            <button
+            <Button variant="ghost" size="icon"
               key={o}
               type="button"
               onClick={() => setFilters(f => ({ ...f, origin: o }))}
@@ -139,7 +139,7 @@ export default function SoldPropertiesPage() {
               }`}
             >
               {labels[o]}
-            </button>
+            </Button>
           )
         })}
       </div>
@@ -189,12 +189,12 @@ export default function SoldPropertiesPage() {
           className="w-auto"
         />
         {(filters.property_type || filters.neighborhood || filters.min_covered_area != null || filters.max_covered_area != null || search) && (
-          <button
+          <Button variant="ghost" size="sm"
             onClick={() => { setFilters(f => ({ origin: f.origin })); setSearch('') }}
-            className="text-xs text-gray-500 hover:text-primary shrink-0"
+            className="p-0 text-xs text-gray-500 hover:text-primary shrink-0"
           >
             Limpiar
-          </button>
+          </Button>
         )}
       </div>
 

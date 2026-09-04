@@ -244,11 +244,12 @@ export default function ConfiguracionApiPage() {
 
       {/* Token recién creado — visible una sola vez, por encima de las tabs */}
       {newToken && (
-        <Alert tone="warning" title={`Token “${newToken.name}” creado`} className="[&>div]:flex-1">
-          <p>
+        <Card>
+          <Heading level={4}>Token “{newToken.name}” creado</Heading>
+          <Text size="sm" tone="muted" className="mt-1 block">
             Copialo ahora: por seguridad <strong>no vas a poder verlo de nuevo</strong>. Ya lo dejamos cargado en <em>Prueba en vivo</em>.
-          </p>
-          <div className="mt-3 flex items-stretch gap-2">
+          </Text>
+          <div className="mt-3 flex items-start gap-2">
             <code className="flex-1 bg-white border border-gray-200 rounded-control px-3 py-2 text-xs font-mono text-gray-700 break-all">
               {newToken.token}
             </code>
@@ -264,7 +265,7 @@ export default function ConfiguracionApiPage() {
           <Button variant="ghost" onClick={() => setNewToken(null)} className="mt-2 -ml-3">
             Ya lo guardé, ocultar
           </Button>
-        </Alert>
+        </Card>
       )}
 
       {/* Tabs */}
@@ -405,14 +406,14 @@ export default function ConfiguracionApiPage() {
                 <span className="w-5 h-5 rounded-full bg-primary text-white text-xs flex items-center justify-center">2</span>
                 Hacé el request
               </Heading>
-              <button
+              <Button variant="ghost" size="icon"
                 onClick={() => copyText(buildCurl(testToken.trim() || undefined), 'curl')}
                 aria-label="Copiar comando de ejemplo"
-                className="flex items-center gap-1.5 text-xs font-medium text-primary hover:opacity-80"
+                className="p-0 flex items-center gap-1.5 text-xs font-medium text-primary hover:opacity-80"
               >
                 {copiedKey === 'curl' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                 {copiedKey === 'curl' ? 'Copiado' : 'Copiar comando'}
-              </button>
+              </Button>
             </div>
             <Text tone="muted" className="mb-3">
               Acepta un lead o varios (<code className="text-xs bg-gray-100 px-1 py-0.5 rounded">{'{ "leads": [...] }'}</code>, hasta 100).
@@ -460,12 +461,12 @@ export default function ConfiguracionApiPage() {
                       Escuchando… ejecutá el comando de arriba para enviar tu lead de prueba.
                     </p>
                     <Loader2 className="w-4 h-4 animate-spin text-warning shrink-0" />
-                    <button
+                    <Button variant="ghost" size="sm"
                       onClick={() => setTestStatus('idle')}
-                      className="text-xs text-gray-600 underline shrink-0"
+                      className="p-0 text-xs text-gray-600 underline shrink-0"
                     >
                       Cancelar
-                    </button>
+                    </Button>
                   </div>
                 </Alert>
               )}
@@ -476,12 +477,12 @@ export default function ConfiguracionApiPage() {
                     <p className="flex-1">
                       <strong>¡Recibimos tu lead de prueba!</strong> La integración está funcionando. Aparece en <strong>Leads</strong>, sin asignar.
                     </p>
-                    <button
+                    <Button variant="ghost" size="sm"
                       onClick={() => { setTestBaseline(null); setTestStatus('idle') }}
-                      className="flex items-center gap-1.5 text-xs font-medium text-success hover:opacity-80 shrink-0"
+                      className="p-0 flex items-center gap-1.5 text-xs font-medium text-success hover:opacity-80 shrink-0"
                     >
                       <RotateCcw className="w-3.5 h-3.5" /> Probar de nuevo
-                    </button>
+                    </Button>
                   </div>
                 </Alert>
               )}

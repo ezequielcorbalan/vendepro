@@ -116,7 +116,10 @@ no hay razón para usar el elemento nativo cuando necesitás enfocar por código
 **`Checkbox`, `RadioGroup`** (`Choice`) — selección con círculos/cajas verticales.
 
 **`PillRadioGroup`, `PillCheckGroup`** (`ChoicePills`) — chips seleccionables en
-fila. Para elegir UNO o VARIOS valores de una lista horizontal ("Disposición",
+fila. `size` (`md` por default, `sm` para convivir con un `Button size="sm"` en
+la misma fila — regla 27). Ojo: el `className` va al CONTENEDOR, no a los pills,
+y el prop `label` se DIBUJA además de nombrar al grupo, así que pasarlo donde ya
+hay una etiqueta arriba la duplica. Para elegir UNO o VARIOS valores de una lista horizontal ("Disposición",
 "Amenities"). Distinto de `RadioGroup` (vertical) y de `SegmentedControl` (cambio de
 vista, no selección de datos).
 

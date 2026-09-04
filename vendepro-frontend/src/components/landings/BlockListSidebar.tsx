@@ -72,10 +72,10 @@ export default function BlockListSidebar({ blocks, selectedId, onSelect, onReord
         {showAdd && (
           <div className="border border-gray-200 rounded-card p-2 bg-gray-50 space-y-1">
             {AVAILABLE_BLOCK_TYPES.map(t => (
-              <button key={t.type} onClick={async () => {
+              <Button variant="ghost" size="icon" key={t.type} onClick={async () => {
                 await onAdd({ type: t.type, visible: true, data: t.seedData })
                 setShowAdd(false)
-              }} className="w-full text-left text-sm px-3 py-2 rounded-control hover:bg-white">{t.label}</button>
+              }} className="w-full text-left text-sm px-3 py-2 rounded-control hover:bg-white">{t.label}</Button>
             ))}
           </div>
         )}
@@ -95,9 +95,9 @@ function SortableBlockRow({ block, selected, onSelect, onRemove, onToggleVisibil
     <div ref={setNodeRef} style={style}
       className={`group flex items-center gap-1 px-2 py-1.5 rounded-control text-sm cursor-pointer ${selected ? 'bg-primary/10 ring-1 ring-primary/40' : 'hover:bg-gray-100'}`}
       onClick={onSelect}>
-      <button {...attributes} {...listeners} className="text-gray-400 cursor-grab active:cursor-grabbing" aria-label="Reordenar" onClick={e => e.stopPropagation()}>
+      <Button variant="ghost" size="icon" {...attributes} {...listeners} className="p-0 text-gray-400 cursor-grab active:cursor-grabbing" aria-label="Reordenar" onClick={e => e.stopPropagation()}>
         <GripVertical className="w-3.5 h-3.5" />
-      </button>
+      </Button>
       <span className={`flex-1 truncate ${block.visible ? 'text-ink' : 'text-gray-400'}`}>
         {BLOCK_LABELS[block.type]}
         {block.is_variable && (
@@ -105,14 +105,14 @@ function SortableBlockRow({ block, selected, onSelect, onRemove, onToggleVisibil
         )}
       </span>
       {isRequired && <span className="text-[10px] text-primary" title="Requerido">◆</span>}
-      <button onClick={(e) => { e.stopPropagation(); onToggleVisibility() }} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-700" title={block.visible ? 'Ocultar' : 'Mostrar'}>
+      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onToggleVisibility() }} className="p-0 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-700" title={block.visible ? 'Ocultar' : 'Mostrar'}>
         {block.visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-      </button>
+      </Button>
       {!isRequired && (
-        <button onClick={(e) => { e.stopPropagation(); if (confirm('¿Eliminar este bloque?')) onRemove() }}
-          className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-danger" title="Eliminar">
+        <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); if (confirm('¿Eliminar este bloque?')) onRemove() }}
+          className="p-0 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-danger" title="Eliminar">
           <Trash2 className="w-3.5 h-3.5" />
-        </button>
+        </Button>
       )}
     </div>
   )

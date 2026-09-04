@@ -4,6 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recha
 import { landingsApi } from '@/lib/landings/api'
 import type { AnalyticsSummary } from '@/lib/landings/types'
 import { StatTile } from '@/components/ui/StatTile'
+import { Button } from '@/components/ui/Button'
 
 function FunnelRow({ label, count, pct }: { label: string; count: number; pct: number }) {
   return (
@@ -34,10 +35,10 @@ export default function AnalyticsDashboard({ landingId }: { landingId: string })
     <div className="space-y-4">
       <div className="flex gap-2">
         {([7, 14, 30] as const).map(r => (
-          <button key={r} onClick={() => setRange(r)}
+          <Button variant="primary" size="sm" key={r} onClick={() => setRange(r)}
             className={`text-xs px-3 py-1.5 rounded-full ${range === r ? 'bg-brand-pink text-white' : 'bg-gray-100 text-gray-700'}`}>
             Últimos {r} días
-          </button>
+          </Button>
         ))}
       </div>
 

@@ -165,7 +165,7 @@ export function WizardShell({ initialTemplateId, initialLeadId, existingAppraisa
     <div className="mx-auto max-w-5xl px-4 py-6 md:px-8 md:py-10">
       {/* Header estándar del DS, igual que el resto de las pantallas: superficie
           blanca, título y la acción a la derecha. Era un <h1> con clases sueltas
-          y un <button> de texto gris. */}
+          y un <Button variant="ghost" size="icon" className="p-0"> de texto gris. */}
       <PageHeader
         title={isEditMode ? 'Editar tasación' : 'Nueva tasación'}
         className="mb-6"

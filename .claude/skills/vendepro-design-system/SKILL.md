@@ -10,7 +10,7 @@ Antes de escribir UI en `vendepro-frontend`, este archivo te dice **qué usar** 
 
 ## Por qué existe
 
-El proyecto tiene 46 componentes en `src/components/ui` y 25 reglas escritas en
+El proyecto tiene 46 componentes en `src/components/ui` y 28 reglas escritas en
 `doc/ds-visual-rules.md`. Nada de eso cabe en la cabeza mientras escribís una
 feature, así que lo que pasa en la práctica es esto — dos casos reales del repo:
 
@@ -123,7 +123,7 @@ en dos colores distintos.
 
 ## Las reglas que más se rompen
 
-Están las 25 en `doc/ds-visual-rules.md` con ❌/✅ y su grep de auditoría. Estas
+Están las 28 en `doc/ds-visual-rules.md` con ❌/✅ y su grep de auditoría. Estas
 seis son las que el repo ya vio fallar más de una vez:
 
 **Color por token, nunca por paleta.** `text-danger`, no `text-red-500`.
@@ -187,5 +187,5 @@ sus variantes y el motivo de cada decisión en el `hint`.
   existe:** varios componentes resuelven casos que por el nombre no parecen — por
   ejemplo `OptionCard` para una grilla de templates, `PillRadioGroup` para filtros en
   fila, o `DetailMeta` para los datos de un encabezado.
-- `doc/ds-visual-rules.md` en el repo — las 25 reglas con ❌/✅ y su grep de auditoría.
+- `doc/ds-visual-rules.md` en el repo — las 28 reglas con ❌/✅ y su grep de auditoría.
 - `doc/ds-plan-fase6.md` — qué queda por migrar y en qué orden.
