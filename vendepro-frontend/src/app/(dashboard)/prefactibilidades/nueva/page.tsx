@@ -150,15 +150,20 @@ export default function NuevaPrefactibilidadPage() {
         className="mb-6"
       />
 
-      <StepIndicator
-        steps={steps.map(s => s.label)}
-        current={step + 1}
-        onStepClick={n => setStep(n - 1)}
-        allowForward
-        className="mb-6"
-      />
+      <Card padded={false}>
+        {/* El stepper va DENTRO del contenedor del formulario, separado por su
+            propio borde: flotando entre el header y la Card se leía como un
+            elemento suelto y no como parte del paso que se está completando. */}
+        <div className="border-b border-gray-100 px-5 py-4 sm:px-6">
+          <StepIndicator
+            steps={steps.map(s => s.label)}
+            current={step + 1}
+            onStepClick={n => setStep(n - 1)}
+            allowForward
+          />
+        </div>
 
-      <Card className="p-5 sm:p-6">
+        <div className="p-5 sm:p-6">
 
         {/* Step 0: Terreno */}
         {step === 0 && (
@@ -485,6 +490,7 @@ export default function NuevaPrefactibilidadPage() {
             </div>
           </div>
         )}
+        </div>
       </Card>
 
       {/* Nav footer */}
