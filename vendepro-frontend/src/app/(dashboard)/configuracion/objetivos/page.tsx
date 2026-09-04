@@ -183,22 +183,41 @@ export default function ObjetivosConfigPage() {
     if (items.length === 0) { toast('Cargá al menos un objetivo con valor > 0', 'error'); return }
 
     setSaving(true)
-    try {
-      const res = await apiFetch('admin', '/objectives', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ batch: items }),
-      })
-      const data = (await res.json()) as any
-      if (data.created) {
-        toast(`${data.created} objetivos creados para ${batchAgents.length} agente${batchAgents.length > 1 ? 's' : ''}`)
-        const fresh = (await apiFetch('admin', '/objectives').then(r => r.json())) as any
-        if (Array.isArray(fresh)) setObjectives(fresh)
-        setShowBatch(false); setBatchTargets({}); setBatchAgents([]); setSelectedTemplate(null); setTicketPromedio(0)
-      } else {
-        toast(data.error || 'Error', 'error')
+    // Uno por uno, no en lote: `POST /objectives` crea UN objetivo. El front
+    // mandaba `{ batch: items }` y el use case leía `agent_id`/`metric`/`target`
+    // del cuerpo, así que llegaban `undefined` y D1 respondía
+    // `D1_TYPE_ERROR` con un 500 — esta pantalla nunca guardó. Si algún día
+    // hay endpoint de lote, esto vuelve a ser un solo request.
+    let creados = 0
+    const fallidos: string[] = []
+    for (const item of items) {
+      try {
+        const res = await apiFetch('admin', '/objectives', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(item),
+        })
+        if (res.ok) creados++
+        else fallidos.push(item.metric)
+      } catch {
+        fallidos.push(item.metric)
       }
-    } catch { toast('Error al guardar', 'error') }
+    }
+
+    if (creados > 0) {
+      const fresh = (await apiFetch('admin', '/objectives').then(r => r.json())) as any
+      if (Array.isArray(fresh)) setObjectives(fresh)
+    }
+    // El formulario se limpia sólo si entró TODO: si quedaron objetivos afuera,
+    // se mantiene cargado para poder reintentar sin volver a escribirlo.
+    if (fallidos.length === 0) {
+      toast(`${creados} objetivo${creados > 1 ? 's' : ''} creado${creados > 1 ? 's' : ''} para ${batchAgents.length} agente${batchAgents.length > 1 ? 's' : ''}`)
+      setShowBatch(false); setBatchTargets({}); setBatchAgents([]); setSelectedTemplate(null); setTicketPromedio(0)
+    } else if (creados > 0) {
+      toast(`Se crearon ${creados} de ${items.length}. Quedaron afuera: ${fallidos.join(', ')}`, 'error')
+    } else {
+      toast('No se pudo crear ningún objetivo', 'error')
+    }
     setSaving(false)
   }
 
