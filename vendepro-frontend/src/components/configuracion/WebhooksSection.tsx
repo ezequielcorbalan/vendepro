@@ -13,6 +13,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/Button'
 import { Field, Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
+import { Switch } from '@/components/ui/Switch'
 import { Text } from '@/components/ui/Typography'
 import { Checkbox } from '@/components/ui/Choice'
 
@@ -167,12 +168,9 @@ export default function WebhooksSection({ onCountChange }: { onCountChange?: (n:
           Avisamos a tu sistema (n8n, Zapier, etc.) con un POST JSON cuando ocurre un evento.
           Cada entrega va firmada con <code className="text-xs bg-gray-100 px-1 py-0.5 rounded font-mono">X-VendePro-Signature: sha256=HMAC(secret, body)</code>.
         </p>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="shrink-0 flex items-center gap-2 bg-gradient-to-br from-brand-pink to-brand-orange text-white px-4 py-2.5 rounded-control text-sm font-medium hover:opacity-90"
-        >
+        <Button onClick={() => setShowCreate(true)} className="shrink-0">
           <Plus className="w-4 h-4" /> Nuevo webhook
-        </button>
+        </Button>
       </div>
 
       {loading ? (
@@ -210,18 +208,15 @@ export default function WebhooksSection({ onCountChange }: { onCountChange?: (n:
                 </div>
                 <div className="shrink-0 flex items-center gap-2">
                   {/* Toggle activo/pausado */}
-                  <button
-                    onClick={() => handleToggle(w)}
-                    role="switch"
-                    aria-checked={w.is_active}
-                    aria-label={w.is_active ? 'Pausar webhook' : 'Activar webhook'}
-                    className={`relative w-10 h-6 rounded-full transition-colors ${w.is_active ? 'bg-green-500' : 'bg-gray-300'}`}
-                  >
-                    <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${w.is_active ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
-                  </button>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${w.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'}`}>
-                    {w.is_active ? 'Activo' : 'Pausado'}
-                  </span>
+                  {/* El nombre accesible del Switch sale de su `label`, no de un
+                      aria-label: por eso el estado va adentro del componente y no
+                      en un pill al lado, que además duplicaba la información. */}
+                  <Switch
+                    checked={w.is_active}
+                    onChange={() => handleToggle(w)}
+                    label={w.is_active ? 'Activo' : 'Pausado'}
+                    className="text-xs"
+                  />
                 </div>
               </div>
 
@@ -238,20 +233,24 @@ export default function WebhooksSection({ onCountChange }: { onCountChange?: (n:
                 <code className="flex-1 bg-gray-50 border border-gray-200 rounded-control px-3 py-1.5 text-xs font-mono text-gray-600 truncate">
                   {revealedSecret === w.id ? w.secret : '••••••••••••••••••••••••'}
                 </code>
-                <button
+                <Button
+                  variant="ghost"
+                  size="icon"
                   onClick={() => setRevealedSecret(revealedSecret === w.id ? null : w.id)}
                   aria-label={revealedSecret === w.id ? 'Ocultar secret' : 'Mostrar secret'}
                   className="shrink-0 w-9 h-9 flex items-center justify-center rounded-control text-gray-400 hover:text-gray-700 hover:bg-gray-50"
                 >
                   {revealedSecret === w.id ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
                   onClick={() => copyText(w.secret, `secret-${w.id}`)}
                   aria-label="Copiar secret"
                   className="shrink-0 w-9 h-9 flex items-center justify-center rounded-control text-gray-400 hover:text-gray-700 hover:bg-gray-50"
                 >
                   {copiedKey === `secret-${w.id}` ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
-                </button>
+                </Button>
               </div>
 
               <div className="flex items-center justify-between gap-2 pt-1 border-t border-gray-100">
@@ -259,28 +258,34 @@ export default function WebhooksSection({ onCountChange }: { onCountChange?: (n:
                   Último disparo {fmtDate(w.last_triggered_at)}
                 </p>
                 <div className="flex items-center gap-1">
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => toggleDeliveries(w)}
                     className="flex items-center gap-1 px-2.5 h-9 rounded-control text-xs font-medium text-gray-500 hover:text-ink hover:bg-gray-50"
                   >
                     Entregas {openDeliveries === w.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => handleTest(w)}
                     disabled={testingId === w.id}
                     className="flex items-center gap-1.5 px-2.5 h-9 rounded-control text-xs font-medium text-brand-pink hover:bg-pink-50 disabled:opacity-50"
                   >
                     {testingId === w.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
                     Probar
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => handleDelete(w)}
                     title="Eliminar webhook"
                     aria-label={`Eliminar webhook ${w.name || w.url}`}
                     className="w-9 h-9 flex items-center justify-center rounded-control text-gray-400 hover:text-red-500 hover:bg-red-50"
                   >
                     <Trash2 className="w-4 h-4" />
-                  </button>
+                  </Button>
                 </div>
               </div>
 
