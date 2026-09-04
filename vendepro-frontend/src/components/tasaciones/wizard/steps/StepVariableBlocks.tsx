@@ -324,6 +324,9 @@ function FromScratchBlocks({
               }`}
             >
               <div className="flex items-start gap-3 px-3 py-2.5">
+                {/* ds-todo: el Checkbox del DS toma su nombre accesible del prop `label`, y acá el
+              texto visible es el botón de al lado — migrar dejaría el control sin
+              nombre. Candidato a que Checkbox acepte aria-label. */}
                 <input
                   type="checkbox"
                   checked={included}

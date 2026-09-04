@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { apiFetch } from '@/lib/api'
 import { LEAD_STAGES, SEARCH_ENTITY_TONES, type LeadStage } from '@/lib/crm-config'
 import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { Text } from '@/components/ui/Typography'
@@ -77,9 +78,18 @@ export default function GlobalSearch() {
     >
         <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100">
           <Search className="w-5 h-5 text-gray-400 shrink-0" />
-          <input ref={inputRef} type="text" value={query} onChange={e => setQuery(e.target.value)}
+          {/* El borde y el foco los pone la barra, no el campo: por eso va sin
+              caja. El Input del DS igual aporta el ref, el placeholder y el
+              disabled, y saca el `outline-none` que se comía el anillo de foco. */}
+          <Input
+            ref={inputRef}
+            type="text"
+            aria-label="Buscar"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
             placeholder="Buscar leads, contactos, propiedades..."
-            className="flex-1 text-sm outline-none placeholder-gray-400" />
+            className="flex-1 border-0 bg-transparent px-0 py-0 shadow-none"
+          />
           {query && (
             <Button variant="ghost" size="icon" aria-label="Limpiar búsqueda" onClick={() => { setQuery(''); setResults(null) }}>
               <X className="w-4 h-4 text-gray-400" />

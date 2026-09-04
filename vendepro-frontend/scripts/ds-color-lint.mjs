@@ -125,7 +125,10 @@ const buttonHits = []
 const inputHits = []
 for (const root of ROOTS) {
   for (const file of walk(root)) {
-    readFileSync(file, 'utf8').split('\n').forEach((line, i) => {
+    const lineas = readFileSync(file, 'utf8').split('\n')
+    const { comentario, exenta } = analizarComentarios(lineas)
+    lineas.forEach((line, i) => {
+      if (comentario.has(i) || exenta.has(i)) return
       if (line.includes('ds-todo')) return
       if (PATTERN.test(line)) hits.push(`${file}:${i + 1}`)
       if (GRADIENT_PATTERN.test(line)) gradientHits.push(`${file}:${i + 1}`)
@@ -183,6 +186,47 @@ function archivosTocados() {
 const TOCADOS = archivosTocados()
 
 /** Un ratchet: informa, y falla sólo si el contador SUBE del baseline. */
+/**
+ * Analiza los comentarios de un archivo y devuelve dos conjuntos de índices:
+ *
+ * - `comentario`: líneas que son comentario. Un docblock que EXPLICA la deuda
+ *   ("antes era un `<input>` nativo") no es deuda, y contarlo infla el número.
+ * - `exenta`: la primera línea de código después de un comentario que contiene
+ *   `ds-todo`. Hace falta porque la convención de CLAUDE.md es un comentario
+ *   JSX arriba del elemento, y si la explicación ocupa varios renglones el
+ *   marcador queda a 2 o 3 líneas — y los renglones del medio de un comentario
+ *   JSX no empiezan con `*`, así que no se pueden reconocer por el prefijo.
+ */
+function analizarComentarios(lineas) {
+  const comentario = new Set()
+  const exenta = new Set()
+  let dentroDeBloque = false
+  let marcadorPendiente = false
+
+  lineas.forEach((linea, i) => {
+    const abre = linea.includes('/*')
+    const cierra = linea.includes('*/')
+    const esLinea = /^\s*\/\//.test(linea)
+    // `{/*` (comentario JSX) abre con la llave ADELANTE del `/*`, así que la
+    // apertura hay que reconocerla con la llave opcional o no matchea nunca.
+    const abreAlPrincipio = /^\s*\{?\s*\/\*/.test(linea)
+    const esComentario = dentroDeBloque || esLinea || abreAlPrincipio
+
+    if (esComentario) {
+      comentario.add(i)
+      if (linea.includes('ds-todo')) marcadorPendiente = true
+      if (dentroDeBloque && cierra) dentroDeBloque = false
+      else if (abre && !cierra) dentroDeBloque = true
+      return
+    }
+    if (abre && !cierra) dentroDeBloque = true
+    if (linea.trim() === '') return
+    if (marcadorPendiente) { exenta.add(i); marcadorPendiente = false }
+  })
+
+  return { comentario, exenta }
+}
+
 function ratchet({ etiqueta, hits, baseline, archivo, sugerencia }) {
   const count = hits.length
   console.log(`DS lint · ${etiqueta}: ${count} (baseline ${baseline})`)

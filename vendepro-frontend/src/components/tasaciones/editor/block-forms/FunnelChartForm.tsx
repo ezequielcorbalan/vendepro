@@ -30,6 +30,7 @@ export function FunnelChartForm({ data, onPatch }: Props) {
             <div key={i} className="flex items-center gap-2">
               <BlockInput placeholder="Etapa" value={step.label} onChange={e => setStep(i, 'label', e.target.value)} className="flex-1 text-xs" />
               <BlockInput type="number" placeholder="Valor" value={step.value ?? ''} onChange={e => setStep(i, 'value', e.target.value)} />
+              {/* ds-todo: el DS no tiene selector de color — ver EditableCanvas. Candidato a "ColorInput". */}
               <input type="color" value={step.color ?? '#ff007c'} onChange={e => setStep(i, 'color', e.target.value)} className="h-7 w-7 rounded-control border border-gray-300 p-0.5" />
               <button onClick={() => remove(i)} aria-label="Quitar" className="text-gray-400 hover:text-danger"><X className="w-3.5 h-3.5" /></button>
             </div>

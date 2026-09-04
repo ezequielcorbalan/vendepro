@@ -256,6 +256,8 @@ function BackgroundColorButton({ value, onChange }: { value: string | null; onCh
         <>
           <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
           <div className="absolute right-0 top-6 z-30 flex items-center gap-2 rounded-control border border-gray-200 bg-white p-2 shadow-pop" onClick={(e) => e.stopPropagation()}>
+            {/* ds-todo: el DS no tiene selector de color. Se repite en FunnelChartForm.
+              Candidato a componente "ColorInput". */}
             <input
               type="color"
               value={value ?? '#ffffff'}
@@ -340,6 +342,10 @@ const wrap = 'flex items-center gap-0.5 rounded-card border border-gray-200 bg-w
     case 'button_link':
       return (
         <div className={wrap}>
+          {/* ds-todo: campo de edición en el lugar sobre el lienzo de la tasación: sin caja,
+              sin fondo y en text-xs. El Input del DS trae caja y padding propios;
+              forzarlo cambiaría el aspecto del documento. Candidato a variante
+              "inline" del Input. */}
           <input
             type="url"
             aria-label="Enlace del botón"

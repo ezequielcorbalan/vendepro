@@ -265,6 +265,7 @@ export function ComparableCard({
                   </p>
                 </>
               )}
+              {/* ds-todo: el DS no tiene control de archivo — ver ImageUpload. Candidato a "FileInput". */}
               <input
                 ref={fileRef}
                 type="file"

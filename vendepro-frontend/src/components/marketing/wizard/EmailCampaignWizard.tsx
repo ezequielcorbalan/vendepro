@@ -14,6 +14,7 @@ import ReviewStep from './ReviewStep'
 import { Button } from '@/components/ui/Button'
 
 import { Card } from '@/components/ui/Card'
+import { Input } from '@/components/ui/Input'
 import { IconMedallion } from '@/components/ui/IconMedallion'
 const STEPS = [
   { n: 1, label: 'Audiencia' },
@@ -143,8 +144,9 @@ export default function EmailCampaignWizard({ campaignId }: { campaignId?: strin
           <IconMedallion size="lg">
             <Mail className="w-5 h-5" />
           </IconMedallion>
-          <input
-            className="flex-1 text-lg font-semibold text-ink border-0 border-b border-transparent outline-none placeholder:text-gray-300"
+          <Input
+            aria-label="Nombre de la campaña"
+            className="flex-1 border-0 border-b border-transparent bg-transparent px-0 text-lg font-semibold shadow-none placeholder:text-gray-300"
             placeholder="Nombre de la campaña (interno)"
             value={name}
             onChange={e => setName(e.target.value)}

@@ -320,6 +320,7 @@ export default function SoldPropertyForm({ initial, onCancel, onSaved }: Props) 
               </span>
             )}
           </div>
+          {/* ds-todo: el DS no tiene control de archivo — ver ImageUpload. Candidato a "FileInput". */}
           <input
             ref={fileRef}
             type="file"
