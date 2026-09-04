@@ -441,6 +441,20 @@ Ojo: el `className` de esos grupos va al CONTENEDOR, no a los pills, así que
 desde la pantalla no se puede corregir el tamaño. Por eso es un prop.
 
 
+## 28. Dos cosas fijas no pueden compartir la misma esquina
+
+El toast vive en `bottom-24 right-4`, no en `bottom-4`, porque el botón flotante
+de IA está en `bottom-6 right-6` y montado en el layout del dashboard — o sea en
+TODAS las pantallas. Con los dos abajo a la derecha el mensaje quedaba tapado a
+la mitad.
+
+**El z-index no era el problema**: el toast es `z-[100]` y el botón `z-40`, así
+que el orden ya estaba bien. El problema es que ocupaban el mismo lugar. Cuando
+algo fijo se tapa, mirá primero la posición y después la capa.
+
+Auditoría: `overlay-props-fase6.test.tsx`, bloque "no lo tapa el botón flotante".
+
+
 ## Enforcement existente
 El ratchet de color (`scripts/ds-color-lint.mjs` + `scripts/.ds-color-baseline`)
 ya evita que SUBA nada de esto: colores Tailwind sueltos, medallones de
@@ -478,7 +492,7 @@ quedan afuera del ratchet a propósito: migrarlos SÍ cambia el tamaño, así qu
 deciden a mano (quedan 16). Mismo espíritu: cuando una pantalla se corrige acá,
 el baseline baja y queda trabado el retroceso.
 
-Las reglas 12 a 27 salieron del repaso visual del 31/08 y 01/09/2026: cada una es una
+Las reglas 12 a 28 salieron del repaso visual del 31/08 y 01/09/2026: cada una es una
 corrección que se pidió sobre pantalla y que, en vez de quedar en la pantalla
 donde se pidió, se movió al componente que la impone. La 12 es la que enseñó por
 qué: el header de contacto se había arreglado inline, así que el de lead siguió

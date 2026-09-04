@@ -4,6 +4,7 @@ import { Modal } from '../Modal'
 import { Drawer } from '../Drawer'
 import { Button } from '../Button'
 import { PillCheckGroup } from '../ChoicePills'
+import { ToastProvider } from '../Toast'
 
 afterEach(cleanup)
 
@@ -122,5 +123,25 @@ describe('ChoicePills · size', () => {
   it('con size="sm" iguala al Button size="sm" para convivir en la misma fila', () => {
     render(<PillCheckGroup size="sm" options={[{ value: 'a', label: 'A' }]} value={[]} onChange={() => {}} />)
     expect(screen.getByRole('button', { name: 'A' }).className).toMatch(/text-xs px-3 py-1\.5/)
+  })
+})
+
+describe('Toast · no lo tapa el botón flotante', () => {
+  /**
+   * El botón flotante de IA está en `bottom-6 right-6` y montado en el layout
+   * del dashboard, o sea en TODAS las pantallas. Con el toast en `bottom-4` se
+   * pisaban y el mensaje quedaba tapado a la mitad — Paula lo vio con un
+   * "Internal server error" ilegible. El z-index no era el problema (toast
+   * z-100, botón z-40): ocupaban la misma esquina.
+   */
+  it('el contenedor sube por encima del botón flotante', () => {
+    const { container } = render(
+      <ToastProvider><span /></ToastProvider>,
+    )
+    const cont = container.parentElement!.querySelector('.fixed.z-\\[100\\]')
+      ?? document.querySelector('.fixed.z-\\[100\\]')
+    expect(cont).not.toBeNull()
+    expect(cont!.className).toMatch(/bottom-24/)
+    expect(cont!.className).not.toMatch(/bottom-4\b/)
   })
 })
