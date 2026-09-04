@@ -387,6 +387,31 @@ Auditoría: `src/components/ui/__tests__/overlay-contract.test.tsx`, bloque
 de antes del arreglo (02/09/2026).
 
 
+## 25. Una sheet no se pega al borde de abajo
+
+`Modal sheet` nace con aire: 8px al borde inferior y a los costados, y las
+**cuatro** esquinas redondeadas. Dos motivos, y el segundo no es estético:
+
+- En un teléfono con barra de gestos, los últimos píxeles de la pantalla son
+  zona muerta — y en una sheet ahí es justo donde cae el footer con los botones.
+  El padding usa `env(safe-area-inset-bottom)`, así que respeta esa barra cuando
+  existe y cae a 8px cuando no.
+- Levantada con el borde inferior cuadrado se lee como un error de maquetado, no
+  como una decisión. Si le das aire, redondeás las cuatro.
+
+❌ `items-end p-0` + `rounded-t-2xl` → la sheet nace con `bottom` igual al alto
+de la ventana: cero aire.
+
+✅ Lo trae el componente: `items-end p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]`
++ `rounded-2xl`, y arriba de 640px vuelve al diálogo centrado con `rounded-card`.
+
+No lo resuelvas por pantalla: son 8 sheets y el `className` del panel no puede
+mover el scrim. Salió del repaso de Paula sobre pantalla el 04/09/2026, medido
+antes y después (0px → 8px de aire).
+
+Auditoría: `overlay-contract.test.tsx`, bloque "Modal · sheet".
+
+
 ## Enforcement existente
 El ratchet de color (`scripts/ds-color-lint.mjs` + `scripts/.ds-color-baseline`)
 ya evita que SUBA nada de esto: colores Tailwind sueltos, medallones de
@@ -415,7 +440,7 @@ quedan afuera del ratchet a propósito: migrarlos SÍ cambia el tamaño, así qu
 deciden a mano (quedan 16). Mismo espíritu: cuando una pantalla se corrige acá,
 el baseline baja y queda trabado el retroceso.
 
-Las reglas 12 a 24 salieron del repaso visual del 31/08 y 01/09/2026: cada una es una
+Las reglas 12 a 25 salieron del repaso visual del 31/08 y 01/09/2026: cada una es una
 corrección que se pidió sobre pantalla y que, en vez de quedar en la pantalla
 donde se pidió, se movió al componente que la impone. La 12 es la que enseñó por
 qué: el header de contacto se había arreglado inline, así que el de lead siguió

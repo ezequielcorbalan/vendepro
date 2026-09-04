@@ -69,9 +69,10 @@ flotando.
 
 ## Overlays
 
-**`Modal`** — diálogo centrado. `sheet` lo pega abajo en móvil y lo deja centrado
-en desktop: es el molde de las pantallas de trabajo de campo (leads, calendario,
-contactos). `padded={false}` para contenido a sangre (una banda de filtros con
+**`Modal`** — diálogo centrado. `sheet` lo baja en móvil y lo deja centrado en
+desktop: es el molde de las pantallas de trabajo de campo (leads, calendario,
+contactos). No queda pegado al borde — trae 8px de aire y respeta la barra de
+gestos del teléfono (regla 25). `padded={false}` para contenido a sangre (una banda de filtros con
 borde, una lista que scrollea sola). `header` es el mismo slot que el del Drawer,
 para encabezados que no son un título de una línea. `align="top"` ancla el panel
 arriba, que es lo que pide una paleta de comandos (centrada salta de lugar según

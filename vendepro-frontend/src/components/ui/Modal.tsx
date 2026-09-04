@@ -17,8 +17,9 @@ import { useOverlay } from './useOverlay'
  * tiene secciones a sangre — una banda de filtros con su propio borde, una lista
  * que scrollea sola.
  *
- * `sheet` lo vuelve un bottom sheet en móvil (pegado abajo, esquinas redondeadas
- * sólo arriba) que en desktop sigue siendo el diálogo centrado de siempre. No es
+ * `sheet` lo vuelve un bottom sheet en móvil (abajo, con aire al borde y las
+ * cuatro esquinas redondeadas) que en desktop sigue siendo el diálogo centrado
+ * de siempre. No es
  * una variante inventada: había SEIS overlays idénticos armados a mano con este
  * mismo layout (leads ×2, calendario, contactos/[id], admin/objetivos), y son
  * pantallas de trabajo de campo, donde `rules/responsive.md` pide sheet — en un
@@ -67,7 +68,11 @@ export function Modal({ open, onClose, title, header, icon, danger = false, chil
         className={cn(
           'fixed inset-0 bg-black/50 flex justify-center',
           sheet
-            ? 'items-end p-0 sm:items-center sm:p-4'
+            // No pegada al borde: un poco de aire abajo y a los costados. Sobre
+            // un teléfono con barra de gestos el borde inferior es zona muerta,
+            // así que el footer con los botones quedaba justo ahí. `env(...)`
+            // respeta esa barra cuando existe y cae a 0.5rem cuando no.
+            ? 'items-end p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:items-center sm:p-4'
             : align === 'top'
               ? 'items-start p-4 pt-[10vh]'
               : 'items-center p-4',
@@ -91,7 +96,7 @@ export function Modal({ open, onClose, title, header, icon, danger = false, chil
             // fijo, la altura la sigue dando el contenido.
             'bg-white w-full max-w-md shadow-pop overflow-hidden outline-none',
             'max-h-[90vh] flex flex-col',
-            sheet ? 'rounded-t-2xl sm:rounded-card' : 'rounded-card',
+            sheet ? 'rounded-2xl sm:rounded-card' : 'rounded-card',
             className,
           )}
         >

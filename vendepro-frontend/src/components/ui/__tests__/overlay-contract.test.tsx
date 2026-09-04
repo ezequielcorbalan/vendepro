@@ -81,10 +81,22 @@ describe('Modal · sheet', () => {
     expect(scrim.className).toMatch(/sm:items-center/)
   })
 
-  it('redondea sólo arriba en móvil y vuelve al radio de card en desktop', () => {
+  it('no queda pegado al borde de abajo', () => {
+    // Paula lo pidió sobre pantalla el 04/09: la sheet nacía con `bottom` igual
+    // al alto de la ventana, o sea cero aire, y en un teléfono con barra de
+    // gestos los botones del footer caen en zona muerta.
+    render(<Modal open onClose={() => {}} title="T" sheet>cuerpo</Modal>)
+    const scrim = screen.getByRole('dialog').parentElement!
+    expect(scrim.className).not.toMatch(/\bp-0\b/)
+    expect(scrim.className).toMatch(/safe-area-inset-bottom/)
+  })
+
+  it('redondea las cuatro esquinas en móvil y vuelve al radio de card en desktop', () => {
+    // Con la sheet levantada, el borde de abajo cuadrado se lee como un bug.
     render(<Modal open onClose={() => {}} title="T" sheet>cuerpo</Modal>)
     const panel = screen.getByRole('dialog')
-    expect(panel.className).toMatch(/rounded-t-2xl/)
+    expect(panel.className).toMatch(/rounded-2xl/)
+    expect(panel.className).not.toMatch(/rounded-t-2xl/)
     expect(panel.className).toMatch(/sm:rounded-card/)
   })
 
@@ -93,7 +105,7 @@ describe('Modal · sheet', () => {
     const scrim = screen.getByRole('dialog').parentElement!
     expect(scrim.className).toMatch(/items-center/)
     expect(scrim.className).not.toMatch(/items-end/)
-    expect(screen.getByRole('dialog').className).not.toMatch(/rounded-t-2xl/)
+    expect(screen.getByRole('dialog').className).not.toMatch(/rounded-2xl/)
   })
 
   it('cumple el contrato de overlay igual que el modal centrado', () => {
