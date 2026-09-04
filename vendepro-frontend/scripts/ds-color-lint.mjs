@@ -117,13 +117,6 @@ for (const root of ROOTS) {
   }
 }
 
-const count = hits.length
-
-const gradientCount = gradientHits.length
-const glyphCount = glyphHits.length
-const slateCount = slateHits.length
-const overlayCount = overlayHits.length
-const radiusCount = radiusHits.length
 
 /**
  * Archivos que cambió esta rama respecto de main. Sirve para señalar al culpable

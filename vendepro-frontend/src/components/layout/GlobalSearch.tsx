@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { apiFetch } from '@/lib/api'
 import { LEAD_STAGES, SEARCH_ENTITY_TONES, type LeadStage } from '@/lib/crm-config'
 import { Button } from '@/components/ui/Button'
+import { Modal } from '@/components/ui/Modal'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { Text } from '@/components/ui/Typography'
 
@@ -14,7 +15,6 @@ export default function GlobalSearch() {
   const [results, setResults] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
   const debounceRef = useRef<any>(null)
 
   useEffect(() => {
@@ -34,16 +34,6 @@ export default function GlobalSearch() {
   useEffect(() => {
     if (open && inputRef.current) inputRef.current.focus()
   }, [open])
-
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [])
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
@@ -78,9 +68,14 @@ export default function GlobalSearch() {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/30 z-50 flex items-start justify-center pt-[10vh]" onClick={close}>
-      <div ref={containerRef} className="bg-white rounded-card shadow-pop w-[90vw] max-w-lg mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center gap-3 px-4 py-3 border-b">
+    <Modal
+      open
+      onClose={close}
+      align="top"
+      padded={false}
+      className="max-w-lg"
+    >
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100">
           <Search className="w-5 h-5 text-gray-400 shrink-0" />
           <input ref={inputRef} type="text" value={query} onChange={e => setQuery(e.target.value)}
             placeholder="Buscar leads, contactos, propiedades..."
@@ -159,7 +154,6 @@ export default function GlobalSearch() {
             <Text size="xs" tone="muted" className="p-4 text-center">Escribí al menos 2 caracteres para buscar</Text>
           )}
         </div>
-      </div>
-    </div>
+    </Modal>
   )
 }

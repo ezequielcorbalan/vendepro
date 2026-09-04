@@ -24,11 +24,21 @@ import { useOverlay } from './useOverlay'
  * pantallas de trabajo de campo, donde `rules/responsive.md` pide sheet — en un
  * teléfono se alcanza con el pulgar y no tapa todo. Migrarlos a un modal centrado
  * habría cambiado UX de campo por consistencia de código.
+ *
+ * `header` es el mismo slot que ya tiene `Drawer`: para encabezados que no son
+ * un título de una línea (el onboarding lleva el indicador de pasos ahí). La X
+ * la sigue poniendo el Modal, así que el slot no necesita traer su propio cierre.
+ *
+ * `align="top"` ancla el panel arriba en vez de centrarlo, que es lo que pide una
+ * paleta de comandos (⌘K): centrada vertical salta de lugar según cuántos
+ * resultados haya. Si se pasa junto con `sheet`, gana `sheet`.
  */
 interface ModalProps {
   open: boolean
   onClose: () => void
   title?: string
+  /** Header propio, en vez del `title` de una línea. La X la pone el Modal. */
+  header?: ReactNode
   /** Ícono en caja a la izquierda del título. */
   icon?: ReactNode
   /** Caja del ícono en tono destructivo (rojo) en vez del gradiente de marca. */
@@ -39,10 +49,12 @@ interface ModalProps {
   padded?: boolean
   /** Bottom sheet en móvil, diálogo centrado en desktop. Para pantallas de campo. */
   sheet?: boolean
+  /** Dónde queda el panel en vertical. Default 'center'. `sheet` le gana. */
+  align?: 'center' | 'top'
   className?: string
 }
 
-export function Modal({ open, onClose, title, icon, danger = false, children, footer, padded = true, sheet = false, className }: ModalProps) {
+export function Modal({ open, onClose, title, header, icon, danger = false, children, footer, padded = true, sheet = false, align = 'center', className }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null)
   const downOnScrim = useRef(false)
   useOverlay(open, onClose, panelRef)
@@ -54,7 +66,11 @@ export function Modal({ open, onClose, title, icon, danger = false, children, fo
       <div
         className={cn(
           'fixed inset-0 bg-black/50 flex justify-center',
-          sheet ? 'items-end p-0 sm:items-center sm:p-4' : 'items-center p-4',
+          sheet
+            ? 'items-end p-0 sm:items-center sm:p-4'
+            : align === 'top'
+              ? 'items-start p-4 pt-[10vh]'
+              : 'items-center p-4',
         )}
         style={{ zIndex: Z.modal }}
         onMouseDown={e => { downOnScrim.current = e.target === e.currentTarget }}
@@ -79,8 +95,9 @@ export function Modal({ open, onClose, title, icon, danger = false, children, fo
             className,
           )}
         >
-          {title && (
+          {(title || header) && (
             <div className="shrink-0 flex items-start justify-between gap-3 px-6 pt-5 pb-3 border-b border-gray-100">
+              {header ?? (
               <div className="flex items-center gap-3">
                 {icon && (
                   <div
@@ -94,12 +111,13 @@ export function Modal({ open, onClose, title, icon, danger = false, children, fo
                 )}
                 <h2 className="text-lg font-semibold text-ink leading-tight">{title}</h2>
               </div>
+              )}
               <button type="button" onClick={onClose} aria-label="Cerrar" className="p-1.5 hover:bg-gray-100 rounded-control shrink-0">
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
           )}
-          <div className={cn('text-sm text-gray-600 min-h-0 overflow-y-auto', padded && 'px-6 py-4')}>{children}</div>
+          <div className={cn('text-sm text-gray-600 grow min-h-0 overflow-y-auto', padded && 'px-6 py-4')}>{children}</div>
           {footer && (
             <div className="shrink-0 flex items-center justify-end gap-2 px-6 py-4 bg-gray-50 border-t border-gray-100">
               {footer}

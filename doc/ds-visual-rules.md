@@ -395,6 +395,17 @@ gradiente a mano (regla 14), íconos escritos como carácter (regla 20), la esca
 overlays armados a mano (fase 6). Son seis ratchets, cada uno con su archivo de
 baseline en `scripts/.ds-*-baseline`.
 
+**El de overlays llegó a 0 el 04/09/2026** y ahí se queda: cualquier `inset-0` con
+fondo translúcido nuevo hace fallar el lint. Los tres últimos necesitaron un prop
+que el DS no tenía, y por eso mismo estaban armados a mano — `Drawer side="left"`
+(nav móvil), `Modal align="top"` (paleta ⌘K) y `Modal header` (onboarding). El
+onboarding perdió su fade de entrada: ningún overlay del DS tiene transición, y
+meterle una toca todos los overlays de la app, así que se decidió aparte.
+
+Ojo con la exclusión: el ratchet no mira `src/components/ui`, que tiene sentido
+para colores pero no para overlays — `ConfirmDialog` arma el suyo a mano y el
+contador no lo ve.
+
 **El contador de color estaba mal medido hasta el 31/08/2026.** Sólo miraba
 emerald/green/red/blue/amber/yellow, y eso dejaba afuera 58 casos: `rose-500` es
 un segundo rojo, `pink-*` un segundo primary, y además purple/cyan/orange/indigo.

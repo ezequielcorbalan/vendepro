@@ -8,7 +8,8 @@ import { Portal } from './Portal'
 import { useOverlay } from './useOverlay'
 
 /**
- * Drawer / panel lateral del design system. Entra desde la derecha. Portal +
+ * Drawer / panel lateral del design system. Entra desde la derecha, o desde la
+ * izquierda con `side="left"`. Portal +
  * scroll-lock + focus-trap + devolución de foco. Cierra con Esc o click en el
  * fondo (mousedown+mouseup, para no cerrar al soltar afuera tras seleccionar).
  *
@@ -16,6 +17,11 @@ import { useOverlay } from './useOverlay'
  * asistente de IA lleva medallón + nombre + modelo, y por armarlo a mano se
  * había quedado sin Esc, sin scroll-lock y sin focus-trap. El slot recibe el
  * contenido; la X y el borde los sigue poniendo el Drawer.
+ *
+ * `side` salió del nav móvil, que es el único panel que entra por la izquierda
+ * (la navegación vive a la izquierda en desktop, así que abrirla desde la
+ * derecha se lee como otra cosa). Por eso estaba armado a mano y no cerraba con
+ * Esc.
  *
  * `padded` es el mismo prop que `Card`: apagalo cuando el contenido tiene
  * secciones a sangre (una fila de tabs con su propio borde, una lista).
@@ -32,9 +38,13 @@ interface DrawerProps {
   padded?: boolean
   /** Ancho del panel. Default w-[380px]. */
   width?: string
+  /** Lado por el que entra. Default 'right'. */
+  side?: 'left' | 'right'
+  /** Clases extra para el scrim — p.ej. `lg:hidden` en el nav móvil. */
+  className?: string
 }
 
-export function Drawer({ open, onClose, title, header, children, footer, padded = true, width = 'w-[380px]' }: DrawerProps) {
+export function Drawer({ open, onClose, title, header, children, footer, padded = true, width = 'w-[380px]', side = 'right', className }: DrawerProps) {
   const panelRef = useRef<HTMLDivElement>(null)
   const downOnScrim = useRef(false)
   useOverlay(open, onClose, panelRef)
@@ -44,7 +54,11 @@ export function Drawer({ open, onClose, title, header, children, footer, padded 
   return (
     <Portal>
       <div
-        className="fixed inset-0 flex justify-end bg-black/35"
+        className={cn(
+          'fixed inset-0 flex bg-black/35',
+          side === 'left' ? 'justify-start' : 'justify-end',
+          className,
+        )}
         style={{ zIndex: Z.modal }}
         onMouseDown={e => { downOnScrim.current = e.target === e.currentTarget }}
         onMouseUp={e => { if (downOnScrim.current && e.target === e.currentTarget) onClose() }}

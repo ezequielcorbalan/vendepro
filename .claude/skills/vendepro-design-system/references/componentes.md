@@ -72,7 +72,13 @@ flotando.
 **`Modal`** — diálogo centrado. `sheet` lo pega abajo en móvil y lo deja centrado
 en desktop: es el molde de las pantallas de trabajo de campo (leads, calendario,
 contactos). `padded={false}` para contenido a sangre (una banda de filtros con
-borde, una lista que scrollea sola).
+borde, una lista que scrollea sola). `header` es el mismo slot que el del Drawer,
+para encabezados que no son un título de una línea. `align="top"` ancla el panel
+arriba, que es lo que pide una paleta de comandos (centrada salta de lugar según
+cuántos resultados haya); si va junto con `sheet`, gana `sheet`.
+
+> Sin `title` **ni** `header` no dibuja encabezado —  ni barra ni X. Es lo que
+> necesita la paleta ⌘K, que trae su propia barra de búsqueda.
 
 > **Trampa:** el panel ya es una columna acotada al 90% del alto de pantalla, con
 > encabezado y `footer` fijos y el cuerpo scrolleando solo. No armes un
@@ -83,7 +89,9 @@ borde, una lista que scrollea sola).
 
 **`Drawer`** — panel lateral. `header` (ReactNode) para encabezados que no son un
 título de una línea; la X la sigue poniendo el Drawer. `footer` para acciones fijas
-abajo. `padded` igual que en `Modal`.
+abajo. `padded` igual que en `Modal`. `side="left"` para el que entra por la
+izquierda (hoy sólo el nav móvil). El `className` va al **scrim**, no al panel —
+por eso `lg:hidden` funciona: esconde el fondo negro también.
 
 **`ConfirmDialog`** / **`useConfirm`** — confirmar algo destructivo.
 
