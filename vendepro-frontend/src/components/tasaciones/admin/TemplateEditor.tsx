@@ -15,6 +15,8 @@ import type { TemplateBlock, AppraisalBlockType } from '../renderer/types'
 import { APPRAISAL_BLOCK_TYPES, WEB_ONLY_TYPES } from '../renderer/types'
 import { getBlockMeta } from '../renderer/block-catalog'
 import { Button } from '@/components/ui/Button'
+import { Modal } from '@/components/ui/Modal'
+import { OptionCard } from '@/components/ui/OptionCard'
 import { Alert } from '@/components/ui/Alert'
 import { Heading, Text } from '@/components/ui/Typography'
 
@@ -258,28 +260,32 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
       </div>
 
       {adding && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-card bg-white p-6">
-            <h3 className="text-lg font-semibold">Agregar bloque</h3>
-            <p className="mt-1 text-xs text-gray-500">Elegí qué información querés sumar a la tasación.</p>
-            <div className="mt-4 grid grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2">
+        <Modal
+          open
+          onClose={() => setAdding(false)}
+          title="Agregar bloque"
+          icon={<Plus className="w-5 h-5" />}
+          className="max-w-2xl"
+          footer={<Button variant="ghost" onClick={() => setAdding(false)}>Cancelar</Button>}
+        >
+            <Text size="sm" tone="muted" className="block mb-4">
+              Elegí qué información querés sumar a la tasación.
+            </Text>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {APPRAISAL_BLOCK_TYPES.map(t => {
                 const meta = getBlockMeta(t)
                 return (
-                  <button
+                  <OptionCard
                     key={t}
+                    orientation="stack"
+                    title={meta.label}
+                    description={meta.description}
                     onClick={() => addBlock(t)}
-                    className="rounded-control border border-gray-300 px-3 py-2 text-left hover:border-primary hover:bg-primary/5"
-                  >
-                    <div className="text-sm font-medium text-ink">{meta.label}</div>
-                    <div className="mt-0.5 text-xs leading-snug text-gray-500">{meta.description}</div>
-                  </button>
+                  />
                 )
               })}
             </div>
-            <button onClick={() => setAdding(false)} className="mt-4 self-end rounded px-4 py-2 text-sm text-gray-600 hover:bg-gray-100">Cancelar</button>
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   )

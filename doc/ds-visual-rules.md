@@ -352,11 +352,84 @@ Están acá para que no se pierdan:
   Si `/r/` sale, la coherencia pide que salgan estas dos también, o que entren
   las tres. Pendiente de decisión.
 
+## 24. Dentro de un `Modal` no se arma un header ni un footer pegajoso a mano
+
+El panel del `Modal` ya es una columna acotada al 90% del alto de la pantalla:
+el encabezado y el `footer` quedan fijos y **el cuerpo scrollea solo**. Los
+overlays a mano resolvían eso con `sticky top-0` / `sticky bottom-0` adentro del
+contenido, y al migrarlos hay que sacarlo: duplicado, el header pegajoso viaja
+con el scroll del cuerpo y se ve doble borde.
+
+❌
+```tsx
+<Modal open onClose={cerrar}>
+  <div className="sticky top-0 bg-white border-b">…</div>
+  <div className="p-4">…campos…</div>
+  <div className="sticky bottom-0 border-t">…botones…</div>
+</Modal>
+```
+
+✅
+```tsx
+<Modal open onClose={cerrar} title="Nuevo lead" footer={<><Button …/><Button …/></>}>
+  …campos…
+</Modal>
+```
+
+Y no intentes acotar el alto desde afuera: un `flex flex-col` en el `className`
+del panel no llega al contenido, porque `children` va envuelto en el div del
+cuerpo. Ese fue el bug: el `overflow-y-auto` quedó en un nieto, y como el panel
+tiene `overflow-hidden`, un formulario largo **se recortaba** — en un teléfono el
+final del form quedaba inalcanzable, y en una captura se veía perfecto.
+
+Auditoría: `src/components/ui/__tests__/overlay-contract.test.tsx`, bloque
+"un formulario largo no se corta" — tres aserciones que fallan sobre el `Modal`
+de antes del arreglo (02/09/2026).
+
+
+## 25. Una sheet no se pega al borde de abajo
+
+`Modal sheet` nace con aire: 8px al borde inferior y a los costados, y las
+**cuatro** esquinas redondeadas. Dos motivos, y el segundo no es estético:
+
+- En un teléfono con barra de gestos, los últimos píxeles de la pantalla son
+  zona muerta — y en una sheet ahí es justo donde cae el footer con los botones.
+  El padding usa `env(safe-area-inset-bottom)`, así que respeta esa barra cuando
+  existe y cae a 8px cuando no.
+- Levantada con el borde inferior cuadrado se lee como un error de maquetado, no
+  como una decisión. Si le das aire, redondeás las cuatro.
+
+❌ `items-end p-0` + `rounded-t-2xl` → la sheet nace con `bottom` igual al alto
+de la ventana: cero aire.
+
+✅ Lo trae el componente: `items-end p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]`
++ `rounded-2xl`, y arriba de 640px vuelve al diálogo centrado con `rounded-card`.
+
+No lo resuelvas por pantalla: son 8 sheets y el `className` del panel no puede
+mover el scrim. Salió del repaso de Paula sobre pantalla el 04/09/2026, medido
+antes y después (0px → 8px de aire).
+
+Auditoría: `overlay-contract.test.tsx`, bloque "Modal · sheet".
+
+
 ## Enforcement existente
 El ratchet de color (`scripts/ds-color-lint.mjs` + `scripts/.ds-color-baseline`)
 ya evita que SUBA nada de esto: colores Tailwind sueltos, medallones de
 gradiente a mano (regla 14), íconos escritos como carácter (regla 20), la escala
-`slate` (regla 21) y los radios pre-token `rounded-lg`/`xl` (regla 8).
+`slate` (regla 21), los radios pre-token `rounded-lg`/`xl` (regla 8) y los
+overlays armados a mano (fase 6). Son seis ratchets, cada uno con su archivo de
+baseline en `scripts/.ds-*-baseline`.
+
+**El de overlays llegó a 0 el 04/09/2026** y ahí se queda: cualquier `inset-0` con
+fondo translúcido nuevo hace fallar el lint. Los tres últimos necesitaron un prop
+que el DS no tenía, y por eso mismo estaban armados a mano — `Drawer side="left"`
+(nav móvil), `Modal align="top"` (paleta ⌘K) y `Modal header` (onboarding). El
+onboarding perdió su fade de entrada: ningún overlay del DS tiene transición, y
+meterle una toca todos los overlays de la app, así que se decidió aparte.
+
+Ojo con la exclusión: el ratchet no mira `src/components/ui`, que tiene sentido
+para colores pero no para overlays — `ConfirmDialog` arma el suyo a mano y el
+contador no lo ve.
 
 **El contador de color estaba mal medido hasta el 31/08/2026.** Sólo miraba
 emerald/green/red/blue/amber/yellow, y eso dejaba afuera 58 casos: `rose-500` es
@@ -367,7 +440,7 @@ quedan afuera del ratchet a propósito: migrarlos SÍ cambia el tamaño, así qu
 deciden a mano (quedan 16). Mismo espíritu: cuando una pantalla se corrige acá,
 el baseline baja y queda trabado el retroceso.
 
-Las reglas 12 a 22 salieron del repaso visual del 31/08/2026: cada una es una
+Las reglas 12 a 25 salieron del repaso visual del 31/08 y 01/09/2026: cada una es una
 corrección que se pidió sobre pantalla y que, en vez de quedar en la pantalla
 donde se pidió, se movió al componente que la impone. La 12 es la que enseñó por
 qué: el header de contacto se había arreglado inline, así que el de lead siguió

@@ -7,6 +7,7 @@ import { useToast } from '@/components/ui/Toast'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { Modal } from '@/components/ui/Modal'
 import { Heading } from '@/components/ui/Typography'
 import { Field, Input, Select } from '@/components/ui/Input'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -139,9 +140,21 @@ export default function ObjetivosPage() {
       )}
 
       {showCreate && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowCreate(false)}>
-          <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-5" onClick={e => e.stopPropagation()}>
-            <Heading level={4} className="mb-4">Nuevo objetivo</Heading>
+        <Modal
+          open
+          sheet
+          onClose={() => setShowCreate(false)}
+          title="Nuevo objetivo"
+          icon={<Target className="w-5 h-5" />}
+          footer={
+            <>
+              <Button variant="outline" onClick={() => setShowCreate(false)}>Cancelar</Button>
+              <Button onClick={handleCreate} loading={saving} disabled={!form.agent_id || !form.target}>
+                Crear objetivo
+              </Button>
+            </>
+          }
+        >
             <div className="space-y-3">
               <Select value={form.agent_id} onChange={e => setForm(f => ({ ...f, agent_id: e.target.value }))}>
                 <option value="">Seleccionar agente *</option>
@@ -160,14 +173,7 @@ export default function ObjetivosPage() {
                 </Field>
               </div>
             </div>
-            <div className="flex gap-2 mt-4">
-              <Button variant="outline" fullWidth onClick={() => setShowCreate(false)}>Cancelar</Button>
-              <Button fullWidth onClick={handleCreate} disabled={!form.agent_id || !form.target || saving}>
-                {saving ? 'Creando...' : 'Crear objetivo'}
-              </Button>
-            </div>
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   )

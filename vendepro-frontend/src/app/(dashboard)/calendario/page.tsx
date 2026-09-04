@@ -5,7 +5,7 @@ import Link from 'next/link'
 import {
   Plus, X, ChevronLeft, ChevronRight, Calendar, Phone, Users, Home, Eye,
   ClipboardList, RefreshCw, FileText, FileSignature, CheckCircle2, Trash2,
-  Link2
+  Link2, CalendarPlus
 } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -13,6 +13,7 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Switch } from '@/components/ui/Switch'
 import { Card, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { Modal } from '@/components/ui/Modal'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Alert } from '@/components/ui/Alert'
@@ -526,12 +527,19 @@ export default function CalendarioPage() {
 
       {/* Create modal */}
       {showCreate && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowCreate(false)}>
-          <div className="bg-white w-full sm:max-w-md sm:rounded-card rounded-t-2xl p-5" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <Heading level={4} as="h3">Nuevo evento</Heading>
-              <button onClick={() => setShowCreate(false)} aria-label="Cerrar" className="p-1 hover:bg-gray-100 rounded-control"><X className="w-5 h-5 text-gray-400" /></button>
-            </div>
+        <Modal
+          open
+          sheet
+          onClose={() => setShowCreate(false)}
+          title="Nuevo evento"
+          icon={<CalendarPlus className="w-5 h-5" />}
+          footer={
+            <>
+              <Button variant="outline" onClick={() => setShowCreate(false)}>Cancelar</Button>
+              <Button onClick={handleCreate} disabled={!form.title || !form.start_at} loading={saving}>Crear</Button>
+            </>
+          }
+        >
             <div className="space-y-3">
               <Field label="Título" required>
                 <Input placeholder="Título del evento" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
@@ -553,14 +561,7 @@ export default function CalendarioPage() {
                 <Textarea placeholder="Notas..." value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2} className="min-h-0" />
               </Field>
             </div>
-            <div className="flex gap-2 mt-4">
-              <Button variant="outline" className="flex-1" onClick={() => setShowCreate(false)}>Cancelar</Button>
-              <Button className="flex-1" onClick={handleCreate} disabled={!form.title || !form.start_at} loading={saving}>
-                Crear
-              </Button>
-            </div>
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   )

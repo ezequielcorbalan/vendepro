@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import {
   ArrowLeft, Phone, Mail, MapPin, User, Home, Loader2,
-  ExternalLink, Building2, UserPlus, Edit3, X
+  ExternalLink, Building2, UserPlus, Edit3
 } from 'lucide-react'
 import Link from 'next/link'
 import { apiFetch } from '@/lib/api'
@@ -12,6 +12,7 @@ import { useToast } from '@/components/ui/Toast'
 import { Card } from '@/components/ui/Card'
 import { Heading, Text } from '@/components/ui/Typography'
 import { Button } from '@/components/ui/Button'
+import { Modal } from '@/components/ui/Modal'
 import { Field, Input, Select, Textarea } from '@/components/ui/Input'
 import { CallButton, WhatsAppButton } from '@/components/ui/ContactButtons'
 import type { Contact } from '@/lib/types'
@@ -236,13 +237,22 @@ export default function ContactDetailPage() {
 
       {/* Modal editar contacto */}
       {showEdit && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowEdit(false)}>
-          <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="sticky top-0 bg-white border-b px-4 py-3 flex items-center justify-between rounded-t-2xl">
-              <Heading level={4}>Editar contacto</Heading>
-              <Button variant="ghost" onClick={() => setShowEdit(false)} aria-label="Cerrar" icon={<X className="w-5 h-5" />} className="!px-2" />
-            </div>
-            <div className="p-4 space-y-3">
+        <Modal
+          open
+          sheet
+          onClose={() => setShowEdit(false)}
+          title="Editar contacto"
+          icon={<Edit3 className="w-5 h-5" />}
+          className="max-h-[90vh] flex flex-col"
+          padded={false}
+          footer={
+            <>
+              <Button variant="outline" onClick={() => setShowEdit(false)}>Cancelar</Button>
+              <Button onClick={handleSaveEdit} loading={saving}>Guardar</Button>
+            </>
+          }
+        >
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
               <Field label="Nombre completo" htmlFor="edit-full_name" required>
                 <Input id="edit-full_name" value={editForm.full_name} onChange={e => setEditForm((f: any) => ({ ...f, full_name: e.target.value }))} autoFocus />
               </Field>
@@ -266,14 +276,7 @@ export default function ContactDetailPage() {
                 <Textarea id="edit-notes" rows={3} value={editForm.notes} onChange={e => setEditForm((f: any) => ({ ...f, notes: e.target.value }))} />
               </Field>
             </div>
-            <div className="sticky bottom-0 bg-white border-t px-4 py-3 flex gap-2">
-              <Button variant="outline" onClick={() => setShowEdit(false)} className="flex-1">Cancelar</Button>
-              <Button onClick={handleSaveEdit} loading={saving} disabled={saving} className="flex-1">
-                {saving ? 'Guardando...' : 'Guardar'}
-              </Button>
-            </div>
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   )

@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import {
   Plus, Search, Phone, X,
   AlertTriangle, User, MapPin, ArrowRight, ChevronDown, Download, Sparkles, Trash2, GripVertical,
-  ChevronRight, Check, Tag, Loader2, Archive
+  ChevronRight, Check, Tag, Loader2, Calculator, ArrowLeft, Archive
 } from 'lucide-react'
 import {
   LEAD_SOURCES, LEAD_FLAGS,
@@ -23,6 +23,8 @@ import { StageBadge } from '@/components/ui/StageBadge'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Button } from '@/components/ui/Button'
+import { Modal } from '@/components/ui/Modal'
+import { StepIndicator } from '@/components/ui/StepIndicator'
 import { Alert } from '@/components/ui/Alert'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Input, Select, Textarea } from '@/components/ui/Input'
@@ -734,25 +736,36 @@ export default function LeadsPage() {
 
       {/* CREATE MODAL */}
       {showCreate && (
-        <div
-          className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
-          onClick={closeCreateModal}
+        <Modal
+          open
+          sheet
+          onClose={closeCreateModal}
+          title="Nuevo lead"
+          icon={<Plus className="w-5 h-5" />}
+          className="sm:max-w-lg"
+          padded={false}
+          footer={
+            createStep === 1 ? (
+              <>
+                <Button variant="outline" onClick={closeCreateModal}>Cancelar</Button>
+                <Button onClick={() => setCreateStep(2)} disabled={!canProceedStep1}>
+                  Siguiente <ChevronRight className="w-4 h-4" />
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" onClick={() => setCreateStep(1)} icon={<ArrowLeft className="w-4 h-4" />}>
+                  Atrás
+                </Button>
+                <Button onClick={handleCreate} loading={saving}>Crear lead</Button>
+              </>
+            )
+          }
         >
-          <div
-            className="bg-white w-full sm:max-w-lg sm:rounded-card rounded-t-card max-h-[90vh] overflow-y-auto"
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="sticky top-0 bg-white border-b px-4 py-3 flex items-center justify-between rounded-t-card z-10">
-              <div>
-                <Heading level={4} as="h3">Nuevo lead</Heading>
-                <p className="text-xs text-gray-400">
-                  {createStep === 1 ? 'Paso 1 de 2 — Contacto' : 'Paso 2 de 2 — Pipeline'}
-                </p>
-              </div>
-              <Button variant="ghost" size="icon" aria-label="Cerrar" onClick={closeCreateModal}>
-                <X className="w-5 h-5" />
-              </Button>
+            {/* Los pasos se nombran con el StepIndicator del DS, no con un
+                "Paso 1 de 2" escrito a mano. */}
+            <div className="px-4 pt-3">
+              <StepIndicator steps={['Contacto', 'Pipeline']} current={createStep} />
             </div>
 
             {/* PASO 1: Contacto */}
@@ -885,42 +898,19 @@ export default function LeadsPage() {
               </div>
             )}
 
-            {/* Footer */}
-            <div className="sticky bottom-0 bg-white border-t px-4 py-3 flex gap-2">
-              {createStep === 1 ? (
-                <>
-                  <Button variant="outline" className="flex-1" onClick={closeCreateModal}>Cancelar</Button>
-                  <Button
-                    className="flex-1"
-                    onClick={() => setCreateStep(2)}
-                    disabled={!canProceedStep1}
-                  >
-                    Siguiente <ChevronRight className="w-4 h-4" />
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button variant="outline" className="flex-1" onClick={() => setCreateStep(1)}>← Atrás</Button>
-                  <Button
-                    className="flex-1"
-                    onClick={handleCreate}
-                    loading={saving}
-                  >
-                    {saving ? 'Guardando...' : 'Crear lead'}
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
+        </Modal>
       )}
 
       {/* CONVERT TO APPRAISAL MODAL */}
       {showConvertModal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowConvertModal(null)}>
-          <div className="bg-white w-full sm:max-w-md sm:rounded-card rounded-t-card p-5" onClick={e => e.stopPropagation()}>
-            <Heading level={4} as="h3" className="mb-2">Avanzar a tasación</Heading>
-            <Text tone="muted" className="mb-4">
+        <Modal
+          open
+          sheet
+          onClose={() => setShowConvertModal(null)}
+          title="Avanzar a tasación"
+          icon={<Calculator className="w-5 h-5" />}
+        >
+            <Text tone="muted" className="block mb-4">
               <strong>{showConvertModal.full_name}</strong> pasará a &ldquo;En tasación&rdquo;. ¿Querés crear una tasación vinculada?
             </Text>
             <div className="space-y-2">
@@ -932,8 +922,7 @@ export default function LeadsPage() {
               </Button>
               <Button variant="ghost" fullWidth className="text-gray-400" onClick={() => setShowConvertModal(null)}>Cancelar</Button>
             </div>
-          </div>
-        </div>
+        </Modal>
       )}
       {/* AI Panel */}
       {showAI && (

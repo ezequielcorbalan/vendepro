@@ -150,6 +150,10 @@ export default function DesignSystemPage() {
   const [email, setEmail] = useState(true)
   const [op, setOp] = useState('venta')
   const [modalOpen, setModalOpen] = useState(false)
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const [navOpen, setNavOpen] = useState(false)
+  const [topOpen, setTopOpen] = useState(false)
+  const [headerOpen, setHeaderOpen] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [optMode, setOptMode] = useState('method')
   const [segIcon, setSegIcon] = useState('config')
@@ -733,6 +737,30 @@ export default function DesignSystemPage() {
           </Modal>
         </Section>
 
+        {/* Modal sheet */}
+        <Section
+          title="Modal · sheet"
+          hint="Mismo diálogo pegado abajo en el teléfono y centrado en desktop. Es el molde de las pantallas de trabajo de campo (leads, calendario, contactos): la mano llega al pulgar, no al centro de la pantalla. Angostá la ventana para verlo."
+        >
+          <Button variant="outline" onClick={() => setSheetOpen(true)}>Abrir sheet</Button>
+          <Modal
+            open={sheetOpen}
+            sheet
+            onClose={() => setSheetOpen(false)}
+            title="Avanzar a tasación"
+            icon={<AlertTriangle className="w-4 h-4" />}
+            footer={
+              <>
+                <Button variant="ghost" onClick={() => setSheetOpen(false)}>Cancelar</Button>
+                <Button onClick={() => setSheetOpen(false)}>Avanzar</Button>
+              </>
+            }
+          >
+            En móvil sale desde abajo con las esquinas de arriba redondeadas; arriba de
+            640px es el mismo modal centrado de siempre.
+          </Modal>
+        </Section>
+
         {/* Empty state */}
         <Section title="Empty state" hint="Estado vacío operativo con CTA.">
           <Card padded={false}>
@@ -846,6 +874,50 @@ export default function DesignSystemPage() {
               <Switch checked={auto} onChange={setAuto} label="Formulario de contacto" />
             </div>
           </Drawer>
+        </Section>
+
+        {/* Drawer izquierdo + Modal align/header — los tres props que cerraron la fase 6 */}
+        <Section
+          title="Drawer izquierdo · Modal anclado arriba · header propio"
+          hint="Los tres props que cerraron la fase 6, cada uno sacado de un overlay que estaba armado a mano justo porque el DS no lo soportaba: el nav móvil entra por la izquierda, la paleta ⌘K se ancla arriba (centrada saltaría de lugar según cuántos resultados haya) y el onboarding lleva el indicador de pasos en el encabezado en vez de un título."
+        >
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => setNavOpen(true)}>Drawer izquierdo</Button>
+            <Button variant="outline" onClick={() => setTopOpen(true)}>Modal anclado arriba</Button>
+            <Button variant="outline" onClick={() => setHeaderOpen(true)}>Modal con header propio</Button>
+          </div>
+
+          <Drawer
+            open={navOpen}
+            onClose={() => setNavOpen(false)}
+            side="left"
+            width="w-72"
+            title="Menú de navegación"
+          >
+            Igual que el de la derecha, pero entra por la izquierda: la navegación
+            vive a la izquierda, así que abrirla del otro lado se lee como otra cosa.
+          </Drawer>
+
+          <Modal open={topOpen} onClose={() => setTopOpen(false)} align="top" padded={false}>
+            <div className="flex items-center gap-3 border-b border-gray-100 px-4 py-3">
+              <Search className="w-5 h-5 text-gray-400 shrink-0" />
+              <Input placeholder="Buscar leads, contactos, propiedades..." className="border-0 shadow-none focus:ring-0" />
+            </div>
+            <div className="p-4">
+              <Text size="sm" tone="muted">Sin `title` ni `header` el Modal no dibuja encabezado, que es lo que necesita una paleta de comandos.</Text>
+            </div>
+          </Modal>
+
+          <Modal
+            open={headerOpen}
+            onClose={() => setHeaderOpen(false)}
+            title="Bienvenida a VendéPro"
+            header={<StepIndicator variant="dots" steps={8} current={3} />}
+            footer={<Button onClick={() => setHeaderOpen(false)}>Siguiente</Button>}
+          >
+            El slot recibe el encabezado; la X la sigue poniendo el Modal, igual que
+            en el Drawer. El `title` queda como nombre accesible del diálogo.
+          </Modal>
         </Section>
 
         {/* Notificaciones */}

@@ -763,20 +763,20 @@ export default function LeadDetailPage() {
 
       {/* Vincular propiedad / tasación al cambiar de etapa */}
       {propModal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setPropModal(null)}>
-          <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-5" onClick={e => e.stopPropagation()}>
-            <h3 className="font-semibold text-ink mb-2">
-              {propModal.requireProperty
-                ? 'Necesitás una propiedad vinculada'
-                : `Vincular propiedad o tasación`}
-            </h3>
-            <p className="text-sm text-gray-500 mb-4">
+        <Modal
+          open
+          sheet
+          onClose={() => setPropModal(null)}
+          title={propModal.requireProperty ? 'Necesitás una propiedad vinculada' : 'Vincular propiedad o tasación'}
+          icon={<Home className="w-5 h-5" />}
+        >
+            <Text size="sm" tone="muted" className="block mb-4">
               {propModal.requireProperty ? (
                 <>Para marcar a <strong>{lead.full_name}</strong> como &ldquo;Captado&rdquo; primero tenés que crear y vincular una propiedad.</>
               ) : (
                 <><strong>{lead.full_name}</strong> no tiene una propiedad ni tasación vinculada. Para &ldquo;{getStageConfig(propModal.targetStage, lead.pipeline).label}&rdquo; conviene tener una. ¿Qué querés hacer?</>
               )}
-            </p>
+            </Text>
             <div className="space-y-2">
               <Button variant="success" size="lg" fullWidth icon={<Home className="w-4 h-4" />} onClick={goCreateProperty}>
                 Crear propiedad vinculada
@@ -796,8 +796,7 @@ export default function LeadDetailPage() {
               )}
               <Button variant="ghost" fullWidth onClick={() => setPropModal(null)}>Cancelar</Button>
             </div>
-          </div>
-        </div>
+        </Modal>
       )}
 
       {/* Comprador → Cerrado: sugerir crear la reserva (no obligatorio) */}
