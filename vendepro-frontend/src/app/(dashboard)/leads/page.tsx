@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import {
   Plus, Search, Phone, X,
   AlertTriangle, User, MapPin, ArrowRight, ChevronDown, Download, Sparkles, Trash2, GripVertical,
-  ChevronRight, Check, Tag, Loader2, Calculator, ArrowLeft
+  ChevronRight, Check, Tag, Loader2, Calculator, ArrowLeft, Archive
 } from 'lucide-react'
 import {
   LEAD_SOURCES, LEAD_FLAGS,
@@ -31,6 +31,7 @@ import { Input, Select, Textarea } from '@/components/ui/Input'
 import { Heading, Text } from '@/components/ui/Typography'
 import { CallButton, WhatsAppButton } from '@/components/ui/ContactButtons'
 import AIChatPanel from '@/components/ai/AIChatPanel'
+import { MarkNotCapturedModal, type NotCapturedResult } from '@/components/leads/MarkNotCapturedModal'
 import { apiFetch } from '@/lib/api'
 import { loadStickyFilters, saveStickyFilters } from '@/lib/sticky-filters'
 import { scopeQueryString } from '@/lib/agent-scope'
@@ -54,6 +55,35 @@ interface StickyLeadFilters {
 function isAgentFinalStage(lead: any): boolean {
   if (lead?.pipeline === 'comprador') return (BUYER_LEAD_TERMINAL_STAGES as readonly string[]).includes(lead.stage)
   return (LEAD_AGENT_FINAL_STAGES as readonly string[]).includes(lead.stage)
+}
+
+/** `yyyy-mm-dd` (o ISO) → "3 oct". Mediodía UTC para no correrse un día en AR. */
+function formatShortDate(dateStr: string): string {
+  const d = new Date(dateStr.length === 10 ? `${dateStr}T12:00:00Z` : dateStr)
+  return isNaN(d.getTime()) ? dateStr : d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })
+}
+
+/**
+ * Registra la actividad al usar un canal de contacto desde la lista.
+ *
+ * Antes esto sólo pasaba desde la ficha del lead, así que el trabajo hecho
+ * desde la lista —que es donde el agente pasa el día— no quedaba en ninguna
+ * parte: el dashboard mostraba 0 actividades con 68 leads contactados.
+ *
+ * Best-effort a propósito: el chat o la llamada ya se abrieron: si el registro
+ * falla no hay nada que el agente pueda hacer al respecto, y un error acá sólo
+ * lo interrumpiría.
+ */
+function logContactActivity(lead: any, type: 'llamada' | 'whatsapp') {
+  apiFetch('crm', '/activities', {
+    method: 'POST',
+    body: JSON.stringify({
+      activity_type: type,
+      lead_id: lead.id,
+      contact_id: lead.contact_id || null,
+      description: `${type === 'llamada' ? 'Llamada' : 'WhatsApp'} a ${lead.full_name}`,
+    }),
+  }).catch(() => {})
 }
 
 function timeAgo(dateStr: string): string {
@@ -81,7 +111,9 @@ export default function LeadsPage() {
   const [filterStage, setFilterStage] = useState<string>(searchParams.get('stage') || '')
   const [filterSource, setFilterSource] = useState('')
   const [filterOperation, setFilterOperation] = useState('')
-  const [filterAgent, setFilterAgent] = useState('')
+  // `?agent=` permite linkear desde la tarjeta Equipo del dashboard a los
+  // leads de un agente, igual que `?stage=` linkea a una etapa.
+  const [filterAgent, setFilterAgent] = useState(searchParams.get('agent') || '')
   const [agents, setAgents] = useState<any[]>([])
   const sortParam = searchParams.get('sort')
   const [sortBy, setSortBy] = useState<'recent' | 'name' | 'urgency'>(
@@ -99,6 +131,11 @@ export default function LeadsPage() {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
   const [saving, setSaving] = useState(false)
   const [showConvertModal, setShowConvertModal] = useState<any>(null)
+  // Los cerrados no son parte del pipeline; se muestran sólo si se piden.
+  const [showClosed, setShowClosed] = useState(false)
+  // Lead que está por marcarse "no captado" (pipeline vendedor): el modal
+  // pregunta motivo + cuándo recontactar antes de mandar el cambio de etapa.
+  const [notCapturedLead, setNotCapturedLead] = useState<any>(null)
 
   // ── Modal de creación — 2 pasos ──────────────────────────────
   const [createStep, setCreateStep] = useState<1 | 2>(1)
@@ -151,7 +188,7 @@ export default function LeadsPage() {
       if (saved.search) setSearch(saved.search)
       if (saved.source) setFilterSource(saved.source)
       if (saved.operation) setFilterOperation(saved.operation)
-      if (saved.agent) setFilterAgent(saved.agent)
+      if (!searchParams.get('agent') && saved.agent) setFilterAgent(saved.agent)
       if (saved.view) setView(saved.view)
     }
     setFiltersRestored(true)
@@ -213,8 +250,20 @@ export default function LeadsPage() {
     }, 300)
   }, [contactSearch, selectedContact])
 
+  // El pipeline son los leads vivos. Un lead cerrado (no captado / inválido /
+  // vendido) desaparece de la lista igual que ya desaparecía del kanban: se lo
+  // ve con el toggle "Cerrados" o filtrando por esa etapa a mano.
+  const closedStages = stages.terminalStages
+  const closedLeads = useMemo(
+    () => leads.filter(l => closedStages.includes(l.stage)),
+    [leads, closedStages]
+  )
+  const openCount = leads.length - closedLeads.length
+
   const filtered = useMemo(() => {
     const result = leads.filter(l => {
+      // Filtrar por una etapa cerrada es pedirla explícitamente: se muestra.
+      if (closedStages.includes(l.stage) && !showClosed && filterStage !== l.stage) return false
       if (search) {
         const q = search.toLowerCase()
         if (!((l.full_name || '').toLowerCase().includes(q) ||
@@ -238,7 +287,7 @@ export default function LeadsPage() {
     })
     // 'recent' is already sorted by updated_at DESC from API
     return result
-  }, [leads, search, filterStage, filterSource, filterOperation, filterAgent, sortBy])
+  }, [leads, search, filterStage, filterSource, filterOperation, filterAgent, sortBy, showClosed, closedStages])
 
 
   const closeCreateModal = () => {
@@ -350,12 +399,18 @@ export default function LeadsPage() {
 
   const moveToStage = useCallback(async (leadId: string, stage: string) => {
     if (stage === 'finalizado') {
-      toast('Finalizado se asigna automáticamente cuando la propiedad se vende', 'warning')
+      toast('Vendido se asigna automáticamente cuando la propiedad se vende', 'warning')
       return
     }
     if (stage === 'en_tasacion') {
       const lead = leads.find(l => l.id === leadId)
       if (lead) { setShowConvertModal(lead); return }
+    }
+    // "No captado" del pipeline vendedor pide más que un motivo: hay que
+    // decidir cuándo se retoma. Va por su propio modal (confirmNotCaptured).
+    if (stage === 'perdido') {
+      const lead = leads.find(l => l.id === leadId)
+      if (lead && lead.pipeline !== 'comprador') { setNotCapturedLead(lead); return }
     }
     try {
       if (stage === 'perdido' || stage === 'invalido') {
@@ -363,7 +418,7 @@ export default function LeadsPage() {
           title: stage === 'perdido' ? 'Marcar lead como perdido' : 'Marcar lead como inválido',
           message: stage === 'perdido'
             ? '¿Por qué se pierde este lead?'
-            : 'Ej: propiedad no apta, datos duplicados, fake, etc.',
+            : 'Sale del pipeline y no entra al circuito de recontacto. Ej: dato falso o duplicado, propiedad no apta, o alguien a quien no le vas a dar seguimiento.',
           confirmLabel: stage === 'perdido' ? 'Marcar perdido' : 'Marcar inválido',
           variant: 'danger',
           requireReason: true,
@@ -401,25 +456,48 @@ export default function LeadsPage() {
     moveToStage(leadId, targetStage)
   }, [leads, moveToStage])
 
-  const markLost = async (leadId: string) => {
-    const { confirmed, reason } = await askConfirm({
-      title: 'Marcar lead como perdido',
-      message: 'Ej: no responde, presupuesto fuera de rango, eligió otra inmobiliaria, etc.',
-      confirmLabel: 'Marcar perdido',
-      variant: 'danger',
-      requireReason: true,
-      reasonPlaceholder: 'Motivo (opcional)',
-    })
-    if (!confirmed) return
+  // La card usa el mismo camino que el kanban: vendedor abre el modal de "no
+  // captado", comprador cae en el askConfirm de "perdido".
+  const markLost = (leadId: string) => moveToStage(leadId, 'perdido')
+
+  /**
+   * Cierra el lead como no captado y le deja agendado el recontacto.
+   *
+   * Son dos llamadas y no una porque el endpoint de etapa no toca el próximo
+   * paso: `/leads/stage` mueve la máquina de estados y `PUT /leads` guarda
+   * `next_step`/`next_step_date`. Si la segunda falla, el lead igual quedó
+   * cerrado —lo importante— y se avisa que la fecha no se guardó.
+   */
+  const confirmNotCaptured = async ({ reason, recontactDate }: NotCapturedResult) => {
+    const lead = notCapturedLead
+    if (!lead) return
+    setSaving(true)
     try {
       const r = await apiFetch('crm', '/leads/stage', {
         method: 'POST',
-        body: JSON.stringify({ id: leadId, stage: 'perdido', notes: reason || 'Sin motivo especificado' })
+        body: JSON.stringify({ id: lead.id, stage: 'perdido', notes: reason || 'Sin motivo especificado' })
       })
-      pushFromApiResponse(await r.json().catch(() => ({})), { entity_type: 'lead', entity_id: leadId, event_name_fallback: 'perdido' })
-      toast('Lead marcado como perdido', 'warning')
+      pushFromApiResponse(await r.json().catch(() => ({})), { entity_type: 'lead', entity_id: lead.id, event_name_fallback: 'perdido' })
+      setNotCapturedLead(null)
+
+      if (recontactDate) {
+        try {
+          await apiFetch('crm', '/leads', {
+            method: 'PUT',
+            body: JSON.stringify({ id: lead.id, next_step: 'Recontactar (no captado)', next_step_date: recontactDate }),
+          })
+          toast(`No captado · recontactar el ${new Date(`${recontactDate}T00:00:00`).toLocaleDateString('es-AR')}`, 'warning')
+        } catch {
+          toast('Lead marcado como no captado, pero no se pudo guardar la fecha de recontacto', 'warning')
+        }
+      } else {
+        toast('Lead marcado como no captado', 'warning')
+      }
       loadLeads()
-    } catch { toast('Error al marcar como perdido', 'error') }
+    } catch {
+      toast('Error al marcar como no captado', 'error')
+    }
+    setSaving(false)
   }
 
   const deleteLead = async (leadId: string, leadName: string) => {
@@ -443,10 +521,17 @@ export default function LeadsPage() {
   return (
     <div className="space-y-4 min-w-0 overflow-hidden">
       {confirmDialog}
+      <MarkNotCapturedModal
+        open={!!notCapturedLead}
+        leadName={notCapturedLead?.full_name}
+        saving={saving}
+        onClose={() => setNotCapturedLead(null)}
+        onConfirm={confirmNotCaptured}
+      />
       {/* Header */}
       <PageHeader
         title="Leads"
-        subtitle={`${leads.length} lead${leads.length !== 1 ? 's' : ''} en el pipeline ${pipeline === 'comprador' ? 'de compradores' : 'de captación'}`}
+        subtitle={`${openCount} lead${openCount !== 1 ? 's' : ''} en el pipeline ${pipeline === 'comprador' ? 'de compradores' : 'de captación'}`}
         actions={
           <>
             <Button
@@ -530,10 +615,22 @@ export default function LeadsPage() {
           <option value="">Agente: todos</option>
           {agents.map(a => <option key={a.id} value={a.id}>{a.full_name}</option>)}
         </Select>
+        {closedLeads.length > 0 && (
+          <Button
+            variant={showClosed ? 'outline' : 'ghost'}
+            size="sm"
+            icon={<Archive className="w-3.5 h-3.5" />}
+            onClick={() => setShowClosed(v => !v)}
+            aria-pressed={showClosed}
+            className={showClosed ? 'shrink-0' : 'shrink-0 text-gray-500'}
+          >
+            Cerrados ({closedLeads.length})
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => { setFilterStage(''); setFilterSource(''); setFilterOperation(''); setFilterAgent('') }}
+          onClick={() => { setFilterStage(''); setFilterSource(''); setFilterOperation(''); setFilterAgent(''); setShowClosed(false) }}
           className="shrink-0 text-gray-500 px-0"
         >
           Limpiar
@@ -562,13 +659,23 @@ export default function LeadsPage() {
       ) : view === 'list' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {filtered.length === 0 ? (
-            <EmptyState
-              className="col-span-2"
-              icon={<User className="w-7 h-7" />}
-              title="Sin leads"
-              description="Creá tu primer lead para comenzar"
-              action={<Button onClick={() => setShowCreate(true)}>Crear primer lead</Button>}
-            />
+            closedLeads.length > 0 && !showClosed ? (
+              <EmptyState
+                className="col-span-2"
+                icon={<Archive className="w-7 h-7" />}
+                title="Sin leads abiertos"
+                description={`No queda nada en el pipeline. Hay ${closedLeads.length} lead${closedLeads.length === 1 ? '' : 's'} cerrado${closedLeads.length === 1 ? '' : 's'}.`}
+                action={<Button variant="outline" onClick={() => setShowClosed(true)}>Ver cerrados</Button>}
+              />
+            ) : (
+              <EmptyState
+                className="col-span-2"
+                icon={<User className="w-7 h-7" />}
+                title="Sin leads"
+                description="Creá tu primer lead para comenzar"
+                action={<Button onClick={() => setShowCreate(true)}>Crear primer lead</Button>}
+              />
+            )
           ) : filtered.map(lead => <LeadCard key={lead.id} lead={lead} onAdvance={() => advanceStage(lead)} onLost={() => markLost(lead.id)} onDelete={() => deleteLead(lead.id, lead.full_name)} onRefresh={loadLeads} />)}
         </div>
       ) : (
@@ -598,18 +705,19 @@ export default function LeadsPage() {
             })}
           </div>
           {(() => {
-            const perdidos = leads.filter(l => l.stage === 'perdido').length
-            const invalidos = leads.filter(l => l.stage === 'invalido').length
-            const finalizados = pipeline === 'vendedor' ? leads.filter(l => l.stage === 'finalizado').length : 0
-            const total = perdidos + invalidos + finalizados
-            if (total === 0) return null
-            const parts: string[] = []
-            if (perdidos) parts.push(`Perdidos: ${perdidos}`)
-            if (invalidos) parts.push(`Inválidos: ${invalidos}`)
-            if (finalizados) parts.push(`Finalizados: ${finalizados}`)
+            // Los cerrados no tienen columna: se resumen abajo con el label de
+            // su etapa, que depende del pipeline ("No captado" ≠ "Perdido").
+            if (closedLeads.length === 0) return null
+            const parts = closedStages
+              .map(s => ({ label: stages.config[s]?.label ?? s, n: closedLeads.filter(l => l.stage === s).length }))
+              .filter(p => p.n > 0)
+              .map(p => `${p.label}: ${p.n}`)
             return (
-              <div className="mt-4 p-3 bg-gray-50 rounded-card">
+              <div className="mt-4 p-3 bg-gray-50 rounded-card flex items-center justify-between gap-3">
                 <Text size="xs" tone="muted" weight="medium">{parts.join(' · ')}</Text>
+                <Button variant="ghost" size="sm" onClick={() => { setShowClosed(true); setView('list') }} className="shrink-0 text-gray-500">
+                  Ver cerrados
+                </Button>
               </div>
             )
           })()}
@@ -970,7 +1078,7 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
             <div className={`flex items-center gap-1.5 text-xs px-2 py-1.5 rounded-control ${urgency === 'danger' ? 'bg-red-50 text-red-600' : urgency === 'warning' ? 'bg-amber-50 text-amber-600' : 'bg-primary/5 text-primary'}`}>
               <ArrowRight className="w-3 h-3 shrink-0" />
               <span className="truncate">{lead.next_step}</span>
-              {lead.next_step_date && <span className="shrink-0 text-[10px] opacity-70">· {lead.next_step_date}</span>}
+              {lead.next_step_date && <span className="shrink-0 text-[10px] opacity-70">· {formatShortDate(lead.next_step_date)}</span>}
             </div>
           )}
         </Link>
@@ -979,9 +1087,9 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
         <div className="flex sm:hidden flex-col border-l border-gray-100 shrink-0" onClick={e => e.stopPropagation()}>
           {lead.phone ? (
             <>
-              <CallButton phone={lead.phone} iconOnly
+              <CallButton phone={lead.phone} iconOnly onClick={() => logContactActivity(lead, 'llamada')}
                 className="flex-1 w-12 h-auto rounded-none bg-transparent text-gray-500 hover:bg-gray-50 active:bg-gray-100 hover:opacity-100 transition-colors" />
-              <WhatsAppButton phone={lead.phone} iconOnly templateContext={{ name: lead.full_name, address: lead.property_address || lead.neighborhood }}
+              <WhatsAppButton phone={lead.phone} iconOnly templateContext={{ name: lead.full_name, address: lead.property_address || lead.neighborhood }} onClick={() => logContactActivity(lead, 'whatsapp')}
                 className="flex-1 w-12 h-auto rounded-none bg-transparent text-gray-500 hover:bg-gray-50 active:bg-gray-100 border-t border-gray-100 hover:opacity-100 transition-colors" />
             </>
           ) : (
@@ -1007,9 +1115,9 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
       <div className="hidden sm:flex border-t border-gray-100 divide-x divide-gray-100" onClick={e => e.stopPropagation()}>
         {lead.phone ? (
           <>
-            <CallButton phone={lead.phone}
+            <CallButton phone={lead.phone} onClick={() => logContactActivity(lead, 'llamada')}
               className="flex-1 rounded-none bg-transparent text-gray-600 text-xs px-0 py-2.5 hover:bg-gray-50 hover:opacity-100 transition-colors" />
-            <WhatsAppButton phone={lead.phone} templateContext={{ name: lead.full_name, address: lead.property_address || lead.neighborhood }}
+            <WhatsAppButton phone={lead.phone} templateContext={{ name: lead.full_name, address: lead.property_address || lead.neighborhood }} onClick={() => logContactActivity(lead, 'whatsapp')}
               className="flex-1 rounded-none bg-transparent text-gray-600 text-xs px-0 py-2.5 hover:bg-gray-50 hover:opacity-100 transition-colors" />
           </>
         ) : (
@@ -1064,7 +1172,7 @@ function KanbanCard({ lead, onAdvance, onMoveTo }: { lead: any; onAdvance: () =>
         <div className="flex gap-0.5">{Object.entries(checklist).map(([k, v]) => <div key={k} className={`w-1.5 h-1.5 rounded-full ${v ? 'bg-green-500' : 'bg-gray-200'}`} />)}</div>
         <div className="flex gap-1">
           {lead.phone && (
-            <WhatsAppButton phone={lead.phone} iconOnly templateContext={{ name: lead.full_name, address: lead.property_address || lead.neighborhood }}
+            <WhatsAppButton phone={lead.phone} iconOnly templateContext={{ name: lead.full_name, address: lead.property_address || lead.neighborhood }} onClick={() => logContactActivity(lead, 'whatsapp')}
               className="w-7 h-7 rounded-control bg-transparent text-whatsapp hover:bg-success/10 hover:opacity-100" />
           )}
           <Button variant="ghost" size="icon" onClick={() => setShowMove(!showMove)} aria-label="Mover a otra etapa" className="p-1 text-gray-400">

@@ -11,6 +11,11 @@ nuevo → asignado → contactado → calificado → en_tasacion → presentada 
 
 (9 stages, definidos en `domain/value-objects/lead-stage.ts` con transiciones validadas.)
 
+> La etapa `perdido` se muestra en la UI del pipeline vendedor como
+> **"No captado"**, y `finalizado` como **"Vendido"**. Las claves no cambian.
+> Un no captado sale del pipeline pero queda con recontacto agendado a los 30 y
+> 120 días. Detalle completo en [[Estados]] §1 y §1.1.
+
 ## Entidad
 
 - **`Lead`** (`packages/core/src/domain/entities/lead.ts`)

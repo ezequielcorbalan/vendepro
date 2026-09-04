@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import {
   Target, TrendingUp, Phone, Users, Home, Eye, Calculator, Clock,
   MessageCircle, FileText, Settings, CheckCircle2, BarChart3, MapPin,
@@ -38,16 +39,22 @@ function ConvCard({ label, pct }: { label: string; pct: number }) {
 }
 
 export default function MiPerformancePage() {
+  const searchParams = useSearchParams()
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState<'month' | 'quarter' | 'year'>('month')
 
+  // `?agent=` deja a la inmobiliaria abrir la performance de alguien del
+  // equipo. Si lo pide un agente, la API le devuelve la suya igual: el
+  // permiso se decide en el servidor.
+  const viewedAgent = searchParams.get('agent')
+
   useEffect(() => {
-    apiFetch('analytics', '/agent-stats')
+    apiFetch('analytics', `/agent-stats${viewedAgent ? `?agent_id=${viewedAgent}` : ''}`)
       .then(r => r.json())
       .then(d => { setData(d as any); setLoading(false) })
       .catch(() => setLoading(false))
-  }, [])
+  }, [viewedAgent])
 
   if (loading) {
     return (
@@ -81,7 +88,7 @@ export default function MiPerformancePage() {
       <ActivityTabs />
       {/* Header */}
       <PageHeader
-        title="Mi Performance"
+        title={viewedAgent ? 'Performance del agente' : 'Mi Performance'}
         subtitle={data.agent?.full_name || 'Agente'}
         actions={
           <SegmentedControl

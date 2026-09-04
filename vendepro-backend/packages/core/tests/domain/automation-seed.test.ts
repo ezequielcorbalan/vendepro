@@ -6,6 +6,8 @@ import { AutomationAction } from '../../src/domain/entities/automation-action'
 import {
   getTriggerDefinition,
   getActionDefinition,
+  categoryForTemplate,
+  DEFAULT_RECIPE_CATEGORY,
 } from '../../src/domain/value-objects/automation-catalog'
 import { extractTokens } from '../../src/domain/rules/automation-interpolation'
 import { variablesForTrigger } from '../../src/domain/value-objects/automation-catalog'
@@ -19,8 +21,21 @@ import { variablesForTrigger } from '../../src/domain/value-objects/automation-c
  * que usa el motor en runtime.
  */
 
-const SEED_PATH = resolve(__dirname, '../../../../migrations_v2/044_automations_seed.sql')
-const seed = readFileSync(SEED_PATH, 'utf8')
+/**
+ * Las recetas de sistema no viven todas en la 044: una receta nueva llega en su
+ * propia migración. Si este test mirara solo la 044, la garantía —sobre todo la
+ * de que cada receta tenga categoría en la galería— dejaría de cubrir
+ * justamente a las recetas nuevas, que son las que se olvidan.
+ *
+ * Al agregar una migración que seedee recetas de sistema, sumala acá.
+ */
+const SEED_FILES = [
+  '044_automations_seed.sql',
+  '050_recontacto_no_captado.sql',
+]
+const seed = SEED_FILES
+  .map((f) => readFileSync(resolve(__dirname, '../../../../migrations_v2', f), 'utf8'))
+  .join('\n')
 
 interface SeededAutomation {
   id: string
@@ -183,6 +198,17 @@ describe('seed del catálogo de recetas', () => {
           ).toBe(true)
         }
       }
+    }
+  })
+
+  it('cada receta tiene una categoría asignada en la galería', () => {
+    // Sin esto, una receta nueva se seedea y cae en "Otras", al fondo de la
+    // galería, sin que nadie se entere hasta verla en producción.
+    for (const row of automationRows) {
+      expect(
+        categoryForTemplate(row.template_key),
+        `${row.template_key}: falta en el mapa de categorías del catálogo`,
+      ).not.toBe(DEFAULT_RECIPE_CATEGORY)
     }
   })
 

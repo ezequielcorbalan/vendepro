@@ -37,9 +37,51 @@ nuevo ─► asignado ─► contactado ─► calificado ─► en_tasacion ─
 | `presentada` | activo | Tasación presentada (dispara seguimiento automático +7d) |
 | `seguimiento` | activo | En seguimiento, puede volver atrás |
 | `captado` | semi-terminal | Captación completa. **Cierra al agente**, sigue abierto a sync |
-| `invalido` | terminal | Manual desde casi cualquier estado |
+| `invalido` | terminal | Manual desde casi cualquier estado. **Descarte definitivo** — ver §1.1 |
 | `finalizado` | terminal | Solo por sync desde `property.vendida` |
 | `perdido` | terminal | Manual o por sync desde `property.perdida` |
+
+> ⚠️ **Clave ≠ label en el pipeline vendedor.** Las claves de arriba son las que
+> viven en `leads.stage`, `stage_history` y las políticas de sync, y no cambian.
+> La UI muestra otros nombres porque los originales confundían:
+>
+> | Clave | Label en la UI | Por qué |
+> |---|---|---|
+> | `perdido` | **No captado** | El caso real es "tasé y no capté". No es basura: se recontacta (ver §1.1) |
+> | `finalizado` | **Vendido** | No es un cierre manual, lo pone el sync cuando la propiedad captada se vende. "Finalizado" se leía como un hermano de "Perdido" |
+>
+> El mapa de labels vive en `vendepro-frontend/src/lib/crm-config.ts` →
+> `LEAD_STAGES`. En el pipeline **comprador**, `perdido` sigue siendo "Perdido":
+> ahí sí es un lead perdido y no hay captación de por medio.
+
+### 1.1 Los dos cierres negativos: `perdido` vs `invalido`
+
+Los dos sacan al lead del pipeline, pero **no son lo mismo** y la diferencia es
+operativa, no cosmética:
+
+| | `perdido` — "No captado" | `invalido` — "Inválido" |
+|---|---|---|
+| Qué es | Se trabajó y no se captó: tasé y eligió otra inmobiliaria, no acordamos precio, decidió no vender | Un lead al que no se le va a dar seguimiento: dato falso o duplicado, propiedad no apta, o simplemente no vale el tiempo |
+| Recontacto | **Sí** — 30 y 120 días | **No**, nunca |
+| Automatización | Dispara `recontacto_no_captado` | Ninguna. El trigger es `to_stage = perdido`, así que `invalido` no la activa |
+| Sync a property | **No toca la propiedad vinculada** (`LEAD_TO_PROPERTY_SYNC` no tiene regla para `perdido`) | Pasa la propiedad a `invalida` si no está en un estado final |
+
+Un lead que pasa a `perdido` (= "No captado") **sale del pipeline pero no se
+descarta**: el propietario sigue queriendo vender y en unos meses puede volver
+a estar disponible.
+
+- **Cuándo se retoma lo elige el agente** al cerrarlo, en el modal
+  `MarkNotCapturedModal` (motivo + "en 1 mes / en 4 meses / otra fecha / no
+  recontactar"). La fecha va a `leads.next_step_date` con
+  `next_step = 'Recontactar (no captado)'` y se ve en la card.
+- **El recordatorio lo agenda la automatización** `recontacto_no_captado`
+  (migración `050_recontacto_no_captado.sql`): trigger `lead.stage_changed`
+  con `to_stage = perdido`, condición `lead.pipeline ≠ comprador`, dos acciones
+  `create_calendar_event` a `due_in_days` 30 y 120. `dedupe_scope: once`. Activa
+  por defecto en las orgs existentes; se apaga desde Configuración →
+  Automatizaciones.
+- En la lista de Leads los cerrados (`perdido`, `invalido`, `finalizado`) **no
+  se muestran**: hay un toggle "Cerrados (N)". El kanban ya los excluía.
 
 ### Transiciones manuales (`MANUAL_TRANSITIONS`)
 
