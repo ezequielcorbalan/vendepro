@@ -10,19 +10,25 @@ import { cn } from '@/lib/utils'
 interface CheckboxProps {
   checked: boolean
   onChange: (checked: boolean) => void
+  /** Etiqueta VISIBLE al lado del control. También lo nombra. */
   label?: string
+  /**
+   * Nombre accesible sin texto visible, para cuando la etiqueta ya está en la
+   * pantalla. Sin esto y sin `label` el control queda sin nombre.
+   */
+  'aria-label'?: string
   disabled?: boolean
   className?: string
 }
 
-export function Checkbox({ checked, onChange, label, disabled = false, className }: CheckboxProps) {
+export function Checkbox({ checked, onChange, label, disabled = false, className, 'aria-label': ariaLabel }: CheckboxProps) {
   return (
     <label className={cn('inline-flex items-center gap-2.5 text-sm text-ink', disabled ? 'opacity-50' : 'cursor-pointer', className)}>
       <button
         type="button"
         role="checkbox"
         aria-checked={checked}
-        aria-label={label}
+        aria-label={ariaLabel ?? label}
         disabled={disabled}
         onClick={() => !disabled && onChange(!checked)}
         className={cn(

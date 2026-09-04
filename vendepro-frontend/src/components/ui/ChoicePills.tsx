@@ -46,16 +46,22 @@ interface PillRadioGroupProps {
   onChange: (value: string) => void
   /** Tamaño del chip. Default 'md'. */
   size?: PillSize
+  /**
+   * Nombre del grupo sin texto visible. `label` se DIBUJA además de nombrar, así
+   * que donde la etiqueta ya está en la pantalla hay que usar esto o el grupo
+   * queda sin nombre.
+   */
+  'aria-label'?: string
   className?: string
 }
 
 /** Selección única. */
-export function PillRadioGroup({ label, hint, options, value, onChange, size = 'md', className }: PillRadioGroupProps) {
+export function PillRadioGroup({ label, hint, options, value, onChange, size = 'md', className, 'aria-label': ariaLabel }: PillRadioGroupProps) {
   return (
     <div className={className}>
       {label && <p className="block text-sm font-medium text-gray-700 mb-1.5">{label}</p>}
       {hint && <p className="text-xs text-gray-500 -mt-1 mb-1.5">{hint}</p>}
-      <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={label}>
+      <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={ariaLabel ?? label}>
         {options.map(o => (
           <button
             key={o.value}
@@ -82,18 +88,20 @@ interface PillCheckGroupProps {
   onChange: (value: string[]) => void
   /** Tamaño del chip. Default 'md'. */
   size?: PillSize
+  /** Nombre del grupo sin texto visible. Ver PillRadioGroup. */
+  'aria-label'?: string
   className?: string
 }
 
 /** Selección múltiple. */
-export function PillCheckGroup({ label, hint, options, value, onChange, size = 'md', className }: PillCheckGroupProps) {
+export function PillCheckGroup({ label, hint, options, value, onChange, size = 'md', className, 'aria-label': ariaLabel }: PillCheckGroupProps) {
   const toggle = (v: string) => onChange(value.includes(v) ? value.filter(x => x !== v) : [...value, v])
   return (
     <div className={className}>
       {label && <p className="block text-sm font-medium text-gray-700 mb-1.5">{label}</p>}
       {hint && <p className="text-xs text-gray-500 -mt-1 mb-1.5">{hint}</p>}
       {/* Igual que PillRadioGroup: el grupo se anuncia con su etiqueta. */}
-      <div className="flex flex-wrap gap-2" role="group" aria-label={label}>
+      <div className="flex flex-wrap gap-2" role="group" aria-label={ariaLabel ?? label}>
         {options.map(o => (
           <button
             key={o.value}

@@ -309,10 +309,10 @@ export default function ObjetivosConfigPage() {
               >
                 Todos
               </Button>
-              {/* Sin `label`: el prop se dibuja VISIBLE además de nombrar al
-                  grupo, y acá la etiqueta ya está arriba. ds-todo: candidato a
-                  que PillCheckGroup acepte aria-labelledby. */}
+              {/* `label` se dibuja VISIBLE además de nombrar al grupo, y acá la
+                  etiqueta ya está arriba: el nombre va por aria-label. */}
               <PillCheckGroup
+                aria-label="Agentes"
                 size="sm"
                 options={agents.map(a => ({ value: a.id, label: a.full_name }))}
                 value={batchAgents}
