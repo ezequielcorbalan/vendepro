@@ -170,7 +170,7 @@ export default function SoldPropertyForm({ initial, onCancel, onSaved }: Props) 
     <form onSubmit={handleSubmit} className="space-y-4" ref={dropRef} tabIndex={-1}>
       {/* Origen */}
       <div className="flex gap-2 text-xs">
-        <button
+        <Button variant="ghost" size="sm"
           type="button"
           onClick={() => setOriginType('team')}
           className={`px-3 py-1.5 rounded-control font-medium ${
@@ -178,8 +178,8 @@ export default function SoldPropertyForm({ initial, onCancel, onSaved }: Props) 
           }`}
         >
           Del equipo
-        </button>
-        <button
+        </Button>
+        <Button variant="ghost" size="sm"
           type="button"
           onClick={() => setOriginType('external')}
           className={`px-3 py-1.5 rounded-control font-medium ${
@@ -187,7 +187,7 @@ export default function SoldPropertyForm({ initial, onCancel, onSaved }: Props) 
           }`}
         >
           Colega externo
-        </button>
+        </Button>
       </div>
 
       {originType === 'external' && (
@@ -296,13 +296,13 @@ export default function SoldPropertyForm({ initial, onCancel, onSaved }: Props) 
               {photos.map(url => (
                 <div key={url} className="relative group aspect-square bg-gray-100 rounded-control overflow-hidden">
                   <img src={url} alt="" className="w-full h-full object-cover" />
-                  <button
+                  <Button variant="ghost" size="icon"
                     type="button"
                     onClick={() => removePhoto(url)}
                     className="absolute top-1 right-1 bg-white/90 rounded-full p-0.5 opacity-0 group-hover:opacity-100 hover:bg-red-50"
                   >
                     <X className="w-3 h-3 text-gray-600" />
-                  </button>
+                  </Button>
                 </div>
               ))}
             </div>

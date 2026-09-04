@@ -240,13 +240,13 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
                 {isCustom && <span className="ml-1 text-[10px] text-gray-400">(custom)</span>}
               </span>
               <div className="flex items-center gap-1">
-                <button
+                <Button variant="ghost" size="icon"
                   onClick={() => isCustom ? removeCustomDoc(doc.key) : hideDefaultDoc(doc.key)}
                   title="Eliminar item"
                   className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-danger transition-opacity p-1"
                 >
                   <Trash2 className="w-3 h-3" />
-                </button>
+                </Button>
                 {/* Dos estados explícitos, no tres. Había un tercer botón
                     ("Pendiente", un círculo) que no hacía nada que estos dos no
                     hicieran: los dos son toggle, así que clickear el activo ya
@@ -256,24 +256,24 @@ export default function DocChecklistWidget({ propertyId, docStatusJson, captured
                     ds-todo: candidato a un control de par toggle en 24px. Único
                     uso en la app, así que por ahora son dos botones nativos con
                     los colores tokenizados. */}
-                <button
+                <Button variant="success" size="icon"
                   onClick={() => updateStatus(doc.key, s === 'done' ? 'pending' : 'done')}
                   title="Tengo el documento"
-                  className={`w-6 h-6 rounded-md flex items-center justify-center transition-all ${
+                  className={`p-0 w-6 h-6 rounded-md flex items-center justify-center transition-all ${
                     s === 'done' ? 'bg-success text-white' : 'bg-gray-100 text-gray-400 hover:bg-success/20'
                   }`}
                 >
                   <Check className="w-3.5 h-3.5" />
-                </button>
-                <button
+                </Button>
+                <Button variant="danger" size="icon"
                   onClick={() => updateStatus(doc.key, s === 'na' ? 'pending' : 'na')}
                   title="No aplica"
-                  className={`w-6 h-6 rounded-md flex items-center justify-center transition-all ${
+                  className={`p-0 w-6 h-6 rounded-md flex items-center justify-center transition-all ${
                     s === 'na' ? 'bg-danger text-white' : 'bg-gray-100 text-gray-400 hover:bg-danger/20'
                   }`}
                 >
                   <X className="w-3.5 h-3.5" />
-                </button>
+                </Button>
               </div>
             </div>
           )

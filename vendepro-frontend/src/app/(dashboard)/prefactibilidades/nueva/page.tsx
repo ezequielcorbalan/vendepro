@@ -272,12 +272,12 @@ export default function NuevaPrefactibilidadPage() {
                   </Button>
                 </div>
               ))}
-              <button
+              <Button variant="ghost" size="sm"
                 onClick={() => setUnitsMix([...unitsMix, { type: '', count: '', avg_m2: '' }])}
-                className="text-sm font-medium text-primary flex items-center gap-1"
+                className="p-0 text-sm font-medium text-primary flex items-center gap-1"
               >
                 <Plus className="w-3 h-3" /> Agregar tipología
-              </button>
+              </Button>
             </div>
 
             <div>
@@ -374,9 +374,9 @@ export default function NuevaPrefactibilidadPage() {
               <div key={idx} className="border border-gray-200 rounded-card p-3 space-y-2">
                 <div className="flex justify-between items-center">
                   <Text as="span" size="xs" weight="semibold" tone="muted">Comparable #{idx + 1}</Text>
-                  <button onClick={() => setComparables(comparables.filter((_, i) => i !== idx))} className="text-danger">
+                  <Button variant="ghost" size="icon" onClick={() => setComparables(comparables.filter((_, i) => i !== idx))} className="p-0 text-danger">
                     <X className="w-4 h-4" />
-                  </button>
+                  </Button>
                 </div>
                 <Input
                   placeholder="Nombre del proyecto/dirección"
@@ -410,12 +410,12 @@ export default function NuevaPrefactibilidadPage() {
                 </div>
               </div>
             ))}
-            <button
+            <Button variant="ghost" size="sm"
               onClick={() => setComparables([...comparables, { project: '', price_per_m2: '', notes: '' }])}
-              className="text-sm font-medium text-primary flex items-center gap-1"
+              className="p-0 text-sm font-medium text-primary flex items-center gap-1"
             >
               <Plus className="w-3 h-3" /> Agregar comparable
-            </button>
+            </Button>
 
             <Heading level={4} className="mt-6">Cronograma del proyecto</Heading>
             {timeline.map((t, idx) => (
@@ -441,17 +441,17 @@ export default function NuevaPrefactibilidadPage() {
                     setTimeline(nt)
                   }}
                 />
-                <button onClick={() => setTimeline(timeline.filter((_, i) => i !== idx))} className="text-danger p-2">
+                <Button variant="ghost" size="icon" onClick={() => setTimeline(timeline.filter((_, i) => i !== idx))} className="text-danger p-2">
                   <X className="w-4 h-4" />
-                </button>
+                </Button>
               </div>
             ))}
-            <button
+            <Button variant="ghost" size="sm"
               onClick={() => setTimeline([...timeline, { phase: '', months: '' }])}
-              className="text-sm font-medium text-primary flex items-center gap-1"
+              className="p-0 text-sm font-medium text-primary flex items-center gap-1"
             >
               <Plus className="w-3 h-3" /> Agregar fase
-            </button>
+            </Button>
           </div>
         )}
 

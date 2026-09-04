@@ -17,6 +17,7 @@ import { PropertyStageBadge } from '@/components/ui/PropertyStageBadge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { PROPERTY_STAGES, type PropertyStage } from '@/lib/crm-config'
 import { formatCurrency } from '@/lib/utils'
+import { Button } from '@/components/ui/Button'
 
 // Columnas del kanban comercial. Drag & drop libre entre cualquiera de ellas.
 const KANBAN_STAGES: PropertyStage[] = [
@@ -52,15 +53,15 @@ function SortHeader({ label, sortKey, sort, onSort, className }: {
       className={`text-left px-4 py-2.5 font-medium ${className ?? ''}`}
       aria-sort={active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}
     >
-      <button
+      <Button variant="ghost" size="icon"
         onClick={() => onSort(sortKey)}
-        className={`inline-flex items-center gap-1 uppercase tracking-wide transition-colors ${active ? 'text-gray-700' : 'hover:text-gray-700'}`}
+        className={`p-0 inline-flex items-center gap-1 uppercase tracking-wide transition-colors ${active ? 'text-gray-700' : 'hover:text-gray-700'}`}
       >
         {label}
         {active
           ? (sort.dir === 'asc' ? <ChevronUp className="w-3 h-3 text-primary" /> : <ChevronDown className="w-3 h-3 text-primary" />)
           : <ChevronsUpDown className="w-3 h-3 text-gray-300" />}
-      </button>
+      </Button>
     </th>
   )
 }
@@ -182,14 +183,14 @@ export default function PipelinePage() {
         subtitle={`${activeCount} propiedades · arrastrá las tarjetas entre columnas`}
         actions={
           <div className="flex gap-1 border rounded-control p-1 shrink-0">
-            <button onClick={() => switchView('kanban')} title="Vista Kanban"
+            <Button variant="ghost" size="icon" onClick={() => switchView('kanban')} title="Vista Kanban"
               className={`p-1.5 rounded transition-colors ${view === 'kanban' ? 'bg-gray-100 text-gray-700' : 'text-gray-400 hover:text-gray-600'}`}>
               <LayoutGrid className="w-4 h-4" />
-            </button>
-            <button onClick={() => switchView('tabla')} title="Vista Tabla"
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => switchView('tabla')} title="Vista Tabla"
               className={`p-1.5 rounded transition-colors ${view === 'tabla' ? 'bg-gray-100 text-gray-700' : 'text-gray-400 hover:text-gray-600'}`}>
               <Table2 className="w-4 h-4" />
-            </button>
+            </Button>
           </div>
         }
       />

@@ -11,6 +11,7 @@ import {
   type ExtractedComparable,
 } from './extract-comparable'
 import { Field, Input } from '@/components/ui/Input'
+import { Button } from '@/components/ui/Button'
 
 export type ComparableKind = 'publicacion' | 'venta'
 
@@ -144,10 +145,10 @@ export function ComparableCard({
     <article className="rounded-card border border-gray-200 bg-white">
       {/* Header colapsable (siempre visible) */}
       <header className="flex items-center gap-2 px-4 py-3">
-        <button
+        <Button variant="ghost" size="sm"
           type="button"
           onClick={() => setCollapsed(v => !v)}
-          className="flex flex-1 items-center gap-2 text-left"
+          className="p-0 flex flex-1 items-center gap-2 text-left"
           aria-expanded={!collapsed}
         >
           {collapsed
@@ -160,12 +161,12 @@ export function ComparableCard({
               {summaryPrice}
             </span>
           )}
-        </button>
+        </Button>
 
         {/* Acciones */}
         <div className="flex items-center gap-0.5">
           {onMoveUp && (
-            <button
+            <Button variant="ghost" size="icon"
               type="button"
               onClick={onMoveUp}
               disabled={!canMoveUp}
@@ -173,10 +174,10 @@ export function ComparableCard({
               className="rounded p-1 text-gray-400 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent"
             >
               <ArrowUp className="h-3.5 w-3.5" />
-            </button>
+            </Button>
           )}
           {onMoveDown && (
-            <button
+            <Button variant="ghost" size="icon"
               type="button"
               onClick={onMoveDown}
               disabled={!canMoveDown}
@@ -184,16 +185,16 @@ export function ComparableCard({
               className="rounded p-1 text-gray-400 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent"
             >
               <ArrowDown className="h-3.5 w-3.5" />
-            </button>
+            </Button>
           )}
-          <button
+          <Button variant="ghost" size="icon"
             type="button"
             onClick={onRemove}
             title="Eliminar"
             className="rounded-control p-1 text-gray-400 hover:bg-danger/5 hover:text-danger"
           >
             <X className="h-4 w-4" />
-          </button>
+          </Button>
         </div>
       </header>
 

@@ -82,17 +82,17 @@ export default function LandingsPage() {
       />
 
       <div className="flex items-center gap-4 border-b border-gray-200 mb-4">
-        <button onClick={() => setTab('mine')} className={`pb-3 px-1 text-sm font-medium border-b-2 -mb-px transition-colors ${tab === 'mine' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+        <Button variant="ghost" size="sm" onClick={() => setTab('mine')} className={`pb-3 px-1 text-sm font-medium border-b-2 -mb-px transition-colors ${tab === 'mine' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
           Mías
-        </button>
+        </Button>
         {isAdmin && (
           <>
-            <button onClick={() => setTab('org')} className={`pb-3 px-1 text-sm font-medium border-b-2 -mb-px transition-colors ${tab === 'org' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+            <Button variant="ghost" size="sm" onClick={() => setTab('org')} className={`pb-3 px-1 text-sm font-medium border-b-2 -mb-px transition-colors ${tab === 'org' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
               Todas del org
-            </button>
-            <button onClick={() => setTab('pending_review')} className={`pb-3 px-1 text-sm font-medium border-b-2 -mb-px transition-colors ${tab === 'pending_review' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setTab('pending_review')} className={`pb-3 px-1 text-sm font-medium border-b-2 -mb-px transition-colors ${tab === 'pending_review' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
               Pendientes de aprobación
-            </button>
+            </Button>
           </>
         )}
       </div>
@@ -103,7 +103,7 @@ export default function LandingsPage() {
           { id: 'marketing', label: 'Marketing' },
           { id: 'tasacion', label: 'Plantillas de tasación' },
         ] as const).map(t => (
-          <button
+          <Button variant="ghost" size="icon"
             key={t.id}
             onClick={() => setTypeTab(t.id)}
             className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
@@ -113,7 +113,7 @@ export default function LandingsPage() {
             }`}
           >
             {t.label}
-          </button>
+          </Button>
         ))}
       </div>
 
