@@ -21,6 +21,18 @@
  *    scroll-lock, focus-trap, devolución de foco y Esc. Ver la fase 6 en
  *    doc/ds-plan-fase6.md; el contrato que tienen que cumplir está testeado en
  *    components/ui/__tests__/overlay-contract.tsx.
+ * 6. Botones nativos (`<button>`) fuera de `components/ui`. Va `ui/Button`, que
+ *    trae variantes, tamaños, `loading`, `icon`, `fullWidth` y, con `href`, un
+ *    `<Link>`. Un `<button>` con clases sueltas se ve parecido y no comparte
+ *    nada: por eso hay 3 alturas de botón distintas en la app.
+ * 7. Inputs nativos (`<input>`/`<select>`/`<textarea>`) fuera de
+ *    `components/ui`. Van con `ui/Field` + `Input`/`Select`/`Textarea`, que
+ *    asocian el label solo, propagan el estado de error y aceptan `ref`.
+ *
+ *    Estos dos entraron el 04/09/2026 para CERRAR el alcance de la migración:
+ *    eran las únicas dos categorías sin ratchet, o sea las únicas por donde el
+ *    plan podía seguir creciendo. Su baseline es el número de ese día.
+ *
  * 5. La escala `slate`. El DS usa `gray`. El módulo de tasaciones estaba escrito
  *    entero en slate —258 usos— así que sus grises tenían un tinte azulado que
  *    el resto de la app no tiene. Baseline 0: ya no queda ninguno.
@@ -78,12 +90,18 @@ const OVERLAY_PATTERN = /inset-0[^"'`]*(bg-(black|slate|gray|neutral|white)\/|ba
 const OVERLAY_BASELINE_FILE = 'scripts/.ds-overlay-baseline'
 const RADIUS_PATTERN = /rounded-(lg|xl)\b/
 const RADIUS_BASELINE_FILE = 'scripts/.ds-radius-baseline'
+const NATIVE_BUTTON_PATTERN = /<button\b/
+const BUTTON_BASELINE_FILE = 'scripts/.ds-button-baseline'
+const NATIVE_INPUT_PATTERN = /<(input|select|textarea)\b/
+const INPUT_BASELINE_FILE = 'scripts/.ds-input-baseline'
 const baseline = existsSync(BASELINE_FILE) ? Number(readFileSync(BASELINE_FILE, 'utf8').trim() || '0') : 0
 const gradientBaseline = existsSync(GRADIENT_BASELINE_FILE) ? Number(readFileSync(GRADIENT_BASELINE_FILE, 'utf8').trim() || '0') : 0
 const glyphBaseline = existsSync(GLYPH_BASELINE_FILE) ? Number(readFileSync(GLYPH_BASELINE_FILE, 'utf8').trim() || '0') : 0
 const slateBaseline = existsSync(SLATE_BASELINE_FILE) ? Number(readFileSync(SLATE_BASELINE_FILE, 'utf8').trim() || '0') : 0
 const overlayBaseline = existsSync(OVERLAY_BASELINE_FILE) ? Number(readFileSync(OVERLAY_BASELINE_FILE, 'utf8').trim() || '0') : 0
 const radiusBaseline = existsSync(RADIUS_BASELINE_FILE) ? Number(readFileSync(RADIUS_BASELINE_FILE, 'utf8').trim() || '0') : 0
+const buttonBaseline = existsSync(BUTTON_BASELINE_FILE) ? Number(readFileSync(BUTTON_BASELINE_FILE, 'utf8').trim() || '0') : 0
+const inputBaseline = existsSync(INPUT_BASELINE_FILE) ? Number(readFileSync(INPUT_BASELINE_FILE, 'utf8').trim() || '0') : 0
 
 function walk(dir) {
   let out = []
@@ -103,6 +121,8 @@ const glyphHits = []
 const slateHits = []
 const overlayHits = []
 const radiusHits = []
+const buttonHits = []
+const inputHits = []
 for (const root of ROOTS) {
   for (const file of walk(root)) {
     readFileSync(file, 'utf8').split('\n').forEach((line, i) => {
@@ -113,6 +133,8 @@ for (const root of ROOTS) {
       if (SLATE_PATTERN.test(line)) slateHits.push(`${file}:${i + 1}`)
       if (OVERLAY_PATTERN.test(line)) overlayHits.push(`${file}:${i + 1}`)
       if (RADIUS_PATTERN.test(line)) radiusHits.push(`${file}:${i + 1}`)
+      if (NATIVE_BUTTON_PATTERN.test(line)) buttonHits.push(`${file}:${i + 1}`)
+      if (NATIVE_INPUT_PATTERN.test(line)) inputHits.push(`${file}:${i + 1}`)
     })
   }
 }
@@ -210,6 +232,14 @@ const resultados = [
   ratchet({
     etiqueta: 'radios pre-token (rounded-lg/xl)', hits: radiusHits, baseline: radiusBaseline, archivo: RADIUS_BASELINE_FILE,
     sugerencia: 'Usá `rounded-control` (8px) o `rounded-card` (12px) — regla 8.',
+  }),
+  ratchet({
+    etiqueta: 'botones nativos (<button>)', hits: buttonHits, baseline: buttonBaseline, archivo: BUTTON_BASELINE_FILE,
+    sugerencia: 'Usá <Button> del DS (variant/size/loading/icon/href). Si de verdad no encaja, marcá la línea con ds-todo.',
+  }),
+  ratchet({
+    etiqueta: 'inputs nativos (<input>/<select>/<textarea>)', hits: inputHits, baseline: inputBaseline, archivo: INPUT_BASELINE_FILE,
+    sugerencia: 'Usá <Field> + <Input>/<Select>/<Textarea> del DS. Si no encaja, marcá la línea con ds-todo.',
   }),
 ]
 
