@@ -1,4 +1,5 @@
 'use client'
+import { Button } from '@/components/ui/Button'
 import { useEffect, useState } from 'react'
 import { Download, Loader2 } from 'lucide-react'
 import type { TemplateBlock, BindingMode, AppraisalBlockType } from '../renderer/types'
@@ -137,12 +138,12 @@ export function BlockAdminForm({ block, onPatchBlock, onPatchData, onRemove }: P
             label="Incluir en PDF"
           />
         </div>
-        <button
+        <Button variant="ghost" size="sm"
           onClick={onRemove}
-          className="ml-auto pt-7 text-xs text-danger hover:opacity-80"
+          className="p-0 ml-auto pt-7 text-xs text-danger hover:opacity-80"
         >
           Eliminar
-        </button>
+        </Button>
       </div>
       {canApplyDefaults && (
         <div className="flex flex-wrap items-center gap-2 rounded border border-gray-200 bg-gray-50 px-3 py-2 text-xs">
@@ -150,7 +151,7 @@ export function BlockAdminForm({ block, onPatchBlock, onPatchData, onRemove }: P
             Hay valores guardados en{' '}
             <strong className="text-ink">Bloques estáticos</strong>:
           </span>
-          <button
+          <Button variant="outline" size="sm"
             type="button"
             onClick={applyDefaults}
             disabled={applying || hasDefaults === false}
@@ -159,7 +160,7 @@ export function BlockAdminForm({ block, onPatchBlock, onPatchData, onRemove }: P
           >
             {applying ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
             Aplicar valores guardados
-          </button>
+          </Button>
           {hasDefaults === false && (
             <span className="text-gray-400">Configurarlos en Configuración → Tasaciones → Bloques estáticos.</span>
           )}

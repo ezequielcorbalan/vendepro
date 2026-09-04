@@ -29,9 +29,9 @@ function SortableBlock({ block, isReadOnly, children }: { block: TemplateBlock; 
     <div ref={setNodeRef} style={style} className="rounded border border-gray-200 bg-white">
       <div className="flex items-center gap-2 px-3 py-2">
         {!isReadOnly && (
-          <button {...attributes} {...listeners} className="cursor-grab text-gray-400">
+          <Button variant="ghost" size="icon" {...attributes} {...listeners} className="p-0 cursor-grab text-gray-400">
             <GripVertical className="h-4 w-4" />
-          </button>
+          </Button>
         )}
         <span className="text-sm font-medium">{getBlockMeta(block.type).label}</span>
       </div>

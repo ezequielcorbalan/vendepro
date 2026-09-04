@@ -182,14 +182,14 @@ function TextWithVariables({
             {variables.length === 0 ? (
               <Text size="xs" tone="muted">Elegí primero un disparador para ver sus variables.</Text>
             ) : variables.map(variable => (
-              <button
+              <Button variant="ghost" size="sm"
                 key={variable}
                 type="button"
                 onClick={() => insert(variable)}
                 className="text-xs px-2.5 py-1 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 font-mono"
               >
                 {`{{${variable}}}`}
-              </button>
+              </Button>
             ))}
           </div>
         )}

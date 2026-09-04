@@ -329,12 +329,12 @@ export default function MisObjetivosPage() {
             </Button>
             <Button variant="ghost" onClick={cancel}>Cancelar</Button>
           </div>
-          <button
+          <Button variant="ghost" size="sm"
             onClick={() => setMode('method')}
-            className="text-xs text-primary hover:underline flex items-center gap-1"
+            className="p-0 text-xs text-primary hover:underline flex items-center gap-1"
           >
             <Zap className="w-3 h-3" /> Prefiero adoptar un método
-          </button>
+          </Button>
         </Card>
       )}
 
@@ -354,9 +354,9 @@ export default function MisObjetivosPage() {
                     <Text as="span" size="xs" tone="muted">{obj.period_start} → {obj.period_end}</Text>
                   </div>
                 </div>
-                <button onClick={() => handleDelete(obj.id)} className="p-2 text-gray-300 hover:text-danger hover:bg-danger/10 rounded-control">
+                <Button variant="ghost" size="icon" onClick={() => handleDelete(obj.id)} className="p-2 text-gray-300 hover:text-danger hover:bg-danger/10 rounded-control">
                   <Trash2 className="w-4 h-4" />
-                </button>
+                </Button>
               </div>
             )
           })}

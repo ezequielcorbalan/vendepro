@@ -175,7 +175,7 @@ function StaticBlockRow({ type, row, isOpen, onToggle, onPatch, onSave }: RowPro
 
   return (
     <section className="overflow-hidden rounded-card border border-gray-200 bg-white">
-      <button
+      <Button variant="ghost" size="icon"
         type="button"
         onClick={onToggle}
         className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-gray-50"
@@ -198,7 +198,7 @@ function StaticBlockRow({ type, row, isOpen, onToggle, onPatch, onSave }: RowPro
             <span className="text-gray-400">Sin configurar</span>
           )}
         </div>
-      </button>
+      </Button>
       {isOpen && (
         <div className="border-t border-gray-100 p-4">
           <BlockForm

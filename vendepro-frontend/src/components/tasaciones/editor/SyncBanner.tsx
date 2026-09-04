@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { AlertCircle, Loader2 } from 'lucide-react'
 import { getTemplate, syncTemplate } from '../shared/api'
+import { Button } from '@/components/ui/Button'
 
 interface Props {
   appraisalId: string
@@ -35,9 +36,9 @@ export function SyncBanner({ appraisalId, templateId, templateSyncedAt, onSynced
     <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-warning/30 bg-warning/10 px-4 py-3 text-sm text-ink">
       <AlertCircle className="h-4 w-4" />
       <span>El template <strong>{templateName}</strong> fue actualizado. Tu tasación todavía usa la versión anterior.</span>
-      <button onClick={handleSync} disabled={syncing} className="ml-auto flex items-center gap-1 rounded-control bg-warning px-3 py-1 text-white disabled:opacity-50">
+      <Button variant="ghost" size="sm" onClick={handleSync} disabled={syncing} className="ml-auto flex items-center gap-1 rounded-control bg-warning px-3 py-1 text-white disabled:opacity-50">
         {syncing && <Loader2 className="h-3 w-3 animate-spin" />} Actualizar mi tasación
-      </button>
+      </Button>
     </div>
   )
 }

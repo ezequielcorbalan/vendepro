@@ -8,6 +8,7 @@ import { StaticBlocksHome } from '@/components/tasaciones/admin/StaticBlocksHome
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Text } from '@/components/ui/Typography'
 import { getCurrentUser } from '@/lib/auth'
+import { Button } from '@/components/ui/Button'
 
 const ALL_TABS = [
   { key: 'templates', label: 'Templates', roles: ['admin', 'agent'] },
@@ -37,7 +38,7 @@ function ConfigTasacionInner() {
       {visibleTabs.length > 1 && (
         <nav className="mt-6 border-b border-gray-200">
           {visibleTabs.map(t => (
-            <button
+            <Button variant="ghost" size="icon"
               key={t.key}
               onClick={() => router.push(`/configuracion/tasacion?tab=${t.key}`)}
               className={`border-b-2 px-4 py-2 text-sm ${
@@ -47,7 +48,7 @@ function ConfigTasacionInner() {
               }`}
             >
               {t.label}
-            </button>
+            </Button>
           ))}
         </nav>
       )}

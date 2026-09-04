@@ -1,6 +1,7 @@
 'use client'
 import { BlockField, BlockInput, BlockTextarea } from '../BlockField'
 import { X } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
 interface Props { data: any; onPatch: (p: Record<string, unknown>) => void }
 
 export function MarketStatsForm({ data, onPatch }: Props) {
@@ -25,13 +26,13 @@ export function MarketStatsForm({ data, onPatch }: Props) {
       <div>
         <div className="mb-1 flex items-center justify-between">
           <span className="text-xs uppercase tracking-wide text-gray-600">Variables (keys)</span>
-          <button onClick={add} className="text-xs text-brand-pink">+ Agregar</button>
+          <Button variant="ghost" size="sm" onClick={add} className="p-0 text-xs text-brand-pink">+ Agregar</Button>
         </div>
         <ul className="space-y-1">
           {vars.map((v, i) => (
             <li key={i} className="flex gap-1">
               <BlockInput value={v} onChange={e => setVar(i, e.target.value)} placeholder="market.avg_price" className="flex-1 text-xs font-mono" />
-              <button onClick={() => remove(i)} aria-label="Quitar" className="text-gray-400 hover:text-danger"><X className="w-3.5 h-3.5" /></button>
+              <Button variant="ghost" size="icon" onClick={() => remove(i)} aria-label="Quitar" className="p-0 text-gray-400 hover:text-danger"><X className="w-3.5 h-3.5" /></Button>
             </li>
           ))}
         </ul>

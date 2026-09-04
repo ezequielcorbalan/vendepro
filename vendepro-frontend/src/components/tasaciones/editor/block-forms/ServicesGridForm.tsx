@@ -1,5 +1,6 @@
 'use client'
 import { BlockField, BlockInput } from '../BlockField'
+import { Button } from '@/components/ui/Button'
 interface Props { data: any; onPatch: (p: Record<string, unknown>) => void }
 
 interface Service { icon?: string; label: string; description?: string }
@@ -22,14 +23,14 @@ export function ServicesGridForm({ data, onPatch }: Props) {
       <div>
         <div className="mb-1 flex items-center justify-between">
           <span className="text-xs uppercase tracking-wide text-gray-600">Servicios</span>
-          <button onClick={add} className="text-xs text-brand-pink">+ Agregar</button>
+          <Button variant="ghost" size="sm" onClick={add} className="p-0 text-xs text-brand-pink">+ Agregar</Button>
         </div>
         <div className="space-y-2">
           {services.map((svc, i) => (
             <div key={i} className="rounded border border-gray-200 p-2 space-y-1">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-gray-400">Servicio {i + 1}</span>
-                <button onClick={() => remove(i)} className="text-xs text-danger hover:opacity-80">Eliminar</button>
+                <Button variant="ghost" size="sm" onClick={() => remove(i)} className="p-0 text-xs text-danger hover:opacity-80">Eliminar</Button>
               </div>
               <BlockInput placeholder="Icono (emoji o nombre)" value={svc.icon ?? ''} onChange={e => setField(i, 'icon', e.target.value)} />
               <BlockInput placeholder="Nombre del servicio" value={svc.label} onChange={e => setField(i, 'label', e.target.value)} />

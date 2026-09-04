@@ -124,7 +124,35 @@ Aparte: `tasaciones/editor/EditorShell.tsx` y `EditableCanvas.tsx` tienen
 `fixed inset-0` sin scrim (el preview móvil y la barra flotante). Revisar qué son
 antes de decidir si migran.
 
-## Tanda 5 — Botones
+## Tanda 5 — Botones ✅ HECHA (04/09/2026)
+
+**Resultado: 0 botones nativos sin resolver en nuestros archivos** (de 161).
+Los 22 que sigue contando el ratchet son 19 de archivos que Ezequiel tocó esta
+semana —afuera a pedido de Paula— y 3 de páginas públicas.
+
+Tres cosas no eran botones y fueron a donde correspondía:
+
+| Era | En realidad era | Dónde |
+|---|---|---|
+| `<button role="switch">` con `bg-green-500` | `Switch` | WebhooksSection |
+| `<button role="switch">` con `focus:outline-none` | `Switch` | StepVariableBlocks |
+| fila de chips con estado activo | `PillCheckGroup` | configuracion/objetivos |
+
+Y un CTA con degradado rosa→naranja pasó a `Button variant="primary"` (rosa
+sólido): el gradiente de marca sólo sigue permitido como superficie dentro de
+`components/ui`. **Es un cambio visible.**
+
+### Las tres trampas del conversor, para el próximo que automatice esto
+1. `Button size="icon"` trae `p-2`. Un botón sin padding propio CRECE y corre el
+   espaciado de su fila: hay que ponerle `p-0`.
+2. Un regex `<button[^>]*>` se corta en el `>` de las arrow functions
+   (`onClick={() => x}`). Hay que recorrer la etiqueta balanceando llaves y
+   comillas, o el `p-0` no se aplica y no te enterás.
+3. `bg-danger/10` es un tinte sobre un botón fantasma, NO la variante
+   destructiva. Confundirlos convierte un ícono con matiz rojo en un botón rojo
+   macizo.
+
+## Tanda 5 — Botones (plan original)
 
 **~186 `<button>` a mano, de los que la mitad o dos tercios son deuda real**
 

@@ -158,9 +158,9 @@ export default function PerformancePage() {
           className="w-24"
         />
         {hasFilters && (
-          <button onClick={clearFilters} className="text-xs text-gray-500 hover:text-primary shrink-0">
+          <Button variant="ghost" size="sm" onClick={clearFilters} className="p-0 text-xs text-gray-500 hover:text-primary shrink-0">
             Limpiar
-          </button>
+          </Button>
         )}
         <div className="flex-1" />
         <SegmentedControl

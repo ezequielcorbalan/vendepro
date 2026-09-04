@@ -443,7 +443,7 @@ function SaveStatus({ status, errorMsg, lastSavedAt, onRetry }: { status: string
   if (status === 'error') return (
     <span title={errorMsg ?? undefined} className="flex max-w-md items-center gap-1 truncate text-xs text-danger">
       <AlertCircle className="h-3 w-3 shrink-0" /> {errorMsg ?? 'Error al guardar'}
-      <button type="button" onClick={onRetry} className="ml-1 shrink-0 underline">Reintentar</button>
+      <Button variant="ghost" size="sm" type="button" onClick={onRetry} className="p-0 ml-1 shrink-0 underline">Reintentar</Button>
     </span>
   )
   if (status === 'debouncing') return <span className="text-xs text-gray-400">Cambios pendientes...</span>
