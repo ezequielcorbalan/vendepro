@@ -25,6 +25,7 @@ import { Alert } from '@/components/ui/Alert'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { useToast } from '@/components/ui/Toast'
 import { BlockField, BlockInput, BlockTextarea } from './BlockField'
+import { useConfirm } from '@/components/ui/useConfirm'
 
 interface Props {
   initial: any
@@ -54,6 +55,7 @@ function buildCtx(a: any, org: OrgCtx | null): AppraisalContext {
 }
 
 export function EditorShell({ initial, snapshot, context }: Props) {
+  const { confirmDialog, askConfirm } = useConfirm()
   const [state, dispatch] = useEditorState(initial, snapshot)
   const [mode, setMode] = useState<RenderMode>('web')
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false)
@@ -130,7 +132,13 @@ export function EditorShell({ initial, snapshot, context }: Props) {
   }
 
   const handleRemoveComparable = async (id: string) => {
-    if (!confirm('¿Eliminar este comparable?')) return
+    const { confirmed } = await askConfirm({
+      title: 'Eliminar comparable',
+      message: 'El comparable sale de la tasación. No se puede deshacer.',
+      confirmLabel: 'Eliminar',
+      variant: 'danger',
+    })
+    if (!confirmed) return
     try {
       await deleteComparable(id)
       setComparables(prev => prev.filter(c => c.id !== id))
@@ -178,7 +186,12 @@ export function EditorShell({ initial, snapshot, context }: Props) {
 
   const handleDownloadPdf = async () => {
     if (!state.appraisal.public_slug) {
-      if (!confirm('El PDF incluye un link público a /t/... ¿Continuar?')) return
+      const { confirmed } = await askConfirm({
+        title: 'Generar PDF',
+        message: 'El PDF incluye un link público a /t/… y esta tasación todavía no tiene uno publicado.',
+        confirmLabel: 'Generar igual',
+      })
+      if (!confirmed) return
     }
     setPdfStatus('generating')
     try {
@@ -202,6 +215,7 @@ export function EditorShell({ initial, snapshot, context }: Props) {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {confirmDialog}
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3">
         <div className="flex items-center gap-3">
           <Button href="/tasaciones" variant="ghost" size="icon" aria-label="Volver a Tasaciones">

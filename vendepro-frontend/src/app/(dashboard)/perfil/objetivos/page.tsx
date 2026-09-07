@@ -14,6 +14,7 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { OptionCard } from '@/components/ui/OptionCard'
 import { OBJECTIVE_METRICS, OBJECTIVE_TEMPLATES, PERIOD_TYPES, scaleMetrics, type ObjectiveTemplate } from '@/lib/crm-config'
 import { apiFetch } from '@/lib/api'
+import { useConfirm } from '@/components/ui/useConfirm'
 
 type Mode = null | 'method' | 'custom'
 
@@ -41,6 +42,7 @@ function getPeriodDates(type: string) {
 }
 
 export default function MisObjetivosPage() {
+  const { confirmDialog, askConfirm } = useConfirm()
   const { toast } = useToast()
   const [objectives, setObjectives] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -133,7 +135,13 @@ export default function MisObjetivosPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('¿Eliminar este objetivo?')) return
+    const { confirmed } = await askConfirm({
+      title: 'Eliminar objetivo',
+      message: 'El objetivo y su progreso dejan de verse en el panel. No se puede deshacer.',
+      confirmLabel: 'Eliminar',
+      variant: 'danger',
+    })
+    if (!confirmed) return
     await apiFetch('admin', `/objectives?id=${id}`, { method: 'DELETE' })
     setObjectives(prev => prev.filter(o => o.id !== id))
     toast('Objetivo eliminado')
@@ -147,6 +155,7 @@ export default function MisObjetivosPage() {
 
   return (
     <div>
+      {confirmDialog}
       <Link href="/perfil" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-ink mb-4">
         <ArrowLeft className="w-4 h-4" /> Volver a mi perfil
       </Link>

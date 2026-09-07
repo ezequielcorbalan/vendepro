@@ -15,8 +15,10 @@ import {
   OBJECTIVE_METRICS, getObjectiveSemaforo, getPeriodProgressPct,
   type ObjectiveMetric
 } from '@/lib/crm-config'
+import { useConfirm } from '@/components/ui/useConfirm'
 
 export default function ObjetivosPage() {
+  const { confirmDialog, askConfirm } = useConfirm()
   const { toast } = useToast()
   const [objectives, setObjectives] = useState<any[]>([])
   const [agents, setAgents] = useState<any[]>([])
@@ -68,7 +70,13 @@ export default function ObjetivosPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('¿Eliminar este objetivo?')) return
+    const { confirmed } = await askConfirm({
+      title: 'Eliminar objetivo',
+      message: 'El objetivo y su progreso dejan de verse en el panel. No se puede deshacer.',
+      confirmLabel: 'Eliminar',
+      variant: 'danger',
+    })
+    if (!confirmed) return
     await apiFetch('admin', `/objectives?id=${id}`, { method: 'DELETE' })
     toast('Objetivo eliminado', 'warning')
     loadData()
@@ -83,6 +91,7 @@ export default function ObjetivosPage() {
 
   return (
     <div className="space-y-5">
+      {confirmDialog}
       <PageHeader
         title="Objetivos"
         subtitle={`${objectives.length} objetivo${objectives.length !== 1 ? 's' : ''}`}

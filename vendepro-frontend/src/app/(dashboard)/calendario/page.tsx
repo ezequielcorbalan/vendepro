@@ -23,6 +23,7 @@ import { CallButton, WhatsAppButton } from '@/components/ui/ContactButtons'
 import { EVENT_TYPES } from '@/lib/crm-config'
 import { apiFetch } from '@/lib/api'
 import { getScopedAgentId } from '@/lib/agent-scope'
+import { useConfirm } from '@/components/ui/useConfirm'
 
 const ICON_MAP: Record<string, any> = {
   Phone, Users, Home, Eye, ClipboardList, RefreshCw, FileText, FileSignature, Calendar,
@@ -114,6 +115,10 @@ function ETIcon({ type, className }: { type: string; className?: string }) {
 }
 
 export default function CalendarioPage() {
+  const { confirmDialog, askConfirm } = useConfirm()
+  // Plan B cuando `navigator.clipboard` falla (contexto no seguro, permiso
+  // denegado): mostramos el link para copiar a mano. Antes era un `prompt()`.
+  const [linkAMano, setLinkAMano] = useState<string | null>(null)
   const { toast } = useToast()
   const now = new Date()
   const [events, setEvents] = useState<any[]>([])
@@ -248,7 +253,13 @@ export default function CalendarioPage() {
   }
 
   const deleteEvent = async (id: string) => {
-    if (!confirm('¿Eliminar este evento?')) return
+    const { confirmed } = await askConfirm({
+      title: 'Eliminar evento',
+      message: 'El evento sale del calendario. No se puede deshacer.',
+      confirmLabel: 'Eliminar',
+      variant: 'danger',
+    })
+    if (!confirmed) return
     await apiFetch('crm', `/calendar?id=${id}`, { method: 'DELETE' })
     toast('Evento eliminado', 'warning')
     loadEvents()
@@ -261,7 +272,7 @@ export default function CalendarioPage() {
       await navigator.clipboard.writeText(link)
       toast('Link copiado — mandáselo al cliente para que lo agende')
     } catch {
-      prompt('Copiá el link para el cliente:', link)
+      setLinkAMano(link)
     }
   }
 
@@ -277,6 +288,21 @@ export default function CalendarioPage() {
 
   return (
     <div className="space-y-4">
+      {confirmDialog}
+
+      <Modal
+        open={!!linkAMano}
+        onClose={() => setLinkAMano(null)}
+        title="Link para el cliente"
+        footer={<Button variant="ghost" onClick={() => setLinkAMano(null)}>Cerrar</Button>}
+      >
+        <Text size="sm" tone="muted" className="block mb-3">
+          No pudimos copiarlo automáticamente. Seleccionalo y copialo a mano.
+        </Text>
+        <Field label="Link">
+          <Input readOnly value={linkAMano ?? ''} onFocus={e => e.currentTarget.select()} />
+        </Field>
+      </Modal>
       <PageHeader
         title="Calendario"
         subtitle={

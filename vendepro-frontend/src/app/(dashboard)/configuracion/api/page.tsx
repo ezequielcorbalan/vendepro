@@ -22,6 +22,7 @@ import { Tabs } from '@/components/ui/Tabs'
 import { Modal } from '@/components/ui/Modal'
 import { Field, Input, Textarea } from '@/components/ui/Input'
 import type { ApiToken } from '@/lib/types'
+import { useConfirm } from '@/components/ui/useConfirm'
 
 const IMPORT_ENDPOINT = `${getApiBase('public')}/v1/leads`
 
@@ -58,6 +59,7 @@ function decodeTid(jwt: string): string | null {
 type Tab = 'tokens' | 'webhooks' | 'test'
 
 export default function ConfiguracionApiPage() {
+  const { confirmDialog, askConfirm } = useConfirm()
   const { toast } = useToast()
   const user = getCurrentUser()
   const isAdmin = user?.role === 'admin' || user?.role === 'owner'
@@ -125,7 +127,13 @@ export default function ConfiguracionApiPage() {
   }
 
   async function handleRevoke(id: string, tokenName: string) {
-    if (!confirm(`¿Revocar el token "${tokenName}"? Las integraciones que lo usen dejarán de funcionar.`)) return
+    const { confirmed } = await askConfirm({
+      title: 'Revocar token',
+      message: `Las integraciones que usen "${tokenName}" dejan de funcionar. El token queda en la lista, marcado como revocado.`,
+      confirmLabel: 'Revocar',
+      variant: 'danger',
+    })
+    if (!confirmed) return
     try {
       await apiFetch('crm', `/api-tokens/${id}`, { method: 'DELETE' })
       toast('Token revocado', 'warning')
@@ -137,9 +145,15 @@ export default function ConfiguracionApiPage() {
 
   async function handleDelete(token: ApiToken) {
     const warning = token.is_active
-      ? `¿Eliminar el token "${token.name}"? Las integraciones que lo usen dejarán de funcionar y desaparece de la lista. No se puede deshacer.`
-      : `¿Eliminar definitivamente el token "${token.name}"? No se puede deshacer.`
-    if (!confirm(warning)) return
+      ? `Las integraciones que usen "${token.name}" dejan de funcionar y el token desaparece de la lista. No se puede deshacer.`
+      : `El token "${token.name}" desaparece de la lista. No se puede deshacer.`
+    const { confirmed } = await askConfirm({
+      title: 'Eliminar token',
+      message: warning,
+      confirmLabel: 'Eliminar',
+      variant: 'danger',
+    })
+    if (!confirmed) return
     try {
       await apiFetch('crm', `/api-tokens/${token.id}?permanent=1`, { method: 'DELETE' })
       toast('Token eliminado', 'warning')
@@ -220,6 +234,7 @@ export default function ConfiguracionApiPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-5">
+      {confirmDialog}
       {/* Header propio (pantalla con back-nav) */}
       <div>
         <Link href="/configuracion" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-ink mb-4">

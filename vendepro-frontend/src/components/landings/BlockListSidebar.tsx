@@ -9,6 +9,7 @@ import { BLOCK_LABELS } from './blocks'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Text } from '@/components/ui/Typography'
+import { useConfirm } from '@/components/ui/useConfirm'
 
 const AVAILABLE_BLOCK_TYPES: Array<{ type: BlockType; label: string; seedData: any }> = [
   { type: 'hero-split', label: 'Hero dividido', seedData: { title: 'Título', media_url: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=1200', media_side: 'right', accent_color: 'pink' } },
@@ -30,6 +31,20 @@ interface Props {
 
 export default function BlockListSidebar({ blocks, selectedId, onSelect, onReorder, onRemove, onToggleVisibility, onAdd }: Props) {
   const [showAdd, setShowAdd] = useState(false)
+  const { confirmDialog, askConfirm } = useConfirm()
+
+  // La confirmacion vive acá y no en la fila: es el padre el que tiene el id y
+  // el `onRemove` de verdad, y así hay un solo diálogo para toda la lista en vez
+  // de uno por bloque.
+  async function pedirBorrar(id: string) {
+    const { confirmed } = await askConfirm({
+      title: 'Eliminar bloque',
+      message: 'El bloque sale de la landing. No se puede deshacer.',
+      confirmLabel: 'Eliminar',
+      variant: 'danger',
+    })
+    if (confirmed) await onRemove(id)
+  }
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
 
   function handleDragEnd(e: DragEndEvent) {
@@ -42,6 +57,7 @@ export default function BlockListSidebar({ blocks, selectedId, onSelect, onReord
 
   return (
     <aside className="bg-white border-r border-gray-200 flex flex-col overflow-hidden">
+      {confirmDialog}
       <div className="p-3 border-b border-gray-200">
         <Text size="xs" tone="muted" weight="semibold" className="uppercase tracking-wider">Bloques ({blocks.length})</Text>
       </div>
@@ -52,7 +68,7 @@ export default function BlockListSidebar({ blocks, selectedId, onSelect, onReord
               <SortableBlockRow key={b.id} block={b}
                 selected={selectedId === b.id}
                 onSelect={() => onSelect(b.id)}
-                onRemove={() => onRemove(b.id)}
+                onRemove={() => pedirBorrar(b.id)}
                 onToggleVisibility={() => onToggleVisibility(b.id, !b.visible)}
               />
             ))}
@@ -109,7 +125,7 @@ function SortableBlockRow({ block, selected, onSelect, onRemove, onToggleVisibil
         {block.visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
       </Button>
       {!isRequired && (
-        <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); if (confirm('¿Eliminar este bloque?')) onRemove() }}
+        <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onRemove() }}
           className="p-0 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-danger" title="Eliminar">
           <Trash2 className="w-3.5 h-3.5" />
         </Button>

@@ -455,13 +455,69 @@ algo fijo se tapa, mirá primero la posición y después la capa.
 Auditoría: `overlay-props-fase6.test.tsx`, bloque "no lo tapa el botón flotante".
 
 
+## 29. Nada destructivo se pregunta con `confirm()`
+
+`window.confirm()` es del navegador, no nuestro: no tiene la marca, no dice el
+nombre de lo que estás borrando, el botón de aceptar es idéntico al de cancelar
+y en móvil aparece pegado a la barra de direcciones. Va `useConfirm()`, que
+devuelve una promesa y preserva el flujo imperativo:
+
+```tsx
+const { confirmDialog, askConfirm } = useConfirm()
+
+async function handleDelete(w: Webhook) {
+  const { confirmed } = await askConfirm({
+    title: 'Eliminar webhook',
+    message: `"${w.name}" deja de recibir eventos y se borra su historial. No se puede deshacer.`,
+    confirmLabel: 'Eliminar',
+    variant: 'danger',
+  })
+  if (!confirmed) return
+  // ...
+}
+
+return <div>{confirmDialog}{/* ... */}</div>
+```
+
+❌ `if (!confirm('¿Eliminar este objetivo?')) return`
+✅ `title: 'Eliminar objetivo'` + `message` con la consecuencia + `variant: 'danger'`
+
+**El título dice la acción, el mensaje dice la consecuencia.** El `confirm()`
+nativo obligaba a meter todo en una línea ("¿Eliminar esta ficha? Esta acción no
+se puede deshacer."), y por eso 8 de los 20 que migramos decían apenas
+"¿Eliminar este X?" — sin decir qué se pierde. El diálogo del DS tiene dos
+campos justamente para no tener que elegir.
+
+**Si la confirmación está en una fila de una lista, el diálogo va en el padre.**
+`BlockListSidebar` y `EditableCanvas` lo tenían en cada fila: el `onRemove` de la
+fila es un closure sin id, así que la confirmación tenía que vivir donde está el
+id. Puesto en el padre hay UN diálogo para toda la lista en vez de uno por
+elemento.
+
+**`prompt()` cuenta igual.** El único que había era el plan B del calendario
+cuando `navigator.clipboard` falla; ahora es un `Modal` con el link en un
+`Input readOnly`.
+
+Ratchet: `diálogos nativos (confirm/alert/prompt)` en `ds-color-lint.mjs`,
+baseline en `scripts/.ds-dialog-baseline`. Bajó de 24 a 3 el 07/09/2026; los 3
+que quedan están en `configuracion/conexiones`, que quedó fuera de alcance.
+
+
 ## Enforcement existente
 El ratchet de color (`scripts/ds-color-lint.mjs` + `scripts/.ds-color-baseline`)
 ya evita que SUBA nada de esto: colores Tailwind sueltos, medallones de
 gradiente a mano (regla 14), íconos escritos como carácter (regla 20), la escala
 `slate` (regla 21), los radios pre-token `rounded-lg`/`xl` (regla 8) y los
-overlays armados a mano (fase 6). Son seis ratchets, cada uno con su archivo de
-baseline en `scripts/.ds-*-baseline`.
+overlays armados a mano (fase 6), los botones nativos (`<button>`), los inputs
+nativos (`<input>`/`<select>`/`<textarea>`) y los diálogos nativos
+(`confirm`/`alert`/`prompt`, regla 29). Son nueve ratchets, cada uno con su
+archivo de baseline en `scripts/.ds-*-baseline`.
+
+Un ratchet sólo se pone sobre un patrón que YA tiene alternativa en el DS. Sobre
+uno que no la tiene no protege nada: sólo bloquea trabajo legítimo hasta que
+alguien decida el componente. Por eso los 29 "Volver" armados a mano y los 82
+micro-labels `uppercase tracking-wide` siguen sin ratchet — cuando exista el
+componente, se pone.
 
 **El de overlays llegó a 0 el 04/09/2026** y ahí se queda: cualquier `inset-0` con
 fondo translúcido nuevo hace fallar el lint. Los tres últimos necesitaron un prop
