@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
   KeyRound, Plus, Trash2, Loader2, ArrowLeft, Copy, Check,
-  AlertCircle, ShieldAlert, ShieldOff, Radio, Play, RotateCcw,
+  AlertCircle, ShieldAlert, ShieldOff, Play, RotateCcw,
   Webhook as WebhookIcon,
 } from 'lucide-react'
 import { apiFetch, getApiBase } from '@/lib/api'
@@ -19,6 +19,7 @@ import { Alert } from '@/components/ui/Alert'
 import { Badge } from '@/components/ui/Badge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Tabs } from '@/components/ui/Tabs'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { Modal } from '@/components/ui/Modal'
 import { Field, Input, Textarea } from '@/components/ui/Input'
 import type { ApiToken } from '@/lib/types'
@@ -56,7 +57,7 @@ function decodeTid(jwt: string): string | null {
   }
 }
 
-type Tab = 'tokens' | 'webhooks' | 'test'
+type Tab = 'tokens' | 'webhooks'
 
 export default function ConfiguracionApiPage() {
   const { confirmDialog, askConfirm } = useConfirm()
@@ -112,11 +113,10 @@ export default function ConfiguracionApiPage() {
         setShowCreate(false)
         setName('')
         loadTokens()
-        // Deja el token cargado en la prueba en vivo y salta a esa pestaña.
+        // Deja el token cargado y la escucha activa en la prueba de abajo.
         setTestToken(data.token)
         setTestBaseline(null)
         setTestStatus('waiting')
-        setTab('test')
       } else {
         toast(data.error || 'No se pudo crear el token', 'error')
       }
@@ -235,26 +235,14 @@ export default function ConfiguracionApiPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-5">
       {confirmDialog}
-      {/* Header propio (pantalla con back-nav) */}
       <div>
         <Link href="/configuracion" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-ink mb-4">
           <ArrowLeft className="w-4 h-4" /> Volver a Configuración
         </Link>
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-semibold text-ink flex items-center gap-2">
-              <KeyRound className="w-6 h-6 text-gray-600" /> Configuración de API
-            </h1>
-            <Text tone="muted" className="mt-1">Tokens para importar leads y webhooks para avisar a tus sistemas cuando pasa algo en el CRM.</Text>
-          </div>
-          <Button
-            onClick={() => setShowCreate(true)}
-            icon={<Plus className="w-4 h-4" />}
-            className="shrink-0"
-          >
-            Nuevo token
-          </Button>
-        </div>
+        <PageHeader
+          title="Configuración de API"
+          subtitle="Tokens para importar leads y webhooks para avisar a tus sistemas cuando pasa algo en el CRM."
+        />
       </div>
 
       {/* Token recién creado — visible una sola vez, por encima de las tabs */}
@@ -262,7 +250,7 @@ export default function ConfiguracionApiPage() {
         <Card>
           <Heading level={4}>Token “{newToken.name}” creado</Heading>
           <Text size="sm" tone="muted" className="mt-1 block">
-            Copialo ahora: por seguridad <strong>no vas a poder verlo de nuevo</strong>. Ya lo dejamos cargado en <em>Prueba en vivo</em>.
+            Copialo ahora: por seguridad <strong>no vas a poder verlo de nuevo</strong>. Ya lo dejamos cargado en <em>Probá tu token</em>, más abajo.
           </Text>
           <div className="mt-3 flex items-start gap-2">
             <code className="flex-1 bg-white border border-gray-200 rounded-control px-3 py-2 text-xs font-mono text-gray-700 break-all">
@@ -288,7 +276,6 @@ export default function ConfiguracionApiPage() {
         items={[
           { value: 'tokens', label: 'Tokens', icon: <KeyRound className="w-4 h-4" />, count: activeCount || undefined },
           { value: 'webhooks', label: 'Webhooks', icon: <WebhookIcon className="w-4 h-4" />, count: webhookCount || undefined },
-          { value: 'test', label: 'Prueba en vivo', icon: <Radio className="w-4 h-4" /> },
         ]}
         value={tab}
         onChange={v => setTab(v as Tab)}
@@ -296,7 +283,16 @@ export default function ConfiguracionApiPage() {
 
       {/* ── TAB: TOKENS (grilla) ─────────────────────────────── */}
       {tab === 'tokens' && (
-        <div role="tabpanel">
+        <div role="tabpanel" className="space-y-5">
+          <div className="flex items-start justify-between gap-4">
+            <Text size="sm" tone="muted">
+              Un token deja que una integración (tu web, un portal, Zapier) importe leads al CRM por la API.
+            </Text>
+            <Button onClick={() => setShowCreate(true)} icon={<Plus className="w-4 h-4" />} className="shrink-0">
+              Nuevo token
+            </Button>
+          </div>
+
           {loading ? (
             <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
           ) : error ? (
@@ -383,19 +379,15 @@ export default function ConfiguracionApiPage() {
               ))}
             </div>
           )}
-        </div>
-      )}
 
-      {/* ── TAB: WEBHOOKS ────────────────────────────────────── */}
-      {tab === 'webhooks' && (
-        <div role="tabpanel">
-          <WebhooksSection onCountChange={setWebhookCount} />
-        </div>
-      )}
-
-      {/* ── TAB: PRUEBA EN VIVO ──────────────────────────────── */}
-      {tab === 'test' && (
-        <div role="tabpanel" className="space-y-5">
+          {/* Probá tu token — vivía en una tercera pestaña, pero sólo prueba
+              tokens (nunca webhooks), así que va acá, debajo de la lista. */}
+          <div className="pt-2">
+            <Heading level={3}>Probá tu token</Heading>
+            <Text tone="muted" className="mt-0.5 block">
+              Tres pasos para confirmar que la integración entra bien, sin salir de esta pantalla.
+            </Text>
+          </div>
           {/* Paso 1: token */}
           <Card>
             <Heading level={4} className="flex items-center gap-2 mb-1">
@@ -448,7 +440,7 @@ export default function ConfiguracionApiPage() {
           <Card>
             <Heading level={4} className="flex items-center gap-2 mb-1">
               <span className="w-5 h-5 rounded-full bg-primary text-white text-xs flex items-center justify-center">3</span>
-              Prueba en vivo
+              Escuchá el request
             </Heading>
             <Text tone="muted" className="mb-3">
               Iniciá la escucha y ejecutá el comando. Vamos a detectar el primer request que llegue con este token.
@@ -503,6 +495,13 @@ export default function ConfiguracionApiPage() {
               )}
             </div>
           </Card>
+        </div>
+      )}
+
+      {/* ── TAB: WEBHOOKS ────────────────────────────────────── */}
+      {tab === 'webhooks' && (
+        <div role="tabpanel">
+          <WebhooksSection onCountChange={setWebhookCount} />
         </div>
       )}
 

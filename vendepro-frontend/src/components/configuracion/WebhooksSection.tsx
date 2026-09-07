@@ -173,12 +173,12 @@ export default function WebhooksSection({ onCountChange }: { onCountChange?: (n:
     <div className="space-y-4">
       {confirmDialog}
       <div className="flex items-start justify-between gap-4">
-        <p className="text-sm text-gray-500">
+        <Text size="sm" tone="muted">
           Avisamos a tu sistema (n8n, Zapier, etc.) con un POST JSON cuando ocurre un evento.
           Cada entrega va firmada con <code className="text-xs bg-gray-100 px-1 py-0.5 rounded font-mono">X-VendePro-Signature: sha256=HMAC(secret, body)</code>.
-        </p>
-        <Button onClick={() => setShowCreate(true)} className="shrink-0">
-          <Plus className="w-4 h-4" /> Nuevo webhook
+        </Text>
+        <Button onClick={() => setShowCreate(true)} icon={<Plus className="w-4 h-4" />} className="shrink-0">
+          Nuevo webhook
         </Button>
       </div>
 

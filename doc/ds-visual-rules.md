@@ -503,6 +503,40 @@ baseline en `scripts/.ds-dialog-baseline`. Bajó de 24 a 3 el 07/09/2026; los 3
 que quedan están en `configuracion/conexiones`, que quedó fuera de alcance.
 
 
+## 30. En una pantalla con pestañas, la acción va en la pestaña
+
+`PageHeader` es para la acción de la PANTALLA. Si la acción es de una pestaña,
+en el header queda mal: `/configuracion/api` tenía "Nuevo token" arriba, así que
+**estando en la pestaña de Webhooks se veían los dos botones a la vez** —
+"Nuevo token" en el encabezado y "Nuevo webhook" adentro del panel. El de
+Webhooks ya estaba bien; el de Tokens era el que sobraba arriba.
+
+El patrón, igual en las dos pestañas: una línea que explica para qué sirve, y el
+botón a la derecha.
+
+```tsx
+<div className="flex items-start justify-between gap-4">
+  <Text size="sm" tone="muted">Un token deja que una integración importe leads por la API.</Text>
+  <Button onClick={abrir} icon={<Plus className="w-4 h-4" />} className="shrink-0">
+    Nuevo token
+  </Button>
+</div>
+```
+
+❌ `<PageHeader title="Configuración de API" actions={<Button>Nuevo token</Button>} />` con pestañas debajo
+✅ `PageHeader` sin `actions`, y el botón adentro del `role="tabpanel"` que le corresponde
+
+**Y si una pestaña sólo opera sobre lo de otra, no es una pestaña.** Esa misma
+pantalla tenía una tercera, "Prueba en vivo", que probaba únicamente tokens —
+nunca webhooks. Pasó a ser una sección abajo de la lista de tokens, donde el
+token que acabás de crear ya queda cargado sin cambiar de pestaña. Tres
+pestañas se leían como tres temas; eran dos.
+
+Sin ratchet: no hay patrón mecánico que distinga una acción de pantalla de una
+de pestaña. La auditoría es a ojo — `grep -rn "PageHeader" src/app` cruzado con
+las pantallas que usan `Tabs`.
+
+
 ## Enforcement existente
 El ratchet de color (`scripts/ds-color-lint.mjs` + `scripts/.ds-color-baseline`)
 ya evita que SUBA nada de esto: colores Tailwind sueltos, medallones de
