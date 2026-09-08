@@ -25,6 +25,7 @@
 | 13 · Academia | 🔴 | Nada. |
 | — · Planes y billing (pregunta 1) | 🟡 | Gating `plan`+`modules` con UI completa; **solo frontend**, sin enforcement en API y sin cobro (MP/Stripe: 0). |
 | — · Feed XML portales | 🟡 | Backend sirve XML real; sin UI, opt-in solo por SQL, tags sin validar contra spec Navent. |
+| — · Design system (fase 6) | 🟡 | 50 componentes, 31 reglas y 9 ratchets en CI; quedan 19 `ds-todo` y las páginas públicas sin decidir. |
 
 ---
 
@@ -204,11 +205,45 @@ Nada en el código (esperado: el roadmap dice "se planifican, no se codean todav
 - **Feed XML de portales (ZonaProp/Argenprop)** 🟡 — backend en producción (`portal_feeds`, mapper con TAGS provisionales pendientes de la spec de Navent, endpoint `GET /feed/:token` sin auth con telemetría), pero **cero UI**: `publish_portals` solo se marca por SQL y el feed se provisiona con script manual (`scripts/portal-feed.mjs`). Ver [[portales-feed-xml]] en memoria.
 - **Webhooks salientes + API tokens** 🟢 (`032_webhooks.sql`, `POST /v1/leads`) — el reemplazo del rol disparador de Emblue; consumidores externos vía n8n.
 - **api-rentals** — dominio completo aparte (18 rutas, pagos de alquileres).
+- **Design system 🟡 (fase 6, al 08-sep-2026)** — no es un feature de producto,
+  pero condiciona todo lo que se construya encima, así que va acá.
+
+  **Qué hay**: 50 componentes en `vendepro-frontend/src/components/ui`, galería
+  viva y pública en `/design-system`, 31 reglas con ❌/✅ en
+  `doc/ds-visual-rules.md` y **9 ratchets con baseline** en
+  `scripts/.ds-*-baseline` que corren en CI (`npm run lint:ds`). El ratchet no
+  falla por lo que ya existe: falla si un cambio *sube* el número, así que el
+  retroceso queda trabado sin tener que migrar todo primero.
+
+  **Cerrado**: overlays armados a mano **18 → 0** (y ahí se queda: cualquier
+  `inset-0` translúcido nuevo hace fallar el lint); diálogos nativos
+  `confirm/alert/prompt` **24 → 3**; `Switch`/`Checkbox`/`ChoicePills` se pueden
+  nombrar sin dibujar la etiqueta (`aria-label`); `ConfirmDialog` migrado a
+  `Modal`, con lo que hereda Portal, scroll-lock, focus-trap y Esc.
+
+  **Qué falta**, y por qué no es solo trabajo mecánico:
+  - **19 `ds-todo`** — son decisiones de diseño pendientes, no deuda. Las tres
+    grandes: `FileInput` y `ColorInput` (el DS no tiene control de archivo ni de
+    color) y qué hacer con las **páginas públicas** (`/f/`, `/v/`): DS o
+    identidad propia. Esa última desbloquea 11 controles nativos.
+  - **Error de hidratación en 8 lugares** — `getCurrentUser()` lee
+    `localStorage`, así que devuelve `null` en el servidor y el usuario real en
+    el cliente; las pantallas que eligen qué mostrar según el rol pintan cosas
+    distintas y React re-renderiza todo el árbol. El hook que lo arregla está en
+    `src/lib/use-current-user.ts`; aplicarlo cambia el primer render de esas 8.
+  - Los 30 controles nativos que quedan en archivos de la tanda de Ezequiel
+    quedaron **fuera de alcance** a propósito, para no pisarnos.
+
+  Ver `doc/ds-plan.md`, `doc/ds-review.md` y `doc/ds-plan-fase6.md`.
 
 ## KB desactualizado detectado
 
 - [[Dominio-Marketing]] dice `meta_integration` "1 row por org" y describe un envío sGTM separado — ambos obsoletos tras la migración 040 (config por agente) y el diseño actual (Stape es override de endpoint, no tercer envío).
 - `doc/backend.md:85` lista `EMBLUE_API_KEY` para api-auth — legacy retirado, hoy es `RESEND_API_KEY`.
+- [[Frontend-componentes]] decía "el design system (46 archivos)" y le faltaban
+  5 componentes (`ActionGroup`, `AgentSelector`, `DetailHeader`, `StepCard`,
+  `WhatsAppTemplatePicker`), además de marcar `ConfirmDialog` como "legacy a
+  reemplazar por Modal" cuando ya se migró. **Corregido el 08-sep-2026.**
 - [[DB-overview]] § "Migrations en orden": la tabla se corta en la migración 020 y dice "51 tablas en 24 migrations", pero `migrations_v2/` tiene hoy 58 archivos hasta la 049 (confirmado al documentar Feature 07). El gap 021-047 no está listado — quedó así desde antes de este feature, backfillarlo es trabajo aparte.
 
 ## Relacionado
