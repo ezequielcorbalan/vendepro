@@ -43,8 +43,17 @@ export class CreateReportUseCase {
     const status = input.publish ? 'published' : 'draft'
     const publishedAt = input.publish ? new Date().toISOString() : null
 
+    // Gate multi-tenant: sin esto, un propertyId de OTRA org creaba el reporte
+    // igual — y como reports.org_id se deriva de la propiedad al guardar, el
+    // reporte quedaba escrito en los datos de la org ajena (invisible para
+    // quien lo creó, visible para la víctima).
     const property = await this.propertyRepo.findById(input.propertyId, input.orgId)
-    const address = property?.toObject().address ?? input.propertyId
+    if (!property) {
+      const err = new Error('Propiedad no encontrada') as Error & { statusCode: number }
+      err.statusCode = 404
+      throw err
+    }
+    const address = property.toObject().address ?? input.propertyId
     const periodLabel = sanitizePeriodLabel(input.periodLabel)
     const publicSlug = makeReportPublicSlug(address, periodLabel, this.idGen)
 

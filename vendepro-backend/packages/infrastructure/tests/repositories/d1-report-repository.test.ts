@@ -250,4 +250,47 @@ describe('D1ReportRepository', () => {
       ),
     ).rejects.toThrow('Propiedad no encontrada')
   })
+
+  it('addPhoto persiste la foto con su r2_key y deletePhoto la devuelve para limpiar R2', async () => {
+    const repo = new D1ReportRepository(env.DB)
+    const r = buildReport()
+    await repo.save(r)
+
+    await repo.addPhoto({
+      id: nextId('ph'),
+      report_id: r.id,
+      photo_url: 'https://r2.public/reports/a.jpg',
+      r2_key: `reports/${orgId}/${r.id}/a.jpg`,
+      photo_type: 'visit_form',
+      sort_order: 0,
+    }, orgId)
+
+    const photos = await repo.findPhotosByReport(r.id, orgId)
+    expect(photos).toHaveLength(1)
+    expect(photos[0]!.photo_url).toBe('https://r2.public/reports/a.jpg')
+    expect(photos[0]!.r2_key).toBe(`reports/${orgId}/${r.id}/a.jpg`)
+
+    const deleted = await repo.deletePhoto(photos[0]!.id, orgId)
+    expect(deleted?.r2_key).toBe(`reports/${orgId}/${r.id}/a.jpg`)
+    expect(await repo.findPhotosByReport(r.id, orgId)).toHaveLength(0)
+  })
+
+  it('addPhoto y deletePhoto respetan el scope de org', async () => {
+    const repo = new D1ReportRepository(env.DB)
+    const r = buildReport()
+    await repo.save(r)
+    const foto = {
+      id: nextId('ph'), report_id: r.id, photo_url: 'u', r2_key: null,
+      photo_type: 'property', sort_order: 0,
+    }
+
+    // Alta contra otra org: 404 y nada escrito.
+    await expect(repo.addPhoto(foto, 'org-ajena')).rejects.toMatchObject({ statusCode: 404 })
+    expect(await repo.findPhotosByReport(r.id, orgId)).toHaveLength(0)
+
+    // Baja contra otra org: null y la fila sigue.
+    await repo.addPhoto(foto, orgId)
+    expect(await repo.deletePhoto(foto.id, 'org-ajena')).toBeNull()
+    expect(await repo.findPhotosByReport(r.id, orgId)).toHaveLength(1)
+  })
 })

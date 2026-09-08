@@ -67,6 +67,9 @@ export default function NuevoReporte() {
 
   // Step 5: Photos
   const [photos, setPhotos] = useState<File[]>([])
+  // Fotos ya guardadas del reporte (solo en modo edición)
+  const [existingPhotos, setExistingPhotos] = useState<{ id: string; photo_url: string }[]>([])
+  const [deletingPhoto, setDeletingPhoto] = useState<string | null>(null)
 
   // Competitor extraction
   const [extractingComp, setExtractingComp] = useState<number | null>(null)
@@ -109,6 +112,10 @@ export default function NuevoReporte() {
             else if (c.section === 'conclusion') setConclusion(c.body || '')
             else if (c.section === 'price_reference') setPriceReference(c.body || '')
           }
+        }
+
+        if (Array.isArray(data.photos)) {
+          setExistingPhotos(data.photos.map((p: any) => ({ id: p.id, photo_url: p.photo_url })))
         }
 
         if (Array.isArray(data.competitors)) {
@@ -232,6 +239,22 @@ export default function NuevoReporte() {
     }
   }
 
+  async function handleDeleteExistingPhoto(photoId: string) {
+    setDeletingPhoto(photoId)
+    try {
+      const res = await apiFetch('properties', `/report-photos/${photoId}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as any
+        throw new Error(data?.error || 'No se pudo borrar la foto')
+      }
+      setExistingPhotos((prev) => prev.filter((p) => p.id !== photoId))
+    } catch (err) {
+      setError((err as Error)?.message ?? 'No se pudo borrar la foto')
+    } finally {
+      setDeletingPhoto(null)
+    }
+  }
+
   /** Camino "pegá el link": el backend baja la página del aviso y extrae los datos. */
   async function handleCompetitorUrl(index: number) {
     const url = competitors[index]?.url?.trim()
@@ -325,6 +348,24 @@ export default function NuevoReporte() {
   }
 
   async function handleSubmit(publish: boolean) {
+    // Los "required" de los pasos 1 y 3 no se validaban en ningún lado: se
+    // podía publicar un reporte sin período (slug "reporte-periodo-…") y sin
+    // conclusión. El stepper deja saltar pasos, así que la red va acá.
+    if (!periodLabel.trim() || !periodStart || !periodEnd) {
+      setError('Completá el período del reporte (nombre, desde y hasta) antes de guardar.')
+      setStep(1)
+      return
+    }
+    if (periodEnd < periodStart) {
+      setError('La fecha "Hasta" no puede ser anterior a "Desde".')
+      setStep(1)
+      return
+    }
+    if (publish && !conclusion.trim()) {
+      setError('Escribí la conclusión y recomendación antes de publicar.')
+      setStep(3)
+      return
+    }
     setLoading(true)
     setError('')
 
@@ -363,7 +404,7 @@ export default function NuevoReporte() {
           photoForm.append('file', photos[i])
           photoForm.append('reportId', reportId)
           photoForm.append('photoType', 'visit_form')
-          photoForm.append('sortOrder', i.toString())
+          photoForm.append('sortOrder', (existingPhotos.length + i).toString())
           try {
             const photoRes = await apiFetch('properties', '/upload-photo', { method: 'POST', body: photoForm })
             if (!photoRes.ok) {
@@ -718,6 +759,33 @@ export default function NuevoReporte() {
               />
             </label>
 
+            {existingPhotos.length > 0 && (
+              <div>
+                <Text size="xs" tone="muted" className="mb-2">Fotos ya guardadas ({existingPhotos.length})</Text>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {existingPhotos.map((photo) => (
+                    <div key={photo.id} className="relative">
+                      <img
+                        src={photo.photo_url}
+                        alt=""
+                        className="w-full h-32 object-cover rounded-control"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteExistingPhoto(photo.id)}
+                        loading={deletingPhoto === photo.id}
+                        aria-label="Borrar foto guardada"
+                        className="absolute top-1 right-1 w-6 h-6 p-0 bg-danger text-white rounded-full hover:bg-danger/80 hover:text-white"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {photos.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                 {photos.map((photo, i) => (
@@ -757,7 +825,7 @@ export default function NuevoReporte() {
                 {[strategy, marketing, conclusion, priceReference].filter(Boolean).length} de 4
               </Text>
               <Text as="p"><strong>Competencia:</strong> {competitors.filter(c => c.url).length} propiedades</Text>
-              <Text as="p"><strong>Fotos:</strong> {photos.length}</Text>
+              <Text as="p"><strong>Fotos:</strong> {existingPhotos.length + photos.length}{existingPhotos.length > 0 ? ` (${existingPhotos.length} ya guardadas)` : ''}</Text>
             </div>
 
             <div className="flex gap-3">

@@ -86,7 +86,12 @@ Worker de propiedades, fotos, tasaciones, fichas, prefactibilidades, visit forms
 | Método | Path | Descripción |
 |---|---|---|
 | GET | `/reports` | Lista reportes |
-| POST | `/reports` | Crea reporte |
+| POST | `/reports` | Crea reporte (404 si la propiedad no es de la org) |
+| GET | `/reports/:id` | Detalle: report + metrics + content + competitors + photos |
+| PUT | `/reports/:id` | Actualiza (incluye competitors desde 2026-09-08) |
+| DELETE | `/reports/:id` | Borra con cascada + cleanup R2 |
+| POST | `/upload-photo` | Con `reportId` en el form: sube a R2 **y** escribe `report_photos` (2026-09-08) |
+| DELETE | `/report-photos/:id` | Baja individual de foto de reporte (2026-09-08) |
 
 ### Landing Templates (legacy aquí, ver también [[API-crm]])
 

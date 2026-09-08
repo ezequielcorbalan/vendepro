@@ -1,5 +1,5 @@
 import { Report } from '@vendepro/core'
-import type { ReportRepository, NewReportMetric, NewReportContent } from '@vendepro/core'
+import type { ReportRepository, NewReportMetric, NewReportContent, NewReportPhoto } from '@vendepro/core'
 import type { ReportMetricProps, ReportContentProps } from '@vendepro/core'
 
 /**
@@ -286,6 +286,51 @@ export class D1ReportRepository implements ReportRepository {
       .bind(reportId, orgId)
       .all()).results as any[]) || []
     return rows.map((r) => ({ id: r.id, photo_url: r.photo_url, r2_key: r.r2_key ?? undefined }))
+  }
+
+  async addPhoto(photo: NewReportPhoto, orgId: string): Promise<void> {
+    // Gate: el reporte tiene que ser de la org.
+    const parent = await this.db
+      .prepare('SELECT 1 FROM reports WHERE id = ? AND org_id = ?')
+      .bind(photo.report_id, orgId)
+      .first()
+    if (!parent) {
+      const err = new Error('Reporte no encontrado')
+      ;(err as any).statusCode = 404
+      throw err
+    }
+    try {
+      await this.db
+        .prepare(
+          'INSERT INTO report_photos (id, report_id, photo_url, r2_key, photo_type, sort_order) VALUES (?, ?, ?, ?, ?, ?)',
+        )
+        .bind(photo.id, photo.report_id, photo.photo_url, photo.r2_key ?? null, photo.photo_type, photo.sort_order)
+        .run()
+    } catch (e) {
+      // r2_key llega con la migración 051. Si todavía no corrió, insertamos sin
+      // la columna: la foto se ve igual, sólo el cleanup de R2 usa el fallback
+      // por URL (ver DeleteReportUseCase).
+      await this.db
+        .prepare(
+          'INSERT INTO report_photos (id, report_id, photo_url, photo_type, sort_order) VALUES (?, ?, ?, ?, ?)',
+        )
+        .bind(photo.id, photo.report_id, photo.photo_url, photo.photo_type, photo.sort_order)
+        .run()
+    }
+  }
+
+  async deletePhoto(photoId: string, orgId: string): Promise<{ photo_url: string; r2_key?: string } | null> {
+    const row = (await this.db
+      .prepare(
+        `SELECT ph.* FROM report_photos ph
+         JOIN reports r ON ph.report_id = r.id
+         WHERE ph.id = ? AND r.org_id = ?`,
+      )
+      .bind(photoId, orgId)
+      .first()) as any
+    if (!row) return null
+    await this.db.prepare('DELETE FROM report_photos WHERE id = ?').bind(photoId).run()
+    return { photo_url: row.photo_url, r2_key: row.r2_key ?? undefined }
   }
 
   private toEntity(row: any): Report {

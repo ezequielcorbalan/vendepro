@@ -6,6 +6,7 @@ export interface ReportDetailResult {
   metrics: ReportMetricProps[]
   content: ReportContentProps[]
   competitors: Record<string, unknown>[]
+  photos: Array<{ id: string; photo_url: string; r2_key?: string }>
 }
 
 export class GetReportDetailUseCase {
@@ -15,12 +16,13 @@ export class GetReportDetailUseCase {
     const report = await this.repo.findReportRaw(id, orgId)
     if (!report) return null
 
-    const [metrics, content, competitors] = await Promise.all([
+    const [metrics, content, competitors, photos] = await Promise.all([
       this.repo.findMetrics(id, orgId),
       this.repo.findContent(id, orgId),
       this.repo.findCompetitorLinks(report.property_id as string, orgId),
+      this.repo.findPhotosByReport(id, orgId),
     ])
 
-    return { report, metrics, content, competitors }
+    return { report, metrics, content, competitors, photos }
   }
 }

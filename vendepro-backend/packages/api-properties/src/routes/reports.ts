@@ -6,6 +6,7 @@ import {
   CreateReportUseCase,
   UpdateReportUseCase,
   DeleteReportUseCase,
+  DeleteReportPhotoUseCase,
 } from '@vendepro/core'
 
 type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket; R2_PUBLIC_URL: string; BROWSER: Fetcher; API_PUBLIC_URL: string }
@@ -56,6 +57,18 @@ export function registerReportRoutes(app: Hono<{ Bindings: Env } & AuthVars>) {
     } catch (e: any) {
       if (e.statusCode === 404) return c.json({ error: e.message }, 404)
       if (e.statusCode === 403) return c.json({ error: e.message }, 403)
+      throw e
+    }
+  })
+
+  app.delete('/report-photos/:id', async (c) => {
+    const repo = new D1ReportRepository(c.env.DB)
+    const storage = new R2StorageService(c.env.R2, c.env.R2_PUBLIC_URL)
+    const useCase = new DeleteReportPhotoUseCase(repo, storage)
+    try {
+      return c.json(await useCase.execute(c.req.param('id'), c.get('orgId')))
+    } catch (e: any) {
+      if (typeof e?.statusCode === 'number') return c.json({ error: e.message }, e.statusCode)
       throw e
     }
   })

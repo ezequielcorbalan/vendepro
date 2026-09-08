@@ -39,6 +39,27 @@ Reportes mensuales de **performance de una propiedad publicada**: métricas de p
 
 Todo lo de IA va por [[API-ai]] (Gemini) como JSON con base64 — nada multipart.
 
+## Historial de bugs del circuito (auditoría 2026-09-08)
+
+Corregidos en la misma tanda que los endpoints de IA:
+- **Las fotos nunca se guardaban**: `/upload-photo` subía a R2 e ignoraba el
+  `reportId` — jamás escribió `report_photos`, así que el reporte público
+  nunca mostró una foto. Ahora `AddReportPhotoUseCase` hace ambas cosas, y
+  hay `DELETE /report-photos/:id` para el modo edición del wizard.
+- **Editar perdía la competencia**: el PUT ignoraba `competitors`.
+- **El listado perdió el semáforo**: en el refactor hexagonal,
+  `ListReportsWithMetricsUseCase` dejó de calcular `views_per_day`,
+  `days_in_period` y `health_status` — la columna Vis/día salía vacía y el
+  semáforo decía "Sin datos" en todas las filas. El cálculo volvió al use case
+  (regla de dominio `report-health-rules`).
+- **Cross-org write**: crear un reporte con un `propertyId` ajeno lo escribía
+  en la org de esa propiedad. Ahora 404.
+- **Wizard sin red**: se podía publicar sin período ni conclusión.
+
+Pendiente operativo: **migración 051** (`report_photos.r2_key`) — el código
+tolera que no esté (insert con fallback), pero sin ella la baja de fotos no
+limpia el objeto exacto de R2.
+
 ## Reglas (`domain/rules/report-health-rules.ts`)
 
 Define el **semáforo de salud** (`HealthStatus`) según `views_per_day`:

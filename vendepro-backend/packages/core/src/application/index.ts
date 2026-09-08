@@ -81,6 +81,8 @@ export * from './use-cases/ficha-links/manage-ficha-links'
 export * from './use-cases/reports/get-reports'
 export * from './use-cases/reports/get-report-detail'
 export * from './use-cases/reports/create-report'
+export * from './use-cases/reports/add-report-photo'
+export * from './use-cases/reports/delete-report-photo'
 export * from './use-cases/reports/update-report'
 export * from './use-cases/reports/delete-report'
 
