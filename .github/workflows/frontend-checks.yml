@@ -1,0 +1,57 @@
+name: Frontend checks
+
+# Los 268 tests del frontend, `tsc` y `eslint` no corrían en ningún workflow:
+# el único que había era el ratchet del design system. La regla del repo dice
+# que los tests tienen que pasar antes de mergear a main, pero eso dependía de
+# que alguien se acordara de correrlos local.
+#
+# Corre sobre TODO `vendepro-frontend/`, no sólo `src/`: un cambio en
+# `tsconfig.json`, en `vitest.config.ts` o en las dependencias puede romper el
+# build sin tocar una línea de código de la app.
+on:
+  pull_request:
+    paths:
+      - 'vendepro-frontend/**'
+  push:
+    branches: [main]
+    paths:
+      - 'vendepro-frontend/**'
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: vendepro-frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: vendepro-frontend/package-lock.json
+      - run: npm ci
+
+      # Cada paso corre aunque el anterior falle (`if: always()`), para no tener
+      # que hacer cuatro viajes al CI arreglando de a un problema por vez.
+      - name: Typecheck
+        if: always()
+        run: npm run typecheck
+
+      - name: Tests
+        if: always()
+        run: npm test
+
+      - name: ESLint
+        if: always()
+        run: npm run lint
+
+      # El ratchet del design system: nueve contadores con baseline en
+      # `scripts/.ds-*-baseline`. No falla por lo que ya existe, falla si el
+      # cambio SUBE alguno. Antes vivía en su propio workflow (`ds-lint.yml`),
+      # que sólo se disparaba cuando el PR tocaba `src/` o
+      # `.ds-color-baseline` — así que un PR que subiera cualquiera de los
+      # otros ocho baselines no lo verificaba.
+      - name: DS lint (ratchet)
+        if: always()
+        run: npm run lint:ds
