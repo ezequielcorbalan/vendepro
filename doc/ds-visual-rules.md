@@ -680,6 +680,13 @@ quedan afuera del ratchet a propósito: migrarlos SÍ cambia el tamaño, así qu
 deciden a mano (quedan 16). Mismo espíritu: cuando una pantalla se corrige acá,
 el baseline baja y queda trabado el retroceso.
 
+Las reglas 29 a 32 salieron del repaso del 07 y 08/09/2026, mismo criterio: la 29
+de los `confirm()` nativos, la 30 y la 31 de la pantalla de API (la acción que
+estaba en el header y el wizard vertical duplicado), y la 32 del error de
+hidratación. De esas cuatro **sólo la 29 tiene ratchet**, y las razones están en
+cada regla — un ratchet sobre un patrón sin alternativa en el DS, o que no se
+puede detectar sin falsos positivos, no protege nada: bloquea trabajo legítimo.
+
 Las reglas 12 a 28 salieron del repaso visual del 31/08 y 01/09/2026: cada una es una
 corrección que se pidió sobre pantalla y que, en vez de quedar en la pantalla
 donde se pidió, se movió al componente que la impone. La 12 es la que enseñó por
