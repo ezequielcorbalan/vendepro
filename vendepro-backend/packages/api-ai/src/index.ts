@@ -5,6 +5,7 @@ import {
   ExtractComparableFromScreenshotUseCase,
   ExtractComparableFromUrlUseCase,
   ExtractPortalReportFromPdfUseCase,
+  GenerateReportConclusionUseCase,
   ExtractLeadFromTextUseCase,
   ExtractLeadFromImageUseCase,
   EditBlockWithAIUseCase,
@@ -97,6 +98,28 @@ app.post('/extract-kiteprop', async (c) => {
     const useCase = new ExtractPortalReportFromPdfUseCase(ai)
     const report = await useCase.execute({ pdfBase64: body.pdfBase64 ?? '' })
     return c.json(report)
+  } catch (e: any) {
+    if (typeof e?.statusCode === 'number') return c.json({ error: e.message }, e.statusCode)
+    throw e
+  }
+})
+
+// Redacta la "Conclusión y recomendación" del reporte de gestión a partir de
+// las métricas y comparables que el agente ya cargó en el wizard. El semáforo
+// se calcula en el use case (regla de dominio) y viaja al modelo ya resuelto.
+app.post('/suggest-report-conclusion', async (c) => {
+  const body = (await c.req.json()) as any
+  try {
+    const ai = new GeminiAIService(c.env.GEMINI_API_KEY)
+    const useCase = new GenerateReportConclusionUseCase(ai)
+    const result = await useCase.execute({
+      periodLabel: body.periodLabel,
+      periodStart: body.periodStart,
+      periodEnd: body.periodEnd,
+      metrics: body.metrics,
+      competitors: body.competitors,
+    })
+    return c.json(result)
   } catch (e: any) {
     if (typeof e?.statusCode === 'number') return c.json({ error: e.message }, e.statusCode)
     throw e

@@ -5,6 +5,9 @@ import type {
   ListingTextExtractor,
   PortalReportExtractor,
   PortalReportData,
+  ReportConclusionGenerator,
+  ReportConclusionContext,
+  ReportConclusionResult,
 } from '@vendepro/core'
 import { providerError } from './provider-error'
 
@@ -175,7 +178,7 @@ function toPortalReport(p: any): PortalReportData {
 }
 
 export class GeminiAIService
-  implements AIService, ListingTextExtractor, PortalReportExtractor
+  implements AIService, ListingTextExtractor, PortalReportExtractor, ReportConclusionGenerator
 {
   constructor(private readonly apiKey: string) {
     // Guard explícito. Sin esto, una key ausente queda `undefined`, se serializa
@@ -403,6 +406,53 @@ Sin explicaciones y sin markdown.`,
       return toPortalReport(parseJsonLoose(raw) ?? {})
     } finally {
       clearTimeout(timeout)
+    }
+  }
+
+  // ── conclusión del reporte de gestión ─────────────────────────
+
+  async generateReportConclusion(ctx: ReportConclusionContext): Promise<ReportConclusionResult> {
+    const system = `Sos asistente de un agente inmobiliario argentino. Redactá la sección
+"Conclusión y recomendación" de un reporte de gestión quincenal/mensual dirigido al PROPIETARIO
+de la propiedad, en español rioplatense, tono profesional, cercano y honesto.
+
+Reglas:
+1. Basate SOLO en los datos provistos. NO inventes números, porcentajes ni comparaciones.
+2. 2 a 3 párrafos cortos: cómo performó el aviso, qué dice eso del interés del mercado,
+   y una recomendación concreta de próximo paso.
+3. Si la tracción es floja (semáforo rojo/naranja), decilo con tacto y fundamentá la
+   recomendación (ej.: revisar el precio) con los datos disponibles — sin dramatizar.
+4. Si hay propiedades comparables con precio, usalas como referencia de mercado.
+5. No uses markdown ni títulos: texto plano, listo para pegar en el campo.
+6. "price_reference" es UN párrafo corto sobre el precio vs mercado. Si no hay
+   avg_market_price ni comparables con precio, devolvé null en ese campo.
+
+Devolvé SOLO un JSON válido: { "conclusion": "...", "price_reference": "..." | null }`
+
+    const user = `Período: ${ctx.periodLabel}${ctx.daysInPeriod > 0 ? ` (${ctx.daysInPeriod} días)` : ''}
+${ctx.viewsPerDay !== null ? `Visitas al aviso por día: ${ctx.viewsPerDay} — semáforo: ${ctx.healthLabel}` : 'Sin datos de visitas diarias.'}
+Métricas por portal: ${JSON.stringify(ctx.metrics)}
+Comparables de la zona: ${ctx.competitors.length > 0 ? JSON.stringify(ctx.competitors) : 'sin datos'}`
+
+    const raw = await this.chat(
+      [{ role: 'system', content: system }, { role: 'user', content: user }],
+      { maxTokens: 1000, timeoutMs: 30_000, temperature: 0.4 },
+    )
+    const p = parseJsonLoose(raw) ?? {}
+    const conclusion = typeof p.conclusion === 'string' ? p.conclusion.trim() : ''
+    if (!conclusion) {
+      const err = new Error(
+        'La IA no devolvió una conclusión utilizable. Probá de nuevo.',
+      ) as Error & { statusCode: number }
+      err.statusCode = 502
+      throw err
+    }
+    return {
+      conclusion,
+      price_reference:
+        typeof p.price_reference === 'string' && p.price_reference.trim()
+          ? p.price_reference.trim()
+          : null,
     }
   }
 

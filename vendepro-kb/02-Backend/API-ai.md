@@ -22,6 +22,7 @@ Todos por Gemini `3.5-flash-lite`. Contrato uniforme: JSON in / JSON out — **n
 | POST | `/extract-comparable` | ExtractComparableFromScreenshotUseCase | `{imageBase64, mimeType}` → `{fields}` de comparable |
 | POST | `/extract-comparable-url` | ExtractComparableFromUrlUseCase | `{url}` → `{fields}` de comparable (2026-09-08) |
 | POST | `/extract-kiteprop` | ExtractPortalReportFromPdfUseCase | `{pdfBase64}` → `{portals[], total_visits_presenciales, market_comparison}` (2026-09-08) |
+| POST | `/suggest-report-conclusion` | GenerateReportConclusionUseCase | `{periodLabel, periodStart, periodEnd, metrics[], competitors[]}` → `{conclusion, price_reference}` (2026-09-08) |
 | POST | `/generate-email-campaign` | GenerateEmailCampaignContentUseCase | `{brief, kind, audience_description}` → contenido brandeado |
 | POST | `/generate-email-sequence` | GenerateAutomationSequenceUseCase | `{brief, step_count}` → `{steps}` |
 | POST | `/landings/:id/edit-block` | EditBlockWithAIUseCase | `{prompt, scope, blockId}` → bloque modificado |
@@ -36,6 +37,9 @@ El mismo comparable por dos caminos: captura del aviso, o **el link del aviso**.
 
 ### `/extract-kiteprop`
 PDF de reporte de KiteProp → métricas por portal para el paso 2 del wizard de reportes. Única llamada por la **API nativa** de Gemini (`inline_data` con `application/pdf`): el dialecto OpenAI no acepta documentos. Tope 10 MB; fuentes desconocidas caen a `manual`.
+
+### `/suggest-report-conclusion`
+Paso 3 del wizard de reportes, botón "Sugerir con IA": manda las métricas y comparables ya cargados y la IA redacta la "Conclusión y recomendación" para el propietario (rioplatense, 2-3 párrafos, sin inventar números). El semáforo MG se calcula en el use case con `report-health-rules` y viaja al modelo ya resuelto — el LLM no conoce la metodología. `price_reference` sólo se completa si hay datos de mercado, y el frontend no pisa ese campo si el agente ya escribió algo.
 
 ### `/extract-entity` y `/extract-image`
 Agente pega texto de WhatsApp o screenshot del cliente. Devuelve `LeadIntent`: nombre, teléfono, email, barrio, tipo propiedad, operación, presupuesto. Pre-llena el formulario de nuevo lead.
