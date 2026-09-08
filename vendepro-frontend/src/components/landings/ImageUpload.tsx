@@ -7,6 +7,7 @@ import PropertyPhotoPicker from './PropertyPhotoPicker'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { FileInput } from '@/components/ui/FileInput'
 
 interface Props {
   value: string
@@ -21,9 +22,7 @@ export default function ImageUpload({ value, onChange, allowPropertyPicker }: Pr
   const [urlInput, setUrlInput] = useState(value || '')
   const [showPicker, setShowPicker] = useState(false)
 
-  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
+  async function handleFile(file: File) {
     setUploading(true)
     try {
       const form = new FormData()
@@ -60,21 +59,20 @@ export default function ImageUpload({ value, onChange, allowPropertyPicker }: Pr
       />
 
       {mode === 'upload' && (
-        <label className="block">
-          {/* ds-todo: el DS no tiene control de archivo. Es un input oculto que dispara un
-              botón; el patrón se repite en SoldPropertyForm y ComparableCard.
-              Candidato a componente "FileInput". */}
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleFile}
-            disabled={uploading}
-            className="hidden"
-          />
-          <span className="block text-center text-xs py-2 border border-dashed border-gray-300 rounded-control cursor-pointer hover:border-primary">
-            {uploading ? 'Subiendo…' : 'Seleccionar archivo'}
-          </span>
-        </label>
+        <FileInput accept="image/*" onFiles={fs => handleFile(fs[0])} disabled={uploading} aria-label="Subir una imagen">
+          {abrir => (
+            <Button
+              variant="outline"
+              fullWidth
+              onClick={abrir}
+              disabled={uploading}
+              loading={uploading}
+              className="border-dashed text-xs text-gray-500 hover:text-primary"
+            >
+              {uploading ? 'Subiendo…' : 'Seleccionar archivo'}
+            </Button>
+          )}
+        </FileInput>
       )}
 
       {mode === 'url' && (
