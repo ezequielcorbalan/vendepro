@@ -7,7 +7,7 @@ import { TemplatesHome } from '@/components/tasaciones/admin/TemplatesHome'
 import { StaticBlocksHome } from '@/components/tasaciones/admin/StaticBlocksHome'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Text } from '@/components/ui/Typography'
-import { getCurrentUser } from '@/lib/auth'
+import { useCurrentUser } from '@/lib/use-current-user'
 import { Button } from '@/components/ui/Button'
 
 const ALL_TABS = [
@@ -18,10 +18,13 @@ const ALL_TABS = [
 function ConfigTasacionInner() {
   const qp = useSearchParams()
   const router = useRouter()
-  const user = getCurrentUser()
+  const { user, listo } = useCurrentUser()
   const isAdmin = user?.role === 'admin'
 
   // Filter tabs by role — agents only see Templates
+  // `listo` decide el título y qué pestañas hay, así que hasta que se sepa el
+  // rol no se pinta ninguno de los dos: el servidor no ve `localStorage` y
+  // ponía "Mis plantillas de tasación" donde el cliente ponía "Configuración".
   const userRole = user?.role || 'agent'
   const visibleTabs = ALL_TABS.filter(t => (t.roles as readonly string[]).includes(userRole))
   const active = (qp.get('tab') ?? 'templates') as typeof ALL_TABS[number]['key']
@@ -34,8 +37,8 @@ function ConfigTasacionInner() {
       >
         <ArrowLeft className="w-4 h-4" /> Volver a Configuración
       </Link>
-      <PageHeader title={isAdmin ? 'Configuración · Tasaciones' : 'Mis plantillas de tasación'} />
-      {visibleTabs.length > 1 && (
+      <PageHeader title={!listo ? 'Tasaciones' : isAdmin ? 'Configuración · Tasaciones' : 'Mis plantillas de tasación'} />
+      {listo && visibleTabs.length > 1 && (
         <nav className="mt-6 border-b border-gray-200">
           {visibleTabs.map(t => (
             <Button variant="ghost" size="icon"

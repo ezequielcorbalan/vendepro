@@ -14,6 +14,7 @@ import { Alert } from '@/components/ui/Alert'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { OBJECTIVE_METRICS, OBJECTIVE_TEMPLATES, scaleMetrics, type ObjectiveMetric, type ObjectiveTemplate } from '@/lib/crm-config'
 import { apiFetch } from '@/lib/api'
+import { useConfirm } from '@/components/ui/useConfirm'
 
 const METRIC_KEYS = Object.keys(OBJECTIVE_METRICS) as ObjectiveMetric[]
 const CATEGORIES = {
@@ -106,6 +107,7 @@ function AgentCard({ agent, objectives, onDelete }: { agent: Agent; objectives: 
 }
 
 export default function ObjetivosConfigPage() {
+  const { confirmDialog, askConfirm } = useConfirm()
   const { toast } = useToast()
   const [agents, setAgents] = useState<Agent[]>([])
   const [objectives, setObjectives] = useState<Objective[]>([])
@@ -222,7 +224,13 @@ export default function ObjetivosConfigPage() {
   }
 
   async function deleteObj(id: string) {
-    if (!confirm('¿Eliminar este objetivo?')) return
+    const { confirmed } = await askConfirm({
+      title: 'Eliminar objetivo',
+      message: 'El objetivo y su progreso dejan de verse en el panel. No se puede deshacer.',
+      confirmLabel: 'Eliminar',
+      variant: 'danger',
+    })
+    if (!confirmed) return
     await apiFetch('admin', `/objectives?id=${id}`, { method: 'DELETE' })
     setObjectives(prev => prev.filter(o => o.id !== id))
     toast('Objetivo eliminado')
@@ -238,6 +246,7 @@ export default function ObjetivosConfigPage() {
 
   return (
     <div className="space-y-6">
+      {confirmDialog}
       <Link
         href="/configuracion"
         className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-ink"
@@ -309,10 +318,10 @@ export default function ObjetivosConfigPage() {
               >
                 Todos
               </Button>
-              {/* Sin `label`: el prop se dibuja VISIBLE además de nombrar al
-                  grupo, y acá la etiqueta ya está arriba. ds-todo: candidato a
-                  que PillCheckGroup acepte aria-labelledby. */}
+              {/* `label` se dibuja VISIBLE además de nombrar al grupo, y acá la
+                  etiqueta ya está arriba: el nombre va por aria-label. */}
               <PillCheckGroup
+                aria-label="Agentes"
                 size="sm"
                 options={agents.map(a => ({ value: a.id, label: a.full_name }))}
                 value={batchAgents}

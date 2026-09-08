@@ -28,6 +28,7 @@ import { useConfirm } from '@/components/ui/useConfirm'
 import { Timeline } from '@/components/ui/Timeline'
 import { ProgressBar } from '@/components/ui/Progress'
 import { StepIndicator } from '@/components/ui/StepIndicator'
+import { StepCard } from '@/components/ui/StepCard'
 import { Heading, Text } from '@/components/ui/Typography'
 import { CallButton, WhatsAppButton } from '@/components/ui/ContactButtons'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -376,6 +377,29 @@ export default function DesignSystemPage() {
               <Text size="xs" tone="muted" className="mb-2">dots · sin labels, con contador</Text>
               <StepIndicator variant="dots" steps={8} current={3} />
             </div>
+          </div>
+        </Section>
+
+        {/* StepCard */}
+        <Section
+          title="StepCard"
+          hint="El otro tipo de flujo: VERTICAL, todos los pasos visibles a la vez, cada uno en su Card. No confundir con `StepIndicator`, que es la barra de un wizard donde se ve un paso por vez. Estaba dos veces en la app y las dos no coincidían: el editor de automatizaciones tenía este componente pero local a su carpeta (círculo gris de 28px) y la prueba de token de /configuracion/api lo tenía a mano (círculo rosa de 20px). Gana el gris: `primary` se reserva para acciones y estados, y un número de paso es un ordinal. El número va `aria-hidden` — “1” solo no le dice nada a un lector de pantalla y el orden ya lo da el DOM."
+        >
+          <div className="space-y-3">
+            <StepCard step={1} icon={<Zap className="w-4 h-4 text-gray-600" />} title="Cuándo se dispara">
+              <Text size="sm" tone="muted">El contenido del paso va acá.</Text>
+            </StepCard>
+            <StepCard
+              step={2}
+              title="Con acción a la derecha"
+              subtitle="El subtítulo acepta nodos, no sólo texto: hay pasos que necesitan un <code> adentro."
+              action={<Button variant="ghost" size="sm" className="p-0 text-xs text-primary">Copiar comando</Button>}
+            >
+              <Text size="sm" tone="muted">Contenido.</Text>
+            </StepCard>
+            <StepCard step={3} level={4} title="level={4} cuando cuelga de un título de sección">
+              <Text size="sm" tone="muted">Saltarse un nivel de encabezado rompe la navegación por encabezados.</Text>
+            </StepCard>
           </div>
         </Section>
 

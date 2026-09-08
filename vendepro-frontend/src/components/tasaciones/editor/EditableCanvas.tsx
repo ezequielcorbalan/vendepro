@@ -32,6 +32,7 @@ import { CtaWhatsappBlock } from '../renderer/blocks/CtaWhatsappBlock'
 import { AgentContactCardBlock } from '../renderer/blocks/AgentContactCardBlock'
 import { ZoneMapBlock } from '../renderer/blocks/ZoneMapBlock'
 import { BlockEditPopover } from './BlockEditPopover'
+import { useConfirm } from '@/components/ui/useConfirm'
 import '../renderer/print.css'
 
 interface Props {
@@ -65,6 +66,7 @@ export function EditableCanvas({
 }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const { confirmDialog, askConfirm } = useConfirm()
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor),
@@ -80,6 +82,18 @@ export function EditableCanvas({
     '--brand-accent-color': appraisal.org?.brand_accent_color ?? '#e17a2a',
   } as React.CSSProperties
 
+  // La confirmacion vive acá y no en `SortableBlock`: es el canvas el que tiene
+  // el id, y así hay un solo diálogo para todos los bloques en vez de uno por fila.
+  async function pedirBorrar(id: string) {
+    const { confirmed } = await askConfirm({
+      title: 'Eliminar bloque',
+      message: 'El bloque sale de la tasación. No se puede deshacer.',
+      confirmLabel: 'Eliminar',
+      variant: 'danger',
+    })
+    if (confirmed) onRemove(id)
+  }
+
   function handleDragEnd(e: DragEndEvent) {
     const { active, over } = e
     if (!over || active.id === over.id) return
@@ -90,6 +104,7 @@ export function EditableCanvas({
 
   return (
     <div style={brandStyle} className="bg-white">
+      {confirmDialog}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={snapshot.map(b => b.id)} strategy={verticalListSortingStrategy}>
           {/* Insertar al principio */}
@@ -115,7 +130,7 @@ export function EditableCanvas({
                   backgroundColor={backgroundColor}
                   onBackgroundChange={(color) => persistPatch({ background_color: color })}
                   onSelect={() => setSelectedId(block.id)}
-                  onRemove={() => onRemove(block.id)}
+                  onRemove={() => pedirBorrar(block.id)}
                   onPatchData={(patch) => onPatchData(block.id, patch)}
                   onEditStructured={!isFree ? () => setEditingId(block.id) : undefined}
                 >
@@ -216,7 +231,7 @@ function SortableBlock({
           </Button>
         )}
         <Button variant="ghost" size="icon"
-          onClick={(e) => { e.stopPropagation(); if (confirm('¿Eliminar este bloque de la tasación?')) onRemove() }}
+          onClick={(e) => { e.stopPropagation(); onRemove() }}
           className="rounded bg-white/90 p-1 text-gray-400 shadow-pop hover:text-danger"
           title="Eliminar bloque"
           aria-label="Eliminar bloque"

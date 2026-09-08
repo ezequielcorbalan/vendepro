@@ -13,14 +13,29 @@ Todos los componentes en `src/components/`, agrupados por carpeta.
 - **`GlobalSearch.tsx`** — Búsqueda global cross-entity (usa `[[API-analytics]] /search`)
 - **`NotificationBell.tsx`** — Badge + dropdown (usa `[[API-admin]] /notifications`)
 
-## `ui/` — el design system (46 archivos)
+## `ui/` — el design system (50 archivos)
 
 > Galería viva en la ruta **`/design-system`** (pública, sin datos). Plan y
 > decisiones de contrato en `doc/ds-plan.md` y `doc/ds-review.md`.
 > Regla: color → token, texto → `Heading`/`Text`, dominio → `lib/crm-config.ts`.
+>
+> **Las 31 reglas con ❌/✅ y su grep de auditoría están en
+> `doc/ds-visual-rules.md`** — es el documento operativo, más al día que este
+> catálogo. Nueve ratchets con baseline en `scripts/.ds-*-baseline` las traban en
+> CI (`npm run lint:ds`): no fallan por lo que ya existe, fallan si un cambio
+> sube el número.
 
 **Moldes de página y de card**
-- **`PageHeader`** — header estándar de TODA pantalla (título + subtítulo + acciones)
+- **`PageHeader`** — header estándar de TODA pantalla (título + subtítulo + acciones).
+  Si la pantalla tiene pestañas, la acción de una pestaña NO va acá: va adentro
+  del panel que le corresponde (regla 30).
+- **`DetailHeader`** (+ `DetailMeta`) — encabezado de una pantalla de DETALLE
+  (un contacto, un lead, una propiedad). Es a la ficha lo que `PageHeader` es a
+  un listado. Existe porque el detalle de contacto y el de lead habían quedado
+  con dos diseños distintos del mismo objeto.
+- **`ActionGroup`** — grupo de acciones de un header con desborde automático:
+  con más de `max` quedan visibles las últimas `keep` y el resto va al menú de
+  tres puntos. Lo usa `PageHeader` por dentro.
 - **`WidgetHeader`** — el equivalente a escala de card: medallón + título + subtítulo/badge + acción
 - **`Card`** (+ `CardHeader`, `CardTitle`) — superficie blanca estándar
 - **`Typography`** — `Heading` (1–4) y `Text` (size/weight/tone)
@@ -38,7 +53,11 @@ Todos los componentes en `src/components/`, agrupados por carpeta.
 **Navegación y pasos**
 - **`Tabs`** — subrayado inferior. Con `href` en el item, navega (`<Link>`)
 - **`SegmentedControl`** — cambio de vista (soporta `icon`)
-- **`StepIndicator`** — `numbered` (canónica) | `dots` (compacta)
+- **`StepIndicator`** — wizard HORIZONTAL, un paso por vez: `numbered` (canónica) | `dots` (compacta)
+- **`StepCard`** — wizard VERTICAL, todos los pasos a la vista, cada uno en su
+  `Card` con su número. Son dos componentes distintos a propósito:
+  `StepIndicator` sirve cuando el orden es obligatorio, `StepCard` cuando podés
+  leer los tres pasos y ejecutar el que quieras (regla 31).
 - **`Progress`** — `ProgressBar`
 
 **Datos**
@@ -53,7 +72,11 @@ Todos los componentes en `src/components/`, agrupados por carpeta.
 
 **Superposiciones**
 - **`Modal`** · **`Drawer`** · **`Dropdown`** · **`Tooltip`** · **`Portal`** · **`useOverlay`**
-- **`useConfirm`** (+ `ConfirmDialog`, legacy a reemplazar por `Modal`)
+- **`useConfirm`** (+ `ConfirmDialog`) — confirmación con la marca, basada en
+  promesas. **Es obligatoria antes de algo destructivo: nunca `confirm()`
+  nativo** (regla 29). `ConfirmDialog` ya no es legacy — se apoya en `Modal`
+  desde el 04/09/2026, así que hereda Portal, scroll-lock, focus-trap y Esc, y
+  está bajo `overlayContract`.
 - **`Toast`** — `ToastProvider` + `useToast()` · **`Notifications`** — campana + panel
 
 **Estados**
@@ -62,6 +85,11 @@ Todos los componentes en `src/components/`, agrupados por carpeta.
 
 **Selectores de entidad**
 - **`ContactSelector`** / **`PropertySelector`** / **`LeadSelector`** — dropdown con búsqueda
+- **`AgentSelector`** — elegir de quién mirar los números. Filtra en memoria, no
+  contra la API: el equipo son decenas de personas y ya vienen cargadas.
+- **`WhatsAppTemplatePicker`** — paso 2 del botón de WhatsApp: elegir el mensaje
+  antes de abrir el chat. Modal y no popover, porque el botón vive dentro de
+  cards y columnas de kanban con overflow.
 - **`PhotoGallery`** — lightbox de fotos
 
 ## `ai/`

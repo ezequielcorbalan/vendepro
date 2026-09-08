@@ -33,6 +33,13 @@
  *    eran las únicas dos categorías sin ratchet, o sea las únicas por donde el
  *    plan podía seguir creciendo. Su baseline es el número de ese día.
  *
+ * 8. Diálogos nativos del navegador (`confirm`/`alert`/`prompt`). Van con
+ *    `useConfirm` y `useToast`: bloquean la pantalla, no se pueden estilar y se
+ *    leen como un error del navegador y no como parte de la app. Los 12
+ *    `alert()` ya se migraron; quedan los `confirm()`. Este ratchet SÍ tiene
+ *    alternativa en el DS, por eso existe — un ratchet sobre un patrón que no
+ *    tiene reemplazo sólo bloquea trabajo legítimo.
+ *
  * 5. La escala `slate`. El DS usa `gray`. El módulo de tasaciones estaba escrito
  *    entero en slate —258 usos— así que sus grises tenían un tinte azulado que
  *    el resto de la app no tiene. Baseline 0: ya no queda ninguno.
@@ -104,6 +111,10 @@ const NATIVE_BUTTON_PATTERN = /<button\b/
 const BUTTON_BASELINE_FILE = 'scripts/.ds-button-baseline'
 const NATIVE_INPUT_PATTERN = /<(input|select|textarea)\b/
 const INPUT_BASELINE_FILE = 'scripts/.ds-input-baseline'
+// `confirm(`/`alert(`/`prompt(` como llamada, no como parte de otro nombre
+// (`onConfirm(`, `askConfirm(`) ni como palabra en un comentario.
+const NATIVE_DIALOG_PATTERN = /(?<![.\w])(confirm|alert|prompt)\s*\(/
+const DIALOG_BASELINE_FILE = 'scripts/.ds-dialog-baseline'
 const baseline = existsSync(BASELINE_FILE) ? Number(readFileSync(BASELINE_FILE, 'utf8').trim() || '0') : 0
 const gradientBaseline = existsSync(GRADIENT_BASELINE_FILE) ? Number(readFileSync(GRADIENT_BASELINE_FILE, 'utf8').trim() || '0') : 0
 const glyphBaseline = existsSync(GLYPH_BASELINE_FILE) ? Number(readFileSync(GLYPH_BASELINE_FILE, 'utf8').trim() || '0') : 0
@@ -112,6 +123,7 @@ const overlayBaseline = existsSync(OVERLAY_BASELINE_FILE) ? Number(readFileSync(
 const radiusBaseline = existsSync(RADIUS_BASELINE_FILE) ? Number(readFileSync(RADIUS_BASELINE_FILE, 'utf8').trim() || '0') : 0
 const buttonBaseline = existsSync(BUTTON_BASELINE_FILE) ? Number(readFileSync(BUTTON_BASELINE_FILE, 'utf8').trim() || '0') : 0
 const inputBaseline = existsSync(INPUT_BASELINE_FILE) ? Number(readFileSync(INPUT_BASELINE_FILE, 'utf8').trim() || '0') : 0
+const dialogBaseline = existsSync(DIALOG_BASELINE_FILE) ? Number(readFileSync(DIALOG_BASELINE_FILE, 'utf8').trim() || '0') : 0
 
 function walk(dir, { ignorarExclusiones = false } = {}) {
   let out = []
@@ -133,6 +145,7 @@ const overlayHits = []
 const radiusHits = []
 const buttonHits = []
 const inputHits = []
+const dialogHits = []
 for (const root of ROOTS) {
   for (const file of walk(root)) {
     const lineas = readFileSync(file, 'utf8').split('\n')
@@ -154,6 +167,7 @@ for (const root of ROOTS) {
       if (RADIUS_PATTERN.test(line)) radiusHits.push(`${file}:${i + 1}`)
       if (NATIVE_BUTTON_PATTERN.test(line)) buttonHits.push(`${file}:${i + 1}`)
       if (NATIVE_INPUT_PATTERN.test(line)) inputHits.push(`${file}:${i + 1}`)
+      if (NATIVE_DIALOG_PATTERN.test(line)) dialogHits.push(`${file}:${i + 1}`)
     })
   }
 }
@@ -314,6 +328,10 @@ const resultados = [
   ratchet({
     etiqueta: 'inputs nativos (<input>/<select>/<textarea>)', hits: inputHits, baseline: inputBaseline, archivo: INPUT_BASELINE_FILE,
     sugerencia: 'Usá <Field> + <Input>/<Select>/<Textarea> del DS. Si no encaja, marcá la línea con ds-todo.',
+  }),
+  ratchet({
+    etiqueta: 'diálogos nativos (confirm/alert/prompt)', hits: dialogHits, baseline: dialogBaseline, archivo: DIALOG_BASELINE_FILE,
+    sugerencia: 'Usá `useConfirm` para confirmar y `useToast` para avisar: un diálogo nativo bloquea la pantalla y se lee como un error del navegador.',
   }),
 ]
 

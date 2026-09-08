@@ -17,6 +17,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge'
 import { Badge } from '@/components/ui/Badge'
 import { Avatar } from '@/components/ui/Avatar'
 import { Table, type Column } from '@/components/ui/Table'
+import { useConfirm } from '@/components/ui/useConfirm'
 
 const typeLabels: Record<string, { label: string; color: string }> = {
   vendedor: { label: 'Vendedor', color: 'bg-blue-100 text-blue-800' },
@@ -86,6 +87,7 @@ function SourceBadge({ source }: { source?: string | null }) {
 }
 
 export default function ContactosPage() {
+  const { confirmDialog, askConfirm } = useConfirm()
   const { toast } = useToast()
   const [contacts, setContacts] = useState<any[]>([])
   const [agents, setAgents] = useState<any[]>([])
@@ -285,7 +287,13 @@ export default function ContactosPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('¿Eliminar este contacto?')) return
+    const { confirmed } = await askConfirm({
+      title: 'Eliminar contacto',
+      message: 'El contacto sale de la base. No se puede deshacer.',
+      confirmLabel: 'Eliminar',
+      variant: 'danger',
+    })
+    if (!confirmed) return
     await apiFetch('crm', `/contacts?id=${id}`, { method: 'DELETE' })
     setContacts(prev => prev.filter(c => c.id !== id))
     toast('Contacto eliminado', 'warning')
@@ -293,6 +301,7 @@ export default function ContactosPage() {
 
   return (
     <div>
+      {confirmDialog}
       <PageHeader
         title="Contactos"
         subtitle="Base de datos de clientes"

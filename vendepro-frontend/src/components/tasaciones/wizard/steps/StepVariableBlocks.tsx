@@ -12,6 +12,7 @@ import {
 } from '../../renderer/types'
 import type { CustomBlock } from '../use-wizard-form'
 import { Button } from '@/components/ui/Button'
+import { Checkbox } from '@/components/ui/Choice'
 import { Switch } from '@/components/ui/Switch'
 
 interface Props {
@@ -185,12 +186,9 @@ function FromTemplateBlocks({
               editar acá (oculta los {fixedCount} fijos del template y los autocompletados).
             </p>
           </div>
-          {/* ds-todo: el Switch del DS toma su nombre accesible del prop `label`,
-              que se dibuja visible — acá el título ya está a la izquierda, así que
-              va sin label. Candidato a que Switch acepte aria-labelledby.
-              El de antes tampoco tenía nombre, y encima llevaba
-              `focus:outline-none`, que se come el anillo de foco del teclado. */}
-          <Switch checked={hideFixed} onChange={setHideFixed} />
+          {/* El título "Ocultar bloques fijos" ya está a la izquierda, así que el
+              nombre va por aria-label y no por `label`, que se dibujaría al lado. */}
+          <Switch checked={hideFixed} onChange={setHideFixed} aria-label="Ocultar bloques fijos" />
         </div>
       )}
 
@@ -317,15 +315,11 @@ function FromScratchBlocks({
               }`}
             >
               <div className="flex items-start gap-3 px-3 py-2.5">
-                {/* ds-todo: el Checkbox del DS toma su nombre accesible del prop `label`, y acá el
-              texto visible es el botón de al lado — migrar dejaría el control sin
-              nombre. Candidato a que Checkbox acepte aria-label. */}
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={included}
                   onChange={() => onToggle(type)}
-                  className="mt-1 h-4 w-4 cursor-pointer accent-brand-pink"
                   aria-label={`Incluir bloque ${meta.label}`}
+                  className="mt-1"
                 />
                 <Button variant="ghost" size="sm"
                   type="button"

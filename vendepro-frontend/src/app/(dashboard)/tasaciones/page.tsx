@@ -17,7 +17,9 @@ import { getAppraisalStatus } from '@/lib/crm-config'
 import { FichaLinkSection } from '@/components/fichas/FichaLinkSection'
 
 import { Button } from '@/components/ui/Button'
+import { useConfirm } from '@/components/ui/useConfirm'
 export default function TasacionesPage() {
+  const { confirmDialog, askConfirm } = useConfirm()
   const { toast } = useToast()
   const [appraisals, setAppraisals] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -34,7 +36,13 @@ export default function TasacionesPage() {
   useEffect(() => { loadAppraisals() }, [])
 
   async function handleDelete(id: string) {
-    if (!confirm('¿Eliminar esta tasación?')) return
+    const { confirmed } = await askConfirm({
+      title: 'Eliminar tasación',
+      message: 'La tasación sale del listado. No se puede deshacer.',
+      confirmLabel: 'Eliminar',
+      variant: 'danger',
+    })
+    if (!confirmed) return
     try {
       await apiFetch('properties', `/appraisals?id=${id}`, { method: 'DELETE' })
       toast('Tasación eliminada', 'warning')
@@ -60,6 +68,7 @@ export default function TasacionesPage() {
 
   return (
     <div>
+      {confirmDialog}
       <PageHeader
         className="mb-6"
         title="Tasaciones"

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Drawer } from '@/components/ui/Drawer'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Text } from '@/components/ui/Typography'
+import { useConfirm } from '@/components/ui/useConfirm'
 
 const LABEL_ICON: Record<LandingVersion['label'], React.ComponentType<{ className?: string }>> = {
   'auto-save': Clock,
@@ -24,6 +25,7 @@ export default function VersionsDrawer({
   onClose: () => void
   onRollback: () => Promise<void>
 }) {
+  const { confirmDialog, askConfirm } = useConfirm()
   const [versions, setVersions] = useState<LandingVersion[]>([])
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState<string | null>(null)
@@ -36,7 +38,12 @@ export default function VersionsDrawer({
   }, [landingId])
 
   async function rollback(id: string) {
-    if (!confirm('¿Restaurar esta versión? Se crea una nueva versión con este contenido.')) return
+    const { confirmed } = await askConfirm({
+      title: 'Restaurar versión',
+      message: 'Se crea una versión nueva con este contenido. La versión actual queda en el historial.',
+      confirmLabel: 'Restaurar',
+    })
+    if (!confirmed) return
     setBusy(id)
     try {
       await landingsApi.rollback(landingId, id)
@@ -49,6 +56,7 @@ export default function VersionsDrawer({
 
   return (
     <Drawer open onClose={onClose} title="Historial de versiones">
+      {confirmDialog}
         <div className="space-y-2">
           {loading ? (
             <Text size="sm" tone="muted" className="block text-center mt-8">Cargando…</Text>

@@ -16,6 +16,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Switch } from '@/components/ui/Switch'
 import { Text } from '@/components/ui/Typography'
 import { Checkbox } from '@/components/ui/Choice'
+import { useConfirm } from '@/components/ui/useConfirm'
 
 const EVENT_KEYS = Object.keys(WEBHOOK_EVENTS) as WebhookEventKey[]
 
@@ -23,6 +24,7 @@ const fmtDate = (s: string | null) =>
   s ? new Date(s.replace(' ', 'T')).toLocaleString('es-AR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'
 
 export default function WebhooksSection({ onCountChange }: { onCountChange?: (n: number) => void }) {
+  const { confirmDialog, askConfirm } = useConfirm()
   const { toast } = useToast()
 
   const [webhooks, setWebhooks] = useState<Webhook[]>([])
@@ -109,7 +111,13 @@ export default function WebhooksSection({ onCountChange }: { onCountChange?: (n:
 
   async function handleDelete(w: Webhook) {
     const label = w.name || w.url
-    if (!confirm(`¿Eliminar el webhook "${label}"? Dejará de recibir eventos y se borra su historial de entregas.`)) return
+    const { confirmed } = await askConfirm({
+      title: 'Eliminar webhook',
+      message: `"${label}" deja de recibir eventos y se borra su historial de entregas. No se puede deshacer.`,
+      confirmLabel: 'Eliminar',
+      variant: 'danger',
+    })
+    if (!confirmed) return
     try {
       await apiFetch('crm', `/webhooks/${w.id}`, { method: 'DELETE' })
       setList(webhooks.filter(x => x.id !== w.id))
@@ -163,13 +171,14 @@ export default function WebhooksSection({ onCountChange }: { onCountChange?: (n:
 
   return (
     <div className="space-y-4">
+      {confirmDialog}
       <div className="flex items-start justify-between gap-4">
-        <p className="text-sm text-gray-500">
+        <Text size="sm" tone="muted">
           Avisamos a tu sistema (n8n, Zapier, etc.) con un POST JSON cuando ocurre un evento.
           Cada entrega va firmada con <code className="text-xs bg-gray-100 px-1 py-0.5 rounded font-mono">X-VendePro-Signature: sha256=HMAC(secret, body)</code>.
-        </p>
-        <Button onClick={() => setShowCreate(true)} className="shrink-0">
-          <Plus className="w-4 h-4" /> Nuevo webhook
+        </Text>
+        <Button onClick={() => setShowCreate(true)} icon={<Plus className="w-4 h-4" />} className="shrink-0">
+          Nuevo webhook
         </Button>
       </div>
 

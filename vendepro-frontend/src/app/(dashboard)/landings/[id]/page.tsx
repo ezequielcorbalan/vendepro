@@ -4,7 +4,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { Smartphone, Monitor, Sparkles } from 'lucide-react'
 import type { Landing, Block } from '@/lib/landings/types'
 import { landingsApi } from '@/lib/landings/api'
-import { getCurrentUser } from '@/lib/auth'
+import { useCurrentUser } from '@/lib/use-current-user'
 import BlockRenderer from '@/components/landings/BlockRenderer'
 import BlockListSidebar from '@/components/landings/BlockListSidebar'
 import InspectorPanel from '@/components/landings/InspectorPanel'
@@ -23,7 +23,7 @@ import { Drawer } from '@/components/ui/Drawer'
 export default function LandingEditorPage() {
   const params = useParams<{ id: string }>()
   const router = useRouter()
-  const user = typeof window !== 'undefined' ? getCurrentUser() : null
+  const { user } = useCurrentUser()
   const isAdmin = user?.role === 'admin' || user?.role === 'owner'
 
   const [landing, setLanding] = useState<Landing | null>(null)
