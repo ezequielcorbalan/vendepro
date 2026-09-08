@@ -9,7 +9,7 @@ import {
 } from 'lucide-react'
 import { apiFetch, getApiBase } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
-import { getCurrentUser } from '@/lib/auth'
+import { useCurrentUser } from '@/lib/use-current-user'
 import { API_SCOPES } from '@/lib/crm-config'
 import WebhooksSection from '@/components/configuracion/WebhooksSection'
 import { Button } from '@/components/ui/Button'
@@ -63,7 +63,7 @@ type Tab = 'tokens' | 'webhooks'
 export default function ConfiguracionApiPage() {
   const { confirmDialog, askConfirm } = useConfirm()
   const { toast } = useToast()
-  const user = getCurrentUser()
+  const { user, listo } = useCurrentUser()
   const isAdmin = user?.role === 'admin' || user?.role === 'owner'
 
   const [tab, setTab] = useState<Tab>('tokens')
@@ -215,6 +215,17 @@ export default function ConfiguracionApiPage() {
 
   const activeCount = tokens.filter(t => t.is_active).length
   const [webhookCount, setWebhookCount] = useState<number | null>(null)
+
+  // Hasta que se sepa el rol no se puede elegir entre la pantalla y el cartel
+  // de acceso restringido: el servidor no ve `localStorage`, así que sin esto
+  // mandaba "Acceso restringido" y el cliente la pantalla de admin.
+  if (!listo) {
+    return (
+      <div className="flex justify-center py-20">
+        <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+      </div>
+    )
+  }
 
   if (!isAdmin) {
     return (

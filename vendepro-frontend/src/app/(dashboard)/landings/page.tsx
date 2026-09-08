@@ -6,7 +6,7 @@ import { landingsApi } from '@/lib/landings/api'
 import type { Landing } from '@/lib/landings/types'
 import LandingCard from '@/components/landings/LandingCard'
 import NewLandingModal from '@/components/landings/NewLandingModal'
-import { getCurrentUser } from '@/lib/auth'
+import { useCurrentUser } from '@/lib/use-current-user'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -24,7 +24,9 @@ export default function LandingsPage() {
   const [search, setSearch] = useState('')
   const [showCreate, setShowCreate] = useState(false)
   const [createAsTasacionTemplate, setCreateAsTasacionTemplate] = useState(false)
-  const user = typeof window !== 'undefined' ? getCurrentUser() : null
+  // El `typeof window` de antes parecía el arreglo y no lo era: el servidor
+  // igual pintaba `null` y el primer render del cliente el usuario real.
+  const { user, listo } = useCurrentUser()
   const isAdmin = user?.role === 'admin' || user?.role === 'owner'
 
   useEffect(() => {
@@ -85,7 +87,7 @@ export default function LandingsPage() {
         <Button variant="ghost" size="sm" onClick={() => setTab('mine')} className={`pb-3 px-1 text-sm font-medium border-b-2 -mb-px transition-colors ${tab === 'mine' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
           Mías
         </Button>
-        {isAdmin && (
+        {listo && isAdmin && (
           <>
             <Button variant="ghost" size="sm" onClick={() => setTab('org')} className={`pb-3 px-1 text-sm font-medium border-b-2 -mb-px transition-colors ${tab === 'org' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
               Todas del org

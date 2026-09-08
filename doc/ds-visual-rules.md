@@ -579,6 +579,50 @@ porque es un estado. Un ratchet ahí bloquearía usos legítimos. La enforcement
 `StepCard.test.tsx`, que fija el gris, el `aria-hidden` y los niveles.
 
 
+## 32. `getCurrentUser()` no se llama durante el render
+
+Lee `localStorage`, así que en el servidor devuelve `null` y en el cliente el
+usuario real. Si una pantalla decide qué mostrar con ese valor, el servidor y el
+cliente pintan cosas distintas, React tira `Hydration failed` y **descarta el
+HTML del servidor para volver a renderizar todo el árbol en el cliente**. En
+`/configuracion/api` el servidor mandaba "Acceso restringido" y el cliente la
+pantalla de admin.
+
+Va `useCurrentUser()`, que lo lee después de montar y expone `listo`:
+
+```tsx
+const { user, listo } = useCurrentUser()
+const isAdmin = user?.role === 'admin'
+
+if (!listo) return <Spinner />        // el rol decide la pantalla entera
+{listo && isAdmin && <TabDeAdmin />}  // el rol sólo AGREGA algo
+```
+
+❌ `const user = getCurrentUser()` en el cuerpo del componente
+❌ `const user = typeof window !== 'undefined' ? getCurrentUser() : null`
+✅ `const { user, listo } = useCurrentUser()`
+
+**El `typeof window` parece el arreglo y no lo es.** Estaba en las dos pantallas
+de landings: el servidor igual pinta `null` y el primer render del cliente el
+usuario real, que es justo lo que se compara. Se fue de las dos para que nadie
+lo copie.
+
+**No todo llamado rompe.** De los 8 archivos nuestros que lo llamaban, sólo 3
+tenían el bug: los otros 5 ya tapaban el valor con su propio estado de carga
+(`if (loading)`, `if (templates === null)`, `if (!landing)`), que arranca activo
+y hace que el primer render no dependa del rol. Lo que hay que mirar no es si el
+archivo llama a `getCurrentUser()`, sino si el valor llega al PRIMER render.
+
+Sin ratchet: `getCurrentUser` sigue siendo la forma correcta de leer la sesión
+adentro de un handler o un efecto, así que contar llamados marcaría los usos
+buenos. La enforcement es `use-current-user.test.tsx`, que mide el HTML del
+servidor con `renderToStaticMarkup` —y no con `render`, que corre los efectos
+antes de devolver y muestra el estado de después de montar—.
+
+Auditoría: `grep -rn "= getCurrentUser()" src/app src/components` y, por cada
+hit, ver si el valor se usa antes del gate de carga.
+
+
 ## Enforcement existente
 El ratchet de color (`scripts/ds-color-lint.mjs` + `scripts/.ds-color-baseline`)
 ya evita que SUBA nada de esto: colores Tailwind sueltos, medallones de
