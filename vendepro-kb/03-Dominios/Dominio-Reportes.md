@@ -22,12 +22,22 @@ Reportes mensuales de **performance de una propiedad publicada**: métricas de p
 ## Workflow
 
 ```
-1. Agente sube screenshot de Zonaprop/Argenprop/MercadoLibre
-2. POST /extract-metrics ([[API-ai]]) extrae métricas con Claude haiku
+1. Métricas (paso 2): tres caminos
+   a. screenshot de Zonaprop/Argenprop/MercadoLibre → POST /extract-metrics
+   b. PDF de reporte de KiteProp → POST /extract-kiteprop (base64, precarga
+      todos los portales del PDF + visitas presenciales + precio de zona)
+   c. carga manual
+2. Competencia (paso 4): tres caminos
+   a. link del aviso → POST /extract-comparable-url (si el portal bloquea
+      por anti-bot, la API devuelve 422 y se cae al camino b)
+   b. screenshot del aviso (subir o Ctrl+V) → POST /extract-comparable
+   c. carga manual
 3. Agente revisa, edita comparables y secciones
 4. Publica → genera public_slug
 5. Cliente accede via /r/[slug]
 ```
+
+Todo lo de IA va por [[API-ai]] (Gemini) como JSON con base64 — nada multipart.
 
 ## Reglas (`domain/rules/report-health-rules.ts`)
 
@@ -61,7 +71,10 @@ Frontend (`components/reports/HealthBadge.tsx`) muestra el badge. La función `h
 - `GET /public/report/:slug`
 
 [[API-ai]]:
-- `POST /extract-metrics`
+- `POST /extract-metrics` — métricas desde screenshot
+- `POST /extract-kiteprop` — métricas desde el PDF de KiteProp (2026-09-08)
+- `POST /extract-comparable` — comparable desde screenshot
+- `POST /extract-comparable-url` — comparable desde el link del aviso (2026-09-08)
 
 ## Frontend
 

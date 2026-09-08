@@ -129,3 +129,72 @@ describe('GeminiAIService · editLandingBlock', () => {
     expect(r).toMatchObject({ status: 'error', reason: 'provider_error' })
   })
 })
+
+const okNative = (text: string) => ({
+  ok: true,
+  status: 200,
+  json: async () => ({ candidates: [{ content: { parts: [{ text }] } }] }),
+})
+
+describe('GeminiAIService · extractComparableFromText (flujo "pegá el link")', () => {
+  it('manda el texto y la URL al modelo y normaliza igual que la captura', async () => {
+    const f = vi.spyOn(globalThis, 'fetch' as any).mockResolvedValue(ok(JSON.stringify({
+      address: 'Cabildo 1500', total_area: '95', price: 99000, construction_year: 2000,
+    })) as any)
+
+    const r = await svc().extractComparableFromText({
+      text: 'Departamento en venta...',
+      sourceUrl: 'https://www.zonaprop.com.ar/x.html',
+    })
+    expect(r.total_area).toBe(95)
+    expect(r.age).toBe(new Date().getFullYear() - 2000)
+
+    const body = JSON.parse((f.mock.calls[0]![1] as any).body)
+    expect(body.messages[1].content).toContain('https://www.zonaprop.com.ar/x.html')
+    expect(body.messages[1].content).toContain('Departamento en venta')
+  })
+
+  it('rechaza texto vacío sin salir a la red', async () => {
+    const f = vi.spyOn(globalThis, 'fetch' as any)
+    await expect(svc().extractComparableFromText({ text: '  ' })).rejects.toMatchObject({ statusCode: 400 })
+    expect(f).not.toHaveBeenCalled()
+  })
+})
+
+describe('GeminiAIService · extractPortalReportFromPdf (reporte de KiteProp)', () => {
+  it('usa la API NATIVA con el PDF inline — el dialecto OpenAI no acepta documentos', async () => {
+    const f = vi.spyOn(globalThis, 'fetch' as any).mockResolvedValue(okNative(JSON.stringify({
+      portals: [
+        { source: 'ZonaProp', impressions: '5400', portal_visits: 320, inquiries: 12 },
+        { source: 'un portal raro', impressions: null, portal_visits: 10, inquiries: 1 },
+      ],
+      total_visits_presenciales: 4,
+      market_comparison: { avg_market_price: 118000 },
+    })) as any)
+
+    const r = await svc().extractPortalReportFromPdf({ pdfBase64: 'JVBERi0=' })
+
+    const [url, init] = f.mock.calls[0]! as any[]
+    expect(String(url)).toContain(':generateContent')
+    expect(init.headers['x-goog-api-key']).toBe('TEST_KEY')
+    const body = JSON.parse(init.body)
+    expect(body.contents[0].parts[0].inline_data.mime_type).toBe('application/pdf')
+    expect(body.contents[0].parts[0].inline_data.data).toBe('JVBERi0=')
+
+    // Normalización: fuentes con mayúsculas o desconocidas caen a claves del sistema.
+    expect(r.portals[0]).toEqual({ source: 'zonaprop', impressions: 5400, portal_visits: 320, inquiries: 12 })
+    expect(r.portals[1].source).toBe('manual')
+    expect(r.market_comparison).toEqual({ avg_market_price: 118000 })
+  })
+
+  it('devuelve la forma vacía si el modelo no responde JSON, en vez de reventar', async () => {
+    vi.spyOn(globalThis, 'fetch' as any).mockResolvedValue(okNative('no pude leer el documento') as any)
+    const r = await svc().extractPortalReportFromPdf({ pdfBase64: 'JVBERi0=' })
+    expect(r).toEqual({ portals: [], total_visits_presenciales: null, market_comparison: null })
+  })
+
+  it('un 401 del proveedor sale como 502, nunca como 401 que desloguea', async () => {
+    vi.spyOn(globalThis, 'fetch' as any).mockResolvedValue(fail(401) as any)
+    await expect(svc().extractPortalReportFromPdf({ pdfBase64: 'JVBERi0=' })).rejects.toMatchObject({ statusCode: 502 })
+  })
+})

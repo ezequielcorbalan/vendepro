@@ -49,7 +49,7 @@
  */
 import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
-import { join } from 'node:path'
+import { join, sep } from 'node:path'
 
 const ROOTS = ['src/app', 'src/components']
 // `src/components/ui` está excluido de los patrones de COLOR (acá viven los
@@ -117,7 +117,11 @@ function walk(dir, { ignorarExclusiones = false } = {}) {
   let out = []
   for (const entry of readdirSync(dir)) {
     if (EXCLUDE_DIR_NAMES.has(entry)) continue
-    const p = join(dir, entry)
+    // Separador normalizado a '/': en Windows join() arma los paths con '\',
+    // las exclusiones no matcheaban NUNCA y los 8 contadores daban inflados
+    // (66 hits de slate con baseline 0). El mismo motivo por el que el cruce
+    // con los archivos de la rama (git usa '/') tampoco encontraba culpables.
+    const p = join(dir, entry).split(sep).join('/')
     if (!ignorarExclusiones && EXCLUDE_PATH_PREFIXES.some(prefix => p.startsWith(prefix))) continue
     if (statSync(p).isDirectory()) out = out.concat(walk(p, { ignorarExclusiones }))
     else if (p.endsWith('.tsx')) out.push(p)
