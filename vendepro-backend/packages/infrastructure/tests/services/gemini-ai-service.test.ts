@@ -198,3 +198,40 @@ describe('GeminiAIService · extractPortalReportFromPdf (reporte de KiteProp)', 
     await expect(svc().extractPortalReportFromPdf({ pdfBase64: 'JVBERi0=' })).rejects.toMatchObject({ statusCode: 502 })
   })
 })
+
+describe('GeminiAIService · generateReportConclusion', () => {
+  const ctx = {
+    periodLabel: 'Agosto 2026',
+    daysInPeriod: 30,
+    viewsPerDay: 20,
+    healthLabel: 'amarillo — tracción media',
+    metrics: [{ source: 'zonaprop', impressions: 5400, portal_visits: 600, inquiries: 12, phone_calls: null, whatsapp: null, in_person_visits: 4, offers: 1, ranking_position: null, avg_market_price: 118000 }],
+    competitors: [{ address: 'Aguirre 900', price: 95000, notes: 'similar' }],
+  }
+
+  it('manda el semáforo ya calculado y devuelve conclusion + price_reference', async () => {
+    const f = vi.spyOn(globalThis, 'fetch' as any).mockResolvedValue(ok(JSON.stringify({
+      conclusion: 'El aviso tuvo tracción media...',
+      price_reference: 'El precio está alineado con la zona.',
+    })) as any)
+
+    const r = await svc().generateReportConclusion(ctx)
+    expect(r.conclusion).toContain('tracción media')
+    expect(r.price_reference).toContain('alineado')
+
+    const body = JSON.parse((f.mock.calls[0]![1] as any).body)
+    expect(body.messages[1].content).toContain('amarillo — tracción media')
+    expect(body.messages[1].content).toContain('Aguirre 900')
+  })
+
+  it('502 si el modelo no devuelve una conclusión utilizable — nunca un campo vacío mudo', async () => {
+    vi.spyOn(globalThis, 'fetch' as any).mockResolvedValue(ok('{"conclusion": ""}') as any)
+    await expect(svc().generateReportConclusion(ctx)).rejects.toMatchObject({ statusCode: 502 })
+  })
+
+  it('price_reference vacío o ausente normaliza a null', async () => {
+    vi.spyOn(globalThis, 'fetch' as any).mockResolvedValue(ok('{"conclusion": "Buen período.", "price_reference": "  "}') as any)
+    const r = await svc().generateReportConclusion(ctx)
+    expect(r.price_reference).toBeNull()
+  })
+})

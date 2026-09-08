@@ -99,3 +99,37 @@ export interface ExtractPortalReportInput {
 export interface PortalReportExtractor {
   extractPortalReportFromPdf(input: ExtractPortalReportInput): Promise<PortalReportData>
 }
+
+// ── Redacción de la conclusión de un reporte de gestión ──────────
+
+export interface ReportConclusionContext {
+  periodLabel: string
+  /** Días del período, ya calculados por el use case. */
+  daysInPeriod: number
+  /** Resumen agregado + semáforo, calculado por el use case (regla de dominio). */
+  viewsPerDay: number | null
+  healthLabel: string | null
+  metrics: Array<{
+    source: string
+    impressions: number | null
+    portal_visits: number | null
+    inquiries: number | null
+    phone_calls: number | null
+    whatsapp: number | null
+    in_person_visits: number | null
+    offers: number | null
+    ranking_position: number | null
+    avg_market_price: number | null
+  }>
+  competitors: Array<{ address: string | null; price: number | null; notes: string | null }>
+}
+
+export interface ReportConclusionResult {
+  conclusion: string
+  /** Comentario de precio vs mercado. Null si no hay datos para sostenerlo. */
+  price_reference: string | null
+}
+
+export interface ReportConclusionGenerator {
+  generateReportConclusion(ctx: ReportConclusionContext): Promise<ReportConclusionResult>
+}
