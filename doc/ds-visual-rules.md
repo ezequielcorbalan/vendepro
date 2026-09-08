@@ -623,6 +623,61 @@ Auditoría: `grep -rn "= getCurrentUser()" src/app src/components` y, por cada
 hit, ver si el valor se usa antes del gate de carga.
 
 
+## 33. El input de archivo y el de color son componentes, no plomería suelta
+
+**Archivos**: `FileInput`. Es una render prop y no un botón, porque el
+disparador es distinto en cada lugar con razón — un `Button variant="outline"`
+en el formulario de cierres, un dropzone con pegar y arrastrar en
+`ComparableCard`, un botón punteado a lo ancho en `ImageUpload`. Lo que se
+repetía era el input escondido.
+
+```tsx
+<FileInput accept="image/*" onFiles={subir} disabled={subiendo} aria-label="Subir fotos">
+  {abrir => <Button variant="outline" onClick={abrir} icon={<Upload className="w-4 h-4" />}>Subir</Button>}
+</FileInput>
+```
+
+**Y ahí había dos bugs**, que es el argumento de por qué componentizar y no
+copiar:
+
+1. **La misma foto no se podía elegir dos veces.** El `change` no dispara si el
+   `value` no cambió, así que elegir un archivo, borrarlo y volver a elegir EL
+   MISMO no hacía nada. Dos de los tres lo resolvían con
+   `e.target.value = ''`; `ImageUpload` no. Ahora se hace siempre, y **antes**
+   de avisar al consumidor: si el consumidor tira, el input tiene que quedar
+   limpio igual para poder reintentar con el mismo archivo.
+2. **`className="hidden"` saca el input del tab order.** `display: none` no es
+   foco-eable, así que sólo se llegaba por el disparador — y dos de los tres
+   disparadores tampoco andaban con teclado: un `<span>` no es foco-eable, y un
+   `div` con `tabIndex` no dispara su `onClick` con Enter. El input va
+   `sr-only`. Si además el disparador es un `div`, va con `role="button"` y un
+   `onKeyDown` que atienda Enter y espacio.
+
+❌ `<input type="file" className="hidden" />` + un `<span>` que lo dispara
+✅ `<FileInput>{abrir => <Button onClick={abrir}>…</Button>}</FileInput>`
+
+**Colores**: `ColorInput`. Envuelve el `<input type="color">` nativo, que es el
+que abre el selector del sistema — reemplazarlo pide escribir un picker entero y
+no hace falta. Unifica la medida (28px) y el borde, que estaban con `rounded` en
+un lugar y `rounded-control` en el otro.
+
+**En los dos, `aria-label` es obligatorio en el tipo.** No es celo: son los dos
+controles del DS que **no tienen texto visible**, así que sin label no tienen
+nombre. `FunnelChartForm` tenía el selector de color sin ninguno — un lector de
+pantalla anunciaba "color" y nada más. Ponerlo obligatorio en la interfaz hace
+que el compilador lo pida en vez de confiar en que alguien se acuerde.
+
+Sin ratchet: el de inputs nativos ya cubre esto (`<input>` fuera de
+`components/ui`), y estos dos ahora viven adentro, que es donde corresponde.
+Enforcement propia en `FileInput.test.tsx` — 9 tests, incluido el que fija
+`sr-only` en vez de `hidden`.
+
+**Lo que ese test NO cubre, y conviene saberlo**: que el `value` se resetee. En
+jsdom no se puede asignar el `value` de un input de archivo —es una restricción
+real de los navegadores—, así que arranca en `''` pase lo que pase y la
+aserción pasaría igual sin el arreglo. Un test así es peor que ninguno.
+
+
 ## Enforcement existente
 El ratchet de color (`scripts/ds-color-lint.mjs` + `scripts/.ds-color-baseline`)
 ya evita que SUBA nada de esto: colores Tailwind sueltos, medallones de

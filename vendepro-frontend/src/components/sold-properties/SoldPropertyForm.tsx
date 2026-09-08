@@ -12,6 +12,7 @@ import {
 import { useToast } from '@/components/ui/Toast'
 import { Field, Input, Select, Textarea } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import { FileInput } from '@/components/ui/FileInput'
 
 interface Props {
   initial?: Partial<SoldProperty> | null
@@ -26,7 +27,6 @@ export default function SoldPropertyForm({ initial, onCancel, onSaved }: Props) 
   const [originType, setOriginType] = useState<'team' | 'external'>(
     initial?.external_agent_name ? 'external' : 'team',
   )
-  const fileRef = useRef<HTMLInputElement>(null)
   const dropRef = useRef<HTMLFormElement>(null)
 
   const [form, setForm] = useState({
@@ -86,12 +86,6 @@ export default function SoldPropertyForm({ initial, onCancel, onSaved }: Props) 
     }
     if (results.length > 0) setPhotos(prev => [...prev, ...results])
     setUploading(false)
-  }
-
-  function onPickFiles(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files ?? [])
-    if (files.length > 0) uploadFiles(files)
-    e.target.value = ''
   }
 
   function onDrop(e: React.DragEvent) {
@@ -308,9 +302,13 @@ export default function SoldPropertyForm({ initial, onCancel, onSaved }: Props) 
             </div>
           )}
           <div className="flex items-center gap-2 mt-2">
-            <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()} icon={<Upload className="w-3.5 h-3.5" />}>
-              Subir
-            </Button>
+            <FileInput accept="image/*" multiple onFiles={uploadFiles} disabled={uploading} aria-label="Subir fotos del cierre">
+              {abrir => (
+                <Button type="button" variant="outline" size="sm" onClick={abrir} disabled={uploading} icon={<Upload className="w-3.5 h-3.5" />}>
+                  Subir
+                </Button>
+              )}
+            </FileInput>
             <span className="text-[10px] text-gray-400 flex items-center gap-1">
               <ClipboardPaste className="w-3 h-3" /> o pegá con Ctrl+V
             </span>
@@ -320,15 +318,6 @@ export default function SoldPropertyForm({ initial, onCancel, onSaved }: Props) 
               </span>
             )}
           </div>
-          {/* ds-todo: el DS no tiene control de archivo — ver ImageUpload. Candidato a "FileInput". */}
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            multiple
-            className="hidden"
-            onChange={onPickFiles}
-          />
         </div>
       </div>
 

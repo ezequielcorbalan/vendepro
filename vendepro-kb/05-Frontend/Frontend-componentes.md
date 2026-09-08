@@ -13,13 +13,13 @@ Todos los componentes en `src/components/`, agrupados por carpeta.
 - **`GlobalSearch.tsx`** — Búsqueda global cross-entity (usa `[[API-analytics]] /search`)
 - **`NotificationBell.tsx`** — Badge + dropdown (usa `[[API-admin]] /notifications`)
 
-## `ui/` — el design system (50 archivos)
+## `ui/` — el design system (52 archivos)
 
 > Galería viva en la ruta **`/design-system`** (pública, sin datos). Plan y
 > decisiones de contrato en `doc/ds-plan.md` y `doc/ds-review.md`.
 > Regla: color → token, texto → `Heading`/`Text`, dominio → `lib/crm-config.ts`.
 >
-> **Las 31 reglas con ❌/✅ y su grep de auditoría están en
+> **Las 33 reglas con ❌/✅ y su grep de auditoría están en
 > `doc/ds-visual-rules.md`** — es el documento operativo, más al día que este
 > catálogo. Nueve ratchets con baseline en `scripts/.ds-*-baseline` las traban en
 > CI (`npm run lint:ds`): no fallan por lo que ya existe, fallan si un cambio
@@ -49,6 +49,14 @@ Todos los componentes en `src/components/`, agrupados por carpeta.
 - **`Input`** — `Field` + `Input` / `Textarea` / `Select` (Field propaga el error por contexto)
 - **`Choice`** — `Checkbox` / `RadioGroup` · **`ChoicePills`** — chips seleccionables
 - **`Switch`** · **`OptionCard`** — tarjeta seleccionable (`row` | `stack`)
+- **`FileInput`** — el `<input type="file">` y nada más: es una render prop que
+  te da `abrir`, porque el disparador es distinto en cada lugar (un `Button`, un
+  dropzone con pegar y arrastrar, un botón punteado). Resuelve dos bugs que los
+  tres lugares que lo tenían a mano no resolvían igual: que la misma foto no se
+  pudiera elegir dos veces y que el input quedara fuera del tab order (regla 33).
+- **`ColorInput`** — muestrita de 28px sobre el `<input type="color">` nativo.
+  En los dos, `aria-label` es **obligatorio**: son los únicos controles del DS
+  sin texto visible.
 
 **Navegación y pasos**
 - **`Tabs`** — subrayado inferior. Con `href` en el item, navega (`<Link>`)

@@ -337,13 +337,15 @@ markup se pudo envolver en `Modal` en el lugar.
 
 ## Lo que queda — seis decisiones de diseño, no trabajo de migración
 
-Los 19 `ds-todo` (`grep -rn ds-todo vendepro-frontend/src`) se agrupan en seis,
-ordenados por cuánto se repite el patrón:
+Quedan **14** `ds-todo` (`grep -rn ds-todo vendepro-frontend/src`) en cuatro
+grupos. Los dos que eran "falta un componente" ya están hechos; los cuatro que
+quedan son "¿esto merece existir en el DS o se queda local?", que es una
+pregunta distinta:
 
 | Decisión | Cuántos | Qué falta decidir |
 |---|---|---|
-| `FileInput` | 3 | El DS no tiene control de archivo. `SoldPropertyForm`, `ImageUpload` y `ComparableCard` lo resuelven a mano cada uno. Es el que más se repite. |
-| `ColorInput` | 2 | El DS no tiene selector de color. `EditableCanvas` y `FunnelChartForm`. |
+| ~~`FileInput`~~ | ~~3~~ | ✅ **Hecho el 08/09/2026.** Creado y aplicado en los 3. De paso arregló dos bugs que los tres resolvían distinto: la misma foto no se podía elegir dos veces (`ImageUpload`) y el input quedaba fuera del tab order (los tres). Regla 33. |
+| ~~`ColorInput`~~ | ~~2~~ | ✅ **Hecho el 08/09/2026.** `aria-label` obligatorio en el tipo: `FunnelChartForm` lo tenía sin ninguno. Regla 33. |
 | Editor de tasación | 5 | `BubbleToolbar`, toggle de barra ×2, campo inline sobre el lienzo, inputs `size="sm"`. ¿Entran al DS o se quedan locales al editor? |
 | Superficies oscuras de la tasación | 4 | 3 tonos sin mapeo + la portada legacy A4. |
 | Sueltos | 5 | WhatsApp sin número, converger `ContactSelector`, `Modal initialFocus`, toggle de par en 24px, CTA sin destino. |

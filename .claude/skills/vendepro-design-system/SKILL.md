@@ -10,7 +10,7 @@ Antes de escribir UI en `vendepro-frontend`, este archivo te dice **qué usar** 
 
 ## Por qué existe
 
-El proyecto tiene 50 componentes en `src/components/ui` y 32 reglas escritas en
+El proyecto tiene 52 componentes en `src/components/ui` y 33 reglas escritas en
 `doc/ds-visual-rules.md`. Nada de eso cabe en la cabeza mientras escribís una
 feature, así que lo que pasa en la práctica es esto — dos casos reales del repo:
 
@@ -97,6 +97,8 @@ docblock explicando por qué existe y qué reemplaza, sumalo a la galería
 | panel lateral | `Drawer` |
 | confirmar algo destructivo | `ConfirmDialog` o `useConfirm` |
 | input, select, textarea, con label | `Field` + `Input` / `Select` / `Textarea` |
+| elegir un archivo | `FileInput` (render prop: el disparador lo ponés vos) |
+| elegir un color | `ColorInput` |
 | checkbox, radio | `Checkbox`, `RadioGroup` |
 | chips seleccionables en fila | `PillRadioGroup`, `PillCheckGroup` |
 | switch on/off | `Switch` |
@@ -123,7 +125,7 @@ en dos colores distintos.
 
 ## Las reglas que más se rompen
 
-Están las 32 en `doc/ds-visual-rules.md` con ❌/✅ y su grep de auditoría. Estas
+Están las 33 en `doc/ds-visual-rules.md` con ❌/✅ y su grep de auditoría. Estas
 seis son las que el repo ya vio fallar más de una vez:
 
 **Color por token, nunca por paleta.** `text-danger`, no `text-red-500`.
@@ -187,5 +189,5 @@ sus variantes y el motivo de cada decisión en el `hint`.
   existe:** varios componentes resuelven casos que por el nombre no parecen — por
   ejemplo `OptionCard` para una grilla de templates, `PillRadioGroup` para filtros en
   fila, o `DetailMeta` para los datos de un encabezado.
-- `doc/ds-visual-rules.md` en el repo — las 32 reglas con ❌/✅ y su grep de auditoría.
+- `doc/ds-visual-rules.md` en el repo — las 33 reglas con ❌/✅ y su grep de auditoría.
 - `doc/ds-plan-fase6.md` — qué queda por migrar y en qué orden.
