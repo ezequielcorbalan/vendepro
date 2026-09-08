@@ -12,10 +12,16 @@ on:
   pull_request:
     paths:
       - 'vendepro-frontend/**'
+      # El propio workflow, para que un PR que sólo lo toque se verifique a sí
+      # mismo. Sin esto la primera versión de este archivo no corrió en su
+      # propio PR —los `paths` la excluían— y no había forma de saber si andaba
+      # antes de mergearla.
+      - '.github/workflows/frontend-checks.yml'
   push:
     branches: [main]
     paths:
       - 'vendepro-frontend/**'
+      - '.github/workflows/frontend-checks.yml'
 
 jobs:
   checks:
