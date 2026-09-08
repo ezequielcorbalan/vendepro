@@ -24,6 +24,15 @@ export interface NewReportContent {
   sort_order: number
 }
 
+export interface NewReportPhoto {
+  id: string
+  report_id: string
+  photo_url: string
+  r2_key: string | null
+  photo_type: string
+  sort_order: number
+}
+
 export interface ReportRepository {
   findById(id: string, orgId: string): Promise<Report | null>
   findByOrg(orgId: string, propertyId?: string): Promise<Report[]>
@@ -41,4 +50,7 @@ export interface ReportRepository {
   addCompetitorLink(link: { id: string; property_id: string; url: string; address: string | null; price: number | null; notes: string | null }, orgId: string): Promise<void>
   findCompetitorLinks(propertyId: string, orgId: string): Promise<Record<string, unknown>[]>
   findPhotosByReport(reportId: string, orgId: string): Promise<Array<{ id: string; photo_url: string; r2_key?: string }>>
+  addPhoto(photo: NewReportPhoto, orgId: string): Promise<void>
+  /** Borra la fila y devuelve lo necesario para limpiar R2. Null si no existe o no es de la org. */
+  deletePhoto(photoId: string, orgId: string): Promise<{ photo_url: string; r2_key?: string } | null>
 }

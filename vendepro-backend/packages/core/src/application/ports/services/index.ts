@@ -1,5 +1,6 @@
 export * from './auth-service'
 export * from './ai-service'
+export type { ListingPageFetcher, ListingPageFetchResult, ListingPageFetchStatus } from './listing-page-fetcher'
 export * from './storage-service'
 export * from './email-service'
 export * from './meta-conversion-api'

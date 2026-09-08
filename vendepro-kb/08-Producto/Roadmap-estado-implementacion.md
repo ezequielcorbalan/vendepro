@@ -44,7 +44,7 @@ Todo el núcleo está en producción con backend + UI:
 **Bugs encontrados en el análisis** (deuda del CRM base):
 1. 🐛 **NotificationBell nunca muestra nada** — `vendepro-frontend/src/components/layout/NotificationBell.tsx:24` llama `apiFetch('crm', '/notifications')` pero el endpoint vive en **api-admin** (`api-admin/src/index.ts:251`), y además espera `{notifications}` cuando el backend devuelve un array plano. Doble desalineación, `.catch` silencioso → campana siempre vacía.
 2. 🐛 **Detalle de prefactibilidad → 404** — `prefactibilidades/page.tsx:77` linkea a `/prefactibilidades/${id}` pero no existe `[id]/page.tsx` (el backend sí tiene `GET /prefactibilidades/:id`).
-3. 🐛 **Endpoints IA fantasma** — `propiedades/[id]/reportes/nuevo/page.tsx:131,188` llama `POST ai /extract-kiteprop` y `/extract-zonaprop`, que no existen en `api-ai`. Botones que siempre fallan.
+3. ~~🐛 **Endpoints IA fantasma**~~ — **resuelto 2026-09-08**: `/extract-kiteprop` ahora existe en api-ai (PDF de KiteProp por Gemini nativo) y el screenshot de competencia reusa `/extract-comparable`; además hay `/extract-comparable-url` para pegar el link del aviso (con lista blanca de portales y degradación explícita a captura cuando el anti-bot bloquea).
 4. 🐛 **Actividades salta la capa de aplicación** — `api-crm:1025-1062` va directo a `D1ActivityRepository` sin use cases (funciona, pero rompe el patrón hexagonal).
 
 ### 00b — Meta CAPI + GA4 server-side (Stape) 🟡
@@ -171,7 +171,7 @@ Confirmado con grep exhaustivo: cero adapters/ports/webhooks de WhatsApp Busines
 
 ### Feature 11 — Asistente IA interno 🟠
 
-- **IA de extracción/generación 🟢 en producción**: api-ai expone 7 endpoints (extract-metrics/entity/image/comparable, generate-email-campaign/sequence, edit-block) sobre Anthropic (haiku/sonnet) y Groq (llama, whisper implementado sin endpoint).
+- **IA de extracción/generación 🟢 en producción**: api-ai expone 9 endpoints (extract-metrics/entity/image/comparable/comparable-url/kiteprop, generate-email-campaign/sequence, edit-block), todos sobre Gemini `3.5-flash-lite` (ver [[API-ai]]).
 - Pero **el asistente del roadmap no existe**: `AIChatPanel.tsx` no es un chat — es un wizard de 3 pasos para crear leads. Sin tabla `ai_conversations`, sin turnos/historial, y **cero function calling** en ningún adapter (todo one-shot JSON extraction). Sin rate limits ni cost tracking por org.
 
 ---

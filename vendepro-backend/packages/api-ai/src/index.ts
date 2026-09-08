@@ -1,8 +1,10 @@
 import { Hono } from 'hono'
-import { corsMiddleware, errorHandler, createAuthMiddleware, JwtAuthService, D1LandingRepository, GeminiAIService, GeminiEmailContentGenerator, D1OrganizationRepository } from '@vendepro/infrastructure'
+import { corsMiddleware, errorHandler, createAuthMiddleware, JwtAuthService, D1LandingRepository, GeminiAIService, GeminiEmailContentGenerator, D1OrganizationRepository, HttpListingPageFetcher } from '@vendepro/infrastructure'
 import {
   ExtractPropertyMetricsUseCase,
   ExtractComparableFromScreenshotUseCase,
+  ExtractComparableFromUrlUseCase,
+  ExtractPortalReportFromPdfUseCase,
   ExtractLeadFromTextUseCase,
   ExtractLeadFromImageUseCase,
   EditBlockWithAIUseCase,
@@ -62,6 +64,39 @@ app.post('/extract-comparable', async (c) => {
       mimeType: body.mimeType,
     })
     return c.json({ fields })
+  } catch (e: any) {
+    if (typeof e?.statusCode === 'number') return c.json({ error: e.message }, e.statusCode)
+    throw e
+  }
+})
+
+// Comparable desde el LINK del aviso (paso "Competencia" del wizard de
+// reportes). El worker baja la página y la IA extrae los datos del texto.
+// Cuando el portal bloquea la lectura automática (anti-bot) devuelve 422 con
+// un mensaje que redirige al flujo por captura — eso es esperado, no un bug.
+app.post('/extract-comparable-url', async (c) => {
+  const body = (await c.req.json()) as any
+  try {
+    const ai = new GeminiAIService(c.env.GEMINI_API_KEY)
+    const useCase = new ExtractComparableFromUrlUseCase(new HttpListingPageFetcher(), ai)
+    const fields = await useCase.execute({ url: body.url ?? '' })
+    return c.json({ fields })
+  } catch (e: any) {
+    if (typeof e?.statusCode === 'number') return c.json({ error: e.message }, e.statusCode)
+    throw e
+  }
+})
+
+// Métricas por portal desde el PDF de reporte de KiteProp (paso "Métricas"
+// del wizard). JSON con el PDF en base64, como el resto de los endpoints de
+// extracción — acá nada viaja como multipart.
+app.post('/extract-kiteprop', async (c) => {
+  const body = (await c.req.json()) as any
+  try {
+    const ai = new GeminiAIService(c.env.GEMINI_API_KEY)
+    const useCase = new ExtractPortalReportFromPdfUseCase(ai)
+    const report = await useCase.execute({ pdfBase64: body.pdfBase64 ?? '' })
+    return c.json(report)
   } catch (e: any) {
     if (typeof e?.statusCode === 'number') return c.json({ error: e.message }, e.statusCode)
     throw e

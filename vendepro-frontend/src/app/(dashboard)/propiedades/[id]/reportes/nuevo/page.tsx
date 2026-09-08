@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, ArrowRight, Upload, Check, Loader2, FileText, Link2, Trash2, Clipboard } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Upload, Check, Loader2, FileText, Link2, Trash2, Clipboard, Sparkles } from 'lucide-react'
 import type { MetricSource, ExtractedMetrics } from '@/lib/types'
 import { apiFetch } from '@/lib/api'
-import { fileToBase64 } from '@/components/tasaciones/shared/extract-comparable'
+import { fileToBase64, extractComparableFromImage } from '@/components/tasaciones/shared/extract-comparable'
 import { Alert } from '@/components/ui/Alert'
 import { Field, Input, Textarea, Select } from '@/components/ui/Input'
 import { Heading, Text } from '@/components/ui/Typography'
@@ -67,9 +67,13 @@ export default function NuevoReporte() {
 
   // Step 5: Photos
   const [photos, setPhotos] = useState<File[]>([])
+  // Fotos ya guardadas del reporte (solo en modo edición)
+  const [existingPhotos, setExistingPhotos] = useState<{ id: string; photo_url: string }[]>([])
+  const [deletingPhoto, setDeletingPhoto] = useState<string | null>(null)
 
   // Competitor extraction
   const [extractingComp, setExtractingComp] = useState<number | null>(null)
+  const [extractingUrl, setExtractingUrl] = useState<number | null>(null)
 
   // KiteProp PDF extraction
   const [extractingPdf, setExtractingPdf] = useState(false)
@@ -110,6 +114,10 @@ export default function NuevoReporte() {
           }
         }
 
+        if (Array.isArray(data.photos)) {
+          setExistingPhotos(data.photos.map((p: any) => ({ id: p.id, photo_url: p.photo_url })))
+        }
+
         if (Array.isArray(data.competitors)) {
           setCompetitors(data.competitors.map((c: any) => ({
             url: c.url || '', address: c.address || '',
@@ -124,21 +132,31 @@ export default function NuevoReporte() {
 
   async function handleKitePropPdf(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
+    // Permite volver a elegir el mismo archivo si el primer intento falló.
+    e.target.value = ''
     if (!file) return
     setExtractingPdf(true)
     setError('')
     try {
-      const formData = new FormData()
-      formData.append('pdf', file)
-      const response = await apiFetch('ai', '/extract-kiteprop', { method: 'POST', body: formData })
-      if (!response.ok) throw new Error('Error al extraer datos del PDF')
-      const data = await response.json() as any
+      // JSON con el PDF en base64, igual que /extract-metrics y /extract-comparable.
+      // Antes iba como multipart con el campo `pdf` a una ruta que no existía
+      // en api-ai: todos los intentos morían con 404.
+      const { base64 } = await fileToBase64(file)
+      const response = await apiFetch('ai', '/extract-kiteprop', {
+        method: 'POST',
+        body: JSON.stringify({ pdfBase64: base64 }),
+      })
+      const data = (await response.json().catch(() => ({}))) as any
+      if (!response.ok) {
+        throw new Error(data?.error || `Error al extraer datos del PDF (HTTP ${response.status})`)
+      }
 
       // Auto-fill metrics from KiteProp data
       if (data.portals && data.portals.length > 0) {
         const newMetrics = data.portals.map((p: any) => ({
           ...defaultMetrics,
           source: p.source || 'manual',
+          impressions: p.impressions?.toString() || '',
           inquiries: p.inquiries?.toString() || '',
           portal_visits: p.portal_visits?.toString() || '',
         }))
@@ -159,7 +177,10 @@ export default function NuevoReporte() {
         })
       }
     } catch (err) {
-      setError('No se pudieron extraer los datos del PDF de KiteProp. Cargalos manualmente.')
+      console.error('[extract-kiteprop] fallo la extraccion:', err)
+      setError(
+        `No se pudieron extraer los datos del PDF de KiteProp. Cargalos manualmente. (${(err as Error)?.message ?? 'error desconocido'})`,
+      )
     } finally {
       setExtractingPdf(false)
     }
@@ -181,37 +202,83 @@ export default function NuevoReporte() {
     setCompetitors((prev) => prev.filter((_, i) => i !== index))
   }
 
+  /** Vuelca un comparable extraído por IA sobre la fila `index`, sin pisar lo cargado con vacíos. */
+  function applyExtractedCompetitor(index: number, fields: any) {
+    setCompetitors((prev) => {
+      const updated = [...prev]
+      updated[index] = {
+        ...updated[index],
+        url: fields.zonaprop_url || updated[index].url,
+        address: fields.address || updated[index].address,
+        price: fields.price?.toString() || updated[index].price,
+        notes: [
+          fields.total_area ? `${fields.total_area}m²` : '',
+          fields.usd_per_m2 ? `${fields.usd_per_m2} USD/m²` : '',
+          fields.days_on_market ? `${fields.days_on_market}d` : '',
+          fields.views_per_day ? `${fields.views_per_day} vistas/d` : '',
+        ].filter(Boolean).join(' · ') || updated[index].notes,
+      }
+      return updated
+    })
+  }
+
   async function handleCompetitorScreenshot(file: File, index: number) {
     setExtractingComp(index)
     setError('')
     try {
-      const formData = new FormData()
-      formData.append('screenshot', file)
-      const res = await apiFetch('ai', '/extract-zonaprop', { method: 'POST', body: formData })
-      const data = await res.json() as any
-      if (data.success && data.data) {
-        setCompetitors((prev) => {
-          const updated = [...prev]
-          updated[index] = {
-            ...updated[index],
-            address: data.data.address || updated[index].address,
-            price: data.data.price?.toString() || updated[index].price,
-            notes: [
-              data.data.total_area ? `${data.data.total_area}m²` : '',
-              data.data.usd_per_m2 ? `${data.data.usd_per_m2} USD/m²` : '',
-              data.data.days_on_market ? `${data.data.days_on_market}d` : '',
-              data.data.views_per_day ? `${data.data.views_per_day} vistas/d` : '',
-            ].filter(Boolean).join(' · ') || updated[index].notes,
-          }
-          return updated
-        })
-      } else {
-        setError('No se pudieron extraer datos del screenshot')
-      }
-    } catch {
-      setError('Error al procesar el screenshot')
+      // Reusa /extract-comparable, el mismo endpoint que ya usan las
+      // tasaciones. Antes esto iba como multipart a /extract-zonaprop, una
+      // ruta que no existe en api-ai: todos los intentos morían con 404.
+      const fields = await extractComparableFromImage(file)
+      applyExtractedCompetitor(index, fields)
+    } catch (err) {
+      console.error('[extract-comparable] fallo la extraccion:', err)
+      setError(`No se pudieron extraer datos del screenshot. (${(err as Error)?.message ?? 'error desconocido'})`)
     } finally {
       setExtractingComp(null)
+    }
+  }
+
+  async function handleDeleteExistingPhoto(photoId: string) {
+    setDeletingPhoto(photoId)
+    try {
+      const res = await apiFetch('properties', `/report-photos/${photoId}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as any
+        throw new Error(data?.error || 'No se pudo borrar la foto')
+      }
+      setExistingPhotos((prev) => prev.filter((p) => p.id !== photoId))
+    } catch (err) {
+      setError((err as Error)?.message ?? 'No se pudo borrar la foto')
+    } finally {
+      setDeletingPhoto(null)
+    }
+  }
+
+  /** Camino "pegá el link": el backend baja la página del aviso y extrae los datos. */
+  async function handleCompetitorUrl(index: number) {
+    const url = competitors[index]?.url?.trim()
+    if (!url) {
+      setError('Pegá primero el link del aviso en el campo URL.')
+      return
+    }
+    setExtractingUrl(index)
+    setError('')
+    try {
+      const res = await apiFetch('ai', '/extract-comparable-url', {
+        method: 'POST',
+        body: JSON.stringify({ url }),
+      })
+      const data = (await res.json().catch(() => ({}))) as any
+      if (!res.ok) {
+        throw new Error(data?.error || `Error al leer el aviso (HTTP ${res.status})`)
+      }
+      applyExtractedCompetitor(index, data.fields ?? {})
+    } catch (err) {
+      console.error('[extract-comparable-url] fallo la extraccion:', err)
+      setError((err as Error)?.message ?? 'No se pudo leer el aviso desde el link.')
+    } finally {
+      setExtractingUrl(null)
     }
   }
 
@@ -281,6 +348,24 @@ export default function NuevoReporte() {
   }
 
   async function handleSubmit(publish: boolean) {
+    // Los "required" de los pasos 1 y 3 no se validaban en ningún lado: se
+    // podía publicar un reporte sin período (slug "reporte-periodo-…") y sin
+    // conclusión. El stepper deja saltar pasos, así que la red va acá.
+    if (!periodLabel.trim() || !periodStart || !periodEnd) {
+      setError('Completá el período del reporte (nombre, desde y hasta) antes de guardar.')
+      setStep(1)
+      return
+    }
+    if (periodEnd < periodStart) {
+      setError('La fecha "Hasta" no puede ser anterior a "Desde".')
+      setStep(1)
+      return
+    }
+    if (publish && !conclusion.trim()) {
+      setError('Escribí la conclusión y recomendación antes de publicar.')
+      setStep(3)
+      return
+    }
     setLoading(true)
     setError('')
 
@@ -319,7 +404,7 @@ export default function NuevoReporte() {
           photoForm.append('file', photos[i])
           photoForm.append('reportId', reportId)
           photoForm.append('photoType', 'visit_form')
-          photoForm.append('sortOrder', i.toString())
+          photoForm.append('sortOrder', (existingPhotos.length + i).toString())
           try {
             const photoRes = await apiFetch('properties', '/upload-photo', { method: 'POST', body: photoForm })
             if (!photoRes.ok) {
@@ -592,12 +677,26 @@ export default function NuevoReporte() {
                   Pegá un screenshot aquí (Ctrl+V)
                 </div>
                 <Field label="URL del aviso">
-                  <Input
-                    type="url"
-                    value={comp.url}
-                    onChange={(e) => updateCompetitor(idx, 'url', e.target.value)}
-                    placeholder="https://www.zonaprop.com.ar/propiedades/..."
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      type="url"
+                      value={comp.url}
+                      onChange={(e) => updateCompetitor(idx, 'url', e.target.value)}
+                      placeholder="https://www.zonaprop.com.ar/propiedades/..."
+                      className="flex-1"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleCompetitorUrl(idx)}
+                      loading={extractingUrl === idx}
+                      disabled={extractingUrl !== null || !comp.url.trim()}
+                      icon={<Sparkles className="w-4 h-4" />}
+                      className="shrink-0 self-center"
+                    >
+                      {extractingUrl === idx ? 'Leyendo...' : 'Extraer del link'}
+                    </Button>
+                  </div>
                 </Field>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Field label="Dirección">
@@ -660,6 +759,33 @@ export default function NuevoReporte() {
               />
             </label>
 
+            {existingPhotos.length > 0 && (
+              <div>
+                <Text size="xs" tone="muted" className="mb-2">Fotos ya guardadas ({existingPhotos.length})</Text>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {existingPhotos.map((photo) => (
+                    <div key={photo.id} className="relative">
+                      <img
+                        src={photo.photo_url}
+                        alt=""
+                        className="w-full h-32 object-cover rounded-control"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteExistingPhoto(photo.id)}
+                        loading={deletingPhoto === photo.id}
+                        aria-label="Borrar foto guardada"
+                        className="absolute top-1 right-1 w-6 h-6 p-0 bg-danger text-white rounded-full hover:bg-danger/80 hover:text-white"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {photos.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                 {photos.map((photo, i) => (
@@ -699,7 +825,7 @@ export default function NuevoReporte() {
                 {[strategy, marketing, conclusion, priceReference].filter(Boolean).length} de 4
               </Text>
               <Text as="p"><strong>Competencia:</strong> {competitors.filter(c => c.url).length} propiedades</Text>
-              <Text as="p"><strong>Fotos:</strong> {photos.length}</Text>
+              <Text as="p"><strong>Fotos:</strong> {existingPhotos.length + photos.length}{existingPhotos.length > 0 ? ` (${existingPhotos.length} ya guardadas)` : ''}</Text>
             </div>
 
             <div className="flex gap-3">

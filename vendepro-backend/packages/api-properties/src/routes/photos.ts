@@ -1,8 +1,9 @@
 import type { Hono } from 'hono'
-import { D1PropertyRepository, CryptoIdGenerator, R2StorageService } from '@vendepro/infrastructure'
+import { D1PropertyRepository, D1ReportRepository, CryptoIdGenerator, R2StorageService } from '@vendepro/infrastructure'
 import {
   UploadPropertyPhotoUseCase,
   ReorderPropertyPhotosUseCase,
+  AddReportPhotoUseCase,
 } from '@vendepro/core'
 
 type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket; R2_PUBLIC_URL: string; BROWSER: Fetcher; API_PUBLIC_URL: string }
@@ -63,8 +64,36 @@ export function registerPhotoRoutes(app: Hono<{ Bindings: Env } & AuthVars>) {
     const file = formData.get('file') as File | null
     if (!file) return c.json({ error: 'No file' }, 400)
     const buffer = await file.arrayBuffer()
-    const key = `photos/${c.get('orgId')}/${Date.now()}-${file.name}`
     const storage = new R2StorageService(c.env.R2, c.env.R2_PUBLIC_URL)
+
+    // Foto de REPORTE: además de subir a R2 hay que escribir report_photos.
+    // El wizard siempre mandó reportId acá y esta ruta lo ignoraba: la foto
+    // quedaba huérfana en el bucket y el reporte público nunca mostró ninguna.
+    const reportId = formData.get('reportId') as string | null
+    if (reportId) {
+      const useCase = new AddReportPhotoUseCase(
+        new D1ReportRepository(c.env.DB),
+        storage,
+        new CryptoIdGenerator(),
+      )
+      try {
+        const result = await useCase.execute({
+          reportId,
+          orgId: c.get('orgId'),
+          fileName: file.name,
+          contentType: file.type,
+          buffer,
+          photoType: (formData.get('photoType') as string | null) ?? undefined,
+          sortOrder: Number(formData.get('sortOrder') ?? 0),
+        })
+        return c.json({ id: result.id, url: result.photo_url })
+      } catch (e: any) {
+        if (typeof e?.statusCode === 'number') return c.json({ error: e.message }, e.statusCode)
+        throw e
+      }
+    }
+
+    const key = `photos/${c.get('orgId')}/${Date.now()}-${file.name}`
     const url = await storage.upload(key, buffer, file.type)
     return c.json({ url, key })
   })

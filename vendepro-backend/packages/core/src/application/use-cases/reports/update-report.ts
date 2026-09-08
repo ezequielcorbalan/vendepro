@@ -28,6 +28,7 @@ export interface UpdateReportInput {
   marketing?: string
   conclusion?: string
   priceReference?: string
+  competitors?: Array<{ url: string; address?: string | null; price?: number | null; notes?: string | null }>
 }
 
 export class UpdateReportUseCase {
@@ -116,6 +117,26 @@ export class UpdateReportUseCase {
       sort_order: 0,
     }))
     await this.repo.replaceContent(input.id, input.orgId, content)
+
+    // El wizard siempre mandó competitors también en el PUT; este use case los
+    // ignoraba y las ediciones del paso Competencia se perdían en silencio.
+    // Mismo semantics que el create: reemplazo completo, scopeado a la property
+    // del reporte (los links son por propiedad, no por reporte).
+    if (Array.isArray(input.competitors)) {
+      const propertyId = report.property_id as string
+      await this.repo.deleteCompetitorLinks(propertyId, input.orgId)
+      for (const comp of input.competitors) {
+        if (!comp?.url && !comp?.address) continue
+        await this.repo.addCompetitorLink({
+          id: this.idGen.generate(),
+          property_id: propertyId,
+          url: comp.url ?? '',
+          address: comp.address ?? null,
+          price: comp.price ? Number(comp.price) : null,
+          notes: comp.notes ?? null,
+        }, input.orgId)
+      }
+    }
 
     return { success: true, id: input.id, propertyId: report.property_id as string }
   }
