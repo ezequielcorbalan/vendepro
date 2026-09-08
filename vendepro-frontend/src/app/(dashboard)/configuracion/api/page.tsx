@@ -20,6 +20,7 @@ import { Badge } from '@/components/ui/Badge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Tabs } from '@/components/ui/Tabs'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { StepCard } from '@/components/ui/StepCard'
 import { Modal } from '@/components/ui/Modal'
 import { Field, Input, Textarea } from '@/components/ui/Input'
 import type { ApiToken } from '@/lib/types'
@@ -388,15 +389,12 @@ export default function ConfiguracionApiPage() {
               Tres pasos para confirmar que la integración entra bien, sin salir de esta pantalla.
             </Text>
           </div>
-          {/* Paso 1: token */}
-          <Card>
-            <Heading level={4} className="flex items-center gap-2 mb-1">
-              <span className="w-5 h-5 rounded-full bg-primary text-white text-xs flex items-center justify-center">1</span>
-              Tu token
-            </Heading>
-            <Text tone="muted" className="mb-3">
-              Pegá el token de integración que querés probar. Si acabás de crear uno, ya está cargado.
-            </Text>
+          <StepCard
+            step={1}
+            level={4}
+            title="Tu token"
+            subtitle="Pegá el token de integración que querés probar. Si acabás de crear uno, ya está cargado."
+          >
             <Textarea
               value={testToken}
               onChange={e => { setTestToken(e.target.value); setTestStatus('idle') }}
@@ -404,15 +402,13 @@ export default function ConfiguracionApiPage() {
               rows={2}
               className="text-xs font-mono resize-none min-h-0 px-3 py-2.5"
             />
-          </Card>
+          </StepCard>
 
-          {/* Paso 2: request de ejemplo */}
-          <Card>
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <Heading level={4} className="flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-primary text-white text-xs flex items-center justify-center">2</span>
-                Hacé el request
-              </Heading>
+          <StepCard
+            step={2}
+            level={4}
+            title="Hacé el request"
+            action={
               <Button variant="ghost" size="icon"
                 onClick={() => copyText(buildCurl(testToken.trim() || undefined), 'curl')}
                 aria-label="Copiar comando de ejemplo"
@@ -421,11 +417,14 @@ export default function ConfiguracionApiPage() {
                 {copiedKey === 'curl' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                 {copiedKey === 'curl' ? 'Copiado' : 'Copiar comando'}
               </Button>
-            </div>
-            <Text tone="muted" className="mb-3">
-              Acepta un lead o varios (<code className="text-xs bg-gray-100 px-1 py-0.5 rounded">{'{ "leads": [...] }'}</code>, hasta 100).
-              Entran sin asignar, en estado <strong>Nuevo</strong>.
-            </Text>
+            }
+            subtitle={
+              <>
+                Acepta un lead o varios (<code className="text-xs bg-gray-100 px-1 py-0.5 rounded">{'{ "leads": [...] }'}</code>, hasta 100).
+                Entran sin asignar, en estado <strong>Nuevo</strong>.
+              </>
+            }
+          >
             <div className="overflow-x-auto">
               <pre className="bg-gray-900 text-gray-100 rounded-control p-4 text-xs leading-relaxed">{buildCurl(testToken.trim() || undefined)}</pre>
             </div>
@@ -434,18 +433,14 @@ export default function ConfiguracionApiPage() {
               <code className="font-mono">email</code>, <code className="font-mono">operation</code>,{' '}
               <code className="font-mono">source_detail</code>, <code className="font-mono">notes</code>.
             </Text>
-          </Card>
+          </StepCard>
 
-          {/* Paso 3: escuchar en vivo */}
-          <Card>
-            <Heading level={4} className="flex items-center gap-2 mb-1">
-              <span className="w-5 h-5 rounded-full bg-primary text-white text-xs flex items-center justify-center">3</span>
-              Escuchá el request
-            </Heading>
-            <Text tone="muted" className="mb-3">
-              Iniciá la escucha y ejecutá el comando. Vamos a detectar el primer request que llegue con este token.
-            </Text>
-
+          <StepCard
+            step={3}
+            level={4}
+            title="Escuchá el request"
+            subtitle="Iniciá la escucha y ejecutá el comando. Vamos a detectar el primer request que llegue con este token."
+          >
             <div aria-live="polite">
               {testStatus === 'idle' && (
                 <Button
@@ -494,7 +489,7 @@ export default function ConfiguracionApiPage() {
                 </Alert>
               )}
             </div>
-          </Card>
+          </StepCard>
         </div>
       )}
 

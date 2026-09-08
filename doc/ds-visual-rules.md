@@ -537,6 +537,48 @@ de pestaña. La auditoría es a ojo — `grep -rn "PageHeader" src/app` cruzado 
 las pantallas que usan `Tabs`.
 
 
+## 31. Hay dos tipos de wizard, y son dos componentes distintos
+
+**Horizontal, un paso por vez**: `StepIndicator`. La barrita de progreso arriba,
+los pasos que no son el actual están ocultos. Registro de la inmobiliaria,
+wizard de tasación, campaña de email, nueva prefactibilidad.
+
+**Vertical, todos los pasos a la vista**: `StepCard`. Cada paso en su `Card`,
+con su número a la izquierda. Editor de automatizaciones, prueba de token de
+`/configuracion/api`.
+
+Confundirlos es fácil porque los dos "son un wizard", pero no resuelven lo
+mismo: `StepIndicator` sirve cuando el orden es obligatorio y el paso 3 no tiene
+sentido sin el 2; `StepCard` cuando podés leer los tres y ejecutar el que
+quieras.
+
+```tsx
+<StepCard step={1} icon={<Zap className="w-4 h-4 text-gray-600" />} title="Cuándo se dispara">
+  <Field label="Disparador">…</Field>
+</StepCard>
+```
+
+❌ `<Card><Heading level={4}><span className="w-5 h-5 rounded-full bg-primary text-white …">1</span> Tu token</Heading>…</Card>`
+✅ `<StepCard step={1} level={4} title="Tu token" subtitle="…">…</StepCard>`
+
+**El número va en gris y `aria-hidden`.** Las dos versiones que había no
+coincidían: automatizaciones tenía un círculo gris de 28px y la prueba de token
+uno rosa de 20px. Gana el gris, porque `primary` se reserva para acciones y
+estados (regla 15) y un número de paso es un ordinal — el color lo pone el
+título. Y `aria-hidden` porque "1" solo no le dice nada a un lector de pantalla:
+el orden ya lo da el DOM y lo que se lee es el título.
+
+**`level` no es decoración.** En automatizaciones los pasos son la primera
+jerarquía de la pantalla (`3`); en la prueba de token cuelgan de un título de
+sección, así que van `4`. Repetir o saltear un nivel rompe la navegación por
+encabezados.
+
+Sin ratchet: el patrón a cazar sería un `rounded-full bg-primary text-white`, y
+el único que queda es el "hoy" del calendario, donde `primary` SÍ corresponde
+porque es un estado. Un ratchet ahí bloquearía usos legítimos. La enforcement es
+`StepCard.test.tsx`, que fija el gris, el `aria-hidden` y los niveles.
+
+
 ## Enforcement existente
 El ratchet de color (`scripts/ds-color-lint.mjs` + `scripts/.ds-color-baseline`)
 ya evita que SUBA nada de esto: colores Tailwind sueltos, medallones de
