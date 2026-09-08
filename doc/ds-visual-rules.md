@@ -633,6 +633,18 @@ nativos (`<input>`/`<select>`/`<textarea>`) y los diálogos nativos
 (`confirm`/`alert`/`prompt`, regla 29). Son nueve ratchets, cada uno con su
 archivo de baseline en `scripts/.ds-*-baseline`.
 
+**Cómo corren.** Desde el 08/09/2026 los nueve viven en `frontend-checks.yml`
+junto a `tsc`, `vitest` y `eslint`. Antes el ratchet tenía su propio workflow
+(`ds-lint.yml`) y los tests **no corrían en ningún lado**: la regla de que los
+tests pasen antes de mergear dependía de que alguien se acordara de correrlos
+local. Ese workflow además se disparaba sólo si el PR tocaba `src/` o
+`.ds-color-baseline`, así que un PR que subiera cualquiera de los otros ocho
+baselines no verificaba nada. Ahora el trigger es todo `vendepro-frontend/**`.
+
+Ojo: el workflow hace **visible** una falla, no la **traba**. `main` no tiene
+branch protection, así que un PR rojo se puede mergear igual. Eso se arregla en
+la configuración del repo en GitHub, no acá.
+
 Un ratchet sólo se pone sobre un patrón que YA tiene alternativa en el DS. Sobre
 uno que no la tiene no protege nada: sólo bloquea trabajo legítimo hasta que
 alguien decida el componente. Por eso los 29 "Volver" armados a mano y los 82
