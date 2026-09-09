@@ -59,6 +59,8 @@ Cada dominio agrupa entidades + tablas + use cases + endpoints + páginas:
 
 - [[Roadmap-producto]] — roadmap de features candidatos (pivote: CRM gratis + módulo de marketing pago)
 - [[Roadmap-estado-implementacion]] — en qué instancia está cada proceso en el código
+- [[Tramites-plataformas-ads]] — qué pedirle a Meta y a Google para el módulo de Publicidad, y en qué orden (camino crítico, semanas)
+- [[Analisis-Marketing-Ads]] — radiografía de `/marketing`: mezcla vendedor/comprador, 22 hallazgos y el plan por fases hacia el reporte en vivo de anuncios
 
 ## 💼 Ventas y storytelling
 
