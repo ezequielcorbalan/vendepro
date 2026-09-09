@@ -17,9 +17,8 @@ const LEAD_STAGES: FunnelStage[] = [
 
 /** La cola: lo que pasó con la propiedad después de captar. */
 const PROPERTY_STAGES_DATA: FunnelStage[] = [
-  stage({ stage: 'publicada', label: 'Publicada', count: 22, pct: 73, step_pct: 73 }),
-  stage({ stage: 'reservada', label: 'Reservada', count: 8, pct: 27, step_pct: 36, median_days_from_prev: 41, timed_on: 8 }),
-  stage({ stage: 'vendida', label: 'Vendida', count: 5, pct: 17, step_pct: 63 }),
+  stage({ stage: 'reservada', label: 'Reservada', count: 8, pct: 27, step_pct: 27 }),
+  stage({ stage: 'vendida', label: 'Vendida', count: 5, pct: 17, step_pct: 63, median_days_from_prev: 41, timed_on: 5 }),
 ]
 
 describe('FunnelChart', () => {
@@ -76,9 +75,8 @@ describe('FunnelChart', () => {
       <FunnelChart stages={PROPERTY_STAGES_DATA} total={30} domain="property" />,
     )
     const barras = [...container.querySelectorAll<HTMLElement>('[style*="width"]')]
-    expect(barras[0]!.className).toMatch(/bg-blue-100/)    // publicada
-    expect(barras[1]!.className).toMatch(/bg-purple-100/)  // reservada
-    expect(barras[2]!.className).toMatch(/bg-emerald-100/) // vendida
+    expect(barras[0]!.className).toMatch(/bg-purple-100/)  // reservada
+    expect(barras[1]!.className).toMatch(/bg-emerald-100/) // vendida
   })
 
   it('mide la cola sobre los leads captados, no sobre las propiedades', () => {

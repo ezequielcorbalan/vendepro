@@ -177,9 +177,18 @@ describe('computeCaptureTail', () => {
     expect(captured).toBe(3)
     expect(traced).toBe(3)
     const byKey = Object.fromEntries(stages.map(s => [s.stage, s.count]))
-    expect(byKey.publicada).toBe(2) // la vendida y la publicada
     expect(byKey.reservada).toBe(1) // sólo la vendida pasó por acá
     expect(byKey.vendida).toBe(1)
+  })
+
+  it('publicada no es un escalón: publicar es consecuencia de captar', () => {
+    // Como filtro no separa nada — toda captación se publica.
+    const props = [prop('p1', 'l1', 'publicada'), prop('p2', 'l2', 'captada')]
+    const { stages } = computeCaptureTail(new Set(['l1', 'l2']), props, [])
+
+    expect(stages.map(s => s.stage)).toEqual(['reservada', 'vendida'])
+    // Una publicada todavía no se reservó: no suma a ningún escalón.
+    expect(stages.every(s => s.count === 0)).toBe(true)
   })
 
   it('ignora las propiedades que no salieron de un lead captado del período', () => {
@@ -224,10 +233,8 @@ describe('computeCaptureTail', () => {
 
     const { stages } = computeCaptureTail(captados, props, history)
     const byKey = Object.fromEntries(stages.map(s => [s.stage, s.count]))
-    expect(byKey.publicada).toBe(1)
     expect(byKey.reservada).toBe(1)
     expect(byKey.vendida).toBe(0)
-    expect(stages.find(s => s.stage === 'reservada')!.median_days_from_prev).toBe(10)
   })
 
   it('avisa cuántos captados tienen propiedad vinculada', () => {

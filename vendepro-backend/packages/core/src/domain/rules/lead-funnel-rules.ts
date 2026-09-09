@@ -104,19 +104,26 @@ export interface LeadFunnelResult {
  * lead salió cada captación, así que se puede seguir a los mismos leads.
  */
 const CAPTURE_TAIL_STAGES: Array<{ key: string; label: string }> = [
-  { key: 'publicada', label: 'Publicada' },
   { key: 'reservada', label: 'Reservada' },
   { key: 'vendida', label: 'Vendida' },
 ]
 
-/** Etapa comercial de la propiedad → posición en la escalera de arriba. */
+/**
+ * Etapa comercial de la propiedad → posición en la escalera de arriba. Las que
+ * van en -1 son anteriores al primer escalón: la propiedad existe pero todavía
+ * no llegó a reservarse.
+ *
+ * `publicada` está entre esas a propósito: publicar es la consecuencia de
+ * haber captado, no un filtro que algunas propiedades pasan y otras no, así
+ * que como escalón de embudo no separa nada.
+ */
 const PROPERTY_STAGE_ORDER: Record<string, number> = {
   propuesta: -1,
   captada: -1,
   documentacion: -1,
-  publicada: 0,
-  reservada: 1,
-  vendida: 2,
+  publicada: -1,
+  reservada: 0,
+  vendida: 1,
 }
 
 export interface FunnelProperty {
