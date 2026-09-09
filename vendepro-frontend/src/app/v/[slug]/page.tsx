@@ -41,9 +41,11 @@ export default async function VisitFormPage({
 
   return (
     <>
+      {/* El contenedor sale de la config de marketing del agente (`tag`), no de
+          la org: leerlo de `org` devolvía undefined y GTM nunca cargaba. */}
       <GtmScript
-        containerId={data.org?.gtm_container_id ?? data.gtm_container_id ?? null}
-        stapeEndpoint={data.org?.stape_endpoint ?? data.stape_endpoint ?? null}
+        containerId={data.tag?.gtm_container_id ?? null}
+        stapeEndpoint={data.tag?.stape_endpoint ?? null}
       />
       <VisitFormClient slug={slug} data={data} apiPublic={API_PUBLIC} />
     </>

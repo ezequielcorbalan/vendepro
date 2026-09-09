@@ -6,6 +6,9 @@ import {
   isOverdue,
   computeLeadFunnel,
   computeConversionRate,
+  computeFunnelForPipeline,
+  computeConversionRateForPipeline,
+  parseFunnelPipeline,
   type LeadForUrgency,
   type LeadForChecklist,
 } from '../../src/domain/rules/lead-rules'
@@ -271,6 +274,60 @@ describe('Lead rules', () => {
     it('rounds to nearest integer', () => {
       // 1 / 3 = 33.33... → 33
       expect(computeConversionRate({ captado: 1 }, 3)).toBe(33)
+    })
+  })
+})
+
+// ── Embudo por pipeline (panel de Marketing) ────────────────────────────────
+describe('embudo por pipeline', () => {
+  const breakdown = {
+    nuevo: 10, contactado: 8, calificado: 5,
+    en_tasacion: 3, presentada: 2, captado: 1,
+    visita_agendada: 4, visito: 3, oferta: 2, cerrado: 1,
+  }
+
+  it('el embudo vendedor termina en captado', () => {
+    const f = computeFunnelForPipeline('vendedor', breakdown, 30)
+    expect(f.map(s => s.stage)).toEqual([
+      'nuevo', 'contactado', 'calificado', 'en_tasacion', 'presentada', 'captado',
+    ])
+  })
+
+  it('el embudo comprador termina en cerrado y pasa por las visitas', () => {
+    const f = computeFunnelForPipeline('comprador', breakdown, 30)
+    expect(f.map(s => s.stage)).toEqual([
+      'nuevo', 'contactado', 'calificado', 'visita_agendada', 'visito', 'oferta', 'cerrado',
+    ])
+  })
+
+  it('una etapa que no existe en ese pipeline cuenta 0, no rompe', () => {
+    const f = computeFunnelForPipeline('comprador', { nuevo: 5 }, 5)
+    expect(f.find(s => s.stage === 'oferta')?.count).toBe(0)
+  })
+
+  it('parseFunnelPipeline cae a vendedor ante cualquier cosa rara', () => {
+    expect(parseFunnelPipeline('comprador')).toBe('comprador')
+    expect(parseFunnelPipeline('vendedor')).toBe('vendedor')
+    expect(parseFunnelPipeline(null)).toBe('vendedor')
+    expect(parseFunnelPipeline('inquilino')).toBe('vendedor')
+  })
+
+  describe('conversión por pipeline', () => {
+    it('mide contra la etapa-objetivo de cada uno', () => {
+      expect(computeConversionRateForPipeline('vendedor', { captado: 3, cerrado: 9 }, 30)).toBe(10)
+      expect(computeConversionRateForPipeline('comprador', { captado: 9, cerrado: 3 }, 30)).toBe(10)
+    })
+
+    // El entero de computeConversionRate escondía movimientos en bases chicas:
+    // 1 de 30 y 1 de 25 daban los dos 3% y 4% respectivamente, sin matices.
+    it('conserva un decimal', () => {
+      expect(computeConversionRateForPipeline('vendedor', { captado: 1 }, 3)).toBe(33.3)
+      expect(computeConversionRateForPipeline('vendedor', { captado: 7 }, 30)).toBe(23.3)
+    })
+
+    it('sin leads devuelve 0 y no NaN', () => {
+      expect(computeConversionRateForPipeline('vendedor', {}, 0)).toBe(0)
+      expect(computeConversionRateForPipeline('comprador', { cerrado: 5 }, 0)).toBe(0)
     })
   })
 })

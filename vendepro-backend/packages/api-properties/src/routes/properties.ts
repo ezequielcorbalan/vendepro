@@ -5,6 +5,8 @@ import {
   D1StageHistoryRepository,
   CryptoIdGenerator,
   R2StorageService,
+  D1PropertyIncomeRepository,
+  DolarApiFxRate,
 } from '@vendepro/infrastructure'
 import {
   GetPropertiesUseCase,
@@ -18,6 +20,7 @@ import {
   MarkExternalReportUseCase,
   ClearExternalReportUseCase,
   DeletePropertyUseCase,
+  SavePropertyIncomeUseCase,
 } from '@vendepro/core'
 import type { PropertyStageValue } from '@vendepro/core'
 
@@ -123,6 +126,42 @@ export function registerPropertyRoutes(app: Hono<{ Bindings: Env } & AuthVars>) 
       return c.json({ error: e.message || 'Error al cambiar etapa' }, 400)
     }
     return c.json({ success: true })
+  })
+
+  // ── INGRESO DE LA OPERACIÓN ──────────────────────────────────
+  // Cuánto cobró la inmobiliaria por esta venta. Es lo que cierra el ROI: sin
+  // esto hay costo por lead pero no se puede decir si la pauta se paga sola.
+  //
+  // Va aparte del cambio de etapa a propósito: corregir los honorarios no tiene
+  // por qué volver a disparar la máquina de estados ni el historial.
+  app.put('/properties/:id/income', async (c) => {
+    const body = (await c.req.json()) as any
+    const useCase = new SavePropertyIncomeUseCase(
+      new D1PropertyIncomeRepository(c.env.DB),
+      new DolarApiFxRate(),
+    )
+    try {
+      const result = await useCase.execute({
+        orgId: c.get('orgId'),
+        propertyId: c.req.param('id'),
+        // `null` explícito borra el ingreso cargado.
+        commissionAmount: body.commission_amount === null || body.commission_amount === undefined || body.commission_amount === ''
+          ? null
+          : Number(body.commission_amount),
+        commissionCurrency: body.commission_currency,
+        usdRate: body.usd_rate === undefined || body.usd_rate === null || body.usd_rate === ''
+          ? null
+          : Number(body.usd_rate),
+        soldPrice: body.sold_price === undefined || body.sold_price === null || body.sold_price === ''
+          ? null
+          : Number(body.sold_price),
+        soldDate: body.sold_date ?? null,
+        incomeAt: body.income_at ?? null,
+      })
+      return c.json({ success: true, ...result })
+    } catch (e: any) {
+      return c.json({ error: e.message || 'No se pudo guardar el ingreso' }, 400)
+    }
   })
 
   app.put('/properties/:id/price', async (c) => {

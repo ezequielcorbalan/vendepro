@@ -1,5 +1,16 @@
-export { getLeadUrgency, getLeadChecklist, getLeadChecklistScore, isOverdue, computeLeadFunnel, computeConversionRate } from './lead-rules'
-export type { LeadUrgency, LeadForUrgency, LeadForChecklist } from './lead-rules'
+export {
+  getLeadUrgency,
+  getLeadChecklist,
+  getLeadChecklistScore,
+  isOverdue,
+  computeLeadFunnel,
+  computeConversionRate,
+  computeFunnelForPipeline,
+  computeConversionRateForPipeline,
+  parseFunnelPipeline,
+  FUNNEL_GOAL_STAGE,
+} from './lead-rules'
+export type { LeadUrgency, LeadForUrgency, LeadForChecklist, FunnelPipeline } from './lead-rules'
 export { activityTypeForEvent, eventDurationMinutes } from './calendar-activity-rules'
 export { classifyGoogleEventType, matchNameInTitle, candidateNameTerms, normalizeForMatch } from './google-event-import-rules'
 export { computeRealLeadFunnel, computeCaptureTail } from './lead-funnel-rules'
@@ -54,3 +65,5 @@ export {
 } from './email-template'
 export type { EmailBrand, RenderEmailHtmlInput, RenderEmailTextInput } from './email-template'
 export * from './email-deliverability'
+export * from './portal-cost-rules'
+export * from './property-income-rules'

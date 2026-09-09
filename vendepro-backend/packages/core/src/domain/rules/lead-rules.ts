@@ -89,3 +89,68 @@ export function computeConversionRate(stageBreakdown: Record<string, number>, to
     ? Math.round(((stageBreakdown['captado'] ?? 0) / totalLeads) * 100)
     : 0
 }
+
+// ── Embudo por pipeline ──────────────────────────────────────────────────────
+// `computeLeadFunnel` de arriba es el del dashboard y asume vendedor. El panel
+// de Marketing muestra las dos secciones (Captación y Demanda), así que necesita
+// elegir el embudo y la etapa-objetivo según el pipeline.
+
+export type FunnelPipeline = 'vendedor' | 'comprador'
+
+const FUNNEL_STAGES: Record<FunnelPipeline, { key: string; label: string }[]> = {
+  vendedor: [
+    { key: 'nuevo', label: 'Nuevo' },
+    { key: 'contactado', label: 'Contactado' },
+    { key: 'calificado', label: 'Calificado' },
+    { key: 'en_tasacion', label: 'En tasación' },
+    { key: 'presentada', label: 'Presentada' },
+    { key: 'captado', label: 'Captado' },
+  ],
+  comprador: [
+    { key: 'nuevo', label: 'Nuevo' },
+    { key: 'contactado', label: 'Contactado' },
+    { key: 'calificado', label: 'Calificado' },
+    { key: 'visita_agendada', label: 'Visita agendada' },
+    { key: 'visito', label: 'Visitó' },
+    { key: 'oferta', label: 'Oferta' },
+    { key: 'cerrado', label: 'Cerrado' },
+  ],
+}
+
+/** Etapa que cuenta como conversión lograda en cada pipeline. */
+export const FUNNEL_GOAL_STAGE: Record<FunnelPipeline, string> = {
+  vendedor: 'captado',
+  comprador: 'cerrado',
+}
+
+export function parseFunnelPipeline(raw: string | null | undefined): FunnelPipeline {
+  return raw === 'comprador' ? 'comprador' : 'vendedor'
+}
+
+export function computeFunnelForPipeline(
+  pipeline: FunnelPipeline,
+  stageBreakdown: Record<string, number>,
+  totalLeads: number,
+) {
+  return FUNNEL_STAGES[pipeline].map(s => ({
+    stage: s.key,
+    label: s.label,
+    count: stageBreakdown[s.key] ?? 0,
+    pct: totalLeads > 0 ? Math.round(((stageBreakdown[s.key] ?? 0) / totalLeads) * 100) : 0,
+  }))
+}
+
+/**
+ * Conversión de lead a la etapa-objetivo del pipeline. Se devuelve con un
+ * decimal porque el panel la muestra así y redondear a entero acá escondía
+ * movimientos reales en bases chicas.
+ */
+export function computeConversionRateForPipeline(
+  pipeline: FunnelPipeline,
+  stageBreakdown: Record<string, number>,
+  totalLeads: number,
+): number {
+  if (totalLeads <= 0) return 0
+  const goal = stageBreakdown[FUNNEL_GOAL_STAGE[pipeline]] ?? 0
+  return Math.round((goal / totalLeads) * 1000) / 10
+}

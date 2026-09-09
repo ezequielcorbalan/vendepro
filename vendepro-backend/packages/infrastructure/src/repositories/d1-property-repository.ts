@@ -463,6 +463,12 @@ export class D1PropertyRepository implements PropertyRepository {
       auth_start_date: row.auth_start_date ?? null,
       auth_duration_days: row.auth_duration_days ?? null,
       doc_status_json: row.doc_status_json ?? null,
+      sold_price: row.sold_price ?? null,
+      sold_date: row.sold_date ?? null,
+      commission_amount: row.commission_amount ?? null,
+      commission_currency: row.commission_currency ?? null,
+      commission_usd_rate: row.commission_usd_rate ?? null,
+      income_at: row.income_at ?? null,
       created_at: row.created_at, updated_at: row.updated_at,
       // Computed / joined fields surfaced to API consumers (frontend
       // PropertyFilters reads both to compute "sin reportar" alert).

@@ -102,6 +102,13 @@ tres formas distintas según qué ruta lo agarrara. Ver [[API-ai]].
 - `sendEvent({ measurementId, apiSecret, clientId, eventName, params })`
 - Usado dentro de `marketing-sender-factory.ts`
 
+## Cotización del dólar — `dolar-api-fx-rate.ts`
+
+- `GET https://dolarapi.com/v1/dolares/blue` (sin key, timeout 4s). Se toma la **venta**: es el precio al que la inmobiliaria consigue dólares.
+- **Por qué no DolarHoy**: el pedido fue "buscar la cotización de DolarHoy", pero DolarHoy no expone API pública — leer su HTML desde un Worker es frágil y bloqueable. dolarapi sirve la misma cotización en JSON; "DolarHoy" queda como el nombre de referencia que ve el usuario.
+- Ante cualquier problema devuelve `null` y el gasto se guarda sin cotización, para completarla a mano. **Nunca inventa un número**: un tipo de cambio inventado contamina el ROI del período entero y nadie se entera.
+- Lo consume `SavePortalSpendUseCase` (ver [[Dominio-Marketing]] § PortalSpend). El valor queda congelado en la fila.
+
 ## Marketing Factory — `marketing-sender-factory.ts`
 
 Orquesta los providers de marketing para una org:
