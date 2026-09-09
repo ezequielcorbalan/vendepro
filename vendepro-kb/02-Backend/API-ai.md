@@ -23,6 +23,7 @@ Todos por Gemini `3.5-flash-lite`. Contrato uniforme: JSON in / JSON out — **n
 | POST | `/extract-comparable-url` | ExtractComparableFromUrlUseCase | `{url}` → `{fields}` de comparable (2026-09-08) |
 | POST | `/extract-kiteprop` | ExtractPortalReportFromPdfUseCase | `{pdfBase64}` → `{portals[], total_visits_presenciales, market_comparison}` (2026-09-08) |
 | POST | `/suggest-report-conclusion` | GenerateReportConclusionUseCase | `{periodLabel, periodStart, periodEnd, metrics[], competitors[]}` → `{conclusion, price_reference}` (2026-09-08) |
+| POST | `/suggest-appraisal-pricing` | SuggestAppraisalPricingUseCase | `{property, comparables[], swot}` → `{suggested_price, test_price, expected_close_price, usd_per_m2, rationale}` (2026-09-09) |
 | POST | `/generate-email-campaign` | GenerateEmailCampaignContentUseCase | `{brief, kind, audience_description}` → contenido brandeado |
 | POST | `/generate-email-sequence` | GenerateAutomationSequenceUseCase | `{brief, step_count}` → `{steps}` |
 | POST | `/landings/:id/edit-block` | EditBlockWithAIUseCase | `{prompt, scope, blockId}` → bloque modificado |
@@ -40,6 +41,9 @@ PDF de reporte de KiteProp → métricas por portal para el paso 2 del wizard de
 
 ### `/suggest-report-conclusion`
 Paso 3 del wizard de reportes, botón "Sugerir con IA": manda las métricas y comparables ya cargados y la IA redacta la "Conclusión y recomendación" para el propietario (rioplatense, 2-3 párrafos, sin inventar números). El semáforo MG se calcula en el use case con `report-health-rules` y viaja al modelo ya resuelto — el LLM no conoce la metodología. `price_reference` sólo se completa si hay datos de mercado, y el frontend no pisa ese campo si el agente ya escribió algo.
+
+### `/suggest-appraisal-pricing`
+Editor de tasaciones, botón "Sugerir con IA" en la sección Precios: los comparables cargados + datos de la propiedad → los 3 precios (sugerido/prueba/cierre) y la justificación. **La matemática es del código**: el use case calcula USD/m² por comparable (con el precio de CIERRE cuando es una venta), mediana, rango duro y valor base por superficie ponderada; el modelo posiciona dentro del rango y el use case re-valida con clamps + orden cierre ≤ sugerido ≤ prueba. El botón se deshabilita sin comparables.
 
 ### `/extract-entity` y `/extract-image`
 Agente pega texto de WhatsApp o screenshot del cliente. Devuelve `LeadIntent`: nombre, teléfono, email, barrio, tipo propiedad, operación, presupuesto. Pre-llena el formulario de nuevo lead.

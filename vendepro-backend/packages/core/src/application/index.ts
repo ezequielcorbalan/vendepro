@@ -138,6 +138,7 @@ export * from './use-cases/ai/extract-comparable-from-screenshot'
 export * from './use-cases/ai/extract-comparable-from-url'
 export * from './use-cases/ai/extract-portal-report-from-pdf'
 export * from './use-cases/ai/generate-report-conclusion'
+export * from './use-cases/ai/suggest-appraisal-pricing'
 export * from './use-cases/ai/extract-lead-from-text'
 export * from './use-cases/ai/extract-lead-from-image'
 
