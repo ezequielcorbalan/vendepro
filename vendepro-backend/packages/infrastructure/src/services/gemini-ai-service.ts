@@ -8,6 +8,9 @@ import type {
   ReportConclusionGenerator,
   ReportConclusionContext,
   ReportConclusionResult,
+  AppraisalPricingSuggester,
+  AppraisalPricingContext,
+  AppraisalPricingResult,
 } from '@vendepro/core'
 import { providerError } from './provider-error'
 
@@ -178,7 +181,12 @@ function toPortalReport(p: any): PortalReportData {
 }
 
 export class GeminiAIService
-  implements AIService, ListingTextExtractor, PortalReportExtractor, ReportConclusionGenerator
+  implements
+    AIService,
+    ListingTextExtractor,
+    PortalReportExtractor,
+    ReportConclusionGenerator,
+    AppraisalPricingSuggester
 {
   constructor(private readonly apiKey: string) {
     // Guard explícito. Sin esto, una key ausente queda `undefined`, se serializa
@@ -453,6 +461,56 @@ Comparables de la zona: ${ctx.competitors.length > 0 ? JSON.stringify(ctx.compet
         typeof p.price_reference === 'string' && p.price_reference.trim()
           ? p.price_reference.trim()
           : null,
+    }
+  }
+
+  // ── precios de tasación ───────────────────────────────────────
+
+  async suggestAppraisalPricing(ctx: AppraisalPricingContext): Promise<AppraisalPricingResult> {
+    const system = `Sos asesor de pricing de un tasador inmobiliario argentino experimentado.
+Con la estadística de mercado YA CALCULADA por el sistema y los comparables, proponé los tres
+precios de la tasación y su justificación.
+
+Reglas:
+1. Los tres precios DEBEN caer dentro del rango [floor_value, ceil_value]. Arrancá del
+   base_value (mediana × superficie ponderada) y ajustá según la calidad relativa de la
+   propiedad frente a los comparables (fortalezas/debilidades, días en mercado, tracción).
+2. Orden comercial: expected_close_price ≤ suggested_price ≤ test_price. El precio de prueba
+   es apenas superior al sugerido (margen de negociación); el cierre esperado, apenas inferior.
+3. Los comparables kind="venta" con closing_price_usd son evidencia REAL de cierre — pesan
+   más que las publicaciones, que son aspiración de otro vendedor.
+4. "rationale": 1-2 párrafos en español rioplatense explicando el porqué de los números,
+   citando la mediana de USD/m² y los comparables más relevantes por dirección. Sin markdown.
+5. NO inventes datos que no estén en el contexto. Números enteros en USD.
+
+Devolvé SOLO un JSON válido:
+{ "suggested_price": n, "test_price": n, "expected_close_price": n, "rationale": "..." }`
+
+    const user = `Propiedad: ${JSON.stringify(ctx.property)}
+Estadística del sistema: ${JSON.stringify(ctx.stats)}
+Comparables (${ctx.comparables.length}): ${JSON.stringify(ctx.comparables)}
+FODA: fortalezas: ${ctx.swot.strengths ?? 'sin datos'} | debilidades: ${ctx.swot.weaknesses ?? 'sin datos'}`
+
+    const raw = await this.chat(
+      [{ role: 'system', content: system }, { role: 'user', content: user }],
+      { maxTokens: 1200, timeoutMs: 30_000, temperature: 0.3 },
+    )
+    const p = parseJsonLoose(raw) ?? {}
+    const suggested = num(p.suggested_price)
+    if (suggested === null) {
+      const err = new Error(
+        'La IA no devolvió precios utilizables. Probá de nuevo.',
+      ) as Error & { statusCode: number }
+      err.statusCode = 502
+      throw err
+    }
+    return {
+      suggested_price: suggested,
+      test_price: num(p.test_price) ?? suggested,
+      expected_close_price: num(p.expected_close_price) ?? suggested,
+      // El use case recalcula usd_per_m2 desde el precio final; esto es placeholder.
+      usd_per_m2: 0,
+      rationale: typeof p.rationale === 'string' ? p.rationale.trim() : '',
     }
   }
 

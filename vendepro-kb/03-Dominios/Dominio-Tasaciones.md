@@ -6,6 +6,7 @@ El producto estrella de VendéPro. Cada tasación es un documento técnico-comer
 
 ```
 crear tasación → llenar ficha (datos físicos) → cargar comparables (Zonaprop)
+              → "Sugerir con IA" completa los 3 precios + justificación ([[API-ai]], 2026-09-09)
               → ajustar bloques → publicar (genera public_slug)
               → generar PDF (CF Browser Rendering) → enviar al cliente
 ```
