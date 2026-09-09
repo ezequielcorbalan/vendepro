@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { corsMiddleware, errorHandler, createAuthMiddleware, D1LeadRepository, D1PropertyRepository, D1ReservationRepository, D1CalendarRepository, D1AnalyticsReportRepository, D1ActivityRepository, D1AppraisalRepository, D1ContactRepository, D1ObjectiveRepository, D1UserRepository, D1MetaIntegrationRepository, JwtAuthService, MetaAdsInsightsHttp, decrypt } from '@vendepro/infrastructure'
+import { corsMiddleware, errorHandler, createAuthMiddleware, D1LeadRepository, D1PropertyRepository, D1ReservationRepository, D1CalendarRepository, D1AnalyticsReportRepository, D1ActivityRepository, D1AppraisalRepository, D1ContactRepository, D1ObjectiveRepository, D1UserRepository, D1StageHistoryRepository, D1MetaIntegrationRepository, JwtAuthService, MetaAdsInsightsHttp, decrypt } from '@vendepro/infrastructure'
 import {
   GetCampaignInsightsUseCase,
   GetDashboardStatsUseCase,
@@ -18,6 +18,7 @@ import {
   parseAnalyticsPeriod,
   periodStartDate,
   computeLeadFunnel,
+  computeRealLeadFunnel,
   computeConversionRate,
 } from '@vendepro/core'
 
@@ -99,8 +100,26 @@ app.get('/dashboard', async (c) => {
     archivados: sb['archivado'] ?? 0,
   }
 
-  // Funnel: acotado al período. KPIs y conversión: toda la historia.
-  const funnel = computeLeadFunnel(base.funnelStageBreakdown, base.funnelTotalLeads)
+  // Embudo real: cuántos leads ALCANZARON cada etapa, cruzando el historial
+  // de transiciones. El cálculo viejo mostraba en qué etapa está parado cada
+  // lead hoy, así que un captado desaparecía de "nuevo" y "contactado" y el
+  // gráfico salía con forma imposible.
+  //
+  // Best-effort: si el historial no se puede leer, se cae al conteo por etapa
+  // actual. Un embudo impreciso es mejor que un dashboard que no carga.
+  let funnel
+  try {
+    const transitions = await new D1StageHistoryRepository(db)
+      .findTransitionsForLeads(orgId, base.funnelLeads.map(l => l.id))
+    funnel = computeRealLeadFunnel(base.funnelLeads, transitions, 'vendedor')
+  } catch {
+    funnel = {
+      stages: computeLeadFunnel(base.funnelStageBreakdown, base.funnelTotalLeads)
+        .map(s => ({ ...s, step_pct: 0, median_days_from_prev: null, timed_on: 0 })),
+      total: base.funnelTotalLeads,
+      with_history: 0,
+    }
+  }
   const conversionRate = computeConversionRate(sb, base.totalLeads)
 
   return c.json({
