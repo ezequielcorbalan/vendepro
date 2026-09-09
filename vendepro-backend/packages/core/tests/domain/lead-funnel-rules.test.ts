@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   computeRealLeadFunnel,
+  computeCaptureTail,
   type FunnelLead,
   type FunnelHistoryEntry,
 } from '../../src/domain/rules/lead-funnel-rules'
@@ -157,5 +158,109 @@ describe('computeRealLeadFunnel', () => {
       .find(s => s.stage === 'contactado')!
     expect(contactado.timed_on).toBe(0)
     expect(contactado.median_days_from_prev).toBeNull()
+  })
+})
+
+describe('computeCaptureTail', () => {
+  const prop = (id: string, lead_id: string | null, commercial_stage: string | null) =>
+    ({ id, lead_id, commercial_stage })
+
+  it('sigue a la propiedad que salió de cada lead captado', () => {
+    const captados = new Set(['l1', 'l2', 'l3'])
+    const props = [
+      prop('p1', 'l1', 'vendida'),
+      prop('p2', 'l2', 'publicada'),
+      prop('p3', 'l3', 'captada'),
+    ]
+
+    const { stages, captured, traced } = computeCaptureTail(captados, props, [])
+    expect(captured).toBe(3)
+    expect(traced).toBe(3)
+    const byKey = Object.fromEntries(stages.map(s => [s.stage, s.count]))
+    expect(byKey.reservada).toBe(1) // sólo la vendida pasó por acá
+    expect(byKey.vendida).toBe(1)
+  })
+
+  it('publicada no es un escalón: publicar es consecuencia de captar', () => {
+    // Como filtro no separa nada — toda captación se publica.
+    const props = [prop('p1', 'l1', 'publicada'), prop('p2', 'l2', 'captada')]
+    const { stages } = computeCaptureTail(new Set(['l1', 'l2']), props, [])
+
+    expect(stages.map(s => s.stage)).toEqual(['reservada', 'vendida'])
+    // Una publicada todavía no se reservó: no suma a ningún escalón.
+    expect(stages.every(s => s.count === 0)).toBe(true)
+  })
+
+  it('ignora las propiedades que no salieron de un lead captado del período', () => {
+    // Sumarlas sería mezclar poblaciones — el error que el embudo viejo hacía.
+    const captados = new Set(['l1'])
+    const props = [
+      prop('p1', 'l1', 'vendida'),
+      prop('p2', 'otro-lead', 'vendida'),
+      prop('p3', null, 'vendida'), // cargada suelta
+    ]
+
+    const { stages, traced } = computeCaptureTail(captados, props, [])
+    expect(traced).toBe(1)
+    expect(stages.find(s => s.stage === 'vendida')!.count).toBe(1)
+  })
+
+  it('mide el porcentaje sobre los leads captados, no sobre las propiedades', () => {
+    // "De lo que captamos, cuánto se vendió" es la pregunta del usuario.
+    const captados = new Set(['l1', 'l2', 'l3', 'l4'])
+    const props = [prop('p1', 'l1', 'vendida')]
+
+    const vendida = computeCaptureTail(captados, props, []).stages
+      .find(s => s.stage === 'vendida')!
+    expect(vendida.pct).toBe(25)
+  })
+
+  it('no infiere avance desde una etapa de cierre de la propiedad', () => {
+    const captados = new Set(['l1'])
+    const props = [prop('p1', 'l1', 'perdida')]
+
+    const { stages } = computeCaptureTail(captados, props, [])
+    expect(stages.every(s => s.count === 0)).toBe(true)
+  })
+
+  it('usa el historial de la propiedad cuando existe', () => {
+    const captados = new Set(['l1'])
+    const props = [prop('p1', 'l1', 'perdida')]
+    const history = [
+      step('p1', 'publicada', '2026-02-01T00:00:00.000Z'),
+      step('p1', 'reservada', '2026-02-11T00:00:00.000Z'),
+    ]
+
+    const { stages } = computeCaptureTail(captados, props, history)
+    const byKey = Object.fromEntries(stages.map(s => [s.stage, s.count]))
+    expect(byKey.reservada).toBe(1)
+    expect(byKey.vendida).toBe(0)
+  })
+
+  it('avisa cuántos captados tienen propiedad vinculada', () => {
+    // Sin esto, "0 publicadas" se lee como "no publicamos nada" cuando lo que
+    // pasó es que la propiedad se cargó sin vincular al lead.
+    const { captured, traced } = computeCaptureTail(new Set(['l1', 'l2', 'l3']), [], [])
+    expect(captured).toBe(3)
+    expect(traced).toBe(0)
+  })
+
+  it('nunca crece', () => {
+    const captados = new Set(['l1', 'l2', 'l3'])
+    const props = [
+      prop('p1', 'l1', 'vendida'),
+      prop('p2', 'l2', 'reservada'),
+      prop('p3', 'l3', 'publicada'),
+    ]
+    const { stages } = computeCaptureTail(captados, props, [])
+    for (let i = 1; i < stages.length; i++) {
+      expect(stages[i]!.count).toBeLessThanOrEqual(stages[i - 1]!.count)
+    }
+  })
+
+  it('no se cae sin leads captados', () => {
+    const { stages, captured } = computeCaptureTail(new Set(), [], [])
+    expect(captured).toBe(0)
+    expect(stages.every(s => s.count === 0 && s.pct === 0)).toBe(true)
   })
 })

@@ -6,7 +6,7 @@ import {
   Clock, CheckCircle2, BarChart3, ChevronRight, ChevronDown,
   Home, Calculator, Activity, MessageCircle
 } from 'lucide-react'
-import { LEAD_STAGES, LEAD_PIPELINE_STAGES, EVENT_TYPES, getStageConfig } from '@/lib/crm-config'
+import { LEAD_STAGES, LEAD_PIPELINE_STAGES, PROPERTY_STAGES, EVENT_TYPES, getStageConfig } from '@/lib/crm-config'
 import { apiFetch } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { AgentSelector, type AgentOption } from '@/components/ui/AgentSelector'
@@ -20,69 +20,7 @@ import { ProgressBar } from '@/components/ui/Progress'
 import { Heading, Text } from '@/components/ui/Typography'
 import { Alert } from '@/components/ui/Alert'
 import { Select } from '@/components/ui/Input'
-
-interface FunnelStage {
-  stage: string
-  label: string
-  count: number
-  pct: number
-  step_pct: number
-  median_days_from_prev: number | null
-  timed_on: number
-}
-
-/**
- * Embudo de conversión. Las barras son proporcionales al TOTAL de leads que
- * entraron, no a la barra más alta: de otro modo un embudo con poca caída y
- * uno con mucha se dibujan igual, y la forma es justamente lo que hay que ver.
- *
- * Entre etapa y etapa va la conversión del paso y el tiempo mediano, que es
- * donde se lee en qué escalón se estanca el pipeline.
- */
-function FunnelChart({ stages, total }: { stages: FunnelStage[]; total: number }) {
-  return (
-    <div className="space-y-1">
-      {stages.map((item, i) => {
-        const cfg = getStageConfig(item.stage)
-        // Piso de ancho para que una etapa con pocos leads siga siendo legible
-        // (el número va adentro de la barra).
-        const width = total > 0 ? Math.max((item.count / total) * 100, 7) : 7
-        return (
-          <div key={item.stage}>
-            {i > 0 && (
-              <div className="flex items-center gap-2 sm:gap-3 py-0.5">
-                <div className="w-20 sm:w-28 shrink-0" />
-                <div className="flex items-center gap-1 text-gray-400">
-                  <ChevronDown className="w-3 h-3 shrink-0" />
-                  <Text size="xs" tone="muted" className="text-[10px]">
-                    {item.step_pct}% pasa
-                    {item.median_days_from_prev !== null && ` · ${item.median_days_from_prev} d`}
-                  </Text>
-                </div>
-              </div>
-            )}
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="w-20 sm:w-28 shrink-0 text-right">
-                <Text size="xs" tone="muted" className="text-[10px] sm:text-xs truncate">{item.label}</Text>
-              </div>
-              <div className="flex-1 h-7 bg-gray-50 rounded overflow-hidden">
-                <div
-                  className={`h-full rounded flex items-center px-2 transition-all duration-500 ${cfg.color}`}
-                  style={{ width: `${width}%` }}
-                >
-                  <span className="text-xs font-semibold">{item.count}</span>
-                </div>
-              </div>
-              <div className="w-9 shrink-0 text-right">
-                <Text size="xs" tone="muted" className="tabular-nums">{item.pct}%</Text>
-              </div>
-            </div>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
+import { FunnelChart } from '@/components/dashboard/FunnelChart'
 
 function WeeklyChart({ data }: { data: { day: string; count: number }[] }) {
   const max = Math.max(...data.map(d => d.count), 1)
@@ -192,7 +130,7 @@ export default function DashboardCRM() {
     )
   }
 
-  const { leads, overdueLeads, tasaciones, activity, weeklyActivity, todayEvents, pendingFollowups, funnel, conversionRate, recentActivities, pipelineBreakdown } = data
+  const { leads, overdueLeads, tasaciones, activity, weeklyActivity, todayEvents, pendingFollowups, funnel, captureTail, conversionRate, recentActivities, pipelineBreakdown } = data
 
   // La API devuelve pipelineBreakdown con las claves crudas de etapa
   // (nuevo, asignado, presentada, invalido, finalizado…). Se usa como
@@ -320,6 +258,26 @@ export default function DashboardCRM() {
             </Select>
           </div>
           <FunnelChart stages={funnel?.stages ?? []} total={funnel?.total ?? 0} />
+
+          {/* Después de captar el pipeline sigue, pero en otra entidad: la
+              propiedad. No son otros leads —`properties.lead_id` recuerda de
+              cuál salió cada una—, pero sí otro objeto, así que va separado
+              para que se lea como continuación y no como más del mismo conteo. */}
+          {captureTail && captureTail.captured > 0 && (
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <Text size="xs" tone="muted" className="mb-2 block">
+                De lo captado, en la propiedad
+              </Text>
+              <FunnelChart stages={captureTail.stages} total={captureTail.captured} domain="property" />
+              {captureTail.traced < captureTail.captured && (
+                <Text size="xs" tone="muted" className="mt-2 block text-[10px]">
+                  {captureTail.traced} de {captureTail.captured} captados tienen la propiedad
+                  vinculada en el CRM — el resto se cargó sin asociar al lead que la originó.
+                </Text>
+              )}
+            </div>
+          )}
+
           {/* Los leads importados de antes no tienen historial de etapas, así
               que sus tiempos no se pueden calcular. Decirlo evita que se lea
               como "el equipo tarda X" cuando la muestra es una minoría. */}

@@ -19,6 +19,7 @@ import {
   periodStartDate,
   computeLeadFunnel,
   computeRealLeadFunnel,
+  computeCaptureTail,
   computeConversionRate,
 } from '@vendepro/core'
 
@@ -108,10 +109,23 @@ app.get('/dashboard', async (c) => {
   // Best-effort: si el historial no se puede leer, se cae al conteo por etapa
   // actual. Un embudo impreciso es mejor que un dashboard que no carga.
   let funnel
+  let captureTail = null
   try {
-    const transitions = await new D1StageHistoryRepository(db)
-      .findTransitionsForLeads(orgId, base.funnelLeads.map(l => l.id))
+    const stageHistory = new D1StageHistoryRepository(db)
+    const transitions = await stageHistory.findTransitions(orgId, 'lead', base.funnelLeads.map(l => l.id))
     funnel = computeRealLeadFunnel(base.funnelLeads, transitions, 'vendedor')
+
+    // Lo que pasa después de captar. Vive en propiedades, pero no es otra
+    // población: `properties.lead_id` recuerda de qué lead salió cada una, así
+    // que se sigue a los mismos leads del embudo de arriba.
+    const capturedLeadIds = new Set(
+      base.funnelLeads.filter(l => l.stage === 'captado').map(l => l.id),
+    )
+    const tracedProperties = base.funnelProperties
+      .filter(p => p.lead_id && capturedLeadIds.has(p.lead_id))
+    const propertyTransitions = await stageHistory
+      .findTransitions(orgId, 'property', tracedProperties.map(p => p.id))
+    captureTail = computeCaptureTail(capturedLeadIds, base.funnelProperties, propertyTransitions)
   } catch {
     funnel = {
       stages: computeLeadFunnel(base.funnelStageBreakdown, base.funnelTotalLeads)
@@ -135,6 +149,7 @@ app.get('/dashboard', async (c) => {
     // viven en GET /team-stats, que el dashboard pide aparte y sólo si el
     // usuario es de la inmobiliaria.
     funnel,
+    captureTail,
     conversionRate,
     pipelineBreakdown: sb,
   })

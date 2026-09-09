@@ -23,6 +23,8 @@ export interface DashboardStats {
    * historial de etapas: sin los ids no se puede saber por dónde pasaron.
    */
   funnelLeads: Array<{ id: string; stage: string; created_at: string }>
+  /** Propiedades de la org, para seguir el embudo después de captar. */
+  funnelProperties: Array<{ id: string; lead_id: string | null; commercial_stage: string | null }>
 }
 
 export class GetDashboardStatsUseCase {
@@ -78,6 +80,11 @@ export class GetDashboardStatsUseCase {
       funnelStageBreakdown,
       funnelTotalLeads: funnelLeads.length,
       funnelLeads: funnelLeads.map(l => ({ id: l.id, stage: l.stage, created_at: l.created_at })),
+      funnelProperties: properties.map(p => ({
+        id: p.id,
+        lead_id: (p as any).lead_id ?? null,
+        commercial_stage: (p as any).commercial_stage ?? (p as any).status ?? null,
+      })),
     }
   }
 }
