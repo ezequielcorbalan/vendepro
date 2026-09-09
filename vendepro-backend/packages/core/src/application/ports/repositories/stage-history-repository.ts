@@ -17,10 +17,10 @@ export interface StageHistoryEntry {
 
 export interface StageHistoryRepository {
   /**
-   * Transiciones de un conjunto de leads, para el embudo. Devuelve sólo lo
-   * mínimo (lead, etapa destino, cuándo) porque son miles de filas.
+   * Transiciones de un conjunto de entidades, para el embudo. Devuelve sólo
+   * lo mínimo (entidad, etapa destino, cuándo) porque son miles de filas.
    */
-  findTransitionsForLeads(orgId: string, leadIds: string[]): Promise<Array<{ entity_id: string; to_stage: string; changed_at: string }>>
+  findTransitions(orgId: string, entityType: StageHistoryEntityType, entityIds: string[]): Promise<Array<{ entity_id: string; to_stage: string; changed_at: string }>>
   findByEntity(entityType: StageHistoryEntityType, entityId: string, orgId: string): Promise<StageHistoryEntry[]>
   log(entry: Omit<StageHistoryEntry, 'id' | 'changed_at'>): Promise<void>
 }

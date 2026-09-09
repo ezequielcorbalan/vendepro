@@ -97,6 +97,46 @@ export interface LeadFunnelResult {
   with_history: number
 }
 
+/**
+ * Lo que pasa DESPUÉS de captar. El pipeline del negocio no termina en
+ * "captado": la propiedad se publica, se reserva y se vende. Eso vive en otra
+ * entidad, pero no es otra población — `properties.lead_id` recuerda de qué
+ * lead salió cada captación, así que se puede seguir a los mismos leads.
+ */
+const CAPTURE_TAIL_STAGES: Array<{ key: string; label: string }> = [
+  { key: 'publicada', label: 'Publicada' },
+  { key: 'reservada', label: 'Reservada' },
+  { key: 'vendida', label: 'Vendida' },
+]
+
+/** Etapa comercial de la propiedad → posición en la escalera de arriba. */
+const PROPERTY_STAGE_ORDER: Record<string, number> = {
+  propuesta: -1,
+  captada: -1,
+  documentacion: -1,
+  publicada: 0,
+  reservada: 1,
+  vendida: 2,
+}
+
+export interface FunnelProperty {
+  id: string
+  lead_id: string | null
+  commercial_stage: string | null
+}
+
+export interface CaptureTailResult {
+  stages: FunnelStageResult[]
+  /** Leads que llegaron a "captado" — el denominador de esta cola. */
+  captured: number
+  /**
+   * De esos, cuántos tienen una propiedad cargada en el CRM. Sin este número
+   * la cola se lee como "no publicamos nada" cuando en realidad la propiedad
+   * se cargó suelta, sin vincular al lead que la originó.
+   */
+  traced: number
+}
+
 function median(values: number[]): number | null {
   if (values.length === 0) return null
   const sorted = [...values].sort((a, b) => a - b)
@@ -216,4 +256,88 @@ export function computeRealLeadFunnel(
     total,
     with_history: new Set(history.map(h => h.entity_id)).size,
   }
+}
+
+/**
+ * Continúa el embudo más allá de "captado", siguiendo la propiedad que salió
+ * de cada lead captado.
+ *
+ * Mismo criterio que el embudo de leads: cuenta las etapas que la propiedad
+ * ALCANZÓ alguna vez, no dónde está parada. Una propiedad vendida cuenta
+ * también en publicada y reservada, aunque nadie haya registrado esos pasos.
+ *
+ * @param capturedLeadIds Leads que llegaron a "captado".
+ * @param properties      Propiedades de la org (se filtran por lead_id acá).
+ * @param history         Transiciones de esas propiedades.
+ */
+export function computeCaptureTail(
+  capturedLeadIds: Set<string>,
+  properties: FunnelProperty[],
+  history: FunnelHistoryEntry[],
+): CaptureTailResult {
+  const captured = capturedLeadIds.size
+
+  // Sólo las propiedades que nacieron de un lead captado del período. Una
+  // propiedad cargada suelta no pertenece a esta cohorte y sumarla sería
+  // exactamente el error que el embudo viejo cometía: mezclar poblaciones.
+  const traced = properties.filter(p => p.lead_id && capturedLeadIds.has(p.lead_id))
+  const reachedAt = buildReachedAt(history)
+
+  const reachedByStage = new Map<string, Set<string>>()
+  const timestampsByProperty = new Map<string, Map<string, string>>()
+
+  for (const property of traced) {
+    const stamps = new Map(reachedAt.get(property.id) ?? new Map<string, string>())
+
+    // Relleno por etapa actual: una propiedad vendida pasó por publicada y
+    // reservada aunque el historial no lo tenga (las importadas no lo tienen).
+    // Las etapas de cierre —perdida, vencida, suspendida— no infieren nada.
+    const currentIndex = PROPERTY_STAGE_ORDER[property.commercial_stage ?? '']
+    if (currentIndex !== undefined && currentIndex >= 0) {
+      for (let i = 0; i <= currentIndex; i++) {
+        const key = CAPTURE_TAIL_STAGES[i]?.key
+        if (key && !stamps.has(key)) stamps.set(key, '')
+      }
+    }
+
+    timestampsByProperty.set(property.id, stamps)
+    for (const stage of stamps.keys()) {
+      if (PROPERTY_STAGE_ORDER[stage] === undefined || PROPERTY_STAGE_ORDER[stage]! < 0) continue
+      let set = reachedByStage.get(stage)
+      if (!set) { set = new Set(); reachedByStage.set(stage, set) }
+      set.add(property.id)
+    }
+  }
+
+  const stages: FunnelStageResult[] = CAPTURE_TAIL_STAGES.map((stage, index) => {
+    const count = reachedByStage.get(stage.key)?.size ?? 0
+    // El primer escalón se compara contra los leads captados; los demás
+    // contra el escalón anterior.
+    const prev = index > 0 ? CAPTURE_TAIL_STAGES[index - 1] : null
+    const prevCount = prev ? (reachedByStage.get(prev.key)?.size ?? 0) : captured
+
+    const durations: number[] = []
+    if (prev) {
+      for (const stamps of timestampsByProperty.values()) {
+        const from = stamps.get(prev.key)
+        const to = stamps.get(stage.key)
+        if (!from || !to) continue
+        const days = daysBetween(from, to)
+        if (days !== null) durations.push(days)
+      }
+    }
+
+    return {
+      stage: stage.key,
+      label: stage.label,
+      count,
+      // Sobre los leads captados: "de los que captamos, cuántos se vendieron".
+      pct: captured > 0 ? Math.round((count / captured) * 100) : 0,
+      step_pct: prevCount > 0 ? Math.round((count / prevCount) * 100) : 0,
+      median_days_from_prev: median(durations),
+      timed_on: durations.length,
+    }
+  })
+
+  return { stages, captured, traced: traced.length }
 }

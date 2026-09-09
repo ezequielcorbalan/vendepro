@@ -23,24 +23,25 @@ export class D1StageHistoryRepository implements StageHistoryRepository {
     }))
   }
 
-  async findTransitionsForLeads(
+  async findTransitions(
     orgId: string,
-    leadIds: string[],
+    entityType: StageHistoryEntityType,
+    entityIds: string[],
   ): Promise<Array<{ entity_id: string; to_stage: string; changed_at: string }>> {
-    if (leadIds.length === 0) return []
+    if (entityIds.length === 0) return []
 
     // D1 limita los parámetros por statement, así que se pide de a tandas.
     // Mismo tamaño que usa D1TagRepository para lo mismo.
     const CHUNK = 50
     const out: Array<{ entity_id: string; to_stage: string; changed_at: string }> = []
-    for (let i = 0; i < leadIds.length; i += CHUNK) {
-      const chunk = leadIds.slice(i, i + CHUNK)
+    for (let i = 0; i < entityIds.length; i += CHUNK) {
+      const chunk = entityIds.slice(i, i + CHUNK)
       const placeholders = chunk.map(() => '?').join(',')
       const rows = (await this.db.prepare(`
         SELECT entity_id, to_stage, changed_at
         FROM stage_history
-        WHERE org_id = ? AND entity_type = 'lead' AND entity_id IN (${placeholders})
-      `).bind(orgId, ...chunk).all()).results as any[]
+        WHERE org_id = ? AND entity_type = ? AND entity_id IN (${placeholders})
+      `).bind(orgId, entityType, ...chunk).all()).results as any[]
       for (const r of rows) {
         out.push({ entity_id: r.entity_id, to_stage: r.to_stage, changed_at: r.changed_at })
       }
