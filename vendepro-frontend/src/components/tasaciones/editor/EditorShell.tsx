@@ -85,12 +85,64 @@ export function EditorShell({ initial, snapshot, context }: Props) {
   // usuario en vez de tragarnos el error en consola (puede creer que guardó).
   const [compError, setCompError] = useState<string | null>(null)
 
+  // Sugerencia de precios con IA (sección Precios)
+  const [suggestingPrices, setSuggestingPrices] = useState(false)
+  const [pricingRationale, setPricingRationale] = useState<string | null>(null)
+
   useEffect(() => {
     apiFetch('admin', '/org-settings').then(r => r.json() as Promise<any>).then(d => {
       if (isValidWeights(d.surface_weights)) setWeights(d.surface_weights)
       if (d.name) setOrgCtx({ name: d.name, logo_url: d.logo_url ?? null, brand_color: d.brand_color ?? null, brand_accent_color: d.brand_accent_color ?? null })
     }).catch(() => {})
   }, [])
+
+  /** Los comparables cargados + los datos de la propiedad → los 3 precios y su porqué. */
+  const handleSuggestPricing = async () => {
+    setSuggestingPrices(true)
+    setPricingRationale(null)
+    try {
+      const a = state.appraisal
+      const res = await apiFetch('ai', '/suggest-appraisal-pricing', {
+        method: 'POST',
+        body: JSON.stringify({
+          property: {
+            address: a.property_address ?? null,
+            neighborhood: a.neighborhood ?? null,
+            property_type: a.property_type ?? null,
+            weighted_area: computedWeighted ?? a.weighted_area ?? null,
+            covered_area: a.covered_area ?? null,
+            total_area: a.total_area ?? null,
+          },
+          comparables: comparables.map(c => ({
+            address: c.address ?? null,
+            kind: c.kind ?? 'publicacion',
+            total_area: c.total_area ?? null,
+            price: c.price ?? null,
+            closing_price_usd: c.closing_price_usd ?? null,
+            usd_per_m2: c.usd_per_m2 ?? null,
+            days_on_market: c.days_on_market ?? null,
+            views_per_day: c.views_per_day ?? null,
+          })),
+          swot: { strengths: a.strengths ?? null, weaknesses: a.weaknesses ?? null },
+        }),
+      })
+      const data = (await res.json().catch(() => ({}))) as any
+      if (!res.ok) throw new Error(data?.error || `Error al sugerir precios (HTTP ${res.status})`)
+      dispatch({ type: 'patch_appraisal', patch: {
+        suggested_price: data.suggested_price ?? null,
+        test_price: data.test_price ?? null,
+        expected_close_price: data.expected_close_price ?? null,
+        usd_per_m2: data.usd_per_m2 ?? null,
+      } })
+      if (data.rationale) setPricingRationale(data.rationale)
+      toast('Precios sugeridos — revisalos y ajustá lo que haga falta')
+    } catch (err) {
+      console.error('[suggest-pricing] fallo la sugerencia:', err)
+      toast((err as Error)?.message ?? 'No se pudieron sugerir precios', 'error')
+    } finally {
+      setSuggestingPrices(false)
+    }
+  }
 
   const handleAddComparable = async (data: ComparableData) => {
     try {
@@ -327,7 +379,25 @@ export function EditorShell({ initial, snapshot, context }: Props) {
           </section>
 
           <section className="mt-6">
-            <SectionTitle>Precios</SectionTitle>
+            <div className="flex items-center justify-between">
+              <SectionTitle>Precios</SectionTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSuggestPricing}
+                loading={suggestingPrices}
+                disabled={suggestingPrices || comparables.length === 0}
+                icon={<Wand2 className="w-4 h-4" />}
+                title={comparables.length === 0 ? 'Cargá al menos un comparable primero' : 'Sugerir precios desde los comparables'}
+              >
+                {suggestingPrices ? 'Calculando...' : 'Sugerir con IA'}
+              </Button>
+            </div>
+            {pricingRationale && (
+              <Alert tone="brand" className="mt-2 text-xs whitespace-pre-wrap" onDismiss={() => setPricingRationale(null)}>
+                {pricingRationale}
+              </Alert>
+            )}
             <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
               <AppraisalField label="Precio sugerido (USD)" type="number" value={state.appraisal.suggested_price} onChange={v => dispatch({ type: 'patch_appraisal', patch: { suggested_price: v ? Number(v) : null } })} />
               <AppraisalField label="Precio de prueba (USD)" type="number" value={state.appraisal.test_price} onChange={v => dispatch({ type: 'patch_appraisal', patch: { test_price: v ? Number(v) : null } })} />

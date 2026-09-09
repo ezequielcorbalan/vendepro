@@ -78,6 +78,9 @@ export default function NuevoReporte() {
   // KiteProp PDF extraction
   const [extractingPdf, setExtractingPdf] = useState(false)
 
+  // Sugerencia de conclusión con IA (paso 3)
+  const [suggesting, setSuggesting] = useState(false)
+
   // Load existing report if editing
   useEffect(() => {
     if (!editId) return
@@ -347,6 +350,37 @@ export default function NuevoReporte() {
     }
   }
 
+  /** Redacta la conclusión con IA a partir de las métricas y la competencia ya cargadas. */
+  async function handleSuggestConclusion() {
+    setSuggesting(true)
+    setError('')
+    try {
+      const res = await apiFetch('ai', '/suggest-report-conclusion', {
+        method: 'POST',
+        body: JSON.stringify({
+          periodLabel,
+          periodStart,
+          periodEnd,
+          metrics: metricsList,
+          competitors,
+        }),
+      })
+      const data = (await res.json().catch(() => ({}))) as any
+      if (!res.ok) {
+        throw new Error(data?.error || `Error al generar la conclusión (HTTP ${res.status})`)
+      }
+      if (data.conclusion) setConclusion(data.conclusion)
+      // La referencia de precio sólo se completa si el campo está vacío:
+      // es secundaria y no queremos pisar texto que el agente ya escribió.
+      if (data.price_reference && !priceReference.trim()) setPriceReference(data.price_reference)
+    } catch (err) {
+      console.error('[suggest-conclusion] fallo la generacion:', err)
+      setError((err as Error)?.message ?? 'No se pudo generar la conclusión.')
+    } finally {
+      setSuggesting(false)
+    }
+  }
+
   async function handleSubmit(publish: boolean) {
     // Los "required" de los pasos 1 y 3 no se validaban en ningún lado: se
     // podía publicar un reporte sin período (slug "reporte-periodo-…") y sin
@@ -613,14 +647,40 @@ export default function NuevoReporte() {
               />
             </Field>
 
-            <Field label="Conclusión y recomendación" required>
+            <div>
+              {/* Field no tiene slot de acción junto al label; el label vive acá
+                  afuera (mismas clases que el de Field) y la asociación se
+                  mantiene por htmlFor. ds-todo: candidato a prop "action" en Field */}
+              <div className="flex items-center justify-between mb-1.5">
+                <label htmlFor="conclusion-ai" className="text-sm font-medium text-gray-700">
+                  Conclusión y recomendación<span className="text-danger ml-0.5">*</span>
+                </label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSuggestConclusion}
+                  loading={suggesting}
+                  disabled={suggesting}
+                  icon={<Sparkles className="w-4 h-4" />}
+                >
+                  {suggesting ? 'Redactando...' : 'Sugerir con IA'}
+                </Button>
+              </div>
+              <Field htmlFor="conclusion-ai">
               <Textarea
                 value={conclusion}
                 onChange={(e) => setConclusion(e.target.value)}
                 rows={6}
-                placeholder="Análisis del desempeño y recomendaciones para el propietario..."
+                placeholder="Análisis del desempeño y recomendaciones para el propietario... o tocá «Sugerir con IA» y editá el borrador."
               />
-            </Field>
+              </Field>
+              {suggesting && (
+                <div className="flex items-center gap-2 text-sm text-brand-gray mt-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Analizando las métricas cargadas y redactando el borrador...
+                </div>
+              )}
+            </div>
           </div>
         )}
 

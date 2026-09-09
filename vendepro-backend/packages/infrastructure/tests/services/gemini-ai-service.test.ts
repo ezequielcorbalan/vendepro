@@ -198,3 +198,67 @@ describe('GeminiAIService · extractPortalReportFromPdf (reporte de KiteProp)', 
     await expect(svc().extractPortalReportFromPdf({ pdfBase64: 'JVBERi0=' })).rejects.toMatchObject({ statusCode: 502 })
   })
 })
+
+describe('GeminiAIService · generateReportConclusion', () => {
+  const ctx = {
+    periodLabel: 'Agosto 2026',
+    daysInPeriod: 30,
+    viewsPerDay: 20,
+    healthLabel: 'amarillo — tracción media',
+    metrics: [{ source: 'zonaprop', impressions: 5400, portal_visits: 600, inquiries: 12, phone_calls: null, whatsapp: null, in_person_visits: 4, offers: 1, ranking_position: null, avg_market_price: 118000 }],
+    competitors: [{ address: 'Aguirre 900', price: 95000, notes: 'similar' }],
+  }
+
+  it('manda el semáforo ya calculado y devuelve conclusion + price_reference', async () => {
+    const f = vi.spyOn(globalThis, 'fetch' as any).mockResolvedValue(ok(JSON.stringify({
+      conclusion: 'El aviso tuvo tracción media...',
+      price_reference: 'El precio está alineado con la zona.',
+    })) as any)
+
+    const r = await svc().generateReportConclusion(ctx)
+    expect(r.conclusion).toContain('tracción media')
+    expect(r.price_reference).toContain('alineado')
+
+    const body = JSON.parse((f.mock.calls[0]![1] as any).body)
+    expect(body.messages[1].content).toContain('amarillo — tracción media')
+    expect(body.messages[1].content).toContain('Aguirre 900')
+  })
+
+  it('502 si el modelo no devuelve una conclusión utilizable — nunca un campo vacío mudo', async () => {
+    vi.spyOn(globalThis, 'fetch' as any).mockResolvedValue(ok('{"conclusion": ""}') as any)
+    await expect(svc().generateReportConclusion(ctx)).rejects.toMatchObject({ statusCode: 502 })
+  })
+
+  it('price_reference vacío o ausente normaliza a null', async () => {
+    vi.spyOn(globalThis, 'fetch' as any).mockResolvedValue(ok('{"conclusion": "Buen período.", "price_reference": "  "}') as any)
+    const r = await svc().generateReportConclusion(ctx)
+    expect(r.price_reference).toBeNull()
+  })
+})
+
+describe('GeminiAIService · suggestAppraisalPricing', () => {
+  const ctx = {
+    property: { address: 'Juramento 2300', neighborhood: 'Belgrano', property_type: 'departamento', weighted_area: 50, covered_area: 45, total_area: 50 },
+    stats: { count: 3, median_usd_m2: 2000, min_usd_m2: 1900, max_usd_m2: 2100, base_value: 100000, floor_value: 90000, ceil_value: 110000 },
+    comparables: [{ address: 'A', kind: 'venta', total_area: 100, price: null, closing_price_usd: 190000, usd_per_m2: null, days_on_market: 45, views_per_day: 12 }],
+    swot: { strengths: 'luminoso', weaknesses: null },
+  }
+
+  it('manda la estadística al modelo y parsea los precios + rationale', async () => {
+    const f = vi.spyOn(globalThis, 'fetch' as any).mockResolvedValue(ok(JSON.stringify({
+      suggested_price: 98000, test_price: 104000, expected_close_price: 94000,
+      rationale: 'Con una mediana de 2000 USD/m²...',
+    })) as any)
+    const r = await svc().suggestAppraisalPricing(ctx)
+    expect(r.suggested_price).toBe(98000)
+    expect(r.rationale).toContain('mediana')
+    const body = JSON.parse((f.mock.calls[0]![1] as any).body)
+    expect(body.messages[1].content).toContain('"base_value":100000')
+    expect(body.messages[1].content).toContain('Juramento 2300')
+  })
+
+  it('502 si el modelo no devuelve un precio numérico', async () => {
+    vi.spyOn(globalThis, 'fetch' as any).mockResolvedValue(ok('{"rationale": "bla"}') as any)
+    await expect(svc().suggestAppraisalPricing(ctx)).rejects.toMatchObject({ statusCode: 502 })
+  })
+})

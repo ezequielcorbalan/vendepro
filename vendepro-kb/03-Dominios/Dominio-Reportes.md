@@ -32,9 +32,11 @@ Reportes mensuales de **performance de una propiedad publicada**: métricas de p
       por anti-bot, la API devuelve 422 y se cae al camino b)
    b. screenshot del aviso (subir o Ctrl+V) → POST /extract-comparable
    c. carga manual
-3. Agente revisa, edita comparables y secciones
-4. Publica → genera public_slug
-5. Cliente accede via /r/[slug]
+3. Contenido (paso 3): "Sugerir con IA" redacta la conclusión y la referencia
+   de precio desde las métricas cargadas → POST /suggest-report-conclusion
+4. Agente revisa, edita comparables y secciones
+5. Publica → genera public_slug
+6. Cliente accede via /r/[slug]
 ```
 
 Todo lo de IA va por [[API-ai]] (Gemini) como JSON con base64 — nada multipart.
