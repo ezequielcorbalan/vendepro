@@ -27,6 +27,7 @@ import {
   fireMarketingEvent,
   fireWebhookEvent,
   D1AgentProfileRepository,
+  D1MetaIntegrationRepository,
 } from '@vendepro/infrastructure'
 import {
   GetPublicReportUseCase,
@@ -48,6 +49,7 @@ import {
   buildLeadProperty,
   GetPortalFeedUseCase,
   GetPublicAgentLandingUseCase,
+  GetPublicTagConfigUseCase,
 } from '@vendepro/core'
 
 type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket; PUBLIC_BASE_URL?: string }
@@ -89,7 +91,13 @@ app.get('/public/appraisal/:slug', async (c) => {
   )
   const result = await uc.execute(c.req.param('slug'))
   if (!result) return c.json({ error: 'Not found' }, 404)
-  return c.json(result)
+
+  // GTM del agente dueño de la tasación: `/t/` montaba <GtmScript /> sin props,
+  // así que el componente devolvía null y el contenedor nunca cargaba.
+  const tag = await new GetPublicTagConfigUseCase(new D1MetaIntegrationRepository(c.env.DB))
+    .execute((result.appraisal as any)?.agent_id)
+
+  return c.json({ ...result, tag })
 })
 
 // ── PUBLIC VISIT FORM GET (/v/:slug) ───────────────────────────
@@ -129,11 +137,17 @@ app.get('/public/property-visit-form/:slug', async (c) => {
   if (!result) return c.json({ error: 'Not found' }, 404)
 
   const formObj = result.form.toObject()
+  // El front leía `org.gtm_container_id`, que nunca existió en esta respuesta:
+  // el contenedor vive en la config de marketing del agente, no en la org.
+  const tag = await new GetPublicTagConfigUseCase(new D1MetaIntegrationRepository(c.env.DB))
+    .execute(formObj.agent_id)
+
   return c.json({
     slug: formObj.slug,
     submitted: formObj.submitted_at !== null,
     property: result.property,
     org: result.org,
+    tag,
     // Si ya fue submitted, podemos mostrar read-only con las respuestas.
     response: formObj.submitted_at
       ? {
@@ -560,7 +574,7 @@ app.get('/l/:slug', async (c) => {
   const versions = new D1LandingVersionRepository(c.env.DB)
   const orgs = new D1OrganizationRepository(c.env.DB)
   const agentProfiles = new D1AgentProfileRepository(c.env.DB)
-  const uc = new GetPublicLandingUseCase(landings, versions, orgs, agentProfiles)
+  const uc = new GetPublicLandingUseCase(landings, versions, orgs, agentProfiles, new D1MetaIntegrationRepository(c.env.DB))
   const view = await uc.execute({ fullSlug: c.req.param('slug') })
   c.header('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=3600')
   return c.json({ landing: view })

@@ -8,7 +8,8 @@
   ],
   "triggers": {
     // */15: sync KiteProp · */5: campañas de email + cola de automatizaciones
-    "crons": ["*/15 * * * *", "*/5 * * * *"]
+    // 0 6: histórico de pauta, una vez por día (~3am en Argentina)
+    "crons": ["*/15 * * * *", "*/5 * * * *", "0 6 * * *"]
   },
   "vars": {
     // Base pública para los links que van dentro de los emails

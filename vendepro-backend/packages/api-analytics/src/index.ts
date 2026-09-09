@@ -1,7 +1,8 @@
 import { Hono } from 'hono'
-import { corsMiddleware, errorHandler, createAuthMiddleware, D1LeadRepository, D1PropertyRepository, D1ReservationRepository, D1CalendarRepository, D1AnalyticsReportRepository, D1ActivityRepository, D1AppraisalRepository, D1ContactRepository, D1ObjectiveRepository, D1UserRepository, D1MetaIntegrationRepository, JwtAuthService, MetaAdsInsightsHttp, decrypt } from '@vendepro/infrastructure'
+import { corsMiddleware, errorHandler, createAuthMiddleware, D1LeadRepository, D1PropertyRepository, D1ReservationRepository, D1CalendarRepository, D1AnalyticsReportRepository, D1ActivityRepository, D1AppraisalRepository, D1ContactRepository, D1ObjectiveRepository, D1UserRepository, D1MetaIntegrationRepository, D1PortalSpendRepository, D1PortalLeadCountRepository, D1CampaignGoalRepository, D1PropertyIncomeRepository, DolarApiFxRate, JwtAuthService, MetaAdsInsightsHttp, decrypt } from '@vendepro/infrastructure'
 import {
   GetCampaignInsightsUseCase,
+  GetPortalCostsUseCase,
   GetDashboardStatsUseCase,
   GetAppraisalStatsUseCase,
   GetActivityStatsUseCase,
@@ -18,6 +19,17 @@ import {
   periodStartDate,
   computeLeadFunnel,
   computeConversionRate,
+  parseMarketingPeriod,
+  marketingPeriodRanges,
+  periodDelta,
+  parseFunnelPipeline,
+  computeFunnelForPipeline,
+  computeConversionRateForPipeline,
+  FUNNEL_GOAL_STAGE,
+  splitCampaignsByGoal,
+  goalForPipeline,
+  aggregateIncome,
+  computeRoi,
 } from '@vendepro/core'
 
 type Env = { DB: D1Database; JWT_SECRET: string }
@@ -226,39 +238,77 @@ app.get('/reports', async (c) => {
 })
 
 // ── MARKETING DASHBOARD ──────────────────────────────────────
+// El panel tiene dos secciones — Captación (pipeline vendedor) y Demanda
+// (comprador) — y TODAS las series se filtran por el mismo pipeline. Antes el
+// embudo era vendedor y "leads por fuente" traía todos: el total de arriba no
+// era la suma de las barras de abajo, y los leads de portal (compradores
+// consultando una publicación) aparecían como la principal "fuente de
+// marketing" de una pantalla de captación.
+//
+// Los tres períodos son de calendario hasta hoy y el anterior es del mismo
+// largo en días — ver `marketing-period.ts` en core.
 
-function marketingFromDate(period: string): string {
-  const now = new Date()
-  if (period === 'quarter') {
-    const q = new Date(now); q.setMonth(q.getMonth() - 3)
-    return q.toISOString().slice(0, 10)
-  }
-  if (period === 'year') return `${now.getFullYear()}-01-01`
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+/** Etapas que ya pasaron el filtro de calificación, por pipeline. */
+const QUALIFIED_STAGES: Record<string, Set<string>> = {
+  vendedor: new Set(['calificado', 'en_tasacion', 'presentada', 'seguimiento', 'captado']),
+  comprador: new Set(['calificado', 'visita_agendada', 'visito', 'oferta', 'cerrado']),
 }
 
 app.get('/marketing', async (c) => {
   const orgId = c.get('orgId')
+  // La config de pixel/GA4 es por agente desde la migración 040: se lee la del
+  // usuario que mira, igual que el ad account de /marketing/campaigns. Antes se
+  // consultaba por org_id sobre una tabla cuya PK es agent_id, así que el badge
+  // podía mostrar la config de cualquier otro agente.
+  const agentId = c.get('userId')
   const db = c.env.DB
-  const period = c.req.query('period') ?? 'month'
-  const fromDate = marketingFromDate(period)
+  const period = parseMarketingPeriod(c.req.query('period'))
+  const pipeline = parseFunnelPipeline(c.req.query('pipeline'))
+  const { current, previous, elapsedDays } = marketingPeriodRanges(period)
 
-  const [leadsBySource, leadsByDay, stageBreakdown, metaEvents, metaIntegration] = await Promise.all([
-    db.prepare(`SELECT source, COUNT(*) as count FROM leads WHERE org_id = ? AND created_at >= ? GROUP BY source ORDER BY count DESC`).bind(orgId, fromDate).all(),
-    db.prepare(`SELECT substr(created_at, 1, 10) as day, COUNT(*) as count FROM leads WHERE org_id = ? AND created_at >= ? GROUP BY day ORDER BY day ASC`).bind(orgId, fromDate).all(),
-    // Funnel vendor-shaped: solo pipeline vendedor (leadsBySource/leadsByDay quedan con todos — volumen real).
-    db.prepare(`SELECT stage, COUNT(*) as count FROM leads WHERE org_id = ? AND created_at >= ? AND COALESCE(pipeline, 'vendedor') = 'vendedor' GROUP BY stage`).bind(orgId, fromDate).all(),
+  // Marketing por usuario: cada agente cruza SU presupuesto contra SUS leads.
+  // Admin y owner ven la inmobiliaria entera — mismo criterio que el log de
+  // eventos de marketing en api-crm.
+  const role = c.get('userRole')
+  const ownerUserId = role === 'admin' || role === 'owner' ? undefined : agentId
+  const ownerFilter = ownerUserId ? ' AND assigned_to = ?' : ''
+  const ownerArg = ownerUserId ? [ownerUserId] : []
+
+  const scoped = `org_id = ? AND COALESCE(pipeline, 'vendedor') = ? AND created_at >= ? AND created_at < ?${ownerFilter}`
+  const args = [orgId, pipeline, current.from, current.to, ...ownerArg]
+
+  const [leadsBySource, leadsByDay, stageBreakdown, prevStageBreakdown, metaEvents, metaIntegration] = await Promise.all([
+    db.prepare(`SELECT source, COUNT(*) as count FROM leads WHERE ${scoped} GROUP BY source ORDER BY count DESC`).bind(...args).all(),
+    db.prepare(`SELECT substr(created_at, 1, 10) as day, COUNT(*) as count FROM leads WHERE ${scoped} GROUP BY day ORDER BY day ASC`).bind(...args).all(),
+    db.prepare(`SELECT stage, COUNT(*) as count FROM leads WHERE ${scoped} GROUP BY stage`).bind(...args).all(),
+    db.prepare(`SELECT stage, COUNT(*) as count FROM leads WHERE ${scoped} GROUP BY stage`).bind(orgId, pipeline, previous.from, previous.to, ...ownerArg).all(),
     // Solo eventos de Meta CAPI (no GA4, que se loguea aparte con sus propios
-    // nombres) y solo del período seleccionado — igual que el resto del panel.
-    db.prepare(`SELECT event_name, status, COUNT(*) as count FROM meta_event_log WHERE org_id = ? AND provider = 'meta' AND created_at >= ? GROUP BY event_name, status`).bind(orgId, fromDate).all().catch(() => ({ results: [] })),
-    db.prepare(`SELECT enabled, pixel_id, ga4_enabled, ga4_measurement_id FROM meta_integration WHERE org_id = ?`).bind(orgId).first().catch(() => null),
+    // nombres) y solo del período seleccionado. Es de toda la org a propósito:
+    // el envío de conversiones es un hecho de la inmobiliaria, no del usuario.
+    db.prepare(`SELECT event_name, status, COUNT(*) as count FROM meta_event_log WHERE org_id = ? AND provider = 'meta' AND created_at >= ? AND created_at < ? GROUP BY event_name, status`).bind(orgId, current.from, current.to).all().catch(() => ({ results: [] })),
+    db.prepare(`SELECT enabled, pixel_id, ga4_enabled, ga4_measurement_id FROM meta_integration WHERE agent_id = ?`).bind(agentId).first().catch(() => null),
   ])
 
-  const sb: Record<string, number> = {}
-  for (const r of (stageBreakdown.results as any[])) sb[r.stage] = r.count
-  const totalLeads = Object.values(sb).reduce((a, b) => a + b, 0)
-  const funnel = computeLeadFunnel(sb, totalLeads)
-  const conversionRate = computeConversionRate(sb, totalLeads)
+  const tally = (rows: any[]) => {
+    const sb: Record<string, number> = {}
+    for (const r of rows) sb[r.stage] = r.count
+    return { sb, total: Object.values(sb).reduce((a, b) => a + b, 0) }
+  }
+
+  const cur = tally(stageBreakdown.results as any[])
+  const prev = tally(prevStageBreakdown.results as any[])
+  const goalStage = FUNNEL_GOAL_STAGE[pipeline]
+
+  const totals = {
+    leads: cur.total,
+    goal: cur.sb[goalStage] ?? 0,
+    conversionRate: computeConversionRateForPipeline(pipeline, cur.sb, cur.total),
+  }
+  const previousTotals = {
+    leads: prev.total,
+    goal: prev.sb[goalStage] ?? 0,
+    conversionRate: computeConversionRateForPipeline(pipeline, prev.sb, prev.total),
+  }
 
   const eventMap: Record<string, { sent: number; failed: number }> = {}
   for (const r of (metaEvents.results as any[])) {
@@ -267,8 +317,33 @@ app.get('/marketing', async (c) => {
     else if (r.status === 'failed') eventMap[r.event_name].failed += r.count
   }
 
+  // Costo por portal — sólo tiene sentido en Demanda: el gasto de portales es
+  // inventario para compradores, no captación. El gasto mensual se prorratea
+  // por los días del rango antes de cruzarlo con los leads.
+  const portalCosts = pipeline === 'comprador'
+    ? await new GetPortalCostsUseCase(
+        new D1PortalSpendRepository(db),
+        new D1PortalLeadCountRepository(db),
+        new D1PropertyIncomeRepository(db),
+      ).execute({ orgId, from: current.from, to: current.to, ownerUserId }).catch(() => null)
+    : null
+
   return c.json({
-    period, from: fromDate, totalLeads, conversionRate, funnel,
+    period,
+    pipeline,
+    portalCosts,
+    goal_stage: goalStage,
+    range: { ...current, previous_from: previous.from, previous_to: previous.to, elapsed_days: elapsedDays },
+    totals,
+    previous: previousTotals,
+    deltas: {
+      leads: periodDelta(totals.leads, previousTotals.leads),
+      goal: periodDelta(totals.goal, previousTotals.goal),
+      // Una tasa se compara en puntos porcentuales, no en variación porcentual:
+      // "la conversión subió 50%" cuando pasa de 2% a 3% no le dice nada a nadie.
+      conversionRatePoints: Math.round((totals.conversionRate - previousTotals.conversionRate) * 10) / 10,
+    },
+    funnel: computeFunnelForPipeline(pipeline, cur.sb, cur.total),
     leadsBySource: leadsBySource.results,
     leadsByDay: leadsByDay.results,
     metaEvents: eventMap,
@@ -283,8 +358,12 @@ app.get('/marketing', async (c) => {
 // Insights por campaña (Marketing API) cruzados con leads del CRM.
 // La atribución matchea leads.source_detail (campaña de la landing)
 // contra el nombre de campaña en Meta, case-insensitive.
+//
+// El CPL viaja con su base declarada: `cpl_crm` (gasto ÷ leads del CRM) y
+// `cpl_meta` (gasto ÷ leads que reporta Meta) son dos números distintos y no se
+// pueden mezclar en una sola columna sin decir cuál es cuál — que es lo que
+// hacía antes, cayendo a Meta en silencio cuando el CRM no tenía nada atribuido.
 
-const QUALIFIED_STAGES = new Set(['calificado', 'en_tasacion', 'presentada', 'seguimiento', 'captado'])
 const CAMPAIGNS_CACHE_SECONDS = 900 // Meta Insights ratelimitea agresivo
 
 app.get('/marketing/campaigns', async (c) => {
@@ -292,12 +371,21 @@ app.get('/marketing/campaigns', async (c) => {
   // El Ad Account es por-agente: las campañas se leen de la config del usuario.
   const agentId = c.get('userId')
   const db = c.env.DB
-  const period = c.req.query('period') ?? 'month'
-  const fromDate = marketingFromDate(period)
-  const until = new Date().toISOString().slice(0, 10)
+  const period = parseMarketingPeriod(c.req.query('period'))
+  const pipeline = parseFunnelPipeline(c.req.query('pipeline'))
+  const { current } = marketingPeriodRanges(period)
+  // La cuenta publicitaria ya es del usuario; los leads y los honorarios que se
+  // cruzan contra ella tienen que serlo también. Admin y owner ven la org entera.
+  const campaignRole = c.get('userRole')
+  const campaignOwner = campaignRole === 'admin' || campaignRole === 'owner' ? undefined : agentId
+  const campaignOwnerFilter = campaignOwner ? ' AND assigned_to = ?' : ''
+  const campaignOwnerArg = campaignOwner ? [campaignOwner] : []
+  const since = current.from
+  // `to` es exclusivo; el time_range de Meta es inclusivo en los dos extremos.
+  const until = new Date(Date.parse(current.to) - 86_400_000).toISOString().slice(0, 10)
 
   const cache: Cache | undefined = (globalThis as any).caches?.default
-  const cacheKey = new Request(`https://cache.vendepro.internal/marketing-campaigns?agent=${agentId}&period=${period}&until=${until}`)
+  const cacheKey = new Request(`https://cache.vendepro.internal/marketing-campaigns?agent=${agentId}&period=${period}&pipeline=${pipeline}&until=${until}`)
   if (cache) {
     const hit = await cache.match(cacheKey).catch(() => undefined)
     // Copia: los headers de una Response cacheada son inmutables y el
@@ -310,45 +398,91 @@ app.get('/marketing/campaigns', async (c) => {
     new MetaAdsInsightsHttp(),
     (cipher) => decrypt(cipher, c.env.JWT_SECRET),
   )
-  const result = await useCase.execute({ agentId, since: fromDate, until })
+  const result = await useCase.execute({ agentId, since, until })
 
   // Atribución CRM: leads del período agrupados por campaña y stage.
-  const crmByCampaign: Record<string, { leads: number; calificados: number; captados: number }> = {}
+  const qualified = QUALIFIED_STAGES[pipeline] ?? QUALIFIED_STAGES.vendedor!
+  const goalStage = FUNNEL_GOAL_STAGE[pipeline]
+  const crmByCampaign: Record<string, { leads: number; calificados: number; ganados: number }> = {}
   if (result.status === 'ok' && result.campaigns.length > 0) {
     const rows = await db.prepare(`
       SELECT lower(source_detail) as campaign_key, stage, COUNT(*) as count
       FROM leads
-      WHERE org_id = ? AND created_at >= ? AND source_detail IS NOT NULL AND source_detail != ''
-        AND COALESCE(pipeline, 'vendedor') = 'vendedor'
+      WHERE org_id = ? AND created_at >= ? AND created_at < ?
+        AND source_detail IS NOT NULL AND source_detail != ''
+        AND COALESCE(pipeline, 'vendedor') = ?${campaignOwnerFilter}
       GROUP BY campaign_key, stage
-    `).bind(orgId, fromDate).all().catch(() => ({ results: [] }))
+    `).bind(orgId, current.from, current.to, pipeline, ...campaignOwnerArg).all().catch(() => ({ results: [] }))
     for (const r of (rows.results as any[])) {
-      const entry = crmByCampaign[r.campaign_key] ?? (crmByCampaign[r.campaign_key] = { leads: 0, calificados: 0, captados: 0 })
+      const entry = crmByCampaign[r.campaign_key] ?? (crmByCampaign[r.campaign_key] = { leads: 0, calificados: 0, ganados: 0 })
       entry.leads += r.count
-      if (QUALIFIED_STAGES.has(r.stage)) entry.calificados += r.count
-      if (r.stage === 'captado') entry.captados += r.count
+      if (qualified.has(r.stage)) entry.calificados += r.count
+      if (r.stage === goalStage) entry.ganados += r.count
     }
   }
 
-  const campaigns = result.campaigns.map(cp => {
-    const crm = crmByCampaign[cp.campaign_name.toLowerCase()] ?? { leads: 0, calificados: 0, captados: 0 }
-    const leadsForCpl = crm.leads > 0 ? crm.leads : cp.leads
+  // Honorarios de las operaciones que cerró cada campaña. Del lado de captación
+  // la atribución sale del lead que originó la propiedad; del lado de demanda,
+  // del comprador que la compró.
+  const incomeRows = result.status === 'ok'
+    ? await (pipeline === 'vendedor'
+        ? new D1PropertyIncomeRepository(db).findIncomeByCaptureCampaign(orgId, current.from, current.to, campaignOwner)
+        : new D1PropertyIncomeRepository(db).findIncomeByBuyerSource(orgId, current.from, current.to, campaignOwner)
+      ).catch(() => [])
+    : []
+  const income = aggregateIncome(incomeRows)
+
+  // El gasto viene en la moneda de la cuenta publicitaria y los honorarios en
+  // dólares: sin convertir no se pueden dividir. Si la cuenta no es en USD se
+  // busca el dólar del día; si no se consigue, el ROI queda en null con motivo
+  // en vez de mezclar pesos con dólares.
+  const accountCurrency = result.campaigns[0]?.account_currency ?? null
+  let spendToUsd: number | null = accountCurrency === 'USD' || accountCurrency === null ? 1 : null
+  if (spendToUsd === null && accountCurrency) {
+    const fx = await new DolarApiFxRate().usdRate(accountCurrency).catch(() => null)
+    spendToUsd = fx ? fx.rate : null
+  }
+
+  const enriched = result.campaigns.map(cp => {
+    const crm = crmByCampaign[cp.campaign_name.toLowerCase()] ?? { leads: 0, calificados: 0, ganados: 0 }
+    const attributed = income.byAttribution.get(cp.campaign_name.toLowerCase()) ?? null
+    const incomeUsd = attributed?.income_usd ?? null
+    const spendUsd = spendToUsd !== null && spendToUsd > 0 ? cp.spend / spendToUsd : null
     return {
       ...cp,
       crm_leads: crm.leads,
       crm_calificados: crm.calificados,
-      crm_captados: crm.captados,
-      cpl: leadsForCpl > 0 ? cp.spend / leadsForCpl : null,
+      crm_ganados: crm.ganados,
+      cpl_crm: crm.leads > 0 ? cp.spend / crm.leads : null,
+      cpl_meta: cp.leads > 0 ? cp.spend / cp.leads : null,
+      income_usd: incomeUsd,
+      operations: attributed?.operations ?? 0,
+      roi: computeRoi(incomeUsd, spendUsd),
     }
   }).sort((a, b) => b.spend - a.spend)
+
+  // Meta no sabe a qué objetivo comercial apunta cada campaña (su `objective`
+  // dice cómo optimiza, no para qué la usa la inmobiliaria), así que la etiqueta
+  // la pone el usuario. Las que todavía no tienen etiqueta NO se reparten en las
+  // dos secciones: contar el mismo gasto dos veces dejaría el costo por
+  // captación a la mitad del real. Quedan en una bandeja aparte.
+  const goals = await new D1CampaignGoalRepository(db).findByOrg(orgId, 'meta').catch(() => new Map())
+  const split = splitCampaignsByGoal(enriched, goals, goalForPipeline(pipeline))
+  const withGoal = <T extends { campaign_id: string }>(rows: T[]) =>
+    rows.map(r => ({ ...r, goal: goals.get(r.campaign_id) ?? null }))
 
   const response = Response.json({
     status: result.status,
     error: result.error ?? null,
     period,
-    from: fromDate,
+    pipeline,
+    goal: goalForPipeline(pipeline),
+    goal_stage: goalStage,
+    from: since,
     to: until,
-    campaigns,
+    campaigns: withGoal(split.matching),
+    unclassified: withGoal(split.unclassified),
+    unclassified_spend: split.unclassified_spend,
   }, {
     headers: { 'Cache-Control': `max-age=${CAMPAIGNS_CACHE_SECONDS}` },
   })

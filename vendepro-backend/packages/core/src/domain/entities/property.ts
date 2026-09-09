@@ -37,6 +37,15 @@ export interface PropertyProps {
   auth_start_date?: string | null
   auth_duration_days?: number | null
   doc_status_json?: string | null
+  // Cierre de la operación: a cuánto se vendió y cuánto cobró la inmobiliaria.
+  // Los honorarios llevan su cotización congelada (migración 052) — es lo que
+  // alimenta el ROI de la sección Marketing.
+  sold_price?: number | null
+  sold_date?: string | null
+  commission_amount?: number | null
+  commission_currency?: string | null
+  commission_usd_rate?: number | null
+  income_at?: string | null
   created_at: string
   updated_at: string
   // Computed / Joined
@@ -100,6 +109,12 @@ export class Property {
   get auth_duration_days() { return this.props.auth_duration_days ?? null }
   get doc_status_json() { return this.props.doc_status_json ?? null }
   get lead_id() { return this.props.lead_id ?? null }
+  get sold_price() { return this.props.sold_price ?? null }
+  get sold_date() { return this.props.sold_date ?? null }
+  get commission_amount() { return this.props.commission_amount ?? null }
+  get commission_currency() { return this.props.commission_currency ?? null }
+  get commission_usd_rate() { return this.props.commission_usd_rate ?? null }
+  get income_at() { return this.props.income_at ?? null }
 
   // Domain methods
   updateStatus(newStatus: PropertyStatus): void {

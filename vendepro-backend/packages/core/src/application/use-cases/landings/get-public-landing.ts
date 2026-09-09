@@ -2,9 +2,11 @@ import type { LandingRepository } from '../../ports/repositories/landing-reposit
 import type { LandingVersionRepository } from '../../ports/repositories/landing-version-repository'
 import type { OrganizationRepository } from '../../ports/repositories/organization-repository'
 import type { AgentProfileRepository } from '../../ports/repositories/agent-profile-repository'
+import type { MetaIntegrationRepository } from '../../ports/repositories/meta-integration-repository'
 import type { Block } from '../../../domain/value-objects/block-schemas'
 import type { LandingKind } from '../../../domain/entities/landing'
 import { NotFoundError } from '../../../domain/errors/not-found'
+import { GetPublicTagConfigUseCase, type PublicTagConfig } from '../marketing/get-public-tag-config'
 
 export interface PublicLandingView {
   id: string
@@ -23,6 +25,15 @@ export interface PublicLandingView {
    * slug público, o agente sin perfil).
    */
   agent_public_path: string | null
+  /**
+   * Contenedor de GTM del agente dueño de la landing. La landing es el destino
+   * de los anuncios y era la única página pública sin tagging: el shell hacía
+   * `dataLayer.push` contra un dataLayer que no leía nadie.
+   *
+   * Opcional en el tipo porque el repo de integraciones es una dependencia
+   * opcional del use case (los tests de landings no la inyectan).
+   */
+  tag?: PublicTagConfig
 }
 
 export class GetPublicLandingUseCase {
@@ -31,6 +42,7 @@ export class GetPublicLandingUseCase {
     private readonly versions: LandingVersionRepository,
     private readonly orgs: OrganizationRepository,
     private readonly agentProfiles: AgentProfileRepository,
+    private readonly integrations?: MetaIntegrationRepository,
   ) {}
 
   async execute(input: { fullSlug: string }): Promise<PublicLandingView> {
@@ -42,9 +54,15 @@ export class GetPublicLandingUseCase {
     const version = await this.versions.findById(landing.published_version_id)
     if (!version) throw new NotFoundError('Version', landing.published_version_id)
 
-    const agent_public_path = await this.resolveAgentPublicPath(landing.kind, landing.org_id, landing.agent_id)
+    const [agent_public_path, tag] = await Promise.all([
+      this.resolveAgentPublicPath(landing.kind, landing.org_id, landing.agent_id),
+      this.integrations
+        ? new GetPublicTagConfigUseCase(this.integrations).execute(landing.agent_id)
+        : Promise.resolve(undefined),
+    ])
 
     return {
+      ...(tag ? { tag } : {}),
       id: landing.id,
       full_slug: landing.full_slug,
       kind: landing.kind,

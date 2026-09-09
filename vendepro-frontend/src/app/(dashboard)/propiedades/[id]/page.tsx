@@ -19,6 +19,7 @@ import { VisitFormsSection } from '@/components/properties/VisitFormsSection'
 import { InterestedLeadsSection } from '@/components/properties/InterestedLeadsSection'
 import AuthorizationWidget from '@/components/properties/AuthorizationWidget'
 import PriceHistoryWidget from '@/components/properties/PriceHistoryWidget'
+import IncomeWidget from '@/components/properties/IncomeWidget'
 import DocChecklistWidget from '@/components/properties/DocChecklistWidget'
 import ReportsListWidget from '@/components/properties/ReportsListWidget'
 import { getPropertySource } from '@/lib/crm-config'
@@ -163,6 +164,28 @@ export default function PropiedadDetailPage() {
           onPriceChanged={newPrice => setProperty({ ...property, asking_price: newPrice })}
         />
       </div>
+
+      {/* El ingreso aparece cuando la operación ya se cerró: antes de eso no hay
+          nada que cargar y la tarjeta sería ruido en la ficha. */}
+      {(stage === 'vendida' || property.commission_amount != null) && (
+        <div className="mb-6">
+          <IncomeWidget
+            propertyId={id}
+            soldPrice={property.sold_price ?? null}
+            soldDate={property.sold_date ?? null}
+            commissionAmount={property.commission_amount ?? null}
+            commissionCurrency={property.commission_currency ?? null}
+            commissionUsdRate={property.commission_usd_rate ?? null}
+            honorariosPct={property.honorarios_pct ?? null}
+            onSaved={() => {
+              apiFetch('properties', `/properties/${id}`)
+                .then(r => r.json() as any)
+                .then((d: any) => { if (!d?.error) setProperty(d) })
+                .catch(() => {})
+            }}
+          />
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <DocChecklistWidget

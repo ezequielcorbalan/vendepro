@@ -93,6 +93,15 @@ export default async function PublicTasacionPage({
   const snapshot = parseJson<TemplateBlock[]>(data.appraisal.template_snapshot_json)
   const hasTemplate = !!data.appraisal.template_id && snapshot !== null && snapshot.length > 0
 
+  // Antes esto se montaba sin props (y sólo en la rama con template), así que
+  // GtmScript devolvía null siempre: la tasación pública no tagueaba nada.
+  const gtm = (
+    <GtmScript
+      containerId={data.tag?.gtm_container_id ?? null}
+      stapeEndpoint={data.tag?.stape_endpoint ?? null}
+    />
+  )
+
   if (hasTemplate) {
     const overrides = parseJson<BlockOverrides>(data.appraisal.block_overrides_json) ?? {}
     const appraisal = buildAppraisalContext(data)
@@ -107,10 +116,15 @@ export default async function PublicTasacionPage({
           mode={isPrint ? 'print' : 'web'}
           className="min-h-screen bg-white"
         />
-        <GtmScript />
+        {gtm}
       </>
     )
   }
 
-  return <PublicAppraisalShell data={data} />
+  return (
+    <>
+      {gtm}
+      <PublicAppraisalShell data={data} />
+    </>
+  )
 }

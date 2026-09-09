@@ -3,102 +3,72 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
-  Megaphone, Settings, TrendingUp, TrendingDown, Users, Target,
+  Megaphone, Settings, TrendingUp, TrendingDown, Target,
   CheckCircle2, XCircle, AlertCircle, ChevronRight, Sparkles,
-  BarChart2, ArrowUpRight, ExternalLink, Lightbulb, type LucideIcon,
+  BarChart2, ArrowUpRight, ExternalLink, Lightbulb, Minus, type LucideIcon,
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { LEAD_SOURCES, getStageDot } from '@/lib/crm-config'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
 import { Heading, Text } from '@/components/ui/Typography'
-import { Button } from '@/components/ui/Button'
 import { Alert } from '@/components/ui/Alert'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { Tabs } from '@/components/ui/Tabs'
+import { Table, type Column } from '@/components/ui/Table'
 import { ModuleGate } from '@/components/modules/ModuleGate'
+import PortalCosts, { type PortalCostsData } from '@/components/marketing/PortalCosts'
+import HowItWorks from '@/components/marketing/HowItWorks'
+import Campaigns, { type CampaignsResponse } from '@/components/marketing/Campaigns'
 
 type Period = 'month' | 'quarter' | 'year'
+type Pipeline = 'vendedor' | 'comprador'
+
 const PERIOD_LABELS: Record<Period, string> = { month: 'Mes', quarter: 'Trimestre', year: 'Año' }
+
+// Las dos secciones del panel. Son dos objetivos de pauta distintos y no se
+// suman: captar propietarios y conseguir compradores para una publicación.
+const PIPELINE_TABS = [
+  { value: 'vendedor', label: 'Captación' },
+  { value: 'comprador', label: 'Demanda' },
+]
+
+const GOAL_LABEL: Record<Pipeline, string> = { vendedor: 'Captados', comprador: 'Cerrados' }
 
 const SOURCE_COLORS: Record<string, string> = {
   facebook: '#1877F2', instagram: '#E1306C', google: '#4285F4',
   referido: '#10B981', zonaprop: '#FF6B00', argenprop: '#8B5CF6',
   mercadolibre: '#FFE600', cartel: '#F59E0B', telefono: '#6B7280',
-  manual: '#94A3B8', otro: '#CBD5E1',
+  manual: '#94A3B8', kiteprop: '#64748B', otro: '#CBD5E1', landing: '#EC4899',
 }
 
-function Sparkline({ data, color = 'var(--color-primary)' }: { data: number[]; color?: string }) {
-  if (data.length < 2) return null
-  const max = Math.max(...data, 1)
-  const w = 80, h = 28
-  const pts = data.map((v, i) => `${(i / (data.length - 1)) * w},${h - (v / max) * h}`).join(' ')
-  return (
-    <svg width={w} height={h} className="overflow-visible opacity-70">
-      <polyline points={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
+/**
+ * Los leads de landing se guardan como `landing:<slug>` (submit-lead-from-landing),
+ * que no está en LEAD_SOURCES: se veían como texto crudo en gris, justo los que
+ * vienen de la pauta.
+ */
+function sourceLabel(source: string): string {
+  if (source?.startsWith('landing:')) return `Landing · ${source.slice(8)}`
+  return LEAD_SOURCES[source as keyof typeof LEAD_SOURCES]?.label ?? source
 }
 
-function KpiCard({ label, value, trendLabel, trend, sparkData, sparkColor }: {
-  label: string; value: string; trendLabel?: string
-  trend?: 'up' | 'down' | 'neutral'; sparkData?: number[]; sparkColor?: string
-}) {
-  return (
-    <Card className="p-4 flex flex-col justify-between min-h-[100px]">
-      <div className="flex items-start justify-between">
-        <Text size="xs" weight="medium" tone="muted" className="uppercase tracking-wide leading-tight">{label}</Text>
-        {sparkData && sparkData.some(v => v > 0) && <Sparkline data={sparkData} color={sparkColor} />}
-      </div>
-      <div>
-        <Heading level={2} as="p" weight="bold" className="mt-1">{value}</Heading>
-        {trendLabel && (
-          <div className="flex items-center gap-1 mt-0.5">
-            {trend === 'up' && <TrendingUp className="w-3 h-3 text-success" />}
-            {trend === 'down' && <TrendingDown className="w-3 h-3 text-danger" />}
-            <span className={`text-xs font-medium ${trend === 'up' ? 'text-success' : trend === 'down' ? 'text-danger' : 'text-gray-400'}`}>
-              {trendLabel}
-            </span>
-          </div>
-        )}
-      </div>
-    </Card>
-  )
+function sourceColor(source: string): string {
+  if (source?.startsWith('landing:')) return SOURCE_COLORS.landing!
+  return SOURCE_COLORS[source] ?? '#CBD5E1'
 }
 
-// Chip de estado de una integración. Se decidió NO promoverlo al DS: 1 solo uso
-// en toda la app (ver la tanda de decisiones en doc/ds-review.md). Si aparecen
-// más integraciones y el patrón se repite, ahí sí va a ui/.
-function IntegrationBadge({ name, enabled, detail }: { name: string; enabled: boolean; detail?: string }) {
-  return (
-    <div className={`flex items-center gap-2.5 flex-1 px-3 py-2.5 rounded-control border ${enabled ? 'bg-success/10 border-success/30' : 'bg-gray-50 border-gray-200'}`}>
-      {enabled ? <CheckCircle2 className="w-4 h-4 text-success shrink-0" /> : <AlertCircle className="w-4 h-4 text-gray-400 shrink-0" />}
-      <div className="min-w-0">
-        <p className={`text-xs font-semibold ${enabled ? 'text-ink' : 'text-gray-500'}`}>{name}</p>
-        {detail && <p className="text-[10px] text-gray-400 truncate">{detail}</p>}
-      </div>
-    </div>
-  )
+function fmtDay(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  if (!y || !m || !d) return iso
+  const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+  return `${d} ${MONTHS[m - 1]}`
 }
 
-interface CampaignRow {
-  campaign_id: string
-  campaign_name: string
-  spend: number
-  impressions: number
-  clicks: number
-  leads: number
-  account_currency: string | null
-  crm_leads: number
-  crm_calificados: number
-  crm_captados: number
-  cpl: number | null
-}
-
-interface CampaignsResponse {
-  status: 'ok' | 'not_configured' | 'missing_ad_account' | 'token_error' | 'api_error'
-  error: string | null
-  campaigns: CampaignRow[]
+/** `to` viene exclusivo del backend; para mostrar el rango se resta un día. */
+function fmtRange(from: string, toExclusive: string): string {
+  const last = new Date(Date.parse(toExclusive) - 86_400_000).toISOString().slice(0, 10)
+  return from === last ? fmtDay(from) : `${fmtDay(from)} – ${fmtDay(last)}`
 }
 
 function fmtMoney(value: number, currency: string | null): string {
@@ -111,60 +81,151 @@ function fmtMoney(value: number, currency: string | null): string {
   }
 }
 
+function Sparkline({ data, color = 'var(--color-primary)' }: { data: number[]; color?: string }) {
+  if (data.length < 2) return null
+  const max = Math.max(...data, 1)
+  const w = 80, h = 28
+  const pts = data.map((v, i) => `${(i / (data.length - 1)) * w},${h - (v / max) * h}`).join(' ')
+  return (
+    <svg width={w} height={h} className="overflow-visible opacity-70" aria-hidden="true">
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+/**
+ * Variación contra el mismo tramo del período anterior. `null` = el período
+ * anterior fue cero y no hay porcentaje que calcular: se muestra "—" en vez de
+ * una flecha inventada. `unit` es 'pct' para variaciones y 'pts' para la
+ * conversión (una tasa se compara en puntos, no en porcentaje de porcentaje).
+ */
+function Delta({ value, unit = 'pct' }: { value: number | null; unit?: 'pct' | 'pts' }) {
+  if (value === null) return <span className="text-xs text-gray-400">sin base previa</span>
+  const Icon = value > 0 ? TrendingUp : value < 0 ? TrendingDown : Minus
+  const tone = value > 0 ? 'text-success' : value < 0 ? 'text-danger' : 'text-gray-400'
+  const sign = value > 0 ? '+' : ''
+  return (
+    <span className={`inline-flex items-center gap-1 text-xs font-medium ${tone}`}>
+      <Icon className="w-3 h-3" />
+      {sign}{value.toLocaleString('es-AR')}{unit === 'pct' ? '%' : ' pts'}
+    </span>
+  )
+}
+
+function KpiCard({ label, value, delta, deltaUnit, caption, sparkData, sparkColor }: {
+  label: string; value: string
+  delta?: number | null; deltaUnit?: 'pct' | 'pts'
+  caption?: string; sparkData?: number[]; sparkColor?: string
+}) {
+  return (
+    <Card className="p-4 flex flex-col justify-between min-h-[110px]">
+      <div className="flex items-start justify-between">
+        <Text size="xs" weight="medium" tone="muted" className="uppercase tracking-wide leading-tight">{label}</Text>
+        {sparkData && sparkData.some(v => v > 0) && <Sparkline data={sparkData} color={sparkColor} />}
+      </div>
+      <div>
+        <Heading level={2} as="p" weight="bold" className="mt-1">{value}</Heading>
+        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+          {delta !== undefined && <Delta value={delta ?? null} unit={deltaUnit} />}
+          {caption && <span className="text-xs text-gray-400">{caption}</span>}
+        </div>
+      </div>
+    </Card>
+  )
+}
+
+// Chip de estado de una integración. Se decidió NO promoverlo al DS: 1 solo uso
+// en toda la app (ver la tanda de decisiones en doc/ds-review.md).
+function IntegrationBadge({ name, enabled, detail }: { name: string; enabled: boolean; detail?: string }) {
+  return (
+    <div className={`flex items-center gap-2.5 flex-1 px-3 py-2.5 rounded-control border ${enabled ? 'bg-success/10 border-success/30' : 'bg-gray-50 border-gray-200'}`}>
+      {enabled ? <CheckCircle2 className="w-4 h-4 text-success shrink-0" /> : <AlertCircle className="w-4 h-4 text-gray-400 shrink-0" />}
+      <div className="min-w-0">
+        <p className={`text-xs font-semibold ${enabled ? 'text-ink' : 'text-gray-500'}`}>{name}</p>
+        {detail && <p className="text-[10px] text-gray-400 truncate">{detail}</p>}
+      </div>
+    </div>
+  )
+}
+
+interface MarketingData {
+  pipeline: Pipeline
+  goal_stage: string
+  range: { from: string; to: string; previous_from: string; previous_to: string; elapsed_days: number }
+  totals: { leads: number; goal: number; conversionRate: number }
+  previous: { leads: number; goal: number; conversionRate: number }
+  deltas: { leads: number | null; goal: number | null; conversionRatePoints: number }
+  funnel: { stage: string; label: string; count: number; pct: number }[]
+  leadsBySource: { source: string; count: number }[]
+  leadsByDay: { day: string; count: number }[]
+  metaEvents: Record<string, { sent: number; failed: number }>
+  /** Sólo en Demanda: el gasto de portales es inventario para compradores. */
+  portalCosts: PortalCostsData | null
+  integration: {
+    meta: { enabled: boolean; pixelId: string | null }
+    ga4: { enabled: boolean; measurementId: string | null }
+  }
+}
+
 function MarketingPage() {
   const [period, setPeriod] = useState<Period>('month')
-  const [data, setData] = useState<any>(null)
+  const [pipeline, setPipeline] = useState<Pipeline>('vendedor')
+  const [data, setData] = useState<MarketingData | null>(null)
   const [loading, setLoading] = useState(true)
   const [campaignsData, setCampaignsData] = useState<CampaignsResponse | null>(null)
+  // Se incrementa al cargar o borrar gasto de portales, para releer el panel.
+  const [reload, setReload] = useState(0)
 
   useEffect(() => {
     setLoading(true)
-    apiFetch('analytics', `/marketing?period=${period}`)
+    apiFetch('analytics', `/marketing?period=${period}&pipeline=${pipeline}`)
       .then(r => r.json() as Promise<any>)
       .then(d => { setData(d); setLoading(false) })
       .catch(() => setLoading(false))
-  }, [period])
+  }, [period, pipeline, reload])
 
+  // Las campañas se piden por sección: el backend devuelve las que tienen ese
+  // objetivo, más la bandeja de las que todavía nadie clasificó.
   useEffect(() => {
     setCampaignsData(null)
-    apiFetch('analytics', `/marketing/campaigns?period=${period}`)
+    apiFetch('analytics', `/marketing/campaigns?period=${period}&pipeline=${pipeline}`)
       .then(r => r.json() as Promise<any>)
       .then(d => setCampaignsData(d))
-      .catch(() => setCampaignsData({ status: 'api_error', error: 'No se pudieron cargar las campañas', campaigns: [] }))
-  }, [period])
+      .catch(() => setCampaignsData({ status: 'api_error', error: 'No se pudieron cargar las campañas', campaigns: [], unclassified: [], unclassified_spend: 0 }))
+  }, [period, pipeline, reload])
 
-  const totalLeads: number = data?.totalLeads ?? 0
-  const conversionRate: number = data?.conversionRate ?? 0
-  const leadsBySource: { source: string; count: number }[] = data?.leadsBySource ?? []
-  const leadsByDay: { day: string; count: number }[] = data?.leadsByDay ?? []
-  const metaEvents: Record<string, { sent: number; failed: number }> = data?.metaEvents ?? {}
+  const totals = data?.totals ?? { leads: 0, goal: 0, conversionRate: 0 }
+  const previous = data?.previous ?? { leads: 0, goal: 0, conversionRate: 0 }
+  const deltas = data?.deltas ?? { leads: null, goal: null, conversionRatePoints: 0 }
+  const leadsBySource = data?.leadsBySource ?? []
+  const leadsByDay = data?.leadsByDay ?? []
+  const metaEvents = data?.metaEvents ?? {}
   const integration = data?.integration ?? { meta: { enabled: false, pixelId: null }, ga4: { enabled: false, measurementId: null } }
-  const funnel: { stage: string; count: number; rate: number }[] = data?.funnel ?? []
+  const funnel = data?.funnel ?? []
+  const range = data?.range
 
+  const goalLabel = GOAL_LABEL[pipeline]
+  const totalSourceLeads = leadsBySource.reduce((a, s) => a + s.count, 0)
   const maxSource = leadsBySource[0]?.count ?? 1
-  const captados = funnel.find(f => f.stage === 'captado')?.count ?? 0
-  const calificados = funnel.find(f => f.stage === 'calificado')?.count ?? 0
-  const contactados = funnel.find(f => f.stage === 'contactado')?.count ?? 0
-  // Color de cada paso = dot de su etapa del pipeline (fuente única en crm-config),
-  // así el funnel de marketing usa los mismos tonos que los badges de esas etapas.
-  const funnelSteps = [
-    { label: 'Leads capturados', count: totalLeads, color: getStageDot('nuevo') },
-    { label: 'Contactados', count: contactados, color: getStageDot('contactado') },
-    { label: 'Calificados', count: calificados, color: getStageDot('calificado') },
-    { label: 'En tasación', count: funnel.find(f => f.stage === 'en_tasacion')?.count ?? 0, color: getStageDot('en_tasacion') },
-    { label: 'Captados', count: captados, color: getStageDot('captado') },
-  ]
-  const maxFunnel = funnelSteps[0]?.count || 1
-  const metaEventList = Object.entries(metaEvents).map(([name, v]) => ({ name, sent: v.sent, failed: v.failed, total: v.sent + v.failed })).sort((a, b) => b.total - a.total)
-  const sparkData = leadsByDay.map(d => d.count)
+  const maxFunnel = funnel[0]?.count || 1
+  const metaEventList = Object.entries(metaEvents)
+    .map(([name, v]) => ({ name, sent: v.sent, failed: v.failed, total: v.sent + v.failed }))
+    .sort((a, b) => b.total - a.total)
   const totalEventsToMeta = metaEventList.reduce((a, e) => a + e.sent, 0)
+  const sparkData = leadsByDay.map(d => d.count)
 
   const insights = [
-    totalLeads > 0 && leadsBySource[0]
-      ? { icon: TrendingUp, text: `${LEAD_SOURCES[leadsBySource[0].source as keyof typeof LEAD_SOURCES]?.label ?? leadsBySource[0].source} es tu principal fuente con ${leadsBySource[0].count} leads este período.` }
+    range && deltas.leads !== null
+      ? {
+          icon: deltas.leads >= 0 ? TrendingUp : TrendingDown,
+          text: `${totals.leads} leads en ${fmtRange(range.from, range.to)}: ${deltas.leads >= 0 ? 'un' : 'una caída de'} ${Math.abs(deltas.leads)}% contra los ${previous.leads} del mismo tramo del período anterior.`,
+        }
       : null,
-    conversionRate > 0
-      ? { icon: Target, text: `Tasa de conversión lead → captado: ${conversionRate.toFixed(1)}%. ${conversionRate >= 10 ? 'Por encima del promedio del sector (8%).' : 'Hay margen para mejorar el seguimiento.'}` }
+    leadsBySource[0]
+      ? { icon: BarChart2, text: `${sourceLabel(leadsBySource[0].source)} concentra ${Math.round((leadsBySource[0].count / (totalSourceLeads || 1)) * 100)}% de los leads del período.` }
+      : null,
+    totals.goal > 0
+      ? { icon: Target, text: `${totals.goal} ${goalLabel.toLowerCase()} sobre ${totals.leads} leads — ${totals.conversionRate.toLocaleString('es-AR')}% de conversión, ${deltas.conversionRatePoints >= 0 ? '+' : ''}${deltas.conversionRatePoints.toLocaleString('es-AR')} pts contra el período anterior.` }
       : null,
     Object.values(metaEvents).some(e => e.failed > 0)
       ? { icon: AlertCircle, text: 'Hay eventos fallidos en Meta Conversion API. Verificá la configuración en Ajustes → Marketing.' }
@@ -179,10 +240,11 @@ function MarketingPage() {
   return (
     <div className="space-y-5">
 
-      {/* Header */}
       <PageHeader
         title="Marketing"
-        subtitle="Atribución de leads, eventos y conversiones"
+        subtitle={range
+          ? `${fmtRange(range.from, range.to)} · comparado con ${fmtRange(range.previous_from, range.previous_to)}`
+          : 'Atribución de leads, eventos y conversiones'}
         actions={
           <>
             <SegmentedControl
@@ -198,7 +260,9 @@ function MarketingPage() {
         }
       />
 
-      {/* Integration status — Meta + GA4 */}
+      <Tabs items={PIPELINE_TABS} value={pipeline} onChange={v => setPipeline(v as Pipeline)} />
+
+      {/* Integraciones — la config de pixel/GA4 es del usuario que mira */}
       {!loading && (
         <div className="flex flex-col sm:flex-row gap-2">
           <IntegrationBadge name="Meta Conversion API" enabled={integration.meta.enabled}
@@ -217,51 +281,48 @@ function MarketingPage() {
       {/* KPIs */}
       {loading ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => <div key={i} className="h-[100px] bg-gray-100 rounded-card animate-pulse" />)}
+          {[...Array(4)].map((_, i) => <div key={i} className="h-[110px] bg-gray-100 rounded-card animate-pulse" />)}
         </div>
       ) : (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <KpiCard label="Leads del período" value={String(totalLeads)}
-            trendLabel={totalLeads > 0 ? `${captados} captados` : 'Sin leads aún'}
-            trend={totalLeads > 0 ? 'up' : 'neutral'} sparkData={sparkData} sparkColor="#818CF8" />
-          <KpiCard label="Tasa de conversión" value={`${conversionRate.toFixed(1)}%`}
-            trendLabel="lead → captado"
-            trend={conversionRate >= 10 ? 'up' : conversionRate > 0 ? 'neutral' : 'down'}
-            sparkData={sparkData.map((_, i, a) => i > 0 ? Math.max(0, a[i] - a[i - 1]) : 0)} sparkColor="#10B981" />
+          <KpiCard label="Leads del período" value={String(totals.leads)}
+            delta={deltas.leads} caption={`vs ${previous.leads}`}
+            sparkData={sparkData} sparkColor="#818CF8" />
+          <KpiCard label={goalLabel} value={String(totals.goal)}
+            delta={deltas.goal} caption={`vs ${previous.goal}`} />
+          <KpiCard label="Tasa de conversión" value={`${totals.conversionRate.toLocaleString('es-AR')}%`}
+            delta={deltas.conversionRatePoints} deltaUnit="pts"
+            caption={`vs ${previous.conversionRate.toLocaleString('es-AR')}%`} />
           <KpiCard label="Eventos a Meta" value={String(totalEventsToMeta)}
-            trendLabel={integration.meta.enabled ? `${metaEventList.length} tipos de evento` : 'API no conectada'}
-            trend={integration.meta.enabled && totalEventsToMeta > 0 ? 'up' : 'neutral'} />
-          <KpiCard label="Fuentes activas" value={String(leadsBySource.length)}
-            trendLabel={leadsBySource[0] ? `${LEAD_SOURCES[leadsBySource[0].source as keyof typeof LEAD_SOURCES]?.label ?? leadsBySource[0].source} lidera` : 'Sin datos'}
-            trend="neutral" />
+            caption={integration.meta.enabled ? `${metaEventList.length} tipos de evento · toda la organización` : 'API no conectada'} />
         </div>
       )}
 
-      {/* Funnel + Leads por fuente */}
+      {/* Embudo + fuentes */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card>
           <div className="mb-4">
             <Heading level={4} className="flex items-center gap-2"><Target className="w-4 h-4 text-gray-600" /> Embudo del período</Heading>
-            <Text size="xs" tone="muted" className="mt-0.5">De lead capturado a captación</Text>
+            <Text size="xs" tone="muted" className="mt-0.5">
+              {pipeline === 'vendedor' ? 'De lead capturado a captación' : 'De consulta a operación cerrada'}
+            </Text>
           </div>
           {loading ? <div className="space-y-3">{[...Array(5)].map((_, i) => <div key={i} className="h-8 bg-gray-100 rounded animate-pulse" />)}</div>
-            : totalLeads === 0 ? <Text tone="muted" className="text-center py-8">Sin leads en este período</Text>
+            : totals.leads === 0 ? <Text tone="muted" className="text-center py-8">Sin leads en este período</Text>
             : (
               <div className="space-y-3">
-                {funnelSteps.map(step => {
-                  const pct = maxFunnel > 0 ? (step.count / maxFunnel) * 100 : 0
-                  return (
-                    <div key={step.label}>
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-xs text-gray-600">{step.label}</span>
-                        <span className="text-xs font-semibold text-gray-700">{step.count}</span>
-                      </div>
-                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: step.color }} />
-                      </div>
+                {funnel.map(step => (
+                  <div key={step.stage}>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs text-gray-600">{step.label}</span>
+                      <span className="text-xs font-semibold text-gray-700">{step.count}</span>
                     </div>
-                  )
-                })}
+                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-500"
+                        style={{ width: `${maxFunnel > 0 ? (step.count / maxFunnel) * 100 : 0}%`, backgroundColor: getStageDot(step.stage) }} />
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
         </Card>
@@ -269,187 +330,89 @@ function MarketingPage() {
         <Card>
           <div className="mb-4">
             <Heading level={4} className="flex items-center gap-2"><BarChart2 className="w-4 h-4 text-gray-600" /> Leads por fuente</Heading>
-            <Text size="xs" tone="muted" className="mt-0.5">Atribución del período</Text>
+            <Text size="xs" tone="muted" className="mt-0.5">
+              {pipeline === 'vendedor'
+                ? 'Atribución del período — sólo pipeline de captación'
+                : 'Atribución del período — sólo pipeline de compradores'}
+            </Text>
           </div>
           {loading ? <div className="space-y-3">{[...Array(5)].map((_, i) => <div key={i} className="h-8 bg-gray-100 rounded animate-pulse" />)}</div>
             : leadsBySource.length === 0 ? <Text tone="muted" className="text-center py-8">Sin datos de fuente</Text>
             : (
-              <div className="space-y-3">
-                {leadsBySource.slice(0, 7).map(({ source, count }) => {
-                  const label = LEAD_SOURCES[source as keyof typeof LEAD_SOURCES]?.label ?? source
-                  const color = SOURCE_COLORS[source] ?? '#CBD5E1'
-                  const total = leadsBySource.reduce((a, s) => a + s.count, 0)
-                  return (
+              <>
+                <div className="space-y-3">
+                  {leadsBySource.slice(0, 7).map(({ source, count }) => (
                     <div key={source}>
                       <div className="flex justify-between items-center mb-1">
-                        <span className="text-xs text-gray-600 flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: color }} />{label}
+                        <span className="text-xs text-gray-600 flex items-center gap-1.5 min-w-0">
+                          <span className="w-2 h-2 rounded-full inline-block shrink-0" style={{ backgroundColor: sourceColor(source) }} />
+                          <span className="truncate">{sourceLabel(source)}</span>
                         </span>
-                        <span className="text-xs text-gray-500">{count} · {total > 0 ? Math.round((count / total) * 100) : 0}%</span>
+                        <span className="text-xs text-gray-500 shrink-0 ml-2">
+                          {count} · {totalSourceLeads > 0 ? Math.round((count / totalSourceLeads) * 100) : 0}%
+                        </span>
                       </div>
                       <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${(count / maxSource) * 100}%`, backgroundColor: color }} />
+                        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${(count / maxSource) * 100}%`, backgroundColor: sourceColor(source) }} />
                       </div>
                     </div>
-                  )
-                })}
-              </div>
+                  ))}
+                </div>
+                {pipeline === 'comprador' && (
+                  <Text size="xs" tone="muted" className="mt-4">
+                    Los portales son inventario de demanda: se pagan por publicación, no por resultado.
+                    Lo que cuesta cada uno está abajo, en Costo por portal.
+                  </Text>
+                )}
+              </>
             )}
         </Card>
       </div>
 
-      {/* Campañas activas */}
+      {/* Campañas — en las dos secciones, filtradas por objetivo */}
+      <Campaigns
+        data={campaignsData}
+        goalLabel={goalLabel}
+        onChange={() => setReload(n => n + 1)}
+      />
+
+      {pipeline === 'comprador' && (
+        <PortalCosts data={data?.portalCosts ?? null} onChange={() => setReload(n => n + 1)} />
+      )}
+
+      {/* Eventos a Meta */}
       <Card>
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <Heading level={4} className="flex items-center gap-2"><Megaphone className="w-4 h-4 text-[#1877F2]" /> Campañas activas</Heading>
-            <Text size="xs" tone="muted" className="mt-0.5">Performance por campaña con atribución completa</Text>
-          </div>
-          <a href="https://adsmanager.facebook.com" target="_blank" rel="noopener noreferrer"
-            className="flex items-center gap-1 text-xs text-[#1877F2] font-medium hover:underline">
-            Abrir Meta Ads <ExternalLink className="w-3 h-3" />
-          </a>
+        <div className="mb-4">
+          <Heading level={4} className="flex items-center gap-2"><ArrowUpRight className="w-4 h-4 text-[#1877F2]" /> Eventos enviados a Meta</Heading>
+          <Text size="xs" tone="muted" className="mt-0.5">Conversion API · stages del CRM · toda la organización</Text>
         </div>
-        {campaignsData === null ? (
-          <div className="space-y-2">
-            {[...Array(3)].map((_, i) => <div key={i} className="h-10 bg-gray-100 rounded animate-pulse" />)}
+        {!integration.meta.enabled ? (
+          <div className="text-center py-6">
+            <Text tone="muted" className="mb-2">API no configurada</Text>
+            <Link href="/configuracion/marketing" className="text-xs text-primary font-medium hover:underline">Configurar Meta →</Link>
           </div>
-        ) : campaignsData.status === 'not_configured' ? (
-          <EmptyState
-            icon={<Megaphone className="w-6 h-6" />}
-            title="Conectá Meta Conversion API para ver campañas"
-            description="Gasto, leads, calificados, CPL y ROI por campaña"
-            action={
-              <Link href="/configuracion/marketing"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-control bg-primary text-white text-sm font-medium hover:bg-primary-hover transition-colors">
-                <Settings className="w-4 h-4" /> Configurar ahora
-              </Link>
-            }
-          />
-        ) : campaignsData.status === 'missing_ad_account' ? (
-          <Alert tone="info" title="Todo listo — falta el Ad Account ID">
-            <p>
-              Cargá tu Ad Account (act_…) en Ajustes → Marketing y asegurate de que el token tenga permiso <code>ads_read</code>.
-              Las campañas aparecen solas al guardarlo.
-            </p>
-            <Link href="/configuracion/marketing"
-              className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-control bg-primary text-white text-sm font-medium hover:bg-primary-hover transition-colors">
-              <Settings className="w-4 h-4" /> Completar configuración
-            </Link>
-          </Alert>
-        ) : campaignsData.status !== 'ok' ? (
-          <Alert tone="danger" title="No se pudieron leer las campañas de Meta">
-            <p>
-              {campaignsData.status === 'token_error'
-                ? 'El token guardado no es válido — volvé a cargarlo en Ajustes → Marketing.'
-                : campaignsData.error ?? 'Error desconocido.'}
-            </p>
-            <p className="mt-1">
-              Si el error menciona permisos, el token necesita <code>ads_read</code> sobre el ad account (se agrega en Meta Business → System Users).
-            </p>
-          </Alert>
-        ) : campaignsData.campaigns.length === 0 ? (
-          <Text tone="muted" className="text-center py-8">Sin campañas con actividad en este período</Text>
+        ) : metaEventList.length === 0 ? (
+          <Text tone="muted" className="text-center py-6">Sin eventos registrados aún</Text>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-[10px] uppercase tracking-wide text-gray-400 border-b border-gray-100">
-                  <th className="text-left font-medium py-2 pr-3">Campaña</th>
-                  <th className="text-right font-medium py-2 px-3">Gasto</th>
-                  <th className="text-right font-medium py-2 px-3">Impresiones</th>
-                  <th className="text-right font-medium py-2 px-3">Clicks</th>
-                  <th className="text-right font-medium py-2 px-3">Leads Meta</th>
-                  <th className="text-right font-medium py-2 px-3">Leads CRM</th>
-                  <th className="text-right font-medium py-2 px-3">Calificados</th>
-                  <th className="text-right font-medium py-2 px-3">Captados</th>
-                  <th className="text-right font-medium py-2 pl-3">CPL</th>
-                </tr>
-              </thead>
-              <tbody>
-                {campaignsData.campaigns.map(cp => (
-                  <tr key={cp.campaign_id} className="border-b border-gray-50 last:border-0">
-                    <td className="py-2.5 pr-3 font-medium text-gray-700 max-w-[220px] truncate" title={cp.campaign_name}>{cp.campaign_name}</td>
-                    <td className="py-2.5 px-3 text-right text-gray-700">{fmtMoney(cp.spend, cp.account_currency)}</td>
-                    <td className="py-2.5 px-3 text-right text-gray-500">{cp.impressions.toLocaleString('es-AR')}</td>
-                    <td className="py-2.5 px-3 text-right text-gray-500">{cp.clicks.toLocaleString('es-AR')}</td>
-                    <td className="py-2.5 px-3 text-right text-gray-700">{cp.leads}</td>
-                    <td className="py-2.5 px-3 text-right text-gray-700">{cp.crm_leads}</td>
-                    <td className="py-2.5 px-3 text-right text-gray-700">{cp.crm_calificados}</td>
-                    <td className="py-2.5 px-3 text-right font-semibold text-success">{cp.crm_captados}</td>
-                    <td className="py-2.5 pl-3 text-right font-semibold text-ink">{cp.cpl !== null ? fmtMoney(cp.cpl, cp.account_currency) : '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <p className="text-[10px] text-gray-400 mt-2">
-              Leads CRM atribuidos por nombre de campaña (source_detail de la landing). Datos de Meta cacheados 15 min.
-            </p>
-          </div>
-        )}
-      </Card>
-
-      {/* Eventos Meta + Audiencias */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card>
-          <div className="mb-4">
-            <Heading level={4} className="flex items-center gap-2"><ArrowUpRight className="w-4 h-4 text-[#1877F2]" /> Eventos enviados a Meta</Heading>
-            <Text size="xs" tone="muted" className="mt-0.5">Conversion API · stages del CRM</Text>
-          </div>
-          {!integration.meta.enabled ? (
-            <div className="text-center py-6">
-              <Text tone="muted" className="mb-2">API no configurada</Text>
-              <Link href="/configuracion/marketing" className="text-xs text-primary font-medium hover:underline">Configurar Meta →</Link>
-            </div>
-          ) : metaEventList.length === 0 ? (
-            <Text tone="muted" className="text-center py-6">Sin eventos registrados aún</Text>
-          ) : (
-            <div className="space-y-1">
-              {metaEventList.map(evt => (
-                <div key={evt.name} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                  <div>
-                    <p className="text-sm font-medium text-gray-700">{evt.name}</p>
-                    <p className="text-xs text-gray-400">{evt.sent} enviados{evt.failed > 0 ? ` · ${evt.failed} fallidos` : ''}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-gray-600">{evt.total}</span>
-                    {evt.failed > 0 ? <XCircle className="w-4 h-4 text-danger" /> : <CheckCircle2 className="w-4 h-4 text-success" />}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </Card>
-
-        <Card>
-          <div className="mb-4">
-            <Heading level={4} className="flex items-center gap-2"><Users className="w-4 h-4 text-gray-600" /> Audiencias sugeridas</Heading>
-            <Text size="xs" tone="muted" className="mt-0.5">Listas para exportar a Meta Ads Manager</Text>
-          </div>
-          <div className="space-y-2">
-            {[
-              { label: 'Leads calidad alta sin cerrar', sub: 'Retargeting WhatsApp', color: 'bg-orange-50 border-orange-200', count: calificados },
-              { label: 'Visitantes landing sin lead', sub: 'Retargeting landing', color: 'bg-purple-50 border-purple-200', count: null },
-              { label: 'Propietarios captados', sub: 'Lookalike captaciones', color: 'bg-green-50 border-green-200', count: captados },
-              { label: 'Referidos potenciales', sub: 'Leads por referido', color: 'bg-blue-50 border-blue-200', count: leadsBySource.find(s => s.source === 'referido')?.count ?? 0 },
-            ].map(a => (
-              <div key={a.label} className={`flex items-center justify-between px-3 py-2.5 rounded-control border ${a.color}`}>
+          <div className="space-y-1">
+            {metaEventList.map(evt => (
+              <div key={evt.name} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
                 <div>
-                  <p className="text-xs font-semibold text-gray-700">{a.label}</p>
-                  <p className="text-xs text-gray-400">{a.sub}</p>
+                  <p className="text-sm font-medium text-gray-700">{evt.name}</p>
+                  <p className="text-xs text-gray-400">{evt.sent} enviados{evt.failed > 0 ? ` · ${evt.failed} fallidos` : ''}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  {a.count !== null && <span className="text-sm font-bold text-gray-600">{a.count}</span>}
-                  <Button variant="outline">Exportar →</Button>
+                  <span className="text-sm font-semibold text-gray-600">{evt.total}</span>
+                  {evt.failed > 0 ? <XCircle className="w-4 h-4 text-danger" /> : <CheckCircle2 className="w-4 h-4 text-success" />}
                 </div>
               </div>
             ))}
           </div>
-        </Card>
-      </div>
+        )}
+      </Card>
 
       {/* Insights */}
-      {insights.length > 0 && (
+      {!loading && insights.length > 0 && (
         <Card className="bg-gradient-to-r from-primary/5 to-brand-orange/5 border-primary/20">
           <Heading level={4} className="mb-3 flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-gray-600" /> Insights del período
@@ -466,6 +429,10 @@ function MarketingPage() {
           </div>
         </Card>
       )}
+
+      {/* Al pie y colapsado: varios números de arriba son el resultado de una
+          decisión de cálculo que no se adivina mirándolos. */}
+      <HowItWorks pipeline={pipeline} />
     </div>
   )
 }

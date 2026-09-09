@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import PublicLandingShell from '@/components/landings/public/PublicLandingShell'
+import GtmScript from '@/components/marketing/GtmScript'
 import { getPublicLanding } from '@/lib/landings/public-api'
 
 interface Props { params: Promise<{ slug: string }> }
@@ -32,5 +33,15 @@ export default async function PublicLandingPage({ params }: Props) {
   const { slug } = await params
   const landing = await getPublicLanding(slug)
   if (!landing) notFound()
-  return <PublicLandingShell slug={slug} blocks={landing.blocks as any} />
+  return (
+    <>
+      {/* El destino de los anuncios: sin el contenedor acá, los eventos que
+          empuja el shell al dataLayer no llegan a ningún tag. */}
+      <GtmScript
+        containerId={landing.tag?.gtm_container_id ?? null}
+        stapeEndpoint={landing.tag?.stape_endpoint ?? null}
+      />
+      <PublicLandingShell slug={slug} blocks={landing.blocks as any} />
+    </>
+  )
 }

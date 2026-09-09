@@ -18,6 +18,12 @@ export interface PublicLandingView {
    * y no duplicar SEO entre ambas rutas.
    */
   agent_public_path: string | null
+  /**
+   * Contenedor de GTM del agente dueño de la landing. La landing es el destino
+   * de los anuncios y era la única página pública sin tagging: los
+   * `dataLayer.push` del shell no los leía nadie.
+   */
+  tag?: { gtm_container_id: string | null; stape_endpoint: string | null }
 }
 
 export async function getPublicLanding(slug: string): Promise<PublicLandingView | null> {

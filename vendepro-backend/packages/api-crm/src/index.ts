@@ -6,6 +6,8 @@ import {
   D1TagRepository, D1StageHistoryRepository, D1OrganizationRepository,
   D1WhatsAppTemplateRepository,
   D1MetaIntegrationRepository, D1StageEventMappingRepository, D1MetaEventLogRepository,
+  D1PortalSpendRepository, DolarApiFxRate, D1CampaignGoalRepository,
+  D1AdHistoryRepository, MetaAdsInsightsHttp,
   D1PropertyRepository, D1ApiTokenRepository,
   D1LeadPropertyRepository, D1PropertyLinkRepository,
   D1WebhookRepository, D1WebhookDeliveryRepository, HttpWebhookSender,
@@ -33,6 +35,11 @@ import {
   GetMetaIntegrationUseCase, SaveMetaIntegrationUseCase,
   ListStageMappingsUseCase, SaveStageMappingUseCase, DeleteStageMappingUseCase,
   ListMetaEventLogUseCase,
+  ListPortalSpendUseCase,
+  SavePortalSpendUseCase,
+  DeletePortalSpendUseCase,
+  SetCampaignGoalUseCase,
+  SyncAdHistoryUseCase,
   CreateApiTokenUseCase, ListApiTokensUseCase, RevokeApiTokenUseCase, DeleteApiTokenUseCase,
   CreateWebhookUseCase, ListWebhooksUseCase, UpdateWebhookUseCase, DeleteWebhookUseCase,
   TestWebhookUseCase, ListWebhookDeliveriesUseCase,
@@ -298,6 +305,16 @@ app.delete('/lead-properties', async (c) => {
 
 // ── MARKETING (Meta CAPI + GA4 MP + Stape sGTM) ────────────────
 
+/**
+ * Scope de marketing: cada agente maneja su propio presupuesto y sus cuentas
+ * (decisión del 08-sep). Admin y owner ven el de toda la inmobiliaria — mismo
+ * criterio que ya usa el log de eventos de marketing.
+ */
+function marketingScope(c: any): string | undefined {
+  const role = c.get('userRole') as string
+  return role === 'admin' || role === 'owner' ? undefined : (c.get('userId') as string)
+}
+
 function requireAdmin(c: any) {
   const role = c.get('userRole') as string
   if (role !== 'admin' && role !== 'owner') {
@@ -408,6 +425,81 @@ app.get('/marketing/event-log', async (c) => {
     isAdmin ? undefined : c.get('userId'),
   )
   return c.json(list.map(l => l.toObject()))
+})
+
+// ── MARKETING — OBJETIVO DE CADA CAMPAÑA ───────────────────────
+// Meta no sabe si una campaña busca propietarios o compradores: su `objective`
+// dice cómo optimiza, no para qué la usa la inmobiliaria. La etiqueta la pone
+// el usuario, una vez por campaña, y se guarda contra el id del proveedor —
+// nunca contra el nombre, que se puede renombrar en Ads Manager.
+
+app.put('/marketing/campaign-goal', async (c) => {
+  // La campaña vive en la cuenta publicitaria del usuario, así que su etiqueta
+  // también es suya: no hace falta ser admin para clasificar lo propio.
+  const body = (await c.req.json()) as any
+
+  const useCase = new SetCampaignGoalUseCase(new D1CampaignGoalRepository(c.env.DB))
+  // `goal: null` saca la etiqueta y devuelve la campaña a "sin clasificar".
+  await useCase.execute({
+    orgId: c.get('orgId'),
+    provider: body.provider ?? 'meta',
+    campaignId: String(body.campaign_id ?? ''),
+    goal: body.goal ?? null,
+    campaignName: body.campaign_name ?? null,
+    updatedBy: c.get('userId'),
+  })
+  return c.json({ success: true })
+})
+
+// ── MARKETING — GASTO DE PORTALES ──────────────────────────────
+// Los portales no exponen API de facturación: el gasto se carga a mano, una
+// vez por mes. Es de la org (la inmobiliaria paga las publicaciones), así que
+// leer lo ve cualquiera y escribir es admin/owner, igual que el resto de la
+// configuración comercial.
+
+app.get('/marketing/portal-spend', async (c) => {
+  const useCase = new ListPortalSpendUseCase(new D1PortalSpendRepository(c.env.DB))
+  const rows = await useCase.execute(c.get('orgId'), {
+    fromMonth: c.req.query('from_month') ?? undefined,
+    toMonth: c.req.query('to_month') ?? undefined,
+    ownerUserId: marketingScope(c),
+  })
+  return c.json(rows)
+})
+
+app.put('/marketing/portal-spend', async (c) => {
+  // Sin requireAdmin: cada agente carga su propio presupuesto. El gasto queda a
+  // su nombre y sólo entra en SU cruce contra SUS leads.
+  const body = (await c.req.json()) as any
+
+  const useCase = new SavePortalSpendUseCase(
+    new D1PortalSpendRepository(c.env.DB),
+    new CryptoIdGenerator(),
+    new DolarApiFxRate(),
+  )
+  // Upsert por (org, portal, mes): recargar el mismo mes corrige la fila.
+  const saved = await useCase.execute({
+    orgId: c.get('orgId'),
+    provider: body.provider,
+    provider_label: body.provider_label ?? null,
+    period_month: body.period_month,
+    amount: Number(body.amount),
+    currency: body.currency,
+    // Sólo si el usuario la escribió a mano; si no, se busca la del día.
+    usd_rate: body.usd_rate === undefined || body.usd_rate === null || body.usd_rate === ''
+      ? null
+      : Number(body.usd_rate),
+    notes: body.notes ?? null,
+    createdBy: c.get('userId'),
+    ownerUserId: c.get('userId'),
+  })
+  return c.json(saved)
+})
+
+app.delete('/marketing/portal-spend/:id', async (c) => {
+  const useCase = new DeletePortalSpendUseCase(new D1PortalSpendRepository(c.env.DB))
+  await useCase.execute(c.req.param('id'), c.get('orgId'))
+  return c.json({ success: true })
 })
 
 // ── MARKETING — EMAIL (Resend) ─────────────────────────────────
@@ -1548,8 +1640,34 @@ async function runEmailQueue(env: Env): Promise<void> {
   }
 }
 
+/**
+ * Histórico de pauta: una vez por día, para todas las orgs.
+ *
+ * Re-pide los últimos días completos porque Meta reatribuye hacia atrás, y
+ * guarda con upsert por (anuncio, día) — ver `SyncAdHistoryUseCase`. Una cuenta
+ * que falla no frena a las demás; el motivo queda en `ad_accounts`.
+ */
+async function runAdHistorySync(env: Env): Promise<void> {
+  try {
+    const useCase = new SyncAdHistoryUseCase(
+      new D1AdHistoryRepository(env.DB),
+      new D1MetaIntegrationRepository(env.DB),
+      new MetaAdsInsightsHttp(),
+      (cipher) => decrypt(cipher, env.JWT_SECRET),
+    )
+    await useCase.execute({})
+  } catch {
+    // Tabla ausente u otro error de infra: mañana reintenta. El histórico
+    // tolera un día perdido porque la ventana vuelve a pedir hacia atrás.
+  }
+}
+
 async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
-  // Dos crons registrados en wrangler.jsonc — se distinguen por patrón.
+  // Tres crons registrados en wrangler.jsonc — se distinguen por patrón.
+  if (event.cron === '0 6 * * *') {
+    ctx.waitUntil(runAdHistorySync(env))
+    return
+  }
   if (event.cron === '*/5 * * * *') {
     ctx.waitUntil(runEmailQueue(env))
     // Motor de automatizaciones: ejecuta las acciones diferidas y recupera las
