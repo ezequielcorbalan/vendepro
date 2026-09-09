@@ -54,3 +54,131 @@ export interface AIService {
   editLandingBlock(input: EditBlockInput): Promise<EditBlockResult>
   editLandingGlobal(input: EditGlobalInput): Promise<EditGlobalResult>
 }
+
+// ── Extracción de aviso desde el TEXTO de su página ──────────────
+//
+// Puerto aparte y no un método más de `AIService` a propósito: `AIService` lo
+// implementan dos adapters (Gemini y el viejo Groq, todavía vivo en tests), y
+// agregarle métodos obligatorios rompe al que no los tiene. Los puertos chicos
+// los implementa sólo quien de verdad los ofrece.
+
+export interface ExtractComparableFromTextInput {
+  /** Texto plano de la página del aviso (HTML ya limpiado). */
+  text: string
+  /** URL de origen, para que el modelo pueda devolverla en `zonaprop_url`. */
+  sourceUrl?: string
+}
+
+export interface ListingTextExtractor {
+  extractComparableFromText(input: ExtractComparableFromTextInput): Promise<ComparablePropertyData>
+}
+
+// ── Extracción del PDF de reporte de KiteProp ────────────────────
+
+/** Una fila de métricas por portal dentro del reporte. */
+export interface PortalReportRow {
+  /** Clave del portal normalizada: zonaprop | argenprop | mercadolibre | manual. */
+  source: string
+  impressions: number | null
+  portal_visits: number | null
+  inquiries: number | null
+}
+
+export interface PortalReportData {
+  portals: PortalReportRow[]
+  /** Total de visitas presenciales del período, si el PDF lo informa. */
+  total_visits_presenciales: number | null
+  market_comparison: { avg_market_price: number | null } | null
+}
+
+export interface ExtractPortalReportInput {
+  /** PDF en base64, sin el prefijo `data:`. */
+  pdfBase64: string
+}
+
+export interface PortalReportExtractor {
+  extractPortalReportFromPdf(input: ExtractPortalReportInput): Promise<PortalReportData>
+}
+
+// ── Redacción de la conclusión de un reporte de gestión ──────────
+
+export interface ReportConclusionContext {
+  periodLabel: string
+  /** Días del período, ya calculados por el use case. */
+  daysInPeriod: number
+  /** Resumen agregado + semáforo, calculado por el use case (regla de dominio). */
+  viewsPerDay: number | null
+  healthLabel: string | null
+  metrics: Array<{
+    source: string
+    impressions: number | null
+    portal_visits: number | null
+    inquiries: number | null
+    phone_calls: number | null
+    whatsapp: number | null
+    in_person_visits: number | null
+    offers: number | null
+    ranking_position: number | null
+    avg_market_price: number | null
+  }>
+  competitors: Array<{ address: string | null; price: number | null; notes: string | null }>
+}
+
+export interface ReportConclusionResult {
+  conclusion: string
+  /** Comentario de precio vs mercado. Null si no hay datos para sostenerlo. */
+  price_reference: string | null
+}
+
+export interface ReportConclusionGenerator {
+  generateReportConclusion(ctx: ReportConclusionContext): Promise<ReportConclusionResult>
+}
+
+// ── Sugerencia de precios de tasación ────────────────────────────
+
+export interface AppraisalPricingContext {
+  property: {
+    address: string | null
+    neighborhood: string | null
+    property_type: string | null
+    weighted_area: number | null
+    covered_area: number | null
+    total_area: number | null
+  }
+  /** Estadística determinística calculada por el use case sobre los comparables. */
+  stats: {
+    count: number
+    median_usd_m2: number
+    min_usd_m2: number
+    max_usd_m2: number
+    /** Valor base = mediana × superficie ponderada, redondeado. */
+    base_value: number
+    /** Rango duro dentro del cual tienen que caer los precios sugeridos. */
+    floor_value: number
+    ceil_value: number
+  }
+  comparables: Array<{
+    address: string | null
+    kind: string
+    total_area: number | null
+    price: number | null
+    closing_price_usd: number | null
+    usd_per_m2: number | null
+    days_on_market: number | null
+    views_per_day: number | null
+  }>
+  swot: { strengths: string | null; weaknesses: string | null }
+}
+
+export interface AppraisalPricingResult {
+  suggested_price: number
+  test_price: number
+  expected_close_price: number
+  usd_per_m2: number
+  /** Justificación en texto para que el agente la use en la tasación. */
+  rationale: string
+}
+
+export interface AppraisalPricingSuggester {
+  suggestAppraisalPricing(ctx: AppraisalPricingContext): Promise<AppraisalPricingResult>
+}

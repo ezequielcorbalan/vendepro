@@ -19,7 +19,7 @@ function BoundNotice() {
   return (
     <Text size="xs" tone="muted">
       Se sincroniza con tu perfil público.{' '}
-      <Link href="/perfil" className="text-brand-pink hover:underline">Editalo en Perfil.</Link>
+      <Link href="/perfil" className="text-primary hover:underline">Editalo en Perfil.</Link>
     </Text>
   )
 }
@@ -284,10 +284,10 @@ function AgentHeroFields({ data, onChange, binding }: { data: AgentHeroData; onC
                 <option value="secondary">Secundario</option>
                 <option value="whatsapp">WhatsApp</option>
               </Select>
-              <button onClick={() => onChange({ ctas: data.ctas.filter((_, j) => j !== i) })} className="text-xs text-red-500 hover:underline">Quitar</button>
+              <Button variant="ghost" size="sm" onClick={() => onChange({ ctas: data.ctas.filter((_, j) => j !== i) })} className="text-xs text-danger px-0">Quitar</Button>
             </div>
           ))}
-          <button onClick={() => onChange({ ctas: [...data.ctas, { label: '', href: '', style: 'primary' }] })} className="text-xs text-brand-pink hover:underline">+ Agregar CTA</button>
+          <Button variant="ghost" size="sm" onClick={() => onChange({ ctas: [...data.ctas, { label: '', href: '', style: 'primary' }] })} className="text-xs px-0">+ Agregar CTA</Button>
         </div>
       </Field>
     </>
@@ -323,10 +323,10 @@ function AgentCredentialsFields({ data, onChange, binding }: { data: AgentCreden
               <div key={i} className="flex gap-2">
                 <TextInput placeholder="Valor" className="!w-20" value={s.value} onChange={e => { const stats = [...data.stats]; stats[i] = { ...s, value: e.target.value }; onChange({ stats }) }} />
                 <TextInput placeholder="Label" value={s.label} onChange={e => { const stats = [...data.stats]; stats[i] = { ...s, label: e.target.value }; onChange({ stats }) }} />
-                <button onClick={() => onChange({ stats: data.stats.filter((_, j) => j !== i) })} className="text-xs text-red-500 hover:underline">Quitar</button>
+                <Button variant="ghost" size="sm" onClick={() => onChange({ stats: data.stats.filter((_, j) => j !== i) })} className="text-xs text-danger px-0">Quitar</Button>
               </div>
             ))}
-            <button onClick={() => onChange({ stats: [...data.stats, { label: '', value: '' }] })} className="text-xs text-brand-pink hover:underline">+ Agregar stat</button>
+            <Button variant="ghost" size="sm" onClick={() => onChange({ stats: [...data.stats, { label: '', value: '' }] })} className="text-xs px-0">+ Agregar stat</Button>
           </div>
         )}
       </Field>

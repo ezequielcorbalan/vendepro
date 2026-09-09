@@ -81,6 +81,8 @@ export * from './use-cases/ficha-links/manage-ficha-links'
 export * from './use-cases/reports/get-reports'
 export * from './use-cases/reports/get-report-detail'
 export * from './use-cases/reports/create-report'
+export * from './use-cases/reports/add-report-photo'
+export * from './use-cases/reports/delete-report-photo'
 export * from './use-cases/reports/update-report'
 export * from './use-cases/reports/delete-report'
 
@@ -120,6 +122,7 @@ export * from './use-cases/dashboard/get-activity-stats'
 export * from './use-cases/dashboard/get-today-events'
 export * from './use-cases/dashboard/get-pending-followups'
 export * from './use-cases/dashboard/get-agent-stats'
+export * from './use-cases/dashboard/get-team-stats'
 
 // Analytics
 export * from './use-cases/analytics/get-listings-performance'
@@ -132,6 +135,10 @@ export * from './use-cases/analytics/export-leads'
 // AI
 export * from './use-cases/ai/extract-property-metrics'
 export * from './use-cases/ai/extract-comparable-from-screenshot'
+export * from './use-cases/ai/extract-comparable-from-url'
+export * from './use-cases/ai/extract-portal-report-from-pdf'
+export * from './use-cases/ai/generate-report-conclusion'
+export * from './use-cases/ai/suggest-appraisal-pricing'
 export * from './use-cases/ai/extract-lead-from-text'
 export * from './use-cases/ai/extract-lead-from-image'
 

@@ -17,6 +17,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge'
 import { Badge } from '@/components/ui/Badge'
 import { Avatar } from '@/components/ui/Avatar'
 import { Table, type Column } from '@/components/ui/Table'
+import { useConfirm } from '@/components/ui/useConfirm'
 
 const typeLabels: Record<string, { label: string; color: string }> = {
   vendedor: { label: 'Vendedor', color: 'bg-blue-100 text-blue-800' },
@@ -86,6 +87,7 @@ function SourceBadge({ source }: { source?: string | null }) {
 }
 
 export default function ContactosPage() {
+  const { confirmDialog, askConfirm } = useConfirm()
   const { toast } = useToast()
   const [contacts, setContacts] = useState<any[]>([])
   const [agents, setAgents] = useState<any[]>([])
@@ -285,7 +287,13 @@ export default function ContactosPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('¿Eliminar este contacto?')) return
+    const { confirmed } = await askConfirm({
+      title: 'Eliminar contacto',
+      message: 'El contacto sale de la base. No se puede deshacer.',
+      confirmLabel: 'Eliminar',
+      variant: 'danger',
+    })
+    if (!confirmed) return
     await apiFetch('crm', `/contacts?id=${id}`, { method: 'DELETE' })
     setContacts(prev => prev.filter(c => c.id !== id))
     toast('Contacto eliminado', 'warning')
@@ -293,6 +301,7 @@ export default function ContactosPage() {
 
   return (
     <div>
+      {confirmDialog}
       <PageHeader
         title="Contactos"
         subtitle="Base de datos de clientes"
@@ -339,7 +348,7 @@ export default function ContactosPage() {
           <option value="name">Nombre: A → Z</option>
         </Select>
         {activeFilterCount > 0 && (
-          <button onClick={clearFilters} className="text-xs text-gray-500 hover:text-primary shrink-0">Limpiar</button>
+          <Button variant="ghost" size="sm" onClick={clearFilters} className="p-0 text-xs text-gray-500 hover:text-primary shrink-0">Limpiar</Button>
         )}
       </div>
 
@@ -407,7 +416,7 @@ export default function ContactosPage() {
             icon={<BookUser className="w-7 h-7" />}
             title={search || filterType || activeFilterCount > 0 ? 'Sin resultados' : 'No hay contactos todavía'}
             action={
-              <button onClick={() => setShowForm(true)} className="text-primary text-sm hover:underline">Agregar el primer contacto</button>
+              <Button variant="ghost" size="sm" onClick={() => setShowForm(true)} className="p-0 text-primary text-sm hover:underline">Agregar el primer contacto</Button>
             }
           />
         </Card>
@@ -465,9 +474,9 @@ export default function ContactosPage() {
                     {c.created_at && <span className="text-xs text-gray-400 ml-auto whitespace-nowrap">{formatShortDate(c.created_at)}</span>}
                   </div>
                 </div>
-                <button onClick={() => handleDelete(c.id)} className="text-gray-300 hover:text-danger p-1 flex-shrink-0">
+                <Button variant="ghost" size="icon" onClick={() => handleDelete(c.id)} className="text-gray-300 hover:text-danger p-1 flex-shrink-0">
                   <Trash2 className="w-4 h-4" />
-                </button>
+                </Button>
               </div>
             )
           }}

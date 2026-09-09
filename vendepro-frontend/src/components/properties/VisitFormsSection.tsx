@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/Button'
 import { Alert } from '@/components/ui/Alert'
 import { Text } from '@/components/ui/Typography'
 import { VISIT_BUY_INTENTIONS, VISIT_SITUATIONS, VISIT_SOURCES, type VisitBuyIntention } from '@/lib/crm-config'
+import { useConfirm } from '@/components/ui/useConfirm'
 
 type BuyIntention = 'compraria' | 'tal_vez' | 'no' | null
 
@@ -54,6 +55,7 @@ export function VisitFormsSection({
   propertyId: string
   refreshKey?: number
 }) {
+  const { confirmDialog, askConfirm } = useConfirm()
   const [loading, setLoading] = useState(true)
   const [items, setItems] = useState<VisitForm[]>([])
   const [showArchived, setShowArchived] = useState(false)
@@ -111,7 +113,13 @@ export function VisitFormsSection({
   }
 
   async function softDelete(id: string) {
-    if (!confirm('¿Borrar esta ficha de visita? Esta acción no se puede deshacer.')) return
+    const { confirmed } = await askConfirm({
+      title: 'Borrar ficha de visita',
+      message: 'La ficha de visita y sus datos se borran. No se puede deshacer.',
+      confirmLabel: 'Borrar',
+      variant: 'danger',
+    })
+    if (!confirmed) return
     setBusyId(id)
     try {
       const r = await apiFetch('properties', `/visit-forms/${id}`, { method: 'DELETE' })
@@ -124,6 +132,7 @@ export function VisitFormsSection({
 
   return (
     <Card>
+      {confirmDialog}
       <WidgetHeader
         size="lg"
         icon={<ClipboardList className="w-5 h-5" />}

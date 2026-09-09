@@ -174,7 +174,7 @@ export function LeadPropertiesSection({ leadId }: { leadId: string }) {
           {!searching && results.length > 0 && (
             <div className="mt-2 border border-gray-100 rounded-card divide-y divide-gray-100 overflow-hidden">
               {results.map(r => (
-                <button
+                <Button variant="ghost" size="sm"
                   key={r.id}
                   onClick={() => linkProperty(r.id)}
                   disabled={busyId === 'link'}
@@ -182,7 +182,7 @@ export function LeadPropertiesSection({ leadId }: { leadId: string }) {
                 >
                   <span className="font-medium text-ink">{r.address}</span>
                   {r.neighborhood && <span className="text-gray-400"> · {r.neighborhood}</span>}
-                </button>
+                </Button>
               ))}
             </div>
           )}
@@ -248,7 +248,7 @@ export function LeadPropertiesSection({ leadId }: { leadId: string }) {
 
                 <div className="flex items-center gap-1 flex-wrap mt-2 pt-2 border-t border-gray-50">
                   {STATUS_ACTIONS.filter(a => a.status !== item.status).map(a => (
-                    <button
+                    <Button variant="ghost" size="icon"
                       key={a.status}
                       onClick={() => updateStatus(item.id, a.status)}
                       disabled={busy}
@@ -256,9 +256,9 @@ export function LeadPropertiesSection({ leadId }: { leadId: string }) {
                     >
                       <a.icon className="w-3 h-3" />
                       {a.label}
-                    </button>
+                    </Button>
                   ))}
-                  <button
+                  <Button variant="ghost" size="icon"
                     onClick={() => generateVisitForm(item)}
                     disabled={busy}
                     title="Genera el link de la ficha de visita y lo copia al portapapeles"
@@ -266,15 +266,15 @@ export function LeadPropertiesSection({ leadId }: { leadId: string }) {
                   >
                     <ClipboardList className="w-3 h-3" />
                     {copiedId === item.id ? 'Link copiado' : 'Ficha de visita'}
-                  </button>
-                  <button
+                  </Button>
+                  <Button variant="ghost" size="sm"
                     onClick={() => unlink(item.id)}
                     disabled={busy}
                     className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-danger hover:bg-danger/5 rounded-control px-2 min-h-[44px] ml-auto disabled:opacity-40"
                   >
                     <Trash2 className="w-3 h-3" />
                     Quitar
-                  </button>
+                  </Button>
                 </div>
               </div>
             )

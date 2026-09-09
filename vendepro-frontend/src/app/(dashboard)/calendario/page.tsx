@@ -5,7 +5,7 @@ import Link from 'next/link'
 import {
   Plus, X, ChevronLeft, ChevronRight, Calendar, Phone, Users, Home, Eye,
   ClipboardList, RefreshCw, FileText, FileSignature, CheckCircle2, Trash2,
-  Link2
+  Link2, CalendarPlus
 } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -13,6 +13,7 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Switch } from '@/components/ui/Switch'
 import { Card, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { Modal } from '@/components/ui/Modal'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Alert } from '@/components/ui/Alert'
@@ -22,6 +23,7 @@ import { CallButton, WhatsAppButton } from '@/components/ui/ContactButtons'
 import { EVENT_TYPES } from '@/lib/crm-config'
 import { apiFetch } from '@/lib/api'
 import { getScopedAgentId } from '@/lib/agent-scope'
+import { useConfirm } from '@/components/ui/useConfirm'
 
 const ICON_MAP: Record<string, any> = {
   Phone, Users, Home, Eye, ClipboardList, RefreshCw, FileText, FileSignature, Calendar,
@@ -113,6 +115,10 @@ function ETIcon({ type, className }: { type: string; className?: string }) {
 }
 
 export default function CalendarioPage() {
+  const { confirmDialog, askConfirm } = useConfirm()
+  // Plan B cuando `navigator.clipboard` falla (contexto no seguro, permiso
+  // denegado): mostramos el link para copiar a mano. Antes era un `prompt()`.
+  const [linkAMano, setLinkAMano] = useState<string | null>(null)
   const { toast } = useToast()
   const now = new Date()
   const [events, setEvents] = useState<any[]>([])
@@ -247,7 +253,13 @@ export default function CalendarioPage() {
   }
 
   const deleteEvent = async (id: string) => {
-    if (!confirm('¿Eliminar este evento?')) return
+    const { confirmed } = await askConfirm({
+      title: 'Eliminar evento',
+      message: 'El evento sale del calendario. No se puede deshacer.',
+      confirmLabel: 'Eliminar',
+      variant: 'danger',
+    })
+    if (!confirmed) return
     await apiFetch('crm', `/calendar?id=${id}`, { method: 'DELETE' })
     toast('Evento eliminado', 'warning')
     loadEvents()
@@ -260,7 +272,7 @@ export default function CalendarioPage() {
       await navigator.clipboard.writeText(link)
       toast('Link copiado — mandáselo al cliente para que lo agende')
     } catch {
-      prompt('Copiá el link para el cliente:', link)
+      setLinkAMano(link)
     }
   }
 
@@ -276,6 +288,21 @@ export default function CalendarioPage() {
 
   return (
     <div className="space-y-4">
+      {confirmDialog}
+
+      <Modal
+        open={!!linkAMano}
+        onClose={() => setLinkAMano(null)}
+        title="Link para el cliente"
+        footer={<Button variant="ghost" onClick={() => setLinkAMano(null)}>Cerrar</Button>}
+      >
+        <Text size="sm" tone="muted" className="block mb-3">
+          No pudimos copiarlo automáticamente. Seleccionalo y copialo a mano.
+        </Text>
+        <Field label="Link">
+          <Input readOnly value={linkAMano ?? ''} onFocus={e => e.currentTarget.select()} />
+        </Field>
+      </Modal>
       <PageHeader
         title="Calendario"
         subtitle={
@@ -336,9 +363,9 @@ export default function CalendarioPage() {
         <Card padded={false} className="overflow-hidden">
           {/* Nav */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-            <button onClick={handlePrev} aria-label="Mes anterior" className="p-2 hover:bg-gray-100 rounded-control"><ChevronLeft className="w-5 h-5" /></button>
+            <Button variant="ghost" size="icon" onClick={handlePrev} aria-label="Mes anterior" className="p-2 hover:bg-gray-100 rounded-control"><ChevronLeft className="w-5 h-5" /></Button>
             <Heading level={4} as="h2">{MONTH_NAMES[month]} {year}</Heading>
-            <button onClick={handleNext} aria-label="Mes siguiente" className="p-2 hover:bg-gray-100 rounded-control"><ChevronRight className="w-5 h-5" /></button>
+            <Button variant="ghost" size="icon" onClick={handleNext} aria-label="Mes siguiente" className="p-2 hover:bg-gray-100 rounded-control"><ChevronRight className="w-5 h-5" /></Button>
           </div>
 
           {/* Day headers */}
@@ -460,21 +487,21 @@ export default function CalendarioPage() {
                             </>
                           )}
                           {ev.start_at && (
-                            <button onClick={() => copyClientLink(ev)} title="Copiar link para que el cliente lo agende"
+                            <Button variant="ghost" size="icon" onClick={() => copyClientLink(ev)} title="Copiar link para que el cliente lo agende"
                               className="p-1.5 rounded-control hover:bg-gray-100 text-gray-400 hover:text-primary">
                               <Link2 className="w-3.5 h-3.5" />
-                            </button>
+                            </Button>
                           )}
                           {!ev.completed && (
-                            <button onClick={() => completeEvent(ev.id)} title="Marcar como completado"
+                            <Button variant="ghost" size="icon" onClick={() => completeEvent(ev.id)} title="Marcar como completado"
                               className="p-1.5 rounded-control hover:bg-gray-100 text-gray-400 hover:text-success">
                               <CheckCircle2 className="w-3.5 h-3.5" />
-                            </button>
+                            </Button>
                           )}
-                          <button onClick={() => deleteEvent(ev.id)} title="Eliminar evento"
+                          <Button variant="ghost" size="icon" onClick={() => deleteEvent(ev.id)} title="Eliminar evento"
                             className="p-1.5 rounded-control hover:bg-gray-100 text-gray-400 hover:text-danger">
                             <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          </Button>
                         </>
                       )}
                     </div>
@@ -492,7 +519,7 @@ export default function CalendarioPage() {
             <CardTitle>
               {new Date(selectedDate + 'T12:00:00').toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}
             </CardTitle>
-            <button onClick={() => setSelectedDate(null)} aria-label="Cerrar" className="p-1 hover:bg-gray-100 rounded-control"><X className="w-4 h-4 text-gray-400" /></button>
+            <Button variant="ghost" size="icon" onClick={() => setSelectedDate(null)} aria-label="Cerrar" className="p-1 hover:bg-gray-100 rounded-control"><X className="w-4 h-4 text-gray-400" /></Button>
           </div>
           <div className="space-y-2">
             {selectedEvents.map(ev => {
@@ -505,17 +532,17 @@ export default function CalendarioPage() {
                     <p className="text-xs text-gray-400">{fmtTime(ev.start_at)}{ev.lead_name ? ` · ${ev.lead_name}` : ''}</p>
                   </div>
                   {ev.start_at && (
-                    <button onClick={() => copyClientLink(ev)} title="Copiar link para que el cliente lo agende"
-                      className="text-gray-400 hover:text-primary">
+                    <Button variant="ghost" size="icon" onClick={() => copyClientLink(ev)} title="Copiar link para que el cliente lo agende"
+                      className="p-0 text-gray-400 hover:text-primary">
                       <Link2 className="w-4 h-4" />
-                    </button>
+                    </Button>
                   )}
                   {ev.completed === 1 && <CheckCircle2 className="w-4 h-4 text-success" />}
                   {!ev.completed && (
-                    <button onClick={() => completeEvent(ev.id)} title="Marcar como completado"
-                      className="text-gray-400 hover:text-success">
+                    <Button variant="ghost" size="icon" onClick={() => completeEvent(ev.id)} title="Marcar como completado"
+                      className="p-0 text-gray-400 hover:text-success">
                       <CheckCircle2 className="w-4 h-4" />
-                    </button>
+                    </Button>
                   )}
                 </div>
               )
@@ -526,12 +553,19 @@ export default function CalendarioPage() {
 
       {/* Create modal */}
       {showCreate && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowCreate(false)}>
-          <div className="bg-white w-full sm:max-w-md sm:rounded-card rounded-t-2xl p-5" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <Heading level={4} as="h3">Nuevo evento</Heading>
-              <button onClick={() => setShowCreate(false)} aria-label="Cerrar" className="p-1 hover:bg-gray-100 rounded-control"><X className="w-5 h-5 text-gray-400" /></button>
-            </div>
+        <Modal
+          open
+          sheet
+          onClose={() => setShowCreate(false)}
+          title="Nuevo evento"
+          icon={<CalendarPlus className="w-5 h-5" />}
+          footer={
+            <>
+              <Button variant="outline" onClick={() => setShowCreate(false)}>Cancelar</Button>
+              <Button onClick={handleCreate} disabled={!form.title || !form.start_at} loading={saving}>Crear</Button>
+            </>
+          }
+        >
             <div className="space-y-3">
               <Field label="Título" required>
                 <Input placeholder="Título del evento" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
@@ -553,14 +587,7 @@ export default function CalendarioPage() {
                 <Textarea placeholder="Notas..." value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2} className="min-h-0" />
               </Field>
             </div>
-            <div className="flex gap-2 mt-4">
-              <Button variant="outline" className="flex-1" onClick={() => setShowCreate(false)}>Cancelar</Button>
-              <Button className="flex-1" onClick={handleCreate} disabled={!form.title || !form.start_at} loading={saving}>
-                Crear
-              </Button>
-            </div>
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   )

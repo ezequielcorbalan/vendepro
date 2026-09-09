@@ -69,11 +69,31 @@ describe('D1LeadRepository — new methods', () => {
     await repo.save(buildLead({ full_name: 'Captado Lead', next_step_date: pastDate, stage: 'captado' }))
 
     const now = new Date().toISOString()
-    const results = await repo.findPendingFollowups(orgId, now, 10)
+    const results = await repo.findPendingFollowups(orgId, now, 10, 'vendedor')
     expect(results.some(r => r.full_name === 'Overdue Lead')).toBe(true)
     expect(results.some(r => r.full_name === 'Future Lead')).toBe(false)
     // captado should be excluded
     expect(results.some(r => r.full_name === 'Captado Lead')).toBe(false)
+  })
+
+  // El bug que esto cubre: sin filtro de pipeline, un comprador con visita
+  // pendiente aparecía en el dashboard de captación y sumaba a su contador.
+  it('findPendingFollowups keeps each pipeline on its own board', async () => {
+    const repo = new D1LeadRepository(env.DB)
+    const pastDate = '2026-01-01T00:00:00.000Z'
+
+    await repo.save(buildLead({ full_name: 'Propietario Pendiente', next_step_date: pastDate, stage: 'contactado', pipeline: 'vendedor' }))
+    await repo.save(buildLead({ full_name: 'Comprador Pendiente', next_step_date: pastDate, stage: 'contactado', pipeline: 'comprador' }))
+
+    const now = new Date().toISOString()
+
+    const sellers = await repo.findPendingFollowups(orgId, now, 10, 'vendedor')
+    expect(sellers.some(r => r.full_name === 'Propietario Pendiente')).toBe(true)
+    expect(sellers.some(r => r.full_name === 'Comprador Pendiente')).toBe(false)
+
+    const buyers = await repo.findPendingFollowups(orgId, now, 10, 'comprador')
+    expect(buyers.some(r => r.full_name === 'Comprador Pendiente')).toBe(true)
+    expect(buyers.some(r => r.full_name === 'Propietario Pendiente')).toBe(false)
   })
 
   it('exportAllWithAssignedName returns rows with assigned_name', async () => {

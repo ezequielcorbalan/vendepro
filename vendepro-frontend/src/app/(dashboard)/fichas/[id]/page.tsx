@@ -17,19 +17,20 @@ import { Checkbox } from '@/components/ui/Choice'
 import { PillRadioGroup as RadioGroup, PillCheckGroup } from '@/components/ui/ChoicePills'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { DeclaredByOwnerCard, type OwnerDeclaredFicha } from '@/components/fichas/DeclaredByOwnerCard'
+import { useConfirm } from '@/components/ui/useConfirm'
 
 // ── Collapsible section ─────────────────────────────────────
 function Section({ title, icon: Icon, children, defaultOpen = false }: { title: string; icon: any; children: React.ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen)
   return (
     <Card padded={false} className="overflow-hidden">
-      <button type="button" onClick={() => setOpen(!open)} className="w-full flex items-center justify-between px-4 py-3.5 text-left">
+      <Button variant="ghost" size="icon" type="button" onClick={() => setOpen(!open)} className="w-full flex items-center justify-between px-4 py-3.5 text-left">
         <div className="flex items-center gap-2.5">
           <Icon className="w-4 h-4 text-gray-600" />
           <CardTitle>{title}</CardTitle>
         </div>
         {open ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
-      </button>
+      </Button>
       {open && <div className="px-4 pb-4 space-y-3 border-t border-gray-50">{children}</div>}
     </Card>
   )
@@ -79,6 +80,7 @@ function safeParseAmenities(raw: unknown): { items: string[]; other: string } {
 }
 
 export default function FichaDetailPage() {
+  const { confirmDialog, askConfirm } = useConfirm()
   const params = useParams()
   const router = useRouter()
   const { toast } = useToast()
@@ -266,7 +268,13 @@ export default function FichaDetailPage() {
   }
 
   async function handleDelete() {
-    if (!confirm('¿Eliminar esta ficha? Esta acción no se puede deshacer.')) return
+    const { confirmed } = await askConfirm({
+      title: 'Eliminar ficha',
+      message: 'La ficha y su link público dejan de estar disponibles. No se puede deshacer.',
+      confirmLabel: 'Eliminar',
+      variant: 'danger',
+    })
+    if (!confirmed) return
     try {
       const res = await apiFetch('properties', `/fichas/${fichaId}`, { method: 'DELETE' })
       if (!res.ok) {
@@ -307,6 +315,7 @@ export default function FichaDetailPage() {
 
   return (
     <div className="max-w-lg mx-auto pb-24">
+      {confirmDialog}
       <div className="flex items-center justify-between mb-4">
         <Link href={backHref} className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-gray-600">
           <ArrowLeft className="w-4 h-4" /> Volver

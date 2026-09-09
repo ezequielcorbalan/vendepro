@@ -1,5 +1,6 @@
 'use client'
 import { BlockField, BlockInput } from '../BlockField'
+import { Button } from '@/components/ui/Button'
 
 interface Props { data: any; onPatch: (p: Record<string, unknown>) => void }
 type Provider = 'youtube' | 'vimeo' | 'r2'
@@ -57,14 +58,14 @@ export function VideoGalleryForm({ data, onPatch }: Props) {
       <div>
         <div className="mb-1 flex items-center justify-between">
           <span className="text-xs uppercase tracking-wide text-gray-600">Videos</span>
-          <button onClick={add} disabled={videos.length >= MAX_ITEMS} className="text-xs text-brand-pink disabled:opacity-40">+ Agregar</button>
+          <Button variant="ghost" size="sm" onClick={add} disabled={videos.length >= MAX_ITEMS} className="p-0 text-xs text-brand-pink disabled:opacity-40">+ Agregar</Button>
         </div>
         <div className="space-y-2">
           {videos.map((vid, i) => (
             <div key={i} className="space-y-1 rounded border border-gray-200 p-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-gray-400">Video {i + 1} · {vid.provider}</span>
-                <button onClick={() => remove(i)} className="text-xs text-danger hover:opacity-80">Eliminar</button>
+                <Button variant="ghost" size="sm" onClick={() => remove(i)} className="p-0 text-xs text-danger hover:opacity-80">Eliminar</Button>
               </div>
               <BlockInput
                 type="url"

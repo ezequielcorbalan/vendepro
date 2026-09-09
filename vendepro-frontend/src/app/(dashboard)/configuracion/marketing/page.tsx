@@ -33,7 +33,7 @@ const EVENT_KEY_GROUPS: { label: string; keys: { key: string; label: string }[] 
       { key: 'presentada', label: 'Presentada' },
       { key: 'seguimiento', label: 'Seguimiento' },
       { key: 'captado', label: 'Captado' },
-      { key: 'perdido', label: 'Perdido' },
+      { key: 'perdido', label: 'No captado' },
     ],
   },
   {

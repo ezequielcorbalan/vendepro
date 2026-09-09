@@ -24,9 +24,11 @@ import { Tooltip } from '@/components/ui/Tooltip'
 import { Dropdown, DropdownItem, DropdownSeparator } from '@/components/ui/Dropdown'
 import { Table, type Column } from '@/components/ui/Table'
 import { Drawer } from '@/components/ui/Drawer'
+import { useConfirm } from '@/components/ui/useConfirm'
 import { Timeline } from '@/components/ui/Timeline'
 import { ProgressBar } from '@/components/ui/Progress'
 import { StepIndicator } from '@/components/ui/StepIndicator'
+import { StepCard } from '@/components/ui/StepCard'
 import { Heading, Text } from '@/components/ui/Typography'
 import { CallButton, WhatsAppButton } from '@/components/ui/ContactButtons'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -150,6 +152,12 @@ export default function DesignSystemPage() {
   const [email, setEmail] = useState(true)
   const [op, setOp] = useState('venta')
   const [modalOpen, setModalOpen] = useState(false)
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const [navOpen, setNavOpen] = useState(false)
+  const [topOpen, setTopOpen] = useState(false)
+  const [headerOpen, setHeaderOpen] = useState(false)
+  const [ultimaConfirmacion, setUltimaConfirmacion] = useState('')
+  const { confirmDialog, askConfirm } = useConfirm()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [optMode, setOptMode] = useState('method')
   const [segIcon, setSegIcon] = useState('config')
@@ -369,6 +377,29 @@ export default function DesignSystemPage() {
               <Text size="xs" tone="muted" className="mb-2">dots · sin labels, con contador</Text>
               <StepIndicator variant="dots" steps={8} current={3} />
             </div>
+          </div>
+        </Section>
+
+        {/* StepCard */}
+        <Section
+          title="StepCard"
+          hint="El otro tipo de flujo: VERTICAL, todos los pasos visibles a la vez, cada uno en su Card. No confundir con `StepIndicator`, que es la barra de un wizard donde se ve un paso por vez. Estaba dos veces en la app y las dos no coincidían: el editor de automatizaciones tenía este componente pero local a su carpeta (círculo gris de 28px) y la prueba de token de /configuracion/api lo tenía a mano (círculo rosa de 20px). Gana el gris: `primary` se reserva para acciones y estados, y un número de paso es un ordinal. El número va `aria-hidden` — “1” solo no le dice nada a un lector de pantalla y el orden ya lo da el DOM."
+        >
+          <div className="space-y-3">
+            <StepCard step={1} icon={<Zap className="w-4 h-4 text-gray-600" />} title="Cuándo se dispara">
+              <Text size="sm" tone="muted">El contenido del paso va acá.</Text>
+            </StepCard>
+            <StepCard
+              step={2}
+              title="Con acción a la derecha"
+              subtitle="El subtítulo acepta nodos, no sólo texto: hay pasos que necesitan un <code> adentro."
+              action={<Button variant="ghost" size="sm" className="p-0 text-xs text-primary">Copiar comando</Button>}
+            >
+              <Text size="sm" tone="muted">Contenido.</Text>
+            </StepCard>
+            <StepCard step={3} level={4} title="level={4} cuando cuelga de un título de sección">
+              <Text size="sm" tone="muted">Saltarse un nivel de encabezado rompe la navegación por encabezados.</Text>
+            </StepCard>
           </div>
         </Section>
 
@@ -733,6 +764,30 @@ export default function DesignSystemPage() {
           </Modal>
         </Section>
 
+        {/* Modal sheet */}
+        <Section
+          title="Modal · sheet"
+          hint="Mismo diálogo pegado abajo en el teléfono y centrado en desktop. Es el molde de las pantallas de trabajo de campo (leads, calendario, contactos): la mano llega al pulgar, no al centro de la pantalla. Angostá la ventana para verlo."
+        >
+          <Button variant="outline" onClick={() => setSheetOpen(true)}>Abrir sheet</Button>
+          <Modal
+            open={sheetOpen}
+            sheet
+            onClose={() => setSheetOpen(false)}
+            title="Avanzar a tasación"
+            icon={<AlertTriangle className="w-4 h-4" />}
+            footer={
+              <>
+                <Button variant="ghost" onClick={() => setSheetOpen(false)}>Cancelar</Button>
+                <Button onClick={() => setSheetOpen(false)}>Avanzar</Button>
+              </>
+            }
+          >
+            En móvil sale desde abajo con las esquinas de arriba redondeadas; arriba de
+            640px es el mismo modal centrado de siempre.
+          </Modal>
+        </Section>
+
         {/* Empty state */}
         <Section title="Empty state" hint="Estado vacío operativo con CTA.">
           <Card padded={false}>
@@ -846,6 +901,76 @@ export default function DesignSystemPage() {
               <Switch checked={auto} onChange={setAuto} label="Formulario de contacto" />
             </div>
           </Drawer>
+        </Section>
+
+        {/* Drawer izquierdo + Modal align/header — los tres props que cerraron la fase 6 */}
+        <Section
+          title="Drawer izquierdo · Modal anclado arriba · header propio"
+          hint="Los tres props que cerraron la fase 6, cada uno sacado de un overlay que estaba armado a mano justo porque el DS no lo soportaba: el nav móvil entra por la izquierda, la paleta ⌘K se ancla arriba (centrada saltaría de lugar según cuántos resultados haya) y el onboarding lleva el indicador de pasos en el encabezado en vez de un título."
+        >
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => setNavOpen(true)}>Drawer izquierdo</Button>
+            <Button variant="outline" onClick={() => setTopOpen(true)}>Modal anclado arriba</Button>
+            <Button variant="outline" onClick={() => setHeaderOpen(true)}>Modal con header propio</Button>
+          </div>
+
+          <Drawer
+            open={navOpen}
+            onClose={() => setNavOpen(false)}
+            side="left"
+            width="w-72"
+            title="Menú de navegación"
+          >
+            Igual que el de la derecha, pero entra por la izquierda: la navegación
+            vive a la izquierda, así que abrirla del otro lado se lee como otra cosa.
+          </Drawer>
+
+          <Modal open={topOpen} onClose={() => setTopOpen(false)} align="top" padded={false}>
+            <div className="flex items-center gap-3 border-b border-gray-100 px-4 py-3">
+              <Search className="w-5 h-5 text-gray-400 shrink-0" />
+              <Input placeholder="Buscar leads, contactos, propiedades..." className="border-0 shadow-none focus:ring-0" />
+            </div>
+            <div className="p-4">
+              <Text size="sm" tone="muted">Sin `title` ni `header` el Modal no dibuja encabezado, que es lo que necesita una paleta de comandos.</Text>
+            </div>
+          </Modal>
+
+          <Modal
+            open={headerOpen}
+            onClose={() => setHeaderOpen(false)}
+            title="Bienvenida a VendéPro"
+            header={<StepIndicator variant="dots" steps={8} current={3} />}
+            footer={<Button onClick={() => setHeaderOpen(false)}>Siguiente</Button>}
+          >
+            El slot recibe el encabezado; la X la sigue poniendo el Modal, igual que
+            en el Drawer. El `title` queda como nombre accesible del diálogo.
+          </Modal>
+        </Section>
+
+        {/* ConfirmDialog */}
+        <Section
+          title="ConfirmDialog · useConfirm"
+          hint="Confirmación antes de algo destructivo, con motivo opcional. Reemplaza a `confirm()`/`prompt()` nativos manteniendo el flujo imperativo: `const { confirmed, reason } = await askConfirm({...})`. Se apoya en Modal, así que trae Portal, scroll-lock, focus-trap, devolución de foco y Esc — hasta el 04/09/2026 armaba su overlay a mano y no tenía nada de eso."
+        >
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={async () => {
+              const r = await askConfirm({ title: 'Publicar propiedad', message: 'Se va a publicar en todos los portales conectados.' })
+              setUltimaConfirmacion(r.confirmed ? 'Confirmado' : 'Cancelado')
+            }}>Confirmar algo común</Button>
+            <Button variant="outline" onClick={async () => {
+              const r = await askConfirm({
+                title: 'Eliminar lead',
+                message: 'Esta acción no se puede deshacer.\n¿Por qué lo estás descartando?',
+                variant: 'danger',
+                confirmLabel: 'Eliminar',
+                requireReason: true,
+                reasonPlaceholder: 'Motivo',
+              })
+              setUltimaConfirmacion(r.confirmed ? `Eliminado — motivo: ${r.reason || '(vacío)'}` : 'Cancelado')
+            }}>Destructivo, con motivo</Button>
+          </div>
+          {ultimaConfirmacion && <Text size="sm" tone="muted">Resultado: {ultimaConfirmacion}</Text>}
+          {confirmDialog}
         </Section>
 
         {/* Notificaciones */}

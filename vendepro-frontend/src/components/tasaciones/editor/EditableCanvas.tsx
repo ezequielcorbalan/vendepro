@@ -10,6 +10,8 @@ import {
   Heading1, Heading2, Heading3, Type, Image as ImageIcon, Images, Minus, Quote, Link2, AlertTriangle,
   PaintBucket, Space,
 } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
+import { cn } from '@/lib/utils'
 import { hydrateBlocks } from '../renderer/hydrate-blocks'
 import { BlockRenderer } from '../renderer/BlockRenderer'
 import { getBlockCompleteness } from '../renderer/block-completeness'
@@ -30,6 +32,7 @@ import { CtaWhatsappBlock } from '../renderer/blocks/CtaWhatsappBlock'
 import { AgentContactCardBlock } from '../renderer/blocks/AgentContactCardBlock'
 import { ZoneMapBlock } from '../renderer/blocks/ZoneMapBlock'
 import { BlockEditPopover } from './BlockEditPopover'
+import { useConfirm } from '@/components/ui/useConfirm'
 import '../renderer/print.css'
 
 interface Props {
@@ -63,6 +66,7 @@ export function EditableCanvas({
 }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const { confirmDialog, askConfirm } = useConfirm()
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor),
@@ -78,6 +82,18 @@ export function EditableCanvas({
     '--brand-accent-color': appraisal.org?.brand_accent_color ?? '#e17a2a',
   } as React.CSSProperties
 
+  // La confirmacion vive acá y no en `SortableBlock`: es el canvas el que tiene
+  // el id, y así hay un solo diálogo para todos los bloques en vez de uno por fila.
+  async function pedirBorrar(id: string) {
+    const { confirmed } = await askConfirm({
+      title: 'Eliminar bloque',
+      message: 'El bloque sale de la tasación. No se puede deshacer.',
+      confirmLabel: 'Eliminar',
+      variant: 'danger',
+    })
+    if (confirmed) onRemove(id)
+  }
+
   function handleDragEnd(e: DragEndEvent) {
     const { active, over } = e
     if (!over || active.id === over.id) return
@@ -88,6 +104,7 @@ export function EditableCanvas({
 
   return (
     <div style={brandStyle} className="bg-white">
+      {confirmDialog}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={snapshot.map(b => b.id)} strategy={verticalListSortingStrategy}>
           {/* Insertar al principio */}
@@ -113,7 +130,7 @@ export function EditableCanvas({
                   backgroundColor={backgroundColor}
                   onBackgroundChange={(color) => persistPatch({ background_color: color })}
                   onSelect={() => setSelectedId(block.id)}
-                  onRemove={() => onRemove(block.id)}
+                  onRemove={() => pedirBorrar(block.id)}
                   onPatchData={(patch) => onPatchData(block.id, patch)}
                   onEditStructured={!isFree ? () => setEditingId(block.id) : undefined}
                 >
@@ -181,7 +198,7 @@ function SortableBlock({
     >
       {/* Rail de controles */}
       <div className={`absolute left-1 top-1 z-20 flex items-center gap-1 transition-opacity ${selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-        <button
+        <Button variant="ghost" size="icon"
           {...attributes}
           {...listeners}
           onClick={(e) => e.stopPropagation()}
@@ -190,7 +207,7 @@ function SortableBlock({
           aria-label="Reordenar bloque"
         >
           <GripVertical className="h-4 w-4" />
-        </button>
+        </Button>
         <span className="rounded bg-white/90 px-2 py-0.5 text-[10px] font-medium text-gray-500 shadow-pop">
           {getBlockMeta(block.type).label}
         </span>
@@ -204,21 +221,23 @@ function SortableBlock({
       <div className={`absolute right-1 top-1 z-20 flex items-center gap-1 transition-opacity ${selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
         <BackgroundColorButton value={backgroundColor} onChange={onBackgroundChange} />
         {!isFree && onEditStructured && (
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={(e) => { e.stopPropagation(); onEditStructured() }}
-            className="rounded bg-white/90 px-2 py-1 text-[11px] font-medium text-gray-600 shadow-pop hover:text-brand-pink"
+            className="bg-white/90 px-2 py-1 text-[11px] font-medium text-gray-600 shadow-pop hover:text-primary"
           >
             Editar campos
-          </button>
+          </Button>
         )}
-        <button
-          onClick={(e) => { e.stopPropagation(); if (confirm('¿Eliminar este bloque de la tasación?')) onRemove() }}
+        <Button variant="ghost" size="icon"
+          onClick={(e) => { e.stopPropagation(); onRemove() }}
           className="rounded bg-white/90 p-1 text-gray-400 shadow-pop hover:text-danger"
           title="Eliminar bloque"
           aria-label="Eliminar bloque"
         >
           <Trash2 className="h-4 w-4" />
-        </button>
+        </Button>
       </div>
 
       {/* Toolbar de opciones del bloque libre seleccionado */}
@@ -244,18 +263,20 @@ function BackgroundColorButton({ value, onChange }: { value: string | null; onCh
   const [open, setOpen] = useState(false)
   return (
     <div className="relative">
-      <button
+      <Button variant="ghost" size="icon"
         onClick={(e) => { e.stopPropagation(); setOpen(o => !o) }}
         className="rounded bg-white/90 p-1 text-gray-400 shadow-pop hover:text-gray-700"
         title="Color de fondo"
         aria-label="Color de fondo del bloque"
       >
         <PaintBucket className="h-4 w-4" style={value ? { color: value } : undefined} />
-      </button>
+      </Button>
       {open && (
         <>
           <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
           <div className="absolute right-0 top-6 z-30 flex items-center gap-2 rounded-control border border-gray-200 bg-white p-2 shadow-pop" onClick={(e) => e.stopPropagation()}>
+            {/* ds-todo: el DS no tiene selector de color. Se repite en FunnelChartForm.
+              Candidato a componente "ColorInput". */}
             <input
               type="color"
               value={value ?? '#ffffff'}
@@ -264,9 +285,9 @@ function BackgroundColorButton({ value, onChange }: { value: string | null; onCh
               aria-label="Elegir color de fondo"
             />
             {value && (
-              <button onClick={() => { onChange(null); setOpen(false) }} className="text-xs text-gray-500 hover:text-danger">
+              <Button variant="ghost" size="sm" onClick={() => { onChange(null); setOpen(false) }} className="px-1 text-xs text-gray-500 hover:text-danger">
                 Quitar
-              </button>
+              </Button>
             )}
           </div>
         </>
@@ -282,7 +303,10 @@ function FreeBlockToolbar({ block, onPatch }: { block: TemplateBlock; onPatch: (
 // tokens del DS.
 // ds-todo: candidato a componente "BubbleToolbar" si un segundo editor lo pide.
 const wrap = 'flex items-center gap-0.5 rounded-card border border-gray-200 bg-white px-1 py-1 shadow-pop'
-  const btn = (active: boolean) => `rounded p-1 ${active ? 'bg-brand-pink/10 text-brand-pink' : 'text-gray-500 hover:bg-gray-100'}`
+  // ds-todo: candidato a un toggle de barra de herramientas en el DS. El Button
+  // no tiene estado "presionado", así que el activo se pinta por className. Este
+  // helper estaba duplicado dos veces en este mismo archivo.
+  const btn = (active: boolean) => cn('p-1', active ? 'bg-primary/10 text-primary' : 'text-gray-500 hover:bg-gray-100')
 
   switch (block.type) {
     case 'heading':
@@ -290,7 +314,7 @@ const wrap = 'flex items-center gap-0.5 rounded-card border border-gray-200 bg-w
         <div className={wrap}>
           {[1, 2, 3].map(lvl => {
             const Icon = lvl === 1 ? Heading1 : lvl === 2 ? Heading2 : Heading3
-            return <button key={lvl} className={btn((d.level ?? 2) === lvl)} onClick={() => onPatch({ level: lvl })} title={`Título ${lvl}`} aria-label={`Título nivel ${lvl}`} aria-pressed={(d.level ?? 2) === lvl}><Icon className="h-4 w-4" /></button>
+            return <Button variant="ghost" size="icon" key={lvl} className={btn((d.level ?? 2) === lvl)} onClick={() => onPatch({ level: lvl })} title={`Título ${lvl}`} aria-label={`Título nivel ${lvl}`} aria-pressed={(d.level ?? 2) === lvl}><Icon className="h-4 w-4" /></Button>
           })}
           <span className="mx-1 h-4 w-px bg-gray-200" />
           <AlignButtons value={d.align ?? 'left'} onChange={(align) => onPatch({ align })} />
@@ -300,9 +324,9 @@ const wrap = 'flex items-center gap-0.5 rounded-card border border-gray-200 bg-w
       return (
         <div className={wrap}>
           {(['medium', 'wide', 'full'] as const).map(w => (
-            <button key={w} className={btn((d.width ?? 'wide') === w)} onClick={() => onPatch({ width: w })} title={w}>
+            <Button variant="ghost" size="icon" key={w} className={btn((d.width ?? 'wide') === w)} onClick={() => onPatch({ width: w })} title={w}>
               <span className="px-1 text-[11px] capitalize">{w === 'medium' ? 'S' : w === 'wide' ? 'M' : 'L'}</span>
-            </button>
+            </Button>
           ))}
           <span className="mx-1 h-4 w-px bg-gray-200" />
           <AlignButtons value={d.align ?? 'center'} onChange={(align) => onPatch({ align })} />
@@ -313,33 +337,37 @@ const wrap = 'flex items-center gap-0.5 rounded-card border border-gray-200 bg-w
         <div className={wrap}>
           <span className="px-1 text-[11px] text-gray-400">Columnas</span>
           {[2, 3, 4].map(c => (
-            <button key={c} className={btn((d.columns ?? 3) === c)} onClick={() => onPatch({ columns: c })} title={`${c} columnas`} aria-label={`${c} columnas`} aria-pressed={(d.columns ?? 3) === c}>
+            <Button variant="ghost" size="icon" key={c} className={btn((d.columns ?? 3) === c)} onClick={() => onPatch({ columns: c })} title={`${c} columnas`} aria-label={`${c} columnas`} aria-pressed={(d.columns ?? 3) === c}>
               <span className="px-1 text-[11px]">{c}</span>
-            </button>
+            </Button>
           ))}
         </div>
       )
     case 'divider':
       return (
         <div className={wrap}>
-          <button className={btn((d.style ?? 'line') === 'line')} onClick={() => onPatch({ style: 'line' })} title="Línea"><Minus className="h-4 w-4" /></button>
-          <button className={btn((d.style ?? 'line') === 'space')} onClick={() => onPatch({ style: 'space' })} title="Espacio"><Space className="h-4 w-4" /></button>
+          <Button variant="ghost" size="icon" className={btn((d.style ?? 'line') === 'line')} onClick={() => onPatch({ style: 'line' })} title="Línea"><Minus className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" className={btn((d.style ?? 'line') === 'space')} onClick={() => onPatch({ style: 'space' })} title="Espacio"><Space className="h-4 w-4" /></Button>
           <span className="mx-1 h-4 w-px bg-gray-200" />
           {(['sm', 'md', 'lg'] as const).map(s => (
-            <button key={s} className={btn((d.size ?? 'md') === s)} onClick={() => onPatch({ size: s })} title={s}><span className="px-1 text-[11px] uppercase">{s}</span></button>
+            <Button variant="ghost" size="icon" key={s} className={btn((d.size ?? 'md') === s)} onClick={() => onPatch({ size: s })} title={s}><span className="px-1 text-[11px] uppercase">{s}</span></Button>
           ))}
         </div>
       )
     case 'callout':
       return (
         <div className={wrap}>
-          <button className={btn((d.tone ?? 'accent') === 'accent')} onClick={() => onPatch({ tone: 'accent' })} title="Marca"><span className="px-1 text-[11px]">Marca</span></button>
-          <button className={btn((d.tone ?? 'accent') === 'info')} onClick={() => onPatch({ tone: 'info' })} title="Neutro"><span className="px-1 text-[11px]">Neutro</span></button>
+          <Button variant="ghost" size="icon" className={btn((d.tone ?? 'accent') === 'accent')} onClick={() => onPatch({ tone: 'accent' })} title="Marca"><span className="px-1 text-[11px]">Marca</span></Button>
+          <Button variant="ghost" size="icon" className={btn((d.tone ?? 'accent') === 'info')} onClick={() => onPatch({ tone: 'info' })} title="Neutro"><span className="px-1 text-[11px]">Neutro</span></Button>
         </div>
       )
     case 'button_link':
       return (
         <div className={wrap}>
+          {/* ds-todo: campo de edición en el lugar sobre el lienzo de la tasación: sin caja,
+              sin fondo y en text-xs. El Input del DS trae caja y padding propios;
+              forzarlo cambiaría el aspecto del documento. Candidato a variante
+              "inline" del Input. */}
           <input
             type="url"
             aria-label="Enlace del botón"
@@ -356,12 +384,15 @@ const wrap = 'flex items-center gap-0.5 rounded-card border border-gray-200 bg-w
 }
 
 function AlignButtons({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const btn = (active: boolean) => `rounded p-1 ${active ? 'bg-brand-pink/10 text-brand-pink' : 'text-gray-500 hover:bg-gray-100'}`
+  // ds-todo: candidato a un toggle de barra de herramientas en el DS. El Button
+  // no tiene estado "presionado", así que el activo se pinta por className. Este
+  // helper estaba duplicado dos veces en este mismo archivo.
+  const btn = (active: boolean) => cn('p-1', active ? 'bg-primary/10 text-primary' : 'text-gray-500 hover:bg-gray-100')
   return (
     <>
-      <button className={btn(value === 'left')} onClick={() => onChange('left')} title="Izquierda" aria-label="Alinear a la izquierda" aria-pressed={value === 'left'}><AlignLeft className="h-4 w-4" /></button>
-      <button className={btn(value === 'center')} onClick={() => onChange('center')} title="Centro" aria-label="Centrar" aria-pressed={value === 'center'}><AlignCenter className="h-4 w-4" /></button>
-      <button className={btn(value === 'right')} onClick={() => onChange('right')} title="Derecha" aria-label="Alinear a la derecha" aria-pressed={value === 'right'}><AlignRight className="h-4 w-4" /></button>
+      <Button variant="ghost" size="icon" className={btn(value === 'left')} onClick={() => onChange('left')} title="Izquierda" aria-label="Alinear a la izquierda" aria-pressed={value === 'left'}><AlignLeft className="h-4 w-4" /></Button>
+      <Button variant="ghost" size="icon" className={btn(value === 'center')} onClick={() => onChange('center')} title="Centro" aria-label="Centrar" aria-pressed={value === 'center'}><AlignCenter className="h-4 w-4" /></Button>
+      <Button variant="ghost" size="icon" className={btn(value === 'right')} onClick={() => onChange('right')} title="Derecha" aria-label="Alinear a la derecha" aria-pressed={value === 'right'}><AlignRight className="h-4 w-4" /></Button>
     </>
   )
 }
@@ -411,27 +442,27 @@ function InsertZone({ onInsert }: { onInsert: (type: AppraisalBlockType) => void
   return (
     <div className="group/insert relative flex h-6 items-center justify-center">
       <div className={`pointer-events-none absolute inset-x-6 top-1/2 h-px -translate-y-1/2 transition-colors ${open ? 'bg-brand-pink/30' : 'bg-transparent group-hover/insert:bg-brand-pink/30'}`} />
-      <button
+      <Button variant="ghost" size="icon"
         onClick={() => setOpen(o => !o)}
-        className={`z-10 flex h-5 w-5 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 shadow-pop transition-opacity hover:border-brand-pink hover:text-brand-pink ${open ? 'opacity-100' : 'opacity-0 group-hover/insert:opacity-100 focus:opacity-100'}`}
+        className={`z-10 flex h-5 w-5 items-center justify-center p-0 rounded-full border border-gray-200 bg-white text-gray-400 shadow-pop transition-opacity hover:border-brand-pink hover:text-brand-pink ${open ? 'opacity-100' : 'opacity-0 group-hover/insert:opacity-100 focus:opacity-100'}`}
         title="Insertar elemento aquí"
         aria-label="Insertar elemento"
       >
         <Plus className="h-3.5 w-3.5" />
-      </button>
+      </Button>
       {open && (
         <>
           <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
           <div className="absolute top-6 z-30 flex flex-wrap gap-1 rounded-card border border-gray-200 bg-white p-2 shadow-pop">
             {PALETTE.map(({ type, icon: Icon }) => (
-              <button
+              <Button variant="ghost" size="icon"
                 key={type}
                 onClick={() => { onInsert(type); setOpen(false) }}
                 className="flex w-24 flex-col items-center gap-1 rounded-control px-2 py-2 text-[11px] text-gray-600 hover:bg-primary/5 hover:text-primary"
               >
                 <Icon className="h-4 w-4" />
                 {getBlockMeta(type).label}
-              </button>
+              </Button>
             ))}
           </div>
         </>

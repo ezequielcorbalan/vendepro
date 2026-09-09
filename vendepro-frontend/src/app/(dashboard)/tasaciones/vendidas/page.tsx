@@ -22,6 +22,7 @@ import {
 } from '@/lib/sold-properties/api'
 import SoldPropertyForm from '@/components/sold-properties/SoldPropertyForm'
 import { getSoldOrigin } from '@/lib/crm-config'
+import { useConfirm } from '@/components/ui/useConfirm'
 
 function formatPrice(n: number | null | undefined): string {
   if (typeof n !== 'number') return '—'
@@ -34,6 +35,7 @@ function formatDate(d: string | null): string {
 }
 
 export default function SoldPropertiesPage() {
+  const { confirmDialog, askConfirm } = useConfirm()
   const { toast } = useToast()
   const [items, setItems] = useState<SoldProperty[]>([])
   const [loading, setLoading] = useState(true)
@@ -71,7 +73,13 @@ export default function SoldPropertiesPage() {
   }, [items])
 
   async function handleDelete(id: string, label: string) {
-    if (!confirm(`¿Eliminar el cierre real de ${label}?`)) return
+    const { confirmed } = await askConfirm({
+      title: 'Eliminar cierre real',
+      message: `El cierre real de ${label} sale del listado y deja de contar en las métricas. No se puede deshacer.`,
+      confirmLabel: 'Eliminar',
+      variant: 'danger',
+    })
+    if (!confirmed) return
     const ok = await deleteSoldProperty(id)
     if (ok) {
       toast('Cierre eliminado', 'warning')
@@ -83,6 +91,7 @@ export default function SoldPropertiesPage() {
 
   return (
     <div>
+      {confirmDialog}
       <Link
         href="/tasaciones"
         className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-ink mb-4"
@@ -130,7 +139,7 @@ export default function SoldPropertiesPage() {
           const active = (filters.origin ?? 'all') === o
           const labels = { all: 'Todos', mine: 'Míos', team: 'Equipo', external: 'Externos' }
           return (
-            <button
+            <Button variant="ghost" size="icon"
               key={o}
               type="button"
               onClick={() => setFilters(f => ({ ...f, origin: o }))}
@@ -139,7 +148,7 @@ export default function SoldPropertiesPage() {
               }`}
             >
               {labels[o]}
-            </button>
+            </Button>
           )
         })}
       </div>
@@ -189,12 +198,12 @@ export default function SoldPropertiesPage() {
           className="w-auto"
         />
         {(filters.property_type || filters.neighborhood || filters.min_covered_area != null || filters.max_covered_area != null || search) && (
-          <button
+          <Button variant="ghost" size="sm"
             onClick={() => { setFilters(f => ({ origin: f.origin })); setSearch('') }}
-            className="text-xs text-gray-500 hover:text-primary shrink-0"
+            className="p-0 text-xs text-gray-500 hover:text-primary shrink-0"
           >
             Limpiar
-          </button>
+          </Button>
         )}
       </div>
 

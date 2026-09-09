@@ -7,6 +7,7 @@ import { useToast } from '@/components/ui/Toast'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { Modal } from '@/components/ui/Modal'
 import { Heading } from '@/components/ui/Typography'
 import { Field, Input, Select } from '@/components/ui/Input'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -14,8 +15,10 @@ import {
   OBJECTIVE_METRICS, getObjectiveSemaforo, getPeriodProgressPct,
   type ObjectiveMetric
 } from '@/lib/crm-config'
+import { useConfirm } from '@/components/ui/useConfirm'
 
 export default function ObjetivosPage() {
+  const { confirmDialog, askConfirm } = useConfirm()
   const { toast } = useToast()
   const [objectives, setObjectives] = useState<any[]>([])
   const [agents, setAgents] = useState<any[]>([])
@@ -67,7 +70,13 @@ export default function ObjetivosPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('¿Eliminar este objetivo?')) return
+    const { confirmed } = await askConfirm({
+      title: 'Eliminar objetivo',
+      message: 'El objetivo y su progreso dejan de verse en el panel. No se puede deshacer.',
+      confirmLabel: 'Eliminar',
+      variant: 'danger',
+    })
+    if (!confirmed) return
     await apiFetch('admin', `/objectives?id=${id}`, { method: 'DELETE' })
     toast('Objetivo eliminado', 'warning')
     loadData()
@@ -82,6 +91,7 @@ export default function ObjetivosPage() {
 
   return (
     <div className="space-y-5">
+      {confirmDialog}
       <PageHeader
         title="Objetivos"
         subtitle={`${objectives.length} objetivo${objectives.length !== 1 ? 's' : ''}`}
@@ -114,9 +124,9 @@ export default function ObjetivosPage() {
                 </div>
                 <div className="flex items-center gap-1">
                   <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${obj.semaforo.color}`}>{obj.semaforo.label}</span>
-                  <button onClick={() => handleDelete(obj.id)} className="p-1 text-gray-300 hover:text-red-500">
+                  <Button variant="ghost" size="icon" onClick={() => handleDelete(obj.id)} className="p-1 text-gray-300 hover:text-red-500">
                     <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  </Button>
                 </div>
               </div>
               <div className="flex items-end justify-between mb-2">
@@ -139,9 +149,21 @@ export default function ObjetivosPage() {
       )}
 
       {showCreate && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowCreate(false)}>
-          <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-5" onClick={e => e.stopPropagation()}>
-            <Heading level={4} className="mb-4">Nuevo objetivo</Heading>
+        <Modal
+          open
+          sheet
+          onClose={() => setShowCreate(false)}
+          title="Nuevo objetivo"
+          icon={<Target className="w-5 h-5" />}
+          footer={
+            <>
+              <Button variant="outline" onClick={() => setShowCreate(false)}>Cancelar</Button>
+              <Button onClick={handleCreate} loading={saving} disabled={!form.agent_id || !form.target}>
+                Crear objetivo
+              </Button>
+            </>
+          }
+        >
             <div className="space-y-3">
               <Select value={form.agent_id} onChange={e => setForm(f => ({ ...f, agent_id: e.target.value }))}>
                 <option value="">Seleccionar agente *</option>
@@ -160,14 +182,7 @@ export default function ObjetivosPage() {
                 </Field>
               </div>
             </div>
-            <div className="flex gap-2 mt-4">
-              <Button variant="outline" fullWidth onClick={() => setShowCreate(false)}>Cancelar</Button>
-              <Button fullWidth onClick={handleCreate} disabled={!form.agent_id || !form.target || saving}>
-                {saving ? 'Creando...' : 'Crear objetivo'}
-              </Button>
-            </div>
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   )

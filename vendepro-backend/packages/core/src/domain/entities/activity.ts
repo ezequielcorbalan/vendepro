@@ -15,6 +15,8 @@ export interface ActivityProps {
   contact_id: string | null
   property_id: string | null
   appraisal_id: string | null
+  /** Evento de calendario que la generó; NULL si se cargó a mano. */
+  calendar_event_id: string | null
   created_at: string
   // Joined
   agent_name?: string
@@ -24,11 +26,18 @@ export interface ActivityProps {
 export class Activity {
   private constructor(private props: ActivityProps) {}
 
-  static create(props: Omit<ActivityProps, 'created_at'> & { created_at?: string }): Activity {
+  static create(
+    props: Omit<ActivityProps, 'created_at' | 'calendar_event_id'> &
+      { created_at?: string; calendar_event_id?: string | null },
+  ): Activity {
     if (!VALID_TYPES.includes(props.activity_type)) {
       throw new ValidationError(`Tipo de actividad inválido: "${props.activity_type}"`)
     }
-    return new Activity({ ...props, created_at: props.created_at ?? new Date().toISOString() })
+    return new Activity({
+      ...props,
+      calendar_event_id: props.calendar_event_id ?? null,
+      created_at: props.created_at ?? new Date().toISOString(),
+    })
   }
 
   get id() { return this.props.id }
@@ -42,6 +51,7 @@ export class Activity {
   get contact_id() { return this.props.contact_id }
   get property_id() { return this.props.property_id }
   get appraisal_id() { return this.props.appraisal_id }
+  get calendar_event_id() { return this.props.calendar_event_id }
   get created_at() { return this.props.created_at }
   get agent_name() { return this.props.agent_name }
   get lead_name() { return this.props.lead_name }

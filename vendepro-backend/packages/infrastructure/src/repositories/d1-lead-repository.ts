@@ -80,12 +80,23 @@ export class D1LeadRepository implements LeadRepository {
     return rows.map(r => ({ id: r.id, full_name: r.full_name }))
   }
 
-  async findPendingFollowups(orgId: string, now: string, limit: number): Promise<Array<{ id: string; full_name: string; next_step: string | null; next_step_date: string | null; stage: string }>> {
+  async findPendingFollowups(orgId: string, now: string, limit: number, pipeline: 'vendedor' | 'comprador'): Promise<Array<{ id: string; full_name: string; next_step: string | null; next_step_date: string | null; stage: string; pipeline: string }>> {
+    // El filtro por pipeline faltaba: los seguimientos de compradores salían
+    // en el dashboard de captación. `COALESCE` porque los leads viejos, de
+    // antes de que existiera la columna, tienen pipeline NULL y son vendedores.
     const rows = (await this.db
-      .prepare(`SELECT id, full_name, next_step, next_step_date, stage FROM leads WHERE org_id = ? AND next_step_date <= ? AND stage NOT IN ('captado','perdido','invalido','finalizado','cerrado','archivado') ORDER BY next_step_date ASC LIMIT ?`)
-      .bind(orgId, now, limit)
+      .prepare(`
+        SELECT id, full_name, next_step, next_step_date, stage, COALESCE(pipeline, 'vendedor') AS pipeline
+        FROM leads
+        WHERE org_id = ?
+          AND COALESCE(pipeline, 'vendedor') = ?
+          AND next_step_date <= ?
+          AND stage NOT IN ('captado','perdido','invalido','finalizado','cerrado','archivado')
+        ORDER BY next_step_date ASC LIMIT ?
+      `)
+      .bind(orgId, pipeline, now, limit)
       .all()).results as any[]
-    return rows.map(r => ({ id: r.id, full_name: r.full_name, next_step: r.next_step ?? null, next_step_date: r.next_step_date ?? null, stage: r.stage }))
+    return rows.map(r => ({ id: r.id, full_name: r.full_name, next_step: r.next_step ?? null, next_step_date: r.next_step_date ?? null, stage: r.stage, pipeline: r.pipeline }))
   }
 
   async findOpenByContactAndSourceDetail(contactId: string, sourceDetail: string | null, orgId: string): Promise<Lead | null> {

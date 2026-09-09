@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { corsMiddleware, errorHandler, createAuthMiddleware, D1LeadRepository, D1PropertyRepository, D1ReservationRepository, D1CalendarRepository, D1AnalyticsReportRepository, D1ActivityRepository, D1AppraisalRepository, D1ContactRepository, D1ObjectiveRepository, D1UserRepository, D1MetaIntegrationRepository, D1PortalSpendRepository, D1PortalLeadCountRepository, D1CampaignGoalRepository, D1PropertyIncomeRepository, DolarApiFxRate, JwtAuthService, MetaAdsInsightsHttp, decrypt } from '@vendepro/infrastructure'
+import { corsMiddleware, errorHandler, createAuthMiddleware, D1LeadRepository, D1PropertyRepository, D1ReservationRepository, D1CalendarRepository, D1AnalyticsReportRepository, D1ActivityRepository, D1AppraisalRepository, D1ContactRepository, D1ObjectiveRepository, D1UserRepository, D1StageHistoryRepository, D1MetaIntegrationRepository, D1PortalSpendRepository, D1PortalLeadCountRepository, D1CampaignGoalRepository, D1PropertyIncomeRepository, DolarApiFxRate, JwtAuthService, MetaAdsInsightsHttp, decrypt } from '@vendepro/infrastructure'
 import {
   GetCampaignInsightsUseCase,
   GetPortalCostsUseCase,
@@ -9,6 +9,7 @@ import {
   GetTodayEventsUseCase,
   GetPendingFollowupsUseCase,
   GetAgentStatsUseCase,
+  GetTeamStatsUseCase,
   SearchEntitiesUseCase,
   ExportLeadsUseCase,
   GetListingsPerformanceUseCase,
@@ -18,6 +19,7 @@ import {
   parseAnalyticsPeriod,
   periodStartDate,
   computeLeadFunnel,
+  computeRealLeadFunnel,
   computeConversionRate,
   parseMarketingPeriod,
   marketingPeriodRanges,
@@ -91,7 +93,8 @@ app.get('/dashboard', async (c) => {
     new GetAppraisalStatsUseCase(new D1AppraisalRepository(db)).execute(orgId),
     new GetActivityStatsUseCase(new D1ActivityRepository(db)).execute(orgId, agent_id),
     new GetTodayEventsUseCase(new D1CalendarRepository(db)).execute(orgId),
-    new GetPendingFollowupsUseCase(new D1LeadRepository(db)).execute(orgId),
+    // Pipeline explícito: antes traía vendedores y compradores juntos.
+    new GetPendingFollowupsUseCase(new D1LeadRepository(db)).execute(orgId, 'vendedor'),
   ])
 
   const sb = base.stageBreakdown
@@ -109,8 +112,26 @@ app.get('/dashboard', async (c) => {
     archivados: sb['archivado'] ?? 0,
   }
 
-  // Funnel: acotado al período. KPIs y conversión: toda la historia.
-  const funnel = computeLeadFunnel(base.funnelStageBreakdown, base.funnelTotalLeads)
+  // Embudo real: cuántos leads ALCANZARON cada etapa, cruzando el historial
+  // de transiciones. El cálculo viejo mostraba en qué etapa está parado cada
+  // lead hoy, así que un captado desaparecía de "nuevo" y "contactado" y el
+  // gráfico salía con forma imposible.
+  //
+  // Best-effort: si el historial no se puede leer, se cae al conteo por etapa
+  // actual. Un embudo impreciso es mejor que un dashboard que no carga.
+  let funnel
+  try {
+    const transitions = await new D1StageHistoryRepository(db)
+      .findTransitionsForLeads(orgId, base.funnelLeads.map(l => l.id))
+    funnel = computeRealLeadFunnel(base.funnelLeads, transitions, 'vendedor')
+  } catch {
+    funnel = {
+      stages: computeLeadFunnel(base.funnelStageBreakdown, base.funnelTotalLeads)
+        .map(s => ({ ...s, step_pct: 0, median_days_from_prev: null, timed_on: 0 })),
+      total: base.funnelTotalLeads,
+      with_history: 0,
+    }
+  }
   const conversionRate = computeConversionRate(sb, base.totalLeads)
 
   return c.json({
@@ -122,7 +143,9 @@ app.get('/dashboard', async (c) => {
     recentActivities: activity.recent,
     todayEvents,
     pendingFollowups,
-    agentPerformance: [],
+    // `agentPerformance` salía de acá siempre vacío. Los KPIs por agente ahora
+    // viven en GET /team-stats, que el dashboard pide aparte y sólo si el
+    // usuario es de la inmobiliaria.
     funnel,
     conversionRate,
     pipelineBreakdown: sb,
@@ -144,10 +167,45 @@ app.get('/search', async (c) => {
   return c.json(results)
 })
 
+// ── KPIs DEL EQUIPO ───────────────────────────────────────────
+// La inmobiliaria ve los números de cada agente; un agente ve sólo los
+// propios, y para eso ya tiene /dashboard?agent_id= y /agent-stats.
+// Reemplaza el `agentPerformance: []` fijo que hacía que la tarjeta "Equipo"
+// del dashboard nunca pudiera mostrar nada.
+app.get('/team-stats', async (c) => {
+  const role = c.get('userRole')
+  if (role !== 'admin' && role !== 'owner' && role !== 'supervisor') {
+    return c.json({ error: 'Sin permisos (sólo la inmobiliaria ve el equipo)' }, 403)
+  }
+  const db = c.env.DB
+  const stats = await new GetTeamStatsUseCase(
+    new D1UserRepository(db),
+    new D1LeadRepository(db),
+    new D1ActivityRepository(db),
+  ).execute(c.get('orgId'))
+  return c.json(stats)
+})
+
+// Performance de un agente. Por defecto la del usuario logueado; la
+// inmobiliaria puede pedir la de cualquiera con ?agent_id=, para ver cómo
+// viene alguien del equipo. Un agente que intente pedir la de otro recibe la
+// suya: el permiso se resuelve en el servidor y no en el navegador.
 app.get('/agent-stats', async (c) => {
   const db = c.env.DB
   const orgId = c.get('orgId')
-  const agentId = c.get('userId')
+  const role = c.get('userRole')
+  const canSeeOthers = role === 'admin' || role === 'owner' || role === 'supervisor'
+  const requested = c.req.query('agent_id')
+
+  // El id pedido tiene que ser de la propia org: `findProfileById` busca por
+  // id sin filtrar organización, así que sin este chequeo un admin podría
+  // leer el nombre de un usuario de otra inmobiliaria pasando su id.
+  let agentId = c.get('userId')
+  if (canSeeOthers && requested && requested !== agentId) {
+    const target = await new D1UserRepository(db).findById(requested, orgId)
+    if (!target) return c.json({ error: 'Agente no encontrado' }, 404)
+    agentId = requested
+  }
 
   const stats = await new GetAgentStatsUseCase(
     new D1UserRepository(db),

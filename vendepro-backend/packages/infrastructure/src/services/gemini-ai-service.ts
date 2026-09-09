@@ -1,4 +1,17 @@
-import type { AIService, LeadIntent, ComparablePropertyData } from '@vendepro/core'
+import type {
+  AIService,
+  LeadIntent,
+  ComparablePropertyData,
+  ListingTextExtractor,
+  PortalReportExtractor,
+  PortalReportData,
+  ReportConclusionGenerator,
+  ReportConclusionContext,
+  ReportConclusionResult,
+  AppraisalPricingSuggester,
+  AppraisalPricingContext,
+  AppraisalPricingResult,
+} from '@vendepro/core'
 import { providerError } from './provider-error'
 
 /**
@@ -61,7 +74,120 @@ type Part =
   | { type: 'text'; text: string }
   | { type: 'image_url'; image_url: { url: string } }
 
-export class GeminiAIService implements AIService {
+/**
+ * Endpoint NATIVO de Gemini. Sólo lo usa la lectura de PDF: el dialecto OpenAI
+ * no tiene forma de mandar un documento. Ver `extractPortalReportFromPdf`.
+ */
+const NATIVE_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models'
+
+/**
+ * Prompt del comparable, compartido por la captura y por el texto de la página.
+ *
+ * Las reglas son las que pasaron el benchmark del 2026-09-02 (8/8 sobre un aviso
+ * con trampas). Sólo la primera línea cambia según la entrada; el cuerpo, no.
+ */
+const COMPARABLE_PROMPT = `Estás leyendo una publicación inmobiliaria (Zonaprop, Argenprop o similar), ya sea una captura de pantalla o el texto de la página.
+Extraé los datos de la propiedad en JSON con esta forma exacta:
+
+{
+  "address": "calle y número o intersección, o null",
+  "zonaprop_url": "URL si aparece visible, o null",
+  "total_area": número en m² (superficie total) o null,
+  "covered_area": número en m² (superficie cubierta) o null,
+  "price": número en USD (sin signo, sin separadores) o null,
+  "usd_per_m2": número (precio por m² en USD) o null,
+  "days_on_market": número de días publicado, o null,
+  "views_per_day": número de visualizaciones promedio diarias, o null,
+  "construction_year": año de construcción tal como figura (número de 4 dígitos), o null
+}
+
+Reglas:
+- Si el valor no aparece o es ambiguo, usá null. NUNCA tomes datos de secciones
+  tipo "propiedades similares" o "también te puede interesar": son OTRAS propiedades.
+- price siempre en USD. Si está en pesos, convertilo sólo si hay tipo de cambio
+  visible en la misma captura; si no, null.
+- views_per_day es el promedio DIARIO. Si sólo ves un total acumulado y los días
+  publicado, dividí; si no podés, null.
+- NO calcules la antigüedad: devolvé el año de construcción tal cual. La
+  antigüedad la calcula el sistema.
+- Devolvé SOLO el JSON, sin explicaciones, sin markdown.`
+
+/** Normaliza la respuesta cruda del modelo al contrato del puerto. */
+function toComparable(p: any): ComparablePropertyData {
+  return {
+    address: typeof p.address === 'string' ? p.address : null,
+    zonaprop_url: typeof p.zonaprop_url === 'string' ? p.zonaprop_url : null,
+    total_area: num(p.total_area),
+    covered_area: num(p.covered_area),
+    price: num(p.price),
+    usd_per_m2: num(p.usd_per_m2),
+    days_on_market: num(p.days_on_market),
+    views_per_day: num(p.views_per_day),
+    age: ageFromConstructionYear(num(p.construction_year)),
+  }
+}
+
+const PORTAL_REPORT_PROMPT = `Este PDF es un reporte de performance de una propiedad publicada, exportado desde un CRM inmobiliario (KiteProp).
+Extraé las métricas en JSON con esta forma exacta:
+
+{
+  "portals": [
+    {
+      "source": "zonaprop" | "argenprop" | "mercadolibre" | "manual",
+      "impressions": número de impresiones o null,
+      "portal_visits": número de visitas al aviso o null,
+      "inquiries": número de consultas recibidas o null
+    }
+  ],
+  "total_visits_presenciales": número de visitas presenciales del período o null,
+  "market_comparison": { "avg_market_price": precio promedio de la zona en USD o null }
+}
+
+Reglas:
+- Una entrada en "portals" por cada portal que aparezca en el reporte. Si el PDF
+  no distingue portales, devolvé una sola con source "manual".
+- Usá "manual" para cualquier portal que no sea Zonaprop, Argenprop o MercadoLibre.
+- Si una métrica no aparece, null. NO estimes, NO sumes por tu cuenta, NO inventes.
+- Los números van sin separadores de miles y sin símbolo de moneda.
+- Si el PDF cubre varios períodos, usá el más reciente.
+- Devolvé SOLO el JSON, sin explicaciones, sin markdown.`
+
+/** Portales que el resto del sistema sabe mostrar. El resto cae en 'manual'. */
+const KNOWN_SOURCES = new Set(['zonaprop', 'argenprop', 'mercadolibre', 'manual'])
+
+function normalizeSource(v: unknown): string {
+  const s = String(v ?? '').toLowerCase().trim().replace(/\s+/g, '')
+  if (KNOWN_SOURCES.has(s)) return s
+  if (s.includes('zona')) return 'zonaprop'
+  if (s.includes('argen')) return 'argenprop'
+  if (s.includes('mercado') || s === 'meli' || s === 'ml') return 'mercadolibre'
+  return 'manual'
+}
+
+/** Normaliza la respuesta cruda del PDF al contrato del puerto. */
+function toPortalReport(p: any): PortalReportData {
+  const rows = Array.isArray(p.portals) ? p.portals : []
+  const avg = num(p.market_comparison?.avg_market_price)
+  return {
+    portals: rows.map((r: any) => ({
+      source: normalizeSource(r?.source),
+      impressions: num(r?.impressions),
+      portal_visits: num(r?.portal_visits),
+      inquiries: num(r?.inquiries),
+    })),
+    total_visits_presenciales: num(p.total_visits_presenciales),
+    market_comparison: avg === null ? null : { avg_market_price: avg },
+  }
+}
+
+export class GeminiAIService
+  implements
+    AIService,
+    ListingTextExtractor,
+    PortalReportExtractor,
+    ReportConclusionGenerator,
+    AppraisalPricingSuggester
+{
   constructor(private readonly apiKey: string) {
     // Guard explícito. Sin esto, una key ausente queda `undefined`, se serializa
     // como el string "undefined" en el header, el request SALE igual y el
@@ -206,44 +332,185 @@ Sin explicaciones y sin markdown.`,
     const raw = await this.vision(
       imageBase64,
       mimeType,
-      `Esta es una captura de una publicación inmobiliaria (Zonaprop, Argenprop o similar).
-Extraé los datos de la propiedad en JSON con esta forma exacta:
-
-{
-  "address": "calle y número o intersección, o null",
-  "zonaprop_url": "URL si aparece visible, o null",
-  "total_area": número en m² (superficie total) o null,
-  "covered_area": número en m² (superficie cubierta) o null,
-  "price": número en USD (sin signo, sin separadores) o null,
-  "usd_per_m2": número (precio por m² en USD) o null,
-  "days_on_market": número de días publicado, o null,
-  "views_per_day": número de visualizaciones promedio diarias, o null,
-  "construction_year": año de construcción tal como figura (número de 4 dígitos), o null
-}
-
-Reglas:
-- Si el valor no aparece o es ambiguo, usá null. NUNCA tomes datos de secciones
-  tipo "propiedades similares" o "también te puede interesar": son OTRAS propiedades.
-- price siempre en USD. Si está en pesos, convertilo sólo si hay tipo de cambio
-  visible en la misma captura; si no, null.
-- views_per_day es el promedio DIARIO. Si sólo ves un total acumulado y los días
-  publicado, dividí; si no podés, null.
-- NO calcules la antigüedad: devolvé el año de construcción tal cual. La
-  antigüedad la calcula el sistema.
-- Devolvé SOLO el JSON, sin explicaciones, sin markdown.`,
+      COMPARABLE_PROMPT,
       { maxTokens: 800, timeoutMs: 20_000 },
     )
+    return toComparable(parseJsonLoose(raw) ?? {})
+  }
+
+  // ── aviso desde el TEXTO de la página (flujo "pegá el link") ──
+
+  async extractComparableFromText(
+    input: import('@vendepro/core').ExtractComparableFromTextInput,
+  ): Promise<ComparablePropertyData> {
+    const text = (input.text ?? '').trim()
+    if (!text) throw badInput('La página del aviso vino vacía.')
+    const raw = await this.chat(
+      [
+        { role: 'system', content: COMPARABLE_PROMPT },
+        {
+          role: 'user',
+          content: `${input.sourceUrl ? `URL del aviso: ${input.sourceUrl}\n\n` : ''}Texto de la página:\n${text}`,
+        },
+      ],
+      { maxTokens: 800, timeoutMs: 25_000 },
+    )
+    return toComparable(parseJsonLoose(raw) ?? {})
+  }
+
+  // ── reporte de KiteProp en PDF ────────────────────────────────
+
+  /**
+   * Único lugar del adapter que NO usa el dialecto OpenAI.
+   *
+   * La capa de compatibilidad OpenAI de Gemini sólo acepta partes `image_url`:
+   * no hay forma de mandarle un PDF. La API nativa sí, vía `inline_data` con
+   * `mime_type: application/pdf`, y lee el documento entero (texto y tablas)
+   * sin que tengamos que parsear PDF dentro de un Worker. Es una excepción
+   * consciente al criterio "un solo dialecto" del resto de la clase.
+   */
+  async extractPortalReportFromPdf(
+    input: import('@vendepro/core').ExtractPortalReportInput,
+  ): Promise<PortalReportData> {
+    const pdfBase64 = (input.pdfBase64 ?? '').trim()
+    if (!pdfBase64) throw badInput('No llegó ningún PDF.')
+
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 45_000)
+    try {
+      const res = await fetch(`${NATIVE_BASE_URL}/${MODEL}:generateContent`, {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          'x-goog-api-key': this.apiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: 'user',
+              parts: [
+                { inline_data: { mime_type: 'application/pdf', data: pdfBase64 } },
+                { text: PORTAL_REPORT_PROMPT },
+              ],
+            },
+          ],
+          generationConfig: { temperature: 0.1, maxOutputTokens: 1500 },
+        }),
+      })
+      if (!res.ok) {
+        const body = await res.text().catch(() => '')
+        console.error(`[GeminiAIService.pdf] ${res.status} ${body.slice(0, 500)}`)
+        throw providerError(res.status, body, {
+          provider: 'gemini',
+          inputMessage:
+            'No se pudo leer el PDF. Verificá que sea el reporte de KiteProp y que no tenga contraseña.',
+        })
+      }
+      const data = (await res.json()) as any
+      const raw: string = (data.candidates?.[0]?.content?.parts ?? [])
+        .map((p: any) => p?.text ?? '')
+        .join('')
+      return toPortalReport(parseJsonLoose(raw) ?? {})
+    } finally {
+      clearTimeout(timeout)
+    }
+  }
+
+  // ── conclusión del reporte de gestión ─────────────────────────
+
+  async generateReportConclusion(ctx: ReportConclusionContext): Promise<ReportConclusionResult> {
+    const system = `Sos asistente de un agente inmobiliario argentino. Redactá la sección
+"Conclusión y recomendación" de un reporte de gestión quincenal/mensual dirigido al PROPIETARIO
+de la propiedad, en español rioplatense, tono profesional, cercano y honesto.
+
+Reglas:
+1. Basate SOLO en los datos provistos. NO inventes números, porcentajes ni comparaciones.
+2. 2 a 3 párrafos cortos: cómo performó el aviso, qué dice eso del interés del mercado,
+   y una recomendación concreta de próximo paso.
+3. Si la tracción es floja (semáforo rojo/naranja), decilo con tacto y fundamentá la
+   recomendación (ej.: revisar el precio) con los datos disponibles — sin dramatizar.
+4. Si hay propiedades comparables con precio, usalas como referencia de mercado.
+5. No uses markdown ni títulos: texto plano, listo para pegar en el campo.
+6. "price_reference" es UN párrafo corto sobre el precio vs mercado. Si no hay
+   avg_market_price ni comparables con precio, devolvé null en ese campo.
+
+Devolvé SOLO un JSON válido: { "conclusion": "...", "price_reference": "..." | null }`
+
+    const user = `Período: ${ctx.periodLabel}${ctx.daysInPeriod > 0 ? ` (${ctx.daysInPeriod} días)` : ''}
+${ctx.viewsPerDay !== null ? `Visitas al aviso por día: ${ctx.viewsPerDay} — semáforo: ${ctx.healthLabel}` : 'Sin datos de visitas diarias.'}
+Métricas por portal: ${JSON.stringify(ctx.metrics)}
+Comparables de la zona: ${ctx.competitors.length > 0 ? JSON.stringify(ctx.competitors) : 'sin datos'}`
+
+    const raw = await this.chat(
+      [{ role: 'system', content: system }, { role: 'user', content: user }],
+      { maxTokens: 1000, timeoutMs: 30_000, temperature: 0.4 },
+    )
     const p = parseJsonLoose(raw) ?? {}
+    const conclusion = typeof p.conclusion === 'string' ? p.conclusion.trim() : ''
+    if (!conclusion) {
+      const err = new Error(
+        'La IA no devolvió una conclusión utilizable. Probá de nuevo.',
+      ) as Error & { statusCode: number }
+      err.statusCode = 502
+      throw err
+    }
     return {
-      address: typeof p.address === 'string' ? p.address : null,
-      zonaprop_url: typeof p.zonaprop_url === 'string' ? p.zonaprop_url : null,
-      total_area: num(p.total_area),
-      covered_area: num(p.covered_area),
-      price: num(p.price),
-      usd_per_m2: num(p.usd_per_m2),
-      days_on_market: num(p.days_on_market),
-      views_per_day: num(p.views_per_day),
-      age: ageFromConstructionYear(num(p.construction_year)),
+      conclusion,
+      price_reference:
+        typeof p.price_reference === 'string' && p.price_reference.trim()
+          ? p.price_reference.trim()
+          : null,
+    }
+  }
+
+  // ── precios de tasación ───────────────────────────────────────
+
+  async suggestAppraisalPricing(ctx: AppraisalPricingContext): Promise<AppraisalPricingResult> {
+    const system = `Sos asesor de pricing de un tasador inmobiliario argentino experimentado.
+Con la estadística de mercado YA CALCULADA por el sistema y los comparables, proponé los tres
+precios de la tasación y su justificación.
+
+Reglas:
+1. Los tres precios DEBEN caer dentro del rango [floor_value, ceil_value]. Arrancá del
+   base_value (mediana × superficie ponderada) y ajustá según la calidad relativa de la
+   propiedad frente a los comparables (fortalezas/debilidades, días en mercado, tracción).
+2. Orden comercial: expected_close_price ≤ suggested_price ≤ test_price. El precio de prueba
+   es apenas superior al sugerido (margen de negociación); el cierre esperado, apenas inferior.
+3. Los comparables kind="venta" con closing_price_usd son evidencia REAL de cierre — pesan
+   más que las publicaciones, que son aspiración de otro vendedor.
+4. "rationale": 1-2 párrafos en español rioplatense explicando el porqué de los números,
+   citando la mediana de USD/m² y los comparables más relevantes por dirección. Sin markdown.
+5. NO inventes datos que no estén en el contexto. Números enteros en USD.
+
+Devolvé SOLO un JSON válido:
+{ "suggested_price": n, "test_price": n, "expected_close_price": n, "rationale": "..." }`
+
+    const user = `Propiedad: ${JSON.stringify(ctx.property)}
+Estadística del sistema: ${JSON.stringify(ctx.stats)}
+Comparables (${ctx.comparables.length}): ${JSON.stringify(ctx.comparables)}
+FODA: fortalezas: ${ctx.swot.strengths ?? 'sin datos'} | debilidades: ${ctx.swot.weaknesses ?? 'sin datos'}`
+
+    const raw = await this.chat(
+      [{ role: 'system', content: system }, { role: 'user', content: user }],
+      { maxTokens: 1200, timeoutMs: 30_000, temperature: 0.3 },
+    )
+    const p = parseJsonLoose(raw) ?? {}
+    const suggested = num(p.suggested_price)
+    if (suggested === null) {
+      const err = new Error(
+        'La IA no devolvió precios utilizables. Probá de nuevo.',
+      ) as Error & { statusCode: number }
+      err.statusCode = 502
+      throw err
+    }
+    return {
+      suggested_price: suggested,
+      test_price: num(p.test_price) ?? suggested,
+      expected_close_price: num(p.expected_close_price) ?? suggested,
+      // El use case recalcula usd_per_m2 desde el precio final; esto es placeholder.
+      usd_per_m2: 0,
+      rationale: typeof p.rationale === 'string' ? p.rationale.trim() : '',
     }
   }
 

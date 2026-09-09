@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Users, Loader2, UserCheck, BookUser } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { type CampaignSegment, LEAD_STAGES, CONTACT_TYPES } from '@/lib/email-campaigns'
+import { Button } from '@/components/ui/Button'
 
 export interface AudiencePreview {
   count: number
@@ -50,7 +51,7 @@ export default function AudienceStep({
       <div>
         <p className="text-sm font-medium text-gray-700 mb-2">¿A quién le enviamos?</p>
         <div className="grid grid-cols-2 gap-3 max-w-md">
-          <button
+          <Button variant="ghost" size="sm"
             onClick={() => onChange({ source: 'contacts', contact_type: null })}
             className={`flex items-center gap-2 border rounded-card px-4 py-3 text-sm font-medium transition-colors ${
               segment.source === 'contacts'
@@ -59,8 +60,8 @@ export default function AudienceStep({
             }`}
           >
             <UserCheck className="w-4 h-4" /> Contactos
-          </button>
-          <button
+          </Button>
+          <Button variant="ghost" size="sm"
             onClick={() => onChange({ source: 'leads', stages: [] })}
             className={`flex items-center gap-2 border rounded-card px-4 py-3 text-sm font-medium transition-colors ${
               segment.source === 'leads'
@@ -69,7 +70,7 @@ export default function AudienceStep({
             }`}
           >
             <BookUser className="w-4 h-4" /> Leads
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -78,7 +79,7 @@ export default function AudienceStep({
           <p className="text-sm font-medium text-gray-700 mb-2">Tipo de contacto</p>
           <div className="flex flex-wrap gap-2">
             {CONTACT_TYPES.map(t => (
-              <button
+              <Button variant="ghost" size="icon"
                 key={t.key}
                 onClick={() => onChange({ ...segment, contact_type: t.key || null })}
                 className={`text-sm px-3 py-1.5 rounded-full border transition-colors ${
@@ -88,7 +89,7 @@ export default function AudienceStep({
                 }`}
               >
                 {t.label}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -98,7 +99,7 @@ export default function AudienceStep({
           <p className="text-xs text-gray-400 mb-2">Sin selección = todos los leads con email.</p>
           <div className="flex flex-wrap gap-2">
             {LEAD_STAGES.map(s => (
-              <button
+              <Button variant="ghost" size="icon"
                 key={s.key}
                 onClick={() => toggleStage(s.key)}
                 className={`text-sm px-3 py-1.5 rounded-full border transition-colors ${
@@ -108,7 +109,7 @@ export default function AudienceStep({
                 }`}
               >
                 {s.label}
-              </button>
+              </Button>
             ))}
           </div>
         </div>

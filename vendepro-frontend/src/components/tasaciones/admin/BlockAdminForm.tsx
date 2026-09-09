@@ -1,8 +1,11 @@
 'use client'
+import { Button } from '@/components/ui/Button'
 import { useEffect, useState } from 'react'
 import { Download, Loader2 } from 'lucide-react'
 import type { TemplateBlock, BindingMode, AppraisalBlockType } from '../renderer/types'
 import { BlockForm } from '../editor/BlockForm'
+import { Select } from '@/components/ui/Input'
+import { Checkbox } from '@/components/ui/Choice'
 import {
   STATIC_BLOCK_TYPES,
   loadStaticBlockDefaults,
@@ -114,39 +117,33 @@ export function BlockAdminForm({ block, onPatchBlock, onPatchData, onRemove }: P
           <span className="text-xs font-semibold uppercase tracking-wide text-gray-600">
             ¿De dónde sale el contenido?
           </span>
-          <select
+          <Select
             value={block.binding_mode}
             onChange={e => onPatchBlock({ binding_mode: e.target.value as BindingMode })}
-            className="rounded border border-gray-300 px-2 py-1.5 text-sm"
+            className="px-2 py-1.5 text-sm"
           >
             {BINDING_MODE_OPTIONS.map(m => (
               <option key={m.value} value={m.value}>{m.label}</option>
             ))}
-          </select>
+          </Select>
           {currentMode && (
             <span className="mt-1 text-xs leading-snug text-gray-500">{currentMode.hint}</span>
           )}
         </label>
-        <label className="flex items-center gap-2 pt-7 text-sm">
-          <input
-            type="checkbox"
+        <div className="pt-7" title={pdfLocked ? 'Este bloque siempre se incluye en el PDF' : undefined}>
+          <Checkbox
             disabled={pdfLocked}
             checked={block.include_in_pdf}
-            onChange={e => onPatchBlock({ include_in_pdf: e.target.checked })}
+            onChange={checked => onPatchBlock({ include_in_pdf: checked })}
+            label="Incluir en PDF"
           />
-          <span
-            className={pdfLocked ? 'text-gray-400' : ''}
-            title={pdfLocked ? 'Este bloque siempre se incluye en el PDF' : ''}
-          >
-            Incluir en PDF
-          </span>
-        </label>
-        <button
+        </div>
+        <Button variant="ghost" size="sm"
           onClick={onRemove}
-          className="ml-auto pt-7 text-xs text-danger hover:opacity-80"
+          className="p-0 ml-auto pt-7 text-xs text-danger hover:opacity-80"
         >
           Eliminar
-        </button>
+        </Button>
       </div>
       {canApplyDefaults && (
         <div className="flex flex-wrap items-center gap-2 rounded border border-gray-200 bg-gray-50 px-3 py-2 text-xs">
@@ -154,7 +151,7 @@ export function BlockAdminForm({ block, onPatchBlock, onPatchData, onRemove }: P
             Hay valores guardados en{' '}
             <strong className="text-ink">Bloques estáticos</strong>:
           </span>
-          <button
+          <Button variant="outline" size="sm"
             type="button"
             onClick={applyDefaults}
             disabled={applying || hasDefaults === false}
@@ -163,7 +160,7 @@ export function BlockAdminForm({ block, onPatchBlock, onPatchData, onRemove }: P
           >
             {applying ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
             Aplicar valores guardados
-          </button>
+          </Button>
           {hasDefaults === false && (
             <span className="text-gray-400">Configurarlos en Configuración → Tasaciones → Bloques estáticos.</span>
           )}

@@ -27,6 +27,12 @@ Real estate CRM for managing the full commercial pipeline: leads → contacts �
 - Filter by org_id on all queries
 
 ## Design System (UI nueva) — OBLIGATORIO
+
+**Antes de escribir UI, cargá la skill `vendepro-design-system`.** Tiene el
+catálogo de los 46 componentes con cuándo usar cada uno, las reglas que más se
+rompen y cómo verificar. Lo de abajo es el resumen; la skill es la versión
+operativa y está más al día.
+
 Al crear o modificar CUALQUIER pantalla/UI, usar el design system. No maquetar con clases sueltas.
 - **Componentes**: usar los de `src/components/ui` (Button, Badge, Card, Input/Field/Select/Textarea, Avatar, Heading, Text, Tabs, Modal, Drawer, Dropdown, Table, Tooltip, Timeline, Progress, EmptyState, StageBadge, EventChip, Kanban, PropertyCard, Charts…). No recrear con `<button>`/`<div>` + clases.
 - **Texto**: `Heading` (level 1–4) y `Text` (size/weight/tone). Nunca `<h1>`/`<p>` con clases sueltas. Default: títulos de sección (Heading 2) van en **semibold**.

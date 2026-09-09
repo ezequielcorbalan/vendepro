@@ -11,6 +11,9 @@ import {
   type AppraisalBlockType,
 } from '../../renderer/types'
 import type { CustomBlock } from '../use-wizard-form'
+import { Button } from '@/components/ui/Button'
+import { Checkbox } from '@/components/ui/Choice'
+import { Switch } from '@/components/ui/Switch'
 
 interface Props {
   templateId: string | null
@@ -183,21 +186,9 @@ function FromTemplateBlocks({
               editar acá (oculta los {fixedCount} fijos del template y los autocompletados).
             </p>
           </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={hideFixed}
-            onClick={() => setHideFixed(v => !v)}
-            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none ${
-              hideFixed ? 'bg-brand-pink' : 'bg-gray-200'
-            }`}
-          >
-            <span
-              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform ${
-                hideFixed ? 'translate-x-5' : 'translate-x-0'
-              }`}
-            />
-          </button>
+          {/* El título "Ocultar bloques fijos" ya está a la izquierda, así que el
+              nombre va por aria-label y no por `label`, que se dibujaría al lado. */}
+          <Switch checked={hideFixed} onChange={setHideFixed} aria-label="Ocultar bloques fijos" />
         </div>
       )}
 
@@ -215,7 +206,7 @@ function FromTemplateBlocks({
             const open = expanded.has(b.id)
             return (
               <div key={b.id} className="rounded-control border border-gray-200">
-                <button
+                <Button variant="ghost" size="icon"
                   type="button"
                   onClick={() => toggleExpanded(b.id)}
                   className="flex w-full items-start gap-3 px-3 py-2.5 text-left hover:bg-gray-50"
@@ -227,7 +218,7 @@ function FromTemplateBlocks({
                     <p className="text-sm font-medium text-ink">{meta.label}</p>
                     <p className="text-xs text-gray-500">{meta.description}</p>
                   </div>
-                </button>
+                </Button>
                 {open && (
                   <div className="border-t border-gray-200">
                     <BlockForm
@@ -324,20 +315,19 @@ function FromScratchBlocks({
               }`}
             >
               <div className="flex items-start gap-3 px-3 py-2.5">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={included}
                   onChange={() => onToggle(type)}
-                  className="mt-1 h-4 w-4 cursor-pointer accent-brand-pink"
                   aria-label={`Incluir bloque ${meta.label}`}
+                  className="mt-1"
                 />
-                <button
+                <Button variant="ghost" size="sm"
                   type="button"
                   onClick={() => {
                     if (!included) onToggle(type)
                     toggleExpanded(type)
                   }}
-                  className="flex flex-1 items-start justify-between gap-2 text-left"
+                  className="p-0 flex flex-1 items-start justify-between gap-2 text-left"
                 >
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-ink">{meta.label}</p>
@@ -351,7 +341,7 @@ function FromScratchBlocks({
                       ? <ChevronDown className="mt-1 h-4 w-4 shrink-0 text-gray-400" />
                       : <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-gray-400" />
                   )}
-                </button>
+                </Button>
               </div>
               {included && isOpen && (
                 <div className="border-t border-gray-200">

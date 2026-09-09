@@ -4,12 +4,12 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
   KeyRound, Plus, Trash2, Loader2, ArrowLeft, Copy, Check,
-  AlertCircle, ShieldAlert, ShieldOff, Radio, Play, RotateCcw,
+  AlertCircle, ShieldAlert, ShieldOff, Play, RotateCcw,
   Webhook as WebhookIcon,
 } from 'lucide-react'
 import { apiFetch, getApiBase } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
-import { getCurrentUser } from '@/lib/auth'
+import { useCurrentUser } from '@/lib/use-current-user'
 import { API_SCOPES } from '@/lib/crm-config'
 import WebhooksSection from '@/components/configuracion/WebhooksSection'
 import { Button } from '@/components/ui/Button'
@@ -19,9 +19,12 @@ import { Alert } from '@/components/ui/Alert'
 import { Badge } from '@/components/ui/Badge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Tabs } from '@/components/ui/Tabs'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { StepCard } from '@/components/ui/StepCard'
 import { Modal } from '@/components/ui/Modal'
 import { Field, Input, Textarea } from '@/components/ui/Input'
 import type { ApiToken } from '@/lib/types'
+import { useConfirm } from '@/components/ui/useConfirm'
 
 const IMPORT_ENDPOINT = `${getApiBase('public')}/v1/leads`
 
@@ -55,11 +58,12 @@ function decodeTid(jwt: string): string | null {
   }
 }
 
-type Tab = 'tokens' | 'webhooks' | 'test'
+type Tab = 'tokens' | 'webhooks'
 
 export default function ConfiguracionApiPage() {
+  const { confirmDialog, askConfirm } = useConfirm()
   const { toast } = useToast()
-  const user = getCurrentUser()
+  const { user, listo } = useCurrentUser()
   const isAdmin = user?.role === 'admin' || user?.role === 'owner'
 
   const [tab, setTab] = useState<Tab>('tokens')
@@ -110,11 +114,10 @@ export default function ConfiguracionApiPage() {
         setShowCreate(false)
         setName('')
         loadTokens()
-        // Deja el token cargado en la prueba en vivo y salta a esa pestaña.
+        // Deja el token cargado y la escucha activa en la prueba de abajo.
         setTestToken(data.token)
         setTestBaseline(null)
         setTestStatus('waiting')
-        setTab('test')
       } else {
         toast(data.error || 'No se pudo crear el token', 'error')
       }
@@ -125,7 +128,13 @@ export default function ConfiguracionApiPage() {
   }
 
   async function handleRevoke(id: string, tokenName: string) {
-    if (!confirm(`¿Revocar el token "${tokenName}"? Las integraciones que lo usen dejarán de funcionar.`)) return
+    const { confirmed } = await askConfirm({
+      title: 'Revocar token',
+      message: `Las integraciones que usen "${tokenName}" dejan de funcionar. El token queda en la lista, marcado como revocado.`,
+      confirmLabel: 'Revocar',
+      variant: 'danger',
+    })
+    if (!confirmed) return
     try {
       await apiFetch('crm', `/api-tokens/${id}`, { method: 'DELETE' })
       toast('Token revocado', 'warning')
@@ -137,9 +146,15 @@ export default function ConfiguracionApiPage() {
 
   async function handleDelete(token: ApiToken) {
     const warning = token.is_active
-      ? `¿Eliminar el token "${token.name}"? Las integraciones que lo usen dejarán de funcionar y desaparece de la lista. No se puede deshacer.`
-      : `¿Eliminar definitivamente el token "${token.name}"? No se puede deshacer.`
-    if (!confirm(warning)) return
+      ? `Las integraciones que usen "${token.name}" dejan de funcionar y el token desaparece de la lista. No se puede deshacer.`
+      : `El token "${token.name}" desaparece de la lista. No se puede deshacer.`
+    const { confirmed } = await askConfirm({
+      title: 'Eliminar token',
+      message: warning,
+      confirmLabel: 'Eliminar',
+      variant: 'danger',
+    })
+    if (!confirmed) return
     try {
       await apiFetch('crm', `/api-tokens/${token.id}?permanent=1`, { method: 'DELETE' })
       toast('Token eliminado', 'warning')
@@ -201,6 +216,17 @@ export default function ConfiguracionApiPage() {
   const activeCount = tokens.filter(t => t.is_active).length
   const [webhookCount, setWebhookCount] = useState<number | null>(null)
 
+  // Hasta que se sepa el rol no se puede elegir entre la pantalla y el cartel
+  // de acceso restringido: el servidor no ve `localStorage`, así que sin esto
+  // mandaba "Acceso restringido" y el cliente la pantalla de admin.
+  if (!listo) {
+    return (
+      <div className="flex justify-center py-20">
+        <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+      </div>
+    )
+  }
+
   if (!isAdmin) {
     return (
       <div className="max-w-2xl mx-auto py-16">
@@ -220,35 +246,25 @@ export default function ConfiguracionApiPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-5">
-      {/* Header propio (pantalla con back-nav) */}
+      {confirmDialog}
       <div>
         <Link href="/configuracion" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-ink mb-4">
           <ArrowLeft className="w-4 h-4" /> Volver a Configuración
         </Link>
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-semibold text-ink flex items-center gap-2">
-              <KeyRound className="w-6 h-6 text-gray-600" /> Configuración de API
-            </h1>
-            <Text tone="muted" className="mt-1">Tokens para importar leads y webhooks para avisar a tus sistemas cuando pasa algo en el CRM.</Text>
-          </div>
-          <Button
-            onClick={() => setShowCreate(true)}
-            icon={<Plus className="w-4 h-4" />}
-            className="shrink-0"
-          >
-            Nuevo token
-          </Button>
-        </div>
+        <PageHeader
+          title="Configuración de API"
+          subtitle="Tokens para importar leads y webhooks para avisar a tus sistemas cuando pasa algo en el CRM."
+        />
       </div>
 
       {/* Token recién creado — visible una sola vez, por encima de las tabs */}
       {newToken && (
-        <Alert tone="warning" title={`Token “${newToken.name}” creado`} className="[&>div]:flex-1">
-          <p>
-            Copialo ahora: por seguridad <strong>no vas a poder verlo de nuevo</strong>. Ya lo dejamos cargado en <em>Prueba en vivo</em>.
-          </p>
-          <div className="mt-3 flex items-stretch gap-2">
+        <Card>
+          <Heading level={4}>Token “{newToken.name}” creado</Heading>
+          <Text size="sm" tone="muted" className="mt-1 block">
+            Copialo ahora: por seguridad <strong>no vas a poder verlo de nuevo</strong>. Ya lo dejamos cargado en <em>Probá tu token</em>, más abajo.
+          </Text>
+          <div className="mt-3 flex items-start gap-2">
             <code className="flex-1 bg-white border border-gray-200 rounded-control px-3 py-2 text-xs font-mono text-gray-700 break-all">
               {newToken.token}
             </code>
@@ -264,7 +280,7 @@ export default function ConfiguracionApiPage() {
           <Button variant="ghost" onClick={() => setNewToken(null)} className="mt-2 -ml-3">
             Ya lo guardé, ocultar
           </Button>
-        </Alert>
+        </Card>
       )}
 
       {/* Tabs */}
@@ -272,7 +288,6 @@ export default function ConfiguracionApiPage() {
         items={[
           { value: 'tokens', label: 'Tokens', icon: <KeyRound className="w-4 h-4" />, count: activeCount || undefined },
           { value: 'webhooks', label: 'Webhooks', icon: <WebhookIcon className="w-4 h-4" />, count: webhookCount || undefined },
-          { value: 'test', label: 'Prueba en vivo', icon: <Radio className="w-4 h-4" /> },
         ]}
         value={tab}
         onChange={v => setTab(v as Tab)}
@@ -280,7 +295,16 @@ export default function ConfiguracionApiPage() {
 
       {/* ── TAB: TOKENS (grilla) ─────────────────────────────── */}
       {tab === 'tokens' && (
-        <div role="tabpanel">
+        <div role="tabpanel" className="space-y-5">
+          <div className="flex items-start justify-between gap-4">
+            <Text size="sm" tone="muted">
+              Un token deja que una integración (tu web, un portal, Zapier) importe leads al CRM por la API.
+            </Text>
+            <Button onClick={() => setShowCreate(true)} icon={<Plus className="w-4 h-4" />} className="shrink-0">
+              Nuevo token
+            </Button>
+          </div>
+
           {loading ? (
             <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
           ) : error ? (
@@ -367,28 +391,21 @@ export default function ConfiguracionApiPage() {
               ))}
             </div>
           )}
-        </div>
-      )}
 
-      {/* ── TAB: WEBHOOKS ────────────────────────────────────── */}
-      {tab === 'webhooks' && (
-        <div role="tabpanel">
-          <WebhooksSection onCountChange={setWebhookCount} />
-        </div>
-      )}
-
-      {/* ── TAB: PRUEBA EN VIVO ──────────────────────────────── */}
-      {tab === 'test' && (
-        <div role="tabpanel" className="space-y-5">
-          {/* Paso 1: token */}
-          <Card>
-            <Heading level={4} className="flex items-center gap-2 mb-1">
-              <span className="w-5 h-5 rounded-full bg-primary text-white text-xs flex items-center justify-center">1</span>
-              Tu token
-            </Heading>
-            <Text tone="muted" className="mb-3">
-              Pegá el token de integración que querés probar. Si acabás de crear uno, ya está cargado.
+          {/* Probá tu token — vivía en una tercera pestaña, pero sólo prueba
+              tokens (nunca webhooks), así que va acá, debajo de la lista. */}
+          <div className="pt-2">
+            <Heading level={3}>Probá tu token</Heading>
+            <Text tone="muted" className="mt-0.5 block">
+              Tres pasos para confirmar que la integración entra bien, sin salir de esta pantalla.
             </Text>
+          </div>
+          <StepCard
+            step={1}
+            level={4}
+            title="Tu token"
+            subtitle="Pegá el token de integración que querés probar. Si acabás de crear uno, ya está cargado."
+          >
             <Textarea
               value={testToken}
               onChange={e => { setTestToken(e.target.value); setTestStatus('idle') }}
@@ -396,28 +413,29 @@ export default function ConfiguracionApiPage() {
               rows={2}
               className="text-xs font-mono resize-none min-h-0 px-3 py-2.5"
             />
-          </Card>
+          </StepCard>
 
-          {/* Paso 2: request de ejemplo */}
-          <Card>
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <Heading level={4} className="flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-primary text-white text-xs flex items-center justify-center">2</span>
-                Hacé el request
-              </Heading>
-              <button
+          <StepCard
+            step={2}
+            level={4}
+            title="Hacé el request"
+            action={
+              <Button variant="ghost" size="icon"
                 onClick={() => copyText(buildCurl(testToken.trim() || undefined), 'curl')}
                 aria-label="Copiar comando de ejemplo"
-                className="flex items-center gap-1.5 text-xs font-medium text-primary hover:opacity-80"
+                className="p-0 flex items-center gap-1.5 text-xs font-medium text-primary hover:opacity-80"
               >
                 {copiedKey === 'curl' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                 {copiedKey === 'curl' ? 'Copiado' : 'Copiar comando'}
-              </button>
-            </div>
-            <Text tone="muted" className="mb-3">
-              Acepta un lead o varios (<code className="text-xs bg-gray-100 px-1 py-0.5 rounded">{'{ "leads": [...] }'}</code>, hasta 100).
-              Entran sin asignar, en estado <strong>Nuevo</strong>.
-            </Text>
+              </Button>
+            }
+            subtitle={
+              <>
+                Acepta un lead o varios (<code className="text-xs bg-gray-100 px-1 py-0.5 rounded">{'{ "leads": [...] }'}</code>, hasta 100).
+                Entran sin asignar, en estado <strong>Nuevo</strong>.
+              </>
+            }
+          >
             <div className="overflow-x-auto">
               <pre className="bg-gray-900 text-gray-100 rounded-control p-4 text-xs leading-relaxed">{buildCurl(testToken.trim() || undefined)}</pre>
             </div>
@@ -426,18 +444,14 @@ export default function ConfiguracionApiPage() {
               <code className="font-mono">email</code>, <code className="font-mono">operation</code>,{' '}
               <code className="font-mono">source_detail</code>, <code className="font-mono">notes</code>.
             </Text>
-          </Card>
+          </StepCard>
 
-          {/* Paso 3: escuchar en vivo */}
-          <Card>
-            <Heading level={4} className="flex items-center gap-2 mb-1">
-              <span className="w-5 h-5 rounded-full bg-primary text-white text-xs flex items-center justify-center">3</span>
-              Prueba en vivo
-            </Heading>
-            <Text tone="muted" className="mb-3">
-              Iniciá la escucha y ejecutá el comando. Vamos a detectar el primer request que llegue con este token.
-            </Text>
-
+          <StepCard
+            step={3}
+            level={4}
+            title="Escuchá el request"
+            subtitle="Iniciá la escucha y ejecutá el comando. Vamos a detectar el primer request que llegue con este token."
+          >
             <div aria-live="polite">
               {testStatus === 'idle' && (
                 <Button
@@ -460,12 +474,12 @@ export default function ConfiguracionApiPage() {
                       Escuchando… ejecutá el comando de arriba para enviar tu lead de prueba.
                     </p>
                     <Loader2 className="w-4 h-4 animate-spin text-warning shrink-0" />
-                    <button
+                    <Button variant="ghost" size="sm"
                       onClick={() => setTestStatus('idle')}
-                      className="text-xs text-gray-600 underline shrink-0"
+                      className="p-0 text-xs text-gray-600 underline shrink-0"
                     >
                       Cancelar
-                    </button>
+                    </Button>
                   </div>
                 </Alert>
               )}
@@ -476,17 +490,24 @@ export default function ConfiguracionApiPage() {
                     <p className="flex-1">
                       <strong>¡Recibimos tu lead de prueba!</strong> La integración está funcionando. Aparece en <strong>Leads</strong>, sin asignar.
                     </p>
-                    <button
+                    <Button variant="ghost" size="sm"
                       onClick={() => { setTestBaseline(null); setTestStatus('idle') }}
-                      className="flex items-center gap-1.5 text-xs font-medium text-success hover:opacity-80 shrink-0"
+                      className="p-0 flex items-center gap-1.5 text-xs font-medium text-success hover:opacity-80 shrink-0"
                     >
                       <RotateCcw className="w-3.5 h-3.5" /> Probar de nuevo
-                    </button>
+                    </Button>
                   </div>
                 </Alert>
               )}
             </div>
-          </Card>
+          </StepCard>
+        </div>
+      )}
+
+      {/* ── TAB: WEBHOOKS ────────────────────────────────────── */}
+      {tab === 'webhooks' && (
+        <div role="tabpanel">
+          <WebhooksSection onCountChange={setWebhookCount} />
         </div>
       )}
 

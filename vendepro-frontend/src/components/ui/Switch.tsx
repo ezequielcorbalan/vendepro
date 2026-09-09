@@ -9,12 +9,20 @@ import { cn } from '@/lib/utils'
 interface SwitchProps {
   checked: boolean
   onChange: (checked: boolean) => void
+  /** Etiqueta VISIBLE al lado del control. También lo nombra. */
   label?: string
+  /**
+   * Nombre accesible sin texto visible. Para cuando la etiqueta ya está en la
+   * pantalla —un título a la izquierda, una celda de tabla— y repetirla al lado
+   * del control sería ruido. Sin esto y sin `label`, el control queda sin nombre:
+   * pasó en el toggle de webhooks y en el del wizard de tasación.
+   */
+  'aria-label'?: string
   disabled?: boolean
   className?: string
 }
 
-export function Switch({ checked, onChange, label, disabled = false, className }: SwitchProps) {
+export function Switch({ checked, onChange, label, disabled = false, className, 'aria-label': ariaLabel }: SwitchProps) {
   const toggle = () => !disabled && onChange(!checked)
   return (
     <label className={cn('inline-flex items-center gap-2.5 text-sm text-ink', disabled && 'opacity-50', className)}>
@@ -22,7 +30,7 @@ export function Switch({ checked, onChange, label, disabled = false, className }
         type="button"
         role="switch"
         aria-checked={checked}
-        aria-label={label}
+        aria-label={ariaLabel ?? label}
         disabled={disabled}
         onClick={toggle}
         className={cn(

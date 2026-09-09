@@ -7,6 +7,8 @@
  * formateadores — lo que el design system pide centralizar en `lib`.
  */
 
+import { getAnyStageLabel } from './crm-config'
+
 // ── Tipos que devuelve la API ─────────────────────────────────
 
 export type DedupeScope = 'daily' | 'once' | 'always'
@@ -66,6 +68,15 @@ export interface CatalogItem {
   action_labels: string[]
   activated: boolean
   available: boolean
+  /** Sección de la galería. El label y el orden salen de `meta.recipe_categories`. */
+  category: string
+}
+
+/** Sección de la galería de recetas, declarada por el backend. */
+export interface RecipeCategoryMeta {
+  key: string
+  label: string
+  description: string
 }
 
 export interface ConfigField {
@@ -106,6 +117,7 @@ export interface AutomationsMeta {
   variables: Array<{ key: string; label: string; scope: string; example: string }>
   stages: { lead: string[]; property: string[] }
   dedupe_scopes: Array<{ value: string; label: string; help: string }>
+  recipe_categories: RecipeCategoryMeta[]
 }
 
 export interface RunActionResult {
@@ -242,8 +254,7 @@ export function fmtDateTime(iso: string | null): string {
 
 /** Etapas legibles: 'en_tasacion' → 'En tasación'. */
 export function stageLabel(stage: string): string {
-  const withSpaces = stage.replace(/_/g, ' ')
-  return withSpaces.charAt(0).toUpperCase() + withSpaces.slice(1)
+  return getAnyStageLabel(stage)
 }
 
 /** Resumen de una automatización en una línea, para la card de la lista. */

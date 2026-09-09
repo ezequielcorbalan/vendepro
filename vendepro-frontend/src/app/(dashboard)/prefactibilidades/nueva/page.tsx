@@ -10,6 +10,7 @@ import {
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
 import { Card } from '@/components/ui/Card'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { StatTile } from '@/components/ui/StatTile'
 import { Button } from '@/components/ui/Button'
 import { Field, Input, Textarea } from '@/components/ui/Input'
@@ -143,25 +144,26 @@ export default function NuevaPrefactibilidadPage() {
         <ArrowLeft className="w-4 h-4" /> Volver
       </Link>
 
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-control bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center">
-          <BarChart3 className="w-5 h-5 text-white" />
-        </div>
-        <div>
-          <h1 className="text-xl font-bold text-ink">Estudio de Prefactibilidad</h1>
-          <p className="text-xs text-gray-400">Análisis de viabilidad para lotes e inversores · Paso {step + 1} de {steps.length}</p>
-        </div>
-      </div>
-
-      <StepIndicator
-        steps={steps.map(s => s.label)}
-        current={step + 1}
-        onStepClick={n => setStep(n - 1)}
-        allowForward
+      <PageHeader
+        title="Estudio de Prefactibilidad"
+        subtitle={`Análisis de viabilidad para lotes e inversores · Paso ${step + 1} de ${steps.length}`}
         className="mb-6"
       />
 
-      <Card className="p-5 sm:p-6">
+      <Card padded={false}>
+        {/* El stepper va DENTRO del contenedor del formulario, separado por su
+            propio borde: flotando entre el header y la Card se leía como un
+            elemento suelto y no como parte del paso que se está completando. */}
+        <div className="border-b border-gray-100 px-5 py-4 sm:px-6">
+          <StepIndicator
+            steps={steps.map(s => s.label)}
+            current={step + 1}
+            onStepClick={n => setStep(n - 1)}
+            allowForward
+          />
+        </div>
+
+        <div className="p-5 sm:p-6">
 
         {/* Step 0: Terreno */}
         {step === 0 && (
@@ -272,12 +274,12 @@ export default function NuevaPrefactibilidadPage() {
                   </Button>
                 </div>
               ))}
-              <button
+              <Button variant="ghost" size="sm"
                 onClick={() => setUnitsMix([...unitsMix, { type: '', count: '', avg_m2: '' }])}
-                className="text-sm font-medium text-primary flex items-center gap-1"
+                className="p-0 text-sm font-medium text-primary flex items-center gap-1"
               >
                 <Plus className="w-3 h-3" /> Agregar tipología
-              </button>
+              </Button>
             </div>
 
             <div>
@@ -374,9 +376,9 @@ export default function NuevaPrefactibilidadPage() {
               <div key={idx} className="border border-gray-200 rounded-card p-3 space-y-2">
                 <div className="flex justify-between items-center">
                   <Text as="span" size="xs" weight="semibold" tone="muted">Comparable #{idx + 1}</Text>
-                  <button onClick={() => setComparables(comparables.filter((_, i) => i !== idx))} className="text-danger">
+                  <Button variant="ghost" size="icon" onClick={() => setComparables(comparables.filter((_, i) => i !== idx))} className="p-0 text-danger">
                     <X className="w-4 h-4" />
-                  </button>
+                  </Button>
                 </div>
                 <Input
                   placeholder="Nombre del proyecto/dirección"
@@ -410,12 +412,12 @@ export default function NuevaPrefactibilidadPage() {
                 </div>
               </div>
             ))}
-            <button
+            <Button variant="ghost" size="sm"
               onClick={() => setComparables([...comparables, { project: '', price_per_m2: '', notes: '' }])}
-              className="text-sm font-medium text-primary flex items-center gap-1"
+              className="p-0 text-sm font-medium text-primary flex items-center gap-1"
             >
               <Plus className="w-3 h-3" /> Agregar comparable
-            </button>
+            </Button>
 
             <Heading level={4} className="mt-6">Cronograma del proyecto</Heading>
             {timeline.map((t, idx) => (
@@ -441,17 +443,17 @@ export default function NuevaPrefactibilidadPage() {
                     setTimeline(nt)
                   }}
                 />
-                <button onClick={() => setTimeline(timeline.filter((_, i) => i !== idx))} className="text-danger p-2">
+                <Button variant="ghost" size="icon" onClick={() => setTimeline(timeline.filter((_, i) => i !== idx))} className="text-danger p-2">
                   <X className="w-4 h-4" />
-                </button>
+                </Button>
               </div>
             ))}
-            <button
+            <Button variant="ghost" size="sm"
               onClick={() => setTimeline([...timeline, { phase: '', months: '' }])}
-              className="text-sm font-medium text-primary flex items-center gap-1"
+              className="p-0 text-sm font-medium text-primary flex items-center gap-1"
             >
               <Plus className="w-3 h-3" /> Agregar fase
-            </button>
+            </Button>
           </div>
         )}
 
@@ -488,6 +490,7 @@ export default function NuevaPrefactibilidadPage() {
             </div>
           </div>
         )}
+        </div>
       </Card>
 
       {/* Nav footer */}

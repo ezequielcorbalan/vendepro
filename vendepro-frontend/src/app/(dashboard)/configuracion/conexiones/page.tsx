@@ -44,6 +44,8 @@ export default function ConexionesPage() {
   // Google Calendar (personal del usuario logueado)
   const [google, setGoogle] = useState<GoogleIntegration | null>(null)
   const [googleBusy, setGoogleBusy] = useState(false)
+  const [googleError, setGoogleError] = useState<string | null>(null)
+  const [googleImporting, setGoogleImporting] = useState(false)
 
   // Form
   const [apiKeyInput, setApiKeyInput] = useState('')
@@ -163,7 +165,12 @@ export default function ConexionesPage() {
     const status = params.get('google')
     if (!status) return
     if (status === 'ok') toast('Google Calendar conectado')
-    else toast(`No se pudo conectar Google Calendar${params.get('reason') ? ` (${params.get('reason')})` : ''}`, 'error')
+    else {
+      // El motivo queda fijo en pantalla y no en un toast: casi siempre es
+      // "faltó tildar el permiso", que pide volver a intentar haciendo algo
+      // distinto. Un aviso que se desvanece a los segundos no alcanza.
+      setGoogleError(params.get('reason') || 'No se pudo conectar Google Calendar')
+    }
     window.history.replaceState(null, '', window.location.pathname)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -180,6 +187,37 @@ export default function ConexionesPage() {
       toast(err?.message || 'No se pudo iniciar la conexión con Google', 'error')
     }
     setGoogleBusy(false)
+  }
+
+  /**
+   * Trae los eventos de Google al CRM. Es idempotente, así que tocarlo dos
+   * veces no duplica nada — por eso el botón queda siempre disponible y no
+   * escondido detrás de una confirmación.
+   */
+  async function handleGoogleImport() {
+    setGoogleImporting(true)
+    setGoogleError(null)
+    try {
+      const res = await apiFetch('crm', '/integrations/google/import', { method: 'POST' })
+      const data = (await res.json()) as any
+      if (!res.ok || data.reason) {
+        setGoogleError(
+          data.reason === 'insufficient_scopes'
+            ? 'Faltan permisos sobre tu calendario. Desconectá y volvé a conectar dejando tildado el permiso de editar.'
+            : `No se pudieron traer los eventos (${data.reason || 'error'})`,
+        )
+      } else if (data.imported === 0) {
+        toast(data.skipped > 0 ? 'Tus eventos ya estaban en el CRM' : 'No hay eventos nuevos para traer')
+      } else {
+        toast(
+          `${data.imported} evento${data.imported > 1 ? 's' : ''} importado${data.imported > 1 ? 's' : ''}` +
+          (data.linked > 0 ? ` · ${data.linked} vinculado${data.linked > 1 ? 's' : ''} a un lead o contacto` : ''),
+        )
+      }
+    } catch {
+      setGoogleError('Error de conexión al traer los eventos')
+    }
+    setGoogleImporting(false)
   }
 
   async function handleGoogleDisconnect() {
@@ -358,8 +396,34 @@ export default function ConexionesPage() {
           </Alert>
         )}
 
+        {googleError && (
+          <Alert tone="danger" title="No se pudo conectar" onDismiss={() => setGoogleError(null)}>
+            {googleError}
+          </Alert>
+        )}
+
+        {/* Google muestra un tilde por permiso y viene destildado. Si el agente
+            lo saltea, la conexión se crea igual pero no sirve, y el error
+            recién aparecía al primer uso. El aviso va ANTES de mandarlo. */}
+        {google?.configured && !google.connected && (
+          <Alert tone="info" title="Importante: dejá tildado el permiso de editar">
+            Google te va a pedir permiso para <strong>ver y editar los eventos de tu
+            calendario</strong>. Tenés que dejar esa casilla tildada: sin permiso de
+            edición el CRM no puede crear ahí tus visitas ni tus tasaciones, y la
+            conexión queda sin efecto.
+          </Alert>
+        )}
+
         <div className="flex flex-wrap items-center gap-2">
           {google?.connected ? (
+            <>
+            <Button
+              onClick={handleGoogleImport}
+              loading={googleImporting}
+              icon={<Download className="w-4 h-4" />}
+            >
+              Traer mis eventos al CRM
+            </Button>
             <Button
               variant="outline"
               onClick={handleGoogleDisconnect}
@@ -368,6 +432,7 @@ export default function ConexionesPage() {
             >
               Desconectar
             </Button>
+            </>
           ) : (
             <Button
               onClick={handleGoogleConnect}

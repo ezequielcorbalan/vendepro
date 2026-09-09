@@ -144,7 +144,7 @@ export default function SoldPropertyPicker({
                 const isSelected = selected.has(sp.id)
                 const origin = getSoldOrigin(sp.origin)
                 return (
-                  <button
+                  <Button variant="ghost" size="sm"
                     key={sp.id}
                     type="button"
                     onClick={() => toggle(sp.id)}
@@ -191,7 +191,7 @@ export default function SoldPropertyPicker({
                     }`}>
                       {isSelected && <Check className="w-3 h-3 text-white" />}
                     </div>
-                  </button>
+                  </Button>
                 )
               })}
             </div>

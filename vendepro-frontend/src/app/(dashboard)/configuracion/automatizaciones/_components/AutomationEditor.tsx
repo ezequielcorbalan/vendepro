@@ -8,10 +8,11 @@ import { apiFetch } from '@/lib/api'
 import type { AutomationsMeta, AutomationListItem, DedupeScope } from '@/lib/automations'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
+import { StepCard } from '@/components/ui/StepCard'
 import { Button } from '@/components/ui/Button'
 import { Input, Select, Field } from '@/components/ui/Input'
 import { Alert } from '@/components/ui/Alert'
-import { Heading, Text } from '@/components/ui/Typography'
+import { Text } from '@/components/ui/Typography'
 import { useToast } from '@/components/ui/Toast'
 import { ConfigFields, type FieldContext } from './ConfigFields'
 import { ConditionsEditor } from './ConditionsEditor'
@@ -337,33 +338,5 @@ export function AutomationEditor({ automationId }: AutomationEditorProps) {
         </Button>
       </div>
     </div>
-  )
-}
-
-function StepCard({
-  step, icon, title, subtitle, children,
-}: {
-  step: number
-  icon: React.ReactNode
-  title: string
-  subtitle?: string
-  children: React.ReactNode
-}) {
-  return (
-    <Card>
-      <div className="flex items-start gap-3">
-        <span
-          aria-hidden
-          className="w-7 h-7 rounded-full bg-gray-100 text-gray-700 grid place-items-center text-sm font-semibold shrink-0"
-        >
-          {step}
-        </span>
-        <div className="min-w-0 flex-1">
-          <Heading level={3} className="flex items-center gap-2">{icon} {title}</Heading>
-          {subtitle && <Text size="sm" tone="muted" className="mt-0.5">{subtitle}</Text>}
-          <div className="mt-4">{children}</div>
-        </div>
-      </div>
-    </Card>
   )
 }

@@ -1,8 +1,12 @@
 import { Hono } from 'hono'
-import { corsMiddleware, errorHandler, createAuthMiddleware, JwtAuthService, D1LandingRepository, GeminiAIService, GeminiEmailContentGenerator, D1OrganizationRepository } from '@vendepro/infrastructure'
+import { corsMiddleware, errorHandler, createAuthMiddleware, JwtAuthService, D1LandingRepository, GeminiAIService, GeminiEmailContentGenerator, D1OrganizationRepository, HttpListingPageFetcher } from '@vendepro/infrastructure'
 import {
   ExtractPropertyMetricsUseCase,
   ExtractComparableFromScreenshotUseCase,
+  ExtractComparableFromUrlUseCase,
+  ExtractPortalReportFromPdfUseCase,
+  GenerateReportConclusionUseCase,
+  SuggestAppraisalPricingUseCase,
   ExtractLeadFromTextUseCase,
   ExtractLeadFromImageUseCase,
   EditBlockWithAIUseCase,
@@ -62,6 +66,82 @@ app.post('/extract-comparable', async (c) => {
       mimeType: body.mimeType,
     })
     return c.json({ fields })
+  } catch (e: any) {
+    if (typeof e?.statusCode === 'number') return c.json({ error: e.message }, e.statusCode)
+    throw e
+  }
+})
+
+// Comparable desde el LINK del aviso (paso "Competencia" del wizard de
+// reportes). El worker baja la página y la IA extrae los datos del texto.
+// Cuando el portal bloquea la lectura automática (anti-bot) devuelve 422 con
+// un mensaje que redirige al flujo por captura — eso es esperado, no un bug.
+app.post('/extract-comparable-url', async (c) => {
+  const body = (await c.req.json()) as any
+  try {
+    const ai = new GeminiAIService(c.env.GEMINI_API_KEY)
+    const useCase = new ExtractComparableFromUrlUseCase(new HttpListingPageFetcher(), ai)
+    const fields = await useCase.execute({ url: body.url ?? '' })
+    return c.json({ fields })
+  } catch (e: any) {
+    if (typeof e?.statusCode === 'number') return c.json({ error: e.message }, e.statusCode)
+    throw e
+  }
+})
+
+// Métricas por portal desde el PDF de reporte de KiteProp (paso "Métricas"
+// del wizard). JSON con el PDF en base64, como el resto de los endpoints de
+// extracción — acá nada viaja como multipart.
+app.post('/extract-kiteprop', async (c) => {
+  const body = (await c.req.json()) as any
+  try {
+    const ai = new GeminiAIService(c.env.GEMINI_API_KEY)
+    const useCase = new ExtractPortalReportFromPdfUseCase(ai)
+    const report = await useCase.execute({ pdfBase64: body.pdfBase64 ?? '' })
+    return c.json(report)
+  } catch (e: any) {
+    if (typeof e?.statusCode === 'number') return c.json({ error: e.message }, e.statusCode)
+    throw e
+  }
+})
+
+// Redacta la "Conclusión y recomendación" del reporte de gestión a partir de
+// las métricas y comparables que el agente ya cargó en el wizard. El semáforo
+// se calcula en el use case (regla de dominio) y viaja al modelo ya resuelto.
+app.post('/suggest-report-conclusion', async (c) => {
+  const body = (await c.req.json()) as any
+  try {
+    const ai = new GeminiAIService(c.env.GEMINI_API_KEY)
+    const useCase = new GenerateReportConclusionUseCase(ai)
+    const result = await useCase.execute({
+      periodLabel: body.periodLabel,
+      periodStart: body.periodStart,
+      periodEnd: body.periodEnd,
+      metrics: body.metrics,
+      competitors: body.competitors,
+    })
+    return c.json(result)
+  } catch (e: any) {
+    if (typeof e?.statusCode === 'number') return c.json({ error: e.message }, e.statusCode)
+    throw e
+  }
+})
+
+// Sugiere los tres precios de una tasación + justificación, a partir de los
+// comparables cargados en el editor. La estadística (mediana USD/m², rango,
+// valor base) la calcula el use case; el modelo posiciona DENTRO de ese rango
+// y el use case re-valida con clamps. Un LLM nunca decide un número sin red.
+app.post('/suggest-appraisal-pricing', async (c) => {
+  const body = (await c.req.json()) as any
+  try {
+    const ai = new GeminiAIService(c.env.GEMINI_API_KEY)
+    const useCase = new SuggestAppraisalPricingUseCase(ai)
+    const result = await useCase.execute({
+      property: body.property,
+      comparables: body.comparables,
+      swot: body.swot,
+    })
+    return c.json(result)
   } catch (e: any) {
     if (typeof e?.statusCode === 'number') return c.json({ error: e.message }, e.statusCode)
     throw e

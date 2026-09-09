@@ -7,6 +7,14 @@
 // color: `color` (badge Tailwind), `dot` (hex del punto del timeline) y `border`
 // (borde izquierdo de la card). No definir estos colores en ningún otro archivo:
 // las pantallas leen de acá vía getStageConfig / getStageDot / getStageBorder.
+// OJO — dos etapas del pipeline vendedor tienen clave y label distintos, a
+// propósito. Las claves son las del backend (`lead-stage.ts`) y no se tocan
+// porque están en `leads.stage`, `stage_history` y las políticas de sync:
+//   · `perdido`    → "No captado": el caso real es "tasé y no capté", y esos
+//     leads se recontactan a los 30/120 días (automatización
+//     `recontacto_no_captado`), no se tiran.
+//   · `finalizado` → "Vendido": no es un cierre manual, lo pone el sync cuando
+//     la propiedad captada se vende. "Finalizado" se confundía con "Perdido".
 export const LEAD_STAGES = {
   nuevo:       { label: 'Nuevo',        color: 'bg-blue-100 text-blue-800',       dot: '#3b82f6', border: 'border-l-blue-400',    order: 1 },
   asignado:    { label: 'Asignado',     color: 'bg-indigo-100 text-indigo-800',   dot: '#6366f1', border: 'border-l-indigo-400',  order: 2 },
@@ -16,9 +24,9 @@ export const LEAD_STAGES = {
   presentada:  { label: 'Presentada',   color: 'bg-pink-100 text-pink-800',       dot: '#ec4899', border: 'border-l-pink-500',    order: 6 },
   seguimiento: { label: 'Seguimiento',  color: 'bg-yellow-100 text-yellow-800',   dot: '#eab308', border: 'border-l-yellow-400',  order: 7 },
   captado:     { label: 'Captado',      color: 'bg-green-100 text-green-800',     dot: '#22c55e', border: 'border-l-green-500',   order: 8 },
-  perdido:     { label: 'Perdido',      color: 'bg-red-100 text-red-800',         dot: '#ef4444', border: 'border-l-red-400',     order: 9 },
+  perdido:     { label: 'No captado',   color: 'bg-red-100 text-red-800',         dot: '#ef4444', border: 'border-l-red-400',     order: 9 },
   invalido:    { label: 'Inválido',     color: 'bg-gray-100 text-gray-700',       dot: '#6b7280', border: 'border-l-gray-300',    order: 90 },
-  finalizado:  { label: 'Finalizado',   color: 'bg-slate-100 text-slate-700',     dot: '#64748b', border: 'border-l-slate-400',   order: 95 },
+  finalizado:  { label: 'Vendido',      color: 'bg-slate-100 text-slate-700',     dot: '#64748b', border: 'border-l-slate-400',   order: 95 },
 } as const
 
 export type LeadStage = keyof typeof LEAD_STAGES
@@ -26,6 +34,28 @@ export const LEAD_STAGE_KEYS = Object.keys(LEAD_STAGES) as LeadStage[]
 export const LEAD_TERMINAL_STAGES: LeadStage[] = ['perdido', 'invalido', 'finalizado']
 export const LEAD_AGENT_FINAL_STAGES: LeadStage[] = ['captado', ...LEAD_TERMINAL_STAGES]
 export const LEAD_PIPELINE_STAGES = LEAD_STAGE_KEYS.filter(s => !LEAD_TERMINAL_STAGES.includes(s))
+
+// ── RECONTACTO DE "NO CAPTADO" ──────────────────────────────
+// Un lead no captado no es basura: el propietario sigue queriendo vender y en
+// unos meses puede volver a estar disponible. Al marcarlo, el agente elige
+// cuándo retomarlo; la fecha va a `next_step_date` y se ve en la card.
+// El recordatorio de calendario lo pone la automatización de la org
+// (`recontacto_no_captado`, +30 y +120 días), no esta lista.
+export const LEAD_RECONTACT_OPTIONS = [
+  { key: '1m',    label: 'En 1 mes',    days: 30 },
+  { key: '4m',    label: 'En 4 meses',  days: 120 },
+  { key: 'custom',label: 'Otra fecha',  days: null },
+  { key: 'none',  label: 'No recontactar', days: null },
+] as const
+
+export type LeadRecontactKey = typeof LEAD_RECONTACT_OPTIONS[number]['key']
+
+/** Fecha ISO (yyyy-mm-dd) a `days` días de hoy. Para el modal de "No captado". */
+export function recontactDateIn(days: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() + days)
+  return d.toISOString().slice(0, 10)
+}
 
 // ── PIPELINE COMPRADOR ──────────────────────────────────────
 // Flujo: nuevo → contactado → calificado → visita_agendada → visito → oferta → cerrado
@@ -108,6 +138,20 @@ export function getStageDot(stage: string): string {
 /** Clase del borde izquierdo de la card por etapa. Fuente única. */
 export function getStageBorder(stage: string): string {
   return getMergedStageConfig(stage)?.border ?? STAGE_FALLBACK.border
+}
+
+/**
+ * Label de una etapa cualquiera —lead o propiedad— sin saber de qué entidad es.
+ * Para pantallas genéricas (automatizaciones) que reciben la clave pelada desde
+ * la API. Antes esas pantallas prettificaban la clave (`no_captado` → "No
+ * captado") y eso se rompe apenas clave y label divergen, como en `perdido` →
+ * "No captado" o `finalizado` → "Vendido".
+ */
+export function getAnyStageLabel(stage: string): string {
+  const cfg = getMergedStageConfig(stage) ?? (PROPERTY_STAGES as Record<string, { label: string }>)[stage]
+  if (cfg?.label) return cfg.label
+  const withSpaces = stage.replace(/_/g, ' ')
+  return withSpaces.charAt(0).toUpperCase() + withSpaces.slice(1)
 }
 
 // Paleta categórica única para gráficos (funnels, barras). Alineada a los tonos

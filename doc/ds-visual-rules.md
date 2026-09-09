@@ -352,11 +352,324 @@ Están acá para que no se pierdan:
   Si `/r/` sale, la coherencia pide que salgan estas dos también, o que entren
   las tres. Pendiente de decisión.
 
+## 24. Dentro de un `Modal` no se arma un header ni un footer pegajoso a mano
+
+El panel del `Modal` ya es una columna acotada al 90% del alto de la pantalla:
+el encabezado y el `footer` quedan fijos y **el cuerpo scrollea solo**. Los
+overlays a mano resolvían eso con `sticky top-0` / `sticky bottom-0` adentro del
+contenido, y al migrarlos hay que sacarlo: duplicado, el header pegajoso viaja
+con el scroll del cuerpo y se ve doble borde.
+
+❌
+```tsx
+<Modal open onClose={cerrar}>
+  <div className="sticky top-0 bg-white border-b">…</div>
+  <div className="p-4">…campos…</div>
+  <div className="sticky bottom-0 border-t">…botones…</div>
+</Modal>
+```
+
+✅
+```tsx
+<Modal open onClose={cerrar} title="Nuevo lead" footer={<><Button …/><Button …/></>}>
+  …campos…
+</Modal>
+```
+
+Y no intentes acotar el alto desde afuera: un `flex flex-col` en el `className`
+del panel no llega al contenido, porque `children` va envuelto en el div del
+cuerpo. Ese fue el bug: el `overflow-y-auto` quedó en un nieto, y como el panel
+tiene `overflow-hidden`, un formulario largo **se recortaba** — en un teléfono el
+final del form quedaba inalcanzable, y en una captura se veía perfecto.
+
+Auditoría: `src/components/ui/__tests__/overlay-contract.test.tsx`, bloque
+"un formulario largo no se corta" — tres aserciones que fallan sobre el `Modal`
+de antes del arreglo (02/09/2026).
+
+
+## 25. Una sheet no se pega al borde de abajo
+
+`Modal sheet` nace con aire: 8px al borde inferior y a los costados, y las
+**cuatro** esquinas redondeadas. Dos motivos, y el segundo no es estético:
+
+- En un teléfono con barra de gestos, los últimos píxeles de la pantalla son
+  zona muerta — y en una sheet ahí es justo donde cae el footer con los botones.
+  El padding usa `env(safe-area-inset-bottom)`, así que respeta esa barra cuando
+  existe y cae a 8px cuando no.
+- Levantada con el borde inferior cuadrado se lee como un error de maquetado, no
+  como una decisión. Si le das aire, redondeás las cuatro.
+
+❌ `items-end p-0` + `rounded-t-2xl` → la sheet nace con `bottom` igual al alto
+de la ventana: cero aire.
+
+✅ Lo trae el componente: `items-end p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]`
++ `rounded-2xl`, y arriba de 640px vuelve al diálogo centrado con `rounded-card`.
+
+No lo resuelvas por pantalla: son 8 sheets y el `className` del panel no puede
+mover el scrim. Salió del repaso de Paula sobre pantalla el 04/09/2026, medido
+antes y después (0px → 8px de aire).
+
+Auditoría: `overlay-contract.test.tsx`, bloque "Modal · sheet".
+
+
+## 26. El alto de un botón lo define el botón, no su fila
+
+`Button` trae `h-fit`. Sin eso, un contenedor `flex items-stretch` lo estira
+hasta el alto de su vecino: medido en `/configuracion/api`, el bloque del token
+mide 82px en desktop y 2178px en ventana angosta, y el botón "Copiar" se iba con
+él en vez de quedarse en sus 36px.
+
+❌ `<div className="flex items-stretch">` + un `Button` sin alto propio
+✅ Lo trae el componente: `h-fit` no es `auto`, así que `align-items: stretch`
+   deja de aplicarle.
+
+**No se fija un alto por tamaño** (`h-9` para md, etc.) a propósito: hay ~15
+botones en la app cuyo alto sale de un `py-*` propio —`py-3` en el wizard de
+campañas, `py-1` en formularios densos— y todos cambiarían de tamaño. Medido
+antes de decidir.
+
+Auditoría: `overlay-props-fase6.test.tsx`, bloque "el alto lo define el botón".
+
+## 27. Un chip y un botón en la misma fila tienen que medir igual
+
+`PillRadioGroup`/`PillCheckGroup` tienen `size`, con el default en el tamaño
+histórico (`px-4 py-2 text-sm`). Existe porque el "Todos" de una fila de chips
+es un `Button size="sm"` —no es una opción del grupo, es un seleccionar-todo— y
+con un único tamaño de pill quedaban 28px contra 40px en la misma fila.
+
+Ojo: el `className` de esos grupos va al CONTENEDOR, no a los pills, así que
+desde la pantalla no se puede corregir el tamaño. Por eso es un prop.
+
+
+## 28. Dos cosas fijas no pueden compartir la misma esquina
+
+El toast vive en `bottom-24 right-4`, no en `bottom-4`, porque el botón flotante
+de IA está en `bottom-6 right-6` y montado en el layout del dashboard — o sea en
+TODAS las pantallas. Con los dos abajo a la derecha el mensaje quedaba tapado a
+la mitad.
+
+**El z-index no era el problema**: el toast es `z-[100]` y el botón `z-40`, así
+que el orden ya estaba bien. El problema es que ocupaban el mismo lugar. Cuando
+algo fijo se tapa, mirá primero la posición y después la capa.
+
+Auditoría: `overlay-props-fase6.test.tsx`, bloque "no lo tapa el botón flotante".
+
+
+## 29. Nada destructivo se pregunta con `confirm()`
+
+`window.confirm()` es del navegador, no nuestro: no tiene la marca, no dice el
+nombre de lo que estás borrando, el botón de aceptar es idéntico al de cancelar
+y en móvil aparece pegado a la barra de direcciones. Va `useConfirm()`, que
+devuelve una promesa y preserva el flujo imperativo:
+
+```tsx
+const { confirmDialog, askConfirm } = useConfirm()
+
+async function handleDelete(w: Webhook) {
+  const { confirmed } = await askConfirm({
+    title: 'Eliminar webhook',
+    message: `"${w.name}" deja de recibir eventos y se borra su historial. No se puede deshacer.`,
+    confirmLabel: 'Eliminar',
+    variant: 'danger',
+  })
+  if (!confirmed) return
+  // ...
+}
+
+return <div>{confirmDialog}{/* ... */}</div>
+```
+
+❌ `if (!confirm('¿Eliminar este objetivo?')) return`
+✅ `title: 'Eliminar objetivo'` + `message` con la consecuencia + `variant: 'danger'`
+
+**El título dice la acción, el mensaje dice la consecuencia.** El `confirm()`
+nativo obligaba a meter todo en una línea ("¿Eliminar esta ficha? Esta acción no
+se puede deshacer."), y por eso 8 de los 20 que migramos decían apenas
+"¿Eliminar este X?" — sin decir qué se pierde. El diálogo del DS tiene dos
+campos justamente para no tener que elegir.
+
+**Si la confirmación está en una fila de una lista, el diálogo va en el padre.**
+`BlockListSidebar` y `EditableCanvas` lo tenían en cada fila: el `onRemove` de la
+fila es un closure sin id, así que la confirmación tenía que vivir donde está el
+id. Puesto en el padre hay UN diálogo para toda la lista en vez de uno por
+elemento.
+
+**`prompt()` cuenta igual.** El único que había era el plan B del calendario
+cuando `navigator.clipboard` falla; ahora es un `Modal` con el link en un
+`Input readOnly`.
+
+Ratchet: `diálogos nativos (confirm/alert/prompt)` en `ds-color-lint.mjs`,
+baseline en `scripts/.ds-dialog-baseline`. Bajó de 24 a 3 el 07/09/2026; los 3
+que quedan están en `configuracion/conexiones`, que quedó fuera de alcance.
+
+
+## 30. En una pantalla con pestañas, la acción va en la pestaña
+
+`PageHeader` es para la acción de la PANTALLA. Si la acción es de una pestaña,
+en el header queda mal: `/configuracion/api` tenía "Nuevo token" arriba, así que
+**estando en la pestaña de Webhooks se veían los dos botones a la vez** —
+"Nuevo token" en el encabezado y "Nuevo webhook" adentro del panel. El de
+Webhooks ya estaba bien; el de Tokens era el que sobraba arriba.
+
+El patrón, igual en las dos pestañas: una línea que explica para qué sirve, y el
+botón a la derecha.
+
+```tsx
+<div className="flex items-start justify-between gap-4">
+  <Text size="sm" tone="muted">Un token deja que una integración importe leads por la API.</Text>
+  <Button onClick={abrir} icon={<Plus className="w-4 h-4" />} className="shrink-0">
+    Nuevo token
+  </Button>
+</div>
+```
+
+❌ `<PageHeader title="Configuración de API" actions={<Button>Nuevo token</Button>} />` con pestañas debajo
+✅ `PageHeader` sin `actions`, y el botón adentro del `role="tabpanel"` que le corresponde
+
+**Y si una pestaña sólo opera sobre lo de otra, no es una pestaña.** Esa misma
+pantalla tenía una tercera, "Prueba en vivo", que probaba únicamente tokens —
+nunca webhooks. Pasó a ser una sección abajo de la lista de tokens, donde el
+token que acabás de crear ya queda cargado sin cambiar de pestaña. Tres
+pestañas se leían como tres temas; eran dos.
+
+Sin ratchet: no hay patrón mecánico que distinga una acción de pantalla de una
+de pestaña. La auditoría es a ojo — `grep -rn "PageHeader" src/app` cruzado con
+las pantallas que usan `Tabs`.
+
+
+## 31. Hay dos tipos de wizard, y son dos componentes distintos
+
+**Horizontal, un paso por vez**: `StepIndicator`. La barrita de progreso arriba,
+los pasos que no son el actual están ocultos. Registro de la inmobiliaria,
+wizard de tasación, campaña de email, nueva prefactibilidad.
+
+**Vertical, todos los pasos a la vista**: `StepCard`. Cada paso en su `Card`,
+con su número a la izquierda. Editor de automatizaciones, prueba de token de
+`/configuracion/api`.
+
+Confundirlos es fácil porque los dos "son un wizard", pero no resuelven lo
+mismo: `StepIndicator` sirve cuando el orden es obligatorio y el paso 3 no tiene
+sentido sin el 2; `StepCard` cuando podés leer los tres y ejecutar el que
+quieras.
+
+```tsx
+<StepCard step={1} icon={<Zap className="w-4 h-4 text-gray-600" />} title="Cuándo se dispara">
+  <Field label="Disparador">…</Field>
+</StepCard>
+```
+
+❌ `<Card><Heading level={4}><span className="w-5 h-5 rounded-full bg-primary text-white …">1</span> Tu token</Heading>…</Card>`
+✅ `<StepCard step={1} level={4} title="Tu token" subtitle="…">…</StepCard>`
+
+**El número va en gris y `aria-hidden`.** Las dos versiones que había no
+coincidían: automatizaciones tenía un círculo gris de 28px y la prueba de token
+uno rosa de 20px. Gana el gris, porque `primary` se reserva para acciones y
+estados (regla 15) y un número de paso es un ordinal — el color lo pone el
+título. Y `aria-hidden` porque "1" solo no le dice nada a un lector de pantalla:
+el orden ya lo da el DOM y lo que se lee es el título.
+
+**`level` no es decoración.** En automatizaciones los pasos son la primera
+jerarquía de la pantalla (`3`); en la prueba de token cuelgan de un título de
+sección, así que van `4`. Repetir o saltear un nivel rompe la navegación por
+encabezados.
+
+Sin ratchet: el patrón a cazar sería un `rounded-full bg-primary text-white`, y
+el único que queda es el "hoy" del calendario, donde `primary` SÍ corresponde
+porque es un estado. Un ratchet ahí bloquearía usos legítimos. La enforcement es
+`StepCard.test.tsx`, que fija el gris, el `aria-hidden` y los niveles.
+
+
+## 32. `getCurrentUser()` no se llama durante el render
+
+Lee `localStorage`, así que en el servidor devuelve `null` y en el cliente el
+usuario real. Si una pantalla decide qué mostrar con ese valor, el servidor y el
+cliente pintan cosas distintas, React tira `Hydration failed` y **descarta el
+HTML del servidor para volver a renderizar todo el árbol en el cliente**. En
+`/configuracion/api` el servidor mandaba "Acceso restringido" y el cliente la
+pantalla de admin.
+
+Va `useCurrentUser()`, que lo lee después de montar y expone `listo`:
+
+```tsx
+const { user, listo } = useCurrentUser()
+const isAdmin = user?.role === 'admin'
+
+if (!listo) return <Spinner />        // el rol decide la pantalla entera
+{listo && isAdmin && <TabDeAdmin />}  // el rol sólo AGREGA algo
+```
+
+❌ `const user = getCurrentUser()` en el cuerpo del componente
+❌ `const user = typeof window !== 'undefined' ? getCurrentUser() : null`
+✅ `const { user, listo } = useCurrentUser()`
+
+**El `typeof window` parece el arreglo y no lo es.** Estaba en las dos pantallas
+de landings: el servidor igual pinta `null` y el primer render del cliente el
+usuario real, que es justo lo que se compara. Se fue de las dos para que nadie
+lo copie.
+
+**No todo llamado rompe.** De los 8 archivos nuestros que lo llamaban, sólo 3
+tenían el bug: los otros 5 ya tapaban el valor con su propio estado de carga
+(`if (loading)`, `if (templates === null)`, `if (!landing)`), que arranca activo
+y hace que el primer render no dependa del rol. Lo que hay que mirar no es si el
+archivo llama a `getCurrentUser()`, sino si el valor llega al PRIMER render.
+
+Sin ratchet: `getCurrentUser` sigue siendo la forma correcta de leer la sesión
+adentro de un handler o un efecto, así que contar llamados marcaría los usos
+buenos. La enforcement es `use-current-user.test.tsx`, que mide el HTML del
+servidor con `renderToStaticMarkup` —y no con `render`, que corre los efectos
+antes de devolver y muestra el estado de después de montar—.
+
+Auditoría: `grep -rn "= getCurrentUser()" src/app src/components` y, por cada
+hit, ver si el valor se usa antes del gate de carga.
+
+
 ## Enforcement existente
 El ratchet de color (`scripts/ds-color-lint.mjs` + `scripts/.ds-color-baseline`)
 ya evita que SUBA nada de esto: colores Tailwind sueltos, medallones de
 gradiente a mano (regla 14), íconos escritos como carácter (regla 20), la escala
-`slate` (regla 21) y los radios pre-token `rounded-lg`/`xl` (regla 8).
+`slate` (regla 21), los radios pre-token `rounded-lg`/`xl` (regla 8) y los
+overlays armados a mano (fase 6), los botones nativos (`<button>`), los inputs
+nativos (`<input>`/`<select>`/`<textarea>`) y los diálogos nativos
+(`confirm`/`alert`/`prompt`, regla 29). Son nueve ratchets, cada uno con su
+archivo de baseline en `scripts/.ds-*-baseline`.
+
+**Cómo corren.** Desde el 08/09/2026 los nueve viven en `frontend-checks.yml`
+junto a `tsc`, `vitest` y `eslint`. Antes el ratchet tenía su propio workflow
+(`ds-lint.yml`) y los tests **no corrían en ningún lado**: la regla de que los
+tests pasen antes de mergear dependía de que alguien se acordara de correrlos
+local. Ese workflow además se disparaba sólo si el PR tocaba `src/` o
+`.ds-color-baseline`, así que un PR que subiera cualquiera de los otros ocho
+baselines no verificaba nada. Ahora el trigger es todo `vendepro-frontend/**`.
+
+Ojo: el workflow hace **visible** una falla, no la **traba**. `main` no tiene
+branch protection, así que un PR rojo se puede mergear igual. Eso se arregla en
+la configuración del repo en GitHub, no acá.
+
+Un ratchet sólo se pone sobre un patrón que YA tiene alternativa en el DS. Sobre
+uno que no la tiene no protege nada: sólo bloquea trabajo legítimo hasta que
+alguien decida el componente. Por eso los 29 "Volver" armados a mano y los 82
+micro-labels `uppercase tracking-wide` siguen sin ratchet — cuando exista el
+componente, se pone.
+
+**El de overlays llegó a 0 el 04/09/2026** y ahí se queda: cualquier `inset-0` con
+fondo translúcido nuevo hace fallar el lint. Los tres últimos necesitaron un prop
+que el DS no tenía, y por eso mismo estaban armados a mano — `Drawer side="left"`
+(nav móvil), `Modal align="top"` (paleta ⌘K) y `Modal header` (onboarding). El
+onboarding perdió su fade de entrada: ningún overlay del DS tiene transición, y
+meterle una toca todos los overlays de la app, así que se decidió aparte.
+
+**Cerrado el 04/09/2026.** El chequeo de overlays ahora SÍ mira
+`src/components/ui`, salvo `Modal.tsx` y `Drawer.tsx`, que son el overlay del DS.
+La exclusión general de `ui` tiene sentido para colores (ahí viven los reales)
+pero no para comportamiento: `ConfirmDialog` armaba el suyo a mano y el contador
+no lo veía, justo en el componente que el DS manda usar antes de borrar algo.
+Migrado a `Modal` y puesto bajo `overlayContract`: 5 de sus 10 tests fallan
+sobre la versión de antes.
+
+De paso, ese `ConfirmDialog` tenía un bug que nadie había visto: copió el
+medallón del `Modal` y le dejó `text-white` sobre `bg-primary/10`, o sea **un
+ícono blanco sobre rosa claro**. Es el ejemplo exacto de por qué copiar el markup
+de un componente del DS es peor que usarlo.
 
 **El contador de color estaba mal medido hasta el 31/08/2026.** Sólo miraba
 emerald/green/red/blue/amber/yellow, y eso dejaba afuera 58 casos: `rose-500` es
@@ -367,7 +680,7 @@ quedan afuera del ratchet a propósito: migrarlos SÍ cambia el tamaño, así qu
 deciden a mano (quedan 16). Mismo espíritu: cuando una pantalla se corrige acá,
 el baseline baja y queda trabado el retroceso.
 
-Las reglas 12 a 22 salieron del repaso visual del 31/08/2026: cada una es una
+Las reglas 12 a 28 salieron del repaso visual del 31/08 y 01/09/2026: cada una es una
 corrección que se pidió sobre pantalla y que, en vez de quedar en la pantalla
 donde se pidió, se movió al componente que la impone. La 12 es la que enseñó por
 qué: el header de contacto se había arreglado inline, así que el de lead siguió

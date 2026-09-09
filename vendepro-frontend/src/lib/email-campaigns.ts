@@ -49,7 +49,7 @@ export const LEAD_STAGES = [
   { key: 'presentada', label: 'Presentada' },
   { key: 'seguimiento', label: 'Seguimiento' },
   { key: 'captado', label: 'Captado' },
-  { key: 'perdido', label: 'Perdido' },
+  { key: 'perdido', label: 'No captado' },
 ]
 
 export const CONTACT_TYPES = [

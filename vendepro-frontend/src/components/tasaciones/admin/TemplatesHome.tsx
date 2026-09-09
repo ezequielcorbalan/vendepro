@@ -12,10 +12,12 @@ import { Text } from '@/components/ui/Typography'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { Modal } from '@/components/ui/Modal'
 import { TEMPLATE_SCOPES, getTemplateScope } from '@/lib/crm-config'
+import { useConfirm } from '@/components/ui/useConfirm'
 
 const KINDS = ['casa', 'depto', 'terreno', 'corporativo', 'custom'] as const
 
 export function TemplatesHome() {
+  const { confirmDialog, askConfirm } = useConfirm()
   const { toast } = useToast()
   const router = useRouter()
   const user = getCurrentUser()
@@ -56,7 +58,12 @@ export function TemplatesHome() {
     }
   }
   const handleArchive = async (id: string) => {
-    if (!confirm('¿Archivar este template?')) return
+    const { confirmed } = await askConfirm({
+      title: 'Archivar template',
+      message: 'El template sale del listado y deja de estar disponible para tasaciones nuevas.',
+      confirmLabel: 'Archivar',
+    })
+    if (!confirmed) return
     try {
       await archiveTemplate(id)
       load()
@@ -69,6 +76,7 @@ export function TemplatesHome() {
 
   return (
     <div>
+      {confirmDialog}
       <div className="mb-6 flex items-center justify-between">
         <p className="text-sm text-gray-500">{templates.length} templates</p>
         <Button onClick={() => setCreating(true)} icon={<Plus className="h-4 w-4" />}>

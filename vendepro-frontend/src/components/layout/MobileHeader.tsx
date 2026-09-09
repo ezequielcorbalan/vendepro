@@ -3,10 +3,11 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LogOut, Menu, X, FileBarChart } from 'lucide-react'
+import { LogOut, Menu, FileBarChart } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
+import { Drawer } from '@/components/ui/Drawer'
 import { Text } from '@/components/ui/Typography'
 import { agentMobileLinks, adminMobileLinks } from '@/lib/nav-config'
 import { apiFetch, clearToken } from '@/lib/api'
@@ -52,36 +53,45 @@ export default function MobileHeader({ profile }: { profile: Profile }) {
         </div>
       </header>
 
-      {open && (
-        <div
-          className="lg:hidden fixed inset-0 z-50 bg-black/50"
-          onClick={() => setOpen(false)}
-          aria-hidden="true"
-        >
-          <aside
-            className="w-72 bg-white h-full shadow-pop flex flex-col"
-            role="dialog"
-            aria-label="Menú de navegación"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-5 border-b border-gray-100 flex items-center justify-between">
-              <div>
-                <img src="/brand/logo-horizontal.png" alt="VendéPro" className="h-8" />
-                <Text size="xs" tone="muted" className="mt-1 flex items-center gap-1">
-                  <FileBarChart className="w-3 h-3" aria-hidden="true" /> CRM Inmobiliario
-                </Text>
+      <Drawer
+        open={open}
+        onClose={() => setOpen(false)}
+        side="left"
+        width="w-72"
+        className="lg:hidden"
+        padded={false}
+        title="Menú de navegación"
+        header={
+          <div>
+            <img src="/brand/logo-horizontal.png" alt="VendéPro" className="h-8" />
+            <Text size="xs" tone="muted" className="mt-1 flex items-center gap-1">
+              <FileBarChart className="w-3 h-3" aria-hidden="true" /> CRM Inmobiliario
+            </Text>
+          </div>
+        }
+        footer={
+          <div className="w-full">
+            <div className="flex items-center gap-3 px-3 py-2 mb-2">
+              <Avatar size="sm" name={profile.full_name || profile.email || '?'} />
+              <div className="flex-1 min-w-0">
+                <Text weight="medium" className="truncate">{profile.full_name || profile.email}</Text>
+                <Text size="xs" tone="muted">{profile.role === 'admin' ? 'Administrador' : 'Agente'}</Text>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setOpen(false)}
-                aria-label="Cerrar menú"
-              >
-                <X className="w-5 h-5" aria-hidden="true" />
-              </Button>
             </div>
-
-            <nav className="flex-1 p-4 space-y-1 overflow-y-auto" aria-label="Navegación principal">
+            <Button
+              variant="ghost"
+              fullWidth
+              onClick={handleLogout}
+              aria-label="Cerrar sesión"
+              icon={<LogOut className="w-4 h-4" aria-hidden="true" />}
+              className="justify-start gap-3 px-3 py-2.5 text-gray-600"
+            >
+              Cerrar sesión
+            </Button>
+          </div>
+        }
+      >
+            <nav className="p-4 space-y-1" aria-label="Navegación principal">
               {links.map((link) => {
                 const Icon = link.icon
                 const isActive = pathname === link.href
@@ -106,29 +116,7 @@ export default function MobileHeader({ profile }: { profile: Profile }) {
                 )
               })}
             </nav>
-
-            <div className="p-4 border-t border-gray-100">
-              <div className="flex items-center gap-3 px-3 py-2 mb-2">
-                <Avatar size="sm" name={profile.full_name || profile.email || '?'} />
-                <div className="flex-1 min-w-0">
-                  <Text weight="medium" className="truncate">{profile.full_name || profile.email}</Text>
-                  <Text size="xs" tone="muted">{profile.role === 'admin' ? 'Administrador' : 'Agente'}</Text>
-                </div>
-              </div>
-              <Button
-                variant="ghost"
-                fullWidth
-                onClick={handleLogout}
-                aria-label="Cerrar sesión"
-                icon={<LogOut className="w-4 h-4" aria-hidden="true" />}
-                className="justify-start gap-3 px-3 py-2.5 text-gray-600"
-              >
-                Cerrar sesión
-              </Button>
-            </div>
-          </aside>
-        </div>
-      )}
+      </Drawer>
     </>
   )
 }

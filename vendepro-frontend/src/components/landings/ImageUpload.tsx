@@ -61,6 +61,9 @@ export default function ImageUpload({ value, onChange, allowPropertyPicker }: Pr
 
       {mode === 'upload' && (
         <label className="block">
+          {/* ds-todo: el DS no tiene control de archivo. Es un input oculto que dispara un
+              botón; el patrón se repite en SoldPropertyForm y ComparableCard.
+              Candidato a componente "FileInput". */}
           <input
             type="file"
             accept="image/*"

@@ -5,6 +5,7 @@ import { apiFetch } from '@/lib/api'
 import { Modal } from '@/components/ui/Modal'
 import { CardTitle } from '@/components/ui/Card'
 import { Text } from '@/components/ui/Typography'
+import { Button } from '@/components/ui/Button'
 
 interface PropertyLite {
   id: string
@@ -81,7 +82,7 @@ export default function PropertyPhotoPicker({
             <Text size="xs" tone="muted" className="text-center mt-6 px-3">Sin propiedades</Text>
           )}
           {properties.map(p => (
-            <button
+            <Button variant="ghost" size="sm"
               key={p.id}
               onClick={() => setSelectedId(p.id)}
               className={`w-full text-left px-3 py-2 text-sm ${
@@ -94,7 +95,7 @@ export default function PropertyPhotoPicker({
               {p.neighborhood && (
                 <span className="block text-xs text-gray-500 truncate">{p.neighborhood}</span>
               )}
-            </button>
+            </Button>
           ))}
         </aside>
         <div className="flex-1 flex flex-col min-w-0">
@@ -103,10 +104,10 @@ export default function PropertyPhotoPicker({
           </div>
           <div className="flex-1 overflow-auto p-3 grid grid-cols-3 gap-2 content-start">
             {photos.map((ph, i) => (
-              <button
+              <Button variant="ghost" size="icon"
                 key={i}
                 onClick={() => onPick(ph.url, selectedId!)}
-                className="aspect-square bg-cover bg-center rounded-control ring-1 ring-gray-200 hover:ring-primary transition-shadow"
+                className="p-0 aspect-square bg-cover bg-center rounded-control ring-1 ring-gray-200 hover:ring-primary transition-shadow"
                 style={{ backgroundImage: `url(${ph.url})` }}
                 aria-label={`Foto ${i + 1}`}
               />

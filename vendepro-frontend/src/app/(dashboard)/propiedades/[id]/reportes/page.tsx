@@ -11,6 +11,17 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { Heading, Text } from '@/components/ui/Typography'
 
+/**
+ * Formatea una fecha date-only (YYYY-MM-DD) sin corrimiento de zona.
+ * `new Date('2026-09-01')` se parsea como medianoche UTC, y en Argentina
+ * (UTC-3) `toLocaleDateString` la mostraba como 31/08 — un día menos.
+ */
+function formatDateOnly(iso: string): string {
+  const m = iso.match(/^(d{4})-(d{2})-(d{2})/)
+  if (!m) return iso
+  return `${m[3]}/${m[2]}/${m[1]}`
+}
+
 interface Report {
   id: string
   property_id: string
@@ -107,7 +118,7 @@ export default function PropertyReportsPage() {
             >
               <div>
                 <Text size="base" weight="medium">
-                  {r.period_label || (r.period_start ? new Date(r.period_start).toLocaleDateString('es-AR') : 'Reporte')}
+                  {r.period_label || (r.period_start ? formatDateOnly(r.period_start) : 'Reporte')}
                 </Text>
                 <Text size="xs" tone="muted" className="mt-0.5">
                   {r.impressions != null && `${r.impressions} imp · `}

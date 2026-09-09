@@ -18,10 +18,12 @@ import {
   type EmailCampaign, type CampaignSend, CAMPAIGN_STATUS,
   describeSegment, parseSegment, fmtDateTime,
 } from '@/lib/email-campaigns'
+import { useConfirm } from '@/components/ui/useConfirm'
 
 type CampaignDetail = EmailCampaign & { sends: CampaignSend[] }
 
 export default function EmailCampaignDetailPage() {
+  const { confirmDialog, askConfirm } = useConfirm()
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const { toast } = useToast()
@@ -61,7 +63,13 @@ export default function EmailCampaignDetailPage() {
   }
 
   async function deleteCampaign() {
-    if (!confirm('¿Borrar esta campaña? Esta acción no se puede deshacer.')) return
+    const { confirmed } = await askConfirm({
+      title: 'Borrar campaña',
+      message: 'La campaña y sus métricas se borran. No se puede deshacer.',
+      confirmLabel: 'Borrar',
+      variant: 'danger',
+    })
+    if (!confirmed) return
     setWorking(true)
     try {
       const res = await apiFetch('crm', `/marketing/email/campaigns/${id}`, { method: 'DELETE' })
@@ -96,6 +104,7 @@ export default function EmailCampaignDetailPage() {
 
   return (
     <div className="max-w-4xl mx-auto">
+      {confirmDialog}
       <Link href="/marketing/emails" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-ink mb-6">
         <ArrowLeft className="w-4 h-4" /> Volver a campañas
       </Link>

@@ -225,7 +225,7 @@ export default function PropertyFilters({ properties, config }: { properties: an
                 {/* Top row: stage badge (interactive) + non-active status warning */}
                 <div className="flex items-center justify-between mb-2.5">
                   <div className="relative">
-                    <button
+                    <Button variant="ghost" size="icon"
                       aria-label={`Etapa actual: ${stage?.label ?? 'Sin etapa'}. Cambiar etapa`}
                       aria-haspopup="listbox"
                       aria-expanded={openStageMenu === property.id}
@@ -236,18 +236,18 @@ export default function PropertyFilters({ properties, config }: { properties: an
                       {stage && <span className="w-1.5 h-1.5 rounded-full shrink-0" style={stageDotStyle(stage.color)} />}
                       <span>{stage?.label ?? 'Sin etapa'}</span>
                       <ChevronDown className="w-3 h-3 opacity-60" />
-                    </button>
+                    </Button>
                     {openStageMenu === property.id && (
                       <div className="absolute left-0 top-8 z-10 bg-white border border-gray-200 rounded-card shadow-pop py-1 min-w-[160px]">
                         {opStages.map(s => (
-                          <button key={s.id}
+                          <Button variant="ghost" size="icon" key={s.id}
                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); changeStage(property.id, s.id) }}
                             className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 flex items-center gap-2 ${property.commercial_stage_id === s.id ? 'font-semibold text-primary' : 'text-gray-700'}`}
                           >
                             <span className="w-1.5 h-1.5 rounded-full shrink-0" style={stageDotStyle(s.color)} />
                             {s.label}
                             {s.is_terminal && <span className="ml-auto text-[9px] text-gray-400">final</span>}
-                          </button>
+                          </Button>
                         ))}
                       </div>
                     )}

@@ -430,7 +430,8 @@ export default function ConfiguracionPage() {
             {[
               ['"llamada"', 'Llamada'],
               ['"reunión"', 'Reunión'],
-              ['"visita"', 'Visita'],
+              ['"visita"', 'Visita de comprador'],
+              ['"captación"', 'Visita de captación'],
               ['"tasación"', 'Tasación'],
               ['"seguimiento"', 'Seguimiento'],
               ['"firma"', 'Firma'],
@@ -443,12 +444,17 @@ export default function ConfiguracionPage() {
           <Text size="xs" tone="muted" className="mt-2">
             También vincula eventos a leads/contactos si mencionás su nombre en el título.
           </Text>
-        </div>        <Button
-          onClick={() => toast('Integración con Google Calendar próximamente')}
-          icon={<Calendar className="w-4 h-4" />}
+        </div>
+        {/* La conexión vive en Conexiones, que es donde está el flujo OAuth
+            completo (conectar, activar, desconectar). Acá sólo se explica qué
+            hace y se manda para allá: dos botones que conectan lo mismo, en
+            dos pantallas distintas, es una forma segura de confundir. */}
+        <Link
+          href="/configuracion/conexiones"
+          className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-control text-sm font-medium hover:bg-primary-hover"
         >
-          Conectar Google Calendar
-        </Button>
+          <Calendar className="w-4 h-4" /> Conectar Google Calendar
+        </Link>
       </Card>
     </div>
   )

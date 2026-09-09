@@ -110,12 +110,12 @@ export default function ListadoPage() {
         <Input aria-label="Desde" type="date" value={from} onChange={e => setFrom(e.target.value)} className="w-auto" />
         <Input aria-label="Hasta" type="date" value={to} onChange={e => setTo(e.target.value)} className="w-auto" />
         {(neighborhood || status || from || to) && (
-          <button
+          <Button variant="ghost" size="sm"
             onClick={() => { setNeighborhood(''); setStatus(''); setFrom(''); setTo('') }}
-            className="text-xs text-gray-500 hover:text-primary shrink-0"
+            className="p-0 text-xs text-gray-500 hover:text-primary shrink-0"
           >
             Limpiar
-          </button>
+          </Button>
         )}
       </div>
 

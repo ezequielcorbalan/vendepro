@@ -14,6 +14,7 @@ import ReviewStep from './ReviewStep'
 import { Button } from '@/components/ui/Button'
 
 import { Card } from '@/components/ui/Card'
+import { Input } from '@/components/ui/Input'
 import { IconMedallion } from '@/components/ui/IconMedallion'
 const STEPS = [
   { n: 1, label: 'Audiencia' },
@@ -143,8 +144,9 @@ export default function EmailCampaignWizard({ campaignId }: { campaignId?: strin
           <IconMedallion size="lg">
             <Mail className="w-5 h-5" />
           </IconMedallion>
-          <input
-            className="flex-1 text-lg font-semibold text-ink border-0 border-b border-transparent outline-none placeholder:text-gray-300"
+          <Input
+            aria-label="Nombre de la campaña"
+            className="flex-1 border-0 border-b border-transparent bg-transparent px-0 text-lg font-semibold shadow-none placeholder:text-gray-300"
             placeholder="Nombre de la campaña (interno)"
             value={name}
             onChange={e => setName(e.target.value)}
@@ -178,36 +180,36 @@ export default function EmailCampaignWizard({ campaignId }: { campaignId?: strin
 
         {/* Acciones */}
         <div className="flex items-center justify-between mt-6 pt-5 border-t border-gray-100">
-          <button
+          <Button variant="ghost" size="sm"
             onClick={() => saveDraft()}
             disabled={saving}
-            className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-ink disabled:opacity-50"
+            className="p-0 inline-flex items-center gap-2 text-sm text-gray-500 hover:text-ink disabled:opacity-50"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Guardar borrador
-          </button>
+          </Button>
           <div className="flex items-center gap-2">
             {step > 1 && (
-              <button
+              <Button variant="ghost" size="sm"
                 onClick={() => setStep(step - 1)}
                 className="text-sm text-gray-600 px-4 py-2 rounded-control border border-gray-200 hover:border-gray-300"
               >
                 Atrás
-              </button>
+              </Button>
             )}
             {step < 3 ? (
               <Button onClick={() => setStep(step + 1)} disabled={!canNext}>
                 Siguiente <ArrowRight className="w-4 h-4" />
               </Button>
             ) : (
-              <button
+              <Button variant="primary" size="icon"
                 onClick={send}
                 disabled={sending}
                 className="inline-flex items-center gap-2 bg-primary hover:bg-primary-hover text-white text-sm font-medium px-5 py-2 rounded-control disabled:opacity-50"
               >
                 {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 {scheduledAt ? 'Programar envío' : 'Enviar ahora'}
-              </button>
+              </Button>
             )}
           </div>
         </div>

@@ -41,7 +41,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={{ toast }}>
       {children}
-      <div className="fixed bottom-4 right-4 z-[100] space-y-2 max-w-sm">
+      {/* El botón flotante de IA vive en `bottom-6 right-6` y está montado en el
+          layout del dashboard, o sea en TODAS las pantallas: con el toast en
+          `bottom-4` se pisaban y el mensaje quedaba tapado a la mitad. El z-index
+          no alcanzaba —el toast es z-100 y el botón z-40—, porque el problema es
+          que ocupan la misma esquina. El toast sube por encima del botón. */}
+      <div className="fixed bottom-24 right-4 z-[100] space-y-2 max-w-sm">
         {toasts.map(t => (
           <div key={t.id} className={`flex items-center gap-2 px-4 py-3 rounded-card border shadow-pop animate-slide-up ${colors[t.type]}`}>
             {icons[t.type]}

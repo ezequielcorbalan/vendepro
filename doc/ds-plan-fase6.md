@@ -124,7 +124,35 @@ Aparte: `tasaciones/editor/EditorShell.tsx` y `EditableCanvas.tsx` tienen
 `fixed inset-0` sin scrim (el preview móvil y la barra flotante). Revisar qué son
 antes de decidir si migran.
 
-## Tanda 5 — Botones
+## Tanda 5 — Botones ✅ HECHA (04/09/2026)
+
+**Resultado: 0 botones nativos sin resolver en nuestros archivos** (de 161).
+Los 22 que sigue contando el ratchet son 19 de archivos que Ezequiel tocó esta
+semana —afuera a pedido de Paula— y 3 de páginas públicas.
+
+Tres cosas no eran botones y fueron a donde correspondía:
+
+| Era | En realidad era | Dónde |
+|---|---|---|
+| `<button role="switch">` con `bg-green-500` | `Switch` | WebhooksSection |
+| `<button role="switch">` con `focus:outline-none` | `Switch` | StepVariableBlocks |
+| fila de chips con estado activo | `PillCheckGroup` | configuracion/objetivos |
+
+Y un CTA con degradado rosa→naranja pasó a `Button variant="primary"` (rosa
+sólido): el gradiente de marca sólo sigue permitido como superficie dentro de
+`components/ui`. **Es un cambio visible.**
+
+### Las tres trampas del conversor, para el próximo que automatice esto
+1. `Button size="icon"` trae `p-2`. Un botón sin padding propio CRECE y corre el
+   espaciado de su fila: hay que ponerle `p-0`.
+2. Un regex `<button[^>]*>` se corta en el `>` de las arrow functions
+   (`onClick={() => x}`). Hay que recorrer la etiqueta balanceando llaves y
+   comillas, o el `p-0` no se aplica y no te enterás.
+3. `bg-danger/10` es un tinte sobre un botón fantasma, NO la variante
+   destructiva. Confundirlos convierte un ícono con matiz rojo en un botón rojo
+   macizo.
+
+## Tanda 5 — Botones (plan original)
 
 **~186 `<button>` a mano, de los que la mitad o dos tercios son deuda real**
 
@@ -147,7 +175,35 @@ Orden por concentración:
 se usa. La fase 5 le tocó las cards y el header; el resto de la página sigue a
 mano.
 
-## Tanda 6 — Inputs
+## Tanda 6 — Inputs ✅ HECHA (04/09/2026)
+
+**Resultado: 0 inputs nativos sin resolver en nuestros archivos.** De los 21 que
+había, 3 se migraron (`Select` y `Checkbox` en BlockAdminForm, el título del
+wizard de campañas y el buscador ⌘K) y **7 son huecos reales del DS**, marcados
+con `ds-todo` en vez de forzados:
+
+| Hueco | Dónde | Candidato |
+|---|---|---|
+| control de archivo | ImageUpload, SoldPropertyForm, ComparableCard | `FileInput` |
+| selector de color | EditableCanvas, FunnelChartForm | `ColorInput` |
+| campo sin caja sobre el lienzo | EditableCanvas | variante `inline` del Input |
+| checkbox cuyo nombre accesible está afuera | StepVariableBlocks | `aria-label` en Checkbox |
+
+Los 15 que sigue contando el ratchet son 7 de archivos que Ezequiel tocó esta
+semana (afuera a pedido de Paula) y 8 de páginas públicas (`/v/`, `/f/`), que
+esperan la decisión de si siguen el DS o tienen identidad propia.
+
+Dos migraciones arreglaron algo de paso: el título del wizard y el buscador ⌘K
+tenían `outline-none`, que se come el anillo de foco del teclado, y el buscador
+además no tenía nombre accesible.
+
+### Lo que NO se tocó, a propósito
+El micro-label en mayúsculas (`uppercase tracking-wide`) tiene **82 usos** en la
+app: es un patrón establecido, no drift, y el DS no tiene componente para él.
+Migrar uno solo lo habría dejado distinto de los otros 81. Anotado como ítem
+aparte, fuera de esta fase.
+
+## Tanda 6 — Inputs (plan original)
 
 **22 `<input>`, 3 `<select>`, 3 `<textarea>`**
 

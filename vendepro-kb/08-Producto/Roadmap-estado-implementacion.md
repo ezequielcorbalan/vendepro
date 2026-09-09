@@ -25,6 +25,7 @@
 | 13 · Academia | 🔴 | Nada. |
 | — · Planes y billing (pregunta 1) | 🟡 | Gating `plan`+`modules` con UI completa; **solo frontend**, sin enforcement en API y sin cobro (MP/Stripe: 0). |
 | — · Feed XML portales | 🟡 | Backend sirve XML real; sin UI, opt-in solo por SQL, tags sin validar contra spec Navent. |
+| — · Design system (fase 6) | 🟡 | 50 componentes, 31 reglas y 9 ratchets en CI; quedan 19 `ds-todo` y las páginas públicas sin decidir. |
 
 ---
 
@@ -35,6 +36,7 @@
 Todo el núcleo está en producción con backend + UI:
 
 - **Leads**: 6 use cases (`core/src/application/use-cases/leads/`), etapas (`LEAD_STAGES` 10 etapas + `TAG_PIPELINES` en `core/src/shared/crm-config.ts`), historial en `stage_history`, pipelines separados vendedor/comprador (`leads.pipeline`, migración 039).
+- **Cierre de leads 🟢 (03-sep-2026)**: los cerrados salen del pipeline también en la vista Lista (antes solo del kanban), con toggle "Cerrados (N)". `perdido` se muestra como **"No captado"** y `finalizado` como **"Vendido"** — labels, las claves no cambian (ver [[Estados]] §1). Cerrar un no captado abre `MarkNotCapturedModal` (motivo + cuándo recontactar → `next_step_date`) y dispara la automatización `recontacto_no_captado`, que agenda tareas a 30 y 120 días (migración **050**, activa por org). Pendiente operativo: aplicar la migración 050 y deployar el frontend.
 - **Contactos, calendario, actividades, tags, objetivos, visit forms**: en producción (`api-crm`, `api-properties`, `api-admin`).
 - **Google Calendar** 🟢: espejo unidireccional VendéPro→Google + lectura solo-visualización (`use-cases/integrations/`, `api-crm/src/index.ts:725-900`). Pendiente operativo: secrets `GOOGLE_CLIENT_ID/SECRET` y publicar el consent screen.
 - **KiteProp** 🟢: sync manual + cron `*/15` + backfill + enrich + mapeo de agentes + UI (`configuracion/conexiones`). Habla MCP JSON-RPC (`infrastructure/src/services/kiteprop-mcp-client.ts`).
@@ -42,7 +44,7 @@ Todo el núcleo está en producción con backend + UI:
 **Bugs encontrados en el análisis** (deuda del CRM base):
 1. 🐛 **NotificationBell nunca muestra nada** — `vendepro-frontend/src/components/layout/NotificationBell.tsx:24` llama `apiFetch('crm', '/notifications')` pero el endpoint vive en **api-admin** (`api-admin/src/index.ts:251`), y además espera `{notifications}` cuando el backend devuelve un array plano. Doble desalineación, `.catch` silencioso → campana siempre vacía.
 2. 🐛 **Detalle de prefactibilidad → 404** — `prefactibilidades/page.tsx:77` linkea a `/prefactibilidades/${id}` pero no existe `[id]/page.tsx` (el backend sí tiene `GET /prefactibilidades/:id`).
-3. 🐛 **Endpoints IA fantasma** — `propiedades/[id]/reportes/nuevo/page.tsx:131,188` llama `POST ai /extract-kiteprop` y `/extract-zonaprop`, que no existen en `api-ai`. Botones que siempre fallan.
+3. ~~🐛 **Endpoints IA fantasma**~~ — **resuelto 2026-09-08**: `/extract-kiteprop` ahora existe en api-ai (PDF de KiteProp por Gemini nativo) y el screenshot de competencia reusa `/extract-comparable`; además hay `/extract-comparable-url` para pegar el link del aviso (con lista blanca de portales y degradación explícita a captura cuando el anti-bot bloquea).
 4. 🐛 **Actividades salta la capa de aplicación** — `api-crm:1025-1062` va directo a `D1ActivityRepository` sin use cases (funciona, pero rompe el patrón hexagonal).
 
 ### 00b — Meta CAPI + GA4 server-side (Stape) 🟡
@@ -149,7 +151,8 @@ El kind `property` es solo un **estilo**: `landings` no tiene `property_id` — 
 
 **Más avanzado de lo que el roadmap sugiere** — hubo dos generaciones:
 - v1 (`email_automations`, migración 039) fue **absorbida y retirada** (migración 045).
-- v2 🟢: motor genérico (`automations`, `automation_actions`, `automation_runs`, `automation_jobs` con cola durable, migraciones 043-046), 9 recetas de sistema seedeadas, UI completa (`configuracion/automatizaciones/` con editor + generación de secuencia por IA), dry-run `:id/test`.
+- v2 🟢: motor genérico (`automations`, `automation_actions`, `automation_runs`, `automation_jobs` con cola durable, migraciones 043-046), **12** recetas de sistema seedeadas —11 en la 044 más `recontacto_no_captado` en la 050—, UI completa (`configuracion/automatizaciones/` con editor + generación de secuencia por IA), dry-run `:id/test`.
+- Galería de recetas agrupada por momento del negocio (`RECIPE_CATEGORIES` en `automation-catalog.ts` → `meta.recipe_categories` + `category` en cada `CatalogItem`): 5 secciones (entrada de leads, alertas y SLA, tasación, captación, propiedades), buscador por nombre/disparador/acción, filtro por categoría, y las ya activadas ocultas detrás de un switch. La categoría es metadata de presentación: vive en el catálogo declarativo, no en la base.
 
 **Los 3 casos del roadmap**:
 | Caso | Estado |
@@ -168,7 +171,7 @@ Confirmado con grep exhaustivo: cero adapters/ports/webhooks de WhatsApp Busines
 
 ### Feature 11 — Asistente IA interno 🟠
 
-- **IA de extracción/generación 🟢 en producción**: api-ai expone 7 endpoints (extract-metrics/entity/image/comparable, generate-email-campaign/sequence, edit-block) sobre Anthropic (haiku/sonnet) y Groq (llama, whisper implementado sin endpoint).
+- **IA de extracción/generación 🟢 en producción**: api-ai expone 9 endpoints (extract-metrics/entity/image/comparable/comparable-url/kiteprop, generate-email-campaign/sequence, edit-block), todos sobre Gemini `3.5-flash-lite` (ver [[API-ai]]).
 - Pero **el asistente del roadmap no existe**: `AIChatPanel.tsx` no es un chat — es un wizard de 3 pasos para crear leads. Sin tabla `ai_conversations`, sin turnos/historial, y **cero function calling** en ningún adapter (todo one-shot JSON extraction). Sin rate limits ni cost tracking por org.
 
 ---
@@ -202,11 +205,45 @@ Nada en el código (esperado: el roadmap dice "se planifican, no se codean todav
 - **Feed XML de portales (ZonaProp/Argenprop)** 🟡 — backend en producción (`portal_feeds`, mapper con TAGS provisionales pendientes de la spec de Navent, endpoint `GET /feed/:token` sin auth con telemetría), pero **cero UI**: `publish_portals` solo se marca por SQL y el feed se provisiona con script manual (`scripts/portal-feed.mjs`). Ver [[portales-feed-xml]] en memoria.
 - **Webhooks salientes + API tokens** 🟢 (`032_webhooks.sql`, `POST /v1/leads`) — el reemplazo del rol disparador de Emblue; consumidores externos vía n8n.
 - **api-rentals** — dominio completo aparte (18 rutas, pagos de alquileres).
+- **Design system 🟡 (fase 6, al 08-sep-2026)** — no es un feature de producto,
+  pero condiciona todo lo que se construya encima, así que va acá.
+
+  **Qué hay**: 50 componentes en `vendepro-frontend/src/components/ui`, galería
+  viva y pública en `/design-system`, 31 reglas con ❌/✅ en
+  `doc/ds-visual-rules.md` y **9 ratchets con baseline** en
+  `scripts/.ds-*-baseline` que corren en CI (`npm run lint:ds`). El ratchet no
+  falla por lo que ya existe: falla si un cambio *sube* el número, así que el
+  retroceso queda trabado sin tener que migrar todo primero.
+
+  **Cerrado**: overlays armados a mano **18 → 0** (y ahí se queda: cualquier
+  `inset-0` translúcido nuevo hace fallar el lint); diálogos nativos
+  `confirm/alert/prompt` **24 → 3**; `Switch`/`Checkbox`/`ChoicePills` se pueden
+  nombrar sin dibujar la etiqueta (`aria-label`); `ConfirmDialog` migrado a
+  `Modal`, con lo que hereda Portal, scroll-lock, focus-trap y Esc.
+
+  **Qué falta**, y por qué no es solo trabajo mecánico:
+  - **19 `ds-todo`** — son decisiones de diseño pendientes, no deuda. Las tres
+    grandes: `FileInput` y `ColorInput` (el DS no tiene control de archivo ni de
+    color) y qué hacer con las **páginas públicas** (`/f/`, `/v/`): DS o
+    identidad propia. Esa última desbloquea 11 controles nativos.
+  - **Error de hidratación en 8 lugares** — `getCurrentUser()` lee
+    `localStorage`, así que devuelve `null` en el servidor y el usuario real en
+    el cliente; las pantallas que eligen qué mostrar según el rol pintan cosas
+    distintas y React re-renderiza todo el árbol. El hook que lo arregla está en
+    `src/lib/use-current-user.ts`; aplicarlo cambia el primer render de esas 8.
+  - Los 30 controles nativos que quedan en archivos de la tanda de Ezequiel
+    quedaron **fuera de alcance** a propósito, para no pisarnos.
+
+  Ver `doc/ds-plan.md`, `doc/ds-review.md` y `doc/ds-plan-fase6.md`.
 
 ## KB desactualizado detectado
 
 - [[Dominio-Marketing]] dice `meta_integration` "1 row por org" y describe un envío sGTM separado — ambos obsoletos tras la migración 040 (config por agente) y el diseño actual (Stape es override de endpoint, no tercer envío).
 - `doc/backend.md:85` lista `EMBLUE_API_KEY` para api-auth — legacy retirado, hoy es `RESEND_API_KEY`.
+- [[Frontend-componentes]] decía "el design system (46 archivos)" y le faltaban
+  5 componentes (`ActionGroup`, `AgentSelector`, `DetailHeader`, `StepCard`,
+  `WhatsAppTemplatePicker`), además de marcar `ConfirmDialog` como "legacy a
+  reemplazar por Modal" cuando ya se migró. **Corregido el 08-sep-2026.**
 - [[DB-overview]] § "Migrations en orden": la tabla se corta en la migración 020 y dice "51 tablas en 24 migrations", pero `migrations_v2/` tiene hoy 58 archivos hasta la 049 (confirmado al documentar Feature 07). El gap 021-047 no está listado — quedó así desde antes de este feature, backfillarlo es trabajo aparte.
 
 ## Relacionado

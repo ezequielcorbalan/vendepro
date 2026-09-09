@@ -98,3 +98,23 @@ describe('GetReportsUseCase', () => {
     expect(mockRepo.findByOrg).toHaveBeenCalledWith('org-1', 'prop-1')
   })
 })
+
+describe('CreateReportUseCase · gate multi-tenant', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('404 si la propiedad no es de la org — antes el reporte se creaba en la org AJENA', async () => {
+    // reports.org_id se deriva de la propiedad al guardar: sin este gate, un
+    // propertyId de otra org escribía el reporte en los datos de esa org.
+    const propertyRepoAjeno = { findById: vi.fn().mockResolvedValue(null) } as any
+    const useCase = new CreateReportUseCase(mockRepo as any, propertyRepoAjeno, mockIdGen)
+    await expect(useCase.execute({
+      propertyId: 'prop-de-otra-org',
+      orgId: 'org-1',
+      periodLabel: 'Abril 2026',
+      periodStart: '2026-04-01',
+      periodEnd: '2026-04-30',
+      createdBy: 'user-1',
+    })).rejects.toMatchObject({ statusCode: 404 })
+    expect(mockRepo.save).not.toHaveBeenCalled()
+  })
+})

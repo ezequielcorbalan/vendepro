@@ -269,18 +269,18 @@ export default function AgentesPage() {
                       </span>
                     ) : (
                       <div className="relative" data-role-popover>
-                        <button
+                        <Button variant="ghost" size="icon"
                           onClick={() => setChangingRole(changingRole === agent.id ? null : agent.id)}
                           disabled={!!updatingRoleId}
                           className={`text-[10px] px-2 py-0.5 rounded-full font-medium flex items-center gap-0.5 hover:opacity-80 transition-opacity ${getRoleColor(agent.role)}`}
                         >
                           {getRoleLabel(agent.role)}
                           <ChevronDown className="w-2.5 h-2.5" />
-                        </button>
+                        </Button>
                         {changingRole === agent.id && (
                           <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20 bg-white border rounded-card shadow-pop py-1 min-w-[160px]">
                             {roles.map(r => (
-                              <button
+                              <Button variant="ghost" size="icon"
                                 key={r.id}
                                 onClick={() => handleRoleChange(agent.id, r.id, r.name)}
                                 className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 ${
@@ -292,7 +292,7 @@ export default function AgentesPage() {
                                   : <span className="w-3 h-3 shrink-0" />
                                 }
                                 {r.label}
-                              </button>
+                              </Button>
                             ))}
                           </div>
                         )}
@@ -305,21 +305,21 @@ export default function AgentesPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <button
+                  <Button variant="ghost" size="icon"
                     onClick={() => openEdit(agent)}
                     aria-label={`Editar ${agent.full_name}`}
                     className="p-2 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-control"
                   >
                     <Pencil className="w-4 h-4" />
-                  </button>
+                  </Button>
                   {agent.id !== currentUser?.id && (
-                    <button
+                    <Button variant="ghost" size="icon"
                       onClick={() => handleDelete(agent)}
                       aria-label={`Eliminar ${agent.full_name}`}
                       className="p-2 text-gray-400 hover:text-danger hover:bg-danger/10 rounded-control"
                     >
                       <Trash2 className="w-4 h-4" />
-                    </button>
+                    </Button>
                   )}
                 </div>
               </Card>

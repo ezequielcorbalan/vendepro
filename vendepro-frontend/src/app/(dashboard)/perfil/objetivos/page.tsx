@@ -14,6 +14,7 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { OptionCard } from '@/components/ui/OptionCard'
 import { OBJECTIVE_METRICS, OBJECTIVE_TEMPLATES, PERIOD_TYPES, scaleMetrics, type ObjectiveTemplate } from '@/lib/crm-config'
 import { apiFetch } from '@/lib/api'
+import { useConfirm } from '@/components/ui/useConfirm'
 
 type Mode = null | 'method' | 'custom'
 
@@ -41,6 +42,7 @@ function getPeriodDates(type: string) {
 }
 
 export default function MisObjetivosPage() {
+  const { confirmDialog, askConfirm } = useConfirm()
   const { toast } = useToast()
   const [objectives, setObjectives] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -133,7 +135,13 @@ export default function MisObjetivosPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('¿Eliminar este objetivo?')) return
+    const { confirmed } = await askConfirm({
+      title: 'Eliminar objetivo',
+      message: 'El objetivo y su progreso dejan de verse en el panel. No se puede deshacer.',
+      confirmLabel: 'Eliminar',
+      variant: 'danger',
+    })
+    if (!confirmed) return
     await apiFetch('admin', `/objectives?id=${id}`, { method: 'DELETE' })
     setObjectives(prev => prev.filter(o => o.id !== id))
     toast('Objetivo eliminado')
@@ -147,6 +155,7 @@ export default function MisObjetivosPage() {
 
   return (
     <div>
+      {confirmDialog}
       <Link href="/perfil" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-ink mb-4">
         <ArrowLeft className="w-4 h-4" /> Volver a mi perfil
       </Link>
@@ -329,12 +338,12 @@ export default function MisObjetivosPage() {
             </Button>
             <Button variant="ghost" onClick={cancel}>Cancelar</Button>
           </div>
-          <button
+          <Button variant="ghost" size="sm"
             onClick={() => setMode('method')}
-            className="text-xs text-primary hover:underline flex items-center gap-1"
+            className="p-0 text-xs text-primary hover:underline flex items-center gap-1"
           >
             <Zap className="w-3 h-3" /> Prefiero adoptar un método
-          </button>
+          </Button>
         </Card>
       )}
 
@@ -354,9 +363,9 @@ export default function MisObjetivosPage() {
                     <Text as="span" size="xs" tone="muted">{obj.period_start} → {obj.period_end}</Text>
                   </div>
                 </div>
-                <button onClick={() => handleDelete(obj.id)} className="p-2 text-gray-300 hover:text-danger hover:bg-danger/10 rounded-control">
+                <Button variant="ghost" size="icon" onClick={() => handleDelete(obj.id)} className="p-2 text-gray-300 hover:text-danger hover:bg-danger/10 rounded-control">
                   <Trash2 className="w-4 h-4" />
-                </button>
+                </Button>
               </div>
             )
           })}

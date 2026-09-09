@@ -18,6 +18,11 @@ export interface DashboardStats {
   funnelStageBreakdown: Record<string, number>
   /** Total de leads del período `since` — denominador del funnel */
   funnelTotalLeads: number
+  /**
+   * Leads del período, crudos. Los usa el embudo real para cruzarlos con el
+   * historial de etapas: sin los ids no se puede saber por dónde pasaron.
+   */
+  funnelLeads: Array<{ id: string; stage: string; created_at: string }>
 }
 
 export class GetDashboardStatsUseCase {
@@ -72,6 +77,7 @@ export class GetDashboardStatsUseCase {
       stageBreakdown,
       funnelStageBreakdown,
       funnelTotalLeads: funnelLeads.length,
+      funnelLeads: funnelLeads.map(l => ({ id: l.id, stage: l.stage, created_at: l.created_at })),
     }
   }
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Sparkles } from 'lucide-react'
 import AIChatPanel from './AIChatPanel'
+import { Button } from '@/components/ui/Button'
 
 export default function AIFloatingButton() {
   const [open, setOpen] = useState(false)
@@ -20,13 +21,13 @@ export default function AIFloatingButton() {
 
   return (
     <>
-      <button
+      <Button variant="ghost" size="icon"
         onClick={() => setOpen(true)}
         title="Asistente IA (Ctrl+K)"
         className="fixed bottom-6 right-6 z-40 bg-brand-gradient text-white rounded-full p-3.5 shadow-pop hover:opacity-90 hover:scale-105 transition-all"
       >
         <Sparkles size={20} />
-      </button>
+      </Button>
       {open && <AIChatPanel onClose={() => setOpen(false)} />}
     </>
   )

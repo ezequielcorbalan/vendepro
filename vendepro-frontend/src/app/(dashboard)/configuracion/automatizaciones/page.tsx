@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import {
-  Zap, Plus, Loader2, Sparkles, Check, History, Pencil, Trash2, ChevronRight,
+  Zap, Plus, Loader2, Sparkles, Check, History, Pencil, Trash2, ChevronRight, Search,
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { getCurrentUser } from '@/lib/auth'
@@ -15,6 +15,7 @@ import {
 } from '@/lib/automations'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
+import { Input, Select } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { Tabs } from '@/components/ui/Tabs'
 import { Switch } from '@/components/ui/Switch'
@@ -225,7 +226,7 @@ Esta acción no se puede deshacer.`,
       )}
 
       {tab === 'recetas' && (
-        <RecetasTab catalog={catalog} isAdmin={isAdmin} busy={busy} onActivate={activate} />
+        <RecetasTab catalog={catalog} meta={meta} isAdmin={isAdmin} busy={busy} onActivate={activate} />
       )}
 
       {tab === 'historial' && <HistorialTab runs={runs} items={items} meta={meta} />}
@@ -349,13 +350,55 @@ function ActivasTab({
 // ── Pestaña: galería de recetas ───────────────────────────────
 
 function RecetasTab({
-  catalog, isAdmin, busy, onActivate,
+  catalog, meta, isAdmin, busy, onActivate,
 }: {
   catalog: CatalogItem[]
+  meta: AutomationsMeta | null
   isAdmin: boolean
   busy: string | null
   onActivate: (recipe: CatalogItem) => void
 }) {
+  const [search, setSearch] = useState('')
+  const [category, setCategory] = useState('')
+  // Las ya activadas arrancan ocultas: la galería sirve para descubrir lo que
+  // falta, y así el contador de la pestaña coincide con lo que se ve.
+  const [showActivated, setShowActivated] = useState(false)
+
+  const categories = meta?.recipe_categories ?? []
+  const activatedCount = catalog.filter(r => r.activated).length
+  const query = search.trim().toLowerCase()
+
+  const visible = catalog.filter(recipe => {
+    if (!showActivated && recipe.activated) return false
+    if (category && recipe.category !== category) return false
+    if (!query) return true
+    // Se busca también por disparador y acciones: mucha gente llega desde el
+    // efecto ("email") y no desde el nombre de la receta.
+    return [recipe.name, recipe.description ?? '', recipe.trigger_label, ...recipe.action_labels]
+      .join(' ').toLowerCase().includes(query)
+  })
+
+  // El orden de las secciones lo declara el backend. Una categoría que este
+  // build no conozca no desaparece: cae en "Otras", al final.
+  const known = new Set(categories.map(c => c.key))
+  const sections = [
+    ...categories.map(c => ({
+      key: c.key,
+      label: c.label,
+      description: c.description,
+      recipes: visible.filter(r => r.category === c.key),
+    })),
+    {
+      key: '__sin_categoria',
+      label: 'Otras',
+      description: '',
+      recipes: visible.filter(r => !known.has(r.category)),
+    },
+  ].filter(section => section.recipes.length > 0)
+
+  const filtering = query !== '' || category !== ''
+  const clear = () => { setSearch(''); setCategory(''); setShowActivated(false) }
+
   if (catalog.length === 0) {
     return (
       <Card>
@@ -369,62 +412,143 @@ function RecetasTab({
   }
 
   return (
-    // `auto-rows-fr` + `flex-1` en el detalle: las tarjetas quedan todas de la
-    // misma altura y el botón "Activar" a la misma altura en todas, aunque la
-    // descripción o la cantidad de acciones cambien de receta a receta.
-    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 auto-rows-fr">
-      {catalog.map(recipe => (
-        <Card key={recipe.template_key} className="flex flex-col">
-          <div className="flex items-start justify-between gap-2">
-            <Heading level={4}>{recipe.name}</Heading>
-            {recipe.activated && (
-              <StatusBadge label={CATALOG_ACTIVATED.label} color={CATALOG_ACTIVATED.color} />
-            )}
-          </div>
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[180px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Input
+            type="text"
+            placeholder="Buscar receta, disparador o acción..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <Select
+          aria-label="Categoría"
+          value={category}
+          onChange={e => setCategory(e.target.value)}
+          className="w-auto"
+        >
+          <option value="">Categoría: todas</option>
+          {categories.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
+        </Select>
+        <Switch
+          checked={showActivated}
+          onChange={setShowActivated}
+          label={`Ver las ya activadas (${activatedCount})`}
+          className="shrink-0"
+        />
+        <Button variant="ghost" size="sm" onClick={clear} className="shrink-0 text-gray-500 px-0">
+          Limpiar
+        </Button>
+      </div>
 
-          {recipe.description && (
-            <Text size="sm" tone="muted" className="mt-1.5">{recipe.description}</Text>
-          )}
-
-          <div className="mt-3 space-y-1.5 flex-1">
-            <div className="flex items-start gap-2">
-              <Zap className="w-4 h-4 text-gray-600 shrink-0 mt-0.5" aria-hidden />
-              <Text size="xs" tone="muted">{recipe.trigger_label}</Text>
-            </div>
-            {recipe.action_labels.map((label, i) => (
-              <div key={i} className="flex items-start gap-2">
-                <ChevronRight className="w-4 h-4 text-gray-600 shrink-0 mt-0.5" aria-hidden />
-                <Text size="xs" tone="muted">{label}</Text>
-              </div>
-            ))}
-          </div>
-
-          {!recipe.available && (
-            <Alert tone="warning" className="mt-3">
-              Alguna de sus acciones todavía no está disponible. Podés activarla igual: esas acciones se
-              van a registrar como omitidas hasta que estén listas.
-            </Alert>
-          )}
-
-          <div className="mt-4 pt-3 border-t border-gray-200">
-            {recipe.activated ? (
-              <Text size="xs" tone="muted" className="flex items-center gap-1.5">
-                <Check className="w-4 h-4 text-gray-600" aria-hidden /> Ya está en tus automatizaciones
-              </Text>
-            ) : (
-              <Button
-                fullWidth
-                disabled={!isAdmin}
-                loading={busy === recipe.template_key}
-                onClick={() => onActivate(recipe)}
-              >
-                Activar
-              </Button>
-            )}
-          </div>
+      {visible.length === 0 ? (
+        <Card>
+          <EmptyState
+            icon={<Sparkles className="w-6 h-6" />}
+            title={filtering ? 'Ninguna receta coincide' : 'Ya activaste todas las recetas'}
+            description={filtering
+              ? 'Probá con otra palabra o sacá los filtros.'
+              : 'No queda ninguna sin activar. Podés verlas igual para revisarlas.'}
+            action={filtering
+              ? <Button variant="outline" onClick={clear}>Limpiar filtros</Button>
+              : <Button variant="outline" onClick={() => setShowActivated(true)}>Ver las activadas</Button>}
+          />
         </Card>
-      ))}
+      ) : (
+        sections.map(section => (
+          <section key={section.key} className="space-y-3">
+            <div>
+              <div className="flex items-baseline gap-2">
+                <Heading level={3}>{section.label}</Heading>
+                <Text size="sm" tone="muted">{section.recipes.length}</Text>
+              </div>
+              {section.description && (
+                <Text size="sm" tone="muted">{section.description}</Text>
+              )}
+            </div>
+
+            {/* `auto-rows-fr` + `flex-1` en el detalle: las tarjetas quedan todas de
+                la misma altura y el botón "Activar" alineado, aunque la descripción
+                o la cantidad de acciones cambien de receta a receta. */}
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 auto-rows-fr">
+              {section.recipes.map(recipe => (
+                <RecipeCard
+                  key={recipe.template_key}
+                  recipe={recipe}
+                  isAdmin={isAdmin}
+                  busy={busy}
+                  onActivate={onActivate}
+                />
+              ))}
+            </div>
+          </section>
+        ))
+      )}
     </div>
+  )
+}
+
+function RecipeCard({
+  recipe, isAdmin, busy, onActivate,
+}: {
+  recipe: CatalogItem
+  isAdmin: boolean
+  busy: string | null
+  onActivate: (recipe: CatalogItem) => void
+}) {
+  return (
+    <Card className="flex flex-col">
+      <div className="flex items-start justify-between gap-2">
+        <Heading level={4}>{recipe.name}</Heading>
+        {recipe.activated && (
+          <StatusBadge label={CATALOG_ACTIVATED.label} color={CATALOG_ACTIVATED.color} />
+        )}
+      </div>
+
+      {recipe.description && (
+        <Text size="sm" tone="muted" className="mt-1.5">{recipe.description}</Text>
+      )}
+
+      <div className="mt-3 space-y-1.5 flex-1">
+        <div className="flex items-start gap-2">
+          <Zap className="w-4 h-4 text-gray-600 shrink-0 mt-0.5" aria-hidden />
+          <Text size="xs" tone="muted">{recipe.trigger_label}</Text>
+        </div>
+        {recipe.action_labels.map((label, i) => (
+          <div key={i} className="flex items-start gap-2">
+            <ChevronRight className="w-4 h-4 text-gray-600 shrink-0 mt-0.5" aria-hidden />
+            <Text size="xs" tone="muted">{label}</Text>
+          </div>
+        ))}
+      </div>
+
+      {!recipe.available && (
+        <Alert tone="warning" className="mt-3">
+          Alguna de sus acciones todavía no está disponible. Podés activarla igual: esas acciones se
+          van a registrar como omitidas hasta que estén listas.
+        </Alert>
+      )}
+
+      <div className="mt-4 pt-3 border-t border-gray-200">
+        {recipe.activated ? (
+          <Text size="xs" tone="muted" className="flex items-center gap-1.5">
+            <Check className="w-4 h-4 text-gray-600" aria-hidden /> Ya está en tus automatizaciones
+          </Text>
+        ) : (
+          <Button
+            fullWidth
+            disabled={!isAdmin}
+            loading={busy === recipe.template_key}
+            onClick={() => onActivate(recipe)}
+          >
+            Activar
+          </Button>
+        )}
+      </div>
+    </Card>
   )
 }
 

@@ -20,7 +20,10 @@ import {
   VARIABLE_DEFINITIONS,
   getTriggerDefinition,
   variablesForTrigger,
+  categoryForTemplate,
+  RECIPE_CATEGORIES,
   type AutomationTrigger,
+  type RecipeCategory,
 } from '../../../domain/value-objects/automation-catalog'
 import { LEAD_STAGES } from '../../../domain/value-objects/lead-stage'
 import { PROPERTY_STAGES } from '../../../domain/value-objects/property-stage'
@@ -230,6 +233,8 @@ export interface CatalogItem {
   activated: boolean
   /** false si alguna de sus acciones todavía no está implementada. */
   available: boolean
+  /** Sección de la galería. El label y el orden salen de `meta.recipe_categories`. */
+  category: RecipeCategory
 }
 
 export class ListAutomationCatalogUseCase {
@@ -257,6 +262,7 @@ export class ListAutomationCatalogUseCase {
           action_labels: defs.map((d) => d.label),
           activated: already.has(item.automation.template_key!),
           available: defs.every((d) => d.implemented),
+          category: categoryForTemplate(item.automation.template_key!),
         }
       })
   }
@@ -317,6 +323,7 @@ export interface AutomationsMeta {
   variables: typeof VARIABLE_DEFINITIONS
   stages: { lead: readonly string[]; property: readonly string[] }
   dedupe_scopes: Array<{ value: string; label: string; help: string }>
+  recipe_categories: typeof RECIPE_CATEGORIES
 }
 
 function triggerMeta(def: (typeof TRIGGER_DEFINITIONS)[number]) {
@@ -345,6 +352,7 @@ export class GetAutomationsMetaUseCase {
       variables: VARIABLE_DEFINITIONS,
       stages: { lead: LEAD_STAGES, property: PROPERTY_STAGES },
       dedupe_scopes: DEDUPE_SCOPE_LABELS,
+      recipe_categories: RECIPE_CATEGORIES,
     }
   }
 }
