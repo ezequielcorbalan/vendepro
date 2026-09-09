@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
   Users, Phone, CalendarDays, Target, TrendingUp,
-  Clock, CheckCircle2, BarChart3, ChevronRight,
+  Clock, CheckCircle2, BarChart3, ChevronRight, ChevronDown,
   Home, Calculator, Activity, MessageCircle
 } from 'lucide-react'
 import { LEAD_STAGES, LEAD_PIPELINE_STAGES, EVENT_TYPES, getStageConfig } from '@/lib/crm-config'
@@ -21,22 +21,60 @@ import { Heading, Text } from '@/components/ui/Typography'
 import { Alert } from '@/components/ui/Alert'
 import { Select } from '@/components/ui/Input'
 
-function FunnelChart({ data }: { data: { stage: string; count: number }[] }) {
-  const max = Math.max(...data.map(d => d.count), 1)
+interface FunnelStage {
+  stage: string
+  label: string
+  count: number
+  pct: number
+  step_pct: number
+  median_days_from_prev: number | null
+  timed_on: number
+}
+
+/**
+ * Embudo de conversión. Las barras son proporcionales al TOTAL de leads que
+ * entraron, no a la barra más alta: de otro modo un embudo con poca caída y
+ * uno con mucha se dibujan igual, y la forma es justamente lo que hay que ver.
+ *
+ * Entre etapa y etapa va la conversión del paso y el tiempo mediano, que es
+ * donde se lee en qué escalón se estanca el pipeline.
+ */
+function FunnelChart({ stages, total }: { stages: FunnelStage[]; total: number }) {
   return (
-    <div className="space-y-2">
-      {data.map((item) => {
-        const pct = Math.max((item.count / max) * 100, 8)
+    <div className="space-y-1">
+      {stages.map((item, i) => {
         const cfg = getStageConfig(item.stage)
+        // Piso de ancho para que una etapa con pocos leads siga siendo legible
+        // (el número va adentro de la barra).
+        const width = total > 0 ? Math.max((item.count / total) * 100, 7) : 7
         return (
-          <div key={item.stage} className="flex items-center gap-2 sm:gap-3">
-            <div className="w-20 sm:w-28 text-[10px] sm:text-xs text-gray-600 text-right truncate">{item.stage}</div>
-            <div className="flex-1 h-7 bg-gray-50 rounded overflow-hidden">
-              <div
-                className={`h-full rounded flex items-center px-2 transition-all duration-500 ${cfg.color}`}
-                style={{ width: `${pct}%` }}
-              >
-                <span className="text-xs font-semibold">{item.count}</span>
+          <div key={item.stage}>
+            {i > 0 && (
+              <div className="flex items-center gap-2 sm:gap-3 py-0.5">
+                <div className="w-20 sm:w-28 shrink-0" />
+                <div className="flex items-center gap-1 text-gray-400">
+                  <ChevronDown className="w-3 h-3 shrink-0" />
+                  <Text size="xs" tone="muted" className="text-[10px]">
+                    {item.step_pct}% pasa
+                    {item.median_days_from_prev !== null && ` · ${item.median_days_from_prev} d`}
+                  </Text>
+                </div>
+              </div>
+            )}
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-20 sm:w-28 shrink-0 text-right">
+                <Text size="xs" tone="muted" className="text-[10px] sm:text-xs truncate">{item.label}</Text>
+              </div>
+              <div className="flex-1 h-7 bg-gray-50 rounded overflow-hidden">
+                <div
+                  className={`h-full rounded flex items-center px-2 transition-all duration-500 ${cfg.color}`}
+                  style={{ width: `${width}%` }}
+                >
+                  <span className="text-xs font-semibold">{item.count}</span>
+                </div>
+              </div>
+              <div className="w-9 shrink-0 text-right">
+                <Text size="xs" tone="muted" className="tabular-nums">{item.pct}%</Text>
               </div>
             </div>
           </div>
@@ -281,7 +319,16 @@ export default function DashboardCRM() {
               </optgroup>
             </Select>
           </div>
-          <FunnelChart data={funnel || []} />
+          <FunnelChart stages={funnel?.stages ?? []} total={funnel?.total ?? 0} />
+          {/* Los leads importados de antes no tienen historial de etapas, así
+              que sus tiempos no se pueden calcular. Decirlo evita que se lea
+              como "el equipo tarda X" cuando la muestra es una minoría. */}
+          {funnel?.total > 0 && funnel.with_history < funnel.total && (
+            <Text size="xs" tone="muted" className="mt-3 block text-[10px]">
+              Los tiempos salen de {funnel.with_history} de {funnel.total} leads —
+              el resto entró antes de que se registrara el historial de etapas.
+            </Text>
+          )}
         </Card>
 
         <Card className="p-4 sm:p-5">
