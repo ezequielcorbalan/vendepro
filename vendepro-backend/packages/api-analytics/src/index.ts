@@ -134,7 +134,13 @@ app.get('/dashboard', async (c) => {
       with_history: 0,
     }
   }
-  const conversionRate = computeConversionRate(sb, base.totalLeads)
+  // La conversión sigue al período del embudo, no a toda la historia.
+  // Antes eran dos números pegados en pantalla contestando sobre ventanas de
+  // tiempo distintas: cambiabas el período, el embudo se movía y la conversión
+  // no. Ahora es exactamente el último escalón del embudo, así que no pueden
+  // discrepar.
+  const captadoStage = funnel.stages.find((s: { stage: string }) => s.stage === 'captado')
+  const conversionRate = captadoStage?.pct ?? computeConversionRate(sb, base.totalLeads)
 
   return c.json({
     leads,

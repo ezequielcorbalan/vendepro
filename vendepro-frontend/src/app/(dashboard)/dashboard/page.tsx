@@ -22,6 +22,21 @@ import { Alert } from '@/components/ui/Alert'
 import { Select } from '@/components/ui/Input'
 import { FunnelChart } from '@/components/dashboard/FunnelChart'
 
+/**
+ * Etiqueta corta del período, para que el KPI de conversión diga sobre qué
+ * ventana está hablando. Mismas claves que el selector del embudo.
+ */
+const PERIOD_LABELS: Record<string, string> = {
+  all: 'histórico',
+  cal_month: 'este mes',
+  cal_quarter: 'este trimestre',
+  cal_year: 'este año',
+  week: 'últimos 7 días',
+  month: 'últimos 30 días',
+  quarter: 'últimos 90 días',
+  year: 'último año',
+}
+
 function WeeklyChart({ data }: { data: { day: string; count: number }[] }) {
   const max = Math.max(...data.map(d => d.count), 1)
   const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
@@ -196,12 +211,20 @@ export default function DashboardCRM() {
       )}
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <StatTile icon={<Users className="w-5 h-5" />} label="Leads activos" value={activeLeads} tone="bg-blue-50 text-blue-600" href="/leads" />
-        <StatTile icon={<Phone className="w-5 h-5" />} label="Contactados" value={sb['contactado'] || 0} tone="bg-cyan-50 text-cyan-600" href="/leads?stage=contactado" />
-        <StatTile icon={<Calculator className="w-5 h-5" />} label="Tasaciones" value={tasaciones?.total || 0} tone="bg-purple-50 text-purple-600" href="/tasaciones" />
-        <StatTile icon={<Home className="w-5 h-5" />} label="Captaciones" value={captaciones} tone="bg-green-50 text-green-600" href="/propiedades/pipeline" />
-        <StatTile icon={<Activity className="w-5 h-5" />} label="Actividad (30d)" value={activity?.total || 0} tone="primary" href="/actividades" />
-        <StatTile icon={<Target className="w-5 h-5" />} label="Conversión" value={`${conversionRate || 0}%`} tone="bg-amber-50 text-amber-600" href="/mi-performance" />
+        {/* Cada tile dice de qué ventana de tiempo habla. Sin eso convivían en
+            la misma fila números históricos y de 30 días como si midieran lo
+            mismo, y el de "Contactados" —que es cuántos están HOY parados en
+            esa etapa— se leía como cuántos contactaste. */}
+        <StatTile icon={<Users className="w-5 h-5" />} label="Leads activos" value={activeLeads} caption="en el pipeline" tone="bg-blue-50 text-blue-600" href="/leads" />
+        <StatTile icon={<Phone className="w-5 h-5" />} label="Contactados" value={sb['contactado'] || 0} caption="hoy en esta etapa" tone="bg-cyan-50 text-cyan-600" href="/leads?stage=contactado" />
+        {/* Las tasaciones no tienen estado de cierre (draft/generated/sent), así
+            que este total no baja nunca. Decirlo evita leerlo como "abiertas". */}
+        <StatTile icon={<Calculator className="w-5 h-5" />} label="Tasaciones" value={tasaciones?.total || 0} caption="en total" tone="bg-purple-50 text-purple-600" href="/tasaciones" />
+        {/* Cuenta LEADS en etapa captado, así que lleva a esos leads. Antes
+            llevaba al pipeline de propiedades: otra población, otro total. */}
+        <StatTile icon={<Home className="w-5 h-5" />} label="Captaciones" value={captaciones} caption="leads captados" tone="bg-green-50 text-green-600" href="/leads?stage=captado" />
+        <StatTile icon={<Activity className="w-5 h-5" />} label="Actividad" value={activity?.total || 0} caption="últimos 30 días" tone="primary" href="/actividades" />
+        <StatTile icon={<Target className="w-5 h-5" />} label="Conversión" value={`${conversionRate || 0}%`} caption={PERIOD_LABELS[period] ?? 'del período'} tone="bg-amber-50 text-amber-600" href="/mi-performance" />
       </div>
 
       {(overdueLeads > 0 || (todayEvents && todayEvents.length > 0)) && (
