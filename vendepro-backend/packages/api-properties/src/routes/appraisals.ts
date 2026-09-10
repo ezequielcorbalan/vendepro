@@ -7,6 +7,7 @@ import {
   CryptoIdGenerator,
   fireMarketingEvent,
   fireWebhookEvent,
+  fireAutomationEvent,
   CfBrowserRenderingService,
   R2PdfStorage,
   PdfDownloadTokenSignerImpl,
@@ -104,6 +105,14 @@ export function registerAppraisalRoutes(app: Hono<{ Bindings: Env } & AuthVars>)
           suggested_price: typeof body.suggested_price === 'number' ? body.suggested_price : null,
         },
       },
+    })
+    // Automatizaciones: `appraisal.created`. Sólo dispara y encola — este
+    // worker no tiene RESEND_API_KEY; los jobs los ejecuta el cron de api-crm.
+    await fireAutomationEvent(c.env, {
+      orgId,
+      trigger: 'appraisal.created',
+      entityType: 'appraisal',
+      entityId: result.id,
     })
     return c.json({ ...result, marketing: mk ?? null }, 201)
   })

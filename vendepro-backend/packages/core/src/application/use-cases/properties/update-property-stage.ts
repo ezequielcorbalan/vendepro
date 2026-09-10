@@ -19,6 +19,10 @@ export interface UpdatePropertyStageInput {
 
 export interface UpdatePropertyStageOutput {
   syncedLeadId: string | null
+  /** Etapa comercial previa — el detalle del evento `property.stage_changed`. */
+  fromStage: PropertyStageValue
+  /** Si el sync engine también movió el lead vinculado, de dónde a dónde. */
+  leadSync: { leadId: string; from: string | null; to: string } | null
 }
 
 export class UpdatePropertyStageUseCase {
@@ -53,6 +57,7 @@ export class UpdatePropertyStageUseCase {
     }
 
     let syncedLeadId: string | null = null
+    let leadSync: UpdatePropertyStageOutput['leadSync'] = null
     if (this.leadRepo && property.lead_id) {
       const leadId = property.lead_id
       const lead = await this.leadRepo.findById(leadId, input.orgId)
@@ -74,9 +79,10 @@ export class UpdatePropertyStageUseCase {
           })
         }
         syncedLeadId = leadId
+        leadSync = { leadId, from: currentLeadStage, to: newLeadStage }
       }
     }
 
-    return { syncedLeadId }
+    return { syncedLeadId, fromStage: currentStage, leadSync }
   }
 }

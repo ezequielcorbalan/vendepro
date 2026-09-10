@@ -477,6 +477,7 @@ export const VARIABLE_DEFINITIONS: readonly VariableDefinition[] = [
   { key: 'property.stage', label: 'Etapa comercial', scope: 'property', example: 'publicada' },
   { key: 'property.public_url', label: 'Link del reporte público', scope: 'property', example: 'https://…/r/abc123' },
   { key: 'appraisal.public_url', label: 'Link de la tasación', scope: 'appraisal', example: 'https://…/t/abc123' },
+  { key: 'appraisal.address', label: 'Dirección de la tasación', scope: 'appraisal', example: 'Av. Cabildo 1234' },
   { key: 'agent.full_name', label: 'Nombre del agente asignado', scope: 'agent', example: 'Marcela Genta' },
   { key: 'agent.email', label: 'Email del agente', scope: 'agent', example: 'marcela@mg.com.ar' },
   { key: 'agent.phone', label: 'Teléfono del agente', scope: 'agent', example: '11 4444-4444' },

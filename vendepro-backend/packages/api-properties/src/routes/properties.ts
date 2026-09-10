@@ -7,6 +7,7 @@ import {
   R2StorageService,
   D1PropertyIncomeRepository,
   DolarApiFxRate,
+  fireAutomationEvent,
 } from '@vendepro/infrastructure'
 import {
   GetPropertiesUseCase,
@@ -114,7 +115,7 @@ export function registerPropertyRoutes(app: Hono<{ Bindings: Env } & AuthVars>) 
       if (!stageSlug) return c.json({ error: 'commercial_stage o commercial_stage_id requerido' }, 400)
 
       const useCase = new UpdatePropertyStageUseCase(repo, historyRepo, leadRepo)
-      await useCase.execute({
+      const result = await useCase.execute({
         propertyId,
         orgId,
         newStage: stageSlug as PropertyStageValue,
@@ -122,6 +123,25 @@ export function registerPropertyRoutes(app: Hono<{ Bindings: Env } & AuthVars>) 
         notes: body.notes ?? null,
         override: body.override === true,
       })
+      // Automatizaciones: `property.stage_changed` (y `lead.stage_changed` si
+      // el sync engine también movió el lead vinculado). Sólo dispara y
+      // encola — sin RESEND_API_KEY acá; los jobs los ejecuta el cron de api-crm.
+      await fireAutomationEvent(c.env, {
+        orgId,
+        trigger: 'property.stage_changed',
+        entityType: 'property',
+        entityId: propertyId,
+        stage: { from: result.fromStage, to: stageSlug },
+      })
+      if (result.leadSync) {
+        await fireAutomationEvent(c.env, {
+          orgId,
+          trigger: 'lead.stage_changed',
+          entityType: 'lead',
+          entityId: result.leadSync.leadId,
+          stage: { from: result.leadSync.from, to: result.leadSync.to },
+        })
+      }
     } catch (e: any) {
       return c.json({ error: e.message || 'Error al cambiar etapa' }, 400)
     }

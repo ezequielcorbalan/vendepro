@@ -20,15 +20,29 @@ export interface UpdateLeadInput {
   assigned_to?: string
 }
 
+export interface UpdateLeadOutput {
+  /** true si este update cambió el agente responsable — dispara `lead.assigned`. */
+  assignedChanged: boolean
+  assignedTo: string | null
+}
+
 export class UpdateLeadUseCase {
   constructor(private readonly leadRepo: LeadRepository) {}
 
-  async execute(input: UpdateLeadInput): Promise<void> {
+  async execute(input: UpdateLeadInput): Promise<UpdateLeadOutput> {
     const lead = await this.leadRepo.findById(input.id, input.orgId)
     if (!lead) throw new NotFoundError('Lead no encontrado')
+
+    const previousAssignedTo = lead.assigned_to ?? null
 
     const { id, orgId, ...data } = input
     lead.update(data)
     await this.leadRepo.save(lead)
+
+    const assignedTo = lead.assigned_to ?? null
+    return {
+      assignedChanged: input.assigned_to !== undefined && assignedTo !== previousAssignedTo,
+      assignedTo,
+    }
   }
 }

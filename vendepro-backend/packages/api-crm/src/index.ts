@@ -188,7 +188,17 @@ app.put('/leads', async (c) => {
   const body = (await c.req.json()) as any
   const repo = new D1LeadRepository(c.env.DB)
   const useCase = new UpdateLeadUseCase(repo)
-  await useCase.execute({ ...body, orgId: c.get('orgId') })
+  const result = await useCase.execute({ ...body, orgId: c.get('orgId') })
+  // Automatizaciones: `lead.assigned` sólo cuando este update cambió el agente
+  // responsable (editar notas o teléfono no re-dispara nada).
+  if (result.assignedChanged) {
+    await runInBackground(c, fireAndDrainAutomations(c.env, {
+      orgId: c.get('orgId'),
+      trigger: 'lead.assigned',
+      entityType: 'lead',
+      entityId: body.id,
+    }))
+  }
   return c.json({ success: true })
 })
 
@@ -1068,6 +1078,14 @@ app.post('/contacts', async (c) => {
   const repo = new D1ContactRepository(c.env.DB)
   const useCase = new CreateContactUseCase(repo, new CryptoIdGenerator())
   const result = await useCase.execute({ ...body, org_id: c.get('orgId'), agent_id: body.agent_id || c.get('userId') })
+  // Automatizaciones: `contact.created`. Sólo el alta explícita — el contacto
+  // que crea CreateLeadWithContact ya disparó `lead.created` por su lead.
+  await runInBackground(c, fireAndDrainAutomations(c.env, {
+    orgId: c.get('orgId'),
+    trigger: 'contact.created',
+    entityType: 'contact',
+    entityId: result.id,
+  }))
   return c.json(result, 201)
 })
 

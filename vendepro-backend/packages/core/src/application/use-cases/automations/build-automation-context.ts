@@ -3,6 +3,7 @@ import type { ContactRepository } from '../../ports/repositories/contact-reposit
 import type { PropertyRepository } from '../../ports/repositories/property-repository'
 import type { UserRepository } from '../../ports/repositories/user-repository'
 import type { OrganizationRepository } from '../../ports/repositories/organization-repository'
+import type { AppraisalRepository } from '../../ports/repositories/appraisal-repository'
 import type { AutomationContext } from '../../../domain/rules/automation-conditions'
 import type { EntityType } from '../../../domain/value-objects/automation-catalog'
 
@@ -34,6 +35,9 @@ export class BuildAutomationContextUseCase {
     private readonly properties: PropertyRepository,
     private readonly users: UserRepository,
     private readonly orgs: OrganizationRepository,
+    // Opcional para no romper a los callers que no manejan tasaciones; sin él,
+    // un evento de appraisal renderiza ese scope en blanco (regla de la clase).
+    private readonly appraisals?: AppraisalRepository,
   ) {}
 
   async execute(input: BuildAutomationContextInput): Promise<AutomationContext> {
@@ -50,8 +54,31 @@ export class BuildAutomationContextUseCase {
     let agentId: string | null = null
     let contactId: string | null = null
 
-    if (input.entityType === 'lead') {
-      const lead = await safe(() => this.leads.findById(input.entityId, input.orgId))
+    // El scope `lead` puede venir del evento mismo o colgar de la tasación.
+    let leadId: string | null = input.entityType === 'lead' ? input.entityId : null
+
+    if (input.entityType === 'appraisal') {
+      const appraisal = this.appraisals
+        ? await safe(() => this.appraisals!.findById(input.entityId, input.orgId))
+        : null
+      if (appraisal) {
+        context.appraisal = {
+          id: appraisal.id,
+          address: appraisal.property_address,
+          neighborhood: appraisal.neighborhood,
+          status: appraisal.status,
+          suggested_price: appraisal.suggested_price,
+          public_url: appraisal.public_slug && input.publicBaseUrl
+            ? `${trimSlash(input.publicBaseUrl)}/t/${appraisal.public_slug}`
+            : null,
+        }
+        agentId = appraisal.agent_id
+        leadId = appraisal.lead_id
+      }
+    }
+
+    if (leadId) {
+      const lead = await safe(() => this.leads.findById(leadId!, input.orgId))
       if (lead) {
         context.lead = {
           id: lead.id,
@@ -69,7 +96,8 @@ export class BuildAutomationContextUseCase {
           assigned_to: lead.assigned_to,
           created_at: lead.created_at,
         }
-        agentId = lead.assigned_to
+        // El agente de la tasación (si el evento es uno) le gana al del lead.
+        agentId = agentId ?? lead.assigned_to
         contactId = (lead as any).contact_id ?? null
       }
     }

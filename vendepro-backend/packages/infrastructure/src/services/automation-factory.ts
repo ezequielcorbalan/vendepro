@@ -8,6 +8,7 @@ import {
 } from '@vendepro/core'
 import { D1AutomationRepository } from '../repositories/d1-automation-repository'
 import { D1AutomationSweepRepository } from '../repositories/d1-automation-sweep-repository'
+import { D1AppraisalRepository } from '../repositories/d1-appraisal-repository'
 import { D1AutomationRunRepository } from '../repositories/d1-automation-run-repository'
 import { D1AutomationJobRepository } from '../repositories/d1-automation-job-repository'
 import { D1LeadRepository } from '../repositories/d1-lead-repository'
@@ -88,6 +89,7 @@ export function createAutomationContextBuilder(env: AutomationEnv): BuildAutomat
     new D1PropertyRepository(env.DB),
     new D1UserRepository(env.DB),
     new D1OrganizationRepository(env.DB),
+    new D1AppraisalRepository(env.DB),
   )
 }
 
