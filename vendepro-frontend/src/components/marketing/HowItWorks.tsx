@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { HelpCircle, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Card } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
 import { Heading, Text } from '@/components/ui/Typography'
 
 /**
@@ -146,11 +147,12 @@ export default function HowItWorks({ pipeline }: { pipeline: 'vendedor' | 'compr
 
   return (
     <Card className="bg-gray-50/60">
-      <button
-        type="button"
+      {/* ds-todo: candidato a variante "disclosure" de Button (fila entera, contenido a los costados) */}
+      <Button
+        variant="ghost"
         onClick={() => setOpen(o => !o)}
         aria-expanded={open}
-        className="flex items-center justify-between w-full gap-3 text-left"
+        className="flex items-center justify-between w-full gap-3 text-left p-0 h-auto font-normal hover:bg-transparent"
       >
         <div className="flex items-center gap-2 min-w-0">
           <HelpCircle className="w-4 h-4 text-gray-500 shrink-0" aria-hidden="true" />
@@ -165,7 +167,7 @@ export default function HowItWorks({ pipeline }: { pipeline: 'vendedor' | 'compr
           className={cn('w-4 h-4 text-gray-400 shrink-0 transition-transform', open && 'rotate-180')}
           aria-hidden="true"
         />
-      </button>
+      </Button>
 
       {open && (
         <div className="mt-4 space-y-4 border-t border-gray-200 pt-4">

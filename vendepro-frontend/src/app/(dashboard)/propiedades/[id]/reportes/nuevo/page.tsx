@@ -12,6 +12,7 @@ import { Field, Input, Textarea, Select } from '@/components/ui/Input'
 import { Heading, Text } from '@/components/ui/Typography'
 import { Button } from '@/components/ui/Button'
 import { StepIndicator } from '@/components/ui/StepIndicator'
+import { useConfirm } from '@/components/ui/useConfirm'
 
 const steps = [
   { id: 1, title: 'Período' },
@@ -47,6 +48,11 @@ export default function NuevoReporte() {
   const [extracting, setExtracting] = useState(false)
   const [error, setError] = useState('')
   const [loadingExisting, setLoadingExisting] = useState(!!editId)
+  // Si el reporte que se edita YA está publicado: guardarlo "como borrador" lo
+  // DESPUBLICA y el link /r/ que el propietario tiene deja de andar. Pasó en
+  // producción (2026-09-10): edición + botón equivocado = 404 para el cliente.
+  const [wasPublished, setWasPublished] = useState(false)
+  const { confirmDialog, askConfirm } = useConfirm()
 
   // Step 1: Period
   const [periodLabel, setPeriodLabel] = useState('')
@@ -89,6 +95,7 @@ export default function NuevoReporte() {
       .then(data => {
         if (data.error) { setError(data.error); setLoadingExisting(false); return }
         const rep = data.report || {}
+        setWasPublished(rep.status === 'published')
         setPeriodLabel(rep.period_label || '')
         setPeriodStart(rep.period_start || '')
         setPeriodEnd(rep.period_end || '')
@@ -382,6 +389,15 @@ export default function NuevoReporte() {
   }
 
   async function handleSubmit(publish: boolean) {
+    if (!publish && wasPublished) {
+      const { confirmed } = await askConfirm({
+        title: 'Despublicar el reporte',
+        message: 'Este reporte está publicado: si lo guardás como borrador, el link público que tiene el propietario va a dejar de funcionar hasta que lo vuelvas a publicar. ¿Despublicar igual?',
+        confirmLabel: 'Sí, despublicar',
+        cancelLabel: 'Volver',
+      })
+      if (!confirmed) return
+    }
     // Los "required" de los pasos 1 y 3 no se validaban en ningún lado: se
     // podía publicar un reporte sin período (slug "reporte-periodo-…") y sin
     // conclusión. El stepper deja saltar pasos, así que la red va acá.
@@ -463,6 +479,7 @@ export default function NuevoReporte() {
 
   return (
     <div>
+      {confirmDialog}
       <Link
         href={`/propiedades/${propertyId}`}
         className="inline-flex items-center gap-2 text-sm text-brand-gray hover:text-ink mb-6"
@@ -888,6 +905,12 @@ export default function NuevoReporte() {
               <Text as="p"><strong>Fotos:</strong> {existingPhotos.length + photos.length}{existingPhotos.length > 0 ? ` (${existingPhotos.length} ya guardadas)` : ''}</Text>
             </div>
 
+            {wasPublished && (
+              <Alert tone="info">
+                Este reporte ya está publicado. "Guardar cambios" actualiza lo que ve el
+                propietario manteniendo el mismo link.
+              </Alert>
+            )}
             <div className="flex gap-3">
               <Button
                 variant="outline"
@@ -895,14 +918,14 @@ export default function NuevoReporte() {
                 onClick={() => handleSubmit(false)}
                 loading={loading}
               >
-                {loading ? 'Guardando...' : 'Guardar como borrador'}
+                {loading ? 'Guardando...' : wasPublished ? 'Despublicar (apaga el link)' : 'Guardar como borrador'}
               </Button>
               <Button
                 fullWidth
                 onClick={() => handleSubmit(true)}
                 loading={loading}
               >
-                {loading ? 'Publicando...' : 'Publicar reporte'}
+                {loading ? 'Publicando...' : wasPublished ? 'Guardar cambios' : 'Publicar reporte'}
               </Button>
             </div>
           </div>
