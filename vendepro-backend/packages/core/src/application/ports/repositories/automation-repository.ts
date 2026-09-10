@@ -72,6 +72,35 @@ export interface AutomationRunRepository {
   findActionsByRun(runId: string): Promise<AutomationRunAction[]>
 }
 
+// ── Barrido por tiempo ────────────────────────────────────────
+
+/**
+ * Parámetros comunes de las queries de candidatos del barrido.
+ *
+ * `automationId` + `notRunSince` implementan el filtro anti-re-disparo en SQL:
+ * una entidad que ya tiene un run de esta automatización (desde `notRunSince`,
+ * o desde siempre si es null) no vuelve a ser candidata. Sin este filtro el
+ * cron re-evaluaría a los mismos leads en cada tick; el `claim()` del motor
+ * los descartaría igual, pero pre-filtrar acá evita armar contexto al pedo y,
+ * para el scope 'always', es la única guarda contra el spam cada 15 minutos.
+ */
+export interface SweepCandidateQuery {
+  orgId: string
+  automationId: string
+  /** null = excluir si corrió alguna vez (scope 'once'); si no, desde cuándo. */
+  notRunSince: string | null
+  limit: number
+}
+
+export interface AutomationSweepRepository {
+  /** Leads que siguen sin pasar a "contactado", creados antes del corte. */
+  leadsSinContacto(q: SweepCandidateQuery & { createdBefore: string }): Promise<string[]>
+  /** Leads abiertos sin actividad registrada desde el corte (o nunca). */
+  leadsSinRespuesta(q: SweepCandidateQuery & { inactiveSince: string }): Promise<string[]>
+  /** Propiedades activas cuya autorización vence dentro de `diasAntes` días. */
+  propiedadesPorVencer(q: SweepCandidateQuery & { hoy: string; diasAntes: number }): Promise<string[]>
+}
+
 export interface AutomationJobRepository {
   save(job: AutomationJob): Promise<void>
   saveMany(jobs: readonly AutomationJob[]): Promise<void>

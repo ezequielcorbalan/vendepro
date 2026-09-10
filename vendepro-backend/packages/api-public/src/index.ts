@@ -26,6 +26,7 @@ import {
   HmacUnsubscribeTokenSigner,
   fireMarketingEvent,
   fireWebhookEvent,
+  fireAutomationEvent,
   D1AgentProfileRepository,
   D1MetaIntegrationRepository,
 } from '@vendepro/infrastructure'
@@ -470,6 +471,23 @@ app.post('/v1/leads', async (c) => {
       }),
   )
 
+  // Automatizaciones: `lead.created` por cada lead creado (bienvenida, lead de
+  // portal, etc.). Sólo dispara y encola — este worker no tiene RESEND_API_KEY
+  // y drenar sin el executor marcaría los emails como `not_implemented`; los
+  // jobs los ejecuta el cron */5 de api-crm.
+  await Promise.allSettled(
+    result.results
+      .filter((r) => r.ok && r.id && !r.duplicate)
+      .map((r) =>
+        fireAutomationEvent(c.env, {
+          orgId,
+          trigger: 'lead.created',
+          entityType: 'lead',
+          entityId: r.id!,
+        }),
+      ),
+  )
+
   // Un lote 100% duplicados también es éxito (el integrador no debe reintentar).
   return c.json(result, result.created > 0 || result.duplicates > 0 ? 201 : 400)
 })
@@ -550,6 +568,14 @@ app.post('/public/leads', async (c) => {
     },
   })
 
+  // Automatizaciones: `lead.created` (encola; drena el cron de api-crm).
+  await fireAutomationEvent(c.env, {
+    orgId: result.org_id,
+    trigger: 'lead.created',
+    entityType: 'lead',
+    entityId: result.id,
+  })
+
   return c.json({ ...result, marketing: mk ?? null }, 201)
 })
 
@@ -605,6 +631,13 @@ app.post('/l/:slug/submit', async (c) => {
   // Hook marketing — resolver org desde la landing pública.
   const landing = await landings.findByFullSlug(c.req.param('slug'))
   if (landing && (r as any).leadId) {
+    // Automatizaciones: `lead.created` (encola; drena el cron de api-crm).
+    await fireAutomationEvent(c.env, {
+      orgId: landing.org_id,
+      trigger: 'lead.created',
+      entityType: 'lead',
+      entityId: (r as any).leadId,
+    })
     const mk = await fireMarketingEvent(c.env, {
       orgId: landing.org_id,
       // Config por-agente: dispara bajo el pixel del agente dueño de la landing.
