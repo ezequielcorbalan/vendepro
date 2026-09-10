@@ -494,13 +494,14 @@ export default function ConexionesPage() {
               <span className="text-sm text-ink flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-success" /> API Key guardada
               </span>
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => { setShowKeyInput(true); setApiKeyInput('') }}
-                className="text-xs text-primary hover:underline font-medium"
+                className="p-0 text-xs text-primary hover:underline font-medium hover:bg-transparent"
               >
                 Cambiar
-              </button>
+              </Button>
             </div>
           ) : (
             <Input

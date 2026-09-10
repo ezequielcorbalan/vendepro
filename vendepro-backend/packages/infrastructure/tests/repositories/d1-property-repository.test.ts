@@ -331,17 +331,71 @@ describe('D1PropertyRepository — extended methods', () => {
     await repo.updateStage(propId, orgId, 'publicada')
 
     const row = await env.DB
-      .prepare('SELECT commercial_stage, commercial_stage_id FROM properties WHERE id = ?')
+      .prepare('SELECT commercial_stage, commercial_stage_id, status FROM properties WHERE id = ?')
       .bind(propId)
       .first() as any
     expect(row.commercial_stage).toBe('publicada')
     expect(typeof row.commercial_stage_id).toBe('number')
+    expect(row.status).toBe('active')
     // publicada for venta is stage id 2 per seed
     const expectedId = (await env.DB
       .prepare('SELECT id FROM commercial_stages WHERE operation_type_id = 1 AND slug = ?')
       .bind('publicada')
       .first()) as any
     expect(row.commercial_stage_id).toBe(expectedId.id)
+  })
+
+  it('updateStage a vencida deja de mostrar la propiedad como activa (status + status_id)', async () => {
+    const repo = new D1PropertyRepository(env.DB)
+    const propId = await insertProperty(env.DB, orgId, agentId, { operation_type_id: 1 })
+
+    await repo.updateStage(propId, orgId, 'vencida')
+
+    const row = await env.DB
+      .prepare('SELECT commercial_stage, status, status_id FROM properties WHERE id = ?')
+      .bind(propId)
+      .first() as any
+    expect(row.commercial_stage).toBe('vencida')
+    expect(row.status).toBe('inactive')
+    const inactiva = (await env.DB
+      .prepare("SELECT id FROM property_statuses WHERE operation_type_id = 1 AND slug = 'inactiva'")
+      .first()) as any
+    expect(row.status_id).toBe(inactiva.id)
+  })
+
+  it('updateStage a vendida marca status sold (aunque venga por el pipeline de etapas)', async () => {
+    const repo = new D1PropertyRepository(env.DB)
+    const propId = await insertProperty(env.DB, orgId, agentId, { operation_type_id: 1 })
+
+    await repo.updateStage(propId, orgId, 'vendida')
+
+    const row = await env.DB
+      .prepare('SELECT status, status_id FROM properties WHERE id = ?')
+      .bind(propId)
+      .first() as any
+    expect(row.status).toBe('sold')
+    const vendida = (await env.DB
+      .prepare("SELECT id FROM property_statuses WHERE operation_type_id = 1 AND slug = 'vendida'")
+      .first()) as any
+    expect(row.status_id).toBe(vendida.id)
+  })
+
+  it('updateStage de vuelta a publicada revive el status active', async () => {
+    const repo = new D1PropertyRepository(env.DB)
+    const propId = await insertProperty(env.DB, orgId, agentId, { operation_type_id: 1 })
+
+    await repo.updateStage(propId, orgId, 'vencida')
+    await repo.updateStage(propId, orgId, 'publicada')
+
+    const row = await env.DB
+      .prepare('SELECT status, status_id FROM properties WHERE id = ?')
+      .bind(propId)
+      .first() as any
+    expect(row.status).toBe('active')
+    const activa = (await env.DB
+      .prepare("SELECT id FROM property_statuses WHERE operation_type_id = 1 AND slug = 'activa'")
+      .first()) as any
+    expect(row.status_id).toBe(activa.id)
   })
 
   it('updateStage throws on invalid slug', async () => {

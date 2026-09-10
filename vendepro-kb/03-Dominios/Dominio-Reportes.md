@@ -90,6 +90,8 @@ Frontend (`components/reports/HealthBadge.tsx`) muestra el badge. La función `h
 - `GET /reports` — paginado con métricas
 - `GET /listings-performance` — KPIs cross-listings
 
+**Benchmark por barrio (fix 10-sep-2026)**: el barrio es texto libre, así que `GetNeighborhoodComparisonUseCase` y `GetActiveListingsWithBenchmarkUseCase` agrupan y matchean por clave normalizada (`neighborhoodKey()` en `domain/rules/neighborhood-key.ts`: trim + minúsculas + sin tildes + espacios colapsados). Antes el match era por string crudo y "Villa Urquiza" vs "villa urquiza " no matcheaban → todo salía "Sin benchmark" y el mismo barrio aparecía dos veces en la tabla. La normalización NO corrige typos ("villa pueyrreedon" sigue siendo otro barrio — eso es limpieza de datos). El orden de "Mis avisos activos" también cambió: peor delta primero (lo que promete el subtítulo), sin-reportes al final.
+
 [[API-public]]:
 - `GET /public/report/:slug`
 

@@ -15,7 +15,11 @@ Para **alquileres** los stages son: captacion, publicada, con_interesados, alqui
 
 ## Status (estado operativo)
 
-`active | sold | suspended | archived | inactive` — independiente del commercial_stage. Definido en `domain/rules/property-rules.ts` con `canTransitionPropertyStatus(from, to)`.
+`active | sold | suspended | archived | inactive` — definido en `domain/rules/property-rules.ts` con `canTransitionPropertyStatus(from, to)`.
+
+**Derivado de la etapa desde el 10-sep-2026**: cada cambio de `commercial_stage` (dropdown de la card, kanban, sync desde lead) también escribe `status` y `status_id` vía `statusForPropertyStage(stage)` (misma rule file), en el mismo UPDATE de `D1PropertyRepository.updateStage()`. Mapa: vendida/alquilada→sold · suspendida→suspended · vencida→inactive · perdida/invalida/archivada→archived · resto→active. Antes solo se escribía la etapa y una "vencida" seguía con status `active` — pill "Activa" en la card y contando como aviso activo en el performance de reportes. La migración **055** backfillea las filas viejas desincronizadas (gana la etapa sobre cualquier status manual).
+
+Ojo frontend: el pill de la card lee `status_id` contra el catálogo `property_statuses`, cuyos slugs están **en español** (`activa`, no `active`), y el id de "activa" es distinto por operation_type (1 en venta, 7 en alquiler) — comparar siempre por slug, no por id (`PropertyFilters.tsx` → `isActiveStatus()`).
 
 ## Entidad
 

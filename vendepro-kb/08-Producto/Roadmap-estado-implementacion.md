@@ -43,9 +43,11 @@ Todo el núcleo está en producción con backend + UI:
 
 **Bugs encontrados en el análisis** (deuda del CRM base):
 1. 🐛 **NotificationBell nunca muestra nada** — `vendepro-frontend/src/components/layout/NotificationBell.tsx:24` llama `apiFetch('crm', '/notifications')` pero el endpoint vive en **api-admin** (`api-admin/src/index.ts:251`), y además espera `{notifications}` cuando el backend devuelve un array plano. Doble desalineación, `.catch` silencioso → campana siempre vacía.
-2. 🐛 **Detalle de prefactibilidad → 404** — `prefactibilidades/page.tsx:77` linkea a `/prefactibilidades/${id}` pero no existe `[id]/page.tsx` (el backend sí tiene `GET /prefactibilidades/:id`).
+2. 🐛 **Detalle de prefactibilidad → 404** — mitigado el 10-sep-2026: el listado ya no linkea al detalle (cards estáticas) hasta que exista `[id]/page.tsx`. El backend sigue teniendo `GET /prefactibilidades/:id` esperando la página.
 3. ~~🐛 **Endpoints IA fantasma**~~ — **resuelto 2026-09-08**: `/extract-kiteprop` ahora existe en api-ai (PDF de KiteProp por Gemini nativo) y el screenshot de competencia reusa `/extract-comparable`; además hay `/extract-comparable-url` para pegar el link del aviso (con lista blanca de portales y degradación explícita a captura cuando el anti-bot bloquea).
 4. 🐛 **Actividades salta la capa de aplicación** — `api-crm:1025-1062` va directo a `D1ActivityRepository` sin use cases (funciona, pero rompe el patrón hexagonal).
+5. ~~🐛 **Etapa y status desincronizados**~~ — **resuelto 2026-09-10**: cambiar la etapa comercial no tocaba `properties.status`/`status_id`, así que una "vencida" o "vendida" (vía dropdown/kanban) seguía como "Activa" en las cards y contaba como aviso activo en el performance de reportes. Ahora `updateStage()` deriva el status de la etapa (`statusForPropertyStage`), y la migración **055** backfillea lo desincronizado. Ver [[Dominio-Propiedades]] § Status.
+6. ~~🐛 **"Sin benchmark" en todo el performance de reportes**~~ — **resuelto 2026-09-10**: el match activas-vs-vendidas por barrio comparaba strings crudos; con "Villa Urquiza" / "villa urquiza " / "Villa Urquíza" el benchmark nunca matcheaba y el mismo barrio salía repetido en la tabla. Ahora se agrupa por clave normalizada (`neighborhoodKey`). Además "Mis avisos activos" ordena peor delta primero y las sin-reportes al final. Los typos reales ("villa pueyrreedon") y las propiedades duplicadas siguen siendo limpieza de datos manual. Ver [[Dominio-Reportes]].
 
 ### 00b — Meta CAPI + GA4 server-side (Stape) 🟡
 

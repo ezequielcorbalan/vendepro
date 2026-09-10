@@ -18,6 +18,12 @@ import { Heading, Text } from '@/components/ui/Typography'
 
 const REPORT_DEADLINE_DAYS = 20
 
+// El status "activa" se resuelve por slug del catálogo, no por id: el id 1 es
+// "activa" solo para Venta — la de Alquiler tiene otro id autoincremental.
+function isActiveStatus(config: PropertyConfig, statusId: number | null | undefined) {
+  return (getStatus(config, statusId ?? 1)?.slug ?? 'activa') === 'activa'
+}
+
 function lastReportInfo(p: any) {
   const dates: Date[] = []
   if (p.last_report_at) { const d = new Date(p.last_report_at); if (!isNaN(d.getTime())) dates.push(d) }
@@ -100,11 +106,10 @@ export default function PropertyFilters({ properties, config }: { properties: an
     for (const p of properties) {
       const csId = stageOverrides[p.id] ?? p.commercial_stage_id
       if (csId) sCount[csId] = (sCount[csId] || 0) + 1
-      const statusId = p.status_id ?? 1
-      if (!terminalIds.has(csId) && statusId === 1) active++
+      if (!terminalIds.has(csId) && isActiveStatus(config, p.status_id)) active++
     }
     return { activeCount: active, stageCounts: sCount }
-  }, [properties, stageOverrides, terminalIds])
+  }, [properties, stageOverrides, terminalIds, config])
 
   const filtered = properties.filter(p => {
     const csId = stageOverrides[p.id] ?? p.commercial_stage_id
@@ -112,7 +117,7 @@ export default function PropertyFilters({ properties, config }: { properties: an
 
     if (filter === 'active') {
       if (terminalIds.has(csId)) return false
-      if (statusId !== 1) return false
+      if (!isActiveStatus(config, statusId)) return false
     } else if (filter.startsWith('stage:')) {
       if (csId !== Number(filter.replace('stage:', ''))) return false
     } else if (filter !== 'all') {
@@ -252,8 +257,8 @@ export default function PropertyFilters({ properties, config }: { properties: an
                       </div>
                     )}
                   </div>
-                  {/* Status badge — only when non-active (suspended, archived, etc.) */}
-                  {status && status.slug !== 'active' && (
+                  {/* Status badge — solo cuando NO está activa (el catálogo usa slugs en español) */}
+                  {status && status.slug !== 'activa' && (
                     <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={stagePillStyle(status.color)}>
                       {status.label}
                     </span>

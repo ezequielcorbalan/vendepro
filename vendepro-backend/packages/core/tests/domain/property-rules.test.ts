@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { canTransitionPropertyStatus } from '../../src/domain/rules/property-rules'
+import { canTransitionPropertyStatus, statusForPropertyStage } from '../../src/domain/rules/property-rules'
 
 describe('Property rules — canTransitionPropertyStatus', () => {
   it('active -> sold allowed', () => {
@@ -55,5 +55,36 @@ describe('Property rules — canTransitionPropertyStatus', () => {
 
   it('returns false for unknown source status', () => {
     expect(canTransitionPropertyStatus('bogus' as never, 'active')).toBe(false)
+  })
+})
+
+describe('Property rules — statusForPropertyStage', () => {
+  it('vendida y alquilada → sold', () => {
+    expect(statusForPropertyStage('vendida')).toBe('sold')
+    expect(statusForPropertyStage('alquilada')).toBe('sold')
+  })
+
+  it('vencida → inactive (deja de contar como aviso activo)', () => {
+    expect(statusForPropertyStage('vencida')).toBe('inactive')
+  })
+
+  it('suspendida → suspended', () => {
+    expect(statusForPropertyStage('suspendida')).toBe('suspended')
+  })
+
+  it('terminales perdida/invalida/archivada → archived', () => {
+    expect(statusForPropertyStage('perdida')).toBe('archived')
+    expect(statusForPropertyStage('invalida')).toBe('archived')
+    expect(statusForPropertyStage('archivada')).toBe('archived')
+  })
+
+  it('etapas vivas del pipeline → active', () => {
+    for (const stage of ['propuesta', 'captada', 'documentacion', 'publicada', 'reservada']) {
+      expect(statusForPropertyStage(stage)).toBe('active')
+    }
+  })
+
+  it('etapa desconocida cae en active (no rompe el update)', () => {
+    expect(statusForPropertyStage('lo-que-sea')).toBe('active')
   })
 })

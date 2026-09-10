@@ -6,6 +6,7 @@ import {
   computeDeltaHealthStatus,
   type HealthStatus,
 } from '../../../domain/rules/report-health-rules'
+import { neighborhoodKey } from '../../../domain/rules/neighborhood-key'
 
 export interface ActiveListingWithBenchmark {
   property_id: string
@@ -31,10 +32,20 @@ export class GetActiveListingsWithBenchmarkUseCase {
       this.repo.getSoldBenchmarkByNeighborhood(orgId, filters),
     ])
 
-    const benchmarkByNeighborhood = new Map<string, number>()
+    // El barrio es texto libre ("Villa Urquiza" / "villa urquiza " / con tilde),
+    // así que el benchmark se acumula por clave normalizada: primero se suman
+    // visitas y días de todas las variantes, recién después se divide.
+    const benchmarkTotals = new Map<string, { portal: number; days: number }>()
     for (const row of soldBenchmarks) {
-      const days = Math.max(1, row.total_days)
-      benchmarkByNeighborhood.set(row.neighborhood, Math.round((row.total_portal_visits / days) * 10) / 10)
+      const key = neighborhoodKey(row.neighborhood)
+      const acc = benchmarkTotals.get(key) ?? { portal: 0, days: 0 }
+      acc.portal += row.total_portal_visits
+      acc.days += Math.max(1, row.total_days)
+      benchmarkTotals.set(key, acc)
+    }
+    const benchmarkByNeighborhood = new Map<string, number>()
+    for (const [key, acc] of benchmarkTotals) {
+      benchmarkByNeighborhood.set(key, Math.round((acc.portal / Math.max(1, acc.days)) * 10) / 10)
     }
 
     const rows = listings.map(r => {
@@ -42,7 +53,7 @@ export class GetActiveListingsWithBenchmarkUseCase {
       const viewsPerDay = r.reports_count > 0 ? Math.round((r.total_portal_visits / days) * 10) / 10 : 0
       const visitsPerWeek = r.reports_count > 0 ? Math.round((r.total_in_person_visits / (days / 7)) * 10) / 10 : 0
 
-      const benchmark = benchmarkByNeighborhood.get(r.neighborhood) ?? null
+      const benchmark = benchmarkByNeighborhood.get(neighborhoodKey(r.neighborhood)) ?? null
       let delta: number | null = null
       if (r.reports_count > 0 && benchmark !== null && benchmark > 0) {
         delta = Math.round(((viewsPerDay - benchmark) / benchmark) * 1000) / 10
@@ -63,10 +74,12 @@ export class GetActiveListingsWithBenchmarkUseCase {
       }
     })
 
-    // Orden: sin reports primero (más urgentes), luego peores delta, null al final.
+    // Orden: primero las que tienen reportes (peor delta arriba — es lo que
+    // promete el subtítulo de la tabla), después las sin benchmark, y al final
+    // las que nunca tuvieron reporte: son una cola de carga, no de análisis.
     return rows.sort((a, b) => {
-      if (a.reports_count === 0 && b.reports_count > 0) return -1
-      if (b.reports_count === 0 && a.reports_count > 0) return 1
+      if (a.reports_count === 0 && b.reports_count > 0) return 1
+      if (b.reports_count === 0 && a.reports_count > 0) return -1
       if (a.reports_count === 0 && b.reports_count === 0) return 0
 
       const aDelta = a.delta_vs_neighborhood_pct

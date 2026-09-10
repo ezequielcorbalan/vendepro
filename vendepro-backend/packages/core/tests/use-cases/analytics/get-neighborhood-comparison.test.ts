@@ -64,6 +64,46 @@ describe('GetNeighborhoodComparisonUseCase', () => {
     expect(result[0]?.delta_health_status).toBe('light_green')
   })
 
+  it('merges spelling variants of the same neighborhood (case/tildes/espacios)', async () => {
+    const repo = makeRepo()
+    repo.getNeighborhoodTotalsByPropertyStatus
+      .mockResolvedValueOnce([ // sold — variante con tilde
+        {
+          neighborhood: 'Villa Urquíza',
+          property_count: 1, reports_count: 2,
+          total_portal_visits: 400, total_in_person_visits: 4,
+          total_inquiries: 8, total_days: 20, // 20 vis/día
+        },
+      ])
+      .mockResolvedValueOnce([ // active — dos variantes del mismo barrio
+        {
+          neighborhood: 'Villa Urquiza',
+          property_count: 2, reports_count: 3,
+          total_portal_visits: 300, total_in_person_visits: 3,
+          total_inquiries: 6, total_days: 20,
+        },
+        {
+          neighborhood: 'villa urquiza ',
+          property_count: 1, reports_count: 1,
+          total_portal_visits: 150, total_in_person_visits: 1,
+          total_inquiries: 2, total_days: 10,
+        },
+      ])
+
+    const useCase = new GetNeighborhoodComparisonUseCase(repo)
+    const result = await useCase.execute('org_mg')
+
+    // Una sola fila: las variantes se suman y el sold matchea contra el active.
+    expect(result).toHaveLength(1)
+    const row = result[0]!
+    expect(row.neighborhood).toBe('Villa Urquiza') // etiqueta de la variante con más reports
+    expect(row.active?.property_count).toBe(3)
+    expect(row.active?.reports_count).toBe(4)
+    expect(row.active?.avg_views_per_day).toBe(15) // 450/30
+    expect(row.sold?.avg_views_per_day).toBe(20)
+    expect(row.delta_views_per_day_pct).toBe(-25)
+  })
+
   it('sorts by active reports_count descending', async () => {
     const repo = makeRepo()
     repo.getNeighborhoodTotalsByPropertyStatus

@@ -60,7 +60,7 @@ const soldBenchmarks = [
 ]
 
 // Four active listings — order below is shuffled to verify the use case sorts
-// (reports=0 first, then most negative delta, then null delta last).
+// (most negative delta first, then null delta, then reports=0 last).
 const activeListings = [
   {
     property_id: 'prop-1',
@@ -236,16 +236,16 @@ describe('GET /listings-performance', () => {
 
     expect(body.active_listings).toBeDefined()
     expect(body.active_listings).toHaveLength(4)
-    // [0]: propiedad sin reportes (reports_count=0 va primero)
-    expect(body.active_listings[0].reports_count).toBe(0)
-    expect(body.active_listings[0].latest_report_published_at).toBeNull()
-    // [1]: Bauness — peor delta (-24.2) de los que tienen reportes
-    expect(body.active_listings[1].address).toBe('Bauness 2906')
-    expect(body.active_listings[1].delta_vs_neighborhood_pct).toBe(-24.2)
-    expect(body.active_listings[1].delta_health_status).toBe('yellow')
-    expect(body.active_listings[1].latest_report_period_label).toBe('Marzo 2026')
-    // [3]: propiedad sin benchmark (barrio Belgrano, sin vendidas) → delta null
-    expect(body.active_listings[3].delta_vs_neighborhood_pct).toBeNull()
-    expect(body.active_listings[3].delta_health_status).toBe('light_green')
+    // [0]: Bauness — peor delta (-24.2) de los que tienen reportes, va primero
+    expect(body.active_listings[0].address).toBe('Bauness 2906')
+    expect(body.active_listings[0].delta_vs_neighborhood_pct).toBe(-24.2)
+    expect(body.active_listings[0].delta_health_status).toBe('yellow')
+    expect(body.active_listings[0].latest_report_period_label).toBe('Marzo 2026')
+    // [2]: propiedad sin benchmark (barrio Belgrano, sin vendidas) → delta null
+    expect(body.active_listings[2].delta_vs_neighborhood_pct).toBeNull()
+    expect(body.active_listings[2].delta_health_status).toBe('light_green')
+    // [3]: propiedad sin reportes va al final (cola de carga, no de análisis)
+    expect(body.active_listings[3].reports_count).toBe(0)
+    expect(body.active_listings[3].latest_report_published_at).toBeNull()
   })
 })

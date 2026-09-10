@@ -7,6 +7,7 @@ import {
   computeDeltaHealthStatus,
   type HealthStatus,
 } from '../../../domain/rules/report-health-rules'
+import { neighborhoodKey } from '../../../domain/rules/neighborhood-key'
 
 export interface NeighborhoodGroupMetrics {
   property_count: number
@@ -23,6 +24,37 @@ export interface NeighborhoodComparison {
   active: NeighborhoodGroupMetrics | null
   delta_views_per_day_pct: number | null
   delta_health_status: HealthStatus
+}
+
+/**
+ * El barrio es texto libre: la misma zona aparece como "Villa Urquiza",
+ * "villa urquiza " o "Villa Urquíza" según quién cargó la propiedad. El SQL
+ * agrupa por el string crudo, así que acá se re-agrupa por clave normalizada
+ * sumando los totales; la etiqueta visible es la de la variante con más reports.
+ */
+function mergeByNeighborhoodKey(
+  rows: NeighborhoodGroupTotals[],
+): Map<string, NeighborhoodGroupTotals & { label: string }> {
+  const merged = new Map<string, NeighborhoodGroupTotals & { label: string; _labelReports: number }>()
+  for (const r of rows) {
+    const key = neighborhoodKey(r.neighborhood)
+    const prev = merged.get(key)
+    if (!prev) {
+      merged.set(key, { ...r, label: r.neighborhood, _labelReports: r.reports_count })
+      continue
+    }
+    prev.property_count += r.property_count
+    prev.reports_count += r.reports_count
+    prev.total_portal_visits += r.total_portal_visits
+    prev.total_in_person_visits += r.total_in_person_visits
+    prev.total_inquiries += r.total_inquiries
+    prev.total_days += r.total_days
+    if (r.reports_count > prev._labelReports) {
+      prev.label = r.neighborhood
+      prev._labelReports = r.reports_count
+    }
+  }
+  return merged
 }
 
 function toMetrics(row: NeighborhoodGroupTotals | undefined): NeighborhoodGroupMetrics | null {
@@ -48,14 +80,15 @@ export class GetNeighborhoodComparisonUseCase {
       this.repo.getNeighborhoodTotalsByPropertyStatus(orgId, 'active', filters),
     ])
 
-    const neighborhoods = new Set<string>([
-      ...soldRows.map(r => r.neighborhood),
-      ...activeRows.map(r => r.neighborhood),
-    ])
+    const soldByKey = mergeByNeighborhoodKey(soldRows)
+    const activeByKey = mergeByNeighborhoodKey(activeRows)
+    const neighborhoods = new Set<string>([...soldByKey.keys(), ...activeByKey.keys()])
 
-    const results = [...neighborhoods].map(n => {
-      const sold = toMetrics(soldRows.find(r => r.neighborhood === n))
-      const active = toMetrics(activeRows.find(r => r.neighborhood === n))
+    const results = [...neighborhoods].map(key => {
+      const soldRow = soldByKey.get(key)
+      const activeRow = activeByKey.get(key)
+      const sold = toMetrics(soldRow)
+      const active = toMetrics(activeRow)
 
       let delta: number | null = null
       if (sold && active && sold.avg_views_per_day > 0) {
@@ -63,7 +96,7 @@ export class GetNeighborhoodComparisonUseCase {
       }
 
       return {
-        neighborhood: n,
+        neighborhood: activeRow?.label ?? soldRow?.label ?? key,
         sold,
         active,
         delta_views_per_day_pct: delta,

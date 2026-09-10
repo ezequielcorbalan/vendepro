@@ -17,11 +17,12 @@ export { computeRealLeadFunnel, computeCaptureTail } from './lead-funnel-rules'
 export type { FunnelLead, FunnelHistoryEntry, FunnelStageResult, LeadFunnelResult, FunnelProperty, CaptureTailResult } from './lead-funnel-rules'
 export { canSeeAll, canManageOrg, canManageAgents, canSetObjectives, isAdmin } from './role-rules'
 export type { UserRole } from './role-rules'
-export { canTransitionPropertyStatus } from './property-rules'
+export { canTransitionPropertyStatus, statusForPropertyStage } from './property-rules'
 export type { PropertyStatus } from './property-rules'
 export { canTransitionReservationStage } from './reservation-rules'
 export type { ReservationStage } from './reservation-rules'
 export { REPORT_HEALTH_BENCHMARKS, computeHealthStatus, computeDeltaHealthStatus, daysBetweenISO } from './report-health-rules'
+export { neighborhoodKey } from './neighborhood-key'
 export type { HealthStatus } from './report-health-rules'
 export {
   isOwner,

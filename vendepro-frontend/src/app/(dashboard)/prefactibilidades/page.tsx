@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Plus, Calculator, MapPin, Loader2, ChevronRight } from 'lucide-react'
+import { Plus, Calculator, MapPin, Loader2 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -72,10 +72,9 @@ export default function PrefactibilidadesPage() {
       {!loading && !error && items.length > 0 && (
         <div className="space-y-3">
           {items.map((item: any) => (
-            <Link
+            <div
               key={item.id}
-              href={`/prefactibilidades/${item.id}`}
-              className="flex items-center gap-4 bg-white rounded-card border border-gray-100 p-4 hover:border-primary/30 transition-colors"
+              className="flex items-center gap-4 bg-white rounded-card border border-gray-100 p-4"
             >
               <div className="w-10 h-10 rounded-control bg-gray-100 flex items-center justify-center flex-shrink-0">
                 <Calculator className="w-5 h-5 text-gray-600" />
@@ -89,8 +88,7 @@ export default function PrefactibilidadesPage() {
                   </Text>
                 )}
               </div>
-              <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
-            </Link>
+            </div>
           ))}
         </div>
       )}

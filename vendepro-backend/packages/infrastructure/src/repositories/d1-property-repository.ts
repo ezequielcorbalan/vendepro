@@ -1,4 +1,4 @@
-import { Property } from '@vendepro/core'
+import { Property, statusForPropertyStage } from '@vendepro/core'
 import type { PropertyRepository, PropertyFilters, PropertyProps, PropertyPhoto, OperationType, CommercialStage, PropertyStatusCatalog, PropertyPriceHistoryEntry } from '@vendepro/core'
 
 /** lower/trim, sin acentos, sin puntuación y con espacios colapsados — para match de direcciones. */
@@ -282,7 +282,7 @@ export class D1PropertyRepository implements PropertyRepository {
     // Try matching by operation_type_id first, fall back to slug-only lookup
     let stageRow = await this.db
       .prepare(`
-        SELECT cs.id as stage_id, cs.slug as stage_slug
+        SELECT cs.id as stage_id, cs.slug as stage_slug, p.operation_type_id as op_type_id
         FROM commercial_stages cs
         JOIN properties p ON cs.operation_type_id = p.operation_type_id
         WHERE p.id = ? AND cs.slug = ?
@@ -293,21 +293,46 @@ export class D1PropertyRepository implements PropertyRepository {
     if (!stageRow) {
       // Fallback: property may lack operation_type_id — match slug across all operation types
       stageRow = await this.db
-        .prepare(`SELECT id as stage_id, slug as stage_slug FROM commercial_stages WHERE slug = ? LIMIT 1`)
+        .prepare(`SELECT id as stage_id, slug as stage_slug, operation_type_id as op_type_id FROM commercial_stages WHERE slug = ? LIMIT 1`)
         .bind(stageSlug)
         .first() as any
     }
 
     if (!stageRow) throw new Error(`invalid stage: ${stageSlug}`)
 
+    // El status se deriva de la etapa en el mismo UPDATE: si divergen, una
+    // "vencida" sigue mostrándose Activa y contando en analytics como aviso
+    // vivo. Se sincronizan las dos representaciones — la columna TEXT en
+    // inglés (analytics filtra por 'active'/'sold') y el status_id del
+    // catálogo property_statuses (el pill de la card lee ese id).
+    const status = statusForPropertyStage(stageRow.stage_slug)
+    const statusSlugEs = this.statusSlugForCatalog(status, Number(stageRow.op_type_id ?? 1))
     await this.db
       .prepare(`
         UPDATE properties
-        SET commercial_stage = ?, commercial_stage_id = ?, updated_at = datetime('now')
+        SET commercial_stage = ?, commercial_stage_id = ?, status = ?,
+            status_id = COALESCE((
+              SELECT ps.id FROM property_statuses ps
+              WHERE ps.operation_type_id = COALESCE(properties.operation_type_id, 1)
+                AND ps.slug = ?
+            ), status_id),
+            updated_at = datetime('now')
         WHERE id = ? AND org_id = ?
       `)
-      .bind(stageRow.stage_slug, stageRow.stage_id, id, orgId)
+      .bind(stageRow.stage_slug, stageRow.stage_id, status, statusSlugEs, id, orgId)
       .run()
+  }
+
+  /** Slug del catálogo property_statuses (en español) para un status TEXT.
+   *  En alquiler el catálogo no tiene 'vendida': la cerrada es 'alquilada'. */
+  private statusSlugForCatalog(status: string, opTypeId: number): string {
+    switch (status) {
+      case 'sold': return opTypeId === 2 ? 'alquilada' : 'vendida'
+      case 'suspended': return 'suspendida'
+      case 'inactive': return 'inactiva'
+      case 'archived': return 'archivada'
+      default: return 'activa'
+    }
   }
 
   async findCatalogs(): Promise<{
