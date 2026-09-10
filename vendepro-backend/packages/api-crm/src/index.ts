@@ -20,7 +20,7 @@ import {
   JwtAuthService, CryptoIdGenerator,
   encrypt, decrypt,
   createMarketingSender, fireMarketingEvent, fireWebhookEvent, resolveAssignedAgent,
-  fireAndDrainAutomations, drainAutomationJobs,
+  fireAndDrainAutomations, drainAutomationJobs, sweepTimeBasedAutomations,
 } from '@vendepro/infrastructure'
 import { Activity, propertyFromIncoming } from '@vendepro/core'
 import {
@@ -1730,6 +1730,9 @@ async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext)
     return
   }
   ctx.waitUntil(runKitepropAutoSync(env))
+  // Triggers time-based (SLA sin contactar, lead frío, mandato por vencer):
+  // es el barrido que la UI promete con "lo evalúa el sistema cada 15 minutos".
+  ctx.waitUntil(sweepTimeBasedAutomations(env))
 }
 
 // El default sigue siendo la app de Hono (los tests usan app.request) con el

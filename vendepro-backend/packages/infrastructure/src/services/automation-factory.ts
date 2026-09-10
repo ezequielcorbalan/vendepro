@@ -2,10 +2,12 @@ import {
   RunAutomationsForEventUseCase,
   DrainAutomationJobsUseCase,
   BuildAutomationContextUseCase,
+  SweepTimeBasedAutomationsUseCase,
   type RunAutomationsForEventOutput,
   type EntityType,
 } from '@vendepro/core'
 import { D1AutomationRepository } from '../repositories/d1-automation-repository'
+import { D1TimeBasedCandidateRepository } from '../repositories/d1-time-based-candidate-repository'
 import { D1AutomationRunRepository } from '../repositories/d1-automation-run-repository'
 import { D1AutomationJobRepository } from '../repositories/d1-automation-job-repository'
 import { D1LeadRepository } from '../repositories/d1-lead-repository'
@@ -189,6 +191,28 @@ export async function drainAutomationJobs(
     await createAutomationDrainer(env).execute(opts)
   } catch (err) {
     console.error('[automations] drain failed (swallowed):', (err as Error)?.message ?? err)
+  }
+}
+
+/**
+ * Barrido de triggers time-based (SLA sin contactar, lead frío, mandato por
+ * vencer). Es lo que hace correr las recetas que "las evalúa el sistema cada
+ * 15 minutos": va colgado del cron de 15 minutos de api-crm. Dispara por el mismo
+ * camino que cualquier evento — condiciones, rate limit y dedupe incluidos —
+ * y drena la cola si encoló algo, así las alertas salen en el mismo tick.
+ */
+export async function sweepTimeBasedAutomations(env: AutomationEnv): Promise<void> {
+  try {
+    const sweep = new SweepTimeBasedAutomationsUseCase(
+      new D1AutomationRepository(env.DB),
+      new D1TimeBasedCandidateRepository(env.DB),
+      createAutomationContextBuilder(env),
+      createAutomationRunner(env),
+    )
+    const result = await sweep.execute()
+    if (result.queued > 0) await drainAutomationJobs(env, { limit: 50 })
+  } catch (err) {
+    console.error('[automations] sweep failed (swallowed):', (err as Error)?.message ?? err)
   }
 }
 

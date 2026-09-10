@@ -52,3 +52,4 @@ export type { EmailCampaignRepository, EmailCampaignSendRepository, CampaignSend
 export type { EmailAudienceRepository, AudienceRecipient } from './email-audience-repository'
 export * from './portal-feed-repository'
 export * from './automation-repository'
+export * from './time-based-candidate-repository'
