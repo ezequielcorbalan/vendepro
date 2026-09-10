@@ -72,4 +72,54 @@ export interface GoogleCalendarGateway {
   createEvent(accessToken: string, event: GoogleEventPayload): Promise<{ id: string }>
   updateEvent(accessToken: string, eventId: string, event: GoogleEventPayload): Promise<void>
   deleteEvent(accessToken: string, eventId: string): Promise<void>
+  /** Abre un canal para que Google avise cuando el calendario cambia. */
+  watchEvents(accessToken: string, input: WatchEventsInput): Promise<GoogleWatchChannel>
+  /** Cierra el canal. Best-effort: no debe tirar si ya venció. */
+  stopChannel(accessToken: string, channelId: string, resourceId: string): Promise<void>
+  /** Cambios desde el último `syncToken` (o la ventana entera si no hay). */
+  listChanges(accessToken: string, input: ListChangesInput): Promise<GoogleChangesPage>
+}
+
+// ── Notificaciones push (canales de Google) ───────────────────
+
+/** Canal de notificaciones abierto contra el calendario del usuario. */
+export interface GoogleWatchChannel {
+  /** Id que elegimos nosotros; Google lo devuelve en cada notificación. */
+  id: string
+  /** Id del recurso observado. Hace falta para cerrar el canal. */
+  resource_id: string
+  /** Vencimiento en ms epoch. Google no mantiene canales abiertos para siempre. */
+  expiration: number | null
+}
+
+export interface WatchEventsInput {
+  channelId: string
+  /** URL pública HTTPS a la que Google va a postear. */
+  address: string
+  /** Secreto que Google devuelve en cada notificación — así se valida el origen. */
+  token: string
+}
+
+/**
+ * Una tanda de cambios del calendario.
+ *
+ * A diferencia de `listEvents`, incluye los eventos cancelados: en una
+ * sincronización incremental "cancelado" ES el cambio que hay que aplicar.
+ */
+export interface GoogleChangesPage {
+  events: GoogleCalendarEvent[]
+  /** Token para pedir sólo lo que cambie de acá en adelante. */
+  next_sync_token: string | null
+  /**
+   * Google invalidó el token (410). El llamador tiene que resincronizar la
+   * ventana entera y arrancar un token nuevo.
+   */
+  sync_token_expired: boolean
+}
+
+export interface ListChangesInput {
+  /** Sin token: primera sincronización, acotada por la ventana. */
+  syncToken?: string | null
+  timeMin?: string
+  timeMax?: string
 }

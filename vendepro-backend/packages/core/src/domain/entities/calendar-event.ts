@@ -85,6 +85,29 @@ export class CalendarEvent {
     this.props.updated_at = new Date().toISOString()
   }
 
+  /**
+   * Aplica los datos que el agente editó en su calendario externo.
+   *
+   * Toca sólo lo que Google es dueño de contar —título, horario, descripción—
+   * y deja intactos el tipo de evento y los vínculos a lead o contacto: esos
+   * pueden haberse corregido a mano en el CRM, y una corrección humana vale
+   * más que la heurística que los adivinó.
+   */
+  applyExternalEdit(patch: {
+    title: string
+    startAt: string | null
+    endAt: string | null
+    allDay: number
+    description: string | null
+  }): void {
+    if (patch.title.trim()) this.props.title = patch.title.trim()
+    this.props.start_at = patch.startAt
+    this.props.end_at = patch.endAt
+    this.props.all_day = patch.allDay
+    this.props.description = patch.description
+    this.props.updated_at = new Date().toISOString()
+  }
+
   reschedule(startAt: string, endAt: string): void {
     this.props.start_at = startAt
     this.props.end_at = endAt

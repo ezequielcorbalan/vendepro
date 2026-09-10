@@ -12,6 +12,21 @@ export class D1UserIntegrationRepository implements UserIntegrationRepository {
     return row ? this.toEntity(row) : null
   }
 
+  async findByGoogleChannelId(channelId: string): Promise<UserIntegration | null> {
+    // El id de canal vive dentro de `config_json`. Se consulta con
+    // json_extract en vez de traer todas las integraciones y filtrar en JS:
+    // esto lo llama Google en cada cambio de calendario de cada agente.
+    const row = await this.db
+      .prepare(`
+        SELECT * FROM user_integrations
+        WHERE json_extract(config_json, '$.watch_channel_id') = ?
+        LIMIT 1
+      `)
+      .bind(channelId)
+      .first() as any
+    return row ? this.toEntity(row) : null
+  }
+
   async save(integration: UserIntegration): Promise<void> {
     const o = integration.toObject()
     await this.db.prepare(`

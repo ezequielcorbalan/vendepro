@@ -1,6 +1,7 @@
 import type {
   GoogleCalendarGateway, GoogleTokenSet, GoogleEventPayload,
   GoogleCalendarEvent, ListGoogleEventsInput,
+  GoogleWatchChannel, WatchEventsInput, GoogleChangesPage, ListChangesInput,
 } from '@vendepro/core'
 
 const OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token'
@@ -117,6 +118,98 @@ export class GoogleCalendarHttpClient implements GoogleCalendarGateway {
     // 404/410: ya no existe en Google (borrado a mano) — objetivo cumplido
     if (!res.ok && res.status !== 404 && res.status !== 410) {
       throw new Error(`Google Calendar: HTTP ${res.status} al borrar el evento`)
+    }
+  }
+
+  async watchEvents(accessToken: string, input: WatchEventsInput): Promise<GoogleWatchChannel> {
+    const res = await fetch(`${CALENDAR_EVENTS_URL}/watch`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        id: input.channelId,
+        type: 'web_hook',
+        address: input.address,
+        // Google devuelve este token en cada notificación: es lo que prueba
+        // que el POST viene de Google y no de cualquiera que sepa la URL.
+        token: input.token,
+      }),
+      signal: AbortSignal.timeout(this.timeoutMs),
+    })
+    const data = (await res.json().catch(() => ({}))) as any
+    if (!res.ok) {
+      throw new Error(`Google Calendar: ${data?.error?.message || `HTTP ${res.status}`} al abrir el canal`)
+    }
+    return {
+      id: typeof data.id === 'string' ? data.id : input.channelId,
+      resource_id: typeof data.resourceId === 'string' ? data.resourceId : '',
+      // Google lo manda como string de ms epoch.
+      expiration: data.expiration ? Number(data.expiration) : null,
+    }
+  }
+
+  async stopChannel(accessToken: string, channelId: string, resourceId: string): Promise<void> {
+    try {
+      const res = await fetch('https://www.googleapis.com/calendar/v3/channels/stop', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id: channelId, resourceId }),
+        signal: AbortSignal.timeout(this.timeoutMs),
+      })
+      // 404: el canal ya venció o se cerró — objetivo cumplido.
+      if (!res.ok && res.status !== 404) {
+        throw new Error(`HTTP ${res.status}`)
+      }
+    } catch {
+      // Best-effort a propósito: si no se puede cerrar, el canal vence solo.
+      // Fallar acá bloquearía la desconexión de la cuenta, que es lo que el
+      // usuario realmente pidió.
+    }
+  }
+
+  async listChanges(accessToken: string, input: ListChangesInput): Promise<GoogleChangesPage> {
+    const params = new URLSearchParams({
+      singleEvents: 'true',
+      maxResults: '250',
+      // Sin esto los cancelados no vienen, y en una sincronización incremental
+      // "cancelado" ES el cambio que hay que aplicar.
+      showDeleted: 'true',
+    })
+    if (input.syncToken) {
+      params.set('syncToken', input.syncToken)
+    } else {
+      // Primera sincronización: se acota por ventana. `syncToken` y los
+      // filtros de tiempo son mutuamente excluyentes en la API de Google.
+      if (input.timeMin) params.set('timeMin', input.timeMin)
+      if (input.timeMax) params.set('timeMax', input.timeMax)
+    }
+
+    const res = await fetch(`${CALENDAR_EVENTS_URL}?${params.toString()}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      signal: AbortSignal.timeout(this.timeoutMs),
+    })
+
+    // 410 GONE: el token caducó (pasó demasiado tiempo). No es un error a
+    // propagar: es la señal de "resincronizá todo y empezá un token nuevo".
+    if (res.status === 410) {
+      return { events: [], next_sync_token: null, sync_token_expired: true }
+    }
+
+    const data = (await res.json().catch(() => ({}))) as any
+    if (!res.ok) {
+      throw new Error(`Google Calendar: ${data?.error?.message || `HTTP ${res.status}`}`)
+    }
+    return {
+      events: (Array.isArray(data.items) ? data.items : [])
+        .filter((item: any) => item?.id)
+        .map(toGoogleCalendarEvent),
+      next_sync_token: typeof data.nextSyncToken === 'string' ? data.nextSyncToken : null,
+      sync_token_expired: false,
     }
   }
 

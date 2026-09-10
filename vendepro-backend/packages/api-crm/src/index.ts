@@ -41,6 +41,7 @@ import {
   GetKitepropAgentsUseCase, SaveAgentMapUseCase,
   GetGoogleIntegrationUseCase, ConnectGoogleCalendarUseCase,
   ImportGoogleCalendarEventsUseCase,
+  SyncGoogleCalendarUseCase, EnsureGoogleWatchUseCase, GOOGLE_CALENDAR_PROVIDER,
   DisconnectGoogleCalendarUseCase, SaveGoogleIntegrationSettingsUseCase,
   SyncEventToGoogleUseCase, ListGoogleCalendarEventsUseCase,
   GetEmailSettingsUseCase, SaveEmailSettingsUseCase,
@@ -75,6 +76,9 @@ type Env = {
   RESEND_API_KEY?: string
   // Base pública para los links dentro de los emails (reportes, tasaciones, baja)
   PUBLIC_BASE_URL?: string
+  // URL pública de ESTE worker. La necesita el cron para armar la dirección
+  // del webhook de Google: en un cron no hay request de la cual deducirla.
+  PUBLIC_API_URL?: string
 }
 type AuthVars = { Variables: { userId: string; userRole: string; orgId: string } }
 
@@ -84,12 +88,17 @@ app.use('*', corsMiddleware)
 app.onError(errorHandler)
 
 const GOOGLE_CALLBACK_PATH = '/integrations/google/callback'
+const GOOGLE_WEBHOOK_PATH = '/integrations/google/webhook'
 
 // Apply auth to all routes
 app.use('*', async (c, next) => {
   // El callback OAuth llega por redirect del navegador (sin Bearer): se
   // autentica con el JWT firmado que viaja en `state`.
   if (c.req.path === GOOGLE_CALLBACK_PATH) return next()
+  // El webhook lo postea Google, que no tiene forma de mandar nuestro JWT. Se
+  // autentica con el token secreto del canal, que sólo conocen Google y este
+  // worker (ver la ruta más abajo).
+  if (c.req.path === GOOGLE_WEBHOOK_PATH) return next()
   const authService = new JwtAuthService(c.env.JWT_SECRET)
   return createAuthMiddleware(authService)(c, next)
 })
@@ -842,6 +851,25 @@ app.get(GOOGLE_CALLBACK_PATH, async (c) => {
       code,
       redirectUri: googleRedirectUri(c),
     })
+
+    // Recién conectada la cuenta, se abre el canal de notificaciones para que
+    // los eventos entren solos. Best-effort: si Google rechaza el canal (URL
+    // sin verificar, por ejemplo) la conexión igual sirve — el agente tiene el
+    // botón manual y el cron levanta el canal más tarde.
+    try {
+      await new EnsureGoogleWatchUseCase(
+        new D1UserIntegrationRepository(c.env.DB),
+        googleGateway(c.env),
+        new CryptoIdGenerator(),
+        (plain) => encrypt(plain, c.env.JWT_SECRET),
+        (cipher) => decrypt(cipher, c.env.JWT_SECRET),
+      ).execute({
+        userId: payload.sub,
+        webhookUrl: new URL(c.req.url).origin + GOOGLE_WEBHOOK_PATH,
+        force: true,
+      })
+    } catch { /* la conexión ya está hecha; el canal se reintenta por cron */ }
+
     return finish('ok')
   } catch (err: any) {
     // Un ValidationError trae un motivo accionable (ej. faltó tildar el
@@ -935,6 +963,61 @@ app.post('/integrations/google/import', async (c) => {
       : (raw || 'google_error')
     return c.json({ imported: 0, skipped: 0, linked: 0, connected: true, reason }, 502)
   }
+})
+
+/**
+ * Webhook de Google Calendar: llega un POST por cada cambio en el calendario
+ * de un agente que tenga canal abierto.
+ *
+ * Google no manda el evento que cambió — sólo avisa "algo cambió en este
+ * canal". Por eso acá se dispara la sincronización incremental, que con el
+ * `syncToken` se trae únicamente la diferencia.
+ *
+ * Va sin sesión (Google no puede mandar nuestro JWT) y se autentica con el
+ * token secreto del canal: se generó al abrirlo, viaja en `X-Goog-Channel-Token`
+ * y sólo lo conocen Google y este worker. Si no coincide, se corta.
+ */
+app.post(GOOGLE_WEBHOOK_PATH, async (c) => {
+  const channelId = c.req.header('X-Goog-Channel-ID')
+  const channelToken = c.req.header('X-Goog-Channel-Token')
+  const resourceState = c.req.header('X-Goog-Resource-State')
+
+  // Google manda un "sync" de cortesía al abrir el canal. No hay nada que
+  // traer todavía y contestarle 200 es lo que confirma la suscripción.
+  if (!channelId || resourceState === 'sync') return c.body(null, 200)
+
+  const repo = new D1UserIntegrationRepository(c.env.DB)
+  const integration = await repo.findByGoogleChannelId(channelId)
+  if (!integration) {
+    // Canal desconocido: probablemente uno viejo que quedó vivo tras
+    // desconectar. 200 igual, para que Google deje de reintentar.
+    return c.body(null, 200)
+  }
+
+  const expected = integration.getConfig().watch_token
+  if (typeof expected !== 'string' || expected !== channelToken) {
+    return c.json({ error: 'Token de canal inválido' }, 403)
+  }
+
+  try {
+    const result = await new SyncGoogleCalendarUseCase(
+      repo,
+      new D1CalendarRepository(c.env.DB),
+      new D1LeadRepository(c.env.DB),
+      new D1ContactRepository(c.env.DB),
+      googleGateway(c.env),
+      new CryptoIdGenerator(),
+      (plain) => encrypt(plain, c.env.JWT_SECRET),
+      (cipher) => decrypt(cipher, c.env.JWT_SECRET),
+    ).execute({ orgId: integration.org_id, userId: integration.user_id })
+    console.log('google-webhook', channelId, JSON.stringify(result))
+  } catch (err: any) {
+    // Nunca se le devuelve un error a Google: reintentaría con backoff y, si
+    // el fallo es permanente, termina cerrando el canal. La red de seguridad
+    // es el cron, que vuelve a sincronizar más tarde.
+    console.error('google-webhook falló', channelId, String(err?.message ?? err))
+  }
+  return c.body(null, 200)
 })
 
 app.delete('/integrations/google', async (c) => {
@@ -1612,6 +1695,64 @@ async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext)
     return
   }
   ctx.waitUntil(runKitepropAutoSync(env))
+  ctx.waitUntil(renewGoogleWatches(env))
+}
+
+/**
+ * Renueva los canales de Google Calendar que están por vencer.
+ *
+ * Google no mantiene un canal abierto para siempre: vence a los pocos días y,
+ * si nadie lo renueva, los eventos dejan de llegar sin ningún error visible —
+ * simplemente el calendario del agente y el CRM se separan en silencio. Esto
+ * es lo que evita ese final.
+ *
+ * De paso sincroniza a quien tenga canal: si una notificación se perdió (el
+ * worker estaba caído, Google reintentó y desistió), acá se recupera.
+ */
+async function renewGoogleWatches(env: Env): Promise<void> {
+  if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) return
+  if (!env.PUBLIC_API_URL) return
+
+  try {
+    const rows = (await env.DB.prepare(`
+      SELECT user_id, org_id FROM user_integrations
+      WHERE provider = ? AND enabled = 1 AND credentials_encrypted IS NOT NULL
+    `).bind(GOOGLE_CALENDAR_PROVIDER).all()).results as Array<{ user_id: string; org_id: string }>
+
+    const webhookUrl = env.PUBLIC_API_URL.replace(/\/+$/, '') + GOOGLE_WEBHOOK_PATH
+
+    for (const row of rows) {
+      try {
+        const watch = await new EnsureGoogleWatchUseCase(
+          new D1UserIntegrationRepository(env.DB),
+          googleGateway(env),
+          new CryptoIdGenerator(),
+          (plain) => encrypt(plain, env.JWT_SECRET),
+          (cipher) => decrypt(cipher, env.JWT_SECRET),
+        ).execute({ userId: row.user_id, webhookUrl })
+
+        // Al renovar arranca un canal nuevo, y entre el cierre del viejo y la
+        // apertura pudo cambiar algo. Una sincronización deja todo al día.
+        if (watch.renewed) {
+          await new SyncGoogleCalendarUseCase(
+            new D1UserIntegrationRepository(env.DB),
+            new D1CalendarRepository(env.DB),
+            new D1LeadRepository(env.DB),
+            new D1ContactRepository(env.DB),
+            googleGateway(env),
+            new CryptoIdGenerator(),
+            (plain) => encrypt(plain, env.JWT_SECRET),
+            (cipher) => decrypt(cipher, env.JWT_SECRET),
+          ).execute({ orgId: row.org_id, userId: row.user_id })
+        }
+      } catch (err: any) {
+        // Un agente con la cuenta rota no puede frenar la renovación del resto.
+        console.error('renovación de canal falló', row.user_id, String(err?.message ?? err))
+      }
+    }
+  } catch (err: any) {
+    console.error('renewGoogleWatches falló', String(err?.message ?? err))
+  }
 }
 
 // El default sigue siendo la app de Hono (los tests usan app.request) con el

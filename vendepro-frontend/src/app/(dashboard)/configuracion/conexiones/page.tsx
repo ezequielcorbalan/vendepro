@@ -375,8 +375,8 @@ export default function ConexionesPage() {
               <Text weight="semibold">Google Calendar</Text>
               <Text size="xs" tone="muted">
                 {google?.connected
-                  ? <>Conectado{google.email ? <> como <span className="font-medium">{google.email}</span></> : ''} · tus eventos del CRM se copian a tu calendar</>
-                  : 'Copiá automáticamente tus eventos del CRM (visitas, reuniones, tasaciones) a tu calendar personal'}
+                  ? <>Conectado{google.email ? <> como <span className="font-medium">{google.email}</span></> : ''} · se sincroniza en los dos sentidos</>
+                  : 'Tus eventos del CRM van a tu calendar, y lo que agendás en tu calendar entra al CRM'}
               </Text>
             </div>
           </div>
@@ -422,7 +422,7 @@ export default function ConexionesPage() {
               loading={googleImporting}
               icon={<Download className="w-4 h-4" />}
             >
-              Traer mis eventos al CRM
+              Traer mis eventos ahora
             </Button>
             <Button
               variant="outline"
@@ -446,6 +446,7 @@ export default function ConexionesPage() {
         </div>
         <Text size="xs" tone="muted">
           La conexión es personal: cada agente conecta su propia cuenta. Se piden permisos sólo sobre eventos de calendario.
+          {google?.connected && ' Lo que agendes entra al CRM solo, en segundos; el botón de arriba es para recuperar lo que ya tenías cargado.'}
         </Text>
       </Card>
 

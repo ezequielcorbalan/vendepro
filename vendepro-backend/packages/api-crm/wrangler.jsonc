@@ -13,7 +13,9 @@
   "vars": {
     // Base pública para los links que van dentro de los emails
     // (reportes de propiedad, tasaciones, baja de suscripción).
-    "PUBLIC_BASE_URL": "https://www.marcelagenta.com"
+    "PUBLIC_BASE_URL": "https://www.marcelagenta.com",
+    // URL pública de este worker — el cron la usa para el webhook de Google.
+    "PUBLIC_API_URL": "https://crm.api.vendepro.com.ar"
   },
   "d1_databases": [
     {
