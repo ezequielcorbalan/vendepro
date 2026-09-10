@@ -18,7 +18,7 @@
 | 06 · Red compartida de cierres | 🟠 | `sold_properties.shared_with_network` existe pero es un flag muerto: sin UI, sin query cross-org, sin karma. |
 | 07 · Landings por agente | 🟢 | Perfil + landing `/a/<org>/<agente>` con binding vivo en producción; propiedades activas, testimonios y descargables quedan fuera del MVP. |
 | 08 · Landings por propiedad | 🔴 | El kind `property` es solo un estilo; `landings` no tiene `property_id`, sin UTM builder ni QR. |
-| 09 · Automatizaciones de email | 🟡 | Motor v2 en producción (bienvenida y nurture andan); **follow-up por inactividad no corre** — falta el barrido cron. |
+| 09 · Automatizaciones de email | 🟡 | Motor v2 en producción; barrido cron time-based + `lead.created` desde api-public implementados (10-sep, falta deploy). Quedan 6 acciones sin executor y el open/click tracking. |
 | 10 · Agente conversacional IA | 🔴 | Cero código de WhatsApp/IG/Messenger, sin tablas conversations/messages. |
 | 11 · Asistente IA interno | 🟠 | IA de extracción/generación 🟢, pero no hay chat, ni `ai_conversations`, ni function calling. |
 | 12 · Marketplace de servicios | 🔴 | Nada. |
@@ -159,9 +159,11 @@ El kind `property` es solo un **estilo**: `landings` no tiene `property_id` — 
 |---|---|
 | Bienvenida | 🟢 receta `lead_bienvenida`, trigger `lead.created`, se dispara de verdad |
 | Nurture por etapa | 🟢 `lead.stage_changed` se dispara |
-| Follow-up por inactividad | 🟠 **NO corre**: recetas `sla_contacto_24h`/`lead_frio_7d` y `findActiveTimeBased()` (`d1-automation-repository.ts:61`) existen, pero **nadie las llama** — el cron `*/15` solo hace KiteProp. El comentario "lo evalúa el sistema cada 15 minutos" es aspiracional. |
+| Follow-up por inactividad | 🟡 **Implementado 10-sep-2026, falta deploy**: `SweepTimeBasedAutomationsUseCase` (core) + `D1AutomationSweepRepository` (queries de candidatos con filtro anti-re-disparo sobre `automation_runs`) + `sweepTimeBasedAutomations()` en la factory, enganchado al cron `*/15` de api-crm. Cubre los 3 triggers por tiempo (`lead.sin_contacto_24h`, `lead.sin_respuesta_7d`, `property.publicacion_vencida` — vencimiento = `auth_start_date` + `auth_duration_days`). Dedup doble: pre-filtro SQL por scope + `claim()` del motor; tope de 50 candidatos por automatización por tick. |
 
-**Otros gaps**: solo 3 de 9 acciones implementadas (`send_email`, `notify_agent`, `create_calendar_event`; el resto se marca `skipped`); los triggers `appraisal.created` / `property.stage_changed` / `contact.created` / `lead.assigned` están en catálogo y recetas pero **ningún worker los emite** (tampoco los leads creados desde api-public disparan automatizaciones); **open/click tracking no existe** (columnas `opened_at`/`clicked_at` declaradas y nunca escritas, sin pixel, sin redirect, sin webhook de Resend — la UI promete "métricas de apertura" que no llegan).
+**Emisores (10-sep-2026)**: los leads de **api-public** ya disparan `lead.created` — `/v1/leads` (por lead creado, no duplicado), `/public/leads` (legacy) y `/l/:slug/submit` (landings). En api-public se dispara **sin drenar** (el worker no tiene `RESEND_API_KEY` y drenar sin executor marcaría los emails `skipped: not_implemented`); los jobs los ejecuta el cron `*/5` de api-crm, así que la bienvenida puede tardar hasta 5 min. Los leads que crea el **sync de KiteProp** siguen sin disparar (pendiente).
+
+**Otros gaps**: solo 3 de 9 acciones implementadas (`send_email`, `notify_agent`, `create_calendar_event`; el resto se marca `skipped`); los triggers `appraisal.created` / `property.stage_changed` / `contact.created` / `lead.assigned` están en catálogo y recetas pero **ningún worker los emite**; **open/click tracking no existe** (columnas `opened_at`/`clicked_at` declaradas y nunca escritas, sin pixel, sin redirect, sin webhook de Resend — la UI promete "métricas de apertura" que no llegan).
 
 **Provider**: el roadmap dice "Emblue ya está en stack" — **desactualizado**: Emblue es legacy muerto (cero código vivo); todo sale por **Resend** (campañas, automatizaciones, test, reset de password), con template base unificado. Campañas de email 🟢: wizard completo, segmentos dinámicos, cola con cron `*/5` + batches de 100 + 3 reintentos, suppressions, unsubscribe público HMAC, borrador con IA.
 

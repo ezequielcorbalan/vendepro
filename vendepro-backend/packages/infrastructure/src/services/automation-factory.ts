@@ -2,10 +2,12 @@ import {
   RunAutomationsForEventUseCase,
   DrainAutomationJobsUseCase,
   BuildAutomationContextUseCase,
+  SweepTimeBasedAutomationsUseCase,
   type RunAutomationsForEventOutput,
   type EntityType,
 } from '@vendepro/core'
 import { D1AutomationRepository } from '../repositories/d1-automation-repository'
+import { D1AutomationSweepRepository } from '../repositories/d1-automation-sweep-repository'
 import { D1AutomationRunRepository } from '../repositories/d1-automation-run-repository'
 import { D1AutomationJobRepository } from '../repositories/d1-automation-job-repository'
 import { D1LeadRepository } from '../repositories/d1-lead-repository'
@@ -189,6 +191,37 @@ export async function drainAutomationJobs(
     await createAutomationDrainer(env).execute(opts)
   } catch (err) {
     console.error('[automations] drain failed (swallowed):', (err as Error)?.message ?? err)
+  }
+}
+
+/**
+ * Barrido de los triggers por tiempo + drenaje de lo que encoló.
+ *
+ * Pensado para el cron de api-crm (cada 15 minutos): es el único emisor
+ * posible de 'lead.sin_contacto_24h', 'lead.sin_respuesta_7d' y
+ * 'property.publicacion_vencida' — ningún request los dispara porque el hecho
+ * que los dispara es el paso del tiempo. Sólo tiene sentido en un worker con
+ * todos los executors (api-crm): drenar sin `RESEND_API_KEY` marcaría los
+ * jobs de email como `skipped: not_implemented`.
+ */
+export async function sweepTimeBasedAutomations(env: AutomationEnv): Promise<void> {
+  try {
+    const sweeper = new SweepTimeBasedAutomationsUseCase(
+      new D1AutomationRepository(env.DB),
+      new D1AutomationSweepRepository(env.DB),
+      (event) => fireAutomationEvent(env, {
+        orgId: event.orgId,
+        trigger: event.trigger,
+        entityType: event.entityType,
+        entityId: event.entityId,
+      }),
+    )
+    const result = await sweeper.execute({})
+    // Lo que el barrido encoló sale en el mismo tick; si quedara algo (límite
+    // de la pasada), lo recoge el cron */5 que drena siempre.
+    if (result.dispatched > 0) await drainAutomationJobs(env, { limit: 50 })
+  } catch (err) {
+    console.error('[automations] sweep failed (swallowed):', (err as Error)?.message ?? err)
   }
 }
 

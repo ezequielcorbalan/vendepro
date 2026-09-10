@@ -223,6 +223,7 @@ export * from './use-cases/portals/get-portal-feed'
 
 // Automatizaciones
 export * from './use-cases/automations/run-automations-for-event'
+export * from './use-cases/automations/sweep-time-based-automations'
 export * from './use-cases/automations/drain-automation-jobs'
 export * from './use-cases/automations/build-automation-context'
 export * from './use-cases/automations/manage-automations'
