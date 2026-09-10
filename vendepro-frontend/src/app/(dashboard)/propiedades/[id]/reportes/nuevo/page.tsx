@@ -907,7 +907,7 @@ export default function NuevoReporte() {
 
             {wasPublished && (
               <Alert tone="info">
-                Este reporte ya está publicado. "Guardar cambios" actualiza lo que ve el
+                Este reporte ya está publicado. «Guardar cambios» actualiza lo que ve el
                 propietario manteniendo el mismo link.
               </Alert>
             )}
