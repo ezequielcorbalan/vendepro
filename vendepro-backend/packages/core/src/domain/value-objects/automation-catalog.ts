@@ -183,11 +183,6 @@ export const AUTOMATION_ACTIONS = [
 ] as const
 export type AutomationActionType = (typeof AUTOMATION_ACTIONS)[number]
 
-/** Acciones implementadas en la Fase 1. El resto se valida pero se marca `skipped`. */
-export const PHASE_1_ACTIONS: readonly AutomationActionType[] = [
-  'send_email', 'notify_agent', 'create_calendar_event',
-]
-
 export interface ActionDefinition {
   key: AutomationActionType
   label: string
@@ -272,7 +267,7 @@ export const ACTION_DEFINITIONS: readonly ActionDefinition[] = [
     label: 'Enviar email interno',
     description: 'Manda un email al equipo (agente asignado, admins o una dirección fija).',
     applies_to: ['lead', 'contact', 'property', 'appraisal'],
-    implemented: false,
+    implemented: true,
     config_fields: [
       { name: 'subject', label: 'Asunto', type: 'text', required: true },
       { name: 'body_html', label: 'Mensaje', type: 'html', required: true },
@@ -332,18 +327,21 @@ export const ACTION_DEFINITIONS: readonly ActionDefinition[] = [
     label: 'Registrar actividad',
     description: 'Deja rastro en el feed de actividad de la entidad.',
     applies_to: ['lead', 'contact', 'property'],
-    implemented: false,
+    implemented: true,
     config_fields: [
-      { name: 'activity_type', label: 'Tipo', type: 'text', required: true, default: 'automatizacion' },
+      // Un tipo fuera del catálogo de actividades cae a 'seguimiento' al
+      // ejecutar (el dominio valida el enum; 'automatizacion' de recetas
+      // viejas entra por ahí).
+      { name: 'activity_type', label: 'Tipo', type: 'text', required: true, default: 'seguimiento' },
       { name: 'notes', label: 'Detalle', type: 'textarea', required: true },
     ],
   },
   {
     key: 'assign_lead',
     label: 'Asignar el lead',
-    description: 'Asigna el lead a un agente fijo o reparte por round-robin entre los activos.',
+    description: 'Asigna el lead a un agente fijo o reparte entre los activos (le toca al que menos leads abiertos tiene).',
     applies_to: ['lead'],
-    implemented: false,
+    implemented: true,
     config_fields: [
       {
         name: 'mode',
@@ -369,9 +367,9 @@ export const ACTION_DEFINITIONS: readonly ActionDefinition[] = [
   {
     key: 'change_stage',
     label: 'Cambiar la etapa',
-    description: 'Mueve la entidad a otra etapa. Si la transición no es válida, la acción se marca como fallida sin romper el resto.',
+    description: 'Mueve la entidad a otra etapa. Si la transición no es válida, la acción se saltea sin romper el resto.',
     applies_to: ['lead', 'property'],
-    implemented: false,
+    implemented: true,
     chains_events: true,
     config_fields: [
       { name: 'to_stage', label: 'Etapa destino', type: 'stage', required: true },
@@ -381,9 +379,11 @@ export const ACTION_DEFINITIONS: readonly ActionDefinition[] = [
   {
     key: 'add_tag',
     label: 'Agregar etiqueta',
-    description: 'Etiqueta al contacto vinculado.',
+    // Las etiquetas viven en el lead (tabla lead_tags): sin lead en el evento,
+    // la acción se saltea.
+    description: 'Etiqueta al lead vinculado.',
     applies_to: ['lead', 'contact'],
-    implemented: false,
+    implemented: true,
     config_fields: [{ name: 'tags', label: 'Etiquetas', type: 'multiselect', required: true }],
   },
   {
@@ -391,7 +391,7 @@ export const ACTION_DEFINITIONS: readonly ActionDefinition[] = [
     label: 'Llamar a un webhook',
     description: 'Hace un POST firmado a una URL propia. Sirve para WhatsApp o SMS vía n8n.',
     applies_to: ['lead', 'contact', 'property', 'appraisal'],
-    implemented: false,
+    implemented: true,
     config_fields: [
       { name: 'url', label: 'URL', type: 'text', required: true, placeholder: 'https://...' },
       { name: 'secret', label: 'Secret (firma HMAC)', type: 'text' },

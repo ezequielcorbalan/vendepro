@@ -204,13 +204,21 @@ describe('RunAutomationsForEventUseCase', () => {
     expect(next).not.toBe(first)
   })
 
-  it('corta el encadenamiento al llegar a la profundidad máxima', async () => {
+  it('corta el encadenamiento pasada la profundidad máxima', async () => {
     mockRepo.findActiveByTrigger.mockResolvedValue([makeAutomation()])
-    const result = await useCase().execute({ ...baseInput, depth: 1 })
+    const result = await useCase().execute({ ...baseInput, depth: 2 })
 
     expect(result).toEqual({ evaluated: 0, queued: 0, results: [] })
     // Ni siquiera consulta: a esa profundidad no hay nada que evaluar.
     expect(mockRepo.findActiveByTrigger).not.toHaveBeenCalled()
+  })
+
+  it('un evento encadenado (depth 1) sí se evalúa — es el punto de encadenar', async () => {
+    mockRepo.findActiveByTrigger.mockResolvedValue([makeAutomation()])
+    const result = await useCase().execute({ ...baseInput, depth: 1 })
+
+    expect(result.evaluated).toBe(1)
+    expect(result.queued).toBe(1)
   })
 
   it('saltea la acción que encadena eventos si el run ya no puede encadenar', async () => {
@@ -225,6 +233,10 @@ describe('RunAutomationsForEventUseCase', () => {
     // depth 0 todavía puede encadenar: las dos acciones se encolan.
     const ok = await useCase().execute(baseInput)
     expect(ok.results[0].jobs_queued).toBe(2)
+
+    // depth 1 ya no: change_stage se registra como skipped y sólo queda el email.
+    const chained = await useCase().execute({ ...baseInput, depth: 1 })
+    expect(chained.results[0].jobs_queued).toBe(1)
   })
 
   it('no encola nada cuando la automatización no tiene acciones', async () => {

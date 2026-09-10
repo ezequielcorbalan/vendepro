@@ -76,9 +76,11 @@ export class RunAutomationsForEventUseCase {
     const now = input.now ?? new Date()
     const empty: RunAutomationsForEventOutput = { evaluated: 0, queued: 0, results: [] }
 
-    // Anti-loop: una acción `change_stage` dispara `lead.stage_changed`, que
-    // podría volver a dispararla. A partir de MAX_CHAIN_DEPTH se corta seco.
-    if (depth >= MAX_CHAIN_DEPTH) return empty
+    // Anti-loop: una acción `change_stage` dispara `lead.stage_changed` a
+    // depth 1, y ese evento SÍ se evalúa (es el punto de encadenar) — pero sus
+    // runs ya no pueden encolar acciones que encadenen (ver `canChain` abajo),
+    // así que depth 2 no existe salvo bug. Este corte es la red de seguridad.
+    if (depth > MAX_CHAIN_DEPTH) return empty
 
     const candidates = await this.automations.findActiveByTrigger(input.orgId, input.trigger)
     if (candidates.length === 0) return empty

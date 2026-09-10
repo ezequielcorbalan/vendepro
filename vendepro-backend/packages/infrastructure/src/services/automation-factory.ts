@@ -33,7 +33,23 @@ import {
   MapExecutorRegistry,
   type CalendarMirror,
 } from './automation-executors'
-import { SyncEventToGoogleUseCase } from '@vendepro/core'
+import {
+  LogActivityActionExecutor,
+  SendInternalEmailActionExecutor,
+  AssignLeadActionExecutor,
+  AddTagActionExecutor,
+  SendWebhookActionExecutor,
+  ChangeStageActionExecutor,
+} from './automation-executors-crm'
+import { D1ActivityRepository } from '../repositories/d1-activity-repository'
+import { D1TagRepository } from '../repositories/d1-tag-repository'
+import { D1StageHistoryRepository } from '../repositories/d1-stage-history-repository'
+import { HttpWebhookSender } from './http-webhook-sender'
+import {
+  SyncEventToGoogleUseCase,
+  AdvanceLeadStageUseCase,
+  UpdatePropertyStageUseCase,
+} from '@vendepro/core'
 
 /**
  * Entorno mínimo para el motor. `RESEND_API_KEY` es opcional: sin ella el
@@ -99,28 +115,48 @@ export function createAutomationContextBuilder(env: AutomationEnv): BuildAutomat
  */
 export function createAutomationRegistry(env: AutomationEnv): MapExecutorRegistry {
   const publicBaseUrl = env.PUBLIC_BASE_URL ?? DEFAULT_PUBLIC_BASE_URL
+  const leads = new D1LeadRepository(env.DB)
+  const users = new D1UserRepository(env.DB)
+  const properties = new D1PropertyRepository(env.DB)
+  const stageHistory = new D1StageHistoryRepository(env.DB)
+  const ids = new CryptoIdGenerator()
+
   const executors = [
     new NotifyAgentActionExecutor(
       new D1NotificationRepository(env.DB),
-      new D1UserRepository(env.DB),
-      new CryptoIdGenerator(),
+      users,
+      ids,
     ) as any,
     new CreateCalendarEventActionExecutor(
       new D1CalendarRepository(env.DB),
-      new CryptoIdGenerator(),
+      ids,
       buildCalendarMirror(env),
+    ) as any,
+    new LogActivityActionExecutor(new D1ActivityRepository(env.DB), ids) as any,
+    new AssignLeadActionExecutor(leads, users) as any,
+    new AddTagActionExecutor(new D1TagRepository(env.DB), ids) as any,
+    new SendWebhookActionExecutor(new HttpWebhookSender()) as any,
+    new ChangeStageActionExecutor(
+      new AdvanceLeadStageUseCase(leads, new D1CalendarRepository(env.DB), stageHistory, ids, properties),
+      new UpdatePropertyStageUseCase(properties, stageHistory, leads),
+      // El encadenamiento re-entra por el mismo camino que cualquier evento,
+      // con depth+1 para que el motor lo corte a la segunda vuelta.
+      (event) => fireAutomationEvent(env, event),
     ) as any,
   ]
 
   if (env.RESEND_API_KEY) {
+    const settings = new D1EmailSettingsRepository(env.DB)
+    const resend = new ResendEmailService(env.RESEND_API_KEY)
     executors.push(
       new SendEmailActionExecutor(
-        new D1EmailSettingsRepository(env.DB),
+        settings,
         new D1EmailSuppressionRepository(env.DB),
-        new ResendEmailService(env.RESEND_API_KEY),
+        resend,
         new HmacUnsubscribeTokenSigner(env.JWT_SECRET),
         publicBaseUrl,
       ) as any,
+      new SendInternalEmailActionExecutor(settings, users, resend) as any,
     )
   }
 

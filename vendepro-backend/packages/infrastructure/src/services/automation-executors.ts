@@ -292,7 +292,8 @@ function entityLink(context: Record<string, unknown>): string | null {
   return null
 }
 
-function readString(context: Record<string, unknown>, scope: string, key: string): string | null {
+/** Compartido con automation-executors-crm.ts. */
+export function readString(context: Record<string, unknown>, scope: string, key: string): string | null {
   const container = context[scope]
   if (!container || typeof container !== 'object') return null
   const value = (container as Record<string, unknown>)[key]
