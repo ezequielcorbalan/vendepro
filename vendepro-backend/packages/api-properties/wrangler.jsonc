@@ -23,6 +23,7 @@
     "binding": "BROWSER"
   },
   "vars": {
-    "API_PUBLIC_URL": "https://public.api.vendepro.com.ar"
+    "API_PUBLIC_URL": "https://public.api.vendepro.com.ar",
+    "R2_PUBLIC_URL": "https://properties.api.vendepro.com.ar/photo"
   }
 }
