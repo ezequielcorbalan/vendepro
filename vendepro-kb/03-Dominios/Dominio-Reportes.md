@@ -111,7 +111,9 @@ Frontend (`components/reports/HealthBadge.tsx`) muestra el badge. La función `h
 - `/propiedades/[id]/reportes` y `/propiedades/[id]/reportes/nuevo`
 - Componentes: `HealthBadge`, `DiagnosisCard`, `ActiveListingsTable`, `NeighborhoodBenchmarkTable`, `ReportsListWidget`
 
-Página pública: `/r/[slug]`.
+Página pública: `/r/[slug]`. Las fotos del reporte se abren en un lightbox
+(`ReportPhotoGallery`, 2026-09-10): click para ampliar, flechas en pantalla y
+de teclado, Esc/click afuera para cerrar — es el `Modal` del DS con overrides.
 
 ## Relacionados
 

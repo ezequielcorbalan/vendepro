@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import { ReportPhotoGallery } from '@/components/reports/ReportPhotoGallery'
 import {
   Eye,
   MousePointerClick,
@@ -351,16 +352,7 @@ export default async function PublicReportPage({
         {photos.length > 0 && (
           <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <h2 className="font-semibold text-ink mb-4">Fotos</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {photos.map((photo: any) => (
-                <img
-                  key={photo.id}
-                  src={photo.photo_url}
-                  alt={photo.caption || 'Foto'}
-                  className="w-full aspect-square object-cover rounded-xl"
-                />
-              ))}
-            </div>
+            <ReportPhotoGallery photos={photos} />
           </section>
         )}
       </main>
