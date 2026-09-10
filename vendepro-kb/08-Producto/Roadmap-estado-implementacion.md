@@ -65,7 +65,7 @@ Todo el núcleo está en producción con backend + UI:
 4. `ga4ClientId` sintético cuando no hay visitor_id → rompe la sesión GA4 (`send-marketing-event.ts:220`).
 5. Mappings default viven solo en el frontend (`configuracion/marketing/page.tsx:64-69`); sin seed en DB → eventos `noop`.
 6. `RetryFailedMetaEventsUseCase` es **código muerto**: existe con tests pero nadie lo invoca (ni endpoint ni cron).
-7. 🐛 Bug residual de la migración 040: `api-analytics/src/index.ts:254` sigue consultando `meta_integration WHERE org_id = ?` (PK ahora es `agent_id`) → el badge "Meta activo" del dashboard puede mostrar la config de otro agente.
+7. ~~🐛 Bug residual de la migración 040~~ — **ya estaba resuelto** (verificado 2026-09-10): el trabajo de "marketing por usuario" (PR #138) dejó `GET /marketing` leyendo `meta_integration WHERE agent_id = <usuario que mira>` — el badge muestra la config propia; el comentario en `api-analytics/src/index.ts:332-335` documenta el bug viejo. No queda ningún `WHERE org_id` contra `meta_integration` en el repo (la config pública de GTM también resuelve por agente vía `GetPublicTagConfigUseCase`).
 
 ### 00c — Tasaciones + landings públicas + carga manual de cierres 🟢
 
