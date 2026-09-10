@@ -44,7 +44,8 @@ function DeltaTag({ pct, status }: { pct: number | null; status: HealthStatus })
   if (pct === null) {
     return (
       <span className="inline-flex items-center gap-1.5 text-gray-400 text-xs">
-        <HealthBadge status={status} size="sm" />
+        {/* Sin dato no es "verde": el neutro del dominio (light_green) acá confunde. */}
+        <HealthBadge status={null} size="sm" />
         Sin benchmark
       </span>
     )
