@@ -57,6 +57,10 @@ Corregidos en la misma tanda que los endpoints de IA:
 - **Cross-org write**: crear un reporte con un `propertyId` ajeno lo escribía
   en la org de esa propiedad. Ahora 404.
 - **Wizard sin red**: se podía publicar sin período ni conclusión.
+- **Despublicar por accidente** (mordió el 10-sep: edición + "Guardar como
+  borrador" = 404 en el link del propietario): al editar un PUBLICADO, los
+  botones ahora dicen "Guardar cambios" / "Despublicar (apaga el link)" con
+  ConfirmDialog. Republicar conserva el slug — el link revive tal cual.
 
 Pendiente operativo: **migración 051** (`report_photos.r2_key`) — el código
 tolera que no esté (insert con fallback), pero sin ella la baja de fotos no

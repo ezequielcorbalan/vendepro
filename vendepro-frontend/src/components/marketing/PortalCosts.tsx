@@ -174,14 +174,15 @@ export default function PortalCosts({ data, onChange }: { data: PortalCostsData 
             data={rows}
             rowKey={r => r.provider}
             actions={r => (
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => setEditing(r.provider)}
-                className="p-1.5 rounded-control text-gray-400 hover:text-primary hover:bg-primary/5 transition-colors"
+                className="p-1.5 text-gray-400 hover:text-primary hover:bg-primary/5"
                 aria-label={`Cargar gasto de ${portalLabel(r.provider, r.label)}`}
               >
                 <Pencil className="w-4 h-4" />
-              </button>
+              </Button>
             )}
           />
 
