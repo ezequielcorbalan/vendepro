@@ -112,6 +112,7 @@ export * from './use-cases/admin/update-org-settings'
 export * from './use-cases/admin/get-user-profile'
 export * from './use-cases/admin/update-user-profile'
 export * from './use-cases/admin/get-user-notifications'
+export * from './use-cases/admin/mark-notification-read'
 export * from './use-cases/admin/generate-org-api-key'
 export * from './use-cases/admin/get-org-api-key'
 

@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { corsMiddleware, errorHandler, createAuthMiddleware, D1UserRepository, D1ObjectiveRepository, D1TemplateBlockRepository, JwtAuthService, CryptoIdGenerator, D1RoleRepository, D1NotificationRepository, D1OrganizationRepository, D1AppraisalTemplateRepository, D1OrgVariableRepository, D1AgentProfileRepository } from '@vendepro/infrastructure'
-import { CreateAgentUseCase, GetAgentsUseCase, GetDeletedAgentsUseCase, UpdateAgentUseCase, DeleteAgentUseCase, RestoreAgentUseCase, SetObjectivesUseCase, UpdateAgentRoleUseCase, GetRolesUseCase, GetOrgSettingsUseCase, UpdateOrgSettingsUseCase, GetUserProfileUseCase, UpdateUserProfileUseCase, GetUserNotificationsUseCase, ListAppraisalTemplatesUseCase, GetAppraisalTemplateUseCase, CreateAppraisalTemplateUseCase, UpdateAppraisalTemplateUseCase, DuplicateAppraisalTemplateUseCase, ArchiveAppraisalTemplateUseCase, ListOrgVariablesUseCase, CreateOrgVariableUseCase, UpdateOrgVariableUseCase, DeleteOrgVariableUseCase, MODULE_DEFINITIONS, GetAgentProfileUseCase, UpdateAgentProfileUseCase } from '@vendepro/core'
+import { CreateAgentUseCase, GetAgentsUseCase, GetDeletedAgentsUseCase, UpdateAgentUseCase, DeleteAgentUseCase, RestoreAgentUseCase, SetObjectivesUseCase, UpdateAgentRoleUseCase, GetRolesUseCase, GetOrgSettingsUseCase, UpdateOrgSettingsUseCase, GetUserProfileUseCase, UpdateUserProfileUseCase, GetUserNotificationsUseCase, MarkNotificationReadUseCase, ListAppraisalTemplatesUseCase, GetAppraisalTemplateUseCase, CreateAppraisalTemplateUseCase, UpdateAppraisalTemplateUseCase, DuplicateAppraisalTemplateUseCase, ArchiveAppraisalTemplateUseCase, ListOrgVariablesUseCase, CreateOrgVariableUseCase, UpdateOrgVariableUseCase, DeleteOrgVariableUseCase, MODULE_DEFINITIONS, GetAgentProfileUseCase, UpdateAgentProfileUseCase } from '@vendepro/core'
 
 type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket }
 type AuthVars = { Variables: { userId: string; userRole: string; orgId: string } }
@@ -301,6 +301,14 @@ app.get('/notifications', async (c) => {
   } catch {
     return c.json([])
   }
+})
+
+// Marca una leída: es lo que hace persistir el "descartar" de la campana.
+// El repo filtra por user_id, así que nadie marca notificaciones ajenas.
+app.put('/notifications/:id/read', async (c) => {
+  const useCase = new MarkNotificationReadUseCase(new D1NotificationRepository(c.env.DB))
+  await useCase.execute(c.req.param('id'), c.get('userId'))
+  return c.json({ ok: true })
 })
 
 // ── APPRAISAL TEMPLATES ────────────────────────────────────────

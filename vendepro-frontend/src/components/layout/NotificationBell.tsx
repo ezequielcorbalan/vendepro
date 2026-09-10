@@ -17,11 +17,20 @@ import type { UrgencyLevel } from '@/lib/crm-config'
  */
 type Notification = {
   id: string
-  type: string
+  kind: string
   title: string
-  body: string
-  link: string
-  urgency: UrgencyLevel
+  body: string | null
+  link_url: string | null
+  read: boolean
+}
+
+// El backend guarda un `kind`, el panel pinta por urgencia: vencido es rojo,
+// lo asignado/reservado amarillo, lo informativo azul.
+const KIND_URGENCY: Record<string, UrgencyLevel> = {
+  task_overdue: 'high',
+  lead_assigned: 'medium',
+  reservation_update: 'medium',
+  system: 'low',
 }
 
 export default function NotificationBell() {
@@ -32,10 +41,21 @@ export default function NotificationBell() {
 
   async function loadNotifications() {
     try {
-      const res = await apiFetch('crm', '/notifications')
+      // El endpoint vive en api-admin y devuelve el array plano (sin envolver).
+      const res = await apiFetch('admin', '/notifications')
       const data = (await res.json()) as any
-      if (data.notifications) setNotifications(data.notifications)
+      const list: Notification[] = Array.isArray(data) ? data : (data?.notifications ?? [])
+      setNotifications(list.filter(n => !n.read))
     } catch {}
+  }
+
+  // Descartar = marcar leída en el backend; si el PUT falla, el descarte local
+  // igual vale para esta sesión y el próximo load la vuelve a traer.
+  function dismiss(ids: string[]) {
+    setDismissed(prev => new Set([...prev, ...ids]))
+    for (const id of ids) {
+      apiFetch('admin', `/notifications/${id}/read`, { method: 'PUT' }).catch(() => {})
+    }
   }
 
   useEffect(() => {
@@ -56,16 +76,16 @@ export default function NotificationBell() {
   const items: NotificationItem[] = active.map(n => ({
     id: n.id,
     title: n.title,
-    body: n.body,
-    href: n.link,
-    urgency: n.urgency,
+    body: n.body ?? '',
+    href: n.link_url ?? '#',
+    urgency: KIND_URGENCY[n.kind] ?? 'low',
   }))
 
   return (
     <div ref={ref} className="relative">
       <BellButton
         count={active.length}
-        urgent={active.some(n => n.urgency === 'high')}
+        urgent={active.some(n => KIND_URGENCY[n.kind] === 'high')}
         onClick={() => setOpen(o => !o)}
       />
 
@@ -73,8 +93,8 @@ export default function NotificationBell() {
         <div className="absolute left-0 top-full mt-2" style={{ zIndex: Z.dropdown }}>
           <NotificationPanel
             items={items}
-            action={{ label: 'Limpiar', onClick: () => setDismissed(new Set(notifications.map(n => n.id))) }}
-            onDismiss={id => setDismissed(prev => new Set([...prev, id]))}
+            action={{ label: 'Limpiar', onClick: () => dismiss(active.map(n => n.id)) }}
+            onDismiss={id => dismiss([id])}
             onItemClick={() => setOpen(false)}
           />
         </div>
