@@ -35,7 +35,7 @@ describe('GetActiveListingsWithBenchmarkUseCase', () => {
     expect(result[0]?.delta_health_status).toBe('red') // < -30
   })
 
-  it('treats no-reports listings as urgent (first in sort)', async () => {
+  it('manda los sin-reportes al FINAL — la tabla promete "los que más se alejan primero"', async () => {
     const repo = makeRepo()
     repo.getActiveListingsWithAggregates.mockResolvedValue([
       {
@@ -56,8 +56,8 @@ describe('GetActiveListingsWithBenchmarkUseCase', () => {
     const useCase = new GetActiveListingsWithBenchmarkUseCase(repo)
     const result = await useCase.execute('org_mg')
 
-    expect(result[0]?.property_id).toBe('p2') // sin reports primero
-    expect(result[1]?.property_id).toBe('p1')
+    expect(result[result.length - 1]?.property_id).toBe('p2') // sin reports al final
+    expect(result[0]?.property_id).toBe('p1')
   })
 
   it('marks delta null and light_green status when no sold benchmark', async () => {

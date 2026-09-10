@@ -63,10 +63,14 @@ export class GetActiveListingsWithBenchmarkUseCase {
       }
     })
 
-    // Orden: sin reports primero (más urgentes), luego peores delta, null al final.
+    // Orden: lo que la UI promete — "los que más se alejan aparecen primero".
+    // La versión anterior ponía los sin-reportes ARRIBA como "urgentes"; con 40+
+    // propiedades sin reporte, la tabla era una pared de guiones y las filas con
+    // información quedaban enterradas (visto en producción, 2026-09-10). Los
+    // sin-reportes van al final: su urgencia ya la cuenta el chip del header.
     return rows.sort((a, b) => {
-      if (a.reports_count === 0 && b.reports_count > 0) return -1
-      if (b.reports_count === 0 && a.reports_count > 0) return 1
+      if (a.reports_count === 0 && b.reports_count > 0) return 1
+      if (b.reports_count === 0 && a.reports_count > 0) return -1
       if (a.reports_count === 0 && b.reports_count === 0) return 0
 
       const aDelta = a.delta_vs_neighborhood_pct
