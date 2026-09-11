@@ -4,9 +4,13 @@ import Link from 'next/link'
 import {
   Users, Phone, CalendarDays, Target, TrendingUp,
   Clock, CheckCircle2, BarChart3, ChevronRight, ChevronDown,
-  Home, Calculator, Activity, MessageCircle
+  Home, Calculator, Activity, MessageCircle, Eye, Handshake
 } from 'lucide-react'
-import { LEAD_STAGES, LEAD_PIPELINE_STAGES, PROPERTY_STAGES, EVENT_TYPES, getStageConfig } from '@/lib/crm-config'
+import {
+  LEAD_STAGES, LEAD_PIPELINE_STAGES, PROPERTY_STAGES, EVENT_TYPES,
+  LEAD_PROPERTY_STATUSES, getStageConfig, getStagesForPipeline,
+  type LeadPipelineKey,
+} from '@/lib/crm-config'
 import { apiFetch } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { AgentSelector, type AgentOption } from '@/components/ui/AgentSelector'
@@ -20,6 +24,7 @@ import { ProgressBar } from '@/components/ui/Progress'
 import { Heading, Text } from '@/components/ui/Typography'
 import { Alert } from '@/components/ui/Alert'
 import { Select } from '@/components/ui/Input'
+import { Tabs } from '@/components/ui/Tabs'
 import { FunnelChart } from '@/components/dashboard/FunnelChart'
 
 /**
@@ -80,6 +85,19 @@ export default function DashboardCRM() {
   // selector y su dashboard ya viene acotado a él por `scopeQueryString`.
   const [viewedAgent, setViewedAgent] = useState<string | null>(null)
   const [agents, setAgents] = useState<AgentOption[]>([])
+  // Pestaña: vendedores o compradores. Son dos pipelines con etapas y meta
+  // distintas —captar una propiedad vs. cerrar una compra—, así que cada uno
+  // tiene su embudo, su conversión y su ranking. Antes el dashboard mostraba
+  // sólo vendedores sin decirlo, y los compradores no aparecían en ningún KPI.
+  // Se resuelve en un efecto porque `window` no existe en el render del
+  // servidor; el default es vendedores, que es el que ya se veía.
+  const [pipeline, setPipeline] = useState<LeadPipelineKey>('vendedor')
+  const isBuyer = pipeline === 'comprador'
+
+  useEffect(() => {
+    const fromUrl = new URLSearchParams(window.location.search).get('pipeline')
+    if (fromUrl === 'comprador') setPipeline('comprador')
+  }, [])
 
   useEffect(() => {
     const user = getCurrentUser()
@@ -98,21 +116,27 @@ export default function DashboardCRM() {
     //  - la inmobiliaria elige a quién mirar con el selector.
     const agentId = viewedAgent ?? new URLSearchParams(scopeQueryString().slice(1)).get('agent_id')
     const scope = agentId ? `?agent_id=${agentId}&` : '?'
-    apiFetch('analytics', `/dashboard${scope}period=${period}`)
+    apiFetch('analytics', `/dashboard${scope}period=${period}&pipeline=${pipeline}`)
       .then(r => r.json() as Promise<any>)
       .then(d => { setData(d); setLoading(false) })
       .catch(() => setLoading(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [period, viewedAgent])
+  }, [period, viewedAgent, pipeline])
 
   useEffect(() => {
     const orgView = isAdminOrSupervisor()
     setIsOrgView(orgView)
     if (!orgView) return
-    apiFetch('analytics', '/team-stats')
+    // El ranking se pide por pipeline: un agente puede andar bien captando y
+    // mal cerrando compras, y un promedio de los dos no describe a nadie.
+    apiFetch('analytics', `/team-stats?pipeline=${pipeline}`)
       .then(r => r.json() as Promise<any>)
       .then(d => { if (Array.isArray(d)) setTeam(d) })
       .catch(() => {})
+  }, [pipeline])
+
+  useEffect(() => {
+    if (!isAdminOrSupervisor()) return
     // La lista completa del equipo, no sólo quienes tienen leads: para mirar a
     // alguien recién incorporado hay que poder encontrarlo en el buscador.
     apiFetch('admin', '/agents')
@@ -120,6 +144,17 @@ export default function DashboardCRM() {
       .then(d => { if (Array.isArray(d)) setAgents(d) })
       .catch(() => {})
   }, [])
+
+  const switchPipeline = (next: LeadPipelineKey) => {
+    if (next === pipeline) return
+    setPipeline(next)
+    // Se refleja en la URL como en Leads, para poder compartir el link de una
+    // pestaña y para que el botón "atrás" del navegador no mienta.
+    const url = new URL(window.location.href)
+    if (next === 'comprador') url.searchParams.set('pipeline', 'comprador')
+    else url.searchParams.delete('pipeline')
+    window.history.replaceState({}, '', url)
+  }
 
   if (loading) {
     return (
@@ -145,19 +180,61 @@ export default function DashboardCRM() {
     )
   }
 
-  const { leads, overdueLeads, tasaciones, activity, weeklyActivity, todayEvents, pendingFollowups, funnel, captureTail, conversionRate, recentActivities, pipelineBreakdown } = data
+  const { leads, overdueLeads, tasaciones, activity, weeklyActivity, todayEvents, pendingFollowups, funnel, captureTail, buyerProperties, conversionRate, recentActivities, pipelineBreakdown } = data
 
   // La API devuelve pipelineBreakdown con las claves crudas de etapa
   // (nuevo, asignado, presentada, invalido, finalizado…). Se usa como
   // fuente única para el pipeline y los KPIs, evitando desajustes de nombres.
   const sb: Record<string, number> = pipelineBreakdown || {}
-  const ACTIVE_STAGES = ['nuevo', 'asignado', 'contactado', 'calificado', 'en_tasacion', 'presentada', 'seguimiento']
-  const activeLeads = ACTIVE_STAGES.reduce((sum, s) => sum + (sb[s] || 0), 0)
-  const captaciones = sb['captado'] || 0
+  // Las etapas vivas salen de la config del pipeline, no de una lista escrita
+  // a mano: así la pestaña de compradores no puede quedar sumando etapas de
+  // captación que del otro lado no existen.
+  const stageCfg = getStagesForPipeline(pipeline)
+  // La meta del pipeline: captar en vendedores, cerrar en compradores.
+  const wonStage = isBuyer ? 'cerrado' : 'captado'
+  const ganados = leads?.ganados ?? sb[wonStage] ?? 0
+  // Activo = sigue en juego. Ni la meta ni las etapas de cierre cuentan:
+  // `pipelineStages` incluye la meta (es parte del camino) y del lado
+  // comprador `cerrado` además es terminal, así que hay que sacar las dos.
+  const activeLeads = stageCfg.pipelineStages
+    .filter(s => s !== wonStage && !stageCfg.terminalStages.includes(s))
+    .reduce((sum, s) => sum + (sb[s] || 0), 0)
+  // Propiedades que se le mostraron a compradores, por estado. Es lo que
+  // continúa el embudo del lado comprador: después de calificar, el trabajo
+  // se mide en propiedades mostradas, no en etapas del lead.
+  const shown: Record<string, number> = buyerProperties || {}
+  const shownTotal = Object.values(shown).reduce((a, b) => a + b, 0)
+  // Visitada u ofertada: en las dos el comprador ya entró a la propiedad.
+  const visitadas = (shown['visitada'] || 0) + (shown['oferto'] || 0)
+
 
   const viewedAgentName = viewedAgent
     ? agents.find(a => a.id === viewedAgent)?.full_name ?? 'este agente'
     : null
+
+  /**
+   * Link a Leads que conserva la pestaña. Sin el `pipeline`, clickear un KPI
+   * de compradores abría la lista de vendedores filtrada por una etapa que ese
+   * pipeline no tiene: cero resultados y ninguna explicación.
+   */
+  const leadsHref = (stage?: string, extra?: string) => {
+    const params = new URLSearchParams()
+    if (isBuyer) params.set('pipeline', 'comprador')
+    if (stage) params.set('stage', stage)
+    if (extra) params.set('sort', extra)
+    const qs = params.toString()
+    return qs ? `/leads?${qs}` : '/leads'
+  }
+
+  // Los dos KPIs que cambian de significado entre pestañas. El `tone` se
+  // aplica afuera, una sola vez por slot: el color es de la posición en la
+  // fila, no del contenido, y duplicarlo acá sería un color suelto de más.
+  const shownTile = isBuyer
+    ? { icon: <Eye className="w-5 h-5" />, label: 'Visitadas', value: visitadas, caption: 'propiedades mostradas', href: leadsHref('visito') }
+    : { icon: <Calculator className="w-5 h-5" />, label: 'Tasaciones', value: tasaciones?.total || 0, caption: 'en total', href: '/tasaciones' }
+  const wonTile = isBuyer
+    ? { icon: <Handshake className="w-5 h-5" />, label: 'Cerrados', caption: 'compras cerradas', href: leadsHref('cerrado') }
+    : { icon: <Home className="w-5 h-5" />, label: 'Captaciones', caption: 'leads captados', href: leadsHref('captado') }
 
   const last7 = [...Array(7)].map((_, i) => {
     const d = new Date()
@@ -192,6 +269,22 @@ export default function DashboardCRM() {
         }
       />
 
+      {/* Pestañas de pipeline: mismas que en Leads, y a propósito. Vendedores
+          y compradores son dos negocios con etapas y meta distintas; hasta
+          ahora el dashboard mostraba sólo vendedores sin decirlo, así que los
+          compradores no aparecían en ningún número. */}
+      <div className="border-b border-gray-200">
+        <Tabs
+          className="border-b-0"
+          value={pipeline}
+          onChange={v => switchPipeline(v as LeadPipelineKey)}
+          items={[
+            { value: 'vendedor', label: 'Vendedores' },
+            { value: 'comprador', label: 'Compradores' },
+          ]}
+        />
+      </div>
+
       {/* Mirando a una persona: se avisa de forma explícita, porque los mismos
           KPIs con otro alcance se leen mal si no queda claro de quién son. */}
       {viewedAgentName && (
@@ -215,29 +308,35 @@ export default function DashboardCRM() {
             la misma fila números históricos y de 30 días como si midieran lo
             mismo, y el de "Contactados" —que es cuántos están HOY parados en
             esa etapa— se leía como cuántos contactaste. */}
-        <StatTile icon={<Users className="w-5 h-5" />} label="Leads activos" value={activeLeads} caption="en el pipeline" tone="bg-blue-50 text-blue-600" href="/leads" />
-        <StatTile icon={<Phone className="w-5 h-5" />} label="Contactados" value={sb['contactado'] || 0} caption="hoy en esta etapa" tone="bg-cyan-50 text-cyan-600" href="/leads?stage=contactado" />
-        {/* Las tasaciones no tienen estado de cierre (draft/generated/sent), así
-            que este total no baja nunca. Decirlo evita leerlo como "abiertas". */}
-        <StatTile icon={<Calculator className="w-5 h-5" />} label="Tasaciones" value={tasaciones?.total || 0} caption="en total" tone="bg-purple-50 text-purple-600" href="/tasaciones" />
-        {/* Cuenta LEADS en etapa captado, así que lleva a esos leads. Antes
-            llevaba al pipeline de propiedades: otra población, otro total. */}
-        <StatTile icon={<Home className="w-5 h-5" />} label="Captaciones" value={captaciones} caption="leads captados" tone="bg-green-50 text-green-600" href="/leads?stage=captado" />
-        <StatTile icon={<Activity className="w-5 h-5" />} label="Actividad" value={activity?.total || 0} caption="últimos 30 días" tone="primary" href="/actividades" />
+        <StatTile icon={<Users className="w-5 h-5" />} label="Leads activos" value={activeLeads} caption="en el pipeline" tone="bg-blue-50 text-blue-600" href={leadsHref()} />
+        <StatTile icon={<Phone className="w-5 h-5" />} label="Contactados" value={sb['contactado'] || 0} caption="hoy en esta etapa" tone="bg-cyan-50 text-cyan-600" href={leadsHref('contactado')} />
+        {/* Vendedores: las tasaciones, que no tienen estado de cierre
+            (draft/generated/sent) y por eso el total no baja nunca — decirlo
+            evita leerlo como "abiertas". Compradores: el trabajo equivalente
+            es mostrar, y se cuenta en propiedades, no en leads: uno solo puede
+            visitar varias. */}
+        <StatTile {...shownTile} tone="bg-purple-50 text-purple-600" />
+        {/* La meta del pipeline. Cuenta LEADS, así que lleva a esos leads:
+            antes llevaba al pipeline de propiedades, que es otra población. */}
+        <StatTile {...wonTile} value={ganados} tone="bg-green-50 text-green-600" />
+        {/* La actividad no distingue pipeline: una llamada no sabe si es a un
+            vendedor o a un comprador. Por eso el mismo número en las dos
+            pestañas, y por eso lo dice. */}
+        <StatTile icon={<Activity className="w-5 h-5" />} label="Actividad" value={activity?.total || 0} caption="30 días · toda la operación" tone="primary" href="/actividades" />
         <StatTile icon={<Target className="w-5 h-5" />} label="Conversión" value={`${conversionRate || 0}%`} caption={PERIOD_LABELS[period] ?? 'del período'} tone="bg-amber-50 text-amber-600" href="/mi-performance" />
       </div>
 
       {(overdueLeads > 0 || (todayEvents && todayEvents.length > 0)) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {overdueLeads > 0 && (
-            <Link href="/leads?sort=urgency" className="block">
+            <Link href={leadsHref(undefined, 'urgency')} className="block">
               <Alert tone="danger" title={`${overdueLeads} lead${overdueLeads > 1 ? 's' : ''} vencido${overdueLeads > 1 ? 's' : ''}`} className="h-full p-3 transition-opacity hover:opacity-85">
                 Sin contactar o sin actividad
               </Alert>
             </Link>
           )}
           {pendingFollowups && pendingFollowups.length > 0 && (
-            <Link href="/leads?sort=urgency" className="block">
+            <Link href={leadsHref(undefined, 'urgency')} className="block">
               <Alert tone="warning" title={`${pendingFollowups.length} seguimiento${pendingFollowups.length > 1 ? 's' : ''} pendiente${pendingFollowups.length > 1 ? 's' : ''}`} className="h-full p-3 transition-opacity hover:opacity-85">
                 Próximas acciones definidas
               </Alert>
@@ -259,7 +358,7 @@ export default function DashboardCRM() {
         <Card className="p-4 sm:p-5">
           <div className="flex items-center justify-between mb-4 gap-2">
             <Heading level={4} as="h2" className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-gray-600" /> Funnel de conversión
+              <TrendingUp className="w-4 h-4 text-gray-600" /> Embudo de {isBuyer ? 'compradores' : 'captación'}
             </Heading>
             <Select
               value={period}
@@ -280,7 +379,52 @@ export default function DashboardCRM() {
               </optgroup>
             </Select>
           </div>
-          <FunnelChart stages={funnel?.stages ?? []} total={funnel?.total ?? 0} />
+          <FunnelChart stages={funnel?.stages ?? []} total={funnel?.total ?? 0} pipeline={pipeline} />
+
+          {/* Del lado comprador el embudo también sigue después de calificar,
+              pero no en una captación: en las propiedades que se le mostraron.
+              Un comprador ve varias, así que esto cuenta propiedades y no
+              leads — por eso va aparte y no como un escalón más del embudo. */}
+          {isBuyer && shownTotal > 0 && (
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <Text size="xs" tone="muted" className="mb-2 block">
+                Propiedades que se les mostró
+              </Text>
+              <div className="space-y-1.5">
+                {Object.entries(LEAD_PROPERTY_STATUSES).map(([key, cfg]) => {
+                  const count = shown[key] || 0
+                  if (count === 0) return null
+                  return (
+                    <div key={key} className="flex items-center gap-2 sm:gap-3">
+                      <div className="w-20 sm:w-28 shrink-0 text-right">
+                        <Text size="xs" tone="muted" className="text-[10px] sm:text-xs truncate">{cfg.label}</Text>
+                      </div>
+                      <div className="flex-1 h-7 bg-gray-50 rounded overflow-hidden">
+                        <div
+                          className={`h-full rounded flex items-center px-2 transition-all duration-500 ${cfg.color}`}
+                          style={{ width: `${Math.max((count / shownTotal) * 100, 7)}%` }}
+                        >
+                          <span className="text-xs font-semibold">{count}</span>
+                        </div>
+                      </div>
+                      <div className="w-9 shrink-0 text-right">
+                        <Text size="xs" tone="muted" className="tabular-nums">
+                          {Math.round((count / shownTotal) * 100)}%
+                        </Text>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+              {/* Los estados no son un embudo: son etiquetas que el agente
+                  corrige a mano en cualquier orden. Decirlo evita leer
+                  "descartada" como una caída del proceso. */}
+              <Text size="xs" tone="muted" className="mt-2 block text-[10px]">
+                {shownTotal} propiedad{shownTotal === 1 ? '' : 'es'} vinculada{shownTotal === 1 ? '' : 's'} a
+                compradores, por estado — no es un embudo, el estado se corrige a mano.
+              </Text>
+            </div>
+          )}
 
           {/* Después de captar el pipeline sigue, pero en otra entidad: la
               propiedad. No son otros leads —`properties.lead_id` recuerda de
@@ -330,6 +474,12 @@ export default function DashboardCRM() {
               <Text tone="muted">Sin actividad registrada esta semana</Text>
             </div>
           )}
+          {/* Una llamada o una visita no guardan a qué pipeline pertenecen, así
+              que este gráfico es el mismo en las dos pestañas. Mejor decirlo
+              que dejar que se lea como "actividad con compradores". */}
+          <Text size="xs" tone="muted" className="mt-2 block text-[10px]">
+            Incluye toda la operación — la actividad no se separa por pipeline.
+          </Text>
         </Card>
       </div>
 
@@ -420,7 +570,9 @@ export default function DashboardCRM() {
                   <div className="flex items-center gap-2 text-xs text-gray-500">
                     <span>{agent.total_leads} leads</span>
                     <span>·</span>
-                    <span>{agent.captados} capt.</span>
+                    {/* "capt." en vendedores, "cerr." en compradores: es la
+                        meta de cada pipeline y no son lo mismo. */}
+                    <span>{agent.ganados} {isBuyer ? 'cerr.' : 'capt.'}</span>
                     <span>·</span>
                     <span className={agent.conversion >= 20 ? 'text-success' : agent.conversion >= 10 ? 'text-warning' : 'text-danger'}>
                       {agent.conversion}% conv.
@@ -436,16 +588,18 @@ export default function DashboardCRM() {
           ) : (
             <div className="space-y-3">
               <Text tone="muted">
-                {isOrgView ? 'Todavía no hay leads asignados a agentes' : 'Leads de captación asignados a vos'}
+                {isOrgView
+                  ? 'Todavía no hay leads asignados a agentes'
+                  : isBuyer ? 'Compradores asignados a vos' : 'Leads de captación asignados a vos'}
               </Text>
               <div className="grid grid-cols-2 gap-2 text-center">
                 <div className="bg-blue-100 text-blue-800 rounded-control p-2">
                   <p className="text-xl font-bold">{leads?.total || 0}</p>
                   <p className="text-xs font-normal">{isOrgView ? 'Leads de la inmobiliaria' : 'Mis leads'}</p>
                 </div>
-                <div className={`rounded-control p-2 ${LEAD_STAGES.captado.color}`}>
-                  <p className="text-xl font-bold">{leads?.captados || 0}</p>
-                  <p className="text-xs font-normal">Captados</p>
+                <div className={`rounded-control p-2 ${stageCfg.config[wonStage]?.color ?? LEAD_STAGES.captado.color}`}>
+                  <p className="text-xl font-bold">{ganados}</p>
+                  <p className="text-xs font-normal">{isBuyer ? 'Cerrados' : 'Captados'}</p>
                 </div>
               </div>
             </div>
@@ -483,17 +637,19 @@ export default function DashboardCRM() {
 
       <Card className="p-4 sm:p-5">
         <Heading level={4} as="h2" className="mb-3 flex items-center gap-2">
-          <Target className="w-4 h-4 text-gray-600" /> Pipeline de leads
+          <Target className="w-4 h-4 text-gray-600" /> Pipeline de {isBuyer ? 'compradores' : 'vendedores'}
         </Heading>
-        {/* Sólo las etapas activas (LEAD_PIPELINE_STAGES excluye perdido/inválido/finalizado:
-            son resultados de cierre, no "pipeline" — se ven en el funnel de conversión). */}
+        {/* Sólo las etapas activas (pipelineStages excluye perdido/inválido/finalizado:
+            son resultados de cierre, no "pipeline" — se ven en el funnel de conversión).
+            Salen de la config del pipeline en curso: el comprador tiene otras
+            etapas y otra cantidad, así que la grilla se arma sola. */}
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
-          {LEAD_PIPELINE_STAGES.map(key => {
-            const cfg = LEAD_STAGES[key]
+          {stageCfg.pipelineStages.map(key => {
+            const cfg = getStageConfig(key, pipeline)
             return (
               <Link
                 key={key}
-                href={`/leads?stage=${key}`}
+                href={leadsHref(key)}
                 className={`flex flex-col items-center justify-center gap-1 rounded-card p-3 text-center transition-opacity hover:opacity-80 ${cfg.color}`}
               >
                 <p className="text-xl font-bold">{sb[key] || 0}</p>

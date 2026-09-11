@@ -1,7 +1,7 @@
 'use client'
 
 import { ChevronDown } from 'lucide-react'
-import { PROPERTY_STAGES, getStageConfig } from '@/lib/crm-config'
+import { PROPERTY_STAGES, getStageConfig, type LeadPipelineKey } from '@/lib/crm-config'
 import { Text } from '@/components/ui/Typography'
 
 export interface FunnelStage {
@@ -26,18 +26,25 @@ export function FunnelChart({
   stages,
   total,
   domain = 'lead',
+  pipeline = 'vendedor',
 }: {
   stages: FunnelStage[]
   total: number
   /** De qué mapa de dominio salen los colores: etapas de lead o de propiedad. */
   domain?: 'lead' | 'property'
+  /**
+   * De qué pipeline son las etapas. `visita_agendada`, `visito`, `oferta` y
+   * `cerrado` sólo existen del lado comprador: sin esto caían al gris del
+   * fallback y el embudo de compradores salía entero de un color.
+   */
+  pipeline?: LeadPipelineKey
 }) {
   return (
     <div className="space-y-1">
       {stages.map((item, i) => {
         const cfg = domain === 'property'
           ? (PROPERTY_STAGES as Record<string, { color: string }>)[item.stage] ?? getStageConfig(item.stage)
-          : getStageConfig(item.stage)
+          : getStageConfig(item.stage, pipeline)
         // Piso de ancho para que una etapa con pocos leads siga siendo legible
         // (el número va adentro de la barra).
         const width = total > 0 ? Math.max((item.count / total) * 100, 7) : 7

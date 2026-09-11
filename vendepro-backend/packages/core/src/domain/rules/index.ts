@@ -2,7 +2,7 @@ export { getLeadUrgency, getLeadChecklist, getLeadChecklistScore, isOverdue, com
 export type { LeadUrgency, LeadForUrgency, LeadForChecklist } from './lead-rules'
 export { activityTypeForEvent, eventDurationMinutes } from './calendar-activity-rules'
 export { classifyGoogleEventType, matchNameInTitle, candidateNameTerms, normalizeForMatch } from './google-event-import-rules'
-export { computeRealLeadFunnel, computeCaptureTail } from './lead-funnel-rules'
+export { computeRealLeadFunnel, computeCaptureTail, funnelStagesFor, fallbackFunnelFromBreakdown } from './lead-funnel-rules'
 export type { FunnelLead, FunnelHistoryEntry, FunnelStageResult, LeadFunnelResult, FunnelProperty, CaptureTailResult } from './lead-funnel-rules'
 export { canSeeAll, canManageOrg, canManageAgents, canSetObjectives, isAdmin } from './role-rules'
 export type { UserRole } from './role-rules'

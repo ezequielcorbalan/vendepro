@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { corsMiddleware, errorHandler, createAuthMiddleware, D1LeadRepository, D1PropertyRepository, D1ReservationRepository, D1CalendarRepository, D1AnalyticsReportRepository, D1ActivityRepository, D1AppraisalRepository, D1ContactRepository, D1ObjectiveRepository, D1UserRepository, D1StageHistoryRepository, D1MetaIntegrationRepository, JwtAuthService, MetaAdsInsightsHttp, decrypt } from '@vendepro/infrastructure'
+import { corsMiddleware, errorHandler, createAuthMiddleware, D1LeadRepository, D1LeadPropertyRepository, D1PropertyRepository, D1ReservationRepository, D1CalendarRepository, D1AnalyticsReportRepository, D1ActivityRepository, D1AppraisalRepository, D1ContactRepository, D1ObjectiveRepository, D1UserRepository, D1StageHistoryRepository, D1MetaIntegrationRepository, JwtAuthService, MetaAdsInsightsHttp, decrypt } from '@vendepro/infrastructure'
 import {
   GetCampaignInsightsUseCase,
   GetDashboardStatsUseCase,
@@ -20,8 +20,14 @@ import {
   computeLeadFunnel,
   computeRealLeadFunnel,
   computeCaptureTail,
+  fallbackFunnelFromBreakdown,
   computeConversionRate,
 } from '@vendepro/core'
+
+/** Pipeline pedido por la pestaña del dashboard. Cualquier otra cosa es vendedor. */
+function parsePipeline(raw: string | undefined): 'vendedor' | 'comprador' {
+  return raw === 'comprador' ? 'comprador' : 'vendedor'
+}
 
 type Env = { DB: D1Database; JWT_SECRET: string }
 type AuthVars = { Variables: { userId: string; userRole: string; orgId: string } }
@@ -72,18 +78,31 @@ app.get('/dashboard', async (c) => {
   //  - 'cal_week'|'cal_month'|'cal_quarter'|'cal_year' → período calendario en curso
   const since = funnelSince(c.req.query('period'))
 
-  const [base, tasaciones, activity, todayEvents, pendingFollowups] = await Promise.all([
+  // Pestaña del dashboard. Vendedores y compradores no comparten etapas ni
+  // meta, así que cada uno tiene su embudo, su pipeline y su ranking de equipo.
+  const pipeline = parsePipeline(c.req.query('pipeline'))
+  const isBuyer = pipeline === 'comprador'
+
+  const [base, tasaciones, activity, todayEvents, pendingFollowups, buyerProperties] = await Promise.all([
     new GetDashboardStatsUseCase(
       new D1LeadRepository(db),
       new D1PropertyRepository(db),
       new D1ReservationRepository(db),
       new D1CalendarRepository(db),
-    ).execute(orgId, agent_id, since),
-    new GetAppraisalStatsUseCase(new D1AppraisalRepository(db)).execute(orgId),
+    ).execute(orgId, agent_id, since, pipeline),
+    // Las tasaciones son del circuito de captación: en la pestaña de
+    // compradores no se piden en vez de mostrarse y no significar nada ahí.
+    isBuyer ? Promise.resolve(null) : new GetAppraisalStatsUseCase(new D1AppraisalRepository(db)).execute(orgId),
     new GetActivityStatsUseCase(new D1ActivityRepository(db)).execute(orgId, agent_id),
     new GetTodayEventsUseCase(new D1CalendarRepository(db)).execute(orgId),
     // Pipeline explícito: antes traía vendedores y compradores juntos.
-    new GetPendingFollowupsUseCase(new D1LeadRepository(db)).execute(orgId, 'vendedor'),
+    new GetPendingFollowupsUseCase(new D1LeadRepository(db)).execute(orgId, pipeline),
+    // El equivalente comprador de la cola de captación: qué pasó con las
+    // propiedades que se le mostraron. Best-effort — si la tabla no está, el
+    // dashboard igual carga sin ese bloque.
+    isBuyer
+      ? new D1LeadPropertyRepository(db).countBuyerStatusBreakdown(orgId, agent_id).catch(() => null)
+      : Promise.resolve(null),
   ])
 
   const sb = base.stageBreakdown
@@ -99,6 +118,10 @@ app.get('/dashboard', async (c) => {
     captados: sb['captado'] ?? 0,
     perdidos: sb['perdido'] ?? 0,
     archivados: sb['archivado'] ?? 0,
+    // Meta del pipeline en curso: `captado` en vendedores, `cerrado` en
+    // compradores. Existe para que la UI pueda mostrar "cuántos ganó" sin
+    // tener que saber cómo se llama la última etapa de cada pipeline.
+    ganados: (isBuyer ? sb['cerrado'] : sb['captado']) ?? 0,
   }
 
   // Embudo real: cuántos leads ALCANZARON cada etapa, cruzando el historial
@@ -113,34 +136,38 @@ app.get('/dashboard', async (c) => {
   try {
     const stageHistory = new D1StageHistoryRepository(db)
     const transitions = await stageHistory.findTransitions(orgId, 'lead', base.funnelLeads.map(l => l.id))
-    funnel = computeRealLeadFunnel(base.funnelLeads, transitions, 'vendedor')
+    funnel = computeRealLeadFunnel(base.funnelLeads, transitions, pipeline)
 
     // Lo que pasa después de captar. Vive en propiedades, pero no es otra
     // población: `properties.lead_id` recuerda de qué lead salió cada una, así
     // que se sigue a los mismos leads del embudo de arriba.
-    const capturedLeadIds = new Set(
-      base.funnelLeads.filter(l => l.stage === 'captado').map(l => l.id),
-    )
-    const tracedProperties = base.funnelProperties
-      .filter(p => p.lead_id && capturedLeadIds.has(p.lead_id))
-    const propertyTransitions = await stageHistory
-      .findTransitions(orgId, 'property', tracedProperties.map(p => p.id))
-    captureTail = computeCaptureTail(capturedLeadIds, base.funnelProperties, propertyTransitions)
-  } catch {
-    funnel = {
-      stages: computeLeadFunnel(base.funnelStageBreakdown, base.funnelTotalLeads)
-        .map(s => ({ ...s, step_pct: 0, median_days_from_prev: null, timed_on: 0 })),
-      total: base.funnelTotalLeads,
-      with_history: 0,
+    //
+    // Sólo aplica a vendedores: un comprador no produce una captación, así que
+    // del otro lado esta cola sería siempre cero. Lo que continúa el embudo de
+    // compradores es `buyerProperties` — las propiedades que se le mostraron.
+    if (!isBuyer) {
+      const capturedLeadIds = new Set(
+        base.funnelLeads.filter(l => l.stage === 'captado').map(l => l.id),
+      )
+      const tracedProperties = base.funnelProperties
+        .filter(p => p.lead_id && capturedLeadIds.has(p.lead_id))
+      const propertyTransitions = await stageHistory
+        .findTransitions(orgId, 'property', tracedProperties.map(p => p.id))
+      captureTail = computeCaptureTail(capturedLeadIds, base.funnelProperties, propertyTransitions)
     }
+  } catch {
+    funnel = fallbackFunnelFromBreakdown(base.funnelStageBreakdown, base.funnelTotalLeads, pipeline)
   }
   // La conversión sigue al período del embudo, no a toda la historia.
   // Antes eran dos números pegados en pantalla contestando sobre ventanas de
   // tiempo distintas: cambiabas el período, el embudo se movía y la conversión
   // no. Ahora es exactamente el último escalón del embudo, así que no pueden
   // discrepar.
-  const captadoStage = funnel.stages.find((s: { stage: string }) => s.stage === 'captado')
-  const conversionRate = captadoStage?.pct ?? computeConversionRate(sb, base.totalLeads)
+  // El último escalón del embudo ES la conversión, sea cual sea el pipeline:
+  // `captado` para vendedores, `cerrado` para compradores. Tomarlo por
+  // posición y no por nombre evita tener que recordar el mapeo en dos lugares.
+  const finalStage = funnel.stages[funnel.stages.length - 1]
+  const conversionRate = finalStage?.pct ?? computeConversionRate(sb, base.totalLeads)
 
   return c.json({
     leads,
@@ -156,8 +183,12 @@ app.get('/dashboard', async (c) => {
     // usuario es de la inmobiliaria.
     funnel,
     captureTail,
+    // Qué pasó con las propiedades que se le mostraron a los compradores:
+    // status → cantidad. `null` en la pestaña de vendedores.
+    buyerProperties,
     conversionRate,
     pipelineBreakdown: sb,
+    pipeline,
   })
 })
 
@@ -191,7 +222,7 @@ app.get('/team-stats', async (c) => {
     new D1UserRepository(db),
     new D1LeadRepository(db),
     new D1ActivityRepository(db),
-  ).execute(c.get('orgId'))
+  ).execute(c.get('orgId'), parsePipeline(c.req.query('pipeline')))
   return c.json(stats)
 })
 

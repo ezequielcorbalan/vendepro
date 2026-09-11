@@ -91,6 +91,25 @@ export class D1LeadPropertyRepository implements LeadPropertyRepository {
     }))
   }
 
+  async countBuyerStatusBreakdown(orgId: string, agentId?: string): Promise<Record<string, number>> {
+    // COALESCE porque `pipeline` se agregó después: las filas viejas lo tienen
+    // NULL y son todas del pipeline vendedor.
+    let query = `
+      SELECT lp.status as status, COUNT(*) as n
+      FROM lead_properties lp
+      JOIN leads l ON lp.lead_id = l.id
+      WHERE lp.org_id = ? AND COALESCE(l.pipeline, 'vendedor') = 'comprador'
+    `
+    const binds: unknown[] = [orgId]
+    if (agentId) { query += ' AND l.assigned_to = ?'; binds.push(agentId) }
+    query += ' GROUP BY lp.status'
+
+    const rows = (await this.db.prepare(query).bind(...binds).all()).results as any[]
+    const breakdown: Record<string, number> = {}
+    for (const r of rows) breakdown[r.status] = Number(r.n) || 0
+    return breakdown
+  }
+
   async save(leadProperty: LeadProperty): Promise<void> {
     const o = leadProperty.toObject()
     await this.db.prepare(`

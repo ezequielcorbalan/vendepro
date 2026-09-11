@@ -89,4 +89,41 @@ describe('FunnelChart', () => {
     const { container } = render(<FunnelChart stages={[]} total={0} />)
     expect(container.querySelectorAll('[style*="width"]')).toHaveLength(0)
   })
+
+  describe('pipeline comprador', () => {
+    // `visita_agendada`, `visito`, `oferta` y `cerrado` sólo existen del lado
+    // comprador. Sin decirle de qué pipeline son, el lookup de color no las
+    // encontraba y el embudo entero salía del gris del fallback.
+    const BUYER: FunnelStage[] = [
+      stage({ stage: 'visita_agendada', label: 'Visita agendada', count: 40, pct: 40 }),
+      stage({ stage: 'visito', label: 'Visitó', count: 25, pct: 25 }),
+      stage({ stage: 'oferta', label: 'Oferta', count: 10, pct: 10 }),
+      stage({ stage: 'cerrado', label: 'Cerrado', count: 4, pct: 4 }),
+    ]
+
+    it('colorea las etapas de comprador en vez de caer al gris', () => {
+      const { container } = render(<FunnelChart stages={BUYER} total={100} pipeline="comprador" />)
+      const barras = [...container.querySelectorAll<HTMLElement>('[style*="width"]')]
+
+      expect(barras[0]!.className).toMatch(/bg-violet-100/)  // visita_agendada
+      expect(barras[1]!.className).toMatch(/bg-purple-100/)  // visitó
+      expect(barras[2]!.className).toMatch(/bg-amber-100/)   // oferta
+      expect(barras[3]!.className).toMatch(/bg-green-100/)   // cerrado
+      expect(barras.every(b => !/bg-gray-100/.test(b.className))).toBe(true)
+    })
+
+    it('sin el pipeline, esas etapas caen al gris — por eso el prop existe', () => {
+      const { container } = render(<FunnelChart stages={BUYER} total={100} />)
+      const barras = [...container.querySelectorAll<HTMLElement>('[style*="width"]')]
+
+      expect(barras[0]!.className).toMatch(/bg-gray-100/)
+    })
+
+    it('por defecto sigue siendo vendedor', () => {
+      const { container } = render(<FunnelChart stages={LEAD_STAGES} total={204} />)
+      const barras = [...container.querySelectorAll<HTMLElement>('[style*="width"]')]
+
+      expect(barras.every(b => !/bg-gray-100/.test(b.className))).toBe(true)
+    })
+  })
 })

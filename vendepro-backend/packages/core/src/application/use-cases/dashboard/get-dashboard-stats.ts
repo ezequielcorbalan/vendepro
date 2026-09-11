@@ -2,6 +2,19 @@ import type { LeadRepository } from '../../ports/repositories/lead-repository'
 import type { PropertyRepository } from '../../ports/repositories/property-repository'
 import type { ReservationRepository } from '../../ports/repositories/reservation-repository'
 import type { CalendarRepository } from '../../ports/repositories/calendar-repository'
+import type { LeadPipeline } from '../../../domain/value-objects/lead-stage'
+
+/**
+ * Etapas en las que el lead ya no está "activo" ni puede estar vencido.
+ *
+ * Cubre los dos pipelines a propósito: `captado`/`finalizado` cierran un
+ * vendedor, `cerrado` cierra un comprador, y `perdido`/`invalido` cierran los
+ * dos. Antes acá sólo se descontaban `captado` y `perdido`, así que un lead
+ * marcado inválido —un teléfono falso, un duplicado— seguía contando como
+ * activo y, si nadie lo tocaba en una semana, aparecía como vencido. Eso
+ * inflaba la alerta de "leads vencidos" con trabajo que ya estaba cerrado.
+ */
+const CLOSED_STAGES = ['captado', 'finalizado', 'cerrado', 'perdido', 'invalido']
 
 export interface DashboardStats {
   totalLeads: number
@@ -39,17 +52,25 @@ export class GetDashboardStatsUseCase {
    * Los KPIs y el pipeline (`stageBreakdown`, totales) son SIEMPRE de toda la
    * historia. `since` acota únicamente el funnel (`funnelStageBreakdown` /
    * `funnelTotalLeads`), que es el widget que se filtra por período.
+   *
+   * `pipeline` separa las dos pestañas del dashboard. No es un filtro más: un
+   * vendedor y un comprador no comparten ni etapas ni meta, así que sumarlos
+   * daba un embudo de dos poblaciones distintas apiladas.
    */
-  async execute(orgId: string, agentId?: string, since?: string): Promise<DashboardStats> {
+  async execute(
+    orgId: string,
+    agentId?: string,
+    since?: string,
+    pipeline: LeadPipeline = 'vendedor',
+  ): Promise<DashboardStats> {
     const [allLeads, properties, reservations, events] = await Promise.all([
-      // KPIs y funnel son del pipeline vendedor (los compradores tienen métricas propias).
-      this.leadRepo.findByOrg(orgId, { pipeline: 'vendedor', ...(agentId ? { agent_id: agentId } : {}) }),
+      this.leadRepo.findByOrg(orgId, { pipeline, ...(agentId ? { agent_id: agentId } : {}) }),
       this.propertyRepo.findByOrg(orgId, agentId ? { agent_id: agentId } : undefined),
       this.reservationRepo.findByOrg(orgId, agentId ? { agent_id: agentId } : undefined),
       this.calendarRepo.findByOrg(orgId, agentId ? { agent_id: agentId } : undefined),
     ])
 
-    const activeLeads = allLeads.filter(l => l.stage !== 'captado' && l.stage !== 'perdido')
+    const activeLeads = allLeads.filter(l => !CLOSED_STAGES.includes(l.stage))
     const urgentLeads = activeLeads.filter(l => l.getUrgency() === 'danger')
 
     const stageBreakdown: Record<string, number> = {}

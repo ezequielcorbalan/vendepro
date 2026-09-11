@@ -41,6 +41,14 @@ function makeLead(id: string, assignedTo: string | null, stage: string) {
   })
 }
 
+function makeBuyerLead(id: string, assignedTo: string | null, stage: string) {
+  return Lead.create({
+    ...(makeLead(id, assignedTo, 'nuevo').toObject()),
+    pipeline: 'comprador',
+    stage: stage as any,
+  })
+}
+
 function makeRepos(users: User[], leads: Lead[], activity: Record<string, number>) {
   return {
     users: {
@@ -66,7 +74,7 @@ function makeRepos(users: User[], leads: Lead[], activity: Record<string, number
 }
 
 describe('GetTeamStatsUseCase', () => {
-  it('calcula leads, captados y conversión por agente', async () => {
+  it('calcula leads, ganados y conversión por agente', async () => {
     const repos = makeRepos(
       [makeUser('a1', 'Marcela Genta'), makeUser('a2', 'Felix Romero')],
       [
@@ -88,14 +96,14 @@ describe('GetTeamStatsUseCase', () => {
       full_name: 'Marcela Genta',
       role: 'agent',
       total_leads: 4,
-      captados: 2,
+      ganados: 2,
       conversion: 50,
       actividad_mes: 12,
     })
     expect(result[1]?.conversion).toBe(0)
   })
 
-  it('pide sólo el pipeline vendedor: la meta de captación es "captado"', async () => {
+  it('por defecto pide el pipeline vendedor', async () => {
     const repos = makeRepos([makeUser('a1', 'Marcela')], [], {})
 
     await new GetTeamStatsUseCase(repos.users, repos.leads, repos.activities).execute('org1')
@@ -103,7 +111,27 @@ describe('GetTeamStatsUseCase', () => {
     expect(repos.leads.findByOrg).toHaveBeenCalledWith('org1', { pipeline: 'vendedor' })
   })
 
-  it('ordena por captados y desempata por leads', async () => {
+  it('en compradores pide ese pipeline y cuenta "cerrado" como ganado', async () => {
+    // La meta de un comprador no es captar sino cerrar. Si el use case contara
+    // "captado" acá, el ranking de la pestaña de compradores daría todo cero.
+    const repos = makeRepos(
+      [makeUser('a1', 'Marcela')],
+      [
+        makeBuyerLead('l1', 'a1', 'cerrado'),
+        makeBuyerLead('l2', 'a1', 'oferta'),
+      ],
+      {},
+    )
+
+    const result = await new GetTeamStatsUseCase(repos.users, repos.leads, repos.activities)
+      .execute('org1', 'comprador')
+
+    expect(repos.leads.findByOrg).toHaveBeenCalledWith('org1', { pipeline: 'comprador' })
+    expect(result[0]).toMatchObject({ total_leads: 2, ganados: 1, conversion: 50 })
+  })
+
+
+  it('ordena por ganados y desempata por leads', async () => {
     const repos = makeRepos(
       [makeUser('a1', 'Primero'), makeUser('a2', 'Segundo'), makeUser('a3', 'Tercero')],
       [

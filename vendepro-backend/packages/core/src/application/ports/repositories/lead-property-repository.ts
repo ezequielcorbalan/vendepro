@@ -44,6 +44,15 @@ export interface LeadPropertyRepository {
   findByLeadWithProperty(leadId: string, orgId: string): Promise<LeadPropertyWithProperty[]>
   /** Leads interesados en una propiedad (JOIN leads + users) para la pestaña Interesados. */
   findInterestedByProperty(propertyId: string, orgId: string): Promise<InterestedLeadRow[]>
+  /**
+   * Cuántas propiedades de interés hay en cada estado, contando sólo las de
+   * leads COMPRADORES. Es el equivalente comprador de la cola de captación:
+   * después de calificar a un comprador el trabajo no se mide en etapas del
+   * lead sino en propiedades mostradas, y ese conteo no existía en ningún lado.
+   *
+   * Devuelve un mapa status → cantidad; los estados sin filas no aparecen.
+   */
+  countBuyerStatusBreakdown(orgId: string, agentId?: string): Promise<Record<string, number>>
   save(leadProperty: LeadProperty): Promise<void>
   delete(id: string, orgId: string): Promise<void>
 }

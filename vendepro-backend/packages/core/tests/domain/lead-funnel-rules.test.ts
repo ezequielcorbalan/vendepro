@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest'
 import {
   computeRealLeadFunnel,
   computeCaptureTail,
+  funnelStagesFor,
+  fallbackFunnelFromBreakdown,
   type FunnelLead,
   type FunnelHistoryEntry,
 } from '../../src/domain/rules/lead-funnel-rules'
@@ -262,5 +264,91 @@ describe('computeCaptureTail', () => {
     const { stages, captured } = computeCaptureTail(new Set(), [], [])
     expect(captured).toBe(0)
     expect(stages.every(s => s.count === 0 && s.pct === 0)).toBe(true)
+  })
+})
+
+describe('computeRealLeadFunnel — pipeline comprador', () => {
+  it('usa las etapas del comprador, no las de captación', () => {
+    const result = computeRealLeadFunnel([lead('l1', 'nuevo')], [], 'comprador')
+
+    expect(result.stages.map(s => s.stage)).toEqual([
+      'nuevo', 'contactado', 'calificado', 'visita_agendada', 'visito', 'oferta', 'cerrado',
+    ])
+  })
+
+  it('rellena las etapas anteriores de un comprador sin historial', () => {
+    // Los leads importados no tienen historial. Si hoy está en "oferta",
+    // necesariamente fue contactado, calificado, visitó y agendó una visita.
+    const result = computeRealLeadFunnel([lead('l1', 'oferta')], [], 'comprador')
+
+    expect(byKey(result)).toMatchObject({
+      nuevo: 1, contactado: 1, calificado: 1, visita_agendada: 1, visito: 1, oferta: 1, cerrado: 0,
+    })
+  })
+
+  it('el embudo de comprador sólo decrece', () => {
+    // La propiedad que teníamos que garantizar en vendedores vale igual acá:
+    // si una barra supera a la anterior, el gráfico no es un embudo.
+    const leads = [
+      lead('l1', 'nuevo'), lead('l2', 'contactado'), lead('l3', 'visita_agendada'),
+      lead('l4', 'visito'), lead('l5', 'oferta'), lead('l6', 'cerrado'), lead('l7', 'perdido'),
+    ]
+    const counts = computeRealLeadFunnel(leads, [], 'comprador').stages.map(s => s.count)
+
+    for (let i = 1; i < counts.length; i++) {
+      expect(counts[i]!).toBeLessThanOrEqual(counts[i - 1]!)
+    }
+  })
+
+  it('un comprador perdido no infiere hasta dónde había llegado', () => {
+    // Desde "perdido" no se sabe si se fue después de la primera llamada o
+    // después de ofertar. Sólo cuenta en "nuevo", que es lo único seguro.
+    const result = computeRealLeadFunnel([lead('l1', 'perdido')], [], 'comprador')
+
+    expect(byKey(result)).toMatchObject({ nuevo: 1, contactado: 0, cerrado: 0 })
+  })
+
+  it('mide los tiempos con el historial del comprador', () => {
+    const history = [
+      step('l1', 'contactado', '2026-01-03T00:00:00.000Z'),
+      step('l1', 'calificado', '2026-01-05T00:00:00.000Z'),
+    ]
+    const result = computeRealLeadFunnel(
+      [lead('l1', 'calificado', '2026-01-01T00:00:00.000Z')], history, 'comprador',
+    )
+
+    const calificado = result.stages.find(s => s.stage === 'calificado')
+    expect(calificado?.median_days_from_prev).toBe(2)
+  })
+})
+
+describe('fallbackFunnelFromBreakdown', () => {
+  // Este es el camino que se usa cuando el historial de etapas no se puede
+  // leer. Tiene que dibujar el pipeline correcto aunque los números sean peores.
+  it('arma las etapas del pipeline pedido', () => {
+    const stages = fallbackFunnelFromBreakdown({ nuevo: 3 }, 3, 'comprador').stages
+
+    expect(stages.map(s => s.stage)).toEqual(funnelStagesFor('comprador').map(s => s.key))
+  })
+
+  it('no inventa tiempos que no puede calcular', () => {
+    const result = fallbackFunnelFromBreakdown({ nuevo: 3, captado: 1 }, 4)
+
+    expect(result.with_history).toBe(0)
+    expect(result.stages.every(s => s.median_days_from_prev === null)).toBe(true)
+    expect(result.stages.find(s => s.stage === 'captado')?.pct).toBe(25)
+  })
+
+  it('no divide por cero sin leads', () => {
+    expect(fallbackFunnelFromBreakdown({}, 0).stages.every(s => s.pct === 0)).toBe(true)
+  })
+})
+
+describe('funnelStagesFor', () => {
+  it('devuelve una copia: nadie puede mutar la definición del embudo', () => {
+    const stages = funnelStagesFor('vendedor')
+    stages[0]!.label = 'Cambiado'
+
+    expect(funnelStagesFor('vendedor')[0]?.label).toBe('Nuevo')
   })
 })

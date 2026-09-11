@@ -57,3 +57,64 @@ describe('GetDashboardStatsUseCase — filtro de período (since)', () => {
     expect(leadRepo.findByOrg).toHaveBeenCalledWith('org1', expect.objectContaining({ pipeline: 'vendedor', agent_id: 'agent-1' }))
   })
 })
+
+describe('GetDashboardStatsUseCase — pipeline', () => {
+  it('por defecto pide el pipeline vendedor', async () => {
+    const { leadRepo, propertyRepo, reservationRepo, calendarRepo } = makeRepos([])
+    await new GetDashboardStatsUseCase(leadRepo, propertyRepo, reservationRepo, calendarRepo)
+      .execute('org1')
+
+    expect(leadRepo.findByOrg).toHaveBeenCalledWith('org1', { pipeline: 'vendedor' })
+  })
+
+  it('acota los leads al pipeline pedido', async () => {
+    // La pestaña de compradores tiene que preguntar por compradores. Sin esto
+    // mostraba los leads de captación con etiquetas de comprador.
+    const { leadRepo, propertyRepo, reservationRepo, calendarRepo } = makeRepos([])
+    await new GetDashboardStatsUseCase(leadRepo, propertyRepo, reservationRepo, calendarRepo)
+      .execute('org1', undefined, undefined, 'comprador')
+
+    expect(leadRepo.findByOrg).toHaveBeenCalledWith('org1', { pipeline: 'comprador' })
+  })
+
+  it('el agente se combina con el pipeline, no lo reemplaza', async () => {
+    const { leadRepo, propertyRepo, reservationRepo, calendarRepo } = makeRepos([])
+    await new GetDashboardStatsUseCase(leadRepo, propertyRepo, reservationRepo, calendarRepo)
+      .execute('org1', 'agente1', undefined, 'comprador')
+
+    expect(leadRepo.findByOrg).toHaveBeenCalledWith('org1', {
+      pipeline: 'comprador',
+      agent_id: 'agente1',
+    })
+  })
+})
+
+describe('GetDashboardStatsUseCase — qué cuenta como lead activo', () => {
+  function urgent(stage: string) {
+    return { stage, created_at: '2026-01-01', getUrgency: () => 'danger' }
+  }
+
+  it('un lead inválido no está activo ni puede estar vencido', async () => {
+    // Un teléfono falso o un duplicado es trabajo cerrado. Antes contaba como
+    // activo y, si nadie lo tocaba en una semana, engrosaba la alerta de
+    // "leads vencidos" — que es la alerta que uno mira para saber qué hacer.
+    const { leadRepo, propertyRepo, reservationRepo, calendarRepo } = makeRepos([
+      urgent('invalido'), urgent('contactado'),
+    ])
+    const r = await new GetDashboardStatsUseCase(leadRepo, propertyRepo, reservationRepo, calendarRepo)
+      .execute('org1')
+
+    expect(r.activeLeads).toBe(1)
+    expect(r.urgentLeads).toBe(1)
+  })
+
+  it('un comprador cerrado tampoco está activo', async () => {
+    const { leadRepo, propertyRepo, reservationRepo, calendarRepo } = makeRepos([
+      urgent('cerrado'), urgent('oferta'),
+    ])
+    const r = await new GetDashboardStatsUseCase(leadRepo, propertyRepo, reservationRepo, calendarRepo)
+      .execute('org1', undefined, undefined, 'comprador')
+
+    expect(r.activeLeads).toBe(1)
+  })
+})

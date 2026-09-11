@@ -348,3 +348,44 @@ export function computeCaptureTail(
 
   return { stages, captured, traced: traced.length }
 }
+
+/**
+ * Los escalones del embudo de un pipeline.
+ *
+ * Lo necesita el fallback de la API: cuando el historial de etapas no se puede
+ * leer, el embudo se arma con el conteo por etapa actual. Sin esta lista ese
+ * fallback sólo sabría dibujar el pipeline vendedor, y en la pestaña de
+ * compradores mostraría "En tasación" y "Captado" — etapas que un comprador
+ * no tiene.
+ */
+export function funnelStagesFor(pipeline: LeadPipeline): Array<{ key: string; label: string }> {
+  return FUNNEL_STAGES[pipeline].map(s => ({ ...s }))
+}
+
+/**
+ * Embudo de respaldo, a partir del conteo por etapa ACTUAL.
+ *
+ * Es una aproximación peor a propósito: un lead captado no aparece en "nuevo"
+ * ni en "contactado", así que la forma puede salir mal. Se usa sólo cuando el
+ * historial no está disponible — un embudo impreciso es mejor que un
+ * dashboard que no carga, pero no es el número bueno.
+ */
+export function fallbackFunnelFromBreakdown(
+  stageBreakdown: Record<string, number>,
+  total: number,
+  pipeline: LeadPipeline = 'vendedor',
+): LeadFunnelResult {
+  const stages = funnelStagesFor(pipeline).map(stage => {
+    const count = stageBreakdown[stage.key] ?? 0
+    return {
+      stage: stage.key,
+      label: stage.label,
+      count,
+      pct: total > 0 ? Math.round((count / total) * 100) : 0,
+      step_pct: 0,
+      median_days_from_prev: null,
+      timed_on: 0,
+    }
+  })
+  return { stages, total, with_history: 0 }
+}
