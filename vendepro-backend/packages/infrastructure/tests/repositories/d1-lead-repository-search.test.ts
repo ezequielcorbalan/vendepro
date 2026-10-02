@@ -96,6 +96,41 @@ describe('D1LeadRepository — new methods', () => {
     expect(buyers.some(r => r.full_name === 'Propietario Pendiente')).toBe(false)
   })
 
+  // El buscador de la lista necesita encontrar un lead por la propiedad
+  // vinculada (comprador que consultó por un aviso, vendedor ya captado) y por
+  // el teléfono del contacto, que muchas veces no está copiado en el lead.
+  it('findByOrg trae la propiedad vinculada y el teléfono del contacto', async () => {
+    const repo = new D1LeadRepository(env.DB)
+    const contactId = nextId('contact')
+    await env.DB.prepare(`INSERT INTO contacts (id, org_id, agent_id, full_name, phone) VALUES (?,?,?,?,?)`)
+      .bind(contactId, orgId, agentId, 'Dueño Test', '11-4321-8765').run()
+    const lead = buildLead({ full_name: 'Comprador Test', contact_id: contactId, pipeline: 'comprador', stage: 'nuevo' })
+    await repo.save(lead)
+
+    const propId = nextId('prop')
+    await env.DB.prepare(`
+      INSERT INTO properties (id, org_id, address, neighborhood, owner_name, public_slug)
+      VALUES (?,?,?,?,?,?)`)
+      .bind(propId, orgId, 'Av. Cabildo 2040', 'Belgrano', 'Dueño Test', `slug-${propId}`).run()
+    await env.DB.prepare(`
+      INSERT INTO lead_properties (id, org_id, lead_id, property_id) VALUES (?,?,?,?)`)
+      .bind(nextId('lp'), orgId, lead.id, propId).run()
+
+    const rows = await repo.findByOrg(orgId, { pipeline: 'comprador' })
+    const found = rows.find(r => r.id === lead.id)?.toObject()
+    expect(found?.linked_properties).toContain('Av. Cabildo 2040')
+    expect(found?.contact_phone).toBe('11-4321-8765')
+  })
+
+  it('findByOrg busca por teléfono sin importar cómo esté escrito', async () => {
+    const repo = new D1LeadRepository(env.DB)
+    await repo.save(buildLead({ full_name: 'Con Teléfono', phone: '+54 9 11 5555-1234' }))
+    await repo.save(buildLead({ full_name: 'Otro', phone: '11 4444-9999' }))
+
+    const rows = await repo.findByOrg(orgId, { search: '5555-1234' })
+    expect(rows.map(r => r.full_name)).toEqual(['Con Teléfono'])
+  })
+
   it('exportAllWithAssignedName returns rows with assigned_name', async () => {
     const repo = new D1LeadRepository(env.DB)
     await repo.save(buildLead({ full_name: 'Export Lead', assigned_to: agentId }))

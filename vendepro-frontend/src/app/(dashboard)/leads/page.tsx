@@ -34,6 +34,7 @@ import AIChatPanel from '@/components/ai/AIChatPanel'
 import { MarkNotCapturedModal, type NotCapturedResult } from '@/components/leads/MarkNotCapturedModal'
 import { apiFetch } from '@/lib/api'
 import { loadStickyFilters, saveStickyFilters } from '@/lib/sticky-filters'
+import { leadMatchesSearch, leadPropertyLabel } from '@/lib/lead-search'
 import { scopeQueryString } from '@/lib/agent-scope'
 import { pushFromApiResponse } from '@/components/marketing/dataLayer'
 import { DndContext, DragOverlay, useDraggable, useDroppable, type DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
@@ -264,14 +265,7 @@ export default function LeadsPage() {
     const result = leads.filter(l => {
       // Filtrar por una etapa cerrada es pedirla explícitamente: se muestra.
       if (closedStages.includes(l.stage) && !showClosed && filterStage !== l.stage) return false
-      if (search) {
-        const q = search.toLowerCase()
-        if (!((l.full_name || '').toLowerCase().includes(q) ||
-              (l.phone || '').includes(q) ||
-              (l.email || '').toLowerCase().includes(q) ||
-              (l.property_address || '').toLowerCase().includes(q) ||
-              (l.neighborhood || '').toLowerCase().includes(q))) return false
-      }
+      if (search && !leadMatchesSearch(l, search)) return false
       if (filterStage && l.stage !== filterStage) return false
       if (filterSource && l.source !== filterSource) return false
       if (filterOperation && l.operation !== filterOperation) return false
@@ -591,7 +585,7 @@ export default function LeadsPage() {
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[180px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input type="text" placeholder="Buscar nombre, teléfono, dirección..." value={search} onChange={e => setSearch(e.target.value)}
+          <Input type="text" placeholder="Buscar nombre, teléfono o propiedad..." value={search} onChange={e => setSearch(e.target.value)}
             className="pl-10" />
         </div>
         <Select aria-label="Ordenar" value={sortBy} onChange={e => setSortBy(e.target.value as any)} className="w-auto">
@@ -1060,10 +1054,10 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
           </div>
 
           {/* Dirección de la propiedad — visible de un vistazo */}
-          {(lead.property_address || lead.neighborhood) && (
+          {leadPropertyLabel(lead) && (
             <div className="flex items-center gap-1.5 text-xs font-medium text-gray-700 min-w-0">
               <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-              <span className="truncate">{lead.property_address || lead.neighborhood}</span>
+              <span className="truncate">{leadPropertyLabel(lead)}</span>
             </div>
           )}
 
@@ -1160,8 +1154,8 @@ function KanbanCard({ lead, onAdvance, onMoveTo }: { lead: any; onAdvance: () =>
           </div>
         )}
         <div className="space-y-1 text-xs text-gray-500">
-          {(lead.property_address || lead.neighborhood) && (
-            <p className="flex items-center gap-1 font-medium text-gray-700 min-w-0"><MapPin className="w-3 h-3 text-primary shrink-0" /><span className="truncate">{lead.property_address || lead.neighborhood}</span></p>
+          {leadPropertyLabel(lead) && (
+            <p className="flex items-center gap-1 font-medium text-gray-700 min-w-0"><MapPin className="w-3 h-3 text-primary shrink-0" /><span className="truncate">{leadPropertyLabel(lead)}</span></p>
           )}
           {lead.phone && <p className="flex items-center gap-1"><Phone className="w-3 h-3" />{lead.phone}</p>}
           {lead.operation && <p className="capitalize">{lead.operation}</p>}

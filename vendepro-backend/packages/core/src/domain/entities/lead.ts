@@ -36,6 +36,10 @@ export interface LeadProps {
   tags?: string[]
   assigned_name?: string
   last_activity_at?: string | null
+  /** Teléfono del contacto vinculado (puede diferir del del lead). */
+  contact_phone?: string | null
+  /** Direcciones de propiedades vinculadas (captada o de interés), separadas por " · ". */
+  linked_properties?: string | null
 }
 
 export class Lead {

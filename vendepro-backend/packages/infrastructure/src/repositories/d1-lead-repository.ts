@@ -13,15 +13,37 @@ export class D1LeadRepository implements LeadRepository {
   }
 
   async findByOrg(orgId: string, filters?: LeadFilters): Promise<Lead[]> {
-    let query = `SELECT l.*, u.full_name as assigned_name FROM leads l LEFT JOIN users u ON l.assigned_to = u.id WHERE l.org_id = ?`
+    // `linked_properties` y `contact_phone` existen para el buscador de la
+    // lista: el lead muchas veces no tiene la dirección cargada (comprador que
+    // consultó por un aviso, vendedor ya captado) o el teléfono quedó sólo en
+    // el contacto. Se buscan por ahí también.
+    let query = `
+      SELECT l.*, u.full_name as assigned_name, c.phone as contact_phone,
+        (SELECT GROUP_CONCAT(p.address || COALESCE(', ' || p.neighborhood, ''), ' · ')
+           FROM properties p
+          WHERE p.org_id = l.org_id
+            AND (p.lead_id = l.id OR p.id IN (
+              SELECT lp.property_id FROM lead_properties lp WHERE lp.lead_id = l.id AND lp.org_id = l.org_id
+            ))) as linked_properties
+      FROM leads l
+      LEFT JOIN users u ON l.assigned_to = u.id
+      LEFT JOIN contacts c ON c.id = l.contact_id AND c.org_id = l.org_id
+      WHERE l.org_id = ?`
     const binds: unknown[] = [orgId]
 
     if (filters?.pipeline) { query += ' AND l.pipeline = ?'; binds.push(filters.pipeline) }
     if (filters?.stage) { query += ' AND l.stage = ?'; binds.push(filters.stage) }
     if (filters?.agent_id) { query += ' AND l.assigned_to = ?'; binds.push(filters.agent_id) }
     if (filters?.search) {
-      query += ' AND (l.full_name LIKE ? OR l.phone LIKE ?)'
-      binds.push(`%${filters.search}%`, `%${filters.search}%`)
+      // Teléfono: se comparan sólo dígitos, así "11 5555-1234" matchea "1155551234".
+      const digits = filters.search.replace(/\D/g, '')
+      query += ' AND (l.full_name LIKE ? OR l.property_address LIKE ? OR l.neighborhood LIKE ?'
+      binds.push(`%${filters.search}%`, `%${filters.search}%`, `%${filters.search}%`)
+      if (digits.length >= 3) {
+        query += ` OR REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(l.phone, ''), ' ', ''), '-', ''), '+', ''), '(', ''), ')', ''), '.', '') LIKE ?`
+        binds.push(`%${digits}%`)
+      }
+      query += ')'
     }
     query += ' ORDER BY l.created_at DESC LIMIT 500'
 
@@ -152,6 +174,8 @@ export class D1LeadRepository implements LeadRepository {
       contact_id: row.contact_id ?? null,
       created_at: row.created_at, updated_at: row.updated_at,
       assigned_name: row.assigned_name,
+      contact_phone: row.contact_phone ?? null,
+      linked_properties: row.linked_properties ?? null,
     })
   }
 }
