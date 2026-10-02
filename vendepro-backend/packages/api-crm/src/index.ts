@@ -11,6 +11,7 @@ import {
   D1PropertyRepository, D1ApiTokenRepository,
   D1LeadPropertyRepository, D1PropertyLinkRepository,
   D1WebhookRepository, D1WebhookDeliveryRepository, HttpWebhookSender,
+  D1NotificationRepository,
   D1OrgIntegrationRepository, D1IntegrationLinkRepository, D1IntegrationSyncLogRepository,
   KitepropMcpClient,
   D1UserIntegrationRepository, GoogleCalendarHttpClient, buildGoogleAuthUrl,
@@ -25,6 +26,7 @@ import {
 import { Activity, propertyFromIncoming } from '@vendepro/core'
 import {
   GetLeadsUseCase, UpdateLeadUseCase, DeleteLeadUseCase, AdvanceLeadStageUseCase,
+  AssignLeadUseCase,
   LinkLeadPropertyUseCase, UpdateLeadPropertyStatusUseCase, UnlinkLeadPropertyUseCase,
   GetLeadPropertiesUseCase, GetPropertyInterestedLeadsUseCase,
   GetContactsUseCase, CreateContactUseCase, UpdateContactUseCase, DeleteContactUseCase,
@@ -190,6 +192,46 @@ app.put('/leads', async (c) => {
   const useCase = new UpdateLeadUseCase(repo)
   await useCase.execute({ ...body, orgId: c.get('orgId') })
   return c.json({ success: true })
+})
+
+// Delegar un lead a otro agente. Aparte del PUT genérico porque además de
+// cambiar `assigned_to` avisa al agente (campana + email) y deja constancia.
+app.post('/leads/assign', async (c) => {
+  const body = (await c.req.json()) as any
+  const useCase = new AssignLeadUseCase(
+    new D1LeadRepository(c.env.DB),
+    new D1UserRepository(c.env.DB),
+    new D1NotificationRepository(c.env.DB),
+    new D1ActivityRepository(c.env.DB),
+    new CryptoIdGenerator(),
+    {
+      // Sin RESEND_API_KEY el aviso sale igual por campana: el mail se saltea.
+      service: c.env.RESEND_API_KEY ? new ResendEmailService(c.env.RESEND_API_KEY) : undefined,
+      settings: new D1EmailSettingsRepository(c.env.DB),
+      orgs: new D1OrganizationRepository(c.env.DB),
+    },
+    c.env.PUBLIC_BASE_URL ?? '',
+  )
+  const result = await useCase.execute({
+    leadId: body.id ?? body.lead_id,
+    orgId: c.get('orgId'),
+    toAgentId: body.assigned_to,
+    actorId: c.get('userId'),
+    actorRole: c.get('userRole'),
+    note: body.note ?? null,
+  })
+
+  // Automatizaciones: `lead.assigned` ya estaba en el catálogo esperando que
+  // alguien lo emitiera. Sólo si hubo cambio real de agente.
+  if (!result.unchanged) {
+    await runInBackground(c, fireAndDrainAutomations(c.env, {
+      orgId: c.get('orgId'),
+      trigger: 'lead.assigned',
+      entityType: 'lead',
+      entityId: result.leadId,
+    }))
+  }
+  return c.json(result)
 })
 
 app.delete('/leads', async (c) => {

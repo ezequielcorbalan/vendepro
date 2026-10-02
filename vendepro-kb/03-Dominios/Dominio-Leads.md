@@ -60,10 +60,37 @@ En `packages/core/src/application/use-cases/leads/`:
 - `DeleteLeadUseCase`
 - `AdvanceLeadStageUseCase` — valida transición + loguea en `stage_history` + dispara marketing event
 
+## Delegación a un agente (22-sep-2026)
+
+`POST /leads/assign` (`AssignLeadUseCase`) — delegar es distinto de editar
+`assigned_to` con el `PUT /leads` genérico: tiene permisos propios, avisa y
+deja constancia.
+
+- **Permisos**: admin/owner/supervisor reparten cualquier lead; un agente sólo
+  puede pasar uno que ya tenga asignado (`canSeeAll` de `role-rules`).
+- **Aviso**: notificación in-app `kind='lead_assigned'` (la tabla ya tenía ese
+  kind desde la migración 007) + email al agente con el link al lead, si la org
+  tiene remitente configurado y el worker tiene `RESEND_API_KEY`. Los dos avisos
+  son best-effort: si fallan, el lead queda delegado igual y la respuesta lo
+  dice (`notified`, `emailed`, `emailSkipped`).
+- **Constancia**: una `activity` de tipo `admin` sobre el lead ("Delegó el lead
+  a X"), para que la ficha muestre por qué cambió de dueño. No hay tabla de
+  auditoría: se eligió no sumar migración.
+- **Automatizaciones**: la ruta emite el trigger `lead.assigned`, que estaba en
+  el catálogo desde la migración 043 sin que ningún worker lo disparara.
+- UI: botón "Delegar" en `/leads/[id]` → `components/leads/DelegateLeadModal`
+  (agente + instrucción opcional que viaja en el aviso).
+- Se arregló de paso la campana (`NotificationBell`): pegaba a `api-crm` cuando
+  el endpoint vive en `api-admin` y esperaba `{notifications}` en vez de un
+  array, así que nunca mostró nada.
+
+Sin migración. Hay que deployar **api-crm**.
+
 ## Endpoints
 
 [[API-crm]]:
 - `GET/POST/PUT/DELETE /leads`
+- `POST /leads/assign` — delegar a otro agente (ver arriba)
 - `POST /leads/stage`
 - `GET /stage-history?entity_type=lead&entity_id=...`
 
