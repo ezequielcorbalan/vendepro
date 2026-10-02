@@ -69,6 +69,32 @@ En `packages/core/src/application/use-cases/leads/`:
 
 Captura pública: `POST /public/leads` en [[API-public]] (con `X-API-Key`).
 
+## Búsqueda de leads (22-sep-2026)
+
+El buscador de `/leads` filtra en el cliente sobre los leads ya cargados. La
+lógica vive en `vendepro-frontend/src/lib/lead-search.ts`:
+
+- **Teléfono**: se comparan sólo dígitos y se normalizan los prefijos
+  argentinos (`+54`, `9`, `0` de característica, `15` local), así que cualquier
+  forma de escribirlo —o un pedazo de 3 dígitos o más— encuentra al lead.
+  Busca en `phone` y en el teléfono del contacto vinculado.
+- **Texto**: sin acentos ni mayúsculas, y multi-palabra con AND entre campos
+  ("juan cabildo" = nombre + propiedad).
+- **Propiedad**: `property_address` / `neighborhood` del lead **más**
+  `linked_properties` — direcciones de las propiedades vinculadas (la captada,
+  vía `properties.lead_id`, y las de interés del comprador, vía
+  `lead_properties`). Lo calcula `D1LeadRepository.findByOrg` como columna
+  computada, junto con `contact_phone`. La tarjeta del lead también muestra esa
+  dirección cuando el lead no tiene una propia.
+
+`GET /leads?search=` (backend) hace lo mismo para teléfono con `REPLACE`s sobre
+la columna, y busca en nombre / dirección / barrio. Hoy sólo lo usan el export
+y el panel IA: la lista no lo manda.
+
+**Límite conocido**: `findByOrg` corta en 500 leads por pipeline, así que la
+búsqueda del cliente no ve más allá de eso. Cuando una org supere ese volumen,
+la lista tiene que pasar a buscar contra el backend (`?search=`).
+
 ## Frontend
 
 - `/leads` (kanban + tabla, drag-drop entre stages)
