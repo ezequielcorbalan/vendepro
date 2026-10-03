@@ -1,4 +1,4 @@
-export { LeadStage, LEAD_STAGES, BUYER_LEAD_STAGES, LEAD_PIPELINES, PIPELINE_STAGES } from './lead-stage'
+export { LeadStage, LEAD_STAGES, BUYER_LEAD_STAGES, LEAD_PIPELINES, PIPELINE_STAGES, WON_STAGE, isTerminalStage } from './lead-stage'
 export type { LeadStageValue, BuyerLeadStageValue, AnyLeadStageValue, LeadPipeline } from './lead-stage'
 export { PropertyStage, PROPERTY_STAGES } from './property-stage'
 export type { PropertyStageValue } from './property-stage'

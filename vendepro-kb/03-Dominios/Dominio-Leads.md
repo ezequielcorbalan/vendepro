@@ -86,7 +86,37 @@ deja constancia.
 
 Sin migración. Hay que deployar **api-crm**.
 
+## Tablero del equipo (22-sep-2026)
+
+`GET /analytics/team-board?pipeline=` (`GetTeamBoardUseCase`) → pantalla
+`/equipo`, para admin/owner/supervisor. Una fila por agente: leads activos, las
+3 etapas donde más tiene, sin contactar +24h, parados +7d, captados, conversión
+lead→captado y actividad de 30 días. Más la cola de **leads sin asignar** y la
+fila de totales de la inmobiliaria.
+
+- Los conteos salen agregados de la base (`D1TeamStatsRepository`,
+  `GROUP BY assigned_to, stage`), no de traer leads a memoria. El camino viejo
+  (`GetTeamStatsUseCase`, la tarjeta chica del dashboard) pasa por `findByOrg`,
+  que **corta en 500 por pipeline**: sus porcentajes quedan cortos cuando la org
+  crece. El tablero no tiene ese techo.
+- Los atrasos se calculan con `julianday`, no comparando strings: en la base
+  conviven fechas ISO (`...T...Z`) y el formato de `datetime('now')`
+  (`YYYY-MM-DD HH:MM:SS`), y comparar esos textos daba cualquier cosa.
+- Un lead ganado o terminal no cuenta como atrasado. La etapa ganada depende del
+  pipeline: `captado` en vendedor, `cerrado` en comprador (`WON_STAGE`).
+- El orden por defecto pone primero a quien tiene trabajo atrasado, no a quien
+  más captó: el tablero es para actuar.
+- `/leads` sumó el filtro **"Sin asignar"** (`?agent=none`), que es a donde
+  linkea la cola del tablero.
+- En el menú, "Equipo" (CRM) es este tablero; el ABM de usuarios pasó a
+  llamarse "Agentes" en Administración, que es lo que siempre fue.
+
+Sin migración. Hay que deployar **api-analytics**.
+
 ## Endpoints
+
+[[API-analytics]]:
+- `GET /team-board?pipeline=` — tablero del equipo (ver arriba)
 
 [[API-crm]]:
 - `GET/POST/PUT/DELETE /leads`
