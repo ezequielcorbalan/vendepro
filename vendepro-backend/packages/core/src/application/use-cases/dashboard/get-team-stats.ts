@@ -1,6 +1,7 @@
 import type { UserRepository } from '../../ports/repositories/user-repository'
-import type { LeadRepository } from '../../ports/repositories/lead-repository'
 import type { ActivityRepository } from '../../ports/repositories/activity-repository'
+import type { TeamStatsRepository } from '../../ports/repositories/team-stats-repository'
+import { WON_STAGE } from '../../../domain/value-objects/lead-stage'
 
 export interface TeamAgentStats {
   id: string
@@ -21,48 +22,52 @@ export interface TeamAgentStats {
  * tenía el ranking programado (nombre, leads, captados, conversión, barra) pero
  * nunca podía mostrarlo porque nunca llegaban datos.
  *
+ * Los conteos salen agregados de la base. Antes traía todos los leads con
+ * `findByOrg` para contarlos acá, y ese método corta en 500 por pipeline: a
+ * partir de ahí los totales y las conversiones salían cortos sin que nada lo
+ * avisara. Es el mismo port que usa el tablero `/equipo`, así que las dos
+ * pantallas no pueden mostrar números distintos del mismo equipo.
+ *
  * Sólo lo pide la inmobiliaria (admin/owner/supervisor). Un agente ve sus
  * propios números en su dashboard, ya acotados por `agent_id`.
  */
 export class GetTeamStatsUseCase {
   constructor(
     private readonly users: UserRepository,
-    private readonly leads: LeadRepository,
+    private readonly teamStats: TeamStatsRepository,
     private readonly activities: ActivityRepository,
   ) {}
 
   async execute(orgId: string): Promise<TeamAgentStats[]> {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
 
-    const [team, orgLeads, activityByAgent] = await Promise.all([
+    const [team, aggregates, activityByAgent] = await Promise.all([
       this.users.findByOrg(orgId),
       // Pipeline vendedor: "captado" es la meta de captación. La conversión de
       // compradores se mide sobre "cerrado" y va en su propio dashboard.
-      this.leads.findByOrg(orgId, { pipeline: 'vendedor' }),
+      this.teamStats.aggregateLeadsByAgent(orgId, 'vendedor'),
       this.activities.countByAgentSince(orgId, thirtyDaysAgo),
     ])
 
-    const totals: Record<string, number> = {}
-    const captados: Record<string, number> = {}
-    for (const lead of orgLeads) {
-      const agentId = lead.assigned_to
-      if (!agentId) continue
-      totals[agentId] = (totals[agentId] ?? 0) + 1
-      if (lead.stage === 'captado') captados[agentId] = (captados[agentId] ?? 0) + 1
-    }
+    // Los leads sin agente (agent_id null) no son de nadie: no suman al ranking.
+    const byAgent = new Map(
+      aggregates.filter(a => a.agent_id !== null).map(a => [a.agent_id as string, a]),
+    )
+    const won = WON_STAGE.vendedor
 
     return team
       .map(user => {
         const o = user.toObject()
-        const total = totals[o.id] ?? 0
-        const won = captados[o.id] ?? 0
+        const agg = byAgent.get(o.id)
+        const total = agg?.total ?? 0
+        const captados = agg?.by_stage[won] ?? 0
         return {
           id: o.id,
           full_name: o.full_name,
           role: o.role,
           total_leads: total,
-          captados: won,
-          conversion: total > 0 ? Math.round((won / total) * 100) : 0,
+          captados,
+          conversion: total > 0 ? Math.round((captados / total) * 100) : 0,
           actividad_mes: activityByAgent[o.id] ?? 0,
         }
       })

@@ -196,7 +196,7 @@ app.get('/team-stats', async (c) => {
   const db = c.env.DB
   const stats = await new GetTeamStatsUseCase(
     new D1UserRepository(db),
-    new D1LeadRepository(db),
+    new D1TeamStatsRepository(db),
     new D1ActivityRepository(db),
   ).execute(c.get('orgId'))
   return c.json(stats)

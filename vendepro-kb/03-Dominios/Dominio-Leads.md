@@ -95,10 +95,12 @@ lead→captado y actividad de 30 días. Más la cola de **leads sin asignar** y 
 fila de totales de la inmobiliaria.
 
 - Los conteos salen agregados de la base (`D1TeamStatsRepository`,
-  `GROUP BY assigned_to, stage`), no de traer leads a memoria. El camino viejo
-  (`GetTeamStatsUseCase`, la tarjeta chica del dashboard) pasa por `findByOrg`,
-  que **corta en 500 por pipeline**: sus porcentajes quedan cortos cuando la org
-  crece. El tablero no tiene ese techo.
+  `GROUP BY assigned_to, stage`), no de traer leads a memoria. Antes contaban
+  con `findByOrg`, que **corta en 500 por pipeline**: los totales y las
+  conversiones salían cortos cuando la org crecía, sin que nada lo avisara.
+  `GetTeamStatsUseCase` (la tarjeta chica del dashboard) usa ahora el **mismo
+  port**, así que las dos pantallas no pueden mostrar números distintos del
+  mismo equipo.
 - Los atrasos se calculan con `julianday`, no comparando strings: en la base
   conviven fechas ISO (`...T...Z`) y el formato de `datetime('now')`
   (`YYYY-MM-DD HH:MM:SS`), y comparar esos textos daba cualquier cosa.
