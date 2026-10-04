@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { MessageSquare, Send, Check, Clock, AlertTriangle, Bot, User as UserIcon } from 'lucide-react'
+import { MessageSquare, Send, Check, Clock, AlertTriangle, Bot, ArrowUpRight, User as UserIcon } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button'
 import { Textarea, Select } from '@/components/ui/Input'
 import { Heading, Text } from '@/components/ui/Typography'
 import { StatusBadge } from '@/components/ui/StatusBadge'
+import { StageBadge } from '@/components/ui/StageBadge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Alert } from '@/components/ui/Alert'
 import { Avatar } from '@/components/ui/Avatar'
@@ -19,6 +20,7 @@ import { cn } from '@/lib/utils'
 interface Conversation {
   id: string
   channel: string
+  lead: { id: string; full_name: string | null; stage: string | null; pipeline: string } | null
   status: 'open' | 'pending' | 'resolved'
   contact_id: string | null
   contact_name: string | null
@@ -194,6 +196,9 @@ export default function ConversacionesPage() {
                     {c.labels?.includes('bot_pausado') && (
                       <StatusBadge label="Bot pausado" color="bg-gray-100 text-gray-600" size="sm" />
                     )}
+                    {c.lead?.stage && (
+                      <StageBadge stage={c.lead.stage} pipeline={c.lead.pipeline as any} size="sm" />
+                    )}
                   </div>
                 </Button>
               ))}
@@ -213,11 +218,35 @@ export default function ConversacionesPage() {
                 <Avatar name={activa.contact_name ?? '?'} size="sm" />
                 <div className="min-w-0">
                   <Heading level={4}>{activa.contact_name ?? 'Número desconocido'}</Heading>
-                  <StatusBadge
-                    label={ESTADO[activa.status]?.label ?? activa.status}
-                    color={ESTADO[activa.status]?.color ?? 'bg-gray-100 text-gray-600'}
-                    size="sm"
-                  />
+                  <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                    <StatusBadge
+                      label={ESTADO[activa.status]?.label ?? activa.status}
+                      color={ESTADO[activa.status]?.color ?? 'bg-gray-100 text-gray-600'}
+                      size="sm"
+                    />
+                    {/* El salto al trabajo comercial: sin esto la bandeja es un
+                        chat aparte del CRM. */}
+                    {activa.lead && (
+                      <Button
+                        href={`/leads/${activa.lead.id}`}
+                        variant="ghost"
+                        className="h-auto px-1.5 py-0.5 text-xs gap-1"
+                        icon={<ArrowUpRight className="w-3 h-3" />}
+                      >
+                        Ver lead
+                      </Button>
+                    )}
+                    {activa.contact_id && (
+                      <Button
+                        href={`/contactos/${activa.contact_id}`}
+                        variant="ghost"
+                        className="h-auto px-1.5 py-0.5 text-xs gap-1"
+                        icon={<ArrowUpRight className="w-3 h-3" />}
+                      >
+                        Ver contacto
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-2 flex-wrap">

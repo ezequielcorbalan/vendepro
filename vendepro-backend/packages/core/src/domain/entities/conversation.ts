@@ -32,6 +32,11 @@ export interface ConversationProps {
   assignee_name?: string | null
   last_message?: string | null
   unread?: number
+  /**
+   * Lead del contacto, resuelto al leer (el vivo más reciente). Es lo que
+   * permite saltar de la charla al trabajo comercial sin buscar a mano.
+   */
+  lead?: { id: string; full_name: string | null; stage: string | null; pipeline: string } | null
 }
 
 export class Conversation {

@@ -176,4 +176,67 @@ describe('Inbox — conversaciones y mensajes en D1', () => {
     const [fila] = await convRepo.findByOrg(orgId)
     expect(fila?.toObject().last_message).toBe('Último')
   })
+
+  describe('lead vinculado', () => {
+    async function insertarLead(contactId: string, stage: string, creadoHaceDias = 0) {
+      const id = nextId('lead')
+      await env.DB.prepare(`
+        INSERT INTO leads (id, org_id, full_name, phone, stage, pipeline, contact_id, assigned_to, created_at, updated_at)
+        VALUES (?,?,?,?,?,?,?,?,?,?)`)
+        .bind(id, orgId, 'Juan Pérez', '1155551234', stage, 'vendedor', contactId, agentId,
+              new Date(Date.now() - creadoHaceDias * 86400000).toISOString(), new Date().toISOString())
+        .run()
+      return id
+    }
+
+    async function insertarContacto() {
+      const id = nextId('contact')
+      await env.DB.prepare(`
+        INSERT INTO contacts (id, org_id, agent_id, full_name, phone) VALUES (?,?,?,?,?)`)
+        .bind(id, orgId, agentId, 'Juan Pérez', '1155551234').run()
+      return id
+    }
+
+    it('trae el lead del contacto, con su etapa', async () => {
+      const repo = new D1ConversationRepository(env.DB)
+      const contactId = await insertarContacto()
+      const leadId = await insertarLead(contactId, 'contactado')
+      await repo.save(nuevaConversacion({ contact_id: contactId }))
+
+      const [conv] = await repo.findByOrg(orgId)
+      expect(conv?.toObject().lead).toMatchObject({ id: leadId, full_name: 'Juan Pérez', stage: 'contactado' })
+    })
+
+    // Desde la conversación se quiere llegar al trabajo en curso, no al viejo.
+    it('prefiere el lead vivo antes que uno cerrado más reciente', async () => {
+      const repo = new D1ConversationRepository(env.DB)
+      const contactId = await insertarContacto()
+      const vivo = await insertarLead(contactId, 'contactado', 10)
+      await insertarLead(contactId, 'perdido', 1)
+      await repo.save(nuevaConversacion({ contact_id: contactId }))
+
+      const [conv] = await repo.findByOrg(orgId)
+      expect(conv?.toObject().lead?.id).toBe(vivo)
+    })
+
+    it('si la conversación tiene lead_id explícito, gana ése', async () => {
+      const repo = new D1ConversationRepository(env.DB)
+      const contactId = await insertarContacto()
+      await insertarLead(contactId, 'contactado')
+      const elegido = await insertarLead(contactId, 'nuevo')
+      await repo.save(nuevaConversacion({ contact_id: contactId, lead_id: elegido }))
+
+      const [conv] = await repo.findByOrg(orgId)
+      expect(conv?.toObject().lead?.id).toBe(elegido)
+    })
+
+    it('sin lead del contacto, devuelve null', async () => {
+      const repo = new D1ConversationRepository(env.DB)
+      const contactId = await insertarContacto()
+      await repo.save(nuevaConversacion({ contact_id: contactId }))
+
+      const [conv] = await repo.findByOrg(orgId)
+      expect(conv?.toObject().lead).toBeNull()
+    })
+  })
 })

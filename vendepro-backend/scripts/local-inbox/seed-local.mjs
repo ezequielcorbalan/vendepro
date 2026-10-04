@@ -111,6 +111,7 @@ if (process.argv.includes('--demo')) {
   const demos = [
     {
       nombre: 'Juan Pérez', tel: '1155551234', estado: 'open', asignado: USER_ID, labels: '[]',
+      lead: { etapa: 'contactado', pipeline: 'comprador' },
       mensajes: [
         ['in', 'contact', 'Hola, vi el depto de Cabildo 2040. ¿Sigue disponible?', 45],
         ['out', 'bot', 'Hola Juan, sí sigue disponible. ¿Querés coordinar una visita?', 44],
@@ -119,6 +120,7 @@ if (process.argv.includes('--demo')) {
     },
     {
       nombre: 'Lucía Fernández', tel: '1144449999', estado: 'open', asignado: null, labels: '["bot_pausado"]',
+      lead: { etapa: 'nuevo', pipeline: 'vendedor' },
       mensajes: [
         ['in', 'contact', 'Buenas, quiero tasar mi casa en Villa Urquiza', 120],
         ['out', 'agent', 'Hola Lucía, te paso con una asesora.', 118],
@@ -132,12 +134,21 @@ if (process.argv.includes('--demo')) {
 
   let sql = ''
   for (const d of demos) {
-    const contactId = id('contact')
-    const convId = id('conv')
+    // Ids derivados del teléfono: re-correr --demo no duplica nada.
+    const contactId = `contact_demo_${d.tel}`
+    const convId = `conv_demo_${d.tel}`
     const ultimo = d.mensajes[d.mensajes.length - 1][3]
     sql += `
 INSERT OR IGNORE INTO contacts (id, org_id, full_name, phone, contact_type, source, agent_id)
-  VALUES ('${contactId}', '${ORG_ID}', '${d.nombre}', '${d.tel}', 'comprador', 'whatsapp', '${USER_ID}');
+  VALUES ('${contactId}', '${ORG_ID}', '${d.nombre}', '${d.tel}', 'comprador', 'whatsapp', '${USER_ID}');`
+    // Un lead del mismo contacto: así se ve el link desde la conversación.
+    if (d.lead) {
+      sql += `
+INSERT OR IGNORE INTO leads (id, org_id, full_name, phone, source, operation, stage, pipeline, assigned_to, contact_id, created_at, updated_at)
+  VALUES ('lead_demo_${d.tel}', '${ORG_ID}', '${d.nombre}', '${d.tel}', 'whatsapp', 'venta', '${d.lead.etapa}',
+          '${d.lead.pipeline}', '${USER_ID}', '${contactId}', '${haceRato(ultimo + 60)}', '${haceRato(ultimo)}');`
+    }
+    sql += `
 INSERT OR IGNORE INTO conversations (id, org_id, channel, contact_id, external_id, status, assignee_id, labels, last_activity_at, window_expires_at)
   VALUES ('${convId}', '${ORG_ID}', 'whatsapp', '${contactId}', '549${d.tel}@c.us', '${d.estado}',
           ${d.asignado ? `'${d.asignado}'` : 'NULL'}, '${d.labels}', '${haceRato(ultimo)}',
@@ -145,8 +156,8 @@ INSERT OR IGNORE INTO conversations (id, org_id, channel, contact_id, external_i
     for (const [dir, quien, texto, hace] of d.mensajes) {
       sql += `
 INSERT OR IGNORE INTO messages (id, org_id, conversation_id, direction, sender_type, sender_id, content, external_id, created_at)
-  VALUES ('${id('msg')}', '${ORG_ID}', '${convId}', '${dir}', '${quien}',
-          ${quien === 'agent' ? `'${USER_ID}'` : 'NULL'}, '${texto.replace(/'/g, "''")}', '${id('ext')}', '${haceRato(hace)}');`
+  VALUES ('msg_demo_${d.tel}_${hace}', '${ORG_ID}', '${convId}', '${dir}', '${quien}',
+          ${quien === 'agent' ? `'${USER_ID}'` : 'NULL'}, '${texto.replace(/'/g, "''")}', 'ext_demo_${d.tel}_${hace}', '${haceRato(hace)}');`
     }
   }
   // WhatsApp apuntando al WAHA del compose, para poder probar el envío.

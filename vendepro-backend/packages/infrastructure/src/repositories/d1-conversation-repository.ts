@@ -58,10 +58,28 @@ export class D1ConversationRepository implements ConversationRepository {
 
 // El nombre del contacto y del agente se traen en el mismo SELECT: la bandeja
 // los muestra en cada fila y sin esto serían dos queries por conversación.
+//
+// El lead se resuelve al leer y no se congela al crear la conversación: una
+// charla puede empezar antes de que exista el lead, o el contacto puede tener
+// uno nuevo después. Si la conversación tiene `lead_id` explícito manda ése;
+// si no, el lead vivo más reciente del contacto, y recién después uno cerrado
+// —desde la conversación se quiere llegar al trabajo en curso.
+const LEAD_RESUELTO = `
+  COALESCE(c.lead_id, (
+    SELECT l.id FROM leads l
+    WHERE l.contact_id = c.contact_id AND l.org_id = c.org_id
+    ORDER BY CASE WHEN l.stage IN ('perdido','invalido','finalizado','cerrado') THEN 1 ELSE 0 END,
+             l.created_at DESC
+    LIMIT 1))`
+
 const SELECT_BASE = `
   SELECT c.*, ct.full_name AS contact_name, u.full_name AS assignee_name,
     (SELECT m.content FROM messages m WHERE m.conversation_id = c.id
-      ORDER BY m.created_at DESC LIMIT 1) AS last_message
+      ORDER BY m.created_at DESC LIMIT 1) AS last_message,
+    ${LEAD_RESUELTO} AS resolved_lead_id,
+    (SELECT l.full_name FROM leads l WHERE l.id = ${LEAD_RESUELTO}) AS lead_name,
+    (SELECT l.stage FROM leads l WHERE l.id = ${LEAD_RESUELTO}) AS lead_stage,
+    (SELECT COALESCE(l.pipeline, 'vendedor') FROM leads l WHERE l.id = ${LEAD_RESUELTO}) AS lead_pipeline
   FROM conversations c
   LEFT JOIN contacts ct ON ct.id = c.contact_id
   LEFT JOIN users u ON u.id = c.assignee_id`
@@ -84,6 +102,14 @@ function toEntity(row: any): Conversation {
     contact_name: row.contact_name ?? null,
     assignee_name: row.assignee_name ?? null,
     last_message: row.last_message ?? null,
+    lead: row.resolved_lead_id
+      ? {
+          id: row.resolved_lead_id,
+          full_name: row.lead_name ?? null,
+          stage: row.lead_stage ?? null,
+          pipeline: row.lead_pipeline ?? 'vendedor',
+        }
+      : null,
   })
 }
 
