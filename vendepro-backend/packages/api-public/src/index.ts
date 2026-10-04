@@ -26,6 +26,7 @@ import {
   HmacUnsubscribeTokenSigner,
   fireMarketingEvent,
   fireWebhookEvent,
+  D1ConversationRepository, D1MessageRepository,
   fireAutomationEvent,
   D1AgentProfileRepository,
   D1MetaIntegrationRepository,
@@ -51,6 +52,7 @@ import {
   GetPortalFeedUseCase,
   GetPublicAgentLandingUseCase,
   GetPublicTagConfigUseCase,
+  IngestInboundMessageUseCase,
 } from '@vendepro/core'
 
 type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket; PUBLIC_BASE_URL?: string }
@@ -378,6 +380,78 @@ app.get('/public/prefact/:slug', async (c) => {
   const result = await uc.execute(c.req.param('slug'))
   if (!result) return c.json({ error: 'Not found' }, 404)
   return c.json(result)
+})
+
+// ── INBOX: MENSAJE ENTRANTE (/v1/inbox/messages) — Bearer JWT ───
+// Lo llama el proveedor de WhatsApp (WAHA/Evolution hoy, Meta Cloud API
+// después) por cada mensaje que entra. Requiere scope `inbox:write`.
+//
+// Entra por el namespace /v1 y no por un secreto propio para no inventar un
+// segundo mecanismo de auth: el token de integración ya se crea, se revoca y
+// se audita desde la UI, y trae la org.
+//
+// Siempre responde 200 salvo que el body sea inválido: un 500 hace que el
+// proveedor reintente en loop, y la ingesta ya es idempotente por el id del
+// mensaje, así que un reenvío no duplica nada.
+app.post('/v1/inbox/messages', async (c) => {
+  const scopes = c.get('tokenScopes') ?? []
+  if (!scopes.includes('inbox:write')) {
+    return c.json({ error: 'El token no tiene el scope inbox:write' }, 403)
+  }
+
+  const body = (await c.req.json().catch(() => null)) as any
+  if (!body || typeof body !== 'object') {
+    return c.json({ error: 'Body JSON inválido' }, 400)
+  }
+
+  const chatId = String(body.chat_id ?? body.from ?? '').trim()
+  if (!chatId) return c.json({ error: 'chat_id es requerido' }, 400)
+
+  const orgId = c.get('orgId')
+  const uc = new IngestInboundMessageUseCase(
+    new D1ConversationRepository(c.env.DB),
+    new D1MessageRepository(c.env.DB),
+    new D1ContactRepository(c.env.DB),
+    new D1UserRepository(c.env.DB),
+    new CryptoIdGenerator(),
+  )
+
+  const result = await uc.execute({
+    orgId,
+    channel: body.channel === 'instagram' || body.channel === 'facebook' ? body.channel : 'whatsapp',
+    externalChatId: chatId,
+    externalMessageId: body.message_id ? String(body.message_id) : null,
+    // WhatsApp manda el jid ("5491155551234@c.us"): el teléfono es lo de antes del @.
+    fromPhone: String(body.from_phone ?? chatId).split('@')[0] ?? null,
+    fromName: body.from_name ? String(body.from_name) : null,
+    content: typeof body.content === 'string' ? body.content : null,
+    attachments: Array.isArray(body.attachments) ? body.attachments : [],
+    sentAt: body.sent_at ? String(body.sent_at) : undefined,
+  })
+
+  // El bot de n8n escucha `message_created` para decidir si responde. Un
+  // reenvío del proveedor no lo despierta dos veces.
+  if (!result.duplicate) {
+    await fireWebhookEvent(c.env, {
+      orgId,
+      event: 'message_created',
+      payload: {
+        event: 'message_created',
+        body: {
+          conversation: { id: result.conversationId, channel: body.channel ?? 'whatsapp' },
+          sender: { phone_number: String(body.from_phone ?? chatId).split('@')[0], name: body.from_name ?? null },
+          content: typeof body.content === 'string' ? body.content : null,
+          contact_inbox: { source_id: chatId },
+          // 0 = entrante del cliente, 1 = saliente. Es lo que lee el bot.
+          message_type: 0,
+          attachments: Array.isArray(body.attachments) ? body.attachments : [],
+          private: false,
+        },
+      },
+    })
+  }
+
+  return c.json(result, 200)
 })
 
 // ── INTEGRATION API: IMPORT LEADS (/v1/leads) — Bearer JWT ───────

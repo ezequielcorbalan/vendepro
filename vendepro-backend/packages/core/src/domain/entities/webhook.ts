@@ -1,7 +1,10 @@
 import { ValidationError } from '../errors/validation-error'
 
 // Eventos que pueden suscribirse los webhooks salientes. Extensible.
-export const WEBHOOK_EVENTS = ['lead.created', 'lead.stage_changed', 'appraisal.created'] as const
+// `message_created` lo consume el bot de n8n por cada mensaje del inbox
+// (entrante y saliente). El nombre y la forma del payload copian a Chatwoot a
+// propósito: el bot ya los entiende y migrarlo es cambiar la URL.
+export const WEBHOOK_EVENTS = ['lead.created', 'lead.stage_changed', 'appraisal.created', 'message_created'] as const
 export type WebhookEventKey = (typeof WEBHOOK_EVENTS)[number]
 
 export interface WebhookProps {
