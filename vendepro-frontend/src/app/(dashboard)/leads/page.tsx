@@ -5,14 +5,14 @@ import { useSearchParams } from 'next/navigation'
 import {
   Plus, Search, Phone, X,
   AlertTriangle, User, MapPin, ArrowRight, ChevronDown, Download, Sparkles, Trash2, GripVertical,
-  ChevronRight, Check, Tag, Loader2, Calculator, ArrowLeft, Archive
+  ChevronRight, Check, Tag, Loader2, Calculator, ArrowLeft, Archive, UserPlus
 } from 'lucide-react'
 import {
   LEAD_SOURCES, LEAD_FLAGS,
   LEAD_AGENT_FINAL_STAGES, BUYER_LEAD_TERMINAL_STAGES,
   OPERATION_TYPES, getLeadChecklist,
   getLeadUrgency, getUrgencyBadge,
-  getStagesForPipeline, getStageConfig, type LeadPipelineKey
+  getStagesForPipeline, getStageConfig, canSeeAll, type LeadPipelineKey
 } from '@/lib/crm-config'
 import type { Contact } from '@/lib/types'
 import { useToast } from '@/components/ui/Toast'
@@ -23,6 +23,7 @@ import { StageBadge } from '@/components/ui/StageBadge'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
 import { StepIndicator } from '@/components/ui/StepIndicator'
 import { Alert } from '@/components/ui/Alert'
@@ -32,7 +33,11 @@ import { Heading, Text } from '@/components/ui/Typography'
 import { CallButton, WhatsAppButton } from '@/components/ui/ContactButtons'
 import AIChatPanel from '@/components/ai/AIChatPanel'
 import { MarkNotCapturedModal, type NotCapturedResult } from '@/components/leads/MarkNotCapturedModal'
+import { DelegateLeadModal } from '@/components/leads/DelegateLeadModal'
+import { Checkbox } from '@/components/ui/Choice'
+import { useCurrentUser } from '@/lib/use-current-user'
 import { apiFetch } from '@/lib/api'
+import { cn } from '@/lib/utils'
 import { loadStickyFilters, saveStickyFilters } from '@/lib/sticky-filters'
 import { scopeQueryString } from '@/lib/agent-scope'
 import { pushFromApiResponse } from '@/components/marketing/dataLayer'
@@ -136,6 +141,11 @@ export default function LeadsPage() {
   // Lead que está por marcarse "no captado" (pipeline vendedor): el modal
   // pregunta motivo + cuándo recontactar antes de mandar el cambio de etapa.
   const [notCapturedLead, setNotCapturedLead] = useState<any>(null)
+  // Reparto en lote: la cola de sin asignar se vacía seleccionando y delegando
+  // de una, no entrando a cada ficha.
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [showDelegate, setShowDelegate] = useState(false)
+  const { user } = useCurrentUser()
 
   // ── Modal de creación — 2 pasos ──────────────────────────────
   const [createStep, setCreateStep] = useState<1 | 2>(1)
@@ -289,6 +299,20 @@ export default function LeadsPage() {
     return result
   }, [leads, search, filterStage, filterSource, filterOperation, filterAgent, sortBy, showClosed, closedStages])
 
+
+  // Delegar es de admin/supervisor, o del agente sobre sus propios leads.
+  const puedeDelegar = (lead: any) => !!user && (canSeeAll(user.role) || lead.assigned_to === user.id)
+  const seleccionables = filtered.filter(puedeDelegar)
+  const selectedLeads = filtered.filter(l => selected.has(l.id))
+
+  const toggleSelected = (id: string) => setSelected(prev => {
+    const next = new Set(prev)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    return next
+  })
+  const limpiarSeleccion = () => setSelected(new Set())
+  const seleccionarTodos = () => setSelected(new Set(seleccionables.map(l => l.id)))
 
   const closeCreateModal = () => {
     setShowCreate(false)
@@ -521,6 +545,26 @@ export default function LeadsPage() {
   return (
     <div className="space-y-4 min-w-0 overflow-hidden">
       {confirmDialog}
+      <DelegateLeadModal
+        open={showDelegate}
+        onClose={() => setShowDelegate(false)}
+        leadIds={selectedLeads.map(l => l.id)}
+        leadLabel={selectedLeads.length === 1 ? (selectedLeads[0]?.full_name ?? 'El lead') : `${selectedLeads.length} leads`}
+        onDelegated={r => {
+          // En lote puede quedar algo afuera (leads ajenos, o que ya eran de
+          // ese agente): el toast lo dice en vez de cantar un éxito completo.
+          const resto = [
+            r.unchanged > 0 ? `${r.unchanged} ya ${r.unchanged === 1 ? 'era' : 'eran'} suyo${r.unchanged === 1 ? '' : 's'}` : null,
+            r.failed > 0 ? `${r.failed} no se ${r.failed === 1 ? 'pudo' : 'pudieron'} mover` : null,
+          ].filter(Boolean).join(' · ')
+          toast(
+            `${r.assigned} ${r.assigned === 1 ? 'lead delegado' : 'leads delegados'} a ${r.toAgentName}${resto ? ` (${resto})` : ''}`,
+            r.failed > 0 ? 'warning' : 'success',
+          )
+          limpiarSeleccion()
+          loadLeads()
+        }}
+      />
       <MarkNotCapturedModal
         open={!!notCapturedLead}
         leadName={notCapturedLead?.full_name}
@@ -657,6 +701,27 @@ export default function LeadsPage() {
           </div>
         ))}</div>
       ) : view === 'list' ? (
+        <>
+        {/* Barra de reparto: aparece sólo con algo seleccionado. El botón es
+            primary porque mientras está, es LA acción de la pantalla. */}
+        {selected.size > 0 && (
+          <Card className="flex items-center justify-between gap-3 flex-wrap">
+            <Text size="sm" weight="medium">
+              {selected.size} {selected.size === 1 ? 'lead seleccionado' : 'leads seleccionados'}
+            </Text>
+            <div className="flex items-center gap-2 flex-wrap">
+              {selected.size < seleccionables.length && (
+                <Button variant="ghost" onClick={seleccionarTodos}>
+                  Seleccionar los {seleccionables.length}
+                </Button>
+              )}
+              <Button variant="ghost" onClick={limpiarSeleccion}>Limpiar</Button>
+              <Button icon={<UserPlus className="w-3.5 h-3.5" />} onClick={() => setShowDelegate(true)}>
+                Delegar
+              </Button>
+            </div>
+          </Card>
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {filtered.length === 0 ? (
             closedLeads.length > 0 && !showClosed ? (
@@ -676,8 +741,21 @@ export default function LeadsPage() {
                 action={<Button onClick={() => setShowCreate(true)}>Crear primer lead</Button>}
               />
             )
-          ) : filtered.map(lead => <LeadCard key={lead.id} lead={lead} onAdvance={() => advanceStage(lead)} onLost={() => markLost(lead.id)} onDelete={() => deleteLead(lead.id, lead.full_name)} onRefresh={loadLeads} />)}
+          ) : filtered.map(lead => (
+            <LeadCard
+              key={lead.id}
+              lead={lead}
+              selectable={puedeDelegar(lead)}
+              selected={selected.has(lead.id)}
+              onToggleSelect={() => toggleSelected(lead.id)}
+              onAdvance={() => advanceStage(lead)}
+              onLost={() => markLost(lead.id)}
+              onDelete={() => deleteLead(lead.id, lead.full_name)}
+              onRefresh={loadLeads}
+            />
+          ))}
         </div>
+        </>
       ) : (
         <DndContext sensors={sensors} onDragStart={e => setActiveDragId(e.active.id as string)} onDragEnd={handleDragEnd} onDragCancel={() => setActiveDragId(null)}>
         <div className="overflow-x-auto pb-4 -mx-2 px-2">
@@ -952,7 +1030,7 @@ export default function LeadsPage() {
 const CELDA_ICONO = 'flex-1 w-12 rounded-none border-t border-gray-100 p-0 text-gray-500'
 const CELDA_TEXTO = 'flex-1 rounded-none px-0 py-2.5 text-xs font-medium text-gray-600'
 
-function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any; onAdvance: () => void; onLost: () => void; onDelete: () => void; onRefresh: () => void }) {
+function LeadCard({ lead, selectable = false, selected = false, onToggleSelect, onAdvance, onLost, onDelete, onRefresh }: { lead: any; selectable?: boolean; selected?: boolean; onToggleSelect?: () => void; onAdvance: () => void; onLost: () => void; onDelete: () => void; onRefresh: () => void }) {
   const urgency = getLeadUrgency(lead)
   const lastActivity = lead.last_activity_at ? timeAgo(lead.last_activity_at) : null
   const hasAppraisal = lead.appraisal_count > 0
@@ -995,7 +1073,10 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
   const availableTags = orgTags.filter(t => !lead.tags?.some((lt: any) => lt.id === t.id))
 
   return (
-    <div className="relative bg-white border border-gray-200 rounded-card shadow-card overflow-hidden flex flex-col transition-shadow hover:shadow-md">
+    <div className={cn(
+      'relative bg-white border rounded-card shadow-card overflow-hidden flex flex-col transition-shadow hover:shadow-md',
+      selected ? 'border-primary ring-1 ring-primary/30' : 'border-gray-200',
+    )}>
       {/* Tag picker dropdown */}
       {showTagPicker && (
         <>
@@ -1021,6 +1102,16 @@ function LeadCard({ lead, onAdvance, onLost, onDelete, onRefresh }: { lead: any;
       )}
       {/* Card body: en mobile es row (contenido + acciones icono), en desktop es solo contenido */}
       <div className="flex flex-1 min-w-0">
+        {/* Selección para repartir en lote. Fuera del Link: marcar no es entrar. */}
+        {selectable && (
+          <div className="pl-4 pt-5 shrink-0">
+            <Checkbox
+              checked={selected}
+              onChange={() => onToggleSelect?.()}
+              aria-label={`Seleccionar ${lead.full_name}`}
+            />
+          </div>
+        )}
         {/* Main content — clickable */}
         {/* gap-2.5 y no 1.5: con cuatro filas de texto (nombre+badges, teléfono,
             dirección, agente) a 6px de separación la card se leía como un bloque

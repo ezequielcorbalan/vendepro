@@ -357,8 +357,8 @@ export default function LeadDetailPage() {
       <DelegateLeadModal
         open={showDelegate}
         onClose={() => setShowDelegate(false)}
-        leadId={leadId}
-        leadName={lead?.full_name ?? 'El lead'}
+        leadIds={[leadId]}
+        leadLabel={lead?.full_name ?? 'El lead'}
         currentAgentId={lead?.assigned_to ?? null}
         onDelegated={r => {
           // El mail puede no salir (org sin remitente configurado) y la
