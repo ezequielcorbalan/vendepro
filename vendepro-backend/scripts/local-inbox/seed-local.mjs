@@ -26,9 +26,9 @@ const BACKEND = join(__dirname, '..', '..')
 const WORKER_DIR = join(BACKEND, 'packages', 'api-public')
 const DB_NAME = 'vendepro-db'
 
-// Mismo valor que hay que poner en .dev.vars para que el worker valide el
-// token que firmamos acá. Es de juguete y sólo vive en tu máquina.
-const JWT_SECRET = process.env.JWT_SECRET ?? 'local-dev-secret'
+// El mismo secreto de desarrollo que ya traen commiteado todos los workers
+// (packages/*/.dev.vars). Tiene que coincidir o el worker rechaza el token.
+const JWT_SECRET = process.env.JWT_SECRET ?? 'vendepro-local-dev-secret-do-not-use-in-prod'
 
 const ORG_ID = 'org_local'
 const USER_ID = 'user_local_admin'
@@ -56,11 +56,13 @@ for (const archivo of migraciones) {
   try {
     wrangler(['d1', 'execute', DB_NAME, '--local', '--file', join(migrationsDir, archivo)])
   } catch (err) {
-    // Correr el script dos veces re-aplica migraciones ya aplicadas: los
-    // CREATE TABLE IF NOT EXISTS pasan, pero un ALTER TABLE repetido falla.
-    // No es un problema, la columna ya está.
+    // Correr el script dos veces re-aplica migraciones ya aplicadas. Los
+    // CREATE TABLE IF NOT EXISTS pasan, pero un ALTER TABLE repetido falla y
+    // las migraciones que siembran catálogos (operation_types, etapas…)
+    // chocan contra su propia clave. En los tres casos el estado ya es el
+    // correcto, así que se saltea.
     const salida = `${err.stdout ?? ''}${err.stderr ?? ''}`
-    if (/duplicate column|already exists/i.test(salida)) continue
+    if (/duplicate column|already exists|UNIQUE constraint failed/i.test(salida)) continue
     console.error(`\n✗ Falló la migración ${archivo}:\n${salida}`)
     process.exit(1)
   }
@@ -88,15 +90,11 @@ INSERT OR REPLACE INTO api_tokens (id, org_id, name, scopes, prefix, is_active)
 console.log(`
 Listo. La base local tiene la org "${ORG_ID}" y un token para el inbox.
 
-  1. Poné el secreto en packages/api-public/.dev.vars:
-
-       JWT_SECRET = "${JWT_SECRET}"
-
-  2. Levantá el worker:
+  1. Levantá el worker (el .dev.vars ya viene en el repo):
 
        cd packages/api-public && npm run dev
 
-  3. Simulá un mensaje entrante (no hace falta WhatsApp todavía):
+  2. Simulá un mensaje entrante (no hace falta WhatsApp todavía):
 
        node scripts/local-inbox/fake-message.mjs "Hola, vi el depto de Cabildo"
 

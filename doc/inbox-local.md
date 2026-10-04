@@ -13,7 +13,8 @@ node scripts/local-inbox/seed-local.mjs
 
 Aplica las migraciones a la D1 local, siembra una org con un admin y te imprime
 un **token de integración** con scope `inbox:write`. Es idempotente: correlo
-las veces que quieras.
+las veces que quieras. Usa el mismo `JWT_SECRET` de desarrollo que ya traen
+commiteado todos los workers en su `.dev.vars`.
 
 ## 2. Levantar el worker
 
