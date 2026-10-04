@@ -1,0 +1,36 @@
+# WAHA (WhatsApp HTTP API) para probar el inbox en local.
+#
+#   docker compose -f scripts/local-inbox/docker-compose.yml up -d
+#
+# Después abrís http://localhost:3000 , escaneás el QR con el número DEDICADO
+# (nunca el de los carteles) y WAHA empieza a mandar los mensajes entrantes al
+# webhook de abajo.
+#
+# Ojo: WAHA habla con WhatsApp Web, no con la API oficial de Meta. Va contra
+# los términos de servicio y el número se puede bloquear. Es el arranque, no
+# el destino: el día que se migre a la Cloud API cambia sólo el adapter.
+services:
+  waha:
+    image: devlikeapro/waha:latest
+    container_name: vendepro-waha
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # A dónde manda cada mensaje entrante. host.docker.internal apunta a tu
+      # máquina desde adentro del contenedor (en Linux puede hacer falta
+      # --add-host=host.docker.internal:host-gateway).
+      WHATSAPP_HOOK_URL: http://host.docker.internal:8708/v1/inbox/messages
+      WHATSAPP_HOOK_EVENTS: message
+      # El token de integración que imprime seed-local.mjs.
+      WHATSAPP_HOOK_HEADERS: '{"Authorization":"Bearer ${INBOX_TOKEN}"}'
+      # Panel con el QR protegido, para que no quede abierto en tu red.
+      WAHA_DASHBOARD_USERNAME: admin
+      WAHA_DASHBOARD_PASSWORD: ${WAHA_PASSWORD:-cambiame}
+    volumes:
+      # La sesión queda acá: sin esto hay que re-escanear el QR en cada
+      # reinicio del contenedor.
+      - waha-sessions:/app/.sessions
+
+volumes:
+  waha-sessions:
