@@ -57,7 +57,7 @@ export WAHA_PASSWORD="algo-tuyo"
 docker compose -f scripts/local-inbox/docker-compose.yml up -d
 ```
 
-Abrí `http://localhost:3000`, escaneá el QR y mandale un mensaje al número
+Abrí `http://localhost:3001`, escaneá el QR y mandale un mensaje al número
 desde otro teléfono: tiene que aparecer en `conversations`.
 
 ## 5. Responder desde VendéPro
@@ -67,7 +67,7 @@ Para que el envío funcione, la organización necesita su fila en
 
 ```bash
 cd packages/api-public
-npx wrangler d1 execute vendepro-db --local --command "INSERT OR REPLACE INTO org_integrations (id, org_id, provider, config_json, enabled) VALUES ('int_local_wa', 'org_local', 'whatsapp', '{\"provider\":\"waha\",\"base_url\":\"http://localhost:3000\",\"session\":\"default\"}', 1)"
+npx wrangler d1 execute vendepro-db --local --command "INSERT OR REPLACE INTO org_integrations (id, org_id, provider, config_json, enabled) VALUES ('int_local_wa', 'org_local', 'whatsapp', '{\"provider\":\"waha\",\"base_url\":\"http://localhost:3001\",\"session\":\"default\"}', 1)"
 ```
 
 Después, desde el CRM: `POST /conversations/<id>/messages` con `{ "content": "..." }`.

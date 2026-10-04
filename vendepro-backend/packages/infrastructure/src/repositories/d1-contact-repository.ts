@@ -18,8 +18,18 @@ export class D1ContactRepository implements ContactRepository {
 
     if (filters?.agent_id) { query += ' AND agent_id = ?'; binds.push(filters.agent_id) }
     if (filters?.search) {
-      query += ' AND (full_name LIKE ? OR phone LIKE ? OR email LIKE ?)'
+      // Teléfono: se comparan sólo dígitos, así "11 5555-1234" encuentra al
+      // contacto guardado como "+5491155551234". Es la misma normalización que
+      // usa la búsqueda de leads, y lo que necesita el bot para saber si un
+      // número que escribe ya está en la base.
+      const digits = filters.search.replace(/\D/g, '')
+      query += ' AND (full_name LIKE ? OR phone LIKE ? OR email LIKE ?'
       binds.push(`%${filters.search}%`, `%${filters.search}%`, `%${filters.search}%`)
+      if (digits.length >= 3) {
+        query += ` OR REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(phone, ''), ' ', ''), '-', ''), '+', ''), '(', ''), ')', ''), '.', '') LIKE ?`
+        binds.push(`%${digits}%`)
+      }
+      query += ')'
     }
     if (filters?.tag_id) {
       query += ` AND id IN (

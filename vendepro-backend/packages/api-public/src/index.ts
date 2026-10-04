@@ -26,7 +26,7 @@ import {
   HmacUnsubscribeTokenSigner,
   fireMarketingEvent,
   fireWebhookEvent,
-  D1ConversationRepository, D1MessageRepository,
+  D1ConversationRepository, D1MessageRepository, createMessagingGateway,
   fireAutomationEvent,
   D1AgentProfileRepository,
   D1MetaIntegrationRepository,
@@ -53,6 +53,12 @@ import {
   GetPublicAgentLandingUseCase,
   GetPublicTagConfigUseCase,
   IngestInboundMessageUseCase,
+  GetConversationThreadUseCase,
+  AssignConversationUseCase,
+  SetConversationLabelsUseCase,
+  ToggleConversationStatusUseCase,
+  SendMessageUseCase,
+  GetContactsUseCase,
 } from '@vendepro/core'
 
 type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket; PUBLIC_BASE_URL?: string }
@@ -380,6 +386,140 @@ app.get('/public/prefact/:slug', async (c) => {
   const result = await uc.execute(c.req.param('slug'))
   if (!result) return c.json({ error: 'Not found' }, 404)
   return c.json(result)
+})
+
+// ── INBOX: CONTRATO DEL BOT (/v1/conversations/*) ──────────────
+// Los endpoints que consume el bot de n8n. Las rutas y los nombres de los
+// campos copian a Chatwoot (de donde se migra), así que para el bot cambiar
+// de Onetalk a VendéPro es cambiar la URL y el token, no reescribir nodos.
+//
+// Lectura: scope `inbox:read` o `inbox:write`. Escritura: `inbox:write`.
+function puedeLeerInbox(c: any): boolean {
+  const scopes: string[] = c.get('tokenScopes') ?? []
+  return scopes.includes('inbox:read') || scopes.includes('inbox:write')
+}
+function puedeEscribirInbox(c: any): boolean {
+  return (c.get('tokenScopes') ?? []).includes('inbox:write')
+}
+const SIN_LECTURA = { error: 'El token no tiene scope inbox:read' }
+const SIN_ESCRITURA = { error: 'El token no tiene scope inbox:write' }
+
+// Estado, etiquetas y asignado: con esto el bot sabe si está pausado y si la
+// conversación ya la está atendiendo una persona.
+app.get('/v1/conversations/:id', async (c) => {
+  if (!puedeLeerInbox(c)) return c.json(SIN_LECTURA, 403)
+  const uc = new GetConversationThreadUseCase(
+    new D1ConversationRepository(c.env.DB),
+    new D1MessageRepository(c.env.DB),
+  )
+  const conv = await uc.getConversation(c.req.param('id'), c.get('orgId'))
+  const o = conv.toObject()
+  return c.json({
+    id: o.id,
+    channel: o.channel,
+    status: o.status,
+    labels: o.labels,
+    assignee_id: o.assignee_id,
+    contact_id: o.contact_id,
+    // Fuera de ventana, con la API oficial sólo se puede mandar plantilla.
+    window_open: conv.isWindowOpen(),
+    window_expires_at: o.window_expires_at,
+    last_activity_at: o.last_activity_at,
+  })
+})
+
+// El historial, que el bot usa como contexto de la conversación.
+app.get('/v1/conversations/:id/messages', async (c) => {
+  if (!puedeLeerInbox(c)) return c.json(SIN_LECTURA, 403)
+  const uc = new GetConversationThreadUseCase(
+    new D1ConversationRepository(c.env.DB),
+    new D1MessageRepository(c.env.DB),
+  )
+  const limite = Number(c.req.query('limit') ?? 50)
+  const mensajes = await uc.getMessages(c.req.param('id'), c.get('orgId'), Number.isFinite(limite) ? limite : 50)
+  return c.json(mensajes.map(m => {
+    const o = m.toObject()
+    return {
+      id: o.id,
+      content: o.content,
+      // 0 = del cliente, 1 = nuestro. Es lo que el bot lee.
+      message_type: m.messageType,
+      sender_type: o.sender_type,
+      attachments: o.attachments,
+      created_at: o.created_at,
+    }
+  }))
+})
+
+// La respuesta del bot. Sale por el mismo camino que la de un agente.
+app.post('/v1/conversations/:id/messages', async (c) => {
+  if (!puedeEscribirInbox(c)) return c.json(SIN_ESCRITURA, 403)
+  const body = (await c.req.json().catch(() => null)) as any
+  if (!body || typeof body.content !== 'string') {
+    return c.json({ error: 'content es requerido' }, 400)
+  }
+
+  const orgId = c.get('orgId')
+  const gateway = await createMessagingGateway(c.env, orgId)
+  if (!gateway) return c.json({ error: 'La inmobiliaria no tiene WhatsApp configurado' }, 409)
+
+  const result = await new SendMessageUseCase(
+    new D1ConversationRepository(c.env.DB),
+    new D1MessageRepository(c.env.DB),
+    gateway,
+    new CryptoIdGenerator(),
+  ).execute({
+    conversationId: c.req.param('id'),
+    orgId,
+    text: body.content,
+    senderType: 'bot',
+    senderId: null,
+  })
+  return c.json(result, 201)
+})
+
+// Asignar un agente al escalar a humano. `assignee_id: null` la devuelve a la cola.
+app.post('/v1/conversations/:id/assignments', async (c) => {
+  if (!puedeEscribirInbox(c)) return c.json(SIN_ESCRITURA, 403)
+  const body = (await c.req.json().catch(() => ({}))) as any
+  const conv = await new AssignConversationUseCase(
+    new D1ConversationRepository(c.env.DB),
+    new D1UserRepository(c.env.DB),
+  ).execute(c.req.param('id'), c.get('orgId'), body?.assignee_id ?? null)
+  return c.json({ id: conv.id, assignee_id: conv.assignee_id })
+})
+
+// Etiquetas: reemplaza la lista completa (así saca `bot_pausado` también).
+app.post('/v1/conversations/:id/labels', async (c) => {
+  if (!puedeEscribirInbox(c)) return c.json(SIN_ESCRITURA, 403)
+  const body = (await c.req.json().catch(() => ({}))) as any
+  const conv = await new SetConversationLabelsUseCase(new D1ConversationRepository(c.env.DB))
+    .execute(c.req.param('id'), c.get('orgId'), Array.isArray(body?.labels) ? body.labels : [])
+  return c.json({ id: conv.id, labels: conv.labels })
+})
+
+// Abrir / cerrar. Sin body alterna; con `status` lo fija.
+app.post('/v1/conversations/:id/toggle_status', async (c) => {
+  if (!puedeEscribirInbox(c)) return c.json(SIN_ESCRITURA, 403)
+  const body = (await c.req.json().catch(() => ({}))) as any
+  const conv = await new ToggleConversationStatusUseCase(new D1ConversationRepository(c.env.DB))
+    .execute(c.req.param('id'), c.get('orgId'), body?.status)
+  return c.json({ id: conv.id, status: conv.status })
+})
+
+// Anti-doble-contacto: el bot pregunta si un teléfono ya está en la base
+// antes de tratarlo como consulta nueva. Busca por dígitos, así que no
+// importa cómo esté escrito el número de cada lado.
+app.get('/v1/contacts/search', async (c) => {
+  if (!puedeLeerInbox(c)) return c.json(SIN_LECTURA, 403)
+  const q = (c.req.query('q') ?? '').trim()
+  if (!q) return c.json([])
+
+  const contactos = await new GetContactsUseCase(new D1ContactRepository(c.env.DB))
+    .execute(c.get('orgId'), { search: q })
+  return c.json(contactos.slice(0, 20).map(ct => ({
+    id: ct.id, full_name: ct.full_name, phone: ct.phone, email: ct.email, contact_type: ct.contact_type,
+  })))
 })
 
 // ── INBOX: MENSAJE ENTRANTE (/v1/inbox/messages) — Bearer JWT ───

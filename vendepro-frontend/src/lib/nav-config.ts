@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   Building2,
   Users,
+  MessageSquare,
   FileBarChart,
   ClipboardList,
   Settings,
@@ -68,6 +69,7 @@ export const menuSections: NavSection[] = [
     title: 'CRM',
     links: [
       { href: '/leads', label: 'Leads', icon: BookUser },
+      { href: '/conversaciones', label: 'Conversaciones', icon: MessageSquare },
       { href: '/contactos', label: 'Contactos', icon: UserCheck },
     ],
   },

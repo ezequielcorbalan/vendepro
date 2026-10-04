@@ -15,7 +15,8 @@ services:
     container_name: vendepro-waha
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      # 3001 afuera: el 3000 lo usa el frontend (next dev).
+      - "3001:3000"
     environment:
       # A dónde manda cada mensaje entrante. host.docker.internal apunta a tu
       # máquina desde adentro del contenedor (en Linux puede hacer falta

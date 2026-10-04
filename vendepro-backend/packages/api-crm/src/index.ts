@@ -28,7 +28,8 @@ import { Activity, propertyFromIncoming } from '@vendepro/core'
 import {
   GetLeadsUseCase, UpdateLeadUseCase, DeleteLeadUseCase, AdvanceLeadStageUseCase,
   AssignLeadUseCase,
-  SendMessageUseCase,
+  SendMessageUseCase, GetConversationThreadUseCase,
+  AssignConversationUseCase, ToggleConversationStatusUseCase,
   LinkLeadPropertyUseCase, UpdateLeadPropertyStatusUseCase, UnlinkLeadPropertyUseCase,
   GetLeadPropertiesUseCase, GetPropertyInterestedLeadsUseCase,
   GetContactsUseCase, CreateContactUseCase, UpdateContactUseCase, DeleteContactUseCase,
@@ -297,6 +298,48 @@ app.post('/leads/stage', async (c) => {
 })
 
 // ── INBOX ──────────────────────────────────────────────────────
+// Bandeja: la lista que ve el agente, con filtros por estado y asignado.
+app.get('/conversations', async (c) => {
+  const { status, channel, assignee_id, unassigned } = c.req.query()
+  const repo = new D1ConversationRepository(c.env.DB)
+  const conversaciones = await repo.findByOrg(c.get('orgId'), {
+    status: status as any,
+    channel: channel as any,
+    assignee_id,
+    unassigned: unassigned === '1',
+  })
+  return c.json(conversaciones.map(cv => ({ ...cv.toObject(), window_open: cv.isWindowOpen() })))
+})
+
+// El hilo completo de una conversación.
+app.get('/conversations/:id/messages', async (c) => {
+  const uc = new GetConversationThreadUseCase(
+    new D1ConversationRepository(c.env.DB),
+    new D1MessageRepository(c.env.DB),
+  )
+  const mensajes = await uc.getMessages(c.req.param('id'), c.get('orgId'), 200)
+  return c.json(mensajes.map(m => m.toObject()))
+})
+
+// Asignar la conversación a un agente (o devolverla a la cola con null).
+app.post('/conversations/:id/assignments', async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as any
+  const conv = await new AssignConversationUseCase(
+    new D1ConversationRepository(c.env.DB),
+    new D1UserRepository(c.env.DB),
+  ).execute(c.req.param('id'), c.get('orgId'), body?.assignee_id ?? null)
+  return c.json({ id: conv.id, assignee_id: conv.assignee_id })
+})
+
+// Abrir / cerrar desde la bandeja.
+app.post('/conversations/:id/toggle_status', async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as any
+  const conv = await new ToggleConversationStatusUseCase(new D1ConversationRepository(c.env.DB))
+    .execute(c.req.param('id'), c.get('orgId'), body?.status)
+  return c.json({ id: conv.id, status: conv.status })
+})
+
+
 // Responder una conversación desde el CRM. El bot de n8n manda por su propia
 // ruta con token (ver api-public); acá entra el agente con su sesión.
 app.post('/conversations/:id/messages', async (c) => {
