@@ -24,3 +24,4 @@ export type {
   ActionExecutionInput,
   ActionOutcome,
 } from './automation-action-executor'
+export * from './messaging-gateway'

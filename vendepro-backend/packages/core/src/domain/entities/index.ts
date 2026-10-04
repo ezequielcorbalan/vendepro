@@ -105,3 +105,5 @@ export { AutomationRun, AutomationRunAction, MAX_CHAIN_DEPTH, DEDUPE_SCOPES } fr
 export type { AutomationRunProps, AutomationRunActionProps, RunStatus, RunActionStatus, SkipReason, DedupeScope } from './automation-run'
 export { AutomationJob, MAX_JOB_ATTEMPTS, JOB_LOCK_MINUTES } from './automation-job'
 export type { AutomationJobProps, JobStatus } from './automation-job'
+export * from './conversation'
+export * from './message'

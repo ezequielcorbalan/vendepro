@@ -229,3 +229,8 @@ export * from './use-cases/automations/drain-automation-jobs'
 export * from './use-cases/automations/build-automation-context'
 export * from './use-cases/automations/manage-automations'
 export * from './use-cases/automations/generate-email-sequence'
+
+// Inbox (conversaciones de WhatsApp / Instagram / Facebook)
+export * from './use-cases/inbox/ingest-inbound-message'
+export * from './use-cases/inbox/send-message'
+export * from './use-cases/inbox/manage-conversation'
