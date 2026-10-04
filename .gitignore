@@ -59,7 +59,3 @@ skills-lock.json
 
 # cache de turbo
 .turbo/
-
-# Secretos locales de wrangler (JWT_SECRET de desarrollo, etc.)
-.dev.vars
-**/.dev.vars
