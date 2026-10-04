@@ -60,11 +60,26 @@ docker compose -f scripts/local-inbox/docker-compose.yml up -d
 Abrí `http://localhost:3000`, escaneá el QR y mandale un mensaje al número
 desde otro teléfono: tiene que aparecer en `conversations`.
 
+## 5. Responder desde VendéPro
+
+Para que el envío funcione, la organización necesita su fila en
+`org_integrations` con `provider = 'whatsapp'`:
+
+```bash
+cd packages/api-public
+npx wrangler d1 execute vendepro-db --local --command "INSERT OR REPLACE INTO org_integrations (id, org_id, provider, config_json, enabled) VALUES ('int_local_wa', 'org_local', 'whatsapp', '{\"provider\":\"waha\",\"base_url\":\"http://localhost:3000\",\"session\":\"default\"}', 1)"
+```
+
+Después, desde el CRM: `POST /conversations/<id>/messages` con `{ "content": "..." }`.
+Sin esa fila el endpoint devuelve 409 — una org sin WhatsApp configurado no es
+un error, es el estado normal de casi todas.
+
+La config vive por organización y no en el worker porque cada inmobiliaria
+conecta su propio número. El día que una pase a la Cloud API oficial se cambia
+su fila, no el código.
+
 ## Qué falta para que esto sea el inbox de verdad
 
-Este tramo recibe y guarda. Todavía no están:
-
-- Responder desde VendéPro (port `WhatsAppGateway` + adapter WAHA).
 - Los endpoints REST que consume el bot de n8n (asignar, labels, toggle_status).
 - La UI de la bandeja con delegación a agentes.
 

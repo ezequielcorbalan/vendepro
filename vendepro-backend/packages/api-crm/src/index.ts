@@ -12,6 +12,7 @@ import {
   D1LeadPropertyRepository, D1PropertyLinkRepository,
   D1WebhookRepository, D1WebhookDeliveryRepository, HttpWebhookSender,
   D1NotificationRepository,
+  D1ConversationRepository, D1MessageRepository, createMessagingGateway,
   D1OrgIntegrationRepository, D1IntegrationLinkRepository, D1IntegrationSyncLogRepository,
   KitepropMcpClient,
   D1UserIntegrationRepository, GoogleCalendarHttpClient, buildGoogleAuthUrl,
@@ -27,6 +28,7 @@ import { Activity, propertyFromIncoming } from '@vendepro/core'
 import {
   GetLeadsUseCase, UpdateLeadUseCase, DeleteLeadUseCase, AdvanceLeadStageUseCase,
   AssignLeadUseCase,
+  SendMessageUseCase,
   LinkLeadPropertyUseCase, UpdateLeadPropertyStatusUseCase, UnlinkLeadPropertyUseCase,
   GetLeadPropertiesUseCase, GetPropertyInterestedLeadsUseCase,
   GetContactsUseCase, CreateContactUseCase, UpdateContactUseCase, DeleteContactUseCase,
@@ -292,6 +294,54 @@ app.post('/leads/stage', async (c) => {
     stage: { from: result.fromStage, to: body.stage },
   }))
   return c.json({ ...result, marketing: mk ?? null })
+})
+
+// ── INBOX ──────────────────────────────────────────────────────
+// Responder una conversación desde el CRM. El bot de n8n manda por su propia
+// ruta con token (ver api-public); acá entra el agente con su sesión.
+app.post('/conversations/:id/messages', async (c) => {
+  const orgId = c.get('orgId')
+  const body = (await c.req.json().catch(() => null)) as any
+  if (!body || typeof body.content !== 'string') {
+    return c.json({ error: 'content es requerido' }, 400)
+  }
+
+  const gateway = await createMessagingGateway(c.env, orgId)
+  if (!gateway) {
+    return c.json({ error: 'La inmobiliaria no tiene WhatsApp configurado' }, 409)
+  }
+
+  const useCase = new SendMessageUseCase(
+    new D1ConversationRepository(c.env.DB),
+    new D1MessageRepository(c.env.DB),
+    gateway,
+    new CryptoIdGenerator(),
+  )
+  const result = await useCase.execute({
+    conversationId: c.req.param('id'),
+    orgId,
+    text: body.content,
+    senderType: 'agent',
+    senderId: c.get('userId'),
+  })
+
+  // El bot escucha también los salientes: así se entera de que contestó un
+  // humano y se pausa solo (esa lógica ya vive en n8n).
+  await runInBackground(c, fireWebhookEvent(c.env, {
+    orgId,
+    event: 'message_created',
+    payload: {
+      event: 'message_created',
+      body: {
+        conversation: { id: result.conversationId },
+        content: body.content,
+        message_type: 1,
+        private: false,
+      },
+    },
+  }))
+
+  return c.json(result, 201)
 })
 
 // ── LEAD PROPERTIES (propiedades de interés de un lead comprador) ──
