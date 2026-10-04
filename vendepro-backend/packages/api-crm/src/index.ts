@@ -212,23 +212,31 @@ app.post('/leads/assign', async (c) => {
     },
     c.env.PUBLIC_BASE_URL ?? '',
   )
-  const result = await useCase.execute({
-    leadId: body.id ?? body.lead_id,
+  const comun = {
     orgId: c.get('orgId'),
     toAgentId: body.assigned_to,
     actorId: c.get('userId'),
     actorRole: c.get('userRole'),
     note: body.note ?? null,
-  })
+  }
+
+  // `ids` reparte en lote (la cola de sin asignar); `id`, de a uno desde la
+  // ficha. Las dos formas devuelven su propia shape: la ficha habla de UN lead
+  // y la lista necesita saber cuáles quedaron afuera.
+  const ids: string[] | null = Array.isArray(body.ids) ? body.ids : null
+  const result = ids
+    ? await useCase.executeMany({ ...comun, leadIds: ids })
+    : await useCase.execute({ ...comun, leadId: body.id ?? body.lead_id })
 
   // Automatizaciones: `lead.assigned` ya estaba en el catálogo esperando que
-  // alguien lo emitiera. Sólo si hubo cambio real de agente.
-  if (!result.unchanged) {
+  // alguien lo emitiera. Sólo por los leads que cambiaron de agente de verdad.
+  const movidos = 'assigned' in result ? result.assigned : (result.unchanged ? [] : [result.leadId])
+  for (const leadId of movidos) {
     await runInBackground(c, fireAndDrainAutomations(c.env, {
       orgId: c.get('orgId'),
       trigger: 'lead.assigned',
       entityType: 'lead',
-      entityId: result.leadId,
+      entityId: leadId,
     }))
   }
   return c.json(result)
