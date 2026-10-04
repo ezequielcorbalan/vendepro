@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { GetTeamBoardUseCase } from '../../../src/application/use-cases/dashboard/get-team-board'
 import { User } from '../../../src/domain/entities/user'
-import type { AgentLeadAggregate } from '../../../src/application/ports/repositories/team-stats-repository'
+import type { AgentLeadAggregate, AgentFirstResponse } from '../../../src/application/ports/repositories/team-stats-repository'
 
 const user = (id: string, full_name: string, role = 'agent') =>
   User.create({ id, org_id: 'org_mg', email: `${id}@test.com`, password_hash: 'x', full_name, role, active: 1 } as any)
@@ -16,13 +16,24 @@ const agg = (agent_id: string | null, by_stage: Record<string, number>, extra: P
   ...extra,
 })
 
-function build(aggregates: AgentLeadAggregate[], activity: Record<string, number> = {}) {
+function build(
+  aggregates: AgentLeadAggregate[],
+  activity: Record<string, number> = {},
+  respuestas: AgentFirstResponse[] = [],
+) {
   return new GetTeamBoardUseCase(
     { findByOrg: vi.fn(async () => [user('a1', 'Ana'), user('a2', 'Beto'), user('a3', 'Sin nada')]) } as any,
-    { aggregateLeadsByAgent: vi.fn(async () => aggregates) } as any,
+    {
+      aggregateLeadsByAgent: vi.fn(async () => aggregates),
+      aggregateFirstResponseByAgent: vi.fn(async () => respuestas),
+    } as any,
     { countByAgentSince: vi.fn(async () => activity) } as any,
   )
 }
+
+const resp = (agent_id: string, o: Partial<AgentFirstResponse> = {}): AgentFirstResponse => ({
+  agent_id, medidos: 0, en_24h: 0, nunca_contactados: 0, sin_dato: 0, mediana_horas: null, ...o,
+})
 
 describe('GetTeamBoardUseCase', () => {
   it('calcula activos, captados y conversión por agente', async () => {
@@ -96,5 +107,47 @@ describe('GetTeamBoardUseCase', () => {
     expect(ana.conversion).toBe(50)
     expect(ana.activos).toBe(4)
     expect(board.pipeline).toBe('comprador')
+  })
+
+  describe('tiempo de respuesta', () => {
+    it('calcula el % en 24h contando los que nunca se contactaron', async () => {
+      const board = await build(
+        [agg('a1', { contactado: 10 })], {},
+        [resp('a1', { medidos: 8, en_24h: 6, nunca_contactados: 2, mediana_horas: 3.5 })],
+      ).execute('org_mg')
+
+      const ana = board.agents.find(a => a.id === 'a1')!
+      // 6 de 10 (8 medidos + 2 que nunca se contactaron), no 6 de 8.
+      expect(ana.en_24h_pct).toBe(60)
+      expect(ana.mediana_respuesta_h).toBe(3.5)
+    })
+
+    // Si el que no llama a nadie midiera sólo sobre los contactados, daría 100%.
+    it('el que no contactó a nadie no puede dar 100%', async () => {
+      const board = await build(
+        [agg('a1', { nuevo: 5 })], {},
+        [resp('a1', { medidos: 0, en_24h: 0, nunca_contactados: 5 })],
+      ).execute('org_mg')
+
+      expect(board.agents.find(a => a.id === 'a1')!.en_24h_pct).toBe(0)
+    })
+
+    it('sin nada que medir devuelve null, no 0%', async () => {
+      const board = await build(
+        [agg('a1', { contactado: 3 })], {},
+        [resp('a1', { medidos: 0, en_24h: 0, nunca_contactados: 0, sin_dato: 3 })],
+      ).execute('org_mg')
+
+      const ana = board.agents.find(a => a.id === 'a1')!
+      expect(ana.en_24h_pct).toBeNull()
+      expect(ana.respuesta_sin_dato).toBe(3)
+    })
+
+    it('un agente sin datos de respuesta no rompe la fila', async () => {
+      const board = await build([agg('a1', { nuevo: 1 })]).execute('org_mg')
+      const ana = board.agents.find(a => a.id === 'a1')!
+      expect(ana.en_24h_pct).toBeNull()
+      expect(ana.mediana_respuesta_h).toBeNull()
+    })
   })
 })

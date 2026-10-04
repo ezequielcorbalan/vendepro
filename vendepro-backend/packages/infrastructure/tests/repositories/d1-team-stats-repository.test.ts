@@ -24,17 +24,26 @@ describe('D1TeamStatsRepository', () => {
     createdAt?: string
     updatedAt?: string
     pipeline?: string | null
+    firstContactAt?: string | null
   }) {
     const now = new Date().toISOString()
     await env.DB.prepare(`
-      INSERT INTO leads (id, org_id, full_name, stage, assigned_to, pipeline, created_at, updated_at)
-      VALUES (?,?,?,?,?,?,?,?)`)
+      INSERT INTO leads (id, org_id, full_name, stage, assigned_to, pipeline, created_at, updated_at, first_contact_at)
+      VALUES (?,?,?,?,?,?,?,?,?)`)
       .bind(
         nextId('lead'), orgId, 'Lead Test', opts.stage,
         opts.assignedTo === undefined ? agentId : opts.assignedTo,
         opts.pipeline === undefined ? 'vendedor' : opts.pipeline,
         opts.createdAt ?? now, opts.updatedAt ?? now,
+        opts.firstContactAt ?? null,
       ).run()
+  }
+
+  /** `created_at` hace N días y primer contacto H horas después. */
+  async function leadContactadoEn(dias: number, horas: number, stage = 'contactado') {
+    const creado = new Date(Date.now() - dias * 86400000)
+    const contacto = new Date(creado.getTime() + horas * 3600000)
+    await insertLead({ stage, createdAt: creado.toISOString(), firstContactAt: contacto.toISOString() })
   }
 
   const daysAgoIso = (d: number) => new Date(Date.now() - d * 86400000).toISOString()
@@ -133,5 +142,61 @@ describe('D1TeamStatsRepository', () => {
     const otherOrg = await seedOrg(env.DB)
     const rows = await new D1TeamStatsRepository(env.DB).aggregateLeadsByAgent(otherOrg.id, 'vendedor')
     expect(rows).toEqual([])
+  })
+
+  describe('aggregateFirstResponseByAgent', () => {
+    it('cuenta los contactados dentro de las 24h', async () => {
+      await leadContactadoEn(10, 2)
+      await leadContactadoEn(10, 20)
+      await leadContactadoEn(10, 50)
+
+      const [r] = await new D1TeamStatsRepository(env.DB).aggregateFirstResponseByAgent(orgId, 'vendedor')
+      expect(r?.medidos).toBe(3)
+      expect(r?.en_24h).toBe(2)
+    })
+
+    it('saca la mediana de horas, no el promedio', async () => {
+      // 1, 2, 300 → mediana 2. Un promedio daría 101.
+      await leadContactadoEn(10, 1)
+      await leadContactadoEn(10, 2)
+      await leadContactadoEn(10, 300)
+
+      const [r] = await new D1TeamStatsRepository(env.DB).aggregateFirstResponseByAgent(orgId, 'vendedor')
+      expect(r?.mediana_horas).toBeCloseTo(2, 1)
+    })
+
+    it('con cantidad par promedia los dos del medio', async () => {
+      await leadContactadoEn(10, 2)
+      await leadContactadoEn(10, 4)
+      await leadContactadoEn(10, 6)
+      await leadContactadoEn(10, 100)
+
+      const [r] = await new D1TeamStatsRepository(env.DB).aggregateFirstResponseByAgent(orgId, 'vendedor')
+      expect(r?.mediana_horas).toBeCloseTo(5, 1)
+    })
+
+    it('separa los que nunca se contactaron de los que no se pueden medir', async () => {
+      // Sigue en nuevo y venció: incumplido.
+      await insertLead({ stage: 'nuevo', createdAt: new Date(Date.now() - 3 * 86400000).toISOString() })
+      // Avanzó sin registrar primer contacto: no hay con qué medirlo.
+      await insertLead({ stage: 'captado', createdAt: new Date(Date.now() - 3 * 86400000).toISOString() })
+      // Recién creado: todavía no venció, no cuenta en ningún lado.
+      await insertLead({ stage: 'nuevo' })
+
+      const [r] = await new D1TeamStatsRepository(env.DB).aggregateFirstResponseByAgent(orgId, 'vendedor')
+      expect(r?.nunca_contactados).toBe(1)
+      expect(r?.sin_dato).toBe(1)
+      expect(r?.medidos).toBe(0)
+      expect(r?.mediana_horas).toBeNull()
+    })
+
+    it('no mezcla pipelines ni organizaciones', async () => {
+      await leadContactadoEn(5, 1)
+      const repo = new D1TeamStatsRepository(env.DB)
+
+      expect((await repo.aggregateFirstResponseByAgent(orgId, 'comprador'))).toEqual([])
+      const otra = await seedOrg(env.DB)
+      expect((await repo.aggregateFirstResponseByAgent(otra.id, 'vendedor'))).toEqual([])
+    })
   })
 })

@@ -1,6 +1,6 @@
 import type { UserRepository } from '../../ports/repositories/user-repository'
 import type { ActivityRepository } from '../../ports/repositories/activity-repository'
-import type { TeamStatsRepository, AgentLeadAggregate } from '../../ports/repositories/team-stats-repository'
+import type { TeamStatsRepository, AgentLeadAggregate, AgentFirstResponse } from '../../ports/repositories/team-stats-repository'
 import type { LeadPipeline } from '../../../domain/value-objects/lead-stage'
 import { WON_STAGE, isTerminalStage } from '../../../domain/value-objects/lead-stage'
 
@@ -26,6 +26,12 @@ export interface TeamBoardAgentRow {
   actividad_mes: number
   /** Última vez que movió alguno de sus leads. */
   ultimo_movimiento: string | null
+  /** % de leads contactados dentro de las 24h. `null` si no hay con qué medir. */
+  en_24h_pct: number | null
+  /** Cuánto tarda típicamente en hacer el primer contacto. */
+  mediana_respuesta_h: number | null
+  /** Leads que no se pueden medir (avanzaron sin registrar el primer contacto). */
+  respuesta_sin_dato: number
 }
 
 export interface TeamBoardResult {
@@ -59,11 +65,17 @@ export class GetTeamBoardUseCase {
   async execute(orgId: string, pipeline: LeadPipeline = 'vendedor'): Promise<TeamBoardResult> {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
 
-    const [team, aggregates, activityByAgent] = await Promise.all([
+    const [team, aggregates, respuestas, activityByAgent] = await Promise.all([
       this.users.findByOrg(orgId),
       this.teamStats.aggregateLeadsByAgent(orgId, pipeline),
+      this.teamStats.aggregateFirstResponseByAgent(orgId, pipeline),
       this.activities.countByAgentSince(orgId, thirtyDaysAgo),
     ])
+
+    const respuestaPorAgente = new Map<string, AgentFirstResponse>()
+    for (const r of respuestas) {
+      if (r.agent_id !== null) respuestaPorAgente.set(r.agent_id, r)
+    }
 
     const byAgent = new Map<string, AgentLeadAggregate>()
     let unassigned: AgentLeadAggregate | null = null
@@ -77,6 +89,7 @@ export class GetTeamBoardUseCase {
       .map(user => {
         const o = user.toObject()
         const agg = byAgent.get(o.id)
+        const resp = respuestaPorAgente.get(o.id)
         const total = agg?.total ?? 0
         const captados = agg?.by_stage[won] ?? 0
         return {
@@ -92,6 +105,9 @@ export class GetTeamBoardUseCase {
           por_etapa: agg?.by_stage ?? {},
           actividad_mes: activityByAgent[o.id] ?? 0,
           ultimo_movimiento: agg?.ultimo_movimiento ?? null,
+          en_24h_pct: pctEn24h(resp),
+          mediana_respuesta_h: resp?.mediana_horas ?? null,
+          respuesta_sin_dato: resp?.sin_dato ?? 0,
         }
       })
       // Sin leads ni actividad no hay nada que mirar: son usuarios
@@ -128,6 +144,21 @@ export class GetTeamBoardUseCase {
       totales,
     }
   }
+}
+
+/**
+ * % de leads atendidos dentro de las 24h.
+ *
+ * El denominador incluye los que nunca se contactaron y ya vencieron: medir
+ * sólo sobre los contactados le daría 100% al que no llama a nadie. Los que
+ * avanzaron sin registrar primer contacto quedan afuera —no hay con qué
+ * medirlos— y se informan aparte en `respuesta_sin_dato`.
+ */
+function pctEn24h(resp: AgentFirstResponse | undefined): number | null {
+  if (!resp) return null
+  const base = resp.medidos + resp.nunca_contactados
+  if (base === 0) return null
+  return Math.round((resp.en_24h / base) * 100)
 }
 
 /** Vivos: ni la etapa ganada ni las terminales. */

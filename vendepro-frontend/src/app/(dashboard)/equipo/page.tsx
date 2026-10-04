@@ -31,6 +31,9 @@ interface AgentRow {
   por_etapa: Record<string, number>
   actividad_mes: number
   ultimo_movimiento: string | null
+  en_24h_pct: number | null
+  mediana_respuesta_h: number | null
+  respuesta_sin_dato: number
 }
 
 interface Board {
@@ -45,6 +48,20 @@ function conversionColor(pct: number): string {
   if (pct >= 20) return 'bg-success/10 text-success'
   if (pct >= 10) return 'bg-warning/10 text-warning'
   return 'bg-danger/10 text-danger'
+}
+
+/** La regla del negocio es contactar dentro de las 24h: verde si la cumple casi siempre. */
+function sla24hColor(pct: number): string {
+  if (pct >= 90) return 'bg-success/10 text-success'
+  if (pct >= 70) return 'bg-warning/10 text-warning'
+  return 'bg-danger/10 text-danger'
+}
+
+/** 0.5 → "30 min"; 3.2 → "3 h"; 40 → "1.7 d". */
+function formatHoras(h: number): string {
+  if (h < 1) return `${Math.round(h * 60)} min`
+  if (h < 48) return `${h < 10 ? h.toFixed(1) : Math.round(h)} h`
+  return `${(h / 24).toFixed(1)} d`
 }
 
 function timeAgo(iso: string | null): string {
@@ -168,6 +185,24 @@ export default function EquipoPage() {
         />
       ),
     },
+    {
+      key: 'en_24h_pct',
+      header: 'Contactó en 24h',
+      align: 'right',
+      sortable: true,
+      render: r => r.en_24h_pct === null
+        ? <Text size="xs" tone="muted">Sin datos</Text>
+        : <StatusBadge label={`${r.en_24h_pct}%`} color={sla24hColor(r.en_24h_pct)} size="sm" />,
+    },
+    {
+      key: 'mediana_respuesta_h',
+      header: 'Tarda',
+      align: 'right',
+      sortable: true,
+      render: r => r.mediana_respuesta_h === null
+        ? <Text size="xs" tone="muted">—</Text>
+        : <span className="text-ink">{formatHoras(r.mediana_respuesta_h)}</span>,
+    },
     { key: 'actividad_mes', header: 'Actividad 30d', align: 'right', sortable: true },
   ]
 
@@ -236,7 +271,7 @@ export default function EquipoPage() {
             data={board.agents}
             rowKey={r => r.id}
             rowHref={r => `/leads?agent=${r.id}`}
-            minWidth={880}
+            minWidth={1120}
             renderMobileCard={r => (
               <Link href={`/leads?agent=${r.id}`} className="block p-4 space-y-2">
                 <div className="flex items-center justify-between gap-2">
@@ -247,6 +282,8 @@ export default function EquipoPage() {
                   <Text size="xs" tone="muted">{r.activos} activos</Text>
                   <Text size="xs" tone="muted">{r.captados} captados</Text>
                   <Text size="xs" tone="muted">{r.actividad_mes} actividades (30d)</Text>
+                  {r.en_24h_pct !== null && <Text size="xs" tone="muted">{r.en_24h_pct}% en 24h</Text>}
+                  {r.mediana_respuesta_h !== null && <Text size="xs" tone="muted">tarda {formatHoras(r.mediana_respuesta_h)}</Text>}
                 </div>
                 {(r.sin_contactar_24h > 0 || r.sin_movimiento_7d > 0) && (
                   <div className="flex flex-wrap gap-x-4 gap-y-1">

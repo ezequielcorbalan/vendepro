@@ -15,6 +15,34 @@ export interface AgentLeadAggregate {
 }
 
 /**
+ * Qué tan rápido atiende un agente. Se mide sobre `leads.first_contact_at`,
+ * que el dominio escribe en la transición nuevo → contactado.
+ */
+export interface AgentFirstResponse {
+  agent_id: string | null
+  /** Leads con primer contacto registrado: la base de la medición. */
+  medidos: number
+  /** De ésos, cuántos se contactaron dentro de las 24h (la regla del negocio). */
+  en_24h: number
+  /**
+   * Siguen en `nuevo` y ya pasaron 24h: nunca se contactaron. Cuentan como
+   * incumplidos, si no el que no llama a nadie tendría 100%.
+   */
+  nunca_contactados: number
+  /**
+   * Avanzaron de etapa sin pasar por nuevo → contactado (importados, o
+   * cargados ya contactados): no hay con qué medirlos, así que quedan fuera
+   * del porcentaje en vez de contarse como incumplidos.
+   */
+  sin_dato: number
+  /**
+   * Mediana de horas hasta el primer contacto. Mediana y no promedio: un lead
+   * contestado a los 20 días no puede definir el número de todo el mes.
+   */
+  mediana_horas: number | null
+}
+
+/**
  * Lecturas agregadas para el tablero del equipo.
  *
  * Port aparte de `LeadRepository` a propósito: esto no devuelve entidades sino
@@ -24,4 +52,5 @@ export interface AgentLeadAggregate {
  */
 export interface TeamStatsRepository {
   aggregateLeadsByAgent(orgId: string, pipeline: LeadPipeline): Promise<AgentLeadAggregate[]>
+  aggregateFirstResponseByAgent(orgId: string, pipeline: LeadPipeline): Promise<AgentFirstResponse[]>
 }

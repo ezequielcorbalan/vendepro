@@ -1,4 +1,4 @@
-import type { TeamStatsRepository, AgentLeadAggregate, LeadPipeline } from '@vendepro/core'
+import type { TeamStatsRepository, AgentLeadAggregate, AgentFirstResponse, LeadPipeline } from '@vendepro/core'
 import { isTerminalStage, WON_STAGE } from '@vendepro/core'
 
 export class D1TeamStatsRepository implements TeamStatsRepository {
@@ -64,5 +64,66 @@ export class D1TeamStatsRepository implements TeamStatsRepository {
     }
 
     return Array.from(byAgent.values())
+  }
+
+  /**
+   * Tiempo hasta el primer contacto, por agente.
+   *
+   * Dos queries porque son dos preguntas distintas: los conteos salen de un
+   * GROUP BY común, y la mediana necesita ordenar los tiempos de cada agente
+   * (se saca con el truco clásico de `ROW_NUMBER`: el valor del medio, o el
+   * promedio de los dos del medio cuando la cantidad es par).
+   *
+   * Todo con `julianday` — ver el comentario de `aggregateLeadsByAgent` sobre
+   * los dos formatos de fecha que conviven en la base.
+   */
+  async aggregateFirstResponseByAgent(orgId: string, pipeline: LeadPipeline): Promise<AgentFirstResponse[]> {
+    const horas = `(julianday(first_contact_at) - julianday(created_at)) * 24.0`
+    const scope = `org_id = ? AND COALESCE(pipeline, 'vendedor') = ? AND assigned_to IS NOT NULL`
+
+    const [conteos, medianas] = await Promise.all([
+      this.db.prepare(`
+        SELECT
+          assigned_to AS agent_id,
+          SUM(CASE WHEN first_contact_at IS NOT NULL THEN 1 ELSE 0 END) AS medidos,
+          SUM(CASE WHEN first_contact_at IS NOT NULL AND ${horas} <= 24 THEN 1 ELSE 0 END) AS en_24h,
+          SUM(CASE WHEN first_contact_at IS NULL AND stage = 'nuevo'
+                    AND julianday('now') - julianday(created_at) > 1 THEN 1 ELSE 0 END) AS nunca_contactados,
+          SUM(CASE WHEN first_contact_at IS NULL AND stage <> 'nuevo' THEN 1 ELSE 0 END) AS sin_dato
+        FROM leads
+        WHERE ${scope}
+        GROUP BY assigned_to
+      `).bind(orgId, pipeline).all(),
+
+      this.db.prepare(`
+        WITH tiempos AS (
+          SELECT
+            assigned_to AS agent_id,
+            ${horas} AS horas,
+            ROW_NUMBER() OVER (PARTITION BY assigned_to ORDER BY ${horas}) AS fila,
+            COUNT(*) OVER (PARTITION BY assigned_to) AS n
+          FROM leads
+          WHERE ${scope} AND first_contact_at IS NOT NULL
+        )
+        SELECT agent_id, AVG(horas) AS mediana
+        FROM tiempos
+        WHERE fila IN ((n + 1) / 2, (n + 2) / 2)
+        GROUP BY agent_id
+      `).bind(orgId, pipeline).all(),
+    ])
+
+    const medianaPorAgente = new Map<string, number>()
+    for (const row of (medianas.results as any[])) {
+      if (row.mediana !== null) medianaPorAgente.set(row.agent_id, Number(row.mediana))
+    }
+
+    return (conteos.results as any[]).map(row => ({
+      agent_id: row.agent_id ?? null,
+      medidos: Number(row.medidos) || 0,
+      en_24h: Number(row.en_24h) || 0,
+      nunca_contactados: Number(row.nunca_contactados) || 0,
+      sin_dato: Number(row.sin_dato) || 0,
+      mediana_horas: medianaPorAgente.get(row.agent_id) ?? null,
+    }))
   }
 }

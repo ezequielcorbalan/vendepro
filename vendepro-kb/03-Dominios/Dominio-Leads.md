@@ -106,6 +106,14 @@ fila de totales de la inmobiliaria.
   (`YYYY-MM-DD HH:MM:SS`), y comparar esos textos daba cualquier cosa.
 - Un lead ganado o terminal no cuenta como atrasado. La etapa ganada depende del
   pipeline: `captado` en vendedor, `cerrado` en comprador (`WON_STAGE`).
+- **Tiempo de respuesta** (sobre `leads.first_contact_at`, que el dominio escribe
+  en la transición nuevo → contactado): `% contactó en 24h` y la **mediana** de
+  horas hasta el primer contacto. El denominador del % incluye los que nunca se
+  contactaron y ya vencieron — medir sólo sobre los contactados le daría 100% al
+  que no llama a nadie. Los leads que avanzaron sin registrar primer contacto
+  (importados, o cargados ya contactados) no se pueden medir: quedan **fuera**
+  del porcentaje, no contados como incumplidos. Mediana y no promedio: un lead
+  contestado a los 20 días no puede definir el número del mes.
 - El orden por defecto pone primero a quien tiene trabajo atrasado, no a quien
   más captó: el tablero es para actuar.
 - `/leads` sumó el filtro **"Sin asignar"** (`?agent=none`), que es a donde
