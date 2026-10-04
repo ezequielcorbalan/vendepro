@@ -7,7 +7,7 @@
 
 | Feature | Instancia | Resumen en una línea |
 |---|---|---|
-| 00a · CRM operacional | 🟢 | Leads, contactos, calendario, actividades, tags, objetivos en producción. Notificaciones y detalle de prefactibilidad rotos. |
+| 00a · CRM operacional | 🟢 | Leads, contactos, calendario, actividades, tags, objetivos en producción. Prefactibilidades se sacaron de la app (22-sep-2026): queda viva la pagina publica. |
 | 00b · Meta CAPI + GA4 (Stape) | 🟡 | Enviando eventos en producción; custom_data pobre, retry muerto, UTM incompleta, bug org/agente. |
 | 00c · Tasaciones + cierres manuales | 🟢 | Sistema completo con PDF; faltan pulidos (agente en página pública, thumbnails, lightbox). |
 | 01 · Dashboard atribución + creativos | 🟡 | Campañas Meta live con CPL y match a leads; creativos y tablas `ad_*` no existen. |
@@ -44,7 +44,7 @@ Todo el núcleo está en producción con backend + UI:
 
 **Bugs encontrados en el análisis** (deuda del CRM base):
 1. ✅ **NotificationBell nunca muestra nada** — llamaba a `apiFetch('crm', '/notifications')` cuando el endpoint vive en **api-admin**, y esperaba `{notifications}` cuando el backend devuelve un array plano. **Corregido el 22-sep-2026** junto con la delegación de leads (que es la que llena la campana); mapea `kind` → urgencia y muestra sólo las no leídas.
-2. 🐛 **Detalle de prefactibilidad → 404** — `prefactibilidades/page.tsx:77` linkea a `/prefactibilidades/${id}` pero no existe `[id]/page.tsx` (el backend sí tiene `GET /prefactibilidades/:id`).
+2. ✅ **Detalle de prefactibilidad → 404** — la lista linkeaba a un `[id]/page.tsx` que nunca existía. **Resuelto el 22-sep-2026 sacando las pantallas internas de prefactibilidades** (pedido de Gastón): ya no hay desde dónde llegar al 404. La página pública `/p/<slug>`, la API y la tabla siguen intactas — ver [[Dominio-Prefactibilidades]].
 3. ~~🐛 **Endpoints IA fantasma**~~ — **resuelto 2026-09-08**: `/extract-kiteprop` ahora existe en api-ai (PDF de KiteProp por Gemini nativo) y el screenshot de competencia reusa `/extract-comparable`; además hay `/extract-comparable-url` para pegar el link del aviso (con lista blanca de portales y degradación explícita a captura cuando el anti-bot bloquea).
 4. 🐛 **Actividades salta la capa de aplicación** — `api-crm:1025-1062` va directo a `D1ActivityRepository` sin use cases (funciona, pero rompe el patrón hexagonal).
 
