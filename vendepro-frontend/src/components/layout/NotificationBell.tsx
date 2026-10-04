@@ -15,13 +15,22 @@ import type { UrgencyLevel } from '@/lib/crm-config'
  * el design system (`ui/Notifications`) — antes esto tenía su propia copia del
  * botón y del panel dibujados a mano.
  */
+/** Fila de `notifications` tal cual la devuelve api-admin. */
 type Notification = {
   id: string
-  type: string
+  kind: 'lead_assigned' | 'task_overdue' | 'reservation_update' | 'system'
   title: string
-  body: string
-  link: string
-  urgency: UrgencyLevel
+  body: string | null
+  link_url: string | null
+  read: boolean
+}
+
+/** Un lead delegado o una tarea vencida piden acción; el resto es informativo. */
+const KIND_URGENCY: Record<Notification['kind'], UrgencyLevel> = {
+  lead_assigned: 'high',
+  task_overdue: 'high',
+  reservation_update: 'medium',
+  system: 'low',
 }
 
 export default function NotificationBell() {
@@ -32,9 +41,11 @@ export default function NotificationBell() {
 
   async function loadNotifications() {
     try {
-      const res = await apiFetch('crm', '/notifications')
+      // El endpoint vive en api-admin y devuelve un array plano. Apuntaba a
+      // api-crm y esperaba `{notifications}`: la campana nunca mostró nada.
+      const res = await apiFetch('admin', '/notifications')
       const data = (await res.json()) as any
-      if (data.notifications) setNotifications(data.notifications)
+      if (Array.isArray(data)) setNotifications(data.filter((n: Notification) => !n.read))
     } catch {}
   }
 
@@ -56,16 +67,16 @@ export default function NotificationBell() {
   const items: NotificationItem[] = active.map(n => ({
     id: n.id,
     title: n.title,
-    body: n.body,
-    href: n.link,
-    urgency: n.urgency,
+    body: n.body ?? undefined,
+    href: n.link_url ?? undefined,
+    urgency: KIND_URGENCY[n.kind] ?? 'low',
   }))
 
   return (
     <div ref={ref} className="relative">
       <BellButton
         count={active.length}
-        urgent={active.some(n => n.urgency === 'high')}
+        urgent={active.some(n => KIND_URGENCY[n.kind] === 'high')}
         onClick={() => setOpen(o => !o)}
       />
 

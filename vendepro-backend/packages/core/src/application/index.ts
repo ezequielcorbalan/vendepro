@@ -14,6 +14,7 @@ export * from './use-cases/leads/create-lead'
 export * from './use-cases/leads/create-lead-with-contact'
 export * from './use-cases/leads/update-lead'
 export * from './use-cases/leads/advance-lead-stage'
+export * from './use-cases/leads/assign-lead'
 export * from './use-cases/leads/delete-lead'
 
 // Lead properties (propiedades de interés de un lead comprador)

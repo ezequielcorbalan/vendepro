@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   ArrowLeft, Phone, Edit3, Save, X, Trash2,
-  User, ChevronRight, Plus, Loader2, Calendar, Activity,
+  User, UserPlus, ChevronRight, Plus, Loader2, Calendar, Activity,
   Home, FileText, MapPin, Target, StickyNote, Building2,
   CheckCircle2, Mail, DollarSign, Clock
 } from 'lucide-react'
@@ -15,7 +15,7 @@ import { useToast } from '@/components/ui/Toast'
 import { useConfirm } from '@/components/ui/useConfirm'
 import {
   LEAD_SOURCES, OPERATION_TYPES,
-  getStageConfig, getStageDot,
+  getStageConfig, getStageDot, canSeeAll,
   PROPERTY_STAGES, type PropertyStage,
 } from '@/lib/crm-config'
 import { formatDate } from '@/lib/utils'
@@ -35,6 +35,8 @@ import { Timeline } from '@/components/ui/Timeline'
 import { LeadStagePipeline } from '@/components/leads/LeadStagePipeline'
 import { LeadPropertiesSection } from '@/components/leads/LeadPropertiesSection'
 import { MarkNotCapturedModal, type NotCapturedResult } from '@/components/leads/MarkNotCapturedModal'
+import { DelegateLeadModal } from '@/components/leads/DelegateLeadModal'
+import { useCurrentUser } from '@/lib/use-current-user'
 import { FichaLinkSection } from '@/components/fichas/FichaLinkSection'
 
 // Etapas en las que conviene tener una propiedad/tasación vinculada: si el lead
@@ -63,6 +65,10 @@ export default function LeadDetailPage() {
   const [showTagPicker, setShowTagPicker] = useState(false)
   const [tagsLoading, setTagsLoading] = useState(false)
   const [stageHistory, setStageHistory] = useState<any[]>([])
+  const [showDelegate, setShowDelegate] = useState(false)
+  const { user } = useCurrentUser()
+  // Admin/supervisor reparte cualquier lead; un agente sólo puede pasar el suyo.
+  const canDelegate = !!user && (canSeeAll(user.role) || lead?.assigned_to === user.id)
   const [linkedProperty, setLinkedProperty] = useState<{ id: string; commercial_stage: string | null } | null>(null)
 
   function loadLead() {
@@ -348,6 +354,24 @@ export default function LeadDetailPage() {
         onClose={() => setShowNotCaptured(false)}
         onConfirm={confirmNotCaptured}
       />
+      <DelegateLeadModal
+        open={showDelegate}
+        onClose={() => setShowDelegate(false)}
+        leadId={leadId}
+        leadName={lead?.full_name ?? 'El lead'}
+        currentAgentId={lead?.assigned_to ?? null}
+        onDelegated={r => {
+          // El mail puede no salir (org sin remitente configurado) y la
+          // delegación igual valió: se avisa qué llegó y qué no.
+          toast(
+            r.emailed
+              ? `Lead delegado a ${r.toAgentName}. Le avisamos por campana y mail.`
+              : `Lead delegado a ${r.toAgentName}. Le avisamos por campana${r.notified ? '' : ' (el aviso falló)'}.`,
+            r.notified ? 'success' : 'warning',
+          )
+          loadLead()
+        }}
+      />
       {/* Top bar: sólo la vuelta atrás. Las acciones viven en el encabezado,
           igual que en /contactos/[id] — antes eran cinco botones del mismo peso
           en una fila suelta arriba de la card. */}
@@ -486,11 +510,11 @@ export default function LeadDetailPage() {
               <DetailMeta icon={<Clock className="w-4 h-4" />}>
                 Creado {lead.created_at ? formatDate(lead.created_at) : '—'}
               </DetailMeta>
-              {lead.assigned_name && (
-                <DetailMeta icon={<User className="w-4 h-4" />}>
-                  Asignado a <span className="font-medium text-ink">{lead.assigned_name}</span>
-                </DetailMeta>
-              )}
+              <DetailMeta icon={<User className="w-4 h-4" />}>
+                {lead.assigned_name
+                  ? <>Asignado a <span className="font-medium text-ink">{lead.assigned_name}</span></>
+                  : 'Sin asignar'}
+              </DetailMeta>
             </>
           }
           visibleActions={3}
@@ -499,6 +523,11 @@ export default function LeadDetailPage() {
               <Button variant="outline" icon={<Edit3 className="w-3.5 h-3.5" />} onClick={() => setEditing(true)}>
                 Editar
               </Button>
+              {canDelegate && (
+                <Button variant="outline" icon={<UserPlus className="w-3.5 h-3.5" />} onClick={() => setShowDelegate(true)}>
+                  Delegar
+                </Button>
+              )}
               {!isBuyer && (
                 <Button
                   variant="outline"
