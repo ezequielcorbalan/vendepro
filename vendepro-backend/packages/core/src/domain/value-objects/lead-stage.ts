@@ -97,6 +97,20 @@ export const PIPELINE_STAGES: Record<LeadPipeline, readonly string[]> = {
   comprador: BUYER_LEAD_STAGES,
 }
 
+/**
+ * Etapa "ganada" de cada pipeline. En vendedor la meta es captar la propiedad;
+ * en comprador, cerrar la operación.
+ */
+export const WON_STAGE: Record<LeadPipeline, string> = {
+  vendedor: 'captado',
+  comprador: 'cerrado',
+}
+
+/** ¿El lead salió del pipeline? Un terminal no cuenta como activo ni como atrasado. */
+export function isTerminalStage(stage: string, pipeline: LeadPipeline = 'vendedor'): boolean {
+  return PIPELINE_CONFIG[pipeline].terminal.includes(stage)
+}
+
 export interface TransitionOptions {
   source?: TransitionSource
 }

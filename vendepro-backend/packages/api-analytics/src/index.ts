@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { corsMiddleware, errorHandler, createAuthMiddleware, D1LeadRepository, D1PropertyRepository, D1ReservationRepository, D1CalendarRepository, D1AnalyticsReportRepository, D1ActivityRepository, D1AppraisalRepository, D1ContactRepository, D1ObjectiveRepository, D1UserRepository, D1StageHistoryRepository, D1MetaIntegrationRepository, D1PortalSpendRepository, D1PortalLeadCountRepository, D1CampaignGoalRepository, D1PropertyIncomeRepository, DolarApiFxRate, JwtAuthService, MetaAdsInsightsHttp, decrypt } from '@vendepro/infrastructure'
+import { corsMiddleware, errorHandler, createAuthMiddleware, D1LeadRepository, D1PropertyRepository, D1ReservationRepository, D1CalendarRepository, D1AnalyticsReportRepository, D1ActivityRepository, D1AppraisalRepository, D1ContactRepository, D1ObjectiveRepository, D1UserRepository, D1TeamStatsRepository, D1StageHistoryRepository, D1MetaIntegrationRepository, D1PortalSpendRepository, D1PortalLeadCountRepository, D1CampaignGoalRepository, D1PropertyIncomeRepository, DolarApiFxRate, JwtAuthService, MetaAdsInsightsHttp, decrypt } from '@vendepro/infrastructure'
 import {
   GetCampaignInsightsUseCase,
   GetPortalCostsUseCase,
@@ -10,6 +10,7 @@ import {
   GetPendingFollowupsUseCase,
   GetAgentStatsUseCase,
   GetTeamStatsUseCase,
+  GetTeamBoardUseCase,
   SearchEntitiesUseCase,
   ExportLeadsUseCase,
   GetListingsPerformanceUseCase,
@@ -195,10 +196,28 @@ app.get('/team-stats', async (c) => {
   const db = c.env.DB
   const stats = await new GetTeamStatsUseCase(
     new D1UserRepository(db),
-    new D1LeadRepository(db),
+    new D1TeamStatsRepository(db),
     new D1ActivityRepository(db),
   ).execute(c.get('orgId'))
   return c.json(stats)
+})
+
+// Tablero del equipo: una fila por agente con carga, conversión y atrasos.
+// Más detallado que /team-stats (la tarjeta del dashboard) y, a diferencia de
+// aquél, cuenta con agregación en la base: no se come el tope de 500 leads.
+app.get('/team-board', async (c) => {
+  const role = c.get('userRole')
+  if (role !== 'admin' && role !== 'owner' && role !== 'supervisor') {
+    return c.json({ error: 'Sin permisos (sólo la inmobiliaria ve el equipo)' }, 403)
+  }
+  const db = c.env.DB
+  const pipeline = c.req.query('pipeline') === 'comprador' ? 'comprador' : 'vendedor'
+  const board = await new GetTeamBoardUseCase(
+    new D1UserRepository(db),
+    new D1TeamStatsRepository(db),
+    new D1ActivityRepository(db),
+  ).execute(c.get('orgId'), pipeline)
+  return c.json(board)
 })
 
 // Performance de un agente. Por defecto la del usuario logueado; la

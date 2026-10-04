@@ -275,7 +275,8 @@ export default function LeadsPage() {
       if (filterStage && l.stage !== filterStage) return false
       if (filterSource && l.source !== filterSource) return false
       if (filterOperation && l.operation !== filterOperation) return false
-      if (filterAgent && l.assigned_to !== filterAgent) return false
+      if (filterAgent === 'none') { if (l.assigned_to) return false }
+      else if (filterAgent && l.assigned_to !== filterAgent) return false
       return true
     })
     // Sort
@@ -613,6 +614,8 @@ export default function LeadsPage() {
         </Select>
         <Select aria-label="Agente" value={filterAgent} onChange={e => setFilterAgent(e.target.value)} className="w-auto">
           <option value="">Agente: todos</option>
+          {/* La cola a repartir: es a donde linkea el tablero del equipo. */}
+          <option value="none">Sin asignar</option>
           {agents.map(a => <option key={a.id} value={a.id}>{a.full_name}</option>)}
         </Select>
         {closedLeads.length > 0 && (

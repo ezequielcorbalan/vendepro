@@ -110,10 +110,19 @@ export const menuSections: NavSection[] = [
   },
 ]
 
+/**
+ * Tablero del equipo: sólo la inmobiliaria (admin/owner/supervisor). Va suelto
+ * y no dentro de `menuSections` porque es el único link del menú principal con
+ * permiso propio; el Sidebar lo inserta en CRM cuando corresponde.
+ */
+export const equipoLink: NavLink = { href: '/equipo', label: 'Equipo', icon: Users }
+
 export const adminSection: NavSection = {
   title: 'Administración',
   links: [
-    { href: '/admin/agentes', label: 'Equipo', icon: Users },
+    // "Agentes" y no "Equipo": el alta/baja de usuarios es otra cosa que el
+    // tablero de rendimiento, y con los dos llamados igual nadie sabía cuál era cuál.
+    { href: '/admin/agentes', label: 'Agentes', icon: Users },
     { href: '/admin/auditoria', label: 'Auditoría', icon: FileBarChart },
   ],
 }

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { GetTeamStatsUseCase } from '../../../src/application/use-cases/dashboard/get-team-stats'
-import { Lead } from '../../../src/domain/entities/lead'
 import { User } from '../../../src/domain/entities/user'
+import type { AgentLeadAggregate } from '../../../src/application/ports/repositories/team-stats-repository'
 
 function makeUser(id: string, fullName: string, role = 'agent') {
   return User.create({
@@ -17,31 +17,19 @@ function makeUser(id: string, fullName: string, role = 'agent') {
   })
 }
 
-function makeLead(id: string, assignedTo: string | null, stage: string) {
-  return Lead.create({
-    id,
-    org_id: 'org1',
-    contact_id: 'c1',
-    full_name: `Lead ${id}`,
-    phone: null,
-    email: null,
-    source: 'manual',
-    source_detail: null,
-    stage: stage as any,
-    pipeline: 'vendedor',
-    operation: 'venta',
-    property_address: null,
-    neighborhood: null,
-    estimated_value: null,
-    budget: null,
-    notes: null,
-    next_step: null,
-    next_step_date: null,
-    assigned_to: assignedTo,
-  })
+/** Lo que devuelve la agregación de la base para un agente. */
+function agg(agent_id: string | null, by_stage: Record<string, number>): AgentLeadAggregate {
+  return {
+    agent_id,
+    by_stage,
+    total: Object.values(by_stage).reduce((a, b) => a + b, 0),
+    sin_contactar_24h: 0,
+    sin_movimiento_7d: 0,
+    ultimo_movimiento: null,
+  }
 }
 
-function makeRepos(users: User[], leads: Lead[], activity: Record<string, number>) {
+function makeRepos(users: User[], aggregates: AgentLeadAggregate[], activity: Record<string, number>) {
   return {
     users: {
       findById: vi.fn(), findByEmail: vi.fn(),
@@ -50,11 +38,8 @@ function makeRepos(users: User[], leads: Lead[], activity: Record<string, number
       updateRole: vi.fn(), findFirstAdminByOrg: vi.fn(), findProfileById: vi.fn(),
       updateProfile: vi.fn(),
     },
-    leads: {
-      findById: vi.fn(),
-      findByOrg: vi.fn().mockResolvedValue(leads),
-      save: vi.fn(), delete: vi.fn(), searchByName: vi.fn(),
-      findPendingFollowups: vi.fn(), exportAllWithAssignedName: vi.fn(),
+    teamStats: {
+      aggregateLeadsByAgent: vi.fn().mockResolvedValue(aggregates),
     },
     activities: {
       findByOrg: vi.fn(), findById: vi.fn(), save: vi.fn(), delete: vi.fn(),
@@ -70,16 +55,13 @@ describe('GetTeamStatsUseCase', () => {
     const repos = makeRepos(
       [makeUser('a1', 'Marcela Genta'), makeUser('a2', 'Felix Romero')],
       [
-        makeLead('l1', 'a1', 'captado'),
-        makeLead('l2', 'a1', 'contactado'),
-        makeLead('l3', 'a1', 'nuevo'),
-        makeLead('l4', 'a1', 'captado'),
-        makeLead('l5', 'a2', 'contactado'),
+        agg('a1', { captado: 2, contactado: 1, nuevo: 1 }),
+        agg('a2', { contactado: 1 }),
       ],
       { a1: 12, a2: 3 },
     )
 
-    const result = await new GetTeamStatsUseCase(repos.users, repos.leads, repos.activities)
+    const result = await new GetTeamStatsUseCase(repos.users as any, repos.teamStats as any, repos.activities as any)
       .execute('org1')
 
     expect(result).toHaveLength(2)
@@ -98,24 +80,23 @@ describe('GetTeamStatsUseCase', () => {
   it('pide sólo el pipeline vendedor: la meta de captación es "captado"', async () => {
     const repos = makeRepos([makeUser('a1', 'Marcela')], [], {})
 
-    await new GetTeamStatsUseCase(repos.users, repos.leads, repos.activities).execute('org1')
+    await new GetTeamStatsUseCase(repos.users as any, repos.teamStats as any, repos.activities as any).execute('org1')
 
-    expect(repos.leads.findByOrg).toHaveBeenCalledWith('org1', { pipeline: 'vendedor' })
+    expect(repos.teamStats.aggregateLeadsByAgent).toHaveBeenCalledWith('org1', 'vendedor')
   })
 
   it('ordena por captados y desempata por leads', async () => {
     const repos = makeRepos(
       [makeUser('a1', 'Primero'), makeUser('a2', 'Segundo'), makeUser('a3', 'Tercero')],
       [
-        makeLead('l1', 'a1', 'contactado'),
-        makeLead('l2', 'a2', 'captado'),
-        makeLead('l3', 'a3', 'captado'),
-        makeLead('l4', 'a3', 'nuevo'),
+        agg('a1', { contactado: 1 }),
+        agg('a2', { captado: 1 }),
+        agg('a3', { captado: 1, nuevo: 1 }),
       ],
       {},
     )
 
-    const result = await new GetTeamStatsUseCase(repos.users, repos.leads, repos.activities)
+    const result = await new GetTeamStatsUseCase(repos.users as any, repos.teamStats as any, repos.activities as any)
       .execute('org1')
 
     expect(result.map(a => a.id)).toEqual(['a3', 'a2', 'a1'])
@@ -124,11 +105,11 @@ describe('GetTeamStatsUseCase', () => {
   it('deja fuera a los usuarios sin leads ni actividad', async () => {
     const repos = makeRepos(
       [makeUser('a1', 'Comercial'), makeUser('admin1', 'Administrativa', 'admin')],
-      [makeLead('l1', 'a1', 'nuevo')],
+      [agg('a1', { nuevo: 1 })],
       {},
     )
 
-    const result = await new GetTeamStatsUseCase(repos.users, repos.leads, repos.activities)
+    const result = await new GetTeamStatsUseCase(repos.users as any, repos.teamStats as any, repos.activities as any)
       .execute('org1')
 
     expect(result.map(a => a.id)).toEqual(['a1'])
@@ -137,11 +118,11 @@ describe('GetTeamStatsUseCase', () => {
   it('ignora los leads sin agente asignado', async () => {
     const repos = makeRepos(
       [makeUser('a1', 'Comercial')],
-      [makeLead('l1', null, 'captado'), makeLead('l2', 'a1', 'captado')],
+      [agg(null, { captado: 1 }), agg('a1', { captado: 1 })],
       {},
     )
 
-    const result = await new GetTeamStatsUseCase(repos.users, repos.leads, repos.activities)
+    const result = await new GetTeamStatsUseCase(repos.users as any, repos.teamStats as any, repos.activities as any)
       .execute('org1')
 
     expect(result[0]?.total_leads).toBe(1)

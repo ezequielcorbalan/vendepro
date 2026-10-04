@@ -10,7 +10,8 @@ import { Button } from '@/components/ui/Button'
 import { Text } from '@/components/ui/Typography'
 import GlobalSearch from './GlobalSearch'
 import NotificationBell from './NotificationBell'
-import { menuSections, adminSection, type NavLink } from '@/lib/nav-config'
+import { menuSections, adminSection, equipoLink, type NavLink } from '@/lib/nav-config'
+import { canSeeAll } from '@/lib/crm-config'
 import { apiFetch, clearToken } from '@/lib/api'
 import { hasModule } from '@/lib/modules'
 import { useModules } from '@/components/modules/ModulesProvider'
@@ -45,9 +46,14 @@ export default function Sidebar({ profile }: { profile: Profile }) {
     router.refresh()
   }
 
-  const sections = (profile.role === 'admin' || profile.role === 'owner')
-    ? [...menuSections, adminSection]
+  // El tablero del equipo lo ven admin/owner/supervisor; el ABM de agentes,
+  // sólo admin/owner. Por eso son dos gates distintos.
+  const withEquipo = canSeeAll(profile.role)
+    ? menuSections.map(s => s.title === 'CRM' ? { ...s, links: [...s.links, equipoLink] } : s)
     : menuSections
+  const sections = (profile.role === 'admin' || profile.role === 'owner')
+    ? [...withEquipo, adminSection]
+    : withEquipo
 
   // Automatizaciones vive bajo /configuracion pero se navega desde Marketing:
   // sin excluirla se encenderían los dos ítems a la vez.

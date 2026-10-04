@@ -86,7 +86,47 @@ deja constancia.
 
 Sin migración. Hay que deployar **api-crm**.
 
+## Tablero del equipo (22-sep-2026)
+
+`GET /analytics/team-board?pipeline=` (`GetTeamBoardUseCase`) → pantalla
+`/equipo`, para admin/owner/supervisor. Una fila por agente: leads activos, las
+3 etapas donde más tiene, sin contactar +24h, parados +7d, captados, conversión
+lead→captado y actividad de 30 días. Más la cola de **leads sin asignar** y la
+fila de totales de la inmobiliaria.
+
+- Los conteos salen agregados de la base (`D1TeamStatsRepository`,
+  `GROUP BY assigned_to, stage`), no de traer leads a memoria. Antes contaban
+  con `findByOrg`, que **corta en 500 por pipeline**: los totales y las
+  conversiones salían cortos cuando la org crecía, sin que nada lo avisara.
+  `GetTeamStatsUseCase` (la tarjeta chica del dashboard) usa ahora el **mismo
+  port**, así que las dos pantallas no pueden mostrar números distintos del
+  mismo equipo.
+- Los atrasos se calculan con `julianday`, no comparando strings: en la base
+  conviven fechas ISO (`...T...Z`) y el formato de `datetime('now')`
+  (`YYYY-MM-DD HH:MM:SS`), y comparar esos textos daba cualquier cosa.
+- Un lead ganado o terminal no cuenta como atrasado. La etapa ganada depende del
+  pipeline: `captado` en vendedor, `cerrado` en comprador (`WON_STAGE`).
+- **Tiempo de respuesta** (sobre `leads.first_contact_at`, que el dominio escribe
+  en la transición nuevo → contactado): `% contactó en 24h` y la **mediana** de
+  horas hasta el primer contacto. El denominador del % incluye los que nunca se
+  contactaron y ya vencieron — medir sólo sobre los contactados le daría 100% al
+  que no llama a nadie. Los leads que avanzaron sin registrar primer contacto
+  (importados, o cargados ya contactados) no se pueden medir: quedan **fuera**
+  del porcentaje, no contados como incumplidos. Mediana y no promedio: un lead
+  contestado a los 20 días no puede definir el número del mes.
+- El orden por defecto pone primero a quien tiene trabajo atrasado, no a quien
+  más captó: el tablero es para actuar.
+- `/leads` sumó el filtro **"Sin asignar"** (`?agent=none`), que es a donde
+  linkea la cola del tablero.
+- En el menú, "Equipo" (CRM) es este tablero; el ABM de usuarios pasó a
+  llamarse "Agentes" en Administración, que es lo que siempre fue.
+
+Sin migración. Hay que deployar **api-analytics**.
+
 ## Endpoints
+
+[[API-analytics]]:
+- `GET /team-board?pipeline=` — tablero del equipo (ver arriba)
 
 [[API-crm]]:
 - `GET/POST/PUT/DELETE /leads`
