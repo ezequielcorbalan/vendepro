@@ -105,8 +105,6 @@ Layout: `(dashboard)/layout.tsx` (Server, valida cookie con `getCurrentUserServe
 
 | URL | Archivo |
 |---|---|
-| `/prefactibilidades` | `prefactibilidades/page.tsx` |
-| `/prefactibilidades/nueva` | `prefactibilidades/nueva/page.tsx` |
 
 ### [[Dominio-Marketing|Marketing]]
 

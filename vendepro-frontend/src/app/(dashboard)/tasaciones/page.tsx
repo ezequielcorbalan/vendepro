@@ -81,9 +81,6 @@ export default function TasacionesPage() {
             <Button href="/tasaciones/vendidas" variant="outline" icon={<Database className="w-4 h-4" />}>
               Cierres reales
             </Button>
-            <Button href="/prefactibilidades/nueva" variant="outline" icon={<Plus className="w-4 h-4" />}>
-              Prefactibilidad
-            </Button>
             <Button href="/tasaciones/nueva" icon={<Plus className="w-4 h-4" />}>
               Nueva tasación
             </Button>

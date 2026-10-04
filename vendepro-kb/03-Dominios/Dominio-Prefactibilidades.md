@@ -1,5 +1,12 @@
 # 📊 Dominio: Prefactibilidades
 
+> ⚠️ **Las pantallas internas se sacaron el 22-sep-2026** (pedido de Gastón).
+> Ya no existen `/prefactibilidades` ni `/prefactibilidades/nueva`, ni el botón
+> "Prefactibilidad" de Tasaciones. **Siguen vivos**: la página pública
+> `/p/<slug>` (para que no se rompan los links ya compartidos), las rutas de
+> api-properties/api-public, la entidad y la tabla `prefactibilidades`. O sea:
+> no se pueden crear ni listar desde la app, pero nada se borró.
+
 Análisis de viabilidad de proyectos inmobiliarios (terrenos para desarrollar). Output: reporte con TIR, payback, margen y comparables.
 
 ## Entidad
@@ -32,8 +39,9 @@ Análisis de viabilidad de proyectos inmobiliarios (terrenos para desarrollar). 
 
 ## Frontend
 
-- `/prefactibilidades` (lista)
-- `/prefactibilidades/nueva` (formulario gigante)
+- ~~`/prefactibilidades` (lista)~~ — sacada 22-sep-2026
+- ~~`/prefactibilidades/nueva` (formulario gigante)~~ — sacada 22-sep-2026
+- `/p/<slug>` (pública) — sigue activa
 - Página pública: `/p/[slug]`
 
 ## Relacionados
