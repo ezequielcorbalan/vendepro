@@ -47,12 +47,30 @@ export class WahaSessionClient {
     }
   }
 
-  /** Crea o arranca la sesión. Es idempotente del lado de WAHA. */
-  async iniciar(): Promise<void> {
+  /**
+   * Crea o arranca la sesión. Es idempotente del lado de WAHA.
+   *
+   * `webhook` es lo que hace posible un WAHA compartido entre inmobiliarias:
+   * cada sesión avisa a nuestro endpoint con el token de SU organización en
+   * el header, así el mensaje entrante se atribuye solo. Sin esto habría que
+   * un contenedor por inmobiliaria.
+   */
+  async iniciar(webhook?: { url: string; token: string }): Promise<void> {
+    const config = webhook
+      ? {
+          webhooks: [{
+            url: webhook.url,
+            events: ['message'],
+            customHeaders: [{ name: 'Authorization', value: `Bearer ${webhook.token}` }],
+            retries: { policy: 'constant', delaySeconds: 5, attempts: 10 },
+          }],
+        }
+      : undefined
+
     const crear = await fetch(this.url('/api/sessions'), {
       method: 'POST',
       headers: this.headers({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({ name: this.session, start: true }),
+      body: JSON.stringify({ name: this.session, start: true, ...(config ? { config } : {}) }),
     })
     // 422 = ya existe: en ese caso alcanza con arrancarla.
     if (crear.ok) return

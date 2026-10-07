@@ -84,3 +84,32 @@ su fila, no el código.
 - La UI de la bandeja con delegación a agentes.
 
 El plan completo y el contrato que el bot espera están en el brief del equipo.
+
+## Conectar WhatsApp sin tocar la base
+
+Por defecto cada inmobiliaria usa el **WAHA de la plataforma**: una sola
+instancia para todas, con una sesión por organización. Eso es lo que hace que
+conectar sea autogestionable — si cada una necesitara su propio servidor, no lo
+haría nadie.
+
+En el worker `api-crm` hacen falta tres variables:
+
+```
+WAHA_BASE_URL=https://waha.vendepro.com.ar     # la instancia de la plataforma
+WAHA_API_KEY=<la api key de esa instancia>
+INBOX_WEBHOOK_URL=https://public.api.vendepro.com.ar/v1/inbox/messages
+```
+
+Con eso, el admin de la inmobiliaria entra a **Configuración → Conexiones →
+WhatsApp**, toca *Conectar WhatsApp* y escanea el QR. Por detrás, el endpoint
+`POST /integrations/whatsapp/connect`:
+
+1. le asigna una sesión propia (`org-<id>`),
+2. emite un token de integración con scope `inbox:write` y revoca el anterior,
+3. crea la sesión en WAHA con un webhook que lleva **ese** token en el header.
+
+Ese último punto es lo que permite compartir una instancia: cada sesión avisa
+con el token de su organización, así el mensaje entrante se atribuye solo.
+
+Una inmobiliaria que prefiera hospedar el suyo lo configura en *opciones
+avanzadas*, y su `base_url` propia le gana a la de la plataforma.

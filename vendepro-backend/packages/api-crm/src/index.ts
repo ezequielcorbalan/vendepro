@@ -88,6 +88,13 @@ type Env = {
   RESEND_API_KEY?: string
   // Base pública para los links dentro de los emails (reportes, tasaciones, baja)
   PUBLIC_BASE_URL?: string
+  // WAHA de la plataforma: una instancia para todas las inmobiliarias, una
+  // sesión por organización. Sin esto, cada una necesitaría su propio
+  // servidor y conectar WhatsApp dejaría de ser autogestionable.
+  WAHA_BASE_URL?: string
+  WAHA_API_KEY?: string
+  // A dónde avisa WAHA cada mensaje entrante (el worker público).
+  INBOX_WEBHOOK_URL?: string
 }
 type AuthVars = { Variables: { userId: string; userRole: string; orgId: string } }
 
@@ -358,6 +365,74 @@ app.put('/integrations/whatsapp', async (c) => {
   return c.json({ ok: true })
 })
 
+/** Nombre de la sesión de una org en el WAHA compartido. Estable y sin rarezas. */
+function sessionDeOrg(orgId: string): string {
+  return `org-${orgId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 24)}`
+}
+
+/**
+ * Conectar WhatsApp en un paso: deja la configuración lista, crea la sesión
+ * de esta inmobiliaria en el WAHA de la plataforma y devuelve el QR.
+ *
+ * La sesión se crea con un webhook propio que lleva el token de ESTA
+ * organización en el header: así un solo WAHA sirve a todas y cada mensaje
+ * entrante se atribuye solo.
+ */
+app.post('/integrations/whatsapp/connect', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const orgId = c.get('orgId')
+
+  const repo = new D1OrgIntegrationRepository(c.env.DB)
+  const previa = await repo.findByOrgAndProvider(orgId, WHATSAPP_PROVIDER).catch(() => null)
+  const configPrevia = parseConfig(previa?.config_json ?? null)
+
+  // La URL propia de la org gana: una inmobiliaria puede hospedar el suyo.
+  const baseUrl = configPrevia.base_url || c.env.WAHA_BASE_URL
+  if (!baseUrl) {
+    return c.json({ error: 'La plataforma no tiene un proveedor de WhatsApp configurado' }, 503)
+  }
+  const propio = !!configPrevia.base_url
+  const session = configPrevia.session || sessionDeOrg(orgId)
+
+  // Token de integración para el webhook de esta sesión. Se emite uno nuevo
+  // en cada conexión y se revocan los anteriores: el secreto vive sólo donde
+  // se usa (la config de la sesión en WAHA), nunca en nuestra base.
+  const tokenRepo = new D1ApiTokenRepository(c.env.DB)
+  const authService = new JwtAuthService(c.env.JWT_SECRET)
+  const NOMBRE_TOKEN = 'Inbox WhatsApp'
+  for (const viejo of await tokenRepo.findByOrg(orgId).catch(() => [])) {
+    const o = viejo.toObject?.() ?? (viejo as any)
+    if (o.name === NOMBRE_TOKEN && o.is_active) {
+      await tokenRepo.revoke(o.id, orgId).catch(() => {})
+    }
+  }
+  const nuevo = await new CreateApiTokenUseCase(tokenRepo, new CryptoIdGenerator(), authService)
+    .execute({ orgId, name: NOMBRE_TOKEN, scopes: ['inbox:write'], createdBy: c.get('userId') })
+
+  const apiKey = propio
+    ? (previa?.credentials_encrypted ? await decrypt(previa.credentials_encrypted, c.env.JWT_SECRET).catch(() => null) : null)
+    : (c.env.WAHA_API_KEY ?? null)
+
+  await repo.save(OrgIntegration.create({
+    id: previa?.id ?? new CryptoIdGenerator().generate(),
+    org_id: orgId,
+    provider: WHATSAPP_PROVIDER,
+    name: 'WhatsApp',
+    credentials_encrypted: previa?.credentials_encrypted ?? null,
+    config_json: JSON.stringify({ ...configPrevia, provider: 'waha', session, ...(propio ? {} : { base_url: undefined }) }),
+    enabled: true,
+    created_at: previa?.created_at,
+  }))
+
+  const webhookUrl = c.env.INBOX_WEBHOOK_URL ?? 'https://public.api.vendepro.com.ar/v1/inbox/messages'
+  try {
+    await new WahaSessionClient(baseUrl, apiKey, session).iniciar({ url: webhookUrl, token: nuevo.token })
+  } catch (err: any) {
+    return c.json({ error: mensajeProveedor(err) }, 502)
+  }
+  return c.json({ ok: true, session })
+})
+
 // Estado de la sesión + QR si hay que escanear.
 app.get('/integrations/whatsapp/session', async (c) => {
   const denied = requireAdmin(c); if (denied) return denied
@@ -398,18 +473,28 @@ app.post('/integrations/whatsapp/session/start', async (c) => {
   }
 })
 
+/** El error crudo del runtime no le dice nada a quien está configurando. */
+function mensajeProveedor(err: any): string {
+  const crudo = String(err?.message ?? '')
+  return /internal error|fetch failed|ECONNREFUSED|Network connection lost/i.test(crudo)
+    ? 'No se pudo conectar con el proveedor de WhatsApp. Revisá que esté levantado y sea alcanzable.'
+    : crudo || 'No se pudo hablar con el proveedor'
+}
+
 /** Arma el cliente con lo que la org tenga guardado, o null si no hay nada. */
 async function sessionClient(c: any): Promise<WahaSessionClient | null> {
   const integracion = await new D1OrgIntegrationRepository(c.env.DB)
     .findByOrgAndProvider(c.get('orgId'), WHATSAPP_PROVIDER)
     .catch(() => null)
   const config = parseConfig(integracion?.config_json ?? null)
-  if (!integracion || !config.base_url) return null
+  // Sin base_url propia se usa el WAHA de la plataforma: es el caso normal.
+  const baseUrl = config.base_url || c.env.WAHA_BASE_URL
+  if (!integracion || !baseUrl) return null
 
   const apiKey = integracion.credentials_encrypted
     ? await decrypt(integracion.credentials_encrypted, c.env.JWT_SECRET).catch(() => null)
-    : null
-  return new WahaSessionClient(config.base_url, apiKey, config.session ?? 'default')
+    : (c.env.WAHA_API_KEY ?? null)
+  return new WahaSessionClient(baseUrl, apiKey, config.session ?? sessionDeOrg(c.get('orgId')))
 }
 
 // ── INBOX ──────────────────────────────────────────────────────
