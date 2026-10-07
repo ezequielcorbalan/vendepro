@@ -27,6 +27,7 @@ import {
   fireMarketingEvent,
   fireWebhookEvent,
   D1ConversationRepository, D1MessageRepository, createMessagingGateway,
+  D1OrgIntegrationRepository, verificarFirmaMeta, parsearWebhookMeta, parseConfig, META_PROVIDER,
   fireAutomationEvent,
   D1AgentProfileRepository,
   D1MetaIntegrationRepository,
@@ -61,7 +62,16 @@ import {
   GetContactsUseCase,
 } from '@vendepro/core'
 
-type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket; PUBLIC_BASE_URL?: string }
+type Env = {
+  DB: D1Database
+  JWT_SECRET: string
+  R2: R2Bucket
+  PUBLIC_BASE_URL?: string
+  /** App secret de la app de Meta: firma los webhooks de Instagram/Facebook. */
+  META_APP_SECRET?: string
+  /** Token del handshake de verificación del webhook (lo elige uno). */
+  META_VERIFY_TOKEN?: string
+}
 type IntegrationVars = { Variables: { orgId: string; tokenId: string; tokenScopes: string[] } }
 
 const app = new Hono<{ Bindings: Env } & IntegrationVars>()
@@ -386,6 +396,101 @@ app.get('/public/prefact/:slug', async (c) => {
   const result = await uc.execute(c.req.param('slug'))
   if (!result) return c.json({ error: 'Not found' }, 404)
   return c.json(result)
+})
+
+// ── INBOX: WEBHOOK DE META (Instagram / Facebook) ──────────────
+// Público y validado por FIRMA, no por nuestro token: Meta no deja mandar
+// headers propios en sus webhooks. Firma el cuerpo con el app secret y manda
+// el resultado en X-Hub-Signature-256.
+
+// Handshake de alta del webhook: Meta pega una vez con hub.challenge.
+app.get('/public/inbox/meta', (c) => {
+  const esperado = c.env.META_VERIFY_TOKEN
+  const modo = c.req.query('hub.mode')
+  const token = c.req.query('hub.verify_token')
+  const challenge = c.req.query('hub.challenge') ?? ''
+  if (!esperado || modo !== 'subscribe' || token !== esperado) {
+    return c.text('Verificación rechazada', 403)
+  }
+  return c.text(challenge, 200)
+})
+
+app.post('/public/inbox/meta', async (c) => {
+  const appSecret = c.env.META_APP_SECRET
+  if (!appSecret) return c.text('Canal no configurado', 503)
+
+  // El cuerpo CRUDO: la firma se calcula sobre los bytes exactos, así que no
+  // se puede parsear y volver a serializar antes de verificar.
+  const raw = await c.req.text()
+  const firmaOk = await verificarFirmaMeta(raw, c.req.header('X-Hub-Signature-256') ?? null, appSecret)
+  if (!firmaOk) return c.text('Firma inválida', 401)
+
+  const payload = JSON.parse(raw || '{}')
+  const mensajes = parsearWebhookMeta(payload)
+  if (mensajes.length === 0) return c.json({ ok: true, ingeridos: 0 })
+
+  // Meta manda todo por un solo webhook, sin decir de qué organización es: la
+  // cuenta que recibió el mensaje (`entry.id`) es lo que lo ata a una org.
+  const integraciones = await new D1OrgIntegrationRepository(c.env.DB)
+    .findEnabledByProvider(META_PROVIDER)
+    .catch(() => [])
+  const orgPorCuenta = new Map<string, string>()
+  for (const i of integraciones) {
+    const cuenta = parseConfig(i.config_json).account_id
+    if (cuenta) orgPorCuenta.set(String(cuenta), i.org_id)
+  }
+
+  const uc = new IngestInboundMessageUseCase(
+    new D1ConversationRepository(c.env.DB),
+    new D1MessageRepository(c.env.DB),
+    new D1ContactRepository(c.env.DB),
+    new D1UserRepository(c.env.DB),
+    new CryptoIdGenerator(),
+  )
+
+  let ingeridos = 0
+  for (const m of mensajes) {
+    const orgId = orgPorCuenta.get(m.cuentaId)
+    // Una cuenta que no mapea a ninguna org no es un error nuestro: la app de
+    // Meta puede estar suscrita a páginas de terceros. Se ignora.
+    if (!orgId) continue
+
+    const r = await uc.execute({
+      orgId,
+      channel: m.channel,
+      externalChatId: m.remitenteId,
+      externalMessageId: m.mensajeId,
+      fromPhone: null,
+      fromName: null,
+      metaUserId: m.remitenteId,
+      content: m.texto,
+      attachments: m.adjuntos.map(a => ({ type: a.type, url: a.url ?? null })),
+      sentAt: m.enviadoEn,
+    })
+    if (r.duplicate) continue
+    ingeridos++
+
+    await fireWebhookEvent(c.env, {
+      orgId,
+      event: 'message_created',
+      payload: {
+        event: 'message_created',
+        body: {
+          conversation: { id: r.conversationId, channel: m.channel },
+          sender: { phone_number: null, name: null },
+          content: m.texto,
+          contact_inbox: { source_id: m.remitenteId },
+          message_type: 0,
+          attachments: m.adjuntos,
+          private: false,
+        },
+      },
+    })
+  }
+
+  // Siempre 200 salvo firma inválida: un 500 hace que Meta reintente en loop
+  // y termine dando de baja la suscripción del webhook.
+  return c.json({ ok: true, ingeridos })
 })
 
 // ── INBOX: CONTRATO DEL BOT (/v1/conversations/*) ──────────────

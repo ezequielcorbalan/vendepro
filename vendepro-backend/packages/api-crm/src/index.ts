@@ -13,6 +13,7 @@ import {
   D1WebhookRepository, D1WebhookDeliveryRepository, HttpWebhookSender,
   D1NotificationRepository,
   D1ConversationRepository, D1MessageRepository, createMessagingGateway,
+  WahaSessionClient, WHATSAPP_PROVIDER, parseConfig,
   D1OrgIntegrationRepository, D1IntegrationLinkRepository, D1IntegrationSyncLogRepository,
   KitepropMcpClient,
   D1UserIntegrationRepository, GoogleCalendarHttpClient, buildGoogleAuthUrl,
@@ -24,7 +25,7 @@ import {
   createMarketingSender, fireMarketingEvent, fireWebhookEvent, resolveAssignedAgent,
   fireAndDrainAutomations, drainAutomationJobs, sweepTimeBasedAutomations,
 } from '@vendepro/infrastructure'
-import { Activity, propertyFromIncoming } from '@vendepro/core'
+import { Activity, OrgIntegration, propertyFromIncoming } from '@vendepro/core'
 import {
   GetLeadsUseCase, UpdateLeadUseCase, DeleteLeadUseCase, AdvanceLeadStageUseCase,
   AssignLeadUseCase,
@@ -298,6 +299,118 @@ app.post('/leads/stage', async (c) => {
   }))
   return c.json({ ...result, marketing: mk ?? null })
 })
+
+// ── CONEXIÓN DE WHATSAPP (inbox) ──────────────────────────────
+// Conectar el número es escanear un QR: la sesión vive en el proveedor y acá
+// sólo se la configura, se la arranca y se mira cómo viene.
+
+app.get('/integrations/whatsapp', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const integracion = await new D1OrgIntegrationRepository(c.env.DB)
+    .findByOrgAndProvider(c.get('orgId'), WHATSAPP_PROVIDER)
+    .catch(() => null)
+
+  if (!integracion) return c.json({ configurado: false })
+
+  const config = parseConfig(integracion.config_json)
+  return c.json({
+    configurado: true,
+    enabled: integracion.enabled,
+    base_url: config.base_url ?? null,
+    session: config.session ?? 'default',
+    // La api key no vuelve nunca: se guarda cifrada y no hay razón para
+    // exponerla de nuevo, sólo para reemplazarla.
+    tiene_api_key: !!integracion.credentials_encrypted,
+  })
+})
+
+app.put('/integrations/whatsapp', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const body = (await c.req.json().catch(() => null)) as any
+  const baseUrl = String(body?.base_url ?? '').trim()
+  if (!baseUrl) return c.json({ error: 'La URL del proveedor es requerida' }, 400)
+
+  // Se escribe con el repositorio y no con SaveOrgIntegrationUseCase porque
+  // ése es específico de KiteProp (api key sola, sin config).
+  const repo = new D1OrgIntegrationRepository(c.env.DB)
+  const previa = await repo.findByOrgAndProvider(c.get('orgId'), WHATSAPP_PROVIDER).catch(() => null)
+
+  // Sin api key nueva se conserva la guardada: el form nunca la muestra, así
+  // que mandarla vacía significa "no la cambies".
+  const credenciales = body?.api_key
+    ? await encrypt(String(body.api_key), c.env.JWT_SECRET)
+    : previa?.credentials_encrypted ?? null
+
+  await repo.save(OrgIntegration.create({
+    id: previa?.id ?? new CryptoIdGenerator().generate(),
+    org_id: c.get('orgId'),
+    provider: WHATSAPP_PROVIDER,
+    name: 'WhatsApp',
+    credentials_encrypted: credenciales,
+    config_json: JSON.stringify({
+      provider: 'waha',
+      base_url: baseUrl,
+      session: String(body?.session ?? 'default'),
+    }),
+    enabled: body?.enabled !== false,
+    created_at: previa?.created_at,
+  }))
+  return c.json({ ok: true })
+})
+
+// Estado de la sesión + QR si hay que escanear.
+app.get('/integrations/whatsapp/session', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const cliente = await sessionClient(c)
+  if (!cliente) return c.json({ error: 'Configurá primero la URL del proveedor' }, 409)
+
+  try {
+    const sesion = await cliente.estado()
+    // El QR sólo existe mientras haya que escanear, y caduca en segundos.
+    const qr = sesion.estado === 'SCAN_QR_CODE' ? await cliente.qr().catch(() => null) : null
+    return c.json({ ...sesion, qr })
+  } catch (err: any) {
+    // El detalle importa: "no se pudo conectar" vs "api key inválida" son
+    // problemas distintos para quien está configurando. Pero el error crudo
+    // del runtime ("internal error; reference = f829…") no le dice nada a
+    // nadie, así que el caso más común se traduce.
+    const crudo = String(err?.message ?? '')
+    const esRed = /internal error|fetch failed|ECONNREFUSED|Network connection lost/i.test(crudo)
+    return c.json({
+      estado: 'ERROR',
+      error: esRed
+        ? 'No se pudo conectar con el proveedor. Revisá que la URL sea alcanzable desde el servidor y que el contenedor esté levantado.'
+        : crudo || 'No se pudo hablar con el proveedor',
+    }, 502)
+  }
+})
+
+app.post('/integrations/whatsapp/session/start', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const cliente = await sessionClient(c)
+  if (!cliente) return c.json({ error: 'Configurá primero la URL del proveedor' }, 409)
+
+  try {
+    await cliente.iniciar()
+    return c.json({ ok: true })
+  } catch (err: any) {
+    return c.json({ error: err?.message ?? 'No se pudo iniciar la sesión' }, 502)
+  }
+})
+
+/** Arma el cliente con lo que la org tenga guardado, o null si no hay nada. */
+async function sessionClient(c: any): Promise<WahaSessionClient | null> {
+  const integracion = await new D1OrgIntegrationRepository(c.env.DB)
+    .findByOrgAndProvider(c.get('orgId'), WHATSAPP_PROVIDER)
+    .catch(() => null)
+  const config = parseConfig(integracion?.config_json ?? null)
+  if (!integracion || !config.base_url) return null
+
+  const apiKey = integracion.credentials_encrypted
+    ? await decrypt(integracion.credentials_encrypted, c.env.JWT_SECRET).catch(() => null)
+    : null
+  return new WahaSessionClient(config.base_url, apiKey, config.session ?? 'default')
+}
 
 // ── INBOX ──────────────────────────────────────────────────────
 // Bandeja: la lista que ve el agente, con filtros por estado y asignado.

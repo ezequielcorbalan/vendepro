@@ -19,6 +19,13 @@ export interface IngestInboundMessageInput {
   externalMessageId: string | null
   /** Teléfono del remitente en cualquier formato (WhatsApp manda sólo dígitos). */
   fromPhone: string | null
+  /**
+   * IGSID / PSID del remitente. En Instagram y Facebook es lo ÚNICO que
+   * identifica a la persona: Meta no expone el teléfono.
+   */
+  metaUserId?: string | null
+  /** Usuario de Instagram, para que el agente sepa con quién habla. */
+  igUsername?: string | null
   /** Nombre que expone el perfil del remitente, si viene. */
   fromName: string | null
   content: string | null
@@ -145,26 +152,42 @@ export class IngestInboundMessageUseCase {
    * atar y se puede vincular a mano, que es mejor que inventar un dueño.
    */
   private async resolveContact(input: IngestInboundMessageInput): Promise<string | null> {
-    const phone = normalizePhone(input.fromPhone)
-    if (!phone) return null
+    // En Instagram/Facebook la identidad es el id de Meta; en WhatsApp, el
+    // teléfono. Sin ninguno de los dos no hay a quién atar la conversación.
+    const esMeta = input.channel !== 'whatsapp'
+    const phone = esMeta ? null : normalizePhone(input.fromPhone)
+    const metaUserId = esMeta ? (input.metaUserId ?? null) : null
+    if (!phone && !metaUserId) return null
 
-    const existente = await this.contacts.findByEmailOrPhone(input.orgId, null, phone).catch(() => null)
+    const existente = metaUserId
+      ? await this.contacts.findByMetaUserId(input.orgId, metaUserId).catch(() => null)
+      : await this.contacts.findByEmailOrPhone(input.orgId, null, phone).catch(() => null)
     if (existente) return existente.id
 
     const admin = await this.users.findFirstAdminByOrg(input.orgId).catch(() => null)
     if (!admin) return null
 
+    // Un contacto de Instagram nace SIN teléfono, y está bien: el agente lo
+    // pide en la charla. Hasta entonces los botones de llamar y WhatsApp de
+    // la ficha no sirven, que es la verdad y no conviene disimularla.
+    const nombre = input.fromName?.trim()
+      || (input.igUsername ? `@${input.igUsername}` : null)
+      || phone
+      || `${input.channel} ${String(metaUserId).slice(-6)}`
+
     const contact = Contact.create({
       id: this.ids.generate(),
       org_id: input.orgId,
-      full_name: input.fromName?.trim() || phone,
+      full_name: nombre,
       phone,
       email: null,
       contact_type: 'comprador',
       neighborhood: null,
       notes: null,
-      source: 'whatsapp',
+      source: input.channel,
       agent_id: admin.id,
+      meta_user_id: metaUserId,
+      ig_username: input.igUsername ?? null,
     })
     await this.contacts.save(contact)
     return contact.id
