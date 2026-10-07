@@ -2,6 +2,7 @@ import type { LeadRepository } from '../../ports/repositories/lead-repository'
 import type { UserRepository } from '../../ports/repositories/user-repository'
 import type { NotificationRepository } from '../../ports/repositories/notification-repository'
 import type { ActivityRepository } from '../../ports/repositories/activity-repository'
+import type { ConversationRepository } from '../../ports/repositories/conversation-repository'
 import type { EmailSettingsRepository } from '../../ports/repositories/email-settings-repository'
 import type { OrganizationRepository } from '../../ports/repositories/organization-repository'
 import type { EmailService } from '../../ports/services/email-service'
@@ -68,6 +69,13 @@ export class AssignLeadUseCase {
     },
     /** Base para el link del aviso. Sin esto el link queda relativo. */
     private readonly publicBaseUrl = '',
+    /**
+     * Opcional: si está, delegar el lead también le pasa sus conversaciones
+     * del inbox al agente que lo recibe. Sin esto el agente ve el lead pero
+     * la charla de WhatsApp le sigue apareciendo a otro, que es justo la
+     * costura que hace sentir dos sistemas distintos.
+     */
+    private readonly conversations?: ConversationRepository,
   ) {}
 
   async execute(input: AssignLeadInput): Promise<AssignLeadResult> {
@@ -100,6 +108,7 @@ export class AssignLeadUseCase {
     const notified = await this.notify(input, lead.full_name, actorName, note, leadUrl)
     const mail = await this.sendEmail(input, target.email, target.full_name, lead.full_name, actorName, note, leadUrl)
     await this.logActivity(input, target.full_name, note, lead.contact_id)
+    await this.seguirConversaciones(lead.contact_id, input.orgId, input.toAgentId)
 
     return {
       leadId: lead.id,
@@ -109,6 +118,31 @@ export class AssignLeadUseCase {
       notified,
       emailed: mail.sent,
       ...(mail.skipped ? { emailSkipped: mail.skipped } : {}),
+    }
+  }
+
+  /**
+   * Las conversaciones del contacto pasan al mismo agente.
+   *
+   * Sin esto el lead cambia de dueño pero la charla de WhatsApp le sigue
+   * apareciendo al anterior, que es la costura que hace sentir dos sistemas
+   * distintos en vez de uno.
+   *
+   * Sólo las vivas: una conversación resuelta es historia y moverla de dueño
+   * no le sirve a nadie. Best-effort como el resto de los efectos — si el
+   * inbox no está configurado, el lead igual queda delegado.
+   */
+  private async seguirConversaciones(contactId: string | null, orgId: string, toAgentId: string): Promise<void> {
+    if (!this.conversations || !contactId) return
+    try {
+      const charlas = await this.conversations.findByContact(contactId, orgId)
+      for (const charla of charlas) {
+        if (charla.status === 'resolved' || charla.assignee_id === toAgentId) continue
+        charla.assignTo(toAgentId)
+        await this.conversations.save(charla)
+      }
+    } catch {
+      // El inbox puede no estar configurado todavía en esta org.
     }
   }
 

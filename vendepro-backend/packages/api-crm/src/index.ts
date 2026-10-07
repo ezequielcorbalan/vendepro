@@ -214,6 +214,8 @@ app.post('/leads/assign', async (c) => {
       orgs: new D1OrganizationRepository(c.env.DB),
     },
     c.env.PUBLIC_BASE_URL ?? '',
+    // Delegar el lead le pasa también sus conversaciones del inbox.
+    new D1ConversationRepository(c.env.DB),
   )
   const result = await useCase.execute({
     leadId: body.id ?? body.lead_id,

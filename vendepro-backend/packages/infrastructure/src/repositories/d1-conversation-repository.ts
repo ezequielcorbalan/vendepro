@@ -37,6 +37,14 @@ export class D1ConversationRepository implements ConversationRepository {
     return rows.map(toEntity)
   }
 
+  async findByContact(contactId: string, orgId: string): Promise<Conversation[]> {
+    const rows = (await this.db
+      .prepare(`${SELECT_BASE} WHERE c.contact_id = ? AND c.org_id = ? ORDER BY c.last_activity_at DESC`)
+      .bind(contactId, orgId)
+      .all()).results as any[]
+    return rows.map(toEntity)
+  }
+
   async save(conversation: Conversation): Promise<void> {
     const o = conversation.toObject()
     await this.db.prepare(`

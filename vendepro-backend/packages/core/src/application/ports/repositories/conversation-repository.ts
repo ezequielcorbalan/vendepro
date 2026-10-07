@@ -14,5 +14,7 @@ export interface ConversationRepository {
   /** Por el chat del proveedor: es como se reconoce una conversación ya abierta. */
   findByExternalId(orgId: string, channel: ConversationChannel, externalId: string): Promise<Conversation | null>
   findByOrg(orgId: string, filters?: ConversationFilters): Promise<Conversation[]>
+  /** Las charlas de una persona: es como se sigue al lead cuando se delega. */
+  findByContact(contactId: string, orgId: string): Promise<Conversation[]>
   save(conversation: Conversation): Promise<void>
 }

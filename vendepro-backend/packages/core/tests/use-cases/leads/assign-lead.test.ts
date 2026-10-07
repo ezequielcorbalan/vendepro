@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AssignLeadUseCase } from '../../../src/application/use-cases/leads/assign-lead'
 import { Lead } from '../../../src/domain/entities/lead'
+import { Conversation } from '../../../src/domain/entities/conversation'
 import { User } from '../../../src/domain/entities/user'
 import { NotFoundError } from '../../../src/domain/errors/not-found'
 import { ForbiddenError } from '../../../src/domain/errors/forbidden'
@@ -176,5 +177,85 @@ describe('AssignLeadUseCase', () => {
     expect(result.emailSkipped).toBe('dominio sin verificar')
     expect(result.notified).toBe(true)
     expect(leads.save).toHaveBeenCalledOnce()
+  })
+
+  // La costura que hacía sentir dos sistemas: el lead pasaba de agente y la
+  // charla de WhatsApp le seguía apareciendo al anterior.
+  describe('las conversaciones siguen al lead', () => {
+    const charla = (overrides: any = {}) => Conversation.create({
+      id: 'conv-1', org_id: 'org_mg', channel: 'whatsapp', contact_id: 'contact-1',
+      lead_id: null, external_id: '549115@c.us', assignee_id: 'agent-1',
+      last_activity_at: null, window_expires_at: null, ...overrides,
+    })
+
+    function conInbox(charlas: any[]) {
+      const conversations = {
+        findByContact: vi.fn(async () => charlas),
+        findById: vi.fn(), findByExternalId: vi.fn(), findByOrg: vi.fn(), save: vi.fn(),
+      }
+      const leadRepo = { findById: vi.fn(async () => makeLead()), save: vi.fn() }
+      const users: Record<string, any> = {
+        'agent-2': makeUser('agent-2', { full_name: 'Lucía Ruiz' }),
+        'admin-1': makeUser('admin-1', { full_name: 'Marcela Genta' }),
+      }
+      const uc = new AssignLeadUseCase(
+        leadRepo as any,
+        { findById: vi.fn(async (id: string) => users[id] ?? null) } as any,
+        { save: vi.fn() } as any,
+        { save: vi.fn() } as any,
+        { generate: vi.fn(() => 'gen') } as any,
+        undefined,
+        '',
+        conversations as any,
+      )
+      return { uc, conversations }
+    }
+
+    it('le pasa la conversación al agente que recibe el lead', async () => {
+      const c = charla()
+      const { uc, conversations } = conInbox([c])
+      await uc.execute(input)
+
+      expect(conversations.save).toHaveBeenCalledOnce()
+      expect(conversations.save.mock.calls[0][0].assignee_id).toBe('agent-2')
+    })
+
+    // Una conversación resuelta es historia: moverla de dueño no le sirve a nadie.
+    it('no toca las resueltas', async () => {
+      const cerrada = charla()
+      cerrada.setStatus('resolved')
+      const { uc, conversations } = conInbox([cerrada])
+      await uc.execute(input)
+      expect(conversations.save).not.toHaveBeenCalled()
+    })
+
+    it('no reescribe la que ya era del mismo agente', async () => {
+      const { uc, conversations } = conInbox([charla({ assignee_id: 'agent-2' })])
+      await uc.execute(input)
+      expect(conversations.save).not.toHaveBeenCalled()
+    })
+
+    it('si el inbox falla, el lead igual queda delegado', async () => {
+      const { uc } = conInbox([])
+      const conversations = { findByContact: vi.fn(async () => { throw new Error('sin inbox') }), save: vi.fn() }
+      const leadRepo = { findById: vi.fn(async () => makeLead()), save: vi.fn() }
+      const users: Record<string, any> = {
+        'agent-2': makeUser('agent-2'), 'admin-1': makeUser('admin-1'),
+      }
+      const conFalla = new AssignLeadUseCase(
+        leadRepo as any,
+        { findById: vi.fn(async (id: string) => users[id] ?? null) } as any,
+        { save: vi.fn() } as any, { save: vi.fn() } as any,
+        { generate: vi.fn(() => 'gen') } as any, undefined, '', conversations as any,
+      )
+      await expect(conFalla.execute(input)).resolves.toMatchObject({ unchanged: false })
+      expect(leadRepo.save).toHaveBeenCalledOnce()
+    })
+
+    // Sin inbox configurado (la mayoría de las orgs hoy) nada cambia.
+    it('sin repositorio de conversaciones no rompe nada', async () => {
+      const { uc } = build()
+      await expect(uc.execute(input)).resolves.toMatchObject({ unchanged: false })
+    })
   })
 })
