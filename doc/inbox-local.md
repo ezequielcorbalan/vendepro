@@ -113,3 +113,17 @@ con el token de su organización, así el mensaje entrante se atribuye solo.
 
 Una inmobiliaria que prefiera hospedar el suyo lo configura en *opciones
 avanzadas*, y su `base_url` propia le gana a la de la plataforma.
+
+### Probarlo sin Docker ni teléfono
+
+`scripts/local-inbox/fake-waha.mjs` levanta un WAHA de mentira que implementa
+lo que VendéPro le pide (crear sesión, estado, QR, enviar) e imprime lo que
+recibe — sirve para ver que el webhook por sesión llegue bien armado:
+
+```bash
+node scripts/local-inbox/fake-waha.mjs            # pide QR
+node scripts/local-inbox/fake-waha.mjs --working  # ya vinculado
+```
+
+Apuntá `WAHA_BASE_URL=http://localhost:3001` en el `.dev.vars` de api-crm
+(ojo: wrangler no recarga ese archivo en caliente, hay que reiniciar el worker).
