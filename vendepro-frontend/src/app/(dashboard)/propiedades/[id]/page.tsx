@@ -21,6 +21,7 @@ import AuthorizationWidget from '@/components/properties/AuthorizationWidget'
 import PriceHistoryWidget from '@/components/properties/PriceHistoryWidget'
 import IncomeWidget from '@/components/properties/IncomeWidget'
 import DocChecklistWidget from '@/components/properties/DocChecklistWidget'
+import DocPortalCard from '@/components/properties/DocPortalCard'
 import ReportsListWidget from '@/components/properties/ReportsListWidget'
 import { getPropertySource } from '@/lib/crm-config'
 import { PropertyStageBadge } from '@/components/ui/PropertyStageBadge'
@@ -188,11 +189,20 @@ export default function PropiedadDetailPage() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <DocChecklistWidget
-          propertyId={id}
-          docStatusJson={property.doc_status_json || null}
-          capturedAt={property.created_at || null}
-        />
+        <div className="space-y-6">
+          <DocPortalCard
+            propertyId={id}
+            propertyType={property.property_type || null}
+            operationType={property.operation_type || null}
+            ownerName={property.owner_name || null}
+            ownerPhone={property.owner_phone || null}
+          />
+          <DocChecklistWidget
+            propertyId={id}
+            docStatusJson={property.doc_status_json || null}
+            capturedAt={property.created_at || null}
+          />
+        </div>
         <ReportsListWidget propertyId={id} />
       </div>
 

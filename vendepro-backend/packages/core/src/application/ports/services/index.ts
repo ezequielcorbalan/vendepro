@@ -25,3 +25,4 @@ export type {
   ActionOutcome,
 } from './automation-action-executor'
 export * from './messaging-gateway'
+export type { DocumentIntakeGateway, DocumentIntakeFields, DocumentIntakeFile, DocumentIntakeResult } from './document-intake-gateway'

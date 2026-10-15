@@ -32,6 +32,9 @@ import {
   fireAutomationEvent,
   D1AgentProfileRepository,
   D1MetaIntegrationRepository,
+  D1DocPortalLinkRepository,
+  D1PropertyDocumentRepository,
+  N8nDocumentIntakeGateway,
 } from '@vendepro/infrastructure'
 import {
   GetPublicReportUseCase,
@@ -64,6 +67,9 @@ import {
   SendMessageUseCase,
   GetContactsUseCase,
   buildMessageCreatedPayload,
+  GetPublicDocPortalUseCase,
+  UploadPortalDocumentUseCase,
+  FinishDocPortalSessionUseCase,
 } from '@vendepro/core'
 
 type Env = {
@@ -1183,6 +1189,62 @@ app.get('/feed/:token', async (c) => {
       'X-Feed-Skipped': String(result.skipped.length),
     },
   })
+})
+
+// ── PORTAL DE DOCUMENTACIÓN DEL PROPIETARIO (/d/<token>) ──────────
+// Sin auth: el token es la credencial. Cada archivo se reenvía tal cual al
+// webhook de n8n de la org (Drive + clasificación IA + planilla) y queda el
+// registro en D1. La dirección y el agente salen de la propiedad, nunca de lo
+// que tipea el propietario.
+app.get('/public/docs/:token', async (c) => {
+  const db = c.env.DB
+  const uc = new GetPublicDocPortalUseCase(
+    new D1DocPortalLinkRepository(db),
+    new D1PropertyDocumentRepository(db),
+    new D1PropertyRepository(db),
+    new D1OrganizationRepository(db),
+    new D1UserRepository(db),
+  )
+  return c.json(await uc.execute(c.req.param('token')))
+})
+
+// Multipart con UN archivo en `archivo`, igual que la página de n8n.
+app.post('/public/docs/:token/upload', async (c) => {
+  const form = await c.req.formData().catch(() => null)
+  const file = form?.get('archivo')
+  if (!file || typeof file === 'string') {
+    return c.json({ error: 'Falta el archivo' }, 400)
+  }
+  const blob = file as unknown as File
+  const db = c.env.DB
+  const uc = new UploadPortalDocumentUseCase(
+    new D1DocPortalLinkRepository(db),
+    new D1PropertyDocumentRepository(db),
+    new D1PropertyRepository(db),
+    new D1OrgIntegrationRepository(db),
+    new N8nDocumentIntakeGateway(),
+    new CryptoIdGenerator(),
+  )
+  const result = await uc.execute(c.req.param('token'), {
+    name: blob.name,
+    type: blob.type,
+    size: blob.size,
+    data: blob,
+  })
+  return c.json(result, 201)
+})
+
+// "Ya mandé todo": n8n arma el resumen por mail. Acepta text/plain para que
+// la página lo pueda mandar con sendBeacon al salir.
+app.post('/public/docs/:token/done', async (c) => {
+  const db = c.env.DB
+  const uc = new FinishDocPortalSessionUseCase(
+    new D1DocPortalLinkRepository(db),
+    new D1PropertyRepository(db),
+    new D1OrgIntegrationRepository(db),
+    new N8nDocumentIntakeGateway(),
+  )
+  return c.json(await uc.execute(c.req.param('token')))
 })
 
 export default app

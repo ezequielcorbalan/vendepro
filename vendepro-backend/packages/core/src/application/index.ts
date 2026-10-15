@@ -235,3 +235,7 @@ export * from './use-cases/inbox/ingest-inbound-message'
 export * from './use-cases/inbox/send-message'
 export * from './use-cases/inbox/notify-inbox'
 export * from './use-cases/inbox/manage-conversation'
+// Portal de documentación del propietario (/d/<token>)
+export * from './use-cases/doc-portal/manage-doc-portal-link'
+export * from './use-cases/doc-portal/public-doc-portal'
+export * from './use-cases/doc-portal/docs-integration-settings'
