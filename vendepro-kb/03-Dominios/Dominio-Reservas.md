@@ -34,6 +34,15 @@ Métodos: `advanceStage(newStage)` (con validación), `update(data)`.
 > calculados. UI: `ReservationCard` en la ficha de la propiedad (antes la tabla no tenía pantalla).
 > El propietario los ve con cuenta regresiva en su portal `/d/<token>`.
 >
+> **Reserva → propiedad "Reservada" (15-oct-2026)**: `MarkPropertyReservedUseCase` (core) pasa la
+> propiedad a `reservada` cuando aparece una reserva: (1) un documento que la IA clasifica como
+> `reserva` en la carpeta de Drive (barrido) o (2) subido por el portal del propietario, y (3) al cargar
+> la reserva a mano desde la ficha (`POST /reservations` con `property_id`). Sólo desde etapas previas
+> (propuesta, captada, documentación, publicada, suspendida, vencida), con `override` del pipeline, y
+> deja `stage_history` con el motivo (`triggered_by` 'system' o 'user'). Nunca toca una reservada o
+> cerrada. El selector de etapa manual de la ficha sigue igual. **Sin alertas por decisión del usuario**:
+> los avisos de plazos (al agente o al propietario) van como recetas de Automatizaciones, si se quieren.
+>
 > Nota: el modelo es laxo — `property_id` es opcional (guarda también `property_address` como string). Esto es por diseño para soportar reservas de propiedades que no estaban en el sistema antes.
 
 ## Use cases

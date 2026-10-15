@@ -210,6 +210,31 @@ describe('SyncDriveDocumentsUseCase', () => {
     expect(d.properties.update.mock.calls[0]?.[2] ?? {}).not.toHaveProperty('auth_start_date')
   })
 
+  it('una reserva leída en la carpeta pasa la propiedad a "Reservada" (una vez, al leerla)', async () => {
+    const d = deps({
+      items: tree([item({ id: 'r', name: 'Reserva firmada.pdf', parentId: 'f-prop' })]),
+      classify: vi.fn().mockResolvedValue({ docType: 'reserva', issuedAt: '2026-10-12', authorization: null, observations: null }),
+    })
+    const reserve = { execute: vi.fn().mockResolvedValue({ moved: true, from: 'publicada' }) }
+    const [r] = await new SyncDriveDocumentsUseCase({ ...(d as any), reserve }).execute({ orgId: 'org-1', now: NOW })
+    expect(reserve.execute).toHaveBeenCalledWith(expect.objectContaining({
+      orgId: 'org-1', propertyId: 'prop-1', triggeredBy: 'system', reason: 'Leída una reserva en Drive: Reserva firmada.pdf',
+    }))
+    expect(r!.reserved).toBe(1)
+  })
+
+  it('en modo sólo lectura la reserva se registra pero no mueve la etapa', async () => {
+    const d = deps({
+      config: { read_only: true },
+      items: tree([item({ id: 'r', name: 'Reserva.pdf', parentId: 'f-prop' })]),
+      classify: vi.fn().mockResolvedValue({ docType: 'reserva', issuedAt: null, authorization: null, observations: null }),
+    })
+    const reserve = { execute: vi.fn() }
+    await new SyncDriveDocumentsUseCase({ ...(d as any), reserve }).execute({ orgId: 'org-1', now: NOW })
+    expect(reserve.execute).not.toHaveBeenCalled()
+    expect(d.created[0]).toMatchObject({ doc_type: 'reserva' })
+  })
+
   it('si la IA falla no registra nada: se reintenta la próxima noche', async () => {
     const d = deps({
       items: tree([item({ id: 'a', name: 'a.pdf', parentId: 'f-prop' })]),

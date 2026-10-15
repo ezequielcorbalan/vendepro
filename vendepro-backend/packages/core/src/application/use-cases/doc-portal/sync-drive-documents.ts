@@ -25,6 +25,7 @@ import {
   type ExtractedAuthorization,
 } from '../../../domain/rules/drive-documents'
 import { ValidationError } from '../../../domain/errors/validation-error'
+import type { MarkPropertyReservedUseCase } from '../properties/mark-property-reserved'
 
 /** Mismo tope que el portal y que n8n: arriba de esto no se descarga. */
 export const DRIVE_MAX_FILE_BYTES = 15 * 1024 * 1024
@@ -64,6 +65,8 @@ export interface SyncDriveOrgResult {
   properties_updated: number
   authorizations_filled: number
   conflicts: number
+  /** Propiedades que pasaron a "Reservada" porque apareció su reserva en Drive. */
+  reserved: number
 }
 
 interface Classified {
@@ -86,6 +89,8 @@ export interface SyncDriveDocumentsDeps {
   properties: PropertyRepository
   notifications: NotificationRepository
   ids: IdGenerator
+  /** Mueve a "Reservada" cuando se lee una reserva. Opcional: sin esto sólo se registra. */
+  reserve?: MarkPropertyReservedUseCase
 }
 
 /**
@@ -141,7 +146,7 @@ export class SyncDriveDocumentsUseCase {
     const result: SyncDriveOrgResult = {
       org_id: orgId, read_only: config.read_only, folders: 0, matched: 0, ambiguous: 0, unmatched: 0,
       documents: 0, by_name: 0, by_ai: 0, unreadable: 0, pending: 0,
-      properties_updated: 0, authorizations_filled: 0, conflicts: 0,
+      properties_updated: 0, authorizations_filled: 0, conflicts: 0, reserved: 0,
     }
 
     const items = await this.deps.store.listTree(config.shared_drive_id)
@@ -224,6 +229,24 @@ export class SyncDriveDocumentsUseCase {
       if (seen) await this.deps.documents.updateFromDrive(doc)
       else await this.deps.documents.createFromDrive(doc)
       result.documents += 1
+
+      // Una reserva firmada en la carpeta = la propiedad está reservada. Se
+      // aplica al leerla (una vez), no en cada pasada: si alguien la vuelve a
+      // poner en otra etapa a mano, el barrido no la pisa.
+      const reservedProperty = propertyById.get(folder.property_id)
+      if (!config.read_only && reservedProperty && classified.docType === 'reserva' && this.deps.reserve) {
+        try {
+          const out = await this.deps.reserve.execute({
+            orgId,
+            propertyId: reservedProperty.id,
+            triggeredBy: 'system',
+            reason: `Leída una reserva en Drive: ${file.name}`,
+          })
+          if (out.moved) result.reserved += 1
+        } catch (err) {
+          console.error(`[drive-docs] no se pudo pasar a reservada ${reservedProperty.id}:`, (err as Error)?.message ?? err)
+        }
+      }
 
       // Autorización nueva con fecha distinta a la cargada: se avisa una vez,
       // cuando se lee el documento (no en cada pasada).

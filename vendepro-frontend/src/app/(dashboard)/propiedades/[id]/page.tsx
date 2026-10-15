@@ -205,7 +205,16 @@ export default function PropiedadDetailPage() {
           />
         </div>
         <div className="space-y-6">
-          <ReservationCard propertyId={id} propertyAddress={property.address || ''} />
+          <ReservationCard
+            propertyId={id}
+            propertyAddress={property.address || ''}
+            onPropertyChanged={() => {
+              apiFetch('properties', `/properties/${id}`)
+                .then(r => r.json() as any)
+                .then((d: any) => { if (!d?.error) setProperty(d) })
+                .catch(() => {})
+            }}
+          />
           <ReportsListWidget propertyId={id} />
         </div>
       </div>

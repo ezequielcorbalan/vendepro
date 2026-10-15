@@ -176,3 +176,25 @@ describe('nombres en la nube', () => {
     expect(propertyFolderName('  ')).toBe('Propiedad sin dirección')
   })
 })
+
+describe('UploadPortalDocumentUseCase con una reserva', () => {
+  it('si el propietario sube la reserva firmada, la propiedad pasa a "Reservada"', async () => {
+    const link = { id: 'l', org_id: 'org-1', property_id: 'prop-1', agent_id: 'a', token: 't', operation: 'venta',
+      property_kind: 'depto', succession: 'no', married: null, session_id: 's', revoked_at: null }
+    const property = { id: 'prop-1', address: 'x', owner_name: 'Ana', owner_phone: '', owner_email: '', agent_id: 'a',
+      status: 'active', doc_status_json: null, auth_start_date: null, auth_duration_days: null }
+    const reserve = { execute: vi.fn().mockResolvedValue({ moved: true, from: 'publicada' }) }
+    const uc = new UploadPortalDocumentUseCase(
+      { findByToken: vi.fn().mockResolvedValue(link), registerUpload: vi.fn() } as any,
+      { countByLinkSince: vi.fn().mockResolvedValue(0), create: vi.fn() } as any,
+      { findById: vi.fn().mockResolvedValue(property), update: vi.fn() } as any,
+      { findByOrgAndProvider: vi.fn().mockResolvedValue({ enabled: true, config_json: JSON.stringify({ upload_url: 'https://x' }) }) } as any,
+      { upload: vi.fn().mockResolvedValue({ ok: true, error: null, doc_type: 'reserva', doc_label: 'Reserva', recognized: true,
+        issued_at: null, drive_file_id: 'f', drive_file_url: null, drive_folder_url: null, observations: null }), finish: vi.fn() } as any,
+      { generate: () => 'id' } as any,
+      reserve as any,
+    )
+    await uc.execute('t', { name: 'Reserva.pdf', type: 'application/pdf', size: 10, data: new Blob(['x']) })
+    expect(reserve.execute).toHaveBeenCalledWith(expect.objectContaining({ propertyId: 'prop-1', triggeredBy: 'system' }))
+  })
+})
