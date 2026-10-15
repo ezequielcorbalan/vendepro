@@ -85,6 +85,7 @@ El bot es **"Asistente IA Inmobiliaria"** (n8n cloud, 115 nodos, webhook `/webho
 - **Conversación** (`Get Conv Meta`): `labels` + `meta.sender` / `meta.assignee` al estilo Chatwoot.
 - **Mandar**: JSON (`content`, `message_type:"outgoing"`) o **multipart con `attachments[]`** (el PDF de presentación). El archivo se guarda en R2 (`inbox/{org}/{uuid}/…`), se sirve en `/public/inbox/archivos/…` (base `API_PUBLIC_URL`) y sale como archivo si el proveedor puede (`sendFile`: WAHA Plus, Meta) o como texto + link (WAHA Core no manda medios). La respuesta trae `id` en la raíz.
 - **Asignar** (`assignee_id`): acepta un usuario de VendéPro **o un agente de KiteProp**, resuelto con el `agent_map` de la integración de KiteProp. Los ids de Onetalk (ej. `320`) no existen en VendéPro → 422.
+- **Búsqueda de contactos** (`/contacts/search?q=`, la usa el flujo "VendePro → EMBLUE Enrichment" para saber si un lead ya habla con el bot): `{payload}` con `last_activity_at` en segundos y el sentido de Onetalk — busca entre quienes tienen conversación en la bandeja (no en `contacts`, donde cada lead de portal ya tiene contacto), por dígitos del teléfono o por nombre.
 
 **Cambios necesarios del lado del bot** (no se tocó el flujo): ver `doc/n8n-migracion-bot.md`.
 

@@ -759,16 +759,41 @@ app.post('/v1/conversations/:id/toggle_status', async (c) => {
 // Anti-doble-contacto: el bot pregunta si un teléfono ya está en la base
 // antes de tratarlo como consulta nueva. Busca por dígitos, así que no
 // importa cómo esté escrito el número de cada lado.
+// Búsqueda de contactos, con la forma y el SENTIDO de Chatwoot: en Onetalk un
+// contacto existe si escribió por WhatsApp, y el flujo de enriquecimiento de
+// n8n lo usa para saber si un lead "ya habla con el bot". En VendéPro cada lead
+// de portal crea un contacto, así que buscar en `contacts` diría que todos ya
+// hablan. Se busca entre quienes tienen una conversación en la bandeja.
+//
+// `q` puede ser un teléfono (se compara por dígitos: "+54 9 11 5555-1234" y el
+// chat 5491155551234@c.us son el mismo) o un nombre.
 app.get('/v1/contacts/search', async (c) => {
   if (!puedeLeerInbox(c)) return c.json(SIN_LECTURA, 403)
   const q = (c.req.query('q') ?? '').trim()
-  if (!q) return c.json([])
+  if (!q) return c.json({ meta: { count: 0 }, payload: [] })
 
-  const contactos = await new GetContactsUseCase(new D1ContactRepository(c.env.DB))
-    .execute(c.get('orgId'), { search: q })
-  return c.json(contactos.slice(0, 20).map(ct => ({
-    id: ct.id, full_name: ct.full_name, phone: ct.phone, email: ct.email, contact_type: ct.contact_type,
-  })))
+  const digitos = q.replace(/\D/g, '')
+  const conversaciones = await new D1ConversationRepository(c.env.DB)
+    .findByOrg(c.get('orgId'), { search: digitos.length >= 6 ? digitos : q, limit: 50 })
+
+  // Una entrada por persona, con su última actividad (segundos, como Chatwoot).
+  const porPersona = new Map<string, any>()
+  for (const cv of conversaciones) {
+    const o = cv.toObject()
+    const clave = o.contact_id ?? `${o.channel}:${o.external_id}`
+    const actividad = o.last_activity_at ? Math.floor(new Date(o.last_activity_at).getTime() / 1000) : 0
+    const previo = porPersona.get(clave)
+    if (previo && previo.last_activity_at >= actividad) continue
+    porPersona.set(clave, {
+      id: o.contact_id ?? o.id,
+      name: o.contact_name ?? null,
+      phone_number: telefonoE164DesdeChat(o.channel, o.external_id),
+      identifier: telefonoE164DesdeChat(o.channel, o.external_id) ?? o.external_id,
+      last_activity_at: actividad,
+    })
+  }
+  const payload = [...porPersona.values()].slice(0, 20)
+  return c.json({ meta: { count: payload.length }, payload })
 })
 
 // ── INBOX: MENSAJE ENTRANTE (/v1/inbox/messages) — Bearer JWT ───
