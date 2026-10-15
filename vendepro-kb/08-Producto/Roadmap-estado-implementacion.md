@@ -19,7 +19,7 @@
 | 07 · Landings por agente | 🟢 | Perfil + landing `/a/<org>/<agente>` con binding vivo en producción; propiedades activas, testimonios y descargables quedan fuera del MVP. |
 | 08 · Landings por propiedad | 🔴 | El kind `property` es solo un estilo; `landings` no tiene `property_id`, sin UTM builder ni QR. |
 | 09 · Automatizaciones de email | 🟡 | Motor v2 en producción; barrido cron time-based + `lead.created` desde api-public implementados (10-sep, falta deploy). Quedan 6 acciones sin executor y el open/click tracking. |
-| 10 · Agente conversacional IA | 🔴 | Cero código de WhatsApp/IG/Messenger, sin tablas conversations/messages. |
+| 10 · Agente conversacional IA | 🟡 | Bandeja propia de WhatsApp (WAHA) + Instagram (Meta) con delegación, avisos y permisos; el bot sigue en n8n. Rama sin mergear (15-oct), faltan migraciones 059-060 + deploy. |
 | 11 · Asistente IA interno | 🟠 | IA de extracción/generación 🟢, pero no hay chat, ni `ai_conversations`, ni function calling. |
 | 12 · Marketplace de servicios | 🔴 | Nada. |
 | 13 · Academia | 🔴 | Nada. |
@@ -38,6 +38,9 @@ Todo el núcleo está en producción con backend + UI:
 - **Leads**: 6 use cases (`core/src/application/use-cases/leads/`), etapas (`LEAD_STAGES` 10 etapas + `TAG_PIPELINES` en `core/src/shared/crm-config.ts`), historial en `stage_history`, pipelines separados vendedor/comprador (`leads.pipeline`, migración 039).
 - **Cierre de leads 🟢 (03-sep-2026)**: los cerrados salen del pipeline también en la vista Lista (antes solo del kanban), con toggle "Cerrados (N)". `perdido` se muestra como **"No captado"** y `finalizado` como **"Vendido"** — labels, las claves no cambian (ver [[Estados]] §1). Cerrar un no captado abre `MarkNotCapturedModal` (motivo + cuándo recontactar → `next_step_date`) y dispara la automatización `recontacto_no_captado`, que agenda tareas a 30 y 120 días (migración **050**, activa por org). Pendiente operativo: aplicar la migración 050 y deployar el frontend.
 - **Delegar leads 🟡 (22-sep-2026, falta deploy)**: `POST /leads/assign` + botón "Delegar" en la ficha del lead. Hasta ahora sólo se podía elegir agente **al crear** el lead: reasignar desde la UI era imposible. Avisa al agente por campana (`kind='lead_assigned'`) y por email (si hay remitente y `RESEND_API_KEY`), deja constancia como actividad en el lead y emite el trigger `lead.assigned`, que estaba en el catálogo sin emisor. Sin migración; deployar **api-crm**. Detalle en [[Dominio-Leads]].
+- **Motor propio de documentación 🟡 (15-oct-2026, sin migración)**: el portal ya no depende de n8n. Cada inmobiliaria conecta su **Google Drive** en Integraciones y VendéPro clasifica con Gemini y guarda ahí (una carpeta por propiedad); n8n queda como opción avanzada. Falta en Google Cloud: habilitar Drive API + scope `drive.file`; secrets `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` en GitHub (ahora los sincroniza CI a api-crm y api-public) y `GEMINI_API_KEY` también a api-public. Detalle en [[Dominio-Propiedades]].
+- **Portal de documentación del propietario 🟢 (PR #151, 15-oct-2026)**: link `/d/<token>` por propiedad para que el dueño suba los papeles; `api-public` los reenvía al workflow de n8n que ya los guarda en Drive y los clasifica con IA, y VendéPro registra lo recibido y tilda el checklist de la ficha. Reemplaza la página abierta de n8n (cualquiera podía subir a cualquier dirección). Falta: aplicar la migración **061**, deployar **api-properties** y **api-public**, y cargar la integración `docs_n8n` de la org en Configuración → Integraciones. Fase 2 (que lo que entra por mail también llegue a VendéPro) **reemplazada** por el barrido de Drive, que no toca n8n. Detalle en [[Dominio-Propiedades]].
+- **Checklist de documentación desde Drive 🟠 (15-oct-2026, backend hecho; falta migración 063 + deploy + cuenta de servicio + frontend)**: barrido nocturno de la unidad compartida de documentación (api-properties, cuenta de servicio de sólo lectura + Gemini) que vincula cada carpeta con su propiedad, registra los documentos y tilda el checklist; completa la fecha de la autorización si está vacía. Arranca en modo sólo lectura por org. Plan en `doc/documentacion-drive-plan.md`; detalle en [[Dominio-Propiedades]].
 - **Contactos, calendario, actividades, tags, objetivos, visit forms**: en producción (`api-crm`, `api-properties`, `api-admin`).
 - **Google Calendar** 🟢: espejo unidireccional VendéPro→Google + lectura solo-visualización (`use-cases/integrations/`, `api-crm/src/index.ts:725-900`). Pendiente operativo: secrets `GOOGLE_CLIENT_ID/SECRET` y publicar el consent screen.
 - **KiteProp** 🟢: sync manual + cron `*/15` + backfill + enrich + mapeo de agentes + UI (`configuracion/conexiones`). Habla MCP JSON-RPC (`infrastructure/src/services/kiteprop-mcp-client.ts`).
@@ -169,9 +172,17 @@ El kind `property` es solo un **estilo**: `landings` no tiene `property_id` — 
 
 **Provider**: el roadmap dice "Emblue ya está en stack" — **desactualizado**: Emblue es legacy muerto (cero código vivo); todo sale por **Resend** (campañas, automatizaciones, test, reset de password), con template base unificado. Campañas de email 🟢: wizard completo, segmentos dinámicos, cola con cron `*/5` + batches de 100 + 3 reintentos, suppressions, unsubscribe público HMAC, borrador con IA.
 
-### Feature 10 — Agente conversacional IA 🔴
+### Feature 10 — Agente conversacional IA 🟡
 
-Confirmado con grep exhaustivo: cero adapters/ports/webhooks de WhatsApp Business, Instagram o Messenger; sin tablas `conversations`/`messages`/`agent_actions`. Lo único con "whatsapp" es cosmético (links `wa.me`, bloque `cta_whatsapp`, acción genérica `http_post` documentada "para WhatsApp vía n8n").
+**Bandeja propia 🟡 (rama `claude/inbox-delegar-conversacion`, 15-oct-2026)** — reemplazo de Onetalk. Detalle en [[Dominio-Inbox]].
+- Ingesta de WhatsApp por WAHA (webhook nativo, un WAHA compartido con una sesión por org) e Instagram por Meta; tablas `conversations`/`messages` (migraciones **059**, **060**).
+- Responder desde VendéPro (port `MessagingGateway`, adapters WAHA y Meta), delegar conversaciones, delegar un lead le pasa sus conversaciones.
+- Conectar WhatsApp desde la app con un botón y un QR.
+- Avisos por campana: mensaje nuevo (sólo cuando el cliente toma la palabra) y WhatsApp desconectado.
+- Permisos en el servidor: el agente sólo ve y opera lo que le delegaron.
+- Contrato con el bot de n8n compatible con Chatwoot (`message_created` crudo, mismas rutas).
+
+**Lo que falta**: el agente IA propiamente dicho (hoy es el bot de n8n), websockets, fachada Chatwoot completa, `agent_actions`. Pendiente operativo: migraciones 059-060, deploy de api-crm, api-public y frontend, levantar WAHA de la plataforma (`WAHA_BASE_URL`, `WAHA_API_KEY`, `INBOX_WEBHOOK_URL`).
 
 ### Feature 11 — Asistente IA interno 🟠
 

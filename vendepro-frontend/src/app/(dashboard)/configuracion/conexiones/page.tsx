@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import {
   Plug, ArrowLeft, Loader2, Save, CheckCircle2, XCircle,
-  RefreshCw, Download, Radio, AlertCircle, History, Calendar, Unplug, Users, Sparkles,
+  RefreshCw, Download, Radio, AlertCircle, History, Calendar, Unplug, Users, Sparkles, MessageSquare,
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
@@ -18,6 +18,7 @@ import { Checkbox } from '@/components/ui/Choice'
 import { Alert } from '@/components/ui/Alert'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { getCurrentUser } from '@/lib/auth'
+import DocsIntegrationCard from '@/components/settings/DocsIntegrationCard'
 import type { CrmIntegration, GoogleIntegration, IntegrationSyncLogEntry } from '@/lib/types'
 
 type KpAgent = { external_id: string; full_name: string; email: string | null }
@@ -363,6 +364,23 @@ export default function ConexionesPage() {
         />
       </div>
 
+      {/* WhatsApp del inbox: la conexión vive en su propia pantalla porque
+          tiene estado (QR, sesión) y no entra en una tarjeta. */}
+      <Card className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-control bg-success/10 text-success flex items-center justify-center">
+            <MessageSquare className="w-5 h-5" />
+          </div>
+          <div className="min-w-0">
+            <Heading level={4}>WhatsApp</Heading>
+            <Text size="sm" tone="muted">
+              El número por el que la inmobiliaria conversa. Alimenta la bandeja de Conversaciones.
+            </Text>
+          </div>
+        </div>
+        <Button href="/configuracion/conexiones/whatsapp" variant="outline">Configurar</Button>
+      </Card>
+
       {/* Google Calendar (personal del usuario) */}
       <Card className="space-y-4">
         <div className="flex items-center justify-between gap-3">
@@ -450,6 +468,8 @@ export default function ConexionesPage() {
       </Card>
 
       {isAdmin && (<>
+      <DocsIntegrationCard />
+
       {/* Integración de contactos (provider interno: kiteprop) */}
       <Card className="space-y-4">
         <div className="flex items-center justify-between gap-3">

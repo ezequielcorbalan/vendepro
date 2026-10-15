@@ -19,6 +19,8 @@ export interface ContactRepository {
   isVisibleTo(id: string, orgId: string, userId: string): Promise<boolean>
   findByOrg(orgId: string, filters?: ContactFilters): Promise<Contact[]>
   findByEmailOrPhone(orgId: string, email: string | null, phone: string | null): Promise<Contact | null>
+  /** Por IGSID/PSID: en Instagram no hay teléfono con qué cruzar. */
+  findByMetaUserId(orgId: string, metaUserId: string): Promise<Contact | null>
   /** Dirección de la propiedad del lead más reciente de cada contacto, indexada por contact_id */
   findLeadPropertyByContactIds(contactIds: string[], orgId: string): Promise<Record<string, string>>
   save(contact: Contact): Promise<void>

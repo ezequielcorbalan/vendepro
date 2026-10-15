@@ -51,7 +51,9 @@ export default function NotificationBell() {
 
   useEffect(() => {
     loadNotifications()
-    const interval = setInterval(loadNotifications, 5 * 60 * 1000)
+    // Cada minuto: con la bandeja de WhatsApp, "te escribió un cliente" no
+    // puede esperar 5 minutos. Con la pestaña oculta no se consulta.
+    const interval = setInterval(() => { if (!document.hidden) loadNotifications() }, 60 * 1000)
     return () => clearInterval(interval)
   }, [])
 

@@ -11,6 +11,9 @@ export interface ContactProps {
   notes: string | null
   source: string | null
   agent_id: string
+  /** IGSID / PSID: cómo se reconoce a la persona cuando no hay teléfono. */
+  meta_user_id?: string | null
+  ig_username?: string | null
   created_at: string
 }
 
@@ -34,6 +37,8 @@ export class Contact {
   get neighborhood() { return this.props.neighborhood }
   get notes() { return this.props.notes }
   get source() { return this.props.source }
+  get meta_user_id() { return this.props.meta_user_id ?? null }
+  get ig_username() { return this.props.ig_username ?? null }
   get agent_id() { return this.props.agent_id }
   get created_at() { return this.props.created_at }
 

@@ -20,6 +20,7 @@ const PUBLIC_PREFIXES = [
   '/t/',   // public appraisal pages
   '/v/',   // public visit forms
   '/f/',   // fichas de tasación que completa el propietario
+  '/d/',   // portal de documentación del propietario
   '/p/',   // public prefactibilidades
   '/l/',   // landings públicas
   '/a/',   // landings públicas de perfil de agente (/a/[org]/[slug])

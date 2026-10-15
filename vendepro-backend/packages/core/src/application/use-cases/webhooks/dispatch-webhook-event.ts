@@ -2,6 +2,7 @@ import type { WebhookRepository, WebhookDeliveryRepository } from '../../ports/r
 import type { WebhookSender } from '../../ports/services/webhook-sender'
 import type { IdGenerator } from '../../ports/id-generator'
 import type { Webhook } from '../../../domain/entities/webhook'
+import { RAW_DELIVERY_EVENTS } from '../../../domain/entities/webhook'
 
 export interface DispatchWebhookEventInput {
   orgId: string
@@ -33,11 +34,15 @@ export class DispatchWebhookEventUseCase {
     const hooks = await this.repo.findActiveByEvent(input.orgId, input.event)
     if (hooks.length === 0) return { dispatched: 0, delivered: 0 }
 
-    const body = JSON.stringify({
-      event: input.event,
-      timestamp: new Date().toISOString(),
-      data: input.payload,
-    })
+    // Los eventos que imitan a Chatwoot van sin envoltorio (ver
+    // RAW_DELIVERY_EVENTS); el resto conserva el formato de siempre.
+    const body = RAW_DELIVERY_EVENTS.includes(input.event)
+      ? JSON.stringify(input.payload)
+      : JSON.stringify({
+          event: input.event,
+          timestamp: new Date().toISOString(),
+          data: input.payload,
+        })
 
     const results = await Promise.allSettled(hooks.map((h) => this.deliver(h, input, body)))
     const delivered = results.filter((r) => r.status === 'fulfilled' && r.value).length

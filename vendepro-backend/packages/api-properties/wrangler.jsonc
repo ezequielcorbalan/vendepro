@@ -22,6 +22,11 @@
   "browser": {
     "binding": "BROWSER"
   },
+  // Barrido de Drive → checklist de documentación (doc/documentacion-drive-plan.md).
+  // 07:00 UTC = 04:00 en Argentina. Secrets: GOOGLE_DRIVE_SA_KEY y GEMINI_API_KEY (CI).
+  "triggers": {
+    "crons": ["0 7 * * *"]
+  },
   "vars": {
     "API_PUBLIC_URL": "https://public.api.vendepro.com.ar",
     "R2_PUBLIC_URL": "https://properties.api.vendepro.com.ar/photo"
