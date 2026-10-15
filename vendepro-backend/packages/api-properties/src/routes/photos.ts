@@ -5,6 +5,7 @@ import {
   ReorderPropertyPhotosUseCase,
   AddReportPhotoUseCase,
 } from '@vendepro/core'
+import { propiedadEditable, NO_ENCONTRADA } from '../permisos'
 
 type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket; R2_PUBLIC_URL: string; BROWSER: Fetcher; API_PUBLIC_URL: string }
 type AuthVars = { Variables: { userId: string; userRole: string; orgId: string } }
@@ -15,6 +16,16 @@ export function registerPhotoRoutes(app: Hono<{ Bindings: Env } & AuthVars>) {
     const items = (await c.req.json()) as { id: string; sort_order: number }[]
     if (!Array.isArray(items) || items.length === 0) return c.json({ success: true })
     const repo = new D1PropertyRepository(c.env.DB)
+    // Las fotos son de la propiedad: reordenar es modificarla.
+    const propiedades = new Set<string>()
+    for (const item of items) {
+      const foto = await repo.findPhotoById(item.id, c.get('orgId')).catch(() => null)
+      if (!foto) return c.json(NO_ENCONTRADA, 404)
+      propiedades.add(foto.property_id)
+    }
+    for (const id of propiedades) {
+      if (!(await propiedadEditable(c, id))) return c.json(NO_ENCONTRADA, 404)
+    }
     const useCase = new ReorderPropertyPhotosUseCase(repo)
     // ReorderPropertyPhotosUseCase.execute(propertyId, orgId, order) — propertyId not needed for reorder
     // The original handler iterated and updated by photo id+orgId without knowing propertyId.
@@ -28,6 +39,7 @@ export function registerPhotoRoutes(app: Hono<{ Bindings: Env } & AuthVars>) {
     const file = formData.get('file') as File | null
     const propertyId = formData.get('property_id') as string | null
     if (!file || !propertyId) return c.json({ error: 'file y property_id requeridos' }, 400)
+    if (!(await propiedadEditable(c, propertyId))) return c.json(NO_ENCONTRADA, 404)
     const repo = new D1PropertyRepository(c.env.DB)
     const storage = new R2StorageService(c.env.R2, c.env.R2_PUBLIC_URL)
     const idGen = new CryptoIdGenerator()
@@ -48,7 +60,7 @@ export function registerPhotoRoutes(app: Hono<{ Bindings: Env } & AuthVars>) {
     const repo = new D1PropertyRepository(c.env.DB)
     const orgId = c.get('orgId')
     const photo = await repo.findPhotoById(photoId, orgId)
-    if (!photo) return c.json({ error: 'Not found' }, 404)
+    if (!photo || !(await propiedadEditable(c, photo.property_id))) return c.json(NO_ENCONTRADA, 404)
     try { await c.env.R2.delete(photo.r2_key) } catch {}
     try {
       await repo.deletePhoto(photoId, orgId)

@@ -23,7 +23,7 @@ describe('GetPendingFollowupsUseCase', () => {
 
     const result = await new GetPendingFollowupsUseCase(repo).execute('org1')
     expect(result).toEqual(mockFollowups)
-    expect(repo.findPendingFollowups).toHaveBeenCalledWith('org1', expect.any(String), 10, 'vendedor')
+    expect(repo.findPendingFollowups).toHaveBeenCalledWith('org1', expect.any(String), 10, 'vendedor', undefined)
   })
 
   // El default importa: es el que usa el dashboard de captación, y sin él
@@ -33,7 +33,7 @@ describe('GetPendingFollowupsUseCase', () => {
     repo.findPendingFollowups.mockResolvedValue([])
 
     await new GetPendingFollowupsUseCase(repo).execute('org1')
-    expect(repo.findPendingFollowups).toHaveBeenCalledWith('org1', expect.any(String), 10, 'vendedor')
+    expect(repo.findPendingFollowups).toHaveBeenCalledWith('org1', expect.any(String), 10, 'vendedor', undefined)
   })
 
   it('asks for the buyer pipeline when requested', async () => {
@@ -41,7 +41,7 @@ describe('GetPendingFollowupsUseCase', () => {
     repo.findPendingFollowups.mockResolvedValue([])
 
     await new GetPendingFollowupsUseCase(repo).execute('org1', 'comprador')
-    expect(repo.findPendingFollowups).toHaveBeenCalledWith('org1', expect.any(String), 10, 'comprador')
+    expect(repo.findPendingFollowups).toHaveBeenCalledWith('org1', expect.any(String), 10, 'comprador', undefined)
   })
 
   it('uses custom limit', async () => {
@@ -49,7 +49,7 @@ describe('GetPendingFollowupsUseCase', () => {
     repo.findPendingFollowups.mockResolvedValue([])
 
     await new GetPendingFollowupsUseCase(repo).execute('org1', 'vendedor', 5)
-    expect(repo.findPendingFollowups).toHaveBeenCalledWith('org1', expect.any(String), 5, 'vendedor')
+    expect(repo.findPendingFollowups).toHaveBeenCalledWith('org1', expect.any(String), 5, 'vendedor', undefined)
   })
 
   it('returns empty array on repo error', async () => {
@@ -58,5 +58,12 @@ describe('GetPendingFollowupsUseCase', () => {
 
     const result = await new GetPendingFollowupsUseCase(repo).execute('org1')
     expect(result).toEqual([])
+  })
+
+  // El dashboard de un agente mostraba los seguimientos de toda la inmobiliaria.
+  it('acota a un agente cuando se lo pide', async () => {
+    const repo = { findPendingFollowups: vi.fn().mockResolvedValue([]) } as any
+    await new GetPendingFollowupsUseCase(repo).execute('org1', 'vendedor', 10, 'agent-1')
+    expect(repo.findPendingFollowups).toHaveBeenCalledWith('org1', expect.any(String), 10, 'vendedor', 'agent-1')
   })
 })

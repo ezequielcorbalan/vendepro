@@ -23,6 +23,8 @@ import {
   SavePropertyIncomeUseCase,
 } from '@vendepro/core'
 import type { PropertyStageValue } from '@vendepro/core'
+import { duenoAlCrear } from '@vendepro/core'
+import { actor, veTodo, propiedadEditable, NO_ENCONTRADA } from '../permisos'
 
 type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket; R2_PUBLIC_URL: string; BROWSER: Fetcher; API_PUBLIC_URL: string }
 type AuthVars = { Variables: { userId: string; userRole: string; orgId: string } }
@@ -64,7 +66,8 @@ export function registerPropertyRoutes(app: Hono<{ Bindings: Env } & AuthVars>) 
     const body = (await c.req.json()) as any
     const repo = new D1PropertyRepository(c.env.DB)
     const useCase = new CreatePropertyUseCase(repo, new CryptoIdGenerator())
-    const result = await useCase.execute({ ...body, org_id: c.get('orgId'), agent_id: body.agent_id || c.get('userId') })
+    // Quien reparte carga a nombre de otro; un agente, para sí.
+    const result = await useCase.execute({ ...body, org_id: c.get('orgId'), agent_id: duenoAlCrear(actor(c), body.agent_id) })
     return c.json(result, 201)
   })
 
@@ -78,6 +81,9 @@ export function registerPropertyRoutes(app: Hono<{ Bindings: Env } & AuthVars>) 
 
   app.put('/properties/:id', async (c) => {
     const body = (await c.req.json()) as any
+    if (!(await propiedadEditable(c, c.req.param('id')))) return c.json(NO_ENCONTRADA, 404)
+    // Pasar la propiedad a otro agente es de quien reparte.
+    if (!veTodo(c)) delete body.agent_id
     const repo = new D1PropertyRepository(c.env.DB)
     const useCase = new UpdatePropertyUseCase(repo)
     try {
@@ -96,6 +102,7 @@ export function registerPropertyRoutes(app: Hono<{ Bindings: Env } & AuthVars>) 
 
   app.put('/properties/:id/stage', async (c) => {
     const body = (await c.req.json()) as any
+    if (!(await propiedadEditable(c, c.req.param('id')))) return c.json(NO_ENCONTRADA, 404)
     const repo = new D1PropertyRepository(c.env.DB)
     const historyRepo = new D1StageHistoryRepository(c.env.DB)
     const leadRepo = new D1LeadRepository(c.env.DB)
@@ -136,6 +143,7 @@ export function registerPropertyRoutes(app: Hono<{ Bindings: Env } & AuthVars>) 
   // por qué volver a disparar la máquina de estados ni el historial.
   app.put('/properties/:id/income', async (c) => {
     const body = (await c.req.json()) as any
+    if (!(await propiedadEditable(c, c.req.param('id')))) return c.json(NO_ENCONTRADA, 404)
     const useCase = new SavePropertyIncomeUseCase(
       new D1PropertyIncomeRepository(c.env.DB),
       new DolarApiFxRate(),
@@ -166,6 +174,7 @@ export function registerPropertyRoutes(app: Hono<{ Bindings: Env } & AuthVars>) 
 
   app.put('/properties/:id/price', async (c) => {
     const body = (await c.req.json()) as any
+    if (!(await propiedadEditable(c, c.req.param('id')))) return c.json(NO_ENCONTRADA, 404)
     const repo = new D1PropertyRepository(c.env.DB)
     const useCase = new UpdatePropertyPriceUseCase(repo)
     await useCase.execute({ propertyId: c.req.param('id'), orgId: c.get('orgId'), newPrice: body.price, currency: body.currency || 'USD' })
@@ -189,8 +198,8 @@ export function registerPropertyRoutes(app: Hono<{ Bindings: Env } & AuthVars>) 
       return c.json({ error: 'Precio inválido' }, 400)
     }
     const repo = new D1PropertyRepository(c.env.DB)
-    const existing = await repo.findById(propertyId, orgId)
-    if (!existing) return c.json({ error: 'Not found' }, 404)
+    const existing = await propiedadEditable(c, propertyId)
+    if (!existing) return c.json(NO_ENCONTRADA, 404)
     const previous = existing.asking_price ?? null
     const idGen = new CryptoIdGenerator()
     await repo.addPriceHistory({
@@ -215,6 +224,7 @@ export function registerPropertyRoutes(app: Hono<{ Bindings: Env } & AuthVars>) 
 
   app.put('/properties/:id/status', async (c) => {
     const body = (await c.req.json()) as any
+    if (!(await propiedadEditable(c, c.req.param('id')))) return c.json(NO_ENCONTRADA, 404)
     const repo = new D1PropertyRepository(c.env.DB)
     const useCase = new UpdatePropertyStatusUseCase(repo)
     await useCase.execute({ propertyId: c.req.param('id'), orgId: c.get('orgId'), newStatus: body.status })
@@ -222,6 +232,7 @@ export function registerPropertyRoutes(app: Hono<{ Bindings: Env } & AuthVars>) 
   })
 
   app.delete('/properties/:id', async (c) => {
+    if (!(await propiedadEditable(c, c.req.param('id')))) return c.json(NO_ENCONTRADA, 404)
     const repo = new D1PropertyRepository(c.env.DB)
     const useCase = new DeletePropertyUseCase(repo)
     await useCase.execute(c.req.param('id'), c.get('orgId'))
@@ -230,6 +241,7 @@ export function registerPropertyRoutes(app: Hono<{ Bindings: Env } & AuthVars>) 
 
   // ── EXTERNAL REPORT TRACKING ─────────────────────────────────
   app.post('/properties/:id/external-report', async (c) => {
+    if (!(await propiedadEditable(c, c.req.param('id')))) return c.json(NO_ENCONTRADA, 404)
     const repo = new D1PropertyRepository(c.env.DB)
     const useCase = new MarkExternalReportUseCase(repo)
     await useCase.execute(c.req.param('id'), c.get('orgId'))
@@ -237,6 +249,7 @@ export function registerPropertyRoutes(app: Hono<{ Bindings: Env } & AuthVars>) 
   })
 
   app.delete('/properties/:id/external-report', async (c) => {
+    if (!(await propiedadEditable(c, c.req.param('id')))) return c.json(NO_ENCONTRADA, 404)
     const repo = new D1PropertyRepository(c.env.DB)
     const useCase = new ClearExternalReportUseCase(repo)
     await useCase.execute(c.req.param('id'), c.get('orgId'))

@@ -43,7 +43,7 @@ describe('GetTodayEventsUseCase', () => {
     expect(result).toHaveLength(1)
     // called with today's date in YYYY-MM-DD format
     const today = new Date().toISOString().split('T')[0]
-    expect(repo.findByOrgAndDate).toHaveBeenCalledWith('org1', today)
+    expect(repo.findByOrgAndDate).toHaveBeenCalledWith('org1', today, undefined)
   })
 
   it('returns empty array on repo error (graceful fallback)', async () => {

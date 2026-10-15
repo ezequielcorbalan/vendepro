@@ -259,6 +259,16 @@ export class D1AppraisalRepository implements AppraisalRepository {
       .run()
   }
 
+  async findComparableAppraisalId(comparableId: string, orgId: string): Promise<string | null> {
+    const row = await this.db
+      .prepare(`SELECT ac.appraisal_id FROM appraisal_comparables ac
+                JOIN appraisals a ON a.id = ac.appraisal_id
+                WHERE ac.id = ? AND a.org_id = ?`)
+      .bind(comparableId, orgId)
+      .first() as any
+    return row?.appraisal_id ?? null
+  }
+
   async removeComparable(comparableId: string): Promise<void> {
     await this.db
       .prepare('DELETE FROM appraisal_comparables WHERE id = ?')
