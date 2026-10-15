@@ -17,7 +17,7 @@ async function fetchPortal(token: string): Promise<Fetched> {
 }
 
 export const metadata: Metadata = {
-  title: 'Documentación de tu propiedad',
+  title: 'Tu propiedad',
   // El link es la única credencial del propietario: no debe indexarse.
   robots: { index: false, follow: false },
 }

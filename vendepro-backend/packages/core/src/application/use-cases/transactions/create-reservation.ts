@@ -13,6 +13,11 @@ export interface CreateReservationInput {
   offer_currency?: string
   reservation_date?: string | null
   notes?: string | null
+  property_id?: string | null
+  acceptance_deadline?: string | null
+  boleto_date?: string | null
+  escritura_date?: string | null
+  delivery_date?: string | null
 }
 
 export class CreateReservationUseCase {
@@ -35,6 +40,11 @@ export class CreateReservationUseCase {
       reservation_date: input.reservation_date ?? null,
       stage: 'reservada',
       notes: input.notes ?? null,
+      property_id: input.property_id ?? null,
+      acceptance_deadline: input.acceptance_deadline ?? null,
+      boleto_date: input.boleto_date ?? null,
+      escritura_date: input.escritura_date ?? null,
+      delivery_date: input.delivery_date ?? null,
     })
 
     await this.reservationRepo.save(reservation)

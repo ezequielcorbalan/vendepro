@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { corsMiddleware, errorHandler, createAuthMiddleware, D1ReservationRepository, D1StageHistoryRepository, JwtAuthService, CryptoIdGenerator, fireMarketingEvent } from '@vendepro/infrastructure'
 import {
-  GetReservationsUseCase, CreateReservationUseCase, AdvanceReservationStageUseCase,
+  GetReservationsUseCase, CreateReservationUseCase, AdvanceReservationStageUseCase, computeReservationMilestones,
 } from '@vendepro/core'
 
 type Env = { DB: D1Database; JWT_SECRET: string }
@@ -18,11 +18,24 @@ app.use('*', async (c, next) => {
 
 // ── RESERVATIONS ───────────────────────────────────────────────
 app.get('/reservations', async (c) => {
-  const { stage, agent_id } = c.req.query()
+  const { stage, agent_id, property_id } = c.req.query()
   const repo = new D1ReservationRepository(c.env.DB)
   const useCase = new GetReservationsUseCase(repo)
-  const items = await useCase.execute(c.get('orgId'), { stage, agent_id })
-  return c.json(items.map(r => r.toObject()))
+  const items = await useCase.execute(c.get('orgId'), { stage, agent_id, property_id })
+  // Los hitos salen calculados de core: la ficha y el portal del propietario
+  // muestran exactamente lo mismo.
+  const today = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10)
+  return c.json(items.map(r => ({
+    ...r.toObject(),
+    milestones: computeReservationMilestones({
+      stage: r.stage,
+      accepted_at: r.accepted_at,
+      acceptance_deadline: r.acceptance_deadline,
+      boleto_date: r.boleto_date,
+      escritura_date: r.escritura_date,
+      delivery_date: r.delivery_date,
+    }, today),
+  })))
 })
 
 app.post('/reservations', async (c) => {
@@ -82,7 +95,14 @@ app.put('/reservations', async (c) => {
   const repo = new D1ReservationRepository(c.env.DB)
   const res = await repo.findById(body.id, c.get('orgId'))
   if (!res) return c.json({ error: 'Not found' }, 404)
-  const { id, org_id, ...data } = body
+  // Sólo datos y fechas: la etapa cambia por /reservations/stage (deja historial)
+  // y el org/agente no se tocan desde acá.
+  const EDITABLE = [
+    'property_address', 'buyer_name', 'seller_name', 'offer_amount', 'offer_currency', 'reservation_date', 'notes',
+    'acceptance_deadline', 'accepted_at', 'boleto_date', 'escritura_date', 'delivery_date',
+  ] as const
+  const data: Record<string, unknown> = {}
+  for (const key of EDITABLE) if (key in body) data[key] = body[key] === '' ? null : body[key]
   res.update(data)
   await repo.save(res)
   return c.json({ success: true })

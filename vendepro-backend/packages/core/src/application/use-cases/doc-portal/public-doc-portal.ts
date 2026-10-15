@@ -3,6 +3,8 @@ import type { PropertyRepository } from '../../ports/repositories/property-repos
 import type { OrgIntegrationRepository } from '../../ports/repositories/org-integration-repository'
 import type { OrganizationRepository } from '../../ports/repositories/organization-repository'
 import type { UserRepository } from '../../ports/repositories/user-repository'
+import type { ReservationRepository } from '../../ports/repositories/reservation-repository'
+import type { ReportRepository } from '../../ports/repositories/report-repository'
 import type { IdGenerator } from '../../ports/id-generator'
 import type { DocumentIntakeGateway, DocumentIntakeFile } from '../../ports/services/document-intake-gateway'
 import type { AuthorizationTerms } from '../../ports/services/document-classifier'
@@ -18,6 +20,13 @@ import {
   type DocChecklistSummary,
   type DocOperation,
 } from '../../../domain/rules/document-checklist'
+import {
+  computeReservationMilestones,
+  isReservationClosed,
+  nextReservationMilestone,
+  type ReservationMilestone,
+} from '../../../domain/rules/reservation-milestones'
+import { authorizationExpiry, daysUntil } from '../../../domain/rules/authorization-rules'
 import { DomainError } from '../../../domain/errors/domain-error'
 import { NotFoundError } from '../../../domain/errors/not-found'
 import { ValidationError } from '../../../domain/errors/validation-error'
@@ -102,8 +111,39 @@ export interface PublicDocPortalView {
     created_at: string
   }>
   limits: { max_file_bytes: number }
+  /**
+   * Reserva vigente con sus hitos (cuánto falta para aceptar, boleto, escritura,
+   * entrega). Sin datos del comprador: el propietario ve plazos, no a la otra parte.
+   */
+  reservation: {
+    stage: string
+    offer_amount: number | null
+    offer_currency: string
+    reservation_date: string | null
+    milestones: ReservationMilestone[]
+    next: ReservationMilestone | null
+  } | null
+  /** Autorización de venta: hasta cuándo rige. */
+  authorization: { start_date: string; end_date: string; days_left: number | null } | null
+  /** Reportes de gestión publicados (cada uno abre en /r/<slug>). */
+  reports: Array<{ period_label: string; url: string; published_at: string | null }>
 }
 
+/** Fecha de hoy en Buenos Aires (YYYY-MM-DD): los plazos se cuentan por día local. */
+function todayInArgentina(): string {
+  return new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10)
+}
+
+export interface PublicPortalExtras {
+  reservations?: ReservationRepository
+  reports?: ReportRepository
+  today?: () => string
+}
+
+/**
+ * Portal del propietario: además de la documentación, lo que le importa de su
+ * propiedad — la reserva con sus plazos, la autorización y los reportes.
+ */
 export class GetPublicDocPortalUseCase {
   constructor(
     private readonly links: DocPortalLinkRepository,
@@ -111,18 +151,44 @@ export class GetPublicDocPortalUseCase {
     private readonly properties: PropertyRepository,
     private readonly orgs: OrganizationRepository,
     private readonly users: UserRepository,
+    private readonly extras: PublicPortalExtras = {},
   ) {}
 
   async execute(token: string): Promise<PublicDocPortalView> {
     const { link, property } = await resolveLink(this.links, this.properties, token)
 
     const agentId = property.agent_id ?? link.agent_id
-    const [org, agent, docs] = await Promise.all([
+    const [org, agent, docs, reservation, reports] = await Promise.all([
       this.orgs.findById(link.org_id),
       agentId ? this.users.findById(agentId, link.org_id).catch(() => null) : Promise.resolve(null),
       this.documents.listByProperty(property.id, link.org_id),
+      // Lo extra nunca rompe el portal: si falla, la sección no aparece.
+      this.extras.reservations?.findActiveByProperty(property.id, link.org_id).catch(() => null) ?? Promise.resolve(null),
+      this.extras.reports?.findByProperty(property.id, link.org_id).catch(() => []) ?? Promise.resolve([]),
     ])
     if (!org) throw new NotFoundError('Link', 'público')
+
+    const today = (this.extras.today ?? todayInArgentina)()
+    let reservationView: PublicDocPortalView['reservation'] = null
+    if (reservation && !isReservationClosed(reservation.stage)) {
+      const milestones = computeReservationMilestones({
+        stage: reservation.stage,
+        accepted_at: reservation.accepted_at,
+        acceptance_deadline: reservation.acceptance_deadline,
+        boleto_date: reservation.boleto_date,
+        escritura_date: reservation.escritura_date,
+        delivery_date: reservation.delivery_date,
+      }, today)
+      reservationView = {
+        stage: reservation.stage,
+        offer_amount: reservation.offer_amount,
+        offer_currency: reservation.offer_currency,
+        reservation_date: reservation.reservation_date,
+        milestones,
+        next: nextReservationMilestone(milestones),
+      }
+    }
+    const authEnd = authorizationExpiry(property.auth_start_date, property.auth_duration_days)
 
     return {
       address: property.address,
@@ -148,6 +214,13 @@ export class GetPublicDocPortalUseCase {
         created_at: d.created_at,
       })),
       limits: { max_file_bytes: DOC_PORTAL_MAX_FILE_BYTES },
+      reservation: reservationView,
+      authorization: authEnd && property.auth_start_date
+        ? { start_date: property.auth_start_date.slice(0, 10), end_date: authEnd, days_left: daysUntil(authEnd, today) }
+        : null,
+      reports: reports
+        .filter((r) => r.status === 'published' && !!r.public_slug)
+        .map((r) => ({ period_label: r.period_label, url: `/r/${r.public_slug}`, published_at: r.published_at ?? null })),
     }
   }
 }

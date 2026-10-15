@@ -13,6 +13,7 @@ import { WhatsAppButton, CallButton } from '@/components/ui/ContactButtons'
 import { WidgetHeader } from '@/components/ui/WidgetHeader'
 import type { DocChecklistItem, PublicDocPortal } from '@/lib/doc-portal'
 import DocScanner from './DocScanner'
+import { AuthorizationSection, ReportsSection, ReservationSection } from './PortalSections'
 
 interface Props {
   token: string
@@ -164,7 +165,7 @@ export default function DocPortalClient({ token, apiPublic, data }: Props) {
   return (
     <Shell org={data.org}>
       <div className="space-y-1">
-        <Text size="xs" tone="muted">Documentación para {data.operation === 'alquiler' ? 'el alquiler' : 'la venta'} de</Text>
+        <Text size="xs" tone="muted">{data.operation === 'alquiler' ? 'Alquiler' : 'Venta'} de tu propiedad</Text>
         <Heading level={2}>{data.address}</Heading>
       </div>
 
@@ -182,6 +183,8 @@ export default function DocPortalClient({ token, apiPublic, data }: Props) {
           )}
         </Card>
       )}
+
+      {data.reservation && <ReservationSection reservation={data.reservation} />}
 
       <Card className="space-y-4">
         <WidgetHeader
@@ -285,6 +288,9 @@ export default function DocPortalClient({ token, apiPublic, data }: Props) {
           </ul>
         </Card>
       )}
+
+      {data.authorization && <AuthorizationSection authorization={data.authorization} />}
+      {data.reports.length > 0 && <ReportsSection reports={data.reports} />}
     </Shell>
   )
 }

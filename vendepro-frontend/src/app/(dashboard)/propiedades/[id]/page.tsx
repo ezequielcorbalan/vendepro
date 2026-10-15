@@ -22,6 +22,7 @@ import PriceHistoryWidget from '@/components/properties/PriceHistoryWidget'
 import IncomeWidget from '@/components/properties/IncomeWidget'
 import DocChecklistWidget from '@/components/properties/DocChecklistWidget'
 import DocPortalCard from '@/components/properties/DocPortalCard'
+import ReservationCard from '@/components/properties/ReservationCard'
 import ReportsListWidget from '@/components/properties/ReportsListWidget'
 import { getPropertySource } from '@/lib/crm-config'
 import { PropertyStageBadge } from '@/components/ui/PropertyStageBadge'
@@ -203,7 +204,10 @@ export default function PropiedadDetailPage() {
             capturedAt={property.created_at || null}
           />
         </div>
-        <ReportsListWidget propertyId={id} />
+        <div className="space-y-6">
+          <ReservationCard propertyId={id} propertyAddress={property.address || ''} />
+          <ReportsListWidget propertyId={id} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

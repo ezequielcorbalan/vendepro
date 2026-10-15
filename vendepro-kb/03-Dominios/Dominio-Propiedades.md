@@ -89,6 +89,15 @@ Componentes: `PropertyFilters`, `AuthorizationWidget`, `DocPortalCard`, `DocChec
 
 ## Portal de documentación del propietario (`/d/<token>`) — 15-oct-2026
 
+> **Portal ampliado (15-oct-2026)**: además de la documentación, el propietario ve la **reserva**
+> con cuenta regresiva del próximo hito (aceptación → boleto → escritura → entrega; reglas en
+> `core/domain/rules/reservation-milestones.ts`, sin datos del comprador), la **autorización de
+> venta** (`authorizationExpiry`, aviso visual a 15 días) y los **reportes publicados** (`/r/<slug>`).
+> La reserva se carga en la ficha con `ReservationCard` (migración **064**: `reservations.property_id`
+> + fechas de hitos + `accepted_at`). El escáner tiene **recorte semiautomático**: detecta los bordes
+> de la hoja (Otsu + mancha clara más grande), el propietario ajusta las 4 esquinas y se endereza con
+> una homografía (`lib/doc-crop.ts`, sin OpenCV).
+
 > **Dos motores** (config `engine` en `org_integrations` provider `docs_n8n`):
 > - **`google_drive` (motor propio, default para orgs nuevas)**: VendéPro clasifica con Gemini
 >   (`GeminiDocumentClassifier`, PDF/imagen inline, catálogo cerrado + fecha + plazo de autorización) y

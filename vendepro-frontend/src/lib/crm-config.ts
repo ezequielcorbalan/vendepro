@@ -658,3 +658,17 @@ export const WEBHOOK_EVENTS = {
 } as const
 
 export type WebhookEventKey = keyof typeof WEBHOOK_EVENTS
+
+// ── Reservas (operación de venta en curso) ────────────────────────
+// Etapas de `reservations.stage` (core/domain/rules/reservation-rules.ts).
+// Colores por token: es un estado, se renderiza con StatusBadge.
+export type ReservationStage = 'reservada' | 'boleto' | 'escritura' | 'entregada' | 'cancelada' | 'rechazada'
+
+export const RESERVATION_STAGES: Record<ReservationStage, { label: string; color: string; next: ReservationStage | null; nextLabel: string | null }> = {
+  reservada: { label: 'Reservada', color: 'bg-primary/10 text-primary', next: 'boleto', nextLabel: 'Se firmó el boleto' },
+  boleto:    { label: 'Boleto firmado', color: 'bg-info/10 text-info', next: 'escritura', nextLabel: 'Se escrituró' },
+  escritura: { label: 'Escriturada', color: 'bg-success/10 text-success', next: 'entregada', nextLabel: 'Se entregaron las llaves' },
+  entregada: { label: 'Entregada', color: 'bg-success/10 text-success', next: null, nextLabel: null },
+  cancelada: { label: 'Cancelada', color: 'bg-gray-100 text-gray-600', next: null, nextLabel: null },
+  rechazada: { label: 'Rechazada', color: 'bg-danger/10 text-danger', next: null, nextLabel: null },
+}
