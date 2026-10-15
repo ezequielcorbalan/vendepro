@@ -47,9 +47,11 @@ CREATE TABLE IF NOT EXISTS property_documents (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL,
   property_id TEXT NOT NULL REFERENCES properties(id),
-  -- NULL cuando entra por otra vía que no es el portal (fase 2: mail).
+  -- NULL cuando entra por otra vía que no es el portal: mail (n8n) o leído
+  -- directo de la carpeta de Drive. 'drive' va desde ahora porque SQLite no
+  -- deja cambiar un CHECK sin reconstruir la tabla.
   link_id TEXT REFERENCES doc_portal_links(id),
-  source TEXT NOT NULL DEFAULT 'portal' CHECK (source IN ('portal', 'email')),
+  source TEXT NOT NULL DEFAULT 'portal' CHECK (source IN ('portal', 'email', 'drive')),
   original_name TEXT NOT NULL,
   -- tipo_id de n8n: titulo, dni, abl, ... u 'otro' si la IA no lo reconoció.
   doc_type TEXT NOT NULL DEFAULT 'otro',

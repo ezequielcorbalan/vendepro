@@ -21,7 +21,7 @@ export interface DocPortalLink {
   updated_at: string
 }
 
-export type PropertyDocumentSource = 'portal' | 'email'
+export type PropertyDocumentSource = 'portal' | 'email' | 'drive'
 
 /** Un archivo recibido para una propiedad (espejo de la planilla de n8n). */
 export interface PropertyDocument {

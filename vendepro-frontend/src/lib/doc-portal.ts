@@ -54,7 +54,7 @@ export interface DocPortalLink {
 
 export interface PropertyDocument {
   id: string
-  source: 'portal' | 'email'
+  source: 'portal' | 'email' | 'drive'
   original_name: string
   doc_type: string
   doc_label: string
