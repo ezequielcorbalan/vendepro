@@ -98,7 +98,7 @@ app.get('/dashboard', async (c) => {
       new D1ReservationRepository(db),
       new D1CalendarRepository(db),
     ).execute(orgId, agent_id, since),
-    new GetAppraisalStatsUseCase(new D1AppraisalRepository(db)).execute(orgId),
+    new GetAppraisalStatsUseCase(new D1AppraisalRepository(db)).execute(orgId, agent_id),
     new GetActivityStatsUseCase(new D1ActivityRepository(db)).execute(orgId, agent_id),
     new GetTodayEventsUseCase(new D1CalendarRepository(db)).execute(orgId, agent_id),
     // Pipeline explícito: antes traía vendedores y compradores juntos.

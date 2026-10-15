@@ -105,7 +105,7 @@ Aplicado en api-analytics:
 
 Bandeja de conversaciones: mismo criterio, ver [[Dominio-Inbox]].
 
-**Queda**: el contador de tasaciones del dashboard sigue siendo de toda la org (es un número, no expone registros); reportes de propiedades y `listings-performance` son datos de mercado del inventario y se ven enteros, como las propiedades.
+**Contador de tasaciones** del dashboard: para un agente cuenta las suyas (`countByAgent`). Reportes de propiedades y `listings-performance` son datos de mercado del inventario y se ven enteros, como las propiedades.
 
 ## Tablas D1
 
