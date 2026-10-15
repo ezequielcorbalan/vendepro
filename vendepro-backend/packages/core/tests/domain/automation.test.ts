@@ -167,6 +167,14 @@ describe('AutomationRun', () => {
     expect(key('2026-08-27T08:00:00Z')).toBe('a:l1:e')
   })
 
+  it("con ocurrencia, 'once' es una vez por ocurrencia: renovar la autorización vuelve a avisar", () => {
+    const key = (occurrence?: string) =>
+      AutomationRun.dedupeKey({ automationId: 'a', entityId: 'p1', triggerEvent: 'e', scope: 'once', occurrence })
+    expect(key('2026-10-20')).toBe('a:p1:e:2026-10-20')
+    expect(key('2026-10-20')).not.toBe(key('2027-04-18'))
+    expect(key(undefined)).toBe('a:p1:e')
+  })
+
   it("scope 'always' no genera clave: se ejecuta en cada disparo", () => {
     expect(AutomationRun.dedupeKey({ automationId: 'a', entityId: 'l1', triggerEvent: 'e', scope: 'always' })).toBeNull()
   })

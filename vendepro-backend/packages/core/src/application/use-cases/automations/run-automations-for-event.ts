@@ -29,6 +29,11 @@ export interface RunAutomationsForEventInput {
    * >= MAX_CHAIN_DEPTH → no se ejecuta nada (anti-loop).
    */
   depth?: number
+  /**
+   * Qué repetición del hecho es (ej. la fecha de vencimiento de la
+   * autorización). Entra en el dedupe_key: ver `AutomationRun.dedupeKey`.
+   */
+  occurrence?: string | null
   /** Momento del disparo. Inyectable para los tests. */
   now?: Date
 }
@@ -134,6 +139,7 @@ export class RunAutomationsForEventUseCase {
         triggerEvent: input.trigger,
         scope: automation.dedupe_scope,
         at: now,
+        occurrence: input.occurrence,
       }),
       started_at: now.toISOString(),
     })

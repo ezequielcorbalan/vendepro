@@ -153,7 +153,7 @@ describe('SweepTimeBasedAutomationsUseCase', () => {
         trigger_config: { dias_antes: 10 },
       }),
     ])
-    mockCandidates.propiedadesPorVencer.mockResolvedValue(['prop-1'])
+    mockCandidates.propiedadesPorVencer.mockResolvedValue([{ id: 'prop-1', occurrence: '2026-09-18' }])
 
     const out = await useCase().execute({ now: NOW })
 
@@ -164,6 +164,26 @@ describe('SweepTimeBasedAutomationsUseCase', () => {
       expect.objectContaining({ trigger: 'property.publicacion_vencida', entityType: 'property', entityId: 'prop-1' }),
     )
     expect(out.dispatched).toBe(1)
+  })
+
+  it('propiedades por vencer: despacha con la fecha de vencimiento como ocurrencia (renovar vuelve a avisar)', async () => {
+    mockAutomations.findActiveTimeBased.mockResolvedValue([
+      makeTimeBased({ id: 'auto-vence', trigger_type: 'property.publicacion_vencida', trigger_config: { dias_antes: 7 } }),
+    ])
+    mockCandidates.propiedadesPorVencer.mockResolvedValue([{ id: 'prop-1', occurrence: '2026-09-15' }])
+
+    await useCase().execute({ now: NOW })
+
+    expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({ entityId: 'prop-1', occurrence: '2026-09-15' }))
+  })
+
+  it('los triggers de leads no llevan ocurrencia', async () => {
+    mockAutomations.findActiveTimeBased.mockResolvedValue([makeTimeBased()])
+    mockCandidates.leadsSinContacto.mockResolvedValue(['lead-1'])
+
+    await useCase().execute({ now: NOW })
+
+    expect(dispatch.mock.calls[0][0]).not.toHaveProperty('occurrence')
   })
 
   it('una automatización que falla no frena a las demás', async () => {

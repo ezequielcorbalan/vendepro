@@ -92,13 +92,23 @@ export interface SweepCandidateQuery {
   limit: number
 }
 
+/** Candidato con la ocurrencia del hecho (ver `AutomationRun.dedupeKey`). */
+export interface SweepCandidate {
+  id: string
+  occurrence: string
+}
+
 export interface AutomationSweepRepository {
   /** Leads que siguen sin pasar a "contactado", creados antes del corte. */
   leadsSinContacto(q: SweepCandidateQuery & { createdBefore: string }): Promise<string[]>
   /** Leads abiertos sin actividad registrada desde el corte (o nunca). */
   leadsSinRespuesta(q: SweepCandidateQuery & { inactiveSince: string }): Promise<string[]>
-  /** Propiedades activas cuya autorización vence dentro de `diasAntes` días. */
-  propiedadesPorVencer(q: SweepCandidateQuery & { hoy: string; diasAntes: number }): Promise<string[]>
+  /**
+   * Propiedades activas cuya autorización vence dentro de `diasAntes` días.
+   * La ocurrencia es la fecha de vencimiento ('YYYY-MM-DD'): renovar la
+   * autorización genera un vencimiento nuevo y vuelve a avisar.
+   */
+  propiedadesPorVencer(q: SweepCandidateQuery & { hoy: string; diasAntes: number }): Promise<SweepCandidate[]>
 }
 
 export interface AutomationJobRepository {
