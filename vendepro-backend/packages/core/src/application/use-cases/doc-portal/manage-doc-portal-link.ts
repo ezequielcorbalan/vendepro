@@ -5,6 +5,7 @@ import type { IdGenerator } from '../../ports/id-generator'
 import type { Property } from '../../../domain/entities/property'
 import {
   DOCS_INTEGRATION_PROVIDER,
+  GOOGLE_DRIVE_PROVIDER,
   parseDocsIntegrationConfig,
   type DocPortalLink,
   type DocsIntegrationConfig,
@@ -45,7 +46,14 @@ export async function loadDocsIntegration(
 ): Promise<DocsIntegrationConfig | null> {
   const integration = await repo.findByOrgAndProvider(orgId, DOCS_INTEGRATION_PROVIDER)
   if (!integration?.enabled) return null
-  return parseDocsIntegrationConfig(integration.config_json)
+  const config = parseDocsIntegrationConfig(integration.config_json)
+  if (!config) return null
+  // Motor propio: sin el Drive conectado no hay dónde guardar.
+  if (config.engine === 'google_drive') {
+    const drive = await repo.findByOrgAndProvider(orgId, GOOGLE_DRIVE_PROVIDER)
+    if (!drive?.enabled || !drive.credentials_encrypted) return null
+  }
+  return config
 }
 
 async function loadProperty(repo: PropertyRepository, actor: DocPortalActor, propertyId: string): Promise<Property> {

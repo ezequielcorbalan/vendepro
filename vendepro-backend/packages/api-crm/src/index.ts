@@ -17,7 +17,7 @@ import {
   crearPublicadorTiempoReal, emitirTicket, verificarTicket,
   D1OrgIntegrationRepository, D1IntegrationLinkRepository, D1IntegrationSyncLogRepository,
   KitepropMcpClient,
-  D1UserIntegrationRepository, GoogleCalendarHttpClient, buildGoogleAuthUrl,
+  D1UserIntegrationRepository, GoogleCalendarHttpClient, buildGoogleAuthUrl, GoogleDriveStorage,
   D1EmailSettingsRepository, D1EmailSuppressionRepository, ResendEmailService,
   D1EmailCampaignRepository, D1EmailCampaignSendRepository, D1EmailAudienceRepository,
   HmacUnsubscribeTokenSigner,
@@ -27,6 +27,9 @@ import {
   fireAndDrainAutomations, drainAutomationJobs, sweepTimeBasedAutomations,
 } from '@vendepro/infrastructure'
 import { Activity, OrgIntegration, propertyFromIncoming, buildMessageCreatedPayload } from '@vendepro/core'
+import {
+  GetGoogleDriveStatusUseCase, ConnectGoogleDriveUseCase, DisconnectGoogleDriveUseCase, GOOGLE_DRIVE_SCOPES,
+} from '@vendepro/core'
 import {
   GetLeadsUseCase, UpdateLeadUseCase, DeleteLeadUseCase, AdvanceLeadStageUseCase,
   AssignLeadUseCase,
@@ -1433,6 +1436,48 @@ app.get('/integrations/google/auth-url', async (c) => {
   })
 })
 
+// ── Google Drive de la inmobiliaria (motor propio de documentación) ──
+// Conexión de la ORG, no del agente: la hace un admin y los archivos del
+// portal del propietario quedan en ese Drive. Mismo OAuth client y mismo
+// callback que Calendar; el `state` lleva el propósito.
+app.get('/integrations/google-drive', async (c) => {
+  return c.json({
+    ...(await new GetGoogleDriveStatusUseCase(new D1OrgIntegrationRepository(c.env.DB)).execute(c.get('orgId'))),
+    configured: googleConfigured(c.env),
+  })
+})
+
+app.get('/integrations/google-drive/auth-url', async (c) => {
+  const role = c.get('userRole')
+  if (role !== 'admin' && role !== 'owner') return c.json({ error: 'Sólo un administrador puede conectar el Drive' }, 403)
+  if (!googleConfigured(c.env)) {
+    return c.json({ error: 'Google no está configurado en el servidor (faltan GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET)' }, 501)
+  }
+  const state = await new JwtAuthService(c.env.JWT_SECRET).createToken({
+    purpose: 'google_drive_oauth',
+    sub: c.get('userId'),
+    org_id: c.get('orgId'),
+    return_to: c.req.header('Origin') || c.env.FRONTEND_URL || '',
+  }, { expiresIn: '10m' })
+  return c.json({
+    url: buildGoogleAuthUrl({
+      clientId: c.env.GOOGLE_CLIENT_ID as string,
+      redirectUri: googleRedirectUri(c),
+      state,
+      scope: GOOGLE_DRIVE_SCOPES,
+    }),
+  })
+})
+
+app.delete('/integrations/google-drive', async (c) => {
+  const useCase = new DisconnectGoogleDriveUseCase(
+    new D1OrgIntegrationRepository(c.env.DB),
+    googleGateway(c.env),
+    (cipher) => decrypt(cipher, c.env.JWT_SECRET),
+  )
+  return c.json(await useCase.execute(c.get('orgId'), c.get('userRole')))
+})
+
 // Redirect de Google (sin Bearer: el middleware lo deja pasar y acá se
 // valida el JWT de `state`, que lleva userId/orgId y expira a los 10 min).
 app.get(GOOGLE_CALLBACK_PATH, async (c) => {
@@ -1447,6 +1492,33 @@ app.get(GOOGLE_CALLBACK_PATH, async (c) => {
     url.searchParams.set('google', status)
     if (reason) url.searchParams.set('reason', reason)
     return c.redirect(url.toString(), 302)
+  }
+
+  // Drive de documentación: vuelve a Integraciones con ?drive=ok|error.
+  if (payload?.purpose === 'google_drive_oauth') {
+    const back = (status: 'ok' | 'error', reason?: string) => {
+      if (!returnTo) return c.json({ drive: status, reason: reason ?? null }, status === 'ok' ? 200 : 400)
+      const url = new URL('/configuracion/conexiones', returnTo)
+      url.searchParams.set('drive', status)
+      if (reason) url.searchParams.set('reason', reason)
+      return c.redirect(url.toString(), 302)
+    }
+    if (error) return back('error', String(error))
+    if (!code || typeof payload.org_id !== 'string') return back('error', 'sin_code')
+    if (!googleConfigured(c.env)) return back('error', 'no_configurado')
+    try {
+      await new ConnectGoogleDriveUseCase(
+        new D1OrgIntegrationRepository(c.env.DB),
+        googleGateway(c.env),
+        (accessToken) => new GoogleDriveStorage(accessToken),
+        new CryptoIdGenerator(),
+        (plain) => encrypt(plain, c.env.JWT_SECRET),
+      ).execute({ orgId: payload.org_id, code, redirectUri: googleRedirectUri(c) })
+      return back('ok')
+    } catch (err: any) {
+      const reason = typeof err?.message === 'string' && err.message.length < 200 ? err.message : 'canje_fallido'
+      return back('error', reason)
+    }
   }
 
   if (!payload || payload.purpose !== 'google_calendar_oauth' || typeof payload.sub !== 'string') {

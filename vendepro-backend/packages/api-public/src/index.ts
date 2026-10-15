@@ -36,6 +36,11 @@ import {
   D1DocPortalLinkRepository,
   D1PropertyDocumentRepository,
   N8nDocumentIntakeGateway,
+  GeminiDocumentClassifier,
+  GoogleDriveOrgStorageProvider,
+  GoogleCalendarHttpClient,
+  encrypt,
+  decrypt,
 } from '@vendepro/infrastructure'
 import {
   GetPublicReportUseCase,
@@ -72,6 +77,8 @@ import {
   GetPublicDocPortalUseCase,
   UploadPortalDocumentUseCase,
   FinishDocPortalSessionUseCase,
+  NativeDocumentIntakeGateway,
+  EngineRoutingIntakeGateway,
 } from '@vendepro/core'
 
 type Env = {
@@ -88,6 +95,10 @@ type Env = {
   /** WAHA de la plataforma: lo usa el bot cuando responde por WhatsApp. */
   WAHA_BASE_URL?: string
   WAHA_API_KEY?: string
+  // Motor propio de documentación: clasificar (Gemini) y refrescar el token del Drive de la org.
+  GEMINI_API_KEY?: string
+  GOOGLE_CLIENT_ID?: string
+  GOOGLE_CLIENT_SECRET?: string
 }
 type IntegrationVars = { Variables: { orgId: string; tokenId: string; tokenScopes: string[] } }
 
@@ -1246,6 +1257,26 @@ app.get('/feed/:token', async (c) => {
 })
 
 // ── PORTAL DE DOCUMENTACIÓN DEL PROPIETARIO (/d/<token>) ──────────
+/**
+ * El motor lo elige la config de cada org: n8n (webhook) o el propio
+ * (Gemini + el Google Drive de la inmobiliaria).
+ */
+function docIntakeGateway(env: Env) {
+  const db = env.DB
+  const native = new NativeDocumentIntakeGateway(
+    new GeminiDocumentClassifier(env.GEMINI_API_KEY ?? ''),
+    new GoogleDriveOrgStorageProvider(
+      new D1OrgIntegrationRepository(db),
+      new GoogleCalendarHttpClient(env.GOOGLE_CLIENT_ID ?? '', env.GOOGLE_CLIENT_SECRET ?? ''),
+      (plain) => encrypt(plain, env.JWT_SECRET),
+      (cipher) => decrypt(cipher, env.JWT_SECRET),
+    ),
+    new D1NotificationRepository(db),
+    new CryptoIdGenerator(),
+  )
+  return new EngineRoutingIntakeGateway({ n8n: new N8nDocumentIntakeGateway(), google_drive: native })
+}
+
 // Sin auth: el token es la credencial. Cada archivo se reenvía tal cual al
 // webhook de n8n de la org (Drive + clasificación IA + planilla) y queda el
 // registro en D1. La dirección y el agente salen de la propiedad, nunca de lo
@@ -1276,15 +1307,15 @@ app.post('/public/docs/:token/upload', async (c) => {
     new D1PropertyDocumentRepository(db),
     new D1PropertyRepository(db),
     new D1OrgIntegrationRepository(db),
-    new N8nDocumentIntakeGateway(),
+    docIntakeGateway(c.env),
     new CryptoIdGenerator(),
   )
-  const result = await uc.execute(c.req.param('token'), {
-    name: blob.name,
-    type: blob.type,
-    size: blob.size,
-    data: blob,
-  })
+  const declared = form?.get('tipo_declarado')
+  const result = await uc.execute(
+    c.req.param('token'),
+    { name: blob.name, type: blob.type, size: blob.size, data: blob },
+    { declaredType: typeof declared === 'string' ? declared : null },
+  )
   return c.json(result, 201)
 })
 
@@ -1296,7 +1327,8 @@ app.post('/public/docs/:token/done', async (c) => {
     new D1DocPortalLinkRepository(db),
     new D1PropertyRepository(db),
     new D1OrgIntegrationRepository(db),
-    new N8nDocumentIntakeGateway(),
+    docIntakeGateway(c.env),
+    new D1PropertyDocumentRepository(db),
   )
   return c.json(await uc.execute(c.req.param('token')))
 })

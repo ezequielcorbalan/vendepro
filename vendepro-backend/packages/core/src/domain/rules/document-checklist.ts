@@ -260,3 +260,31 @@ export function applyDocumentToDocStatus(
     hidden: data.hidden ?? [],
   })
 }
+
+// ── Nombres en la nube (motor propio) ─────────────────────────────
+
+/** Saca lo que Drive/Windows no aceptan en un nombre y recorta. */
+function cleanName(value: string, max = 120): string {
+  return value.replace(/[\/:*?"<>|\u0000-\u001f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max)
+}
+
+/**
+ * Nombre con el que queda el archivo: el documento reconocido y su fecha
+ * ("Título de propiedad - 2010-08-10.pdf"), igual que renombra n8n. Si no se
+ * reconoció, "A revisar - <nombre original>" para que se vea a simple vista.
+ */
+export function storedDocumentName(docType: string, issuedAt: string | null, originalName: string): string {
+  const ext = (originalName.match(/\.[a-z0-9]{2,5}$/i)?.[0] ?? '').toLowerCase()
+  if (!isDocType(docType) || docType === 'otro') {
+    const base = cleanName(originalName.replace(/\.[a-z0-9]{2,5}$/i, '')) || 'documento'
+    return `A revisar - ${base}${ext}`
+  }
+  const label = cleanName(DOC_TYPE_LABELS[docType].replace(/\s*\(.*?\)\s*/g, ' '))
+  const date = issuedAt && /^\d{4}-\d{2}-\d{2}$/.test(issuedAt) ? ` - ${issuedAt}` : ''
+  return `${label}${date}${ext}`
+}
+
+/** Nombre de la carpeta de la propiedad: la dirección tal cual la cargó el agente. */
+export function propertyFolderName(address: string): string {
+  return cleanName(address) || 'Propiedad sin dirección'
+}

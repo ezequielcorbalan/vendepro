@@ -5,7 +5,8 @@ import type { OrganizationRepository } from '../../ports/repositories/organizati
 import type { UserRepository } from '../../ports/repositories/user-repository'
 import type { IdGenerator } from '../../ports/id-generator'
 import type { DocumentIntakeGateway, DocumentIntakeFile } from '../../ports/services/document-intake-gateway'
-import type { Property } from '../../../domain/entities/property'
+import type { AuthorizationTerms } from '../../ports/services/document-classifier'
+import type { Property, PropertyProps } from '../../../domain/entities/property'
 import type { DocPortalLink, PropertyDocument } from '../../../domain/entities/doc-portal'
 import {
   applyDocumentToDocStatus,
@@ -13,6 +14,7 @@ import {
   docTypeLabel,
   isDocType,
   summarizeDocChecklist,
+  DOC_TYPE_LABELS,
   type DocChecklistSummary,
   type DocOperation,
 } from '../../../domain/rules/document-checklist'
@@ -174,7 +176,11 @@ export class UploadPortalDocumentUseCase {
     private readonly ids: IdGenerator,
   ) {}
 
-  async execute(token: string, file: DocumentIntakeFile): Promise<UploadPortalDocumentResult> {
+  async execute(
+    token: string,
+    file: DocumentIntakeFile,
+    options: { declaredType?: string | null } = {},
+  ): Promise<UploadPortalDocumentResult> {
     const { link, property } = await resolveLink(this.links, this.properties, token)
 
     if (!file || !file.size) throw new ValidationError('El archivo está vacío')
@@ -203,6 +209,9 @@ export class UploadPortalDocumentUseCase {
       sid: link.session_id,
       // Sin mapeo, n8n resuelve el agente con su planilla de responsables.
       agente: agentId ? config.agent_map[agentId] ?? null : null,
+      org_id: link.org_id,
+      property_id: property.id,
+      declared_type: isDocType(options.declaredType) ? options.declaredType : null,
     })
     if (!result.ok) {
       throw new DocIntakeFailedError(result.error || 'No se pudo subir, probá de nuevo')
@@ -232,14 +241,19 @@ export class UploadPortalDocumentUseCase {
     await this.documents.create(doc)
     await this.links.registerUpload(link.id, now)
 
-    // El archivo ya está en Drive: si falla el reflejo en el checklist manual
-    // no hay que decirle al propietario que la subida falló.
+    // El archivo ya está guardado: si falla el reflejo en la ficha no hay que
+    // decirle al propietario que la subida falló.
     try {
+      const patch: Partial<PropertyProps> = {}
       const nextStatus = applyDocumentToDocStatus(property.doc_status_json, {
         type: recognized ? docType : 'otro',
         folderUrl: result.drive_folder_url,
       })
-      if (nextStatus) await this.properties.update(property.id, link.org_id, { doc_status_json: nextStatus })
+      if (nextStatus) patch.doc_status_json = nextStatus
+      if (recognized && docType === 'autorizacion_venta') {
+        Object.assign(patch, authorizationPatch(property, result.authorization ?? null))
+      }
+      if (Object.keys(patch).length > 0) await this.properties.update(property.id, link.org_id, patch)
     } catch (err) {
       console.error('[doc-portal] no se pudo actualizar doc_status_json', err)
     }
@@ -261,10 +275,11 @@ export class FinishDocPortalSessionUseCase {
     private readonly properties: PropertyRepository,
     private readonly integrations: OrgIntegrationRepository,
     private readonly gateway: DocumentIntakeGateway,
+    private readonly documents?: PropertyDocumentRepository,
   ) {}
 
   async execute(token: string): Promise<{ notified: boolean }> {
-    const { link } = await resolveLink(this.links, this.properties, token)
+    const { link, property } = await resolveLink(this.links, this.properties, token)
     if (!link.last_upload_at) return { notified: false }
 
     const now = Date.now()
@@ -276,10 +291,51 @@ export class FinishDocPortalSessionUseCase {
     }
 
     const config = await loadDocsIntegration(this.integrations, link.org_id)
-    if (!config?.done_url) return { notified: false }
+    if (!config) return { notified: false }
+
+    const docs = this.documents ? await this.documents.listByProperty(property.id, link.org_id) : []
+    const checklist = summarizeDocChecklist(
+      computeDocChecklist({
+        operation: link.operation,
+        kind: link.property_kind,
+        succession: link.succession,
+        married: link.married,
+      }),
+      docs.filter((d) => d.recognized).map((d) => d.doc_type),
+    )
 
     await this.links.markFinished(link.id, new Date(now).toISOString())
-    await this.gateway.finish(config, link.session_id)
+    await this.gateway.finish(config, {
+      sessionId: link.session_id,
+      orgId: link.org_id,
+      propertyId: property.id,
+      address: property.address,
+      agentId: property.agent_id ?? link.agent_id,
+      missing: checklist.missing.map((t) => DOC_TYPE_LABELS[t]),
+    })
     return { notified: true }
   }
+}
+
+/**
+ * Plazo de la autorización leído del documento. Sólo completa lo que está
+ * vacío: si alguien ya cargó la fecha a mano, manda lo cargado.
+ */
+export function authorizationPatch(
+  property: Pick<Property, 'auth_start_date' | 'auth_duration_days'>,
+  terms: AuthorizationTerms | null,
+): Partial<PropertyProps> {
+  if (!terms) return {}
+  const patch: Partial<PropertyProps> = {}
+  const valid = (d: string | null) => !!d && /^\d{4}-\d{2}-\d{2}$/.test(d)
+  if (!property.auth_start_date && valid(terms.startDate)) patch.auth_start_date = terms.startDate
+  if (property.auth_duration_days == null) {
+    let days = terms.durationDays && terms.durationDays > 0 ? Math.round(terms.durationDays) : null
+    if (!days && valid(terms.startDate) && valid(terms.endDate)) {
+      const diff = (Date.parse(terms.endDate as string) - Date.parse(terms.startDate as string)) / 86_400_000
+      days = diff > 0 ? Math.round(diff) : null
+    }
+    if (days) patch.auth_duration_days = days
+  }
+  return patch
 }
