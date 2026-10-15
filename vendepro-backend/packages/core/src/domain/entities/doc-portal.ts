@@ -40,6 +40,16 @@ export interface PropertyDocument {
   drive_folder_url: string | null
   observations: string | null
   size_bytes: number | null
+  // Columnas de la migración 063 (barrido de Drive). Opcionales: el portal
+  // no las escribe.
+  /** Hasta cuándo sirve (informes: 30 días desde la emisión). */
+  valid_until?: string | null
+  /** JSON con lo que leyó la IA además del tipo (autorización: inicio y plazo). */
+  extracted_json?: string | null
+  /** 'nombre_n8n' | 'ia' | 'sin_leer'. */
+  classified_by?: string | null
+  /** modifiedTime de Drive cuando se leyó. */
+  drive_modified_at?: string | null
   created_at: string
   updated_at: string
 }

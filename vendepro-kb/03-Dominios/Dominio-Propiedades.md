@@ -137,15 +137,28 @@ de Drive, los clasifica con IA y los anota en su planilla. VendéPro se queda co
 - **Pendiente**: la vía mail de n8n (fase 2) todavía no avisa a VendéPro; confirmar si la
   respuesta de n8n trae `file_id` / `link_carpeta`. Plan completo en `doc/portal-documentacion-plan.md`.
 
-## Documentación desde Drive (planificado)
+## Documentación desde Drive (backend implementado 15-oct-2026, falta 063 + deploy + frontend)
 
-Plan en `doc/documentacion-drive-plan.md` (15-oct-2026). Decisión: **VendéPro lee la unidad
-compartida de Drive directo** con una cuenta de servicio de sólo lectura y clasifica con Gemini;
-**n8n no se toca** (comparte instancia con el bot de WhatsApp). Los archivos que subió n8n ya
-traen tipo y fecha en el nombre (`<Documento> - AAAA-MM-DD.pdf`) y no gastan IA. El barrido
-tilda el checklist (idempotente por `drive_file_id`), completa `auth_start_date`/`auth_duration_days`
-sólo si están vacíos y registra `valid_until` de los informes de dominio (30 días) para un trigger
-nuevo `property.documento_por_vencer`. Depende de la migración 061 del portal (`/d/<token>`).
+Plan y detalle en `doc/documentacion-drive-plan.md`. Decisión: **VendéPro lee la unidad
+compartida de Drive directo** con una cuenta de servicio de sólo lectura (`drive.readonly`, *Lector*
+de la unidad) y clasifica con Gemini; **n8n no se toca** (comparte instancia con el bot de WhatsApp).
+
+- **Barrido** `SyncDriveDocumentsUseCase` (core), cron diario de **api-properties** (`0 7 * * *`) y
+  botón a pedido `POST /properties/:id/documents/sync`. Lista el árbol entero, vincula cada carpeta
+  de propiedad (hija de una carpeta de área) con su propiedad por dirección (`drive_folders`; nunca
+  adivina: dos candidatas = `ambiguous`), y registra cada archivo en `property_documents` con
+  `source = 'drive'`, idempotente por `drive_file_id`.
+- **Clasificación de lo barato a lo caro**: los archivos que subió n8n ya traen tipo y fecha en el
+  nombre (`<Documento> - AAAA-MM-DD.pdf`) y no gastan IA; más de 15 MB queda `sin_leer` para revisión
+  humana; el resto va a `GeminiDocumentClassifier`. Tope de 25 lecturas con IA por noche.
+- **Reflejo en la propiedad** (sólo con `read_only: false` en la config `google_drive_docs`): tilda el
+  checklist (`pending → done`, nunca pisa lo manual), completa `cloud_url` con la carpeta y
+  `auth_start_date`/`auth_duration_days` desde la autorización si estaban vacías. Si la fecha cargada
+  difiere, avisa al agente por la campana. Los informes de dominio e inhibición quedan con
+  `valid_until` (30 días) para el trigger futuro `property.documento_por_vencer` (parte 3).
+- Rutas: `GET/PUT /doc-drive/settings`, `GET /doc-drive/folders`, `PUT /doc-drive/folders/:folderId`.
+- Falta: migración **063** (después de 061 y 062), deploy de api-properties, secret
+  `GOOGLE_DRIVE_SA_KEY` (y verificar que Workspace deje sumar la cuenta de servicio), y el frontend.
 
 ## Relacionados
 

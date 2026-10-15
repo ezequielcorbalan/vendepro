@@ -1,9 +1,8 @@
 # Plan: checklist de documentación leído desde Drive + vencimientos
 
-Estado (15-oct-2026): **plan decidido; parte 1 (aviso de autorización) implementada** en la
-rama `claude/admiring-blackburn-73afbb`, falta migración 062 + deploy de api-crm. Partes 2 a 4
-sin empezar: dependen del portal (`doc/portal-documentacion-plan.md`, migración 061), que todavía
-no está commiteado.
+Estado (15-oct-2026): **parte 1 mergeada** (PR #150; falta migración 062 + deploy de api-crm).
+**Parte 2 implementada** en la rama `claude/documentacion-drive-sync`: backend completo, falta el
+frontend, la migración 063, la cuenta de servicio y el deploy de api-properties. Parte 3 sin empezar.
 
 Objetivo: que nadie tilde a mano el checklist de documentación ni cargue a mano las fechas de la
 autorización. Si el papel está en la carpeta de Drive de la propiedad, VendéPro lo sabe; si tiene
@@ -108,98 +107,103 @@ cada org la activa en Automatizaciones.
 
 ---
 
-## Parte 2 — Barrido de Drive → checklist (depende de la migración 061)
+## Parte 2 — Barrido de Drive → checklist ✅ implementada (15-oct-2026)
+
+Rama `claude/documentacion-drive-sync`, **rebasada sobre `claude/documentacion-drive-propio`**
+(motor propio del portal): reusa su `DocumentClassifier` en vez de tener uno propio, así que se
+mergea **después** de esa rama. Sin frontend todavía (ver "Pendiente" abajo).
 
 ### Datos — migración `063_documentacion_drive.sql`
 
-```sql
--- Carpeta de Drive ↔ propiedad. Sale del matcheo por dirección o la fija un humano.
-CREATE TABLE IF NOT EXISTS drive_folders (
-  folder_id TEXT PRIMARY KEY,
-  org_id TEXT NOT NULL,
-  area TEXT,                        -- 'oficina' | 'andy' | 'danila' (de la config, no del código)
-  name TEXT NOT NULL,
-  property_id TEXT REFERENCES properties(id),
-  match_status TEXT NOT NULL DEFAULT 'none'
-    CHECK (match_status IN ('auto', 'manual', 'ambiguous', 'none', 'ignored')),
-  last_scanned_at TEXT,
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-CREATE INDEX IF NOT EXISTS idx_drive_folders_property ON drive_folders(property_id);
+- Tabla `drive_folders` (carpeta ↔ propiedad): `folder_id`, `area` (nombre de la carpeta de área),
+  `name`, `web_url`, `property_id`, `match_status` (`auto` | `manual` | `ambiguous` | `none` |
+  `ignored`), `last_scanned_at`.
+- `property_documents` suma `valid_until`, `extracted_json`, `classified_by` (`nombre_n8n` | `ia` |
+  `sin_leer`) y `drive_modified_at`. La 061 ya admite `source = 'drive'`.
+- Va **después de la 061 y la 062**. Validada en SQLite sobre la 061.
 
-ALTER TABLE property_documents ADD COLUMN valid_until TEXT;       -- informes: issued_at + 30 días
-ALTER TABLE property_documents ADD COLUMN extracted_json TEXT;    -- autorización: inicio, plazo, exclusiva
-ALTER TABLE property_documents ADD COLUMN classified_by TEXT;     -- 'nombre_n8n' | 'ia' | 'manual'
-ALTER TABLE property_documents ADD COLUMN drive_modified_at TEXT; -- reclasificar si cambió
-```
-
-**Hay que tocar la 061 antes de aplicarla** (todavía no está en prod): el `CHECK (source IN
-('portal','email'))` de `property_documents` tiene que sumar `'drive'`. SQLite no permite cambiar un
-CHECK con ALTER. Si la 061 ya se aplicó cuando se haga esto, la 063 reconstruye la tabla.
+El portal **no** usa las columnas nuevas (sus métodos del repo no las tocan), así que sigue andando
+aunque la 063 todavía no esté aplicada. Sólo el barrido las necesita.
 
 Config por org en `org_integrations`, `provider = 'google_drive_docs'`:
-`{ shared_drive_id, areas: { <folder_id>: { name, agent_ids[] } }, ignore: ['MODELOS', …] }`.
-La clave de la cuenta de servicio es **una sola, de VendéPro**: secret `GOOGLE_DRIVE_SA_KEY` del
-worker, sincronizado por CI como `GEMINI_API_KEY`. Cada org comparte su unidad con el mail de la
-cuenta de servicio como *Lector*. Nada de Marcela en el código.
+`{ shared_drive_id, read_only (default true), ignore: [] }`. Las áreas no se configuran: son las
+carpetas que cuelgan de la raíz de la unidad. La clave de la cuenta de servicio es **una sola, de
+VendéPro**: secret `GOOGLE_DRIVE_SA_KEY` del worker api-properties, sincronizado por CI. Cada org
+agrega el mail de la cuenta de servicio como *Lector* de su unidad. Nada de Marcela en el código.
 
-### Core (reglas puras, con tests)
+### Core
 
-- `parseN8nDocName(title)` → `{ docType, issuedAt } | null`. Mapea los labels que usa n8n al
-  renombrar (`Titulo de propiedad`, `Autorizacion de venta firmada`, `Reglamento de copropiedad`…)
-  a los `tipo_id` del catálogo `DOC_TYPES` de `document-checklist.ts`. `A revisar` → `null`.
-- `matchFolderToProperty(folderName, properties)` → `{ propertyId, status }`: el normalizador del
-  brief §5 portado (número exacto, piso/unidad como subconjunto estricto, calle por primera palabra o
-  inclusión). Dos candidatos → `ambiguous`, nunca adivina. Es el mismo que pedía la fase 2 del portal.
-- `documentValidity(docType, issuedAt)` → `valid_until`: informe de dominio e inhibición, 30 días.
-- `applyAuthorization(property, extracted)` → qué escribir. **Sólo completa vacíos**: si
-  `auth_start_date` está vacío lo llena; si ya tiene otro valor no lo pisa, deja una notificación al
-  agente ("En Drive la autorización arranca el X, en VendéPro figura Y").
-- El paso `pending → done` del checklist ya lo define el portal (nunca pisa un `done`/`na` manual).
+- Reglas (`domain/rules/drive-documents.ts`):
+  - `parseN8nDocName`: "<Documento> - AAAA-MM-DD.pdf" → tipo + fecha, contra los labels de
+    `DOC_TYPE_LABELS` sin el paréntesis aclaratorio y algunas variantes cortas.
+  - `normalizeAddress` / `matchFolderToProperty`: el normalizador del brief §5. Número exacto, calle
+    por primera palabra o inclusión, piso/unidad como subconjunto en algún sentido. Si quedan varias,
+    gana la que coincide exacto en piso/unidad; si no, `ambiguous`. La coma **no** corta la
+    dirección: en VendéPro separa piso y unidad.
+  - `isIgnoredFolderName`: MODELOS, PLANTILLAS, REVISAR, VENDIDAS, CANCELADOS, Downloads,
+    "Sin identificar", ALQUILERES, más lo que diga `ignore` en la config.
+  - `documentValidUntil`: informes de dominio e inhibición, 30 días.
+  - `authorizationFromTerms`: lo que lee el clasificador (inicio, plazo, fin, exclusiva) → inicio +
+    plazo; deduce el que falte a partir del fin.
+  - `planAuthorizationUpdate`: sólo completa vacíos; si la propiedad tiene otra fecha, devuelve un
+    conflicto para avisar.
+- Puertos: `DocumentStore` (sólo lectura: `listTree`, `download` → `Blob`), `DriveFolderRepository`,
+  el `DocumentClassifier` **compartido con el portal** (contrato del motor propio: `Blob` +
+  `declaredType` como pista; tira ante errores del proveedor y sólo devuelve `otro` para lo que no
+  reconoce, que es lo que deja reintentar el barrido), y `PropertyDocumentRepository` suma `listDriveIndex`,
+  `listByOrgAndSource`, `createFromDrive`, `updateFromDrive`.
+- `SyncDriveDocumentsUseCase` (`use-cases/doc-portal/sync-drive-documents.ts`):
+  1. Lista el árbol entero. Carpeta de propiedad = hija directa de un área; los archivos se asignan
+     subiendo hasta ella (sirve para `informes/`, `escrituras/`…). Lo que está suelto en un área o
+     dentro de una carpeta ignorada no se toca.
+  2. Vincula carpetas por dirección. Lo `manual` y lo `ignored` no se recalculan.
+  3. Registra archivos nuevos o con `modifiedTime` distinto. Lo ya registrado por cualquier vía
+     (también el portal) no se vuelve a leer. Orden: nombre de n8n (sin IA, salvo la autorización,
+     que necesita el plazo) → más de 15 MB o formato raro = `sin_leer`, sin descargar → IA. Si la IA
+     falla, no registra nada y se reintenta en la próxima pasada.
+  4. Si la org **no** está en sólo lectura: recalcula el checklist de cada propiedad con todo lo
+     registrado desde Drive (idempotente, sólo `pending → done`), completa `cloud_url` con la carpeta
+     y `auth_start_date`/`auth_duration_days` desde la autorización más nueva si estaban vacías. Si
+     la fecha cargada no coincide con el documento, avisa al agente (campana, una vez por documento
+     leído). Como se recalcula entero, apagar el sólo lectura aplica también lo registrado antes.
+  - Tope de **25 archivos con IA por pasada** (10 en el botón de la ficha). En el cron, una org que
+    falla no frena a las demás.
+- Configuración (`drive-docs-settings.ts`): `Get/SaveDriveDocsSettingsUseCase` (admin; id de unidad
+  validado; sólo lectura por defecto), `ListDriveFoldersUseCase`, `LinkDriveFolderUseCase` (admin:
+  `manual`, `ignored` o volver a automático) y `SyncPropertyDriveDocumentsUseCase` (agente de la
+  propiedad o admin).
 
-### Puertos y adapters
+### Infrastructure
 
-- `DocumentStore` (core) con `listTree(driveId)` y `download(fileId, maxBytes)`.
-  `GoogleDriveDocumentStore` (infrastructure): JWT RS256 firmado con WebCrypto → token
-  `drive.readonly`; `files.list` con `corpora=drive`, `driveId`, `supportsAllDrives`,
-  `includeItemsFromAllDrives`, `pageSize=1000` → **todo el árbol en 1–3 requests**, no uno por carpeta.
-  Las subcarpetas (`informes/`, `escrituras/`) se resuelven en memoria hasta la carpeta de propiedad.
-- `DocumentClassifier` (core) → `{ docType, issuedAt, authorization?: { startDate, durationDays,
-  endDate, exclusive }, observations }`. `GeminiDocumentClassifier` (infrastructure), PDF/imagen
-  inline. Prompt con el catálogo cerrado de 17 tipos; para `autorizacion_venta` pide inicio y plazo.
+- `GoogleDriveDocumentStore`: JWT RS256 firmado con WebCrypto → token `drive.readonly`;
+  `files.list` con `corpora=drive` y `pageSize=1000`; los Google Docs se exportan a PDF; no descarga
+  lo que pasa el tope.
+- `GeminiDocumentClassifier`: el del motor propio del portal (API nativa de Gemini, PDF/imagen
+  inline, catálogo cerrado). El barrido le pasa el tipo del nombre de n8n como `declaredType`, y guarda
+  en `extracted_json` los términos completos de la autorización (fin, exclusiva).
+- `D1DriveFolderRepository` y los métodos nuevos de `D1PropertyDocumentRepository`.
+- `createDriveDocumentsSync(env)` / `runDriveDocumentsSync(env)`: sin `GOOGLE_DRIVE_SA_KEY` no corre;
+  sin `GEMINI_API_KEY` registra sólo lo que trae nombre de n8n.
 
-### Use case `SyncDriveDocumentsUseCase`
+### api-properties
 
-Por org con la integración habilitada:
+- Cron `0 7 * * *` (04:00 en Argentina) → `runDriveDocumentsSync`.
+- `GET/PUT /doc-drive/settings` (el GET devuelve también el mail de la cuenta de servicio, para
+  compartir la unidad), `GET /doc-drive/folders?status=`, `PUT /doc-drive/folders/:folderId`
+  (`{ property_id | null, ignore }`), `POST /properties/:id/documents/sync`.
+- CI: `deploy-api-properties.yml` pasa `GEMINI_API_KEY` y `GOOGLE_DRIVE_SA_KEY`; `_deploy-api.yml`
+  sincroniza el secret nuevo.
 
-1. Lista el árbol. Carpetas nuevas → `drive_folders` + matcheo. Carpetas de servicio → `ignored`.
-2. Por archivo de carpeta matcheada: si `drive_file_id` ya está y `modifiedTime` no cambió → nada.
-   **Idempotente por `drive_file_id`** (índice único de la 061), así que reintentar es gratis.
-3. Clasificación, de lo barato a lo caro:
-   - nombre de n8n → tipo y fecha, `classified_by = 'nombre_n8n'`. Excepción: la autorización igual
-     pasa por IA (el nombre trae la fecha de firma, no el plazo).
-   - Google Docs nativo → export a PDF (tope 10 MB de la API).
-   - más de 15 MB → `otro`, observación "muy grande para leer, revisalo a mano". No se descarga.
-   - resto → IA.
-4. Aplica: checklist, `cloud_url` si estaba vacío (link de la carpeta), `valid_until`, autorización.
-5. **Tope por pasada** (ej. 25 archivos con IA): el backfill se completa en varias noches sin
-   chocar con los límites de subrequests ni de CPU del worker. Lo pendiente queda para la próxima.
+### Pendiente
 
-Dónde corre: **api-properties**, cron diario de madrugada (`0 7 * * *` UTC = 4 am ART) — el cron de
-api-crm es del motor de automatizaciones y no tiene la IA. Más un botón "Revisar carpeta ahora" en
-la ficha (`POST /properties/:id/documents/sync`) para no esperar a la noche.
+- **Frontend**: card "Drive de documentación" en Configuración → Integraciones (id de unidad,
+  sólo lectura, mail de la cuenta de servicio), bandeja "Carpetas sin asignar" y botón "Revisar
+  carpeta ahora" en la ficha. La API ya está.
+- Si n8n no devuelve `file_id` en la subida del portal, el barrido registra ese mismo archivo otra
+  vez con `source = 'drive'`. Queda una fila duplicada; el checklist no se ve afectado porque es
+  idempotente.
 
-### Frontend
-
-- Ficha de la propiedad: los ítems tildados por el barrido muestran de dónde salió ("Drive, 12/10")
-  con link al archivo; la autorización completada por IA aparece con un `StatusBadge` "Leída del
-  documento" hasta que alguien la confirma.
-- Configuración → Integraciones: card "Drive de documentación" (unidad, áreas, mail de la cuenta de
-  servicio para compartir) y bandeja **"Carpetas sin asignar"** (`ambiguous`/`none`) para vincular a
-  mano. Ahí van a aparecer las 5 "Sin identificar".
-
-## Parte 3 — Aviso de informes vencidos (depende de la parte 2)
+## Parte 3 — Aviso de informes vencidos (sin empezar)
 
 Trigger nuevo en el catálogo, por tiempo: `property.documento_por_vencer` (`dias_antes`, default 3;
 `doc_types`, default `informe_dominio, informe_inhibicion`). Candidatos: `property_documents` con
@@ -220,11 +224,14 @@ uno nuevo".
 
 ## Orden de trabajo
 
-1. Parte 1 (hecha) → migración 062 + deploy api-crm.
-2. Commitear y mergear el portal (061), con el `CHECK` de `source` sumando `'drive'`.
-3. Crear la cuenta de servicio, compartirle la unidad como *Lector*, cargar el secret por CI.
-   **Verificar primero la política de Workspace** (ver Riesgo).
-4. Parte 2 en modo "sólo lectura" un par de noches: registra y matchea pero no escribe en
-   `properties` (flag en la config). Revisar la bandeja de carpetas sin asignar y lo clasificado.
-5. Prender la escritura del checklist y la autorización.
-6. Parte 3.
+1. ✅ Parte 1 mergeada → aplicar migración 061, después 062; deploy de api-crm.
+2. ✅ Portal mergeado (PR #151), con `'drive'` en el `CHECK` de `source`.
+3. Parte 2: mergear, aplicar la **063** y deployar api-properties por CI.
+4. Crear la cuenta de servicio en Google Cloud, compartirle la unidad como *Lector* y cargar su JSON
+   como secret `GOOGLE_DRIVE_SA_KEY` del repo. **Verificar primero la política de Workspace** (ver
+   Riesgo).
+5. Cargar la config de la org (`PUT /doc-drive/settings` con el id de la unidad; queda en sólo
+   lectura) y dejar correr un par de noches. Revisar `GET /doc-drive/folders` (las `ambiguous` y
+   `none`) y lo registrado en `property_documents`.
+6. Apagar el sólo lectura (`read_only: false`) para que tilde checklists y complete autorizaciones.
+7. Frontend de la parte 2, y parte 3.
