@@ -10,6 +10,9 @@ import type { MessageAttachment } from '../../../domain/entities/message'
 import { Contact } from '../../../domain/entities/contact'
 import { normalizePhone } from '../../../shared/phone'
 
+/** Un cliente que vuelve a escribir después de esto cuenta como turno nuevo. */
+const PAUSA_QUE_ABRE_TURNO_MS = 30 * 60 * 1000
+
 export interface IngestInboundMessageInput {
   orgId: string
   channel: ConversationChannel
@@ -49,6 +52,15 @@ export interface IngestInboundMessageResult {
   conversation?: { id: string; channel: ConversationChannel; externalId: string; status: string; labels: string[] }
   /** El mensaje guardado, con el mismo propósito. */
   message?: { id: string; content: string | null; attachments: MessageAttachment[]; createdAt: string }
+  /**
+   * ¿El cliente está tomando la palabra? Conversación nueva, o responde a algo
+   * que le mandamos, o vuelve después de un rato. Es la señal para avisarle a
+   * alguien: avisar por CADA mensaje sería ruido (un cliente manda cinco
+   * seguidos y el agente recibe cinco campanazos).
+   */
+  abreTurno?: boolean
+  /** A quién le toca atender, para el aviso. */
+  assigneeId?: string | null
 }
 
 /**
@@ -119,6 +131,15 @@ export class IngestInboundMessageUseCase {
       if (contactId) conversation.linkContact(contactId)
     }
 
+    // Antes de guardar el nuevo: ¿quién habló último?
+    const ultimo = conversationCreated
+      ? null
+      : await this.messages.findLastByConversation(conversation.id, input.orgId).catch(() => null)
+    const abreTurno = conversationCreated
+      || !ultimo
+      || ultimo.direction === 'out'
+      || new Date(sentAt).getTime() - new Date(ultimo.created_at).getTime() > PAUSA_QUE_ABRE_TURNO_MS
+
     conversation.registerInbound(sentAt)
     await this.conversations.save(conversation)
 
@@ -150,6 +171,8 @@ export class IngestInboundMessageUseCase {
         labels: conversation.labels,
       },
       message: { id: message.id, content: message.content, attachments: message.attachments, createdAt: message.created_at },
+      abreTurno,
+      assigneeId: conversation.assignee_id,
     }
   }
 

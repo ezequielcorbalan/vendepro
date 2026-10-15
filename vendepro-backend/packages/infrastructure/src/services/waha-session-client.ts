@@ -60,7 +60,9 @@ export class WahaSessionClient {
       ? {
           webhooks: [{
             url: webhook.url,
-            events: ['message'],
+            // session.status: para avisar a los admins si el número se
+            // desconecta. Sin esto la bandeja se queda muda y nadie se entera.
+            events: ['message', 'session.status'],
             customHeaders: [{ name: 'Authorization', value: `Bearer ${webhook.token}` }],
             retries: { policy: 'constant', delaySeconds: 5, attempts: 10 },
           }],
@@ -72,8 +74,27 @@ export class WahaSessionClient {
       headers: this.headers({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ name: this.session, start: true, ...(config ? { config } : {}) }),
     })
-    // 422 = ya existe: en ese caso alcanza con arrancarla.
     if (crear.ok) return
+
+    // 422 = ya existe (alguien reconecta). NO alcanza con arrancarla: conectar
+    // rota el token de la org, y la sesión vieja seguiría mandando el webhook
+    // con el token revocado — 401 en cada mensaje, y la bandeja muda sin que
+    // nadie se entere. Hay que pisarle la config.
+    if (config) {
+      const actualizar = await fetch(this.url(`/api/sessions/${encodeURIComponent(this.session)}`), {
+        method: 'PUT',
+        headers: this.headers({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ name: this.session, config }),
+      })
+      if (!actualizar.ok) {
+        const detalle = await actualizar.text().catch(() => '')
+        throw new Error(`WAHA respondió ${actualizar.status} al actualizar la sesión${detalle ? `: ${detalle.slice(0, 200)}` : ''}`)
+      }
+      // Actualizar reinicia la sesión si estaba corriendo; arrancarla de
+      // nuevo sólo hace falta si estaba parada.
+      const { estado } = await this.estado()
+      if (estado !== 'STOPPED' && estado !== 'FAILED') return
+    }
 
     const arrancar = await fetch(this.url(`/api/sessions/${encodeURIComponent(this.session)}/start`), {
       method: 'POST',

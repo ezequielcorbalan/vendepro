@@ -10,7 +10,13 @@
  *   POST /api/sessions/{s}/start    arrancar una existente
  *   GET  /api/sessions/{s}          estado
  *   GET  /api/{s}/auth/qr           QR en base64
+ *   PUT  /api/sessions/{s}          actualizar la config (reconectar)
  *   POST /api/sendText              enviar un mensaje
+ *
+ * Y para simular lo que pasa del lado del teléfono, con el webhook NATIVO de
+ * WAHA (el mismo formato que manda un contenedor real):
+ *   POST /simular/mensaje  {session, from, text, name?}   un cliente escribe
+ *   POST /simular/estado   {session, status}              la sesión cambia (FAILED…)
  *
  * Imprime lo que recibe, así se ve si el webhook por sesión llega bien
  * armado — que es la pieza de la que depende el WAHA compartido.
@@ -40,6 +46,8 @@ createServer((req, res) => {
 
     if (req.method === 'POST' && ruta === '/api/sessions') {
       const nombre = body?.name ?? 'default'
+      // Igual que WAHA real: crear una que ya existe es 422, no la pisa.
+      if (sesiones.has(nombre)) return json(res, 422, { error: `Session '${nombre}' already exists` })
       const webhook = body?.config?.webhooks?.[0]
       sesiones.set(nombre, { estado: arrancaVinculado ? 'WORKING' : 'SCAN_QR_CODE', webhook })
       console.log(`\n▶ sesión "${nombre}" creada`)
@@ -50,6 +58,49 @@ createServer((req, res) => {
       }
       console.log(`  eventos → ${(webhook?.events ?? []).join(', ') || '(ninguno)'}`)
       return json(res, 201, { name: nombre, status: sesiones.get(nombre).estado })
+    }
+
+    const actualizar = ruta.match(/^\/api\/sessions\/([^/]+)$/)
+    if (req.method === 'PUT' && actualizar) {
+      const nombre = decodeURIComponent(actualizar[1])
+      const s = sesiones.get(nombre)
+      if (!s) return json(res, 404, { error: 'session not found' })
+      s.webhook = body?.config?.webhooks?.[0] ?? s.webhook
+      console.log(`
+↻ sesión "${nombre}" actualizada (reconexión)`)
+      console.log(`  header  → ${String(s.webhook?.customHeaders?.[0]?.value ?? '').slice(0, 24)}…`)
+      console.log(`  eventos → ${(s.webhook?.events ?? []).join(', ')}`)
+      return json(res, 200, { name: nombre, status: s.estado })
+    }
+
+    if (req.method === 'POST' && (ruta === '/simular/mensaje' || ruta === '/simular/estado')) {
+      const nombre = body?.session ?? [...sesiones.keys()][0]
+      const s = sesiones.get(nombre)
+      if (!s?.webhook) return json(res, 404, { error: `la sesión "${nombre}" no tiene webhook` })
+      let evento
+      if (ruta === '/simular/estado') {
+        s.estado = body?.status ?? 'FAILED'
+        evento = { id: `evt_${Date.now()}`, timestamp: Date.now(), event: 'session.status', session: nombre,
+          payload: { status: s.estado, statuses: [] }, engine: 'WEBJS' }
+      } else {
+        const from = `${String(body?.from ?? '5491155550000').replace(/\D/g, '')}@c.us`
+        evento = { id: `evt_${Date.now()}`, timestamp: Date.now(), event: 'message', session: nombre,
+          me: { id: '5491100000000@c.us', pushName: 'Inmobiliaria Local' },
+          payload: { id: `false_${from}_${Date.now()}`, timestamp: Math.floor(Date.now() / 1000), from,
+            fromMe: false, to: '5491100000000@c.us', body: body?.text ?? 'Hola', hasMedia: false,
+            _data: body?.name ? { notifyName: body.name } : {} },
+          engine: 'WEBJS' }
+      }
+      const headers = { 'Content-Type': 'application/json' }
+      for (const h of s.webhook.customHeaders ?? []) headers[h.name] = h.value
+      fetch(s.webhook.url, { method: 'POST', headers, body: JSON.stringify(evento) })
+        .then(async r => {
+          const texto = await r.text()
+          console.log(`⇢ ${evento.event} → ${r.status} ${texto.slice(0, 160)}`)
+          json(res, 200, { status: r.status, respuesta: texto })
+        })
+        .catch(e => json(res, 502, { error: String(e) }))
+      return
     }
 
     const start = ruta.match(/^\/api\/sessions\/([^/]+)\/start$/)

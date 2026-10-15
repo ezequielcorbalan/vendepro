@@ -28,6 +28,7 @@ import {
   fireWebhookEvent,
   D1ConversationRepository, D1MessageRepository, createMessagingGateway,
   D1OrgIntegrationRepository, verificarFirmaMeta, parsearWebhookMeta, parseConfig, META_PROVIDER,
+  esWebhookWaha, parsearWebhookWaha, D1NotificationRepository,
   fireAutomationEvent,
   D1AgentProfileRepository,
   D1MetaIntegrationRepository,
@@ -54,6 +55,8 @@ import {
   GetPublicAgentLandingUseCase,
   GetPublicTagConfigUseCase,
   IngestInboundMessageUseCase,
+  NotifyInboxUseCase,
+  type IngestInboundMessageResult,
   GetConversationThreadUseCase,
   AssignConversationUseCase,
   SetConversationLabelsUseCase,
@@ -444,13 +447,7 @@ app.post('/public/inbox/meta', async (c) => {
     if (cuenta) orgPorCuenta.set(String(cuenta), i.org_id)
   }
 
-  const uc = new IngestInboundMessageUseCase(
-    new D1ConversationRepository(c.env.DB),
-    new D1MessageRepository(c.env.DB),
-    new D1ContactRepository(c.env.DB),
-    new D1UserRepository(c.env.DB),
-    new CryptoIdGenerator(),
-  )
+  const uc = ingestor(c.env)
 
   let ingeridos = 0
   for (const m of mensajes) {
@@ -474,17 +471,10 @@ app.post('/public/inbox/meta', async (c) => {
     if (r.duplicate) continue
     ingeridos++
 
-    if (r.conversation && r.message) {
-      await fireWebhookEvent(c.env, {
-        orgId,
-        event: 'message_created',
-        payload: buildMessageCreatedPayload({
-          conversation: r.conversation as any,
-          message: { ...r.message, direction: 'in', senderType: 'contact' },
-          senderName: null,
-        }),
-      })
-    }
+    await trasIngerir(c.env, orgId, r, {
+      nombre: null,
+      quien: m.channel === 'instagram' ? 'Un cliente de Instagram' : 'Un cliente de Facebook',
+    })
   }
 
   // Siempre 200 salvo firma inválida: un 500 hace que Meta reintente en loop
@@ -663,47 +653,111 @@ app.post('/v1/inbox/messages', async (c) => {
     return c.json({ error: 'Body JSON inválido' }, 400)
   }
 
-  const chatId = String(body.chat_id ?? body.from ?? '').trim()
-  if (!chatId) return c.json({ error: 'chat_id es requerido' }, 400)
-
   const orgId = c.get('orgId')
-  const uc = new IngestInboundMessageUseCase(
-    new D1ConversationRepository(c.env.DB),
-    new D1MessageRepository(c.env.DB),
-    new D1ContactRepository(c.env.DB),
-    new D1UserRepository(c.env.DB),
-    new CryptoIdGenerator(),
-  )
 
-  const result = await uc.execute({
+  // Dos formatos: el NATIVO de WAHA (lo que manda un contenedor real) y el
+  // plano de los scripts de prueba y de integraciones a mano.
+  let entrada: { chatId: string; mensajeId: string | null; nombre: string | null; texto: string | null; adjuntos: any[]; enviadoEn?: string; channel: 'whatsapp' | 'instagram' | 'facebook' }
+  if (esWebhookWaha(body)) {
+    const evento = parsearWebhookWaha(body)
+    if (evento.tipo === 'estado') {
+      // La org sale del token, no del nombre de sesión: no se puede avisar a
+      // otra org mandando un nombre de sesión ajeno.
+      const avisados = await notificador(c.env).sesionCaida({ orgId, estado: evento.estado })
+      return c.json({ ok: true, estado: evento.estado, avisados })
+    }
+    // Grupos, estados, lo que sale desde el número: 200 para que WAHA no reintente.
+    if (evento.tipo === 'ignorado') return c.json({ ok: true, ignorado: evento.motivo })
+    const m = evento.mensaje
+    entrada = { chatId: m.chatId, mensajeId: m.mensajeId, nombre: m.nombre, texto: m.texto, adjuntos: m.adjuntos, enviadoEn: m.enviadoEn, channel: 'whatsapp' }
+  } else {
+    const chatId = String(body.chat_id ?? body.from ?? '').trim()
+    if (!chatId) return c.json({ error: 'chat_id es requerido' }, 400)
+    entrada = {
+      chatId,
+      mensajeId: body.message_id ? String(body.message_id) : null,
+      nombre: body.from_name ? String(body.from_name) : null,
+      texto: typeof body.content === 'string' ? body.content : null,
+      adjuntos: Array.isArray(body.attachments) ? body.attachments : [],
+      enviadoEn: body.sent_at ? String(body.sent_at) : undefined,
+      channel: body.channel === 'instagram' || body.channel === 'facebook' ? body.channel : 'whatsapp',
+    }
+  }
+
+  // WhatsApp manda el jid ("5491155551234@c.us"): el teléfono es lo de antes del @.
+  const telefono = String(body.from_phone ?? entrada.chatId).split('@')[0] ?? null
+  const result = await ingestor(c.env).execute({
     orgId,
-    channel: body.channel === 'instagram' || body.channel === 'facebook' ? body.channel : 'whatsapp',
-    externalChatId: chatId,
-    externalMessageId: body.message_id ? String(body.message_id) : null,
-    // WhatsApp manda el jid ("5491155551234@c.us"): el teléfono es lo de antes del @.
-    fromPhone: String(body.from_phone ?? chatId).split('@')[0] ?? null,
-    fromName: body.from_name ? String(body.from_name) : null,
-    content: typeof body.content === 'string' ? body.content : null,
-    attachments: Array.isArray(body.attachments) ? body.attachments : [],
-    sentAt: body.sent_at ? String(body.sent_at) : undefined,
+    channel: entrada.channel,
+    externalChatId: entrada.chatId,
+    externalMessageId: entrada.mensajeId,
+    fromPhone: telefono,
+    fromName: entrada.nombre,
+    content: entrada.texto,
+    attachments: entrada.adjuntos,
+    sentAt: entrada.enviadoEn,
   })
 
-  // El bot de n8n escucha `message_created` para decidir si responde. Un
-  // reenvío del proveedor no lo despierta dos veces.
-  if (!result.duplicate && result.conversation && result.message) {
-    await fireWebhookEvent(c.env, {
-      orgId,
-      event: 'message_created',
-      payload: buildMessageCreatedPayload({
-        conversation: result.conversation as any,
-        message: { ...result.message, direction: 'in', senderType: 'contact' },
-        senderName: body.from_name ? String(body.from_name) : null,
-      }),
-    })
-  }
+  await trasIngerir(c.env, orgId, result, {
+    nombre: entrada.nombre,
+    quien: entrada.nombre ?? (telefono ? `+${telefono}` : 'Un cliente'),
+  })
 
   return c.json(result, 200)
 })
+
+function ingestor(env: Env) {
+  return new IngestInboundMessageUseCase(
+    new D1ConversationRepository(env.DB),
+    new D1MessageRepository(env.DB),
+    new D1ContactRepository(env.DB),
+    new D1UserRepository(env.DB),
+    new CryptoIdGenerator(),
+  )
+}
+
+function notificador(env: Env) {
+  return new NotifyInboxUseCase(
+    new D1NotificationRepository(env.DB),
+    new D1UserRepository(env.DB),
+    new CryptoIdGenerator(),
+  )
+}
+
+/**
+ * Lo que pasa después de guardar un mensaje entrante, igual para todos los
+ * canales: despertar al bot de n8n y avisarle a una persona.
+ *
+ * Un reenvío del proveedor (duplicate) no hace ninguna de las dos cosas.
+ */
+async function trasIngerir(
+  env: Env, orgId: string, r: IngestInboundMessageResult,
+  remitente: { nombre: string | null; quien: string },
+): Promise<void> {
+  if (r.duplicate || !r.conversation || !r.message) return
+
+  await fireWebhookEvent(env, {
+    orgId,
+    event: 'message_created',
+    payload: buildMessageCreatedPayload({
+      conversation: r.conversation as any,
+      message: { ...r.message, direction: 'in', senderType: 'contact' },
+      senderName: remitente.nombre,
+    }),
+  })
+
+  // Sólo cuando el cliente toma la palabra: cinco mensajes seguidos son un aviso.
+  if (r.abreTurno) {
+    await notificador(env).nuevoMensaje({
+      orgId,
+      conversationId: r.conversation.id,
+      assigneeId: r.assigneeId ?? null,
+      quien: remitente.quien,
+      texto: r.message.content,
+      tipoAdjunto: r.message.attachments[0]?.type ?? null,
+    }).catch(() => 0)
+  }
+}
 
 // ── INTEGRATION API: IMPORT LEADS (/v1/leads) — Bearer JWT ───────
 // Acepta un lead único, un array, o { leads: [...] } (tope 100). Los leads

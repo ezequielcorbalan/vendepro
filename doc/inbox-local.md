@@ -125,5 +125,19 @@ node scripts/local-inbox/fake-waha.mjs            # pide QR
 node scripts/local-inbox/fake-waha.mjs --working  # ya vinculado
 ```
 
+Para simular lo que pasa del lado del teléfono, el fake manda el webhook
+**nativo** de WAHA (el mismo formato que un contenedor real) a la sesión ya
+conectada:
+
+```bash
+# un cliente escribe
+curl -X POST localhost:3001/simular/mensaje -H 'Content-Type: application/json'   -d '{"from":"5491155551234","text":"Hola, vi el PH","name":"Juan"}'
+# se cae la sesión → aviso a los admins en la campana
+curl -X POST localhost:3001/simular/estado -H 'Content-Type: application/json' -d '{"status":"FAILED"}'
+```
+
+Igual que WAHA real, crear una sesión que ya existe da 422: así se prueba la
+reconexión (que tiene que pisar el webhook con el token nuevo).
+
 Apuntá `WAHA_BASE_URL=http://localhost:3001` en el `.dev.vars` de api-crm
 (ojo: wrangler no recarga ese archivo en caliente, hay que reiniciar el worker).

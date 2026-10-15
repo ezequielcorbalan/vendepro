@@ -26,6 +26,14 @@ export class D1MessageRepository implements MessageRepository {
     return row ? toEntity(row) : null
   }
 
+  async findLastByConversation(conversationId: string, orgId: string): Promise<Message | null> {
+    const row = await this.db
+      .prepare('SELECT * FROM messages WHERE conversation_id = ? AND org_id = ? ORDER BY created_at DESC LIMIT 1')
+      .bind(conversationId, orgId)
+      .first() as any
+    return row ? toEntity(row) : null
+  }
+
   async save(message: Message): Promise<void> {
     const o = message.toObject()
     await this.db.prepare(`

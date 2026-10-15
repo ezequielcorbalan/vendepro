@@ -21,6 +21,7 @@ function build(opts: {
   existingMessage?: Message | null
   contact?: Contact | null
   firstAdmin?: User | null
+  lastMessage?: Message | null
 } = {}) {
   let idSeq = 0
   const conversations = {
@@ -32,6 +33,7 @@ function build(opts: {
   const messages = {
     findByExternalId: vi.fn(async () => opts.existingMessage ?? null),
     findByConversation: vi.fn(),
+    findLastByConversation: vi.fn(async () => opts.lastMessage ?? null),
     save: vi.fn(),
   }
   const contacts = {
@@ -189,5 +191,42 @@ describe('IngestInboundMessageUseCase', () => {
     expect(r.duplicate).toBe(false)
     expect(messages.findByExternalId).not.toHaveBeenCalled()
     expect(messages.save).toHaveBeenCalledOnce()
+  })
+
+  describe('¿el cliente toma la palabra? (para el aviso)', () => {
+    const conversacion = () => Conversation.create({
+      id: 'conv-9', org_id: 'org_mg', channel: 'whatsapp', contact_id: 'contact-1',
+      lead_id: null, external_id: '5491155551234@c.us', assignee_id: 'agent-2',
+      last_activity_at: null, window_expires_at: null,
+    })
+    const anterior = (direction: 'in' | 'out', created_at: string) => Message.create({
+      id: 'msg-0', org_id: 'org_mg', conversation_id: 'conv-9', direction,
+      sender_type: direction === 'in' ? 'contact' : 'agent', sender_id: null,
+      content: 'x', external_id: null, created_at,
+    })
+    const ahora = '2026-10-15T15:00:00.000Z'
+
+    it('sí, si la conversación es nueva', async () => {
+      const { uc } = build()
+      expect((await uc.execute({ ...entrada, sentAt: ahora })).abreTurno).toBe(true)
+    })
+
+    it('sí, si responde a algo que le mandamos', async () => {
+      const { uc } = build({ conversation: conversacion(), lastMessage: anterior('out', '2026-10-15T14:59:00.000Z') })
+      const r = await uc.execute({ ...entrada, sentAt: ahora })
+      expect(r.abreTurno).toBe(true)
+      expect(r.assigneeId).toBe('agent-2')
+    })
+
+    // Un cliente manda cinco mensajes seguidos: el agente recibe UN aviso.
+    it('no, si sigue escribiendo enseguida', async () => {
+      const { uc } = build({ conversation: conversacion(), lastMessage: anterior('in', '2026-10-15T14:58:00.000Z') })
+      expect((await uc.execute({ ...entrada, sentAt: ahora })).abreTurno).toBe(false)
+    })
+
+    it('sí, si vuelve después de media hora', async () => {
+      const { uc } = build({ conversation: conversacion(), lastMessage: anterior('in', '2026-10-15T14:00:00.000Z') })
+      expect((await uc.execute({ ...entrada, sentAt: ahora })).abreTurno).toBe(true)
+    })
   })
 })
