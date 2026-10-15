@@ -5,6 +5,19 @@ import { ValidationError } from '../errors/validation-error'
 // (entrante y saliente). El nombre y la forma del payload copian a Chatwoot a
 // propósito: el bot ya los entiende y migrarlo es cambiar la URL.
 export const WEBHOOK_EVENTS = ['lead.created', 'lead.stage_changed', 'appraisal.created', 'message_created'] as const
+
+/**
+ * Eventos que se entregan CRUDOS, sin el envoltorio `{event, timestamp, data}`.
+ *
+ * `message_created` imita a Chatwoot, de donde migra el bot de n8n, y Chatwoot
+ * no envuelve: manda los campos planos. Con el envoltorio, cada nodo del bot
+ * que lee `$json.body.conversation` tendría que leer `$json.body.data.conversation`
+ * y se romperían todos.
+ *
+ * El envoltorio NO se saca para el resto: los flujos de n8n que ya escuchan
+ * `lead.created` y `lead.stage_changed` cuentan con él.
+ */
+export const RAW_DELIVERY_EVENTS: readonly string[] = ['message_created']
 export type WebhookEventKey = (typeof WEBHOOK_EVENTS)[number]
 
 export interface WebhookProps {

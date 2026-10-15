@@ -67,3 +67,5 @@ export type { EmailBrand, RenderEmailHtmlInput, RenderEmailTextInput } from './e
 export * from './email-deliverability'
 export * from './portal-cost-rules'
 export * from './property-income-rules'
+export { buildMessageCreatedPayload, telefonoE164DesdeChat } from './inbox-webhook-payload'
+export type { InboxWebhookInput } from './inbox-webhook-payload'

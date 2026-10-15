@@ -11,6 +11,21 @@ export const META_PROVIDER = 'instagram'
 export interface MessagingEnv {
   DB: D1Database
   JWT_SECRET: string
+  /** WAHA de la plataforma: el que usan las orgs que no hospedan el suyo. */
+  WAHA_BASE_URL?: string
+  WAHA_API_KEY?: string
+}
+
+/**
+ * Nombre de la sesión de una org en el WAHA compartido.
+ *
+ * Vive acá y no en un worker porque lo necesitan dos: api-crm al conectar y
+ * al mandar como agente, y api-public cuando manda el bot. Si cada uno lo
+ * calculara por su lado, un cambio en uno dejaría al bot mandando a una
+ * sesión que no existe.
+ */
+export function sessionDeOrg(orgId: string): string {
+  return `org-${orgId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 24)}`
 }
 
 /**
@@ -52,13 +67,17 @@ export async function createMessagingGateway(
     return new MetaMessagingGateway({ pageAccessToken: secreto, apiVersion: config.api_version })
   }
 
-  if (!config.base_url) return null
+  // Sin URL propia, el WAHA de la plataforma: es el caso normal. Antes esto
+  // exigía `base_url` en la org, así que en el modelo compartido la conexión
+  // andaba pero mandar un mensaje no — lo encontró la prueba de punta a punta.
+  const baseUrl = config.base_url || env.WAHA_BASE_URL
+  if (!baseUrl) return null
   // WhatsApp arranca con WAHA. Cuando exista el adapter de Cloud API se elige
   // acá por `config.provider` y el resto del sistema no se entera.
   return new WahaMessagingGateway({
-    baseUrl: config.base_url,
-    session: config.session ?? 'default',
-    apiKey: secreto,
+    baseUrl,
+    session: config.session || sessionDeOrg(orgId),
+    apiKey: config.base_url ? secreto : (env.WAHA_API_KEY ?? null),
   })
 }
 

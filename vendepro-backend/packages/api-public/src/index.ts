@@ -60,6 +60,7 @@ import {
   ToggleConversationStatusUseCase,
   SendMessageUseCase,
   GetContactsUseCase,
+  buildMessageCreatedPayload,
 } from '@vendepro/core'
 
 type Env = {
@@ -71,6 +72,9 @@ type Env = {
   META_APP_SECRET?: string
   /** Token del handshake de verificación del webhook (lo elige uno). */
   META_VERIFY_TOKEN?: string
+  /** WAHA de la plataforma: lo usa el bot cuando responde por WhatsApp. */
+  WAHA_BASE_URL?: string
+  WAHA_API_KEY?: string
 }
 type IntegrationVars = { Variables: { orgId: string; tokenId: string; tokenScopes: string[] } }
 
@@ -470,22 +474,17 @@ app.post('/public/inbox/meta', async (c) => {
     if (r.duplicate) continue
     ingeridos++
 
-    await fireWebhookEvent(c.env, {
-      orgId,
-      event: 'message_created',
-      payload: {
+    if (r.conversation && r.message) {
+      await fireWebhookEvent(c.env, {
+        orgId,
         event: 'message_created',
-        body: {
-          conversation: { id: r.conversationId, channel: m.channel },
-          sender: { phone_number: null, name: null },
-          content: m.texto,
-          contact_inbox: { source_id: m.remitenteId },
-          message_type: 0,
-          attachments: m.adjuntos,
-          private: false,
-        },
-      },
-    })
+        payload: buildMessageCreatedPayload({
+          conversation: r.conversation as any,
+          message: { ...r.message, direction: 'in', senderType: 'contact' },
+          senderName: null,
+        }),
+      })
+    }
   }
 
   // Siempre 200 salvo firma inválida: un 500 hace que Meta reintente en loop
@@ -579,6 +578,21 @@ app.post('/v1/conversations/:id/messages', async (c) => {
     text: body.content,
     senderType: 'bot',
     senderId: null,
+  })
+
+  // Chatwoot avisa `message_created` también por los mensajes del bot, y el
+  // bot cuenta con eso: es como lleva el límite de turnos. Acá faltaba.
+  await fireWebhookEvent(c.env, {
+    orgId,
+    event: 'message_created',
+    payload: buildMessageCreatedPayload({
+      conversation: result.conversation as any,
+      message: {
+        id: result.messageId, content: body.content, attachments: [],
+        direction: 'out', senderType: 'bot', createdAt: result.createdAt,
+      },
+      senderName: 'Bot',
+    }),
   })
   return c.json(result, 201)
 })
@@ -676,23 +690,15 @@ app.post('/v1/inbox/messages', async (c) => {
 
   // El bot de n8n escucha `message_created` para decidir si responde. Un
   // reenvío del proveedor no lo despierta dos veces.
-  if (!result.duplicate) {
+  if (!result.duplicate && result.conversation && result.message) {
     await fireWebhookEvent(c.env, {
       orgId,
       event: 'message_created',
-      payload: {
-        event: 'message_created',
-        body: {
-          conversation: { id: result.conversationId, channel: body.channel ?? 'whatsapp' },
-          sender: { phone_number: String(body.from_phone ?? chatId).split('@')[0], name: body.from_name ?? null },
-          content: typeof body.content === 'string' ? body.content : null,
-          contact_inbox: { source_id: chatId },
-          // 0 = entrante del cliente, 1 = saliente. Es lo que lee el bot.
-          message_type: 0,
-          attachments: Array.isArray(body.attachments) ? body.attachments : [],
-          private: false,
-        },
-      },
+      payload: buildMessageCreatedPayload({
+        conversation: result.conversation as any,
+        message: { ...result.message, direction: 'in', senderType: 'contact' },
+        senderName: body.from_name ? String(body.from_name) : null,
+      }),
     })
   }
 

@@ -3,6 +3,7 @@ import type { MessageRepository } from '../../ports/repositories/message-reposit
 import type { MessagingGateway } from '../../ports/services/messaging-gateway'
 import type { IdGenerator } from '../../ports/id-generator'
 import { Message } from '../../../domain/entities/message'
+import type { ConversationChannel } from '../../../domain/entities/conversation'
 import type { MessageSenderType } from '../../../domain/entities/message'
 import { NotFoundError } from '../../../domain/errors/not-found'
 import { ValidationError } from '../../../domain/errors/validation-error'
@@ -21,6 +22,9 @@ export interface SendMessageUseCaseResult {
   messageId: string
   conversationId: string
   externalId: string | null
+  /** Foto de la conversación, para armar el webhook hacia n8n sin volver a la base. */
+  conversation: { id: string; channel: ConversationChannel; externalId: string; status: string; labels: string[] }
+  createdAt: string
 }
 
 /**
@@ -86,6 +90,18 @@ export class SendMessageUseCase {
     conversation.registerOutbound(now)
     await this.conversations.save(conversation)
 
-    return { messageId: message.id, conversationId: conversation.id, externalId: enviado.externalId }
+    return {
+      messageId: message.id,
+      conversationId: conversation.id,
+      externalId: enviado.externalId,
+      conversation: {
+        id: conversation.id,
+        channel: conversation.channel,
+        externalId: conversation.external_id,
+        status: conversation.status,
+        labels: conversation.labels,
+      },
+      createdAt: now,
+    }
   }
 }

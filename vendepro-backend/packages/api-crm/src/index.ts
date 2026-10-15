@@ -13,7 +13,7 @@ import {
   D1WebhookRepository, D1WebhookDeliveryRepository, HttpWebhookSender,
   D1NotificationRepository,
   D1ConversationRepository, D1MessageRepository, createMessagingGateway,
-  WahaSessionClient, WHATSAPP_PROVIDER, parseConfig,
+  WahaSessionClient, WHATSAPP_PROVIDER, parseConfig, sessionDeOrg,
   D1OrgIntegrationRepository, D1IntegrationLinkRepository, D1IntegrationSyncLogRepository,
   KitepropMcpClient,
   D1UserIntegrationRepository, GoogleCalendarHttpClient, buildGoogleAuthUrl,
@@ -25,7 +25,7 @@ import {
   createMarketingSender, fireMarketingEvent, fireWebhookEvent, resolveAssignedAgent,
   fireAndDrainAutomations, drainAutomationJobs, sweepTimeBasedAutomations,
 } from '@vendepro/infrastructure'
-import { Activity, OrgIntegration, propertyFromIncoming } from '@vendepro/core'
+import { Activity, OrgIntegration, propertyFromIncoming, buildMessageCreatedPayload } from '@vendepro/core'
 import {
   GetLeadsUseCase, UpdateLeadUseCase, DeleteLeadUseCase, AdvanceLeadStageUseCase,
   AssignLeadUseCase,
@@ -365,11 +365,6 @@ app.put('/integrations/whatsapp', async (c) => {
   return c.json({ ok: true })
 })
 
-/** Nombre de la sesión de una org en el WAHA compartido. Estable y sin rarezas. */
-function sessionDeOrg(orgId: string): string {
-  return `org-${orgId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 24)}`
-}
-
 /**
  * Conectar WhatsApp en un paso: deja la configuración lista, crea la sesión
  * de esta inmobiliaria en el WAHA de la plataforma y devuelve el QR.
@@ -570,18 +565,21 @@ app.post('/conversations/:id/messages', async (c) => {
 
   // El bot escucha también los salientes: así se entera de que contestó un
   // humano y se pausa solo (esa lógica ya vive en n8n).
+  // `sender.type: 'user'` es lo que le permite al bot distinguir a un humano
+  // de sí mismo: antes este payload no traía remitente y llegaba igual que uno
+  // del bot.
+  const agente = await new D1UserRepository(c.env.DB).findById(c.get('userId'), orgId).catch(() => null)
   await runInBackground(c, fireWebhookEvent(c.env, {
     orgId,
     event: 'message_created',
-    payload: {
-      event: 'message_created',
-      body: {
-        conversation: { id: result.conversationId },
-        content: body.content,
-        message_type: 1,
-        private: false,
+    payload: buildMessageCreatedPayload({
+      conversation: result.conversation as any,
+      message: {
+        id: result.messageId, content: body.content, attachments: [],
+        direction: 'out', senderType: 'agent', createdAt: result.createdAt,
       },
-    },
+      senderName: agente?.full_name ?? null,
+    }),
   }))
 
   return c.json(result, 201)

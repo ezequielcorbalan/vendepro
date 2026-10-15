@@ -42,6 +42,13 @@ export interface IngestInboundMessageResult {
   /** La conversación se abrió con este mensaje. */
   conversationCreated: boolean
   contactId: string | null
+  /**
+   * Foto de la conversación tal como quedó, para armar el webhook hacia n8n
+   * sin volver a la base. Ausente cuando el mensaje era un duplicado.
+   */
+  conversation?: { id: string; channel: ConversationChannel; externalId: string; status: string; labels: string[] }
+  /** El mensaje guardado, con el mismo propósito. */
+  message?: { id: string; content: string | null; attachments: MessageAttachment[]; createdAt: string }
 }
 
 /**
@@ -135,6 +142,14 @@ export class IngestInboundMessageUseCase {
       duplicate: false,
       conversationCreated,
       contactId,
+      conversation: {
+        id: conversation.id,
+        channel: conversation.channel,
+        externalId: conversation.external_id,
+        status: conversation.status,
+        labels: conversation.labels,
+      },
+      message: { id: message.id, content: message.content, attachments: message.attachments, createdAt: message.created_at },
     }
   }
 
