@@ -93,7 +93,19 @@ Aplicado en api-crm:
 - **Agenda y actividades**: sólo las suyas; un agente crea para sí (`duenoAlCrear`), aunque mande otro `agent_id`.
 - Un registro ajeno responde **404**, no 403: no confirma que el id existe.
 
-Bandeja de conversaciones: mismo criterio, ver [[Dominio-Inbox]]. **Pendiente**: propiedades y tasaciones (api-properties) y los reportes de api-analytics siguen filtrando sólo desde la pantalla.
+Aplicado en api-properties:
+- **Propiedades**: el inventario se **ve entero** (un agente tiene que poder ofrecerle a su comprador una propiedad que captó otro; el buscador de propiedades de interés ya buscaba en toda la org). **Modificar** (editar, precio, estado, etapa, ingreso, fotos, borrar) sólo el agente de la propiedad o quien ve todo. Un agente no puede pasar la propiedad a otro por el `PUT`.
+- **Tasaciones**: estrictas — ver, editar, publicar, borrar, comparables, plantilla y PDF sólo las suyas.
+- **Comparables**: sus rutas no chequeaban la organización (iban por id); ahora se confirma antes que la tasación es de la org (`findComparableAppraisalId`).
+
+Aplicado en api-analytics:
+- **Dashboard**: el `agent_id` se pisa para un agente; seguimientos pendientes y eventos de hoy, acotados a él (antes eran de toda la org).
+- **Búsqueda global**: un agente encuentra sus leads, sus contactos visibles y todas las propiedades.
+- **Exportar leads**: un agente exporta sólo los suyos.
+
+Bandeja de conversaciones: mismo criterio, ver [[Dominio-Inbox]].
+
+**Queda**: el contador de tasaciones del dashboard sigue siendo de toda la org (es un número, no expone registros); reportes de propiedades y `listings-performance` son datos de mercado del inventario y se ven enteros, como las propiedades.
 
 ## Tablas D1
 
