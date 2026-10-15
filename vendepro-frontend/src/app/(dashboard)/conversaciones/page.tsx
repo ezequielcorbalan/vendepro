@@ -6,7 +6,7 @@ import { MessageSquare, Send, Check, Clock, AlertTriangle, Bot, ArrowUpRight, Us
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
 import { useCurrentUser } from '@/lib/use-current-user'
-import { canSeeAll } from '@/lib/crm-config'
+import { canSeeAll, canManageOrg } from '@/lib/crm-config'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
@@ -18,7 +18,12 @@ import { StageBadge } from '@/components/ui/StageBadge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Alert } from '@/components/ui/Alert'
 import { Avatar } from '@/components/ui/Avatar'
+import { Badge } from '@/components/ui/Badge'
 import { cn } from '@/lib/utils'
+import { FiltrosBandeja, type Carpeta, type ConteoCarpetas } from '@/components/conversaciones/FiltrosBandeja'
+import { EtiquetasConversacion } from '@/components/conversaciones/EtiquetasConversacion'
+import { RespuestasRapidas } from '@/components/conversaciones/RespuestasRapidas'
+import { nombreCanal, ETIQUETA_BOT_PAUSADO } from '@/components/conversaciones/canales'
 
 interface Conversation {
   id: string
@@ -86,8 +91,39 @@ function Bandeja() {
   const activaId = useRef<string | null>(null)
   activaId.current = activa?.id ?? null
 
+  // Carpetas y filtros. Quien reparte arranca en "Todas" (es lo que veía
+  // antes); un agente tiene sólo las suyas y el servidor lo exige igual.
+  const [carpeta, setCarpeta] = useState<Carpeta>('todas')
+  const [busqueda, setBusqueda] = useState('')
+  const [busquedaAplicada, setBusquedaAplicada] = useState('')
+  const [canal, setCanal] = useState('')
+  const [etiqueta, setEtiqueta] = useState('')
+  const [conteos, setConteos] = useState<ConteoCarpetas>({})
+  const [etiquetasOrg, setEtiquetasOrg] = useState<string[]>([])
+
+  // La búsqueda pega contra D1 (nombre, teléfono y texto de los mensajes): se
+  // espera a que el usuario deje de tipear.
+  useEffect(() => {
+    const t = setTimeout(() => setBusquedaAplicada(busqueda.trim()), 300)
+    return () => clearTimeout(t)
+  }, [busqueda])
+
+  const cargarCarpetas = useCallback(() => {
+    apiFetch('crm', '/conversations/carpetas')
+      .then(r => r.json() as Promise<any>)
+      .then(d => {
+        setConteos(d?.carpetas ?? {})
+        setEtiquetasOrg(Array.isArray(d?.etiquetas) ? d.etiquetas : [])
+      })
+      .catch(() => {})
+  }, [])
+
   const cargarBandeja = useCallback(() => {
-    apiFetch('crm', `/conversations?status=${filtro}`)
+    const params = new URLSearchParams({ status: filtro, carpeta })
+    if (busquedaAplicada) params.set('q', busquedaAplicada)
+    if (canal) params.set('channel', canal)
+    if (etiqueta) params.set('label', etiqueta)
+    apiFetch('crm', `/conversations?${params}`)
       .then(r => r.json() as Promise<any>)
       .then(d => {
         const lista = Array.isArray(d) ? d : []
@@ -95,7 +131,8 @@ function Bandeja() {
         setCargando(false)
       })
       .catch(() => setCargando(false))
-  }, [filtro])
+    cargarCarpetas()
+  }, [filtro, carpeta, busquedaAplicada, canal, etiqueta, cargarCarpetas])
 
   useEffect(() => { setCargando(true); cargarBandeja() }, [cargarBandeja])
 
@@ -176,6 +213,25 @@ function Bandeja() {
     } catch { toast('No se pudo asignar', 'error') }
   }
 
+  const cambiarEtiquetas = async (labels: string[]) => {
+    if (!activa) return
+    const previas = activa.labels
+    setActiva({ ...activa, labels })
+    try {
+      const res = await apiFetch('crm', `/conversations/${activa.id}/labels`, {
+        method: 'POST',
+        body: JSON.stringify({ labels }),
+      })
+      const d = (await res.json()) as any
+      if (!res.ok) throw new Error(d?.error)
+      setActiva(a => a && a.id === activa.id ? { ...a, labels: d.labels } : a)
+      cargarBandeja()
+    } catch {
+      setActiva(a => a && a.id === activa.id ? { ...a, labels: previas } : a)
+      toast('No se pudieron guardar las etiquetas', 'error')
+    }
+  }
+
   const alternarEstado = async () => {
     if (!activa) return
     try {
@@ -190,7 +246,7 @@ function Bandeja() {
     <div className="space-y-4">
       <PageHeader
         title="Conversaciones"
-        subtitle="WhatsApp de la inmobiliaria, atado a los contactos del CRM"
+        subtitle="WhatsApp, Instagram y Messenger de la inmobiliaria, atados a los contactos del CRM"
         actions={
           <SegmentedControl
             value={filtro}
@@ -202,14 +258,30 @@ function Bandeja() {
 
       <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4">
         {/* Bandeja */}
-        <Card padded={false} className="overflow-hidden max-h-[70vh] overflow-y-auto">
+        <Card padded={false} className="overflow-hidden max-h-[70vh] flex flex-col">
+          <FiltrosBandeja
+            reparte={reparte}
+            carpeta={carpeta}
+            onCarpeta={c => { setCarpeta(c); setActiva(null) }}
+            conteos={conteos}
+            busqueda={busqueda}
+            onBusqueda={setBusqueda}
+            canal={canal}
+            onCanal={setCanal}
+            etiqueta={etiqueta}
+            onEtiqueta={setEtiqueta}
+            etiquetas={etiquetasOrg}
+          />
+          <div className="overflow-y-auto flex-1">
           {cargando ? (
             <div className="p-4"><Text tone="muted">Cargando…</Text></div>
           ) : conversaciones.length === 0 ? (
             <EmptyState
               icon={<MessageSquare className="w-6 h-6" />}
               title="Sin conversaciones"
-              description="Cuando entre un mensaje al número conectado, aparece acá."
+              description={busquedaAplicada || canal || etiqueta
+                ? 'Ninguna coincide con los filtros.'
+                : 'Cuando entre un mensaje al número conectado, aparece acá.'}
             />
           ) : (
             /* ds-todo: candidato a variante "list row seleccionable" — un
@@ -239,9 +311,13 @@ function Bandeja() {
                     {c.assignee_name
                       ? <Text size="xs" tone="muted">{c.assignee_name}</Text>
                       : <StatusBadge label="Sin asignar" color="bg-warning/10 text-warning" size="sm" />}
-                    {c.labels?.includes('bot_pausado') && (
+                    {c.channel !== 'whatsapp' && <Badge tone="info">{nombreCanal(c.channel)}</Badge>}
+                    {c.labels?.includes(ETIQUETA_BOT_PAUSADO) && (
                       <StatusBadge label="Bot pausado" color="bg-gray-100 text-gray-600" size="sm" />
                     )}
+                    {c.labels?.filter(l => l !== ETIQUETA_BOT_PAUSADO).map(l => (
+                      <Badge key={l} tone="primary">{l}</Badge>
+                    ))}
                     {c.lead?.stage && (
                       <StageBadge stage={c.lead.stage} pipeline={c.lead.pipeline as any} size="sm" />
                     )}
@@ -250,6 +326,7 @@ function Bandeja() {
               ))}
             </div>
           )}
+          </div>
         </Card>
 
         {/* Hilo */}
@@ -270,6 +347,7 @@ function Bandeja() {
                       color={ESTADO[activa.status]?.color ?? 'bg-gray-100 text-gray-600'}
                       size="sm"
                     />
+                    <Badge tone="neutral">{nombreCanal(activa.channel)}</Badge>
                     {/* El salto al trabajo comercial: sin esto la bandeja es un
                         chat aparte del CRM. */}
                     {activa.lead && (
@@ -316,6 +394,13 @@ function Bandeja() {
                 </Button>
               </div>
             </div>
+            <div className="px-4 py-2 border-b border-gray-100">
+              <EtiquetasConversacion
+                etiquetas={activa.labels ?? []}
+                sugeridas={etiquetasOrg}
+                onCambiar={cambiarEtiquetas}
+              />
+            </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
               {mensajes.length === 0 ? (
@@ -347,13 +432,19 @@ function Bandeja() {
                   <div className="flex items-center gap-2">
                     <Clock className="w-4 h-4 text-warning shrink-0" />
                     <Text size="xs">
-                      Pasaron más de 24 h desde el último mensaje del cliente. Con la API oficial de
-                      WhatsApp sólo se podría responder con una plantilla aprobada.
+                      {activa.channel === 'whatsapp'
+                        ? 'Pasaron más de 24 h desde el último mensaje del cliente. Con la API oficial de WhatsApp sólo se podría responder con una plantilla aprobada.'
+                        : `Pasaron más de 24 h desde el último mensaje del cliente: ${nombreCanal(activa.channel)} no deja responderle hasta que vuelva a escribir.`}
                     </Text>
                   </div>
                 </Alert>
               )}
               <div className="flex items-end gap-2">
+                <RespuestasRapidas
+                  nombre={activa.contact_name}
+                  onElegir={setTexto}
+                  puedeConfigurar={!!user && canManageOrg(user.role)}
+                />
                 <Textarea
                   rows={2}
                   placeholder="Escribí tu respuesta…"
@@ -374,7 +465,7 @@ function Bandeja() {
           en conversaciones y podría servir al calendario. */}
       <Text size="xs" tone="muted" className="flex items-center gap-1.5">
         <AlertTriangle className="w-3 h-3" />
-        El canal usa un proveedor no oficial de WhatsApp mientras se tramita el alta en Meta.
+        WhatsApp usa un proveedor no oficial mientras se tramita el alta en Meta; Instagram y Messenger van por la API oficial.
       </Text>
     </div>
   )

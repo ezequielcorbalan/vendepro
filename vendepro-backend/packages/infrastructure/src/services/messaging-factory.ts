@@ -7,6 +7,14 @@ import { decrypt } from './token-encryption'
 export const WHATSAPP_PROVIDER = 'whatsapp'
 /** Instagram y Facebook comparten integración: una app de Meta, una página. */
 export const META_PROVIDER = 'instagram'
+/** Messenger: misma API de Meta que Instagram, pero otra página y otro token. */
+export const FACEBOOK_PROVIDER = 'facebook'
+
+/** La fila de `org_integrations` de cada canal. */
+export function providerDeCanal(channel: ConversationChannel): string {
+  if (channel === 'whatsapp') return WHATSAPP_PROVIDER
+  return channel === 'facebook' ? FACEBOOK_PROVIDER : META_PROVIDER
+}
 
 export interface MessagingEnv {
   DB: D1Database
@@ -41,6 +49,23 @@ export function sessionDeOrg(orgId: string): string {
  * configurado no es un fallo, es el estado normal de casi todas. Quien llama
  * decide qué contestar.
  */
+/**
+ * Credenciales de Instagram o Messenger de una org, para llamadas que no son
+ * mandar un mensaje (ej. el perfil de quien escribe). `null` si no está conectado.
+ */
+export async function metaConfigDeOrg(
+  env: MessagingEnv,
+  orgId: string,
+  channel: 'instagram' | 'facebook',
+): Promise<{ pageAccessToken: string; apiVersion?: string } | null> {
+  const integration = await new D1OrgIntegrationRepository(env.DB)
+    .findByOrgAndProvider(orgId, providerDeCanal(channel))
+    .catch(() => null)
+  if (!integration?.enabled || !integration.credentials_encrypted) return null
+  const token = await decrypt(integration.credentials_encrypted, env.JWT_SECRET).catch(() => null)
+  return token ? { pageAccessToken: token, apiVersion: parseConfig(integration.config_json).api_version } : null
+}
+
 export async function createMessagingGateway(
   env: MessagingEnv,
   orgId: string,
@@ -48,7 +73,7 @@ export async function createMessagingGateway(
 ): Promise<MessagingGateway | null> {
   // Cada canal tiene su propia fila de integración: una org puede tener
   // Instagram andando y WhatsApp todavía en trámite, o al revés.
-  const provider = channel === 'whatsapp' ? WHATSAPP_PROVIDER : META_PROVIDER
+  const provider = providerDeCanal(channel)
   const integration = await new D1OrgIntegrationRepository(env.DB)
     .findByOrgAndProvider(orgId, provider)
     .catch(() => null)

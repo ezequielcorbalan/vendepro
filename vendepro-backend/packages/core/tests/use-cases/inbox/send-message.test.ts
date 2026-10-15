@@ -82,6 +82,17 @@ describe('SendMessageUseCase', () => {
     expect(gateway.sendText).not.toHaveBeenCalled()
   })
 
+  // Instagram y Messenger imponen la misma ventana y antes no se chequeaba:
+  // Meta rechazaba la respuesta y el agente veía un error genérico.
+  it('también para Messenger e Instagram, con un mensaje que lo explica', async () => {
+    const vencida = new Date(Date.now() - 3600_000).toISOString()
+    for (const channel of ['facebook', 'instagram'] as const) {
+      const { uc, gateway } = build({ enforcesWindow: true, conv: conversacion({ channel, external_id: 'psid-1', window_expires_at: vencida }) })
+      await expect(uc.execute(entrada)).rejects.toThrow(/Meta no deja responderle/)
+      expect(gateway.sendText).not.toHaveBeenCalled()
+    }
+  })
+
   // Hoy el proveedor es WhatsApp Web, que no conoce la ventana.
   it('con un proveedor que no la impone, manda igual', async () => {
     const vencida = new Date(Date.now() - 3600_000).toISOString()

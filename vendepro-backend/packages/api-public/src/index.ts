@@ -27,8 +27,8 @@ import {
   fireMarketingEvent,
   fireWebhookEvent,
   D1ConversationRepository, D1MessageRepository, createMessagingGateway,
-  D1OrgIntegrationRepository, verificarFirmaMeta, parsearWebhookMeta, parseConfig, META_PROVIDER,
-  esWebhookWaha, parsearWebhookWaha, D1NotificationRepository,
+  D1OrgIntegrationRepository, verificarFirmaMeta, parsearWebhookMeta, parseConfig, providerDeCanal,
+  esWebhookWaha, parsearWebhookWaha, D1NotificationRepository, metaConfigDeOrg, obtenerPerfilMeta,
   fireAutomationEvent,
   D1AgentProfileRepository,
   D1MetaIntegrationRepository,
@@ -58,6 +58,7 @@ import {
   GetPublicAgentLandingUseCase,
   GetPublicTagConfigUseCase,
   IngestInboundMessageUseCase,
+  DomainError,
   NotifyInboxUseCase,
   type IngestInboundMessageResult,
   GetConversationThreadUseCase,
@@ -444,23 +445,37 @@ app.post('/public/inbox/meta', async (c) => {
 
   // Meta manda todo por un solo webhook, sin decir de qué organización es: la
   // cuenta que recibió el mensaje (`entry.id`) es lo que lo ata a una org.
-  const integraciones = await new D1OrgIntegrationRepository(c.env.DB)
-    .findEnabledByProvider(META_PROVIDER)
-    .catch(() => [])
+  // Instagram y Messenger llegan por el mismo webhook pero son integraciones
+  // distintas (la cuenta de IG y la página de Facebook tienen ids distintos):
+  // la clave es canal + cuenta.
+  const repoIntegraciones = new D1OrgIntegrationRepository(c.env.DB)
   const orgPorCuenta = new Map<string, string>()
-  for (const i of integraciones) {
-    const cuenta = parseConfig(i.config_json).account_id
-    if (cuenta) orgPorCuenta.set(String(cuenta), i.org_id)
+  for (const canal of ['instagram', 'facebook'] as const) {
+    const integraciones = await repoIntegraciones.findEnabledByProvider(providerDeCanal(canal)).catch(() => [])
+    for (const i of integraciones) {
+      const cuenta = parseConfig(i.config_json).account_id
+      if (cuenta) orgPorCuenta.set(`${canal}:${cuenta}`, i.org_id)
+    }
   }
 
   const uc = ingestor(c.env)
 
   let ingeridos = 0
   for (const m of mensajes) {
-    const orgId = orgPorCuenta.get(m.cuentaId)
+    const orgId = orgPorCuenta.get(`${m.channel}:${m.cuentaId}`)
     // Una cuenta que no mapea a ninguna org no es un error nuestro: la app de
     // Meta puede estar suscrita a páginas de terceros. Se ignora.
     if (!orgId) continue
+
+    // El nombre sólo se pide al abrir la conversación: es una llamada a Meta
+    // por persona, no por mensaje.
+    let perfil: { nombre: string | null; usuario: string | null } = { nombre: null, usuario: null }
+    const yaExiste = await new D1ConversationRepository(c.env.DB)
+      .findByExternalId(orgId, m.channel, m.remitenteId).catch(() => null)
+    if (!yaExiste && (m.channel === 'instagram' || m.channel === 'facebook')) {
+      const config = await metaConfigDeOrg(c.env, orgId, m.channel)
+      if (config) perfil = await obtenerPerfilMeta(config, m.remitenteId, m.channel)
+    }
 
     const r = await uc.execute({
       orgId,
@@ -468,7 +483,8 @@ app.post('/public/inbox/meta', async (c) => {
       externalChatId: m.remitenteId,
       externalMessageId: m.mensajeId,
       fromPhone: null,
-      fromName: null,
+      fromName: perfil.nombre,
+      igUsername: perfil.usuario,
       metaUserId: m.remitenteId,
       content: m.texto,
       attachments: m.adjuntos.map(a => ({ type: a.type, url: a.url ?? null })),
@@ -478,8 +494,8 @@ app.post('/public/inbox/meta', async (c) => {
     ingeridos++
 
     await trasIngerir(c.env, orgId, r, {
-      nombre: null,
-      quien: m.channel === 'instagram' ? 'Un cliente de Instagram' : 'Un cliente de Facebook',
+      nombre: perfil.nombre,
+      quien: perfil.nombre ?? (m.channel === 'instagram' ? 'Un cliente de Instagram' : 'Un cliente de Messenger'),
     })
   }
 
@@ -560,21 +576,32 @@ app.post('/v1/conversations/:id/messages', async (c) => {
   }
 
   const orgId = c.get('orgId')
-  const gateway = await createMessagingGateway(c.env, orgId)
-  if (!gateway) return c.json({ error: 'La inmobiliaria no tiene WhatsApp configurado' }, 409)
+  // Por el canal de la conversación: antes salía siempre por WhatsApp, así que
+  // al bot le era imposible contestarle a un cliente de Instagram.
+  const charla = await new D1ConversationRepository(c.env.DB).findById(c.req.param('id'), orgId)
+  if (!charla) return c.json({ error: 'Conversación no encontrada' }, 404)
+  const gateway = await createMessagingGateway(c.env, orgId, charla.channel)
+  if (!gateway) return c.json({ error: `La inmobiliaria no tiene ${NOMBRE_CANAL[charla.channel]} conectado` }, 409)
 
-  const result = await new SendMessageUseCase(
-    new D1ConversationRepository(c.env.DB),
-    new D1MessageRepository(c.env.DB),
-    gateway,
-    new CryptoIdGenerator(),
-  ).execute({
-    conversationId: c.req.param('id'),
-    orgId,
-    text: body.content,
-    senderType: 'bot',
-    senderId: null,
-  })
+  let result
+  try {
+    result = await new SendMessageUseCase(
+      new D1ConversationRepository(c.env.DB),
+      new D1MessageRepository(c.env.DB),
+      gateway,
+      new CryptoIdGenerator(),
+    ).execute({
+      conversationId: c.req.param('id'),
+      orgId,
+      text: body.content,
+      senderType: 'bot',
+      senderId: null,
+    })
+  } catch (e: any) {
+    // Igual que en api-crm: el motivo del proveedor, no un 500 mudo.
+    if (e instanceof DomainError) throw e
+    return c.json({ error: `No se pudo enviar: ${e?.message ?? 'el proveedor no respondió'}` }, 502)
+  }
 
   // Chatwoot avisa `message_created` también por los mensajes del bot, y el
   // bot cuenta con eso: es como lleva el límite de turnos. Acá faltaba.
@@ -711,6 +738,8 @@ app.post('/v1/inbox/messages', async (c) => {
 
   return c.json(result, 200)
 })
+
+const NOMBRE_CANAL: Record<string, string> = { whatsapp: 'WhatsApp', instagram: 'Instagram', facebook: 'Messenger' }
 
 function ingestor(env: Env) {
   return new IngestInboundMessageUseCase(

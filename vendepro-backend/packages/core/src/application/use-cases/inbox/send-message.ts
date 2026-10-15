@@ -59,10 +59,13 @@ export class SendMessageUseCase {
     // Con un proveedor que no la impone esto no aplica y se manda igual; con
     // la Cloud API, mandar texto libre acá sería un mensaje perdido del lado
     // de Meta, sin aviso para el agente.
-    if (this.gateway.enforcesWindow && conversation.channel === 'whatsapp' && !conversation.isWindowOpen()) {
-      throw new ValidationError(
-        'Pasaron más de 24 horas desde el último mensaje del cliente: sólo se puede responder con una plantilla aprobada',
-      )
+    //
+    // Instagram y Messenger imponen la misma ventana y antes no se chequeaba:
+    // Meta rechazaba la respuesta y el agente veía un error genérico.
+    if (this.gateway.enforcesWindow && !conversation.isWindowOpen()) {
+      throw new ValidationError(conversation.channel === 'whatsapp'
+        ? 'Pasaron más de 24 horas desde el último mensaje del cliente: sólo se puede responder con una plantilla aprobada'
+        : 'Pasaron más de 24 horas desde el último mensaje del cliente: Meta no deja responderle hasta que vuelva a escribir')
     }
 
     const enviado = await this.gateway.sendText({

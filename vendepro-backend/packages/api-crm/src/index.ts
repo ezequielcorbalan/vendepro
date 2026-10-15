@@ -13,7 +13,7 @@ import {
   D1WebhookRepository, D1WebhookDeliveryRepository, HttpWebhookSender,
   D1NotificationRepository,
   D1ConversationRepository, D1MessageRepository, createMessagingGateway,
-  WahaSessionClient, WHATSAPP_PROVIDER, parseConfig, sessionDeOrg,
+  WahaSessionClient, WHATSAPP_PROVIDER, parseConfig, sessionDeOrg, providerDeCanal,
   D1OrgIntegrationRepository, D1IntegrationLinkRepository, D1IntegrationSyncLogRepository,
   KitepropMcpClient,
   D1UserIntegrationRepository, GoogleCalendarHttpClient, buildGoogleAuthUrl,
@@ -61,7 +61,7 @@ import {
   CreateEmailCampaignUseCase, UpdateEmailCampaignUseCase, ListEmailCampaignsUseCase,
   GetEmailCampaignUseCase, DeleteEmailCampaignUseCase, CancelEmailCampaignUseCase,
   PreviewCampaignAudienceUseCase, QueueCampaignSendUseCase, ProcessEmailQueueUseCase,
-  puedeVerConversacion, puedeAsignarConversacion, bandejaDe,
+  puedeVerConversacion, puedeAsignarConversacion, bandejaDe, SetConversationLabelsUseCase, DomainError,
 } from '@vendepro/core'
 import {
   CreateLandingFromTemplateUseCase, UpdateLandingBlocksUseCase, AddBlockUseCase,
@@ -366,6 +366,71 @@ app.put('/integrations/whatsapp', async (c) => {
   return c.json({ ok: true })
 })
 
+// ── INSTAGRAM Y MESSENGER (Meta) ───────────────────────────────
+// Por ahora se conectan pegando el id de la cuenta y el page access token que
+// se sacan del panel de Meta. El "Continuar con Facebook" (OAuth) necesita la
+// app de Meta aprobada; cuando esté, reemplaza este formulario y guarda lo mismo.
+const NOMBRE_CANAL: Record<string, string> = { whatsapp: 'WhatsApp', instagram: 'Instagram', facebook: 'Messenger' }
+const canalMeta = (valor: string | undefined) =>
+  valor === 'instagram' || valor === 'facebook' ? valor : null
+
+app.get('/integrations/meta/:canal', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const canal = canalMeta(c.req.param('canal'))
+  if (!canal) return c.json({ error: 'Canal inválido' }, 400)
+  const integracion = await new D1OrgIntegrationRepository(c.env.DB)
+    .findByOrgAndProvider(c.get('orgId'), providerDeCanal(canal))
+    .catch(() => null)
+  if (!integracion) return c.json({ configurado: false })
+  const config = parseConfig(integracion.config_json)
+  return c.json({
+    configurado: true,
+    enabled: integracion.enabled,
+    account_id: config.account_id ?? null,
+    // El token no vuelve: se guarda cifrado y sólo se reemplaza.
+    tiene_token: !!integracion.credentials_encrypted,
+  })
+})
+
+app.put('/integrations/meta/:canal', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const canal = canalMeta(c.req.param('canal'))
+  if (!canal) return c.json({ error: 'Canal inválido' }, 400)
+  const body = (await c.req.json().catch(() => null)) as any
+  const cuenta = String(body?.account_id ?? '').trim()
+  if (!/^\d{5,}$/.test(cuenta)) {
+    return c.json({ error: canal === 'facebook' ? 'El id de la página es un número largo' : 'El id de la cuenta de Instagram es un número largo' }, 400)
+  }
+
+  const repo = new D1OrgIntegrationRepository(c.env.DB)
+  const provider = providerDeCanal(canal)
+  const previa = await repo.findByOrgAndProvider(c.get('orgId'), provider).catch(() => null)
+  // Sin token nuevo se conserva el guardado (el form nunca lo muestra).
+  const credenciales = body?.page_access_token
+    ? await encrypt(String(body.page_access_token).trim(), c.env.JWT_SECRET)
+    : previa?.credentials_encrypted ?? null
+  if (!credenciales) return c.json({ error: 'Falta el page access token' }, 400)
+
+  // La misma cuenta no puede quedar en dos inmobiliarias: el webhook de Meta
+  // no dice de qué org es y el mensaje caería en la primera que aparezca.
+  const otras = await repo.findEnabledByProvider(provider).catch(() => [])
+  if (otras.some(i => i.org_id !== c.get('orgId') && String(parseConfig(i.config_json).account_id ?? '') === cuenta)) {
+    return c.json({ error: 'Esa cuenta ya está conectada en otra inmobiliaria' }, 409)
+  }
+
+  await repo.save(OrgIntegration.create({
+    id: previa?.id ?? new CryptoIdGenerator().generate(),
+    org_id: c.get('orgId'),
+    provider,
+    name: NOMBRE_CANAL[canal],
+    credentials_encrypted: credenciales,
+    config_json: JSON.stringify({ account_id: cuenta }),
+    enabled: body?.enabled !== false,
+    created_at: previa?.created_at,
+  }))
+  return c.json({ ok: true })
+})
+
 /**
  * Conectar WhatsApp en un paso: deja la configuración lista, crea la sesión
  * de esta inmobiliaria en el WAHA de la plataforma y devuelve el QR.
@@ -513,18 +578,55 @@ async function conversacionVisible(c: any) {
 const NO_ENCONTRADA = { error: 'Conversación no encontrada' }
 
 // Bandeja: la lista que ve el agente, con filtros por estado y asignado.
+// Carpetas: `mias` (asignadas a quien pregunta), `sin_asignar` (la cola) y
+// `todas`. Un agente tiene sólo "mías" — la regla de bandejaDe pisa lo que
+// pida, así que la carpeta es comodidad y no un permiso.
 app.get('/conversations', async (c) => {
-  const { status, channel, assignee_id, unassigned } = c.req.query()
+  const { status, channel, assignee_id, unassigned, carpeta, q, label } = c.req.query()
   const propias = bandejaDe(actorInbox(c))
+  const asignadoA = propias
+    ?? (carpeta === 'mias' ? c.get('userId') : assignee_id)
   const repo = new D1ConversationRepository(c.env.DB)
   const conversaciones = await repo.findByOrg(c.get('orgId'), {
     status: status as any,
     channel: channel as any,
     // Un agente no puede pedir la bandeja de otro ni la cola cambiando el query.
-    assignee_id: propias ?? assignee_id,
-    unassigned: propias ? false : unassigned === '1',
+    assignee_id: asignadoA,
+    unassigned: propias ? false : (carpeta === 'sin_asignar' || unassigned === '1'),
+    search: q || undefined,
+    label: label || undefined,
   })
   return c.json(conversaciones.map(cv => ({ ...cv.toObject(), window_open: cv.isWindowOpen() })))
+})
+
+// Contadores de las carpetas y etiquetas en uso, para armar la bandeja.
+app.get('/conversations/carpetas', async (c) => {
+  const actor = actorInbox(c)
+  const repo = new D1ConversationRepository(c.env.DB)
+  const [conteos, etiquetas] = await Promise.all([
+    repo.countOpenByFolder(c.get('orgId'), actor.userId),
+    repo.findLabels(c.get('orgId')),
+  ])
+  // Un agente sólo tiene su carpeta: no se le cuenta la cola ni el total.
+  const veTodas = bandejaDe(actor) === undefined
+  return c.json({
+    reparte: veTodas,
+    carpetas: veTodas ? conteos : { mias: conteos.mias },
+    etiquetas,
+  })
+})
+
+// Reemplaza las etiquetas de una conversación (la lista completa, como el bot).
+app.post('/conversations/:id/labels', async (c) => {
+  if (!(await conversacionVisible(c))) return c.json(NO_ENCONTRADA, 404)
+  const body = (await c.req.json().catch(() => ({}))) as any
+  if (!Array.isArray(body?.labels)) return c.json({ error: 'labels tiene que ser una lista' }, 400)
+  const labels = body.labels
+    .filter((l: unknown): l is string => typeof l === 'string')
+    .map((l: string) => l.trim().slice(0, 40))
+  const conv = await new SetConversationLabelsUseCase(new D1ConversationRepository(c.env.DB))
+    .execute(c.req.param('id'), c.get('orgId'), labels)
+  return c.json({ id: conv.id, labels: conv.labels })
 })
 
 // El hilo completo de una conversación.
@@ -574,11 +676,14 @@ app.post('/conversations/:id/messages', async (c) => {
   }
   // Contestar desde el número de la inmobiliaria en nombre de otro agente es
   // peor que leer: el cliente lo recibe.
-  if (!(await conversacionVisible(c))) return c.json(NO_ENCONTRADA, 404)
+  const charla = await conversacionVisible(c)
+  if (!charla) return c.json(NO_ENCONTRADA, 404)
 
-  const gateway = await createMessagingGateway(c.env, orgId)
+  // Por el canal de la conversación. Antes salía siempre por WhatsApp: una
+  // respuesta a un cliente de Instagram no llegaba.
+  const gateway = await createMessagingGateway(c.env, orgId, charla.channel)
   if (!gateway) {
-    return c.json({ error: 'La inmobiliaria no tiene WhatsApp configurado' }, 409)
+    return c.json({ error: `La inmobiliaria no tiene ${NOMBRE_CANAL[charla.channel] ?? 'el canal'} conectado` }, 409)
   }
 
   const useCase = new SendMessageUseCase(
@@ -587,13 +692,22 @@ app.post('/conversations/:id/messages', async (c) => {
     gateway,
     new CryptoIdGenerator(),
   )
-  const result = await useCase.execute({
-    conversationId: c.req.param('id'),
-    orgId,
-    text: body.content,
-    senderType: 'agent',
-    senderId: c.get('userId'),
-  })
+  // Un error del proveedor (token vencido, número desconectado) vuelve como
+  // 502 con su motivo: antes llegaba "Internal server error" y el agente no
+  // sabía si reintentar o avisar. Los errores de dominio siguen su curso.
+  let result
+  try {
+    result = await useCase.execute({
+      conversationId: c.req.param('id'),
+      orgId,
+      text: body.content,
+      senderType: 'agent',
+      senderId: c.get('userId'),
+    })
+  } catch (e: any) {
+    if (e instanceof DomainError) throw e
+    return c.json({ error: `No se pudo enviar: ${e?.message ?? 'el proveedor no respondió'}` }, 502)
+  }
 
   // El bot escucha también los salientes: así se entera de que contestó un
   // humano y se pausa solo (esa lógica ya vive en n8n).

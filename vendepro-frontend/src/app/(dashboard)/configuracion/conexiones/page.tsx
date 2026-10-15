@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import {
   Plug, ArrowLeft, Loader2, Save, CheckCircle2, XCircle,
-  RefreshCw, Download, Radio, AlertCircle, History, Calendar, Unplug, Users, Sparkles, MessageSquare,
+  RefreshCw, Download, Radio, AlertCircle, History, Calendar, Unplug, Users, Sparkles, MessageSquare, MessageCircle,
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
@@ -17,6 +17,7 @@ import { Switch } from '@/components/ui/Switch'
 import { Checkbox } from '@/components/ui/Choice'
 import { Alert } from '@/components/ui/Alert'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { IconMedallion } from '@/components/ui/IconMedallion'
 import { getCurrentUser } from '@/lib/auth'
 import DocsIntegrationCard from '@/components/settings/DocsIntegrationCard'
 import type { CrmIntegration, GoogleIntegration, IntegrationSyncLogEntry } from '@/lib/types'
@@ -379,6 +380,20 @@ export default function ConexionesPage() {
           </div>
         </div>
         <Button href="/configuracion/conexiones/whatsapp" variant="outline">Configurar</Button>
+      </Card>
+
+      {/* Instagram y Messenger: misma bandeja, API oficial de Meta. */}
+      <Card className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3 min-w-0">
+          <IconMedallion tone="info"><MessageCircle className="w-5 h-5" /></IconMedallion>
+          <div className="min-w-0">
+            <Heading level={4}>Instagram y Messenger</Heading>
+            <Text size="sm" tone="muted">
+              Los mensajes de Instagram y de la página de Facebook, en la misma bandeja que WhatsApp.
+            </Text>
+          </div>
+        </div>
+        <Button href="/configuracion/conexiones/meta" variant="outline">Configurar</Button>
       </Card>
 
       {/* Google Calendar (personal del usuario) */}

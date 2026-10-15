@@ -239,4 +239,53 @@ describe('Inbox — conversaciones y mensajes en D1', () => {
       expect(conv?.toObject().lead).toBeNull()
     })
   })
+
+  describe('carpetas, búsqueda y etiquetas', () => {
+    async function contacto(nombre: string, telefono: string) {
+      const id = nextId('ct')
+      await env.DB.prepare(
+        `INSERT INTO contacts (id, org_id, full_name, phone, contact_type, agent_id, created_at)
+         VALUES (?, ?, ?, ?, 'comprador', ?, datetime('now'))`,
+      ).bind(id, orgId, nombre, telefono, agentId).run()
+      return id
+    }
+
+    it('filtra por etiqueta y lista las etiquetas en uso', async () => {
+      const repo = new D1ConversationRepository(env.DB)
+      const a = nuevaConversacion({ external_id: 'a@c.us' }); a.setLabels(['caliente', 'bot_pausado'])
+      const b = nuevaConversacion({ external_id: 'b@c.us' }); b.setLabels(['tasacion'])
+      await repo.save(a); await repo.save(b); await repo.save(nuevaConversacion({ external_id: 'c@c.us' }))
+
+      expect((await repo.findByOrg(orgId, { label: 'caliente' })).map(c => c.id)).toEqual([a.id])
+      expect(await repo.findLabels(orgId)).toEqual(['bot_pausado', 'caliente', 'tasacion'])
+    })
+
+    // El teléfono está escrito a mano en el CRM y se busca como se tiene.
+    it('busca por nombre, por teléfono sin formato y por texto de un mensaje', async () => {
+      const repo = new D1ConversationRepository(env.DB)
+      const mensajes = new D1MessageRepository(env.DB)
+      const juan = nuevaConversacion({ external_id: 'j@c.us', contact_id: await contacto('Juan Pérez', '11 5555-1234') })
+      const ana = nuevaConversacion({ external_id: 'an@c.us', contact_id: await contacto('Ana Gómez', '11 4444-0000') })
+      await repo.save(juan); await repo.save(ana)
+      await mensajes.save(Message.create({
+        id: nextId('msg'), org_id: orgId, conversation_id: ana.id, direction: 'in',
+        sender_type: 'contact', sender_id: null, content: 'Me interesa el PH de Palermo', external_id: null,
+      }))
+
+      expect((await repo.findByOrg(orgId, { search: 'juan' })).map(c => c.id)).toEqual([juan.id])
+      expect((await repo.findByOrg(orgId, { search: '1155551234' })).map(c => c.id)).toEqual([juan.id])
+      expect((await repo.findByOrg(orgId, { search: 'PH de Palermo' })).map(c => c.id)).toEqual([ana.id])
+    })
+
+    it('cuenta las abiertas por carpeta', async () => {
+      const repo = new D1ConversationRepository(env.DB)
+      await repo.save(nuevaConversacion({ external_id: '1@c.us', assignee_id: agentId }))
+      await repo.save(nuevaConversacion({ external_id: '2@c.us' }))
+      await repo.save(nuevaConversacion({ external_id: '3@c.us' }))
+      const resuelta = nuevaConversacion({ external_id: '4@c.us', assignee_id: agentId }); resuelta.setStatus('resolved')
+      await repo.save(resuelta)
+
+      expect(await repo.countOpenByFolder(orgId, agentId)).toEqual({ mias: 1, sinAsignar: 2, todas: 3 })
+    })
+  })
 })

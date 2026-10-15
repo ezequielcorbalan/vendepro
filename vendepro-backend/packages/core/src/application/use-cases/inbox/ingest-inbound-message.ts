@@ -211,7 +211,8 @@ export class IngestInboundMessageUseCase {
     const nombre = input.fromName?.trim()
       || (input.igUsername ? `@${input.igUsername}` : null)
       || phone
-      || `${input.channel} ${String(metaUserId).slice(-6)}`
+      // Sin nombre (Meta no respondió el perfil): algo legible y distinguible.
+      || `Cliente de ${input.channel === 'facebook' ? 'Messenger' : 'Instagram'} ${String(metaUserId).slice(-4)}`
 
     const contact = Contact.create({
       id: this.ids.generate(),

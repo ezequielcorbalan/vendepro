@@ -1,5 +1,5 @@
 import { Conversation } from '@vendepro/core'
-import type { ConversationRepository, ConversationFilters, ConversationChannel } from '@vendepro/core'
+import type { ConversationRepository, ConversationFilters, ConversationChannel, ConversationFolderCounts } from '@vendepro/core'
 
 export class D1ConversationRepository implements ConversationRepository {
   constructor(private readonly db: D1Database) {}
@@ -28,6 +28,24 @@ export class D1ConversationRepository implements ConversationRepository {
     if (filters?.channel) { query += ' AND c.channel = ?'; binds.push(filters.channel) }
     if (filters?.assignee_id) { query += ' AND c.assignee_id = ?'; binds.push(filters.assignee_id) }
     if (filters?.unassigned) { query += ' AND c.assignee_id IS NULL' }
+    if (filters?.label) {
+      query += ' AND EXISTS (SELECT 1 FROM json_each(c.labels) WHERE json_each.value = ?)'
+      binds.push(filters.label)
+    }
+    if (filters?.search?.trim()) {
+      // El teléfono se compara sólo por dígitos: en la base está escrito a mano
+      // ("11 5555-1234") y la gente lo busca como lo tiene ("1155551234").
+      const texto = `%${filters.search.trim()}%`
+      const digitos = filters.search.replace(/\D/g, '')
+      query += ` AND (ct.full_name LIKE ? OR c.external_id LIKE ?
+        OR EXISTS (SELECT 1 FROM messages m WHERE m.conversation_id = c.id AND m.content LIKE ?)`
+      binds.push(texto, texto, texto)
+      if (digitos.length >= 4) {
+        query += ` OR REPLACE(REPLACE(REPLACE(REPLACE(ct.phone, ' ', ''), '-', ''), '+', ''), '(', '') LIKE ?`
+        binds.push(`%${digitos}%`)
+      }
+      query += ')'
+    }
 
     // La bandeja se lee por actividad: lo último que pasó, arriba.
     query += ' ORDER BY c.last_activity_at DESC LIMIT ?'
@@ -35,6 +53,27 @@ export class D1ConversationRepository implements ConversationRepository {
 
     const rows = (await this.db.prepare(query).bind(...binds).all()).results as any[]
     return rows.map(toEntity)
+  }
+
+  async findLabels(orgId: string): Promise<string[]> {
+    const rows = (await this.db
+      .prepare(`SELECT DISTINCT j.value AS label FROM conversations c, json_each(c.labels) j
+                WHERE c.org_id = ? ORDER BY j.value`)
+      .bind(orgId)
+      .all()).results as any[]
+    return rows.map(r => String(r.label)).filter(Boolean)
+  }
+
+  async countOpenByFolder(orgId: string, userId: string): Promise<ConversationFolderCounts> {
+    const row = await this.db
+      .prepare(`SELECT
+          SUM(CASE WHEN assignee_id = ? THEN 1 ELSE 0 END) AS mias,
+          SUM(CASE WHEN assignee_id IS NULL THEN 1 ELSE 0 END) AS sin_asignar,
+          COUNT(*) AS todas
+        FROM conversations WHERE org_id = ? AND status != 'resolved'`)
+      .bind(userId, orgId)
+      .first() as any
+    return { mias: row?.mias ?? 0, sinAsignar: row?.sin_asignar ?? 0, todas: row?.todas ?? 0 }
   }
 
   async findByContact(contactId: string, orgId: string): Promise<Conversation[]> {

@@ -38,6 +38,7 @@ function build(opts: {
   }
   const contacts = {
     findByEmailOrPhone: vi.fn(async () => opts.contact ?? null),
+    findByMetaUserId: vi.fn(async () => null),
     save: vi.fn(),
   }
   const users = {
@@ -228,5 +229,14 @@ describe('IngestInboundMessageUseCase', () => {
       const { uc } = build({ conversation: conversacion(), lastMessage: anterior('in', '2026-10-15T14:00:00.000Z') })
       expect((await uc.execute({ ...entrada, sentAt: ahora })).abreTurno).toBe(true)
     })
+  })
+
+  it('un contacto de Messenger sin nombre queda con un nombre legible', async () => {
+    const { uc, contacts } = build({ contact: null })
+    await uc.execute({
+      orgId: 'org_mg', channel: 'facebook', externalChatId: 'psid-998877', externalMessageId: 'm1',
+      fromPhone: null, fromName: null, metaUserId: 'psid-998877', content: 'Hola',
+    } as any)
+    expect(contacts.save.mock.calls[0][0].toObject().full_name).toBe('Cliente de Messenger 8877')
   })
 })

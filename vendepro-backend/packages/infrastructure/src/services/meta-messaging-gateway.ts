@@ -1,7 +1,7 @@
 import type { MessagingGateway, SendMessageInput, SendMessageResult } from '@vendepro/core'
 
-/** Tope de Meta para un mensaje de texto de Instagram. */
-const MAX_TEXTO = 1000
+/** Topes de Meta para un mensaje de texto: Instagram corta antes que Messenger. */
+const MAX_TEXTO: Record<string, number> = { instagram: 1000, facebook: 2000 }
 
 export interface MetaMessagingConfig {
   /** Page access token de la página vinculada a la cuenta de Instagram. */
@@ -33,8 +33,9 @@ export class MetaMessagingGateway implements MessagingGateway {
     if (input.channel === 'whatsapp') {
       throw new Error('Este adapter es para Instagram y Facebook; WhatsApp va por su propio canal')
     }
-    if (input.text.length > MAX_TEXTO) {
-      throw new Error(`El mensaje supera los ${MAX_TEXTO} caracteres que acepta Meta`)
+    const tope = MAX_TEXTO[input.channel] ?? 1000
+    if (input.text.length > tope) {
+      throw new Error(`El mensaje supera los ${tope} caracteres que acepta Meta`)
     }
 
     const base = this.config.baseUrl ?? 'https://graph.facebook.com'
@@ -59,6 +60,39 @@ export class MetaMessagingGateway implements MessagingGateway {
     }
 
     return { externalId: typeof data?.message_id === 'string' ? data.message_id : null }
+  }
+}
+
+export interface PerfilMeta {
+  nombre: string | null
+  /** @usuario de Instagram (Messenger no lo expone). */
+  usuario: string | null
+}
+
+/**
+ * Nombre de quien escribe, que el webhook de Meta no trae: sin esto el
+ * contacto quedaba como "facebook 856672" y el agente no sabía con quién
+ * hablaba. Best-effort: si Meta no responde a tiempo, se sigue sin nombre.
+ */
+export async function obtenerPerfilMeta(
+  config: MetaMessagingConfig,
+  userId: string,
+  channel: 'instagram' | 'facebook',
+): Promise<PerfilMeta> {
+  const base = config.baseUrl ?? 'https://graph.facebook.com'
+  const version = config.apiVersion ?? 'v21.0'
+  const campos = channel === 'instagram' ? 'name,username' : 'first_name,last_name'
+  const url = `${trimSlash(base)}/${version}/${encodeURIComponent(userId)}?fields=${campos}&access_token=${encodeURIComponent(config.pageAccessToken)}`
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(3000) })
+    if (!res.ok) return { nombre: null, usuario: null }
+    const d = (await res.json().catch(() => null)) as any
+    const nombre = channel === 'instagram'
+      ? (d?.name ?? null)
+      : [d?.first_name, d?.last_name].filter(Boolean).join(' ') || null
+    return { nombre: nombre ? String(nombre).trim() : null, usuario: d?.username ? String(d.username) : null }
+  } catch {
+    return { nombre: null, usuario: null }
   }
 }
 
