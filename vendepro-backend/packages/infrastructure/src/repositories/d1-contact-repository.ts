@@ -12,14 +12,32 @@ export class D1ContactRepository implements ContactRepository {
     return row ? this.toEntity(row) : null
   }
 
+  async findByMetaUserId(orgId: string, metaUserId: string): Promise<Contact | null> {
+    const row = await this.db
+      .prepare('SELECT * FROM contacts WHERE org_id = ? AND meta_user_id = ? LIMIT 1')
+      .bind(orgId, metaUserId)
+      .first() as any
+    return row ? this.toEntity(row) : null
+  }
+
   async findByOrg(orgId: string, filters?: ContactFilters): Promise<Contact[]> {
     let query = 'SELECT * FROM contacts WHERE org_id = ?'
     const binds: unknown[] = [orgId]
 
     if (filters?.agent_id) { query += ' AND agent_id = ?'; binds.push(filters.agent_id) }
     if (filters?.search) {
-      query += ' AND (full_name LIKE ? OR phone LIKE ? OR email LIKE ?)'
+      // Teléfono: se comparan sólo dígitos, así "11 5555-1234" encuentra al
+      // contacto guardado como "+5491155551234". Es la misma normalización que
+      // usa la búsqueda de leads, y lo que necesita el bot para saber si un
+      // número que escribe ya está en la base.
+      const digits = filters.search.replace(/\D/g, '')
+      query += ' AND (full_name LIKE ? OR phone LIKE ? OR email LIKE ?'
       binds.push(`%${filters.search}%`, `%${filters.search}%`, `%${filters.search}%`)
+      if (digits.length >= 3) {
+        query += ` OR REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(phone, ''), ' ', ''), '-', ''), '+', ''), '(', ''), ')', ''), '.', '') LIKE ?`
+        binds.push(`%${digits}%`)
+      }
+      query += ')'
     }
     if (filters?.tag_id) {
       query += ` AND id IN (
@@ -103,16 +121,19 @@ export class D1ContactRepository implements ContactRepository {
   async save(contact: Contact): Promise<void> {
     const o = contact.toObject()
     await this.db.prepare(`
-      INSERT INTO contacts (id, org_id, full_name, phone, email, contact_type, neighborhood, notes, source, agent_id, created_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?)
+      INSERT INTO contacts (id, org_id, full_name, phone, email, contact_type, neighborhood, notes, source, agent_id, created_at, meta_user_id, ig_username)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
       ON CONFLICT(id) DO UPDATE SET
         full_name=excluded.full_name, phone=excluded.phone, email=excluded.email,
         contact_type=excluded.contact_type, neighborhood=excluded.neighborhood,
-        notes=excluded.notes, source=excluded.source, agent_id=excluded.agent_id
+        notes=excluded.notes, source=excluded.source, agent_id=excluded.agent_id,
+        -- COALESCE: un update que no trae la identidad de Meta no la borra.
+        meta_user_id=COALESCE(excluded.meta_user_id, contacts.meta_user_id),
+        ig_username=COALESCE(excluded.ig_username, contacts.ig_username)
     `).bind(
       o.id, o.org_id, o.full_name, o.phone, o.email,
       o.contact_type, o.neighborhood, o.notes, o.source,
-      o.agent_id, o.created_at
+      o.agent_id, o.created_at, o.meta_user_id ?? null, o.ig_username ?? null
     ).run()
   }
 
@@ -166,6 +187,8 @@ export class D1ContactRepository implements ContactRepository {
       source: row.source ?? null,
       agent_id: row.agent_id,
       created_at: row.created_at,
+      meta_user_id: row.meta_user_id ?? null,
+      ig_username: row.ig_username ?? null,
     })
   }
 }

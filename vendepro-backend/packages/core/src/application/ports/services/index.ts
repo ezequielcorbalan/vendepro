@@ -24,6 +24,7 @@ export type {
   ActionExecutionInput,
   ActionOutcome,
 } from './automation-action-executor'
+export * from './messaging-gateway'
 export type { DocumentIntakeGateway, DocumentIntakeFields, DocumentIntakeFile, DocumentIntakeResult, DocumentIntakeFinish } from './document-intake-gateway'
 export type { DocumentClassifier, DocumentClassifierInput, DocumentClassification, AuthorizationTerms } from './document-classifier'
 export type { CloudDocumentStorage, CloudFolder, CloudFile } from './cloud-document-storage'

@@ -26,12 +26,14 @@ import {
   HmacUnsubscribeTokenSigner,
   fireMarketingEvent,
   fireWebhookEvent,
+  D1ConversationRepository, D1MessageRepository, createMessagingGateway,
+  D1OrgIntegrationRepository, verificarFirmaMeta, parsearWebhookMeta, parseConfig, META_PROVIDER,
+  esWebhookWaha, parsearWebhookWaha, D1NotificationRepository,
   fireAutomationEvent,
   D1AgentProfileRepository,
   D1MetaIntegrationRepository,
   D1DocPortalLinkRepository,
   D1PropertyDocumentRepository,
-  D1OrgIntegrationRepository,
   N8nDocumentIntakeGateway,
   GeminiDocumentClassifier,
   GoogleDriveOrgStorageProvider,
@@ -61,6 +63,16 @@ import {
   GetPortalFeedUseCase,
   GetPublicAgentLandingUseCase,
   GetPublicTagConfigUseCase,
+  IngestInboundMessageUseCase,
+  NotifyInboxUseCase,
+  type IngestInboundMessageResult,
+  GetConversationThreadUseCase,
+  AssignConversationUseCase,
+  SetConversationLabelsUseCase,
+  ToggleConversationStatusUseCase,
+  SendMessageUseCase,
+  GetContactsUseCase,
+  buildMessageCreatedPayload,
   GetPublicDocPortalUseCase,
   UploadPortalDocumentUseCase,
   FinishDocPortalSessionUseCase,
@@ -73,6 +85,13 @@ type Env = {
   JWT_SECRET: string
   R2: R2Bucket
   PUBLIC_BASE_URL?: string
+  /** App secret de la app de Meta: firma los webhooks de Instagram/Facebook. */
+  META_APP_SECRET?: string
+  /** Token del handshake de verificación del webhook (lo elige uno). */
+  META_VERIFY_TOKEN?: string
+  /** WAHA de la plataforma: lo usa el bot cuando responde por WhatsApp. */
+  WAHA_BASE_URL?: string
+  WAHA_API_KEY?: string
   // Motor propio de documentación: clasificar (Gemini) y refrescar el token del Drive de la org.
   GEMINI_API_KEY?: string
   GOOGLE_CLIENT_ID?: string
@@ -403,6 +422,360 @@ app.get('/public/prefact/:slug', async (c) => {
   if (!result) return c.json({ error: 'Not found' }, 404)
   return c.json(result)
 })
+
+// ── INBOX: WEBHOOK DE META (Instagram / Facebook) ──────────────
+// Público y validado por FIRMA, no por nuestro token: Meta no deja mandar
+// headers propios en sus webhooks. Firma el cuerpo con el app secret y manda
+// el resultado en X-Hub-Signature-256.
+
+// Handshake de alta del webhook: Meta pega una vez con hub.challenge.
+app.get('/public/inbox/meta', (c) => {
+  const esperado = c.env.META_VERIFY_TOKEN
+  const modo = c.req.query('hub.mode')
+  const token = c.req.query('hub.verify_token')
+  const challenge = c.req.query('hub.challenge') ?? ''
+  if (!esperado || modo !== 'subscribe' || token !== esperado) {
+    return c.text('Verificación rechazada', 403)
+  }
+  return c.text(challenge, 200)
+})
+
+app.post('/public/inbox/meta', async (c) => {
+  const appSecret = c.env.META_APP_SECRET
+  if (!appSecret) return c.text('Canal no configurado', 503)
+
+  // El cuerpo CRUDO: la firma se calcula sobre los bytes exactos, así que no
+  // se puede parsear y volver a serializar antes de verificar.
+  const raw = await c.req.text()
+  const firmaOk = await verificarFirmaMeta(raw, c.req.header('X-Hub-Signature-256') ?? null, appSecret)
+  if (!firmaOk) return c.text('Firma inválida', 401)
+
+  const payload = JSON.parse(raw || '{}')
+  const mensajes = parsearWebhookMeta(payload)
+  if (mensajes.length === 0) return c.json({ ok: true, ingeridos: 0 })
+
+  // Meta manda todo por un solo webhook, sin decir de qué organización es: la
+  // cuenta que recibió el mensaje (`entry.id`) es lo que lo ata a una org.
+  const integraciones = await new D1OrgIntegrationRepository(c.env.DB)
+    .findEnabledByProvider(META_PROVIDER)
+    .catch(() => [])
+  const orgPorCuenta = new Map<string, string>()
+  for (const i of integraciones) {
+    const cuenta = parseConfig(i.config_json).account_id
+    if (cuenta) orgPorCuenta.set(String(cuenta), i.org_id)
+  }
+
+  const uc = ingestor(c.env)
+
+  let ingeridos = 0
+  for (const m of mensajes) {
+    const orgId = orgPorCuenta.get(m.cuentaId)
+    // Una cuenta que no mapea a ninguna org no es un error nuestro: la app de
+    // Meta puede estar suscrita a páginas de terceros. Se ignora.
+    if (!orgId) continue
+
+    const r = await uc.execute({
+      orgId,
+      channel: m.channel,
+      externalChatId: m.remitenteId,
+      externalMessageId: m.mensajeId,
+      fromPhone: null,
+      fromName: null,
+      metaUserId: m.remitenteId,
+      content: m.texto,
+      attachments: m.adjuntos.map(a => ({ type: a.type, url: a.url ?? null })),
+      sentAt: m.enviadoEn,
+    })
+    if (r.duplicate) continue
+    ingeridos++
+
+    await trasIngerir(c.env, orgId, r, {
+      nombre: null,
+      quien: m.channel === 'instagram' ? 'Un cliente de Instagram' : 'Un cliente de Facebook',
+    })
+  }
+
+  // Siempre 200 salvo firma inválida: un 500 hace que Meta reintente en loop
+  // y termine dando de baja la suscripción del webhook.
+  return c.json({ ok: true, ingeridos })
+})
+
+// ── INBOX: CONTRATO DEL BOT (/v1/conversations/*) ──────────────
+// Los endpoints que consume el bot de n8n. Las rutas y los nombres de los
+// campos copian a Chatwoot (de donde se migra), así que para el bot cambiar
+// de Onetalk a VendéPro es cambiar la URL y el token, no reescribir nodos.
+//
+// Lectura: scope `inbox:read` o `inbox:write`. Escritura: `inbox:write`.
+function puedeLeerInbox(c: any): boolean {
+  const scopes: string[] = c.get('tokenScopes') ?? []
+  return scopes.includes('inbox:read') || scopes.includes('inbox:write')
+}
+function puedeEscribirInbox(c: any): boolean {
+  return (c.get('tokenScopes') ?? []).includes('inbox:write')
+}
+const SIN_LECTURA = { error: 'El token no tiene scope inbox:read' }
+const SIN_ESCRITURA = { error: 'El token no tiene scope inbox:write' }
+
+// Estado, etiquetas y asignado: con esto el bot sabe si está pausado y si la
+// conversación ya la está atendiendo una persona.
+app.get('/v1/conversations/:id', async (c) => {
+  if (!puedeLeerInbox(c)) return c.json(SIN_LECTURA, 403)
+  const uc = new GetConversationThreadUseCase(
+    new D1ConversationRepository(c.env.DB),
+    new D1MessageRepository(c.env.DB),
+  )
+  const conv = await uc.getConversation(c.req.param('id'), c.get('orgId'))
+  const o = conv.toObject()
+  return c.json({
+    id: o.id,
+    channel: o.channel,
+    status: o.status,
+    labels: o.labels,
+    assignee_id: o.assignee_id,
+    contact_id: o.contact_id,
+    // Fuera de ventana, con la API oficial sólo se puede mandar plantilla.
+    window_open: conv.isWindowOpen(),
+    window_expires_at: o.window_expires_at,
+    last_activity_at: o.last_activity_at,
+  })
+})
+
+// El historial, que el bot usa como contexto de la conversación.
+app.get('/v1/conversations/:id/messages', async (c) => {
+  if (!puedeLeerInbox(c)) return c.json(SIN_LECTURA, 403)
+  const uc = new GetConversationThreadUseCase(
+    new D1ConversationRepository(c.env.DB),
+    new D1MessageRepository(c.env.DB),
+  )
+  const limite = Number(c.req.query('limit') ?? 50)
+  const mensajes = await uc.getMessages(c.req.param('id'), c.get('orgId'), Number.isFinite(limite) ? limite : 50)
+  return c.json(mensajes.map(m => {
+    const o = m.toObject()
+    return {
+      id: o.id,
+      content: o.content,
+      // 0 = del cliente, 1 = nuestro. Es lo que el bot lee.
+      message_type: m.messageType,
+      sender_type: o.sender_type,
+      attachments: o.attachments,
+      created_at: o.created_at,
+    }
+  }))
+})
+
+// La respuesta del bot. Sale por el mismo camino que la de un agente.
+app.post('/v1/conversations/:id/messages', async (c) => {
+  if (!puedeEscribirInbox(c)) return c.json(SIN_ESCRITURA, 403)
+  const body = (await c.req.json().catch(() => null)) as any
+  if (!body || typeof body.content !== 'string') {
+    return c.json({ error: 'content es requerido' }, 400)
+  }
+
+  const orgId = c.get('orgId')
+  const gateway = await createMessagingGateway(c.env, orgId)
+  if (!gateway) return c.json({ error: 'La inmobiliaria no tiene WhatsApp configurado' }, 409)
+
+  const result = await new SendMessageUseCase(
+    new D1ConversationRepository(c.env.DB),
+    new D1MessageRepository(c.env.DB),
+    gateway,
+    new CryptoIdGenerator(),
+  ).execute({
+    conversationId: c.req.param('id'),
+    orgId,
+    text: body.content,
+    senderType: 'bot',
+    senderId: null,
+  })
+
+  // Chatwoot avisa `message_created` también por los mensajes del bot, y el
+  // bot cuenta con eso: es como lleva el límite de turnos. Acá faltaba.
+  await fireWebhookEvent(c.env, {
+    orgId,
+    event: 'message_created',
+    payload: buildMessageCreatedPayload({
+      conversation: result.conversation as any,
+      message: {
+        id: result.messageId, content: body.content, attachments: [],
+        direction: 'out', senderType: 'bot', createdAt: result.createdAt,
+      },
+      senderName: 'Bot',
+    }),
+  })
+  return c.json(result, 201)
+})
+
+// Asignar un agente al escalar a humano. `assignee_id: null` la devuelve a la cola.
+app.post('/v1/conversations/:id/assignments', async (c) => {
+  if (!puedeEscribirInbox(c)) return c.json(SIN_ESCRITURA, 403)
+  const body = (await c.req.json().catch(() => ({}))) as any
+  const conv = await new AssignConversationUseCase(
+    new D1ConversationRepository(c.env.DB),
+    new D1UserRepository(c.env.DB),
+  ).execute(c.req.param('id'), c.get('orgId'), body?.assignee_id ?? null)
+  return c.json({ id: conv.id, assignee_id: conv.assignee_id })
+})
+
+// Etiquetas: reemplaza la lista completa (así saca `bot_pausado` también).
+app.post('/v1/conversations/:id/labels', async (c) => {
+  if (!puedeEscribirInbox(c)) return c.json(SIN_ESCRITURA, 403)
+  const body = (await c.req.json().catch(() => ({}))) as any
+  const conv = await new SetConversationLabelsUseCase(new D1ConversationRepository(c.env.DB))
+    .execute(c.req.param('id'), c.get('orgId'), Array.isArray(body?.labels) ? body.labels : [])
+  return c.json({ id: conv.id, labels: conv.labels })
+})
+
+// Abrir / cerrar. Sin body alterna; con `status` lo fija.
+app.post('/v1/conversations/:id/toggle_status', async (c) => {
+  if (!puedeEscribirInbox(c)) return c.json(SIN_ESCRITURA, 403)
+  const body = (await c.req.json().catch(() => ({}))) as any
+  const conv = await new ToggleConversationStatusUseCase(new D1ConversationRepository(c.env.DB))
+    .execute(c.req.param('id'), c.get('orgId'), body?.status)
+  return c.json({ id: conv.id, status: conv.status })
+})
+
+// Anti-doble-contacto: el bot pregunta si un teléfono ya está en la base
+// antes de tratarlo como consulta nueva. Busca por dígitos, así que no
+// importa cómo esté escrito el número de cada lado.
+app.get('/v1/contacts/search', async (c) => {
+  if (!puedeLeerInbox(c)) return c.json(SIN_LECTURA, 403)
+  const q = (c.req.query('q') ?? '').trim()
+  if (!q) return c.json([])
+
+  const contactos = await new GetContactsUseCase(new D1ContactRepository(c.env.DB))
+    .execute(c.get('orgId'), { search: q })
+  return c.json(contactos.slice(0, 20).map(ct => ({
+    id: ct.id, full_name: ct.full_name, phone: ct.phone, email: ct.email, contact_type: ct.contact_type,
+  })))
+})
+
+// ── INBOX: MENSAJE ENTRANTE (/v1/inbox/messages) — Bearer JWT ───
+// Lo llama el proveedor de WhatsApp (WAHA/Evolution hoy, Meta Cloud API
+// después) por cada mensaje que entra. Requiere scope `inbox:write`.
+//
+// Entra por el namespace /v1 y no por un secreto propio para no inventar un
+// segundo mecanismo de auth: el token de integración ya se crea, se revoca y
+// se audita desde la UI, y trae la org.
+//
+// Siempre responde 200 salvo que el body sea inválido: un 500 hace que el
+// proveedor reintente en loop, y la ingesta ya es idempotente por el id del
+// mensaje, así que un reenvío no duplica nada.
+app.post('/v1/inbox/messages', async (c) => {
+  const scopes = c.get('tokenScopes') ?? []
+  if (!scopes.includes('inbox:write')) {
+    return c.json({ error: 'El token no tiene el scope inbox:write' }, 403)
+  }
+
+  const body = (await c.req.json().catch(() => null)) as any
+  if (!body || typeof body !== 'object') {
+    return c.json({ error: 'Body JSON inválido' }, 400)
+  }
+
+  const orgId = c.get('orgId')
+
+  // Dos formatos: el NATIVO de WAHA (lo que manda un contenedor real) y el
+  // plano de los scripts de prueba y de integraciones a mano.
+  let entrada: { chatId: string; mensajeId: string | null; nombre: string | null; texto: string | null; adjuntos: any[]; enviadoEn?: string; channel: 'whatsapp' | 'instagram' | 'facebook' }
+  if (esWebhookWaha(body)) {
+    const evento = parsearWebhookWaha(body)
+    if (evento.tipo === 'estado') {
+      // La org sale del token, no del nombre de sesión: no se puede avisar a
+      // otra org mandando un nombre de sesión ajeno.
+      const avisados = await notificador(c.env).sesionCaida({ orgId, estado: evento.estado })
+      return c.json({ ok: true, estado: evento.estado, avisados })
+    }
+    // Grupos, estados, lo que sale desde el número: 200 para que WAHA no reintente.
+    if (evento.tipo === 'ignorado') return c.json({ ok: true, ignorado: evento.motivo })
+    const m = evento.mensaje
+    entrada = { chatId: m.chatId, mensajeId: m.mensajeId, nombre: m.nombre, texto: m.texto, adjuntos: m.adjuntos, enviadoEn: m.enviadoEn, channel: 'whatsapp' }
+  } else {
+    const chatId = String(body.chat_id ?? body.from ?? '').trim()
+    if (!chatId) return c.json({ error: 'chat_id es requerido' }, 400)
+    entrada = {
+      chatId,
+      mensajeId: body.message_id ? String(body.message_id) : null,
+      nombre: body.from_name ? String(body.from_name) : null,
+      texto: typeof body.content === 'string' ? body.content : null,
+      adjuntos: Array.isArray(body.attachments) ? body.attachments : [],
+      enviadoEn: body.sent_at ? String(body.sent_at) : undefined,
+      channel: body.channel === 'instagram' || body.channel === 'facebook' ? body.channel : 'whatsapp',
+    }
+  }
+
+  // WhatsApp manda el jid ("5491155551234@c.us"): el teléfono es lo de antes del @.
+  const telefono = String(body.from_phone ?? entrada.chatId).split('@')[0] ?? null
+  const result = await ingestor(c.env).execute({
+    orgId,
+    channel: entrada.channel,
+    externalChatId: entrada.chatId,
+    externalMessageId: entrada.mensajeId,
+    fromPhone: telefono,
+    fromName: entrada.nombre,
+    content: entrada.texto,
+    attachments: entrada.adjuntos,
+    sentAt: entrada.enviadoEn,
+  })
+
+  await trasIngerir(c.env, orgId, result, {
+    nombre: entrada.nombre,
+    quien: entrada.nombre ?? (telefono ? `+${telefono}` : 'Un cliente'),
+  })
+
+  return c.json(result, 200)
+})
+
+function ingestor(env: Env) {
+  return new IngestInboundMessageUseCase(
+    new D1ConversationRepository(env.DB),
+    new D1MessageRepository(env.DB),
+    new D1ContactRepository(env.DB),
+    new D1UserRepository(env.DB),
+    new CryptoIdGenerator(),
+  )
+}
+
+function notificador(env: Env) {
+  return new NotifyInboxUseCase(
+    new D1NotificationRepository(env.DB),
+    new D1UserRepository(env.DB),
+    new CryptoIdGenerator(),
+  )
+}
+
+/**
+ * Lo que pasa después de guardar un mensaje entrante, igual para todos los
+ * canales: despertar al bot de n8n y avisarle a una persona.
+ *
+ * Un reenvío del proveedor (duplicate) no hace ninguna de las dos cosas.
+ */
+async function trasIngerir(
+  env: Env, orgId: string, r: IngestInboundMessageResult,
+  remitente: { nombre: string | null; quien: string },
+): Promise<void> {
+  if (r.duplicate || !r.conversation || !r.message) return
+
+  await fireWebhookEvent(env, {
+    orgId,
+    event: 'message_created',
+    payload: buildMessageCreatedPayload({
+      conversation: r.conversation as any,
+      message: { ...r.message, direction: 'in', senderType: 'contact' },
+      senderName: remitente.nombre,
+    }),
+  })
+
+  // Sólo cuando el cliente toma la palabra: cinco mensajes seguidos son un aviso.
+  if (r.abreTurno) {
+    await notificador(env).nuevoMensaje({
+      orgId,
+      conversationId: r.conversation.id,
+      assigneeId: r.assigneeId ?? null,
+      quien: remitente.quien,
+      texto: r.message.content,
+      tipoAdjunto: r.message.attachments[0]?.type ?? null,
+    }).catch(() => 0)
+  }
+}
 
 // ── INTEGRATION API: IMPORT LEADS (/v1/leads) — Bearer JWT ───────
 // Acepta un lead único, un array, o { leads: [...] } (tope 100). Los leads

@@ -12,6 +12,8 @@ import {
   D1LeadPropertyRepository, D1PropertyLinkRepository,
   D1WebhookRepository, D1WebhookDeliveryRepository, HttpWebhookSender,
   D1NotificationRepository,
+  D1ConversationRepository, D1MessageRepository, createMessagingGateway,
+  WahaSessionClient, WHATSAPP_PROVIDER, parseConfig, sessionDeOrg,
   D1OrgIntegrationRepository, D1IntegrationLinkRepository, D1IntegrationSyncLogRepository,
   KitepropMcpClient,
   D1UserIntegrationRepository, GoogleCalendarHttpClient, buildGoogleAuthUrl, GoogleDriveStorage,
@@ -23,13 +25,15 @@ import {
   createMarketingSender, fireMarketingEvent, fireWebhookEvent, resolveAssignedAgent,
   fireAndDrainAutomations, drainAutomationJobs, sweepTimeBasedAutomations,
 } from '@vendepro/infrastructure'
-import { Activity, propertyFromIncoming } from '@vendepro/core'
+import { Activity, OrgIntegration, propertyFromIncoming, buildMessageCreatedPayload } from '@vendepro/core'
 import {
   GetGoogleDriveStatusUseCase, ConnectGoogleDriveUseCase, DisconnectGoogleDriveUseCase, GOOGLE_DRIVE_SCOPES,
 } from '@vendepro/core'
 import {
   GetLeadsUseCase, UpdateLeadUseCase, DeleteLeadUseCase, AdvanceLeadStageUseCase,
   AssignLeadUseCase,
+  SendMessageUseCase, GetConversationThreadUseCase,
+  AssignConversationUseCase, ToggleConversationStatusUseCase,
   LinkLeadPropertyUseCase, UpdateLeadPropertyStatusUseCase, UnlinkLeadPropertyUseCase,
   GetLeadPropertiesUseCase, GetPropertyInterestedLeadsUseCase,
   GetContactsUseCase, CreateContactUseCase, UpdateContactUseCase, DeleteContactUseCase,
@@ -60,6 +64,7 @@ import {
   CreateEmailCampaignUseCase, UpdateEmailCampaignUseCase, ListEmailCampaignsUseCase,
   GetEmailCampaignUseCase, DeleteEmailCampaignUseCase, CancelEmailCampaignUseCase,
   PreviewCampaignAudienceUseCase, QueueCampaignSendUseCase, ProcessEmailQueueUseCase,
+  puedeVerConversacion, puedeAsignarConversacion, bandejaDe,
 } from '@vendepro/core'
 import {
   CreateLandingFromTemplateUseCase, UpdateLandingBlocksUseCase, AddBlockUseCase,
@@ -87,6 +92,13 @@ type Env = {
   RESEND_API_KEY?: string
   // Base pública para los links dentro de los emails (reportes, tasaciones, baja)
   PUBLIC_BASE_URL?: string
+  // WAHA de la plataforma: una instancia para todas las inmobiliarias, una
+  // sesión por organización. Sin esto, cada una necesitaría su propio
+  // servidor y conectar WhatsApp dejaría de ser autogestionable.
+  WAHA_BASE_URL?: string
+  WAHA_API_KEY?: string
+  // A dónde avisa WAHA cada mensaje entrante (el worker público).
+  INBOX_WEBHOOK_URL?: string
 }
 type AuthVars = { Variables: { userId: string; userRole: string; orgId: string } }
 
@@ -214,6 +226,8 @@ app.post('/leads/assign', async (c) => {
       orgs: new D1OrganizationRepository(c.env.DB),
     },
     c.env.PUBLIC_BASE_URL ?? '',
+    // Delegar el lead le pasa también sus conversaciones del inbox.
+    new D1ConversationRepository(c.env.DB),
   )
   const result = await useCase.execute({
     leadId: body.id ?? body.lead_id,
@@ -295,6 +309,315 @@ app.post('/leads/stage', async (c) => {
     stage: { from: result.fromStage, to: body.stage },
   }))
   return c.json({ ...result, marketing: mk ?? null })
+})
+
+// ── CONEXIÓN DE WHATSAPP (inbox) ──────────────────────────────
+// Conectar el número es escanear un QR: la sesión vive en el proveedor y acá
+// sólo se la configura, se la arranca y se mira cómo viene.
+
+app.get('/integrations/whatsapp', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const integracion = await new D1OrgIntegrationRepository(c.env.DB)
+    .findByOrgAndProvider(c.get('orgId'), WHATSAPP_PROVIDER)
+    .catch(() => null)
+
+  if (!integracion) return c.json({ configurado: false })
+
+  const config = parseConfig(integracion.config_json)
+  return c.json({
+    configurado: true,
+    enabled: integracion.enabled,
+    base_url: config.base_url ?? null,
+    session: config.session ?? 'default',
+    // La api key no vuelve nunca: se guarda cifrada y no hay razón para
+    // exponerla de nuevo, sólo para reemplazarla.
+    tiene_api_key: !!integracion.credentials_encrypted,
+  })
+})
+
+app.put('/integrations/whatsapp', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const body = (await c.req.json().catch(() => null)) as any
+  const baseUrl = String(body?.base_url ?? '').trim()
+  if (!baseUrl) return c.json({ error: 'La URL del proveedor es requerida' }, 400)
+
+  // Se escribe con el repositorio y no con SaveOrgIntegrationUseCase porque
+  // ése es específico de KiteProp (api key sola, sin config).
+  const repo = new D1OrgIntegrationRepository(c.env.DB)
+  const previa = await repo.findByOrgAndProvider(c.get('orgId'), WHATSAPP_PROVIDER).catch(() => null)
+
+  // Sin api key nueva se conserva la guardada: el form nunca la muestra, así
+  // que mandarla vacía significa "no la cambies".
+  const credenciales = body?.api_key
+    ? await encrypt(String(body.api_key), c.env.JWT_SECRET)
+    : previa?.credentials_encrypted ?? null
+
+  await repo.save(OrgIntegration.create({
+    id: previa?.id ?? new CryptoIdGenerator().generate(),
+    org_id: c.get('orgId'),
+    provider: WHATSAPP_PROVIDER,
+    name: 'WhatsApp',
+    credentials_encrypted: credenciales,
+    config_json: JSON.stringify({
+      provider: 'waha',
+      base_url: baseUrl,
+      session: String(body?.session ?? 'default'),
+    }),
+    enabled: body?.enabled !== false,
+    created_at: previa?.created_at,
+  }))
+  return c.json({ ok: true })
+})
+
+/**
+ * Conectar WhatsApp en un paso: deja la configuración lista, crea la sesión
+ * de esta inmobiliaria en el WAHA de la plataforma y devuelve el QR.
+ *
+ * La sesión se crea con un webhook propio que lleva el token de ESTA
+ * organización en el header: así un solo WAHA sirve a todas y cada mensaje
+ * entrante se atribuye solo.
+ */
+app.post('/integrations/whatsapp/connect', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const orgId = c.get('orgId')
+
+  const repo = new D1OrgIntegrationRepository(c.env.DB)
+  const previa = await repo.findByOrgAndProvider(orgId, WHATSAPP_PROVIDER).catch(() => null)
+  const configPrevia = parseConfig(previa?.config_json ?? null)
+
+  // La URL propia de la org gana: una inmobiliaria puede hospedar el suyo.
+  const baseUrl = configPrevia.base_url || c.env.WAHA_BASE_URL
+  if (!baseUrl) {
+    return c.json({ error: 'La plataforma no tiene un proveedor de WhatsApp configurado' }, 503)
+  }
+  const propio = !!configPrevia.base_url
+  const session = configPrevia.session || sessionDeOrg(orgId)
+
+  // Token de integración para el webhook de esta sesión. Se emite uno nuevo
+  // en cada conexión y se revocan los anteriores: el secreto vive sólo donde
+  // se usa (la config de la sesión en WAHA), nunca en nuestra base.
+  const tokenRepo = new D1ApiTokenRepository(c.env.DB)
+  const authService = new JwtAuthService(c.env.JWT_SECRET)
+  const NOMBRE_TOKEN = 'Inbox WhatsApp'
+  for (const viejo of await tokenRepo.findByOrg(orgId).catch(() => [])) {
+    const o = viejo.toObject?.() ?? (viejo as any)
+    if (o.name === NOMBRE_TOKEN && o.is_active) {
+      await tokenRepo.revoke(o.id, orgId).catch(() => {})
+    }
+  }
+  const nuevo = await new CreateApiTokenUseCase(tokenRepo, new CryptoIdGenerator(), authService)
+    .execute({ orgId, name: NOMBRE_TOKEN, scopes: ['inbox:write'], createdBy: c.get('userId') })
+
+  const apiKey = propio
+    ? (previa?.credentials_encrypted ? await decrypt(previa.credentials_encrypted, c.env.JWT_SECRET).catch(() => null) : null)
+    : (c.env.WAHA_API_KEY ?? null)
+
+  await repo.save(OrgIntegration.create({
+    id: previa?.id ?? new CryptoIdGenerator().generate(),
+    org_id: orgId,
+    provider: WHATSAPP_PROVIDER,
+    name: 'WhatsApp',
+    credentials_encrypted: previa?.credentials_encrypted ?? null,
+    config_json: JSON.stringify({ ...configPrevia, provider: 'waha', session, ...(propio ? {} : { base_url: undefined }) }),
+    enabled: true,
+    created_at: previa?.created_at,
+  }))
+
+  const webhookUrl = c.env.INBOX_WEBHOOK_URL ?? 'https://public.api.vendepro.com.ar/v1/inbox/messages'
+  try {
+    await new WahaSessionClient(baseUrl, apiKey, session).iniciar({ url: webhookUrl, token: nuevo.token })
+  } catch (err: any) {
+    return c.json({ error: mensajeProveedor(err) }, 502)
+  }
+  return c.json({ ok: true, session })
+})
+
+// Estado de la sesión + QR si hay que escanear.
+app.get('/integrations/whatsapp/session', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const cliente = await sessionClient(c)
+  if (!cliente) return c.json({ error: 'Configurá primero la URL del proveedor' }, 409)
+
+  try {
+    const sesion = await cliente.estado()
+    // El QR sólo existe mientras haya que escanear, y caduca en segundos.
+    const qr = sesion.estado === 'SCAN_QR_CODE' ? await cliente.qr().catch(() => null) : null
+    return c.json({ ...sesion, qr })
+  } catch (err: any) {
+    // El detalle importa: "no se pudo conectar" vs "api key inválida" son
+    // problemas distintos para quien está configurando. Pero el error crudo
+    // del runtime ("internal error; reference = f829…") no le dice nada a
+    // nadie, así que el caso más común se traduce.
+    const crudo = String(err?.message ?? '')
+    const esRed = /internal error|fetch failed|ECONNREFUSED|Network connection lost/i.test(crudo)
+    return c.json({
+      estado: 'ERROR',
+      error: esRed
+        ? 'No se pudo conectar con el proveedor. Revisá que la URL sea alcanzable desde el servidor y que el contenedor esté levantado.'
+        : crudo || 'No se pudo hablar con el proveedor',
+    }, 502)
+  }
+})
+
+app.post('/integrations/whatsapp/session/start', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const cliente = await sessionClient(c)
+  if (!cliente) return c.json({ error: 'Configurá primero la URL del proveedor' }, 409)
+
+  try {
+    await cliente.iniciar()
+    return c.json({ ok: true })
+  } catch (err: any) {
+    return c.json({ error: err?.message ?? 'No se pudo iniciar la sesión' }, 502)
+  }
+})
+
+/** El error crudo del runtime no le dice nada a quien está configurando. */
+function mensajeProveedor(err: any): string {
+  const crudo = String(err?.message ?? '')
+  return /internal error|fetch failed|ECONNREFUSED|Network connection lost/i.test(crudo)
+    ? 'No se pudo conectar con el proveedor de WhatsApp. Revisá que esté levantado y sea alcanzable.'
+    : crudo || 'No se pudo hablar con el proveedor'
+}
+
+/** Arma el cliente con lo que la org tenga guardado, o null si no hay nada. */
+async function sessionClient(c: any): Promise<WahaSessionClient | null> {
+  const integracion = await new D1OrgIntegrationRepository(c.env.DB)
+    .findByOrgAndProvider(c.get('orgId'), WHATSAPP_PROVIDER)
+    .catch(() => null)
+  const config = parseConfig(integracion?.config_json ?? null)
+  // Sin base_url propia se usa el WAHA de la plataforma: es el caso normal.
+  const baseUrl = config.base_url || c.env.WAHA_BASE_URL
+  if (!integracion || !baseUrl) return null
+
+  const apiKey = integracion.credentials_encrypted
+    ? await decrypt(integracion.credentials_encrypted, c.env.JWT_SECRET).catch(() => null)
+    : (c.env.WAHA_API_KEY ?? null)
+  return new WahaSessionClient(baseUrl, apiKey, config.session ?? sessionDeOrg(c.get('orgId')))
+}
+
+// ── INBOX ──────────────────────────────────────────────────────
+// Permisos (ver conversation-access en core): admin/owner/supervisor ven todo;
+// el agente, sólo lo que le delegaron. Sin esto un agente leía cualquier hilo
+// pidiéndolo por id, aunque la pantalla no se lo mostrara.
+const actorInbox = (c: any) => ({ role: c.get('userRole') as string, userId: c.get('userId') as string })
+
+/**
+ * La conversación, si quien pregunta la puede ver. 404 y no 403 para una
+ * ajena: así no se confirma que el id existe.
+ */
+async function conversacionVisible(c: any) {
+  const conv = await new D1ConversationRepository(c.env.DB)
+    .findById(c.req.param('id'), c.get('orgId'))
+  if (!conv || !puedeVerConversacion(actorInbox(c), conv.assignee_id)) return null
+  return conv
+}
+
+const NO_ENCONTRADA = { error: 'Conversación no encontrada' }
+
+// Bandeja: la lista que ve el agente, con filtros por estado y asignado.
+app.get('/conversations', async (c) => {
+  const { status, channel, assignee_id, unassigned } = c.req.query()
+  const propias = bandejaDe(actorInbox(c))
+  const repo = new D1ConversationRepository(c.env.DB)
+  const conversaciones = await repo.findByOrg(c.get('orgId'), {
+    status: status as any,
+    channel: channel as any,
+    // Un agente no puede pedir la bandeja de otro ni la cola cambiando el query.
+    assignee_id: propias ?? assignee_id,
+    unassigned: propias ? false : unassigned === '1',
+  })
+  return c.json(conversaciones.map(cv => ({ ...cv.toObject(), window_open: cv.isWindowOpen() })))
+})
+
+// El hilo completo de una conversación.
+app.get('/conversations/:id/messages', async (c) => {
+  if (!(await conversacionVisible(c))) return c.json(NO_ENCONTRADA, 404)
+  const uc = new GetConversationThreadUseCase(
+    new D1ConversationRepository(c.env.DB),
+    new D1MessageRepository(c.env.DB),
+  )
+  const mensajes = await uc.getMessages(c.req.param('id'), c.get('orgId'), 200)
+  return c.json(mensajes.map(m => m.toObject()))
+})
+
+// Asignar la conversación a un agente (o devolverla a la cola con null).
+app.post('/conversations/:id/assignments', async (c) => {
+  const conv = await conversacionVisible(c)
+  if (!conv) return c.json(NO_ENCONTRADA, 404)
+  const body = (await c.req.json().catch(() => ({}))) as any
+  const nuevo = body?.assignee_id ?? null
+  if (!puedeAsignarConversacion(actorInbox(c), conv.assignee_id, nuevo)) {
+    return c.json({ error: 'Sólo un admin o supervisor puede delegar conversaciones' }, 403)
+  }
+  const asignada = await new AssignConversationUseCase(
+    new D1ConversationRepository(c.env.DB),
+    new D1UserRepository(c.env.DB),
+  ).execute(c.req.param('id'), c.get('orgId'), nuevo)
+  return c.json({ id: asignada.id, assignee_id: asignada.assignee_id })
+})
+
+// Abrir / cerrar desde la bandeja.
+app.post('/conversations/:id/toggle_status', async (c) => {
+  if (!(await conversacionVisible(c))) return c.json(NO_ENCONTRADA, 404)
+  const body = (await c.req.json().catch(() => ({}))) as any
+  const conv = await new ToggleConversationStatusUseCase(new D1ConversationRepository(c.env.DB))
+    .execute(c.req.param('id'), c.get('orgId'), body?.status)
+  return c.json({ id: conv.id, status: conv.status })
+})
+
+
+// Responder una conversación desde el CRM. El bot de n8n manda por su propia
+// ruta con token (ver api-public); acá entra el agente con su sesión.
+app.post('/conversations/:id/messages', async (c) => {
+  const orgId = c.get('orgId')
+  const body = (await c.req.json().catch(() => null)) as any
+  if (!body || typeof body.content !== 'string') {
+    return c.json({ error: 'content es requerido' }, 400)
+  }
+  // Contestar desde el número de la inmobiliaria en nombre de otro agente es
+  // peor que leer: el cliente lo recibe.
+  if (!(await conversacionVisible(c))) return c.json(NO_ENCONTRADA, 404)
+
+  const gateway = await createMessagingGateway(c.env, orgId)
+  if (!gateway) {
+    return c.json({ error: 'La inmobiliaria no tiene WhatsApp configurado' }, 409)
+  }
+
+  const useCase = new SendMessageUseCase(
+    new D1ConversationRepository(c.env.DB),
+    new D1MessageRepository(c.env.DB),
+    gateway,
+    new CryptoIdGenerator(),
+  )
+  const result = await useCase.execute({
+    conversationId: c.req.param('id'),
+    orgId,
+    text: body.content,
+    senderType: 'agent',
+    senderId: c.get('userId'),
+  })
+
+  // El bot escucha también los salientes: así se entera de que contestó un
+  // humano y se pausa solo (esa lógica ya vive en n8n).
+  // `sender.type: 'user'` es lo que le permite al bot distinguir a un humano
+  // de sí mismo: antes este payload no traía remitente y llegaba igual que uno
+  // del bot.
+  const agente = await new D1UserRepository(c.env.DB).findById(c.get('userId'), orgId).catch(() => null)
+  await runInBackground(c, fireWebhookEvent(c.env, {
+    orgId,
+    event: 'message_created',
+    payload: buildMessageCreatedPayload({
+      conversation: result.conversation as any,
+      message: {
+        id: result.messageId, content: body.content, attachments: [],
+        direction: 'out', senderType: 'agent', createdAt: result.createdAt,
+      },
+      senderName: agente?.full_name ?? null,
+    }),
+  }))
+
+  return c.json(result, 201)
 })
 
 // ── LEAD PROPERTIES (propiedades de interés de un lead comprador) ──
