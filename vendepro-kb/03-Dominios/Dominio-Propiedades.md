@@ -48,6 +48,7 @@ Se exponen vía `GET /property-config` en [[API-properties]].
 - **`property_price_history`** — historial de cambios de precio con razón (también la tabla legacy `price_history`)
 - **`competitor_links`** — links a propiedades competidoras
 - **`property_visit_forms`** — ficha post-visita (ver [[Dominio-Visit-forms]])
+- **`doc_portal_links`** / **`property_documents`** — portal de documentación del propietario (migración 061, ver abajo)
 
 ## Use cases
 
@@ -79,7 +80,40 @@ Se exponen vía `GET /property-config` en [[API-properties]].
 - `/reservas`, `/vendidas`, `/alquiladas` — vistas filtradas
 - Página pública: `/r/[slug]` (reporte público)
 
-Componentes: `PropertyFilters`, `AuthorizationWidget`, `DocChecklistWidget`, `PriceHistoryWidget`, `ReportsListWidget`, `VisitFormsSection`, `PropertySelector`.
+Componentes: `PropertyFilters`, `AuthorizationWidget`, `DocPortalCard`, `DocChecklistWidget`, `PriceHistoryWidget`, `ReportsListWidget`, `VisitFormsSection`, `PropertySelector`.
+
+## Portal de documentación del propietario (`/d/<token>`) — 15-oct-2026
+
+El agente genera desde la ficha un link por propiedad; el dueño lo abre en el celular, ve qué
+le falta y sube PDF o fotos. **VendéPro no guarda los archivos**: `api-public` los reenvía tal
+cual al workflow de n8n "Documentacion de propiedades", que los guarda en la unidad compartida
+de Drive, los clasifica con IA y los anota en su planilla. VendéPro se queda con el registro
+(`property_documents`) y tilda solo el checklist manual.
+
+- **Tablas** (migración 061): `doc_portal_links` (un link vivo por propiedad; token de 32 hex,
+  operación, tipo, sucesión, casado, `session_id` = `sid` de n8n) y `property_documents` (un
+  archivo recibido: `doc_type` = `tipo_id` de n8n, `recognized`, links de Drive si n8n los manda;
+  único por `drive_file_id`).
+- **Configuración**: `org_integrations` con `provider = 'docs_n8n'`; `config_json` =
+  `{ upload_url, done_url, agent_map }`. Se edita en Configuración → Integraciones (admin). Sin
+  integración activa no se puede generar el link.
+- **Checklist** (`core/domain/rules/document-checklist.ts`): `computeDocChecklist` es el mismo
+  cálculo de la página de n8n (venta/alquiler × tipo × sucesión × casado). Los informes de
+  dominio e inhibición van aparte, como trámite de la inmobiliaria, **nunca** como tarea del
+  propietario. La de alquiler es provisoria.
+- **Puente con `doc_status_json`**: `applyDocumentToDocStatus` sólo tilda claves que son
+  exactamente el mismo documento (`titulo→title`, `dni→dni_propietario`…); el resto entra como
+  ítem propio `doc_<tipo>`. Nunca pisa un `na`, un ítem oculto ni un `cloud_url` cargado a mano.
+- **Endpoints**: `GET /properties/:id/documents`, `POST|DELETE /properties/:id/doc-portal-link`,
+  `GET|PUT /doc-portal/settings` (api-properties); `GET /public/docs/:token`,
+  `POST /public/docs/:token/upload` (multipart, un archivo), `POST /public/docs/:token/done`
+  (api-public).
+- **Reglas**: 15 MB por archivo, PDF o imagen, 60 archivos por link por día; token revocado o
+  propiedad `sold`/`archived` → 410; sin reintentos hacia n8n (un reintento duplica en Drive);
+  "Ya mandé todo" tiene un debounce de 2 minutos y también sale por `sendBeacon` al cerrar la página.
+- **Escáner con la cámara** (`app/d/[token]/DocScanner.tsx` + `lib/doc-scan.ts`): el propietario elige qué documento es, saca una foto por página (cámara trasera, o desde la galería) y sale UN PDF con el nombre del documento ("Título de propiedad.pdf"). Todo en el celular, sin dependencias: el PDF se arma a mano con las JPEG tal cual (DCTDecode). "Mejorar como escaneo" divide cada píxel por el fondo estimado (la foto achicada 1/32 y desenfocada) para emparejar la luz y después estira niveles: papel blanco y tinta negra aunque la foto tenga sombra. Hasta 30 páginas; ~300 KB por página. Recorte automático de bordes/perspectiva: pendiente. El portal también le indica la alternativa nativa (Notas/Archivos en iPhone, Google Drive en Android).
+- **Pendiente**: la vía mail de n8n (fase 2) todavía no avisa a VendéPro; confirmar si la
+  respuesta de n8n trae `file_id` / `link_carpeta`. Plan completo en `doc/portal-documentacion-plan.md`.
 
 ## Relacionados
 
