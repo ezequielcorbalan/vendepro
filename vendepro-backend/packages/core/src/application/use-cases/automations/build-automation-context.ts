@@ -5,6 +5,7 @@ import type { UserRepository } from '../../ports/repositories/user-repository'
 import type { OrganizationRepository } from '../../ports/repositories/organization-repository'
 import type { AutomationContext } from '../../../domain/rules/automation-conditions'
 import type { EntityType } from '../../../domain/value-objects/automation-catalog'
+import { authorizationExpiry, daysUntil } from '../../../domain/rules/authorization-rules'
 
 export interface BuildAutomationContextInput {
   orgId: string
@@ -95,6 +96,7 @@ export class BuildAutomationContextUseCase {
     if (input.entityType === 'property') {
       const property = await safe(() => this.properties.findById(input.entityId, input.orgId))
       if (property) {
+        const authExpiry = authorizationExpiry(property.auth_start_date, property.auth_duration_days)
         context.property = {
           id: property.id,
           title: propertyTitle(property),
@@ -112,6 +114,10 @@ export class BuildAutomationContextUseCase {
           operation: property.operation_type,
           owner_name: property.owner_name,
           owner_email: property.owner_email,
+          // Vencimiento de la autorización, para el aviso de "por vencer" sin
+          // hardcodear los días en el mensaje.
+          auth_expires_at: formatYmdAr(authExpiry),
+          auth_days_left: daysUntil(authExpiry, arYmd(now)),
           public_url: property.public_slug && input.publicBaseUrl
             ? `${trimSlash(input.publicBaseUrl)}/r/${property.public_slug}`
             : null,
@@ -190,6 +196,18 @@ function formatDateAr(d: Date): string {
   const day = String(local.getUTCDate()).padStart(2, '0')
   const month = String(local.getUTCMonth() + 1).padStart(2, '0')
   return `${day}/${month}/${local.getUTCFullYear()}`
+}
+
+/** 'YYYY-MM-DD' del día en Argentina. */
+function arYmd(d: Date): string {
+  return new Date(d.getTime() - 3 * 60 * 60_000).toISOString().slice(0, 10)
+}
+
+/** 'YYYY-MM-DD' → 'DD/MM/YYYY'. */
+function formatYmdAr(ymd: string | null): string | null {
+  if (!ymd) return null
+  const [y, m, d] = ymd.split('-')
+  return `${d}/${m}/${y}`
 }
 
 function trimSlash(url: string): string {

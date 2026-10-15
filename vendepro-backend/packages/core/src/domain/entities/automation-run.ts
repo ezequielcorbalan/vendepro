@@ -71,6 +71,11 @@ export class AutomationRun {
    *   'once'   → una sola vez en la vida de la entidad. Es lo que necesita una
    *              secuencia de bienvenida: nadie se re-inscribe nunca.
    *   'always' → sin clave, por lo tanto sin deduplicación.
+   *
+   * `occurrence` distingue repeticiones legítimas del mismo hecho sobre la
+   * misma entidad: el vencimiento de la autorización se renueva, y el aviso
+   * 'once' tiene que volver a salir para el vencimiento nuevo. Con ocurrencia,
+   * 'once' significa "una vez por ocurrencia".
    */
   static dedupeKey(args: {
     automationId: string
@@ -78,11 +83,14 @@ export class AutomationRun {
     triggerEvent: string
     scope?: DedupeScope
     at?: Date
+    occurrence?: string | null
   }): string | null {
     const scope = args.scope ?? 'daily'
     if (scope === 'always' || !args.entityId) return null
 
-    const base = `${args.automationId}:${args.entityId}:${args.triggerEvent}`
+    const base = args.occurrence
+      ? `${args.automationId}:${args.entityId}:${args.triggerEvent}:${args.occurrence}`
+      : `${args.automationId}:${args.entityId}:${args.triggerEvent}`
     if (scope === 'once') return base
 
     const d = args.at ?? new Date()
