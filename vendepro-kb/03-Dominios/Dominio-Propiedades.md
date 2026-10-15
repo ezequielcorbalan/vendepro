@@ -27,7 +27,12 @@ Campos principales:
 - Datos: `rooms`, `size_m2`
 - Propietario: `owner_name`, `owner_phone`, `owner_email`, `contact_id`
 - Origen: `lead_id` (de qué lead vino), `agent_id` (responsable)
-- Mandato: `auth_start_date`, `auth_duration_days` (default 180)
+- Mandato: `auth_start_date`, `auth_duration_days` (default 180). Vencimiento = inicio + plazo
+  (`authorizationExpiry` en `core/src/domain/rules/authorization-rules.ts`, misma cuenta que el
+  barrido cron). El aviso "Autorización por vencer" (trigger `property.publicacion_vencida`, la
+  clave quedó con el nombre viejo) **vuelve a avisar tras una renovación** desde el 15-oct-2026:
+  la fecha de vencimiento entra como *ocurrencia* en el `dedupe_key`. Variables para el mensaje:
+  `{{property.auth_expires_at}}` y `{{property.auth_days_left}}` (migración 062).
 - Documentación: `doc_status_json` (checklist de documentos)
 - Resultado: `sold_price`, `sold_date`, `days_on_market`
 - Media: `cover_photo`
@@ -114,6 +119,16 @@ de Drive, los clasifica con IA y los anota en su planilla. VendéPro se queda co
 - **Escáner con la cámara** (`app/d/[token]/DocScanner.tsx` + `lib/doc-scan.ts`): el propietario elige qué documento es, saca una foto por página (cámara trasera, o desde la galería) y sale UN PDF con el nombre del documento ("Título de propiedad.pdf"). Todo en el celular, sin dependencias: el PDF se arma a mano con las JPEG tal cual (DCTDecode). "Mejorar como escaneo" divide cada píxel por el fondo estimado (la foto achicada 1/32 y desenfocada) para emparejar la luz y después estira niveles: papel blanco y tinta negra aunque la foto tenga sombra. Hasta 30 páginas; ~300 KB por página. Recorte automático de bordes/perspectiva: pendiente. El portal también le indica la alternativa nativa (Notas/Archivos en iPhone, Google Drive en Android).
 - **Pendiente**: la vía mail de n8n (fase 2) todavía no avisa a VendéPro; confirmar si la
   respuesta de n8n trae `file_id` / `link_carpeta`. Plan completo en `doc/portal-documentacion-plan.md`.
+
+## Documentación desde Drive (planificado)
+
+Plan en `doc/documentacion-drive-plan.md` (15-oct-2026). Decisión: **VendéPro lee la unidad
+compartida de Drive directo** con una cuenta de servicio de sólo lectura y clasifica con Gemini;
+**n8n no se toca** (comparte instancia con el bot de WhatsApp). Los archivos que subió n8n ya
+traen tipo y fecha en el nombre (`<Documento> - AAAA-MM-DD.pdf`) y no gastan IA. El barrido
+tilda el checklist (idempotente por `drive_file_id`), completa `auth_start_date`/`auth_duration_days`
+sólo si están vacíos y registra `valid_until` de los informes de dominio (30 días) para un trigger
+nuevo `property.documento_por_vencer`. Depende de la migración 061 del portal (`/d/<token>`).
 
 ## Relacionados
 
