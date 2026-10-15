@@ -76,7 +76,7 @@ export function registerDocPortalRoutes(app: Hono<{ Bindings: Env } & AuthVars>)
     return c.json(await uc.execute(c.get('orgId')))
   })
 
-  // PUT /doc-portal/settings  { enabled, upload_url, done_url, agent_map: { user_id: 'andres' } }
+  // PUT /doc-portal/settings  { enabled, engine: 'google_drive'|'n8n', upload_url, done_url, agent_map }
   app.put('/doc-portal/settings', async (c) => {
     const body = (await c.req.json().catch(() => ({}))) as any
     const uc = new SaveDocsIntegrationSettingsUseCase(new D1OrgIntegrationRepository(c.env.DB), new CryptoIdGenerator())
@@ -85,6 +85,7 @@ export function registerDocPortalRoutes(app: Hono<{ Bindings: Env } & AuthVars>)
         org_id: c.get('orgId'),
         role: c.get('userRole'),
         enabled: body?.enabled === true,
+        engine: body?.engine === 'n8n' ? 'n8n' : 'google_drive',
         upload_url: typeof body?.upload_url === 'string' ? body.upload_url : '',
         done_url: typeof body?.done_url === 'string' ? body.done_url : '',
         agent_map: body?.agent_map && typeof body.agent_map === 'object' ? body.agent_map : {},

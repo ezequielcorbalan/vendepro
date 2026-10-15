@@ -107,5 +107,5 @@ export { AutomationJob, MAX_JOB_ATTEMPTS, JOB_LOCK_MINUTES } from './automation-
 export type { AutomationJobProps, JobStatus } from './automation-job'
 export * from './conversation'
 export * from './message'
-export { DOCS_INTEGRATION_PROVIDER, parseDocsIntegrationConfig } from './doc-portal'
-export type { DocPortalLink, PropertyDocument, PropertyDocumentSource, DocsIntegrationConfig } from './doc-portal'
+export { DOCS_INTEGRATION_PROVIDER, GOOGLE_DRIVE_PROVIDER, DOCS_ENGINES, parseDocsIntegrationConfig } from './doc-portal'
+export type { DocPortalLink, PropertyDocument, PropertyDocumentSource, DocsIntegrationConfig, DocsEngine } from './doc-portal'

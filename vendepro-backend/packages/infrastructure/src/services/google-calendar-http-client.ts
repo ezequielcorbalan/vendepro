@@ -15,12 +15,13 @@ export const GOOGLE_CALENDAR_SCOPES = 'https://www.googleapis.com/auth/calendar.
  * URL de consentimiento OAuth. access_type=offline + prompt=consent fuerzan
  * que Google devuelva refresh_token en cada conexión.
  */
-export function buildGoogleAuthUrl(input: { clientId: string; redirectUri: string; state: string }): string {
+export function buildGoogleAuthUrl(input: { clientId: string; redirectUri: string; state: string; scope?: string }): string {
   const params = new URLSearchParams({
     client_id: input.clientId,
     redirect_uri: input.redirectUri,
     response_type: 'code',
-    scope: GOOGLE_CALENDAR_SCOPES,
+    // Default: Calendar. El Drive de documentación pasa el suyo.
+    scope: input.scope ?? GOOGLE_CALENDAR_SCOPES,
     access_type: 'offline',
     prompt: 'consent',
     state: input.state,

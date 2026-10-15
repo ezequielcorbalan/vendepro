@@ -27,6 +27,8 @@ interface QueueItem {
   file: File
   status: QueueStatus
   message?: string
+  /** Lo que eligió el propietario en el escáner: pista para la IA. */
+  declaredType?: string
 }
 
 const STATUS_BADGE: Record<QueueStatus, { tone: 'neutral' | 'info' | 'success' | 'warning' | 'danger'; label: string }> = {
@@ -72,6 +74,7 @@ export default function DocPortalClient({ token, apiPublic, data }: Props) {
 
     const fd = new FormData()
     fd.append('archivo', item.file, item.file.name)
+    if (item.declaredType) fd.append('tipo_declarado', item.declaredType)
     fetch(`${base}/upload`, { method: 'POST', body: fd })
       .then(async res => {
         const j = (await res.json().catch(() => ({}))) as any
@@ -113,11 +116,12 @@ export default function DocPortalClient({ token, apiPublic, data }: Props) {
     })
   }
 
-  function addFiles(files: FileList | File[] | null) {
+  function addFiles(files: FileList | File[] | null, declaredType?: string) {
     if (!files?.length) return
     const items: QueueItem[] = Array.from(files).map(file => ({
       id: nextId.current++,
       file,
+      declaredType,
       status: file.size > maxBytes ? 'error' : 'waiting',
       message: file.size > maxBytes ? 'Supera 15 MB' : undefined,
     }))
@@ -242,7 +246,7 @@ export default function DocPortalClient({ token, apiPublic, data }: Props) {
         onClose={() => setScannerOpen(false)}
         options={scanOptions}
         maxBytes={maxBytes}
-        onDone={file => addFiles([file])}
+        onDone={(file, docType) => addFiles([file], docType)}
       />
 
       <Card className="space-y-4">

@@ -89,6 +89,23 @@ Componentes: `PropertyFilters`, `AuthorizationWidget`, `DocPortalCard`, `DocChec
 
 ## Portal de documentación del propietario (`/d/<token>`) — 15-oct-2026
 
+> **Dos motores** (config `engine` en `org_integrations` provider `docs_n8n`):
+> - **`google_drive` (motor propio, default para orgs nuevas)**: VendéPro clasifica con Gemini
+>   (`GeminiDocumentClassifier`, PDF/imagen inline, catálogo cerrado + fecha + plazo de autorización) y
+>   guarda en el **Google Drive de la inmobiliaria** (`GoogleDriveStorage`, scope `drive.file`: sólo ve lo
+>   que crea). Carpeta raíz "VendéPro — Documentación" y una por propiedad, encontradas por
+>   `appProperties` (sin tabla). Subida reanudable (la simple corta en 5 MB). Archivo renombrado con el
+>   documento reconocido; si no, "A revisar - …". La autorización leída completa `auth_start_date` /
+>   `auth_duration_days` **sólo si estaban vacíos**. "Ya mandé todo" → aviso en la campana del agente
+>   con lo que falta. Conexión de la ORG (la hace un admin) en api-crm: `GET|DELETE
+>   /integrations/google-drive`, `GET /integrations/google-drive/auth-url`; mismo OAuth client y callback
+>   que Calendar (`state.purpose = 'google_drive_oauth'`). Credenciales en `org_integrations` provider
+>   `google_drive`. Sin migración. Plan: `doc/documentacion-motor-propio-plan.md`.
+> - **`n8n`**: el webhook del workflow de n8n (lo que tiene Marcela). Filas viejas sin `engine` = n8n.
+>
+> Puertos nuevos en core: `DocumentClassifier` (lo reusa el barrido de Drive de
+> `doc/documentacion-drive-plan.md`), `CloudDocumentStorage`; `EngineRoutingIntakeGateway` elige por motor.
+
 El agente genera desde la ficha un link por propiedad; el dueño lo abre en el celular, ve qué
 le falta y sube PDF o fotos. **VendéPro no guarda los archivos**: `api-public` los reenvía tal
 cual al workflow de n8n "Documentacion de propiedades", que los guarda en la unidad compartida
