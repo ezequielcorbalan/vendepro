@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { apiFetch } from '@/lib/api'
+import { useTiempoReal } from '@/lib/tiempo-real'
 import { Z } from '@/lib/z'
 import {
   NotificationBell as BellButton,
@@ -51,11 +52,14 @@ export default function NotificationBell() {
 
   useEffect(() => {
     loadNotifications()
-    // Cada minuto: con la bandeja de WhatsApp, "te escribió un cliente" no
-    // puede esperar 5 minutos. Con la pestaña oculta no se consulta.
+    // Respaldo: si la conexión en vivo no está, cada minuto. Con la pestaña
+    // oculta no se consulta.
     const interval = setInterval(() => { if (!document.hidden) loadNotifications() }, 60 * 1000)
     return () => clearInterval(interval)
   }, [])
+
+  // En vivo: "te escribió un cliente" aparece en el momento, no al minuto.
+  useTiempoReal(evento => { if (evento.tipo === 'aviso') loadNotifications() })
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {

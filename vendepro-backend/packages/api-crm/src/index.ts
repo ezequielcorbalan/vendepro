@@ -14,6 +14,7 @@ import {
   D1NotificationRepository,
   D1ConversationRepository, D1MessageRepository, createMessagingGateway,
   WahaSessionClient, WHATSAPP_PROVIDER, parseConfig, sessionDeOrg, providerDeCanal,
+  crearPublicadorTiempoReal, emitirTicket, verificarTicket,
   D1OrgIntegrationRepository, D1IntegrationLinkRepository, D1IntegrationSyncLogRepository,
   KitepropMcpClient,
   D1UserIntegrationRepository, GoogleCalendarHttpClient, buildGoogleAuthUrl,
@@ -96,6 +97,9 @@ type Env = {
   WAHA_API_KEY?: string
   // A dónde avisa WAHA cada mensaje entrante (el worker público).
   INBOX_WEBHOOK_URL?: string
+  // Durable Object de tiempo real (un hub por inmobiliaria). Opcional: sin
+  // el binding la bandeja sigue andando con la consulta periódica.
+  INBOX_HUB?: DurableObjectNamespace
 }
 type AuthVars = { Variables: { userId: string; userRole: string; orgId: string } }
 
@@ -105,12 +109,16 @@ app.use('*', corsMiddleware)
 app.onError(errorHandler)
 
 const GOOGLE_CALLBACK_PATH = '/integrations/google/callback'
+const REALTIME_PATH = '/realtime'
 
 // Apply auth to all routes
 app.use('*', async (c, next) => {
   // El callback OAuth llega por redirect del navegador (sin Bearer): se
   // autentica con el JWT firmado que viaja en `state`.
   if (c.req.path === GOOGLE_CALLBACK_PATH) return next()
+  // El WebSocket de tiempo real no puede mandar Authorization: se autentica
+  // con el ticket de un minuto que viaja en la URL (ver /realtime/ticket).
+  if (c.req.path === REALTIME_PATH) return next()
   const authService = new JwtAuthService(c.env.JWT_SECRET)
   return createAuthMiddleware(authService)(c, next)
 })
@@ -243,6 +251,12 @@ app.post('/leads/assign', async (c) => {
       trigger: 'lead.assigned',
       entityType: 'lead',
       entityId: result.leadId,
+    }))
+  }
+  // La campana del agente se entera en el momento, no al minuto.
+  if (result.notified) {
+    await runInBackground(c, crearPublicadorTiempoReal(c.env).publicar(c.get('orgId'), {
+      tipo: 'aviso', userIds: [result.toAgentId],
     }))
   }
   return c.json(result)
@@ -558,6 +572,43 @@ async function sessionClient(c: any): Promise<WahaSessionClient | null> {
   return new WahaSessionClient(baseUrl, apiKey, config.session ?? sessionDeOrg(c.get('orgId')))
 }
 
+// ── TIEMPO REAL ────────────────────────────────────────────────
+// La bandeja y la campana se enteran al instante de lo que pasa, por un
+// WebSocket a un Durable Object por inmobiliaria (InboxHub). El aviso no
+// trae datos: dice qué cambió y la pantalla lo pide por la API de siempre.
+
+// Paso 1: con la sesión normal, un ticket de un minuto para conectarse.
+app.post('/realtime/ticket', async (c) => {
+  if (!c.env.INBOX_HUB) return c.json({ error: 'Tiempo real no disponible' }, 503)
+  const ticket = await emitirTicket(c.env.JWT_SECRET, {
+    userId: c.get('userId'),
+    orgId: c.get('orgId'),
+    veTodo: bandejaDe({ role: c.get('userRole'), userId: c.get('userId') }) === undefined,
+  })
+  return c.json({ ticket })
+})
+
+// Paso 2: el WebSocket, con el ticket en la URL. Se pasa al hub de SU org.
+app.get(REALTIME_PATH, async (c) => {
+  if (!c.env.INBOX_HUB) return c.json({ error: 'Tiempo real no disponible' }, 503)
+  if (c.req.header('Upgrade') !== 'websocket') return c.json({ error: 'Se esperaba un WebSocket' }, 426)
+  const datos = await verificarTicket(c.env.JWT_SECRET, c.req.query('ticket') ?? '')
+  if (!datos) return c.json({ error: 'Ticket vencido o inválido' }, 401)
+
+  const hub = c.env.INBOX_HUB.get(c.env.INBOX_HUB.idFromName(datos.orgId))
+  const headers = new Headers(c.req.raw.headers)
+  headers.set('X-User-Id', datos.userId)
+  headers.set('X-Ve-Todo', datos.veTodo ? '1' : '0')
+  return hub.fetch(new Request('https://hub/conectar', { headers }))
+})
+
+/** Avisa en vivo que cambió una conversación (best-effort, fuera de la respuesta). */
+function avisarConversacion(c: any, conv: { id: string; assignee_id: string | null }, previo?: string | null) {
+  return runInBackground(c, crearPublicadorTiempoReal(c.env).publicar(c.get('orgId'), {
+    tipo: 'conversacion', conversationId: conv.id, assigneeId: conv.assignee_id, previoAssigneeId: previo ?? null,
+  }))
+}
+
 // ── INBOX ──────────────────────────────────────────────────────
 // Permisos (ver conversation-access en core): admin/owner/supervisor ven todo;
 // el agente, sólo lo que le delegaron. Sin esto un agente leía cualquier hilo
@@ -626,6 +677,7 @@ app.post('/conversations/:id/labels', async (c) => {
     .map((l: string) => l.trim().slice(0, 40))
   const conv = await new SetConversationLabelsUseCase(new D1ConversationRepository(c.env.DB))
     .execute(c.req.param('id'), c.get('orgId'), labels)
+  await avisarConversacion(c, conv)
   return c.json({ id: conv.id, labels: conv.labels })
 })
 
@@ -653,6 +705,8 @@ app.post('/conversations/:id/assignments', async (c) => {
     new D1ConversationRepository(c.env.DB),
     new D1UserRepository(c.env.DB),
   ).execute(c.req.param('id'), c.get('orgId'), nuevo)
+  // El dueño anterior también se entera: la conversación sale de su bandeja.
+  await avisarConversacion(c, asignada, conv.assignee_id)
   return c.json({ id: asignada.id, assignee_id: asignada.assignee_id })
 })
 
@@ -662,6 +716,7 @@ app.post('/conversations/:id/toggle_status', async (c) => {
   const body = (await c.req.json().catch(() => ({}))) as any
   const conv = await new ToggleConversationStatusUseCase(new D1ConversationRepository(c.env.DB))
     .execute(c.req.param('id'), c.get('orgId'), body?.status)
+  await avisarConversacion(c, conv)
   return c.json({ id: conv.id, status: conv.status })
 })
 
@@ -728,6 +783,7 @@ app.post('/conversations/:id/messages', async (c) => {
     }),
   }))
 
+  await avisarConversacion(c, charla)
   return c.json(result, 201)
 })
 
@@ -2217,3 +2273,7 @@ async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext)
 // El default sigue siendo la app de Hono (los tests usan app.request) con el
 // handler `scheduled` adosado: wrangler resuelve default.fetch y default.scheduled.
 export default Object.assign(app, { scheduled })
+
+// El Durable Object de tiempo real vive en este worker; api-public lo usa
+// por binding con `script_name`.
+export { InboxHub } from '@vendepro/infrastructure'

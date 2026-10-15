@@ -57,7 +57,7 @@ describe('NotifyInboxUseCase.nuevoMensaje', () => {
     const { uc, notifications } = build()
     notifications.save.mockRejectedValueOnce(new Error('D1 caído'))
     const enviados = await uc.nuevoMensaje({ orgId: 'org_mg', conversationId: 'c1', assigneeId: null, quien: 'Juan', texto: 'Hola' })
-    expect(enviados).toBe(1)
+    expect(enviados).toEqual(['owner-1'])
   })
 })
 
@@ -72,7 +72,7 @@ describe('NotifyInboxUseCase.sesionCaida', () => {
   // Reconectar pasa por STARTING y SCAN_QR_CODE: avisar ahí sería alarma falsa.
   it.each(['STARTING', 'SCAN_QR_CODE', 'WORKING'])('no avisa en %s', async (estado) => {
     const { uc, notifications } = build()
-    expect(await uc.sesionCaida({ orgId: 'org_mg', estado })).toBe(0)
+    expect(await uc.sesionCaida({ orgId: 'org_mg', estado })).toEqual([])
     expect(notifications.save).not.toHaveBeenCalled()
   })
 })

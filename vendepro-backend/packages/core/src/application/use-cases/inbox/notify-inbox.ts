@@ -54,7 +54,8 @@ export class NotifyInboxUseCase {
    * Le avisa al agente asignado; si la conversación está en la cola, a los
    * admins, que son quienes la reparten.
    */
-  async nuevoMensaje(input: NuevoMensajeInput): Promise<number> {
+  /** Devuelve a quiénes se avisó, para avisarles también en vivo. */
+  async nuevoMensaje(input: NuevoMensajeInput): Promise<string[]> {
     const destinatarios = input.assigneeId ? [input.assigneeId] : await this.admins(input.orgId)
     const texto = input.texto?.trim()
     const cuerpo = texto
@@ -67,8 +68,8 @@ export class NotifyInboxUseCase {
   }
 
   /** A los admins: son los únicos que pueden volver a escanear el QR. */
-  async sesionCaida(input: SesionCaidaInput): Promise<number> {
-    if (!ESTADOS_CAIDOS.includes(input.estado)) return 0
+  async sesionCaida(input: SesionCaidaInput): Promise<string[]> {
+    if (!ESTADOS_CAIDOS.includes(input.estado)) return []
     return this.enviar(
       input.orgId,
       await this.admins(input.orgId),
@@ -89,8 +90,8 @@ export class NotifyInboxUseCase {
 
   private async enviar(
     orgId: string, userIds: string[], title: string, body: string, linkUrl: string,
-  ): Promise<number> {
-    let enviados = 0
+  ): Promise<string[]> {
+    const enviados: string[] = []
     for (const userId of userIds) {
       try {
         await this.notifications.save(Notification.create({
@@ -103,7 +104,7 @@ export class NotifyInboxUseCase {
           link_url: linkUrl,
           read: false,
         }))
-        enviados++
+        enviados.push(userId)
       } catch {
         // Un aviso que falla no frena a los demás.
       }

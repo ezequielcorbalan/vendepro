@@ -29,6 +29,7 @@ import {
   D1ConversationRepository, D1MessageRepository, createMessagingGateway,
   D1OrgIntegrationRepository, verificarFirmaMeta, parsearWebhookMeta, parseConfig, providerDeCanal,
   esWebhookWaha, parsearWebhookWaha, D1NotificationRepository, metaConfigDeOrg, obtenerPerfilMeta,
+  crearPublicadorTiempoReal,
   fireAutomationEvent,
   D1AgentProfileRepository,
   D1MetaIntegrationRepository,
@@ -82,6 +83,8 @@ type Env = {
   META_APP_SECRET?: string
   /** Token del handshake de verificación del webhook (lo elige uno). */
   META_VERIFY_TOKEN?: string
+  // Hub de tiempo real, definido en api-crm (binding con script_name).
+  INBOX_HUB?: DurableObjectNamespace
   /** WAHA de la plataforma: lo usa el bot cuando responde por WhatsApp. */
   WAHA_BASE_URL?: string
   WAHA_API_KEY?: string
@@ -603,6 +606,8 @@ app.post('/v1/conversations/:id/messages', async (c) => {
     return c.json({ error: `No se pudo enviar: ${e?.message ?? 'el proveedor no respondió'}` }, 502)
   }
 
+  await avisarConversacionBot(c.env, orgId, charla)
+
   // Chatwoot avisa `message_created` también por los mensajes del bot, y el
   // bot cuenta con eso: es como lleva el límite de turnos. Acá faltaba.
   await fireWebhookEvent(c.env, {
@@ -628,6 +633,7 @@ app.post('/v1/conversations/:id/assignments', async (c) => {
     new D1ConversationRepository(c.env.DB),
     new D1UserRepository(c.env.DB),
   ).execute(c.req.param('id'), c.get('orgId'), body?.assignee_id ?? null)
+  await avisarConversacionBot(c.env, c.get('orgId'), conv)
   return c.json({ id: conv.id, assignee_id: conv.assignee_id })
 })
 
@@ -637,6 +643,7 @@ app.post('/v1/conversations/:id/labels', async (c) => {
   const body = (await c.req.json().catch(() => ({}))) as any
   const conv = await new SetConversationLabelsUseCase(new D1ConversationRepository(c.env.DB))
     .execute(c.req.param('id'), c.get('orgId'), Array.isArray(body?.labels) ? body.labels : [])
+  await avisarConversacionBot(c.env, c.get('orgId'), conv)
   return c.json({ id: conv.id, labels: conv.labels })
 })
 
@@ -646,6 +653,7 @@ app.post('/v1/conversations/:id/toggle_status', async (c) => {
   const body = (await c.req.json().catch(() => ({}))) as any
   const conv = await new ToggleConversationStatusUseCase(new D1ConversationRepository(c.env.DB))
     .execute(c.req.param('id'), c.get('orgId'), body?.status)
+  await avisarConversacionBot(c.env, c.get('orgId'), conv)
   return c.json({ id: conv.id, status: conv.status })
 })
 
@@ -697,7 +705,10 @@ app.post('/v1/inbox/messages', async (c) => {
       // La org sale del token, no del nombre de sesión: no se puede avisar a
       // otra org mandando un nombre de sesión ajeno.
       const avisados = await notificador(c.env).sesionCaida({ orgId, estado: evento.estado })
-      return c.json({ ok: true, estado: evento.estado, avisados })
+      if (avisados.length) {
+        await crearPublicadorTiempoReal(c.env).publicar(orgId, { tipo: 'aviso', userIds: avisados })
+      }
+      return c.json({ ok: true, estado: evento.estado, avisados: avisados.length })
     }
     // Grupos, estados, lo que sale desde el número: 200 para que WAHA no reintente.
     if (evento.tipo === 'ignorado') return c.json({ ok: true, ignorado: evento.motivo })
@@ -781,17 +792,31 @@ async function trasIngerir(
     }),
   })
 
+  // En vivo: la bandeja de quien corresponda muestra el mensaje al instante.
+  const tiempoReal = crearPublicadorTiempoReal(env)
+  await tiempoReal.publicar(orgId, {
+    tipo: 'conversacion', conversationId: r.conversation.id, assigneeId: r.assigneeId ?? null,
+  })
+
   // Sólo cuando el cliente toma la palabra: cinco mensajes seguidos son un aviso.
   if (r.abreTurno) {
-    await notificador(env).nuevoMensaje({
+    const avisados = await notificador(env).nuevoMensaje({
       orgId,
       conversationId: r.conversation.id,
       assigneeId: r.assigneeId ?? null,
       quien: remitente.quien,
       texto: r.message.content,
       tipoAdjunto: r.message.attachments[0]?.type ?? null,
-    }).catch(() => 0)
+    }).catch(() => [] as string[])
+    if (avisados.length) await tiempoReal.publicar(orgId, { tipo: 'aviso', userIds: avisados })
   }
+}
+
+/** El bot tocó una conversación: aviso en vivo a la bandeja. */
+function avisarConversacionBot(env: Env, orgId: string, conv: { id: string; assignee_id: string | null }, previo?: string | null) {
+  return crearPublicadorTiempoReal(env).publicar(orgId, {
+    tipo: 'conversacion', conversationId: conv.id, assigneeId: conv.assignee_id, previoAssigneeId: previo ?? null,
+  })
 }
 
 // ── INTEGRATION API: IMPORT LEADS (/v1/leads) — Bearer JWT ───────

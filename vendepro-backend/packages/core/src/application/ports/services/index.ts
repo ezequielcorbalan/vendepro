@@ -26,3 +26,4 @@ export type {
 } from './automation-action-executor'
 export * from './messaging-gateway'
 export type { DocumentIntakeGateway, DocumentIntakeFields, DocumentIntakeFile, DocumentIntakeResult } from './document-intake-gateway'
+export type { RealtimePublisher } from './realtime-publisher'

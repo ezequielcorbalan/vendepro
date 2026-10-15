@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { MessageSquare, AlertTriangle } from 'lucide-react'
+import { useTiempoReal } from '@/lib/tiempo-real'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
 import { useCurrentUser } from '@/lib/use-current-user'
@@ -12,6 +13,7 @@ import { Card } from '@/components/ui/Card'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Text } from '@/components/ui/Typography'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { Badge } from '@/components/ui/Badge'
 import { FiltrosBandeja, type Carpeta, type ConteoCarpetas } from '@/components/conversaciones/FiltrosBandeja'
 import { FilaConversacion } from '@/components/conversaciones/FilaConversacion'
 import { EncabezadoConversacion } from '@/components/conversaciones/EncabezadoConversacion'
@@ -90,21 +92,33 @@ function Bandeja() {
 
   useEffect(() => { setCargando(true); cargarBandeja() }, [cargarBandeja])
 
-  // Sin websockets todavía: la bandeja y el hilo abierto se refrescan solos.
-  // 15 s es lo que tarda en sentirse "en vivo" sin castigar a D1.
+  const recargarHilo = useCallback(() => {
+    const id = activaId.current
+    if (!id) return
+    apiFetch('crm', `/conversations/${id}/messages`)
+      .then(r => r.json() as Promise<any>)
+      .then(d => { if (Array.isArray(d) && activaId.current === id) setMensajes(d) })
+      .catch(() => {})
+  }, [])
+
+  // En vivo: cada cambio en una conversación que puedo ver llega por el
+  // WebSocket y se refresca la lista (y el hilo, si es el que tengo abierto).
+  const enVivo = useTiempoReal(evento => {
+    if (evento.tipo !== 'conversacion') return
+    cargarBandeja()
+    if (activaId.current === evento.conversationId) recargarHilo()
+  })
+
+  // Respaldo por si la conexión en vivo se cae: cada 15 s sin ella, cada
+  // minuto con ella (por si se perdió algún aviso).
   useEffect(() => {
     const intervalo = setInterval(() => {
       if (document.hidden) return
       cargarBandeja()
-      const id = activaId.current
-      if (!id) return
-      apiFetch('crm', `/conversations/${id}/messages`)
-        .then(r => r.json() as Promise<any>)
-        .then(d => { if (Array.isArray(d) && activaId.current === id) setMensajes(d) })
-        .catch(() => {})
-    }, 15_000)
+      recargarHilo()
+    }, enVivo ? 60_000 : 15_000)
     return () => clearInterval(intervalo)
-  }, [cargarBandeja])
+  }, [cargarBandeja, recargarHilo, enVivo])
 
   // El aviso de la campana trae `?c=<id>`: se abre esa conversación apenas
   // carga la bandeja, y también si ya estabas acá y tocás otro aviso.
@@ -202,11 +216,14 @@ function Bandeja() {
         title="Conversaciones"
         subtitle="WhatsApp, Instagram y Messenger de la inmobiliaria, atados a los contactos del CRM"
         actions={
+          <div className="flex items-center gap-3">
+          {enVivo && <Badge tone="success" dot>En vivo</Badge>}
           <SegmentedControl
             value={filtro}
             onChange={v => { setFiltro(v as 'open' | 'resolved'); setActiva(null) }}
             options={[{ value: 'open', label: 'Abiertas' }, { value: 'resolved', label: 'Resueltas' }]}
           />
+          </div>
         }
       />
 

@@ -23,5 +23,10 @@
       "binding": "R2",
       "bucket_name": "vendepro-assets"
     }
-  ]
+  ],
+  // El hub de tiempo real vive en api-crm: acá sólo se publica (mensaje
+  // entrante, respuesta del bot). Requiere api-crm deployado con InboxHub.
+  "durable_objects": {
+    "bindings": [{ "name": "INBOX_HUB", "class_name": "InboxHub", "script_name": "vendepro-api-crm" }]
+  }
 }

@@ -22,5 +22,16 @@
       "database_name": "vendepro-db",
       "database_id": "45d18f94-807b-466f-8742-32bbc61fc7fb"
     }
+  ],
+  // Tiempo real de la bandeja: un hub por inmobiliaria con los WebSockets
+  // abiertos (clase InboxHub, exportada desde src/index.ts). api-public lo
+  // usa por binding con script_name, así que este worker se deploya primero.
+  "durable_objects": {
+    "bindings": [{ "name": "INBOX_HUB", "class_name": "InboxHub" }]
+  },
+  // Clase nueva respaldada por SQLite (la que permite el plan gratuito). El
+  // tag no se cambia nunca; una clase nueva va en un tag nuevo.
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["InboxHub"] }
   ]
 }
