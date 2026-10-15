@@ -179,9 +179,10 @@ El kind `property` es solo un **estilo**: `landings` no tiene `property_id` — 
 - Permisos en el servidor: el agente sólo ve y opera lo que le delegaron.
 - Contrato con el bot de n8n compatible con Chatwoot (`message_created` crudo, mismas rutas).
 - Carpetas (mías / sin asignar / todas), búsqueda, filtros por canal y etiqueta, etiquetas desde el hilo, respuestas rápidas con las plantillas de WhatsApp.
+- **Tiempo real**: Durable Object por inmobiliaria + WebSocket; bandeja y campana al instante (174 ms medido en local), respetando permisos.
 - **Facebook Messenger** iniciado: conexión por página (id + token), ingesta, nombre del cliente desde Meta y respuesta por el canal correcto. Falta la app de Meta aprobada y OAuth.
 
-**Lo que falta**: el agente IA propiamente dicho (hoy es el bot de n8n), websockets, fachada Chatwoot completa, `agent_actions`. Pendiente operativo: migraciones 059-060, deploy de api-crm, api-public y frontend, levantar WAHA de la plataforma (`WAHA_BASE_URL`, `WAHA_API_KEY`, `INBOX_WEBHOOK_URL`).
+**Lo que falta**: el agente IA propiamente dicho (hoy es el bot de n8n), fachada Chatwoot completa, `agent_actions`. Pendiente operativo: migraciones 059-060, deploy de api-crm, api-public y frontend, levantar WAHA de la plataforma (`WAHA_BASE_URL`, `WAHA_API_KEY`, `INBOX_WEBHOOK_URL`).
 
 ### Feature 11 — Asistente IA interno 🟠
 

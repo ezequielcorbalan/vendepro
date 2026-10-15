@@ -36,7 +36,17 @@ Después de guardar, igual para todos los canales (`trasIngerir`): emite `messag
 - **Mensaje nuevo**: sólo cuando el cliente **toma la palabra** (`abreTurno`): conversación nueva, o el último mensaje fue nuestro, o pasaron más de 30 min desde su último mensaje. Cinco mensajes seguidos = un aviso. Va al agente asignado; si está en la cola, a los admins. Link `/conversaciones?c=<id>` abre esa conversación.
 - **WhatsApp desconectado**: la sesión se suscribe a `session.status`; en `FAILED`/`STOPPED` avisa a los admins con link a reconectar. `STARTING`/`SCAN_QR_CODE` no avisan (son pasos normales de conectar).
 
-La campana consulta cada 60 s y la bandeja (lista + hilo abierto) cada 15 s, ambas pausadas con la pestaña oculta. No hay websockets todavía.
+## Tiempo real (15-oct-2026)
+
+Durable Object **`InboxHub`**, uno por inmobiliaria (`idFromName(orgId)`), definido en **api-crm** (`infrastructure/src/realtime/inbox-hub.ts`, exportado desde `api-crm/src/index.ts`). Usa la API de **hibernación**: con las conexiones quietas no consume CPU; el `ping` del navegador se contesta con `setWebSocketAutoResponse` sin despertarlo.
+
+- **Conexión**: `POST /realtime/ticket` (con la sesión) devuelve un ticket HMAC de **1 minuto** (`emitirTicket`, prefijo propio sobre `JWT_SECRET`: no sirve como sesión); el navegador abre `wss://crm…/realtime?ticket=…` (ruta fuera del middleware de auth) y api-crm lo pasa al hub de su org con `X-User-Id` / `X-Ve-Todo`. Un WebSocket del navegador no puede mandar `Authorization`; poner el JWT en la URL lo dejaba en logs.
+- **Eventos** (`EventoTiempoReal`, sin datos — la pantalla vuelve a pedir por la API, que aplica permisos): `conversacion` {id, assigneeId, previoAssigneeId} y `aviso` {userIds} (campana).
+- **Quién recibe** (`debeRecibir`): admin/owner/supervisor todo; el agente sólo sus conversaciones y la que le acaban de sacar (para que desaparezca de su lista). Los `aviso` sólo a sus destinatarios.
+- **Quién publica** (`crearPublicadorTiempoReal`, best-effort; sin binding no hace nada): api-public al ingerir (WhatsApp, Instagram, Messenger), al notificar y en las acciones del bot; api-crm al responder, delegar, etiquetar, resolver y al delegar un lead (aviso al agente). api-public llega al hub por binding con `script_name: vendepro-api-crm`.
+- **Frontend**: `lib/tiempo-real.ts`, una conexión por pestaña compartida por la bandeja y la campana; reconexión con backoff (1 s → 30 s; 5 min si el servidor responde 503). La bandeja muestra "En vivo"; la consulta periódica queda de respaldo (60 s con conexión, 15 s sin ella; la campana, cada minuto).
+- **Medido en local**: 174 ms desde que entra el mensaje hasta que aparece en la bandeja.
+- **Deploy**: la primera vez, api-crm tiene que estar deployado con `InboxHub` antes que api-public (los dos workflows corren en paralelo; si api-public falla, se re-ejecuta desde Actions). Migración de DO `v1` con `new_sqlite_classes` en `api-crm/wrangler.jsonc`.
 
 ## Carpetas, filtros y etiquetas (15-oct-2026)
 
@@ -76,7 +86,6 @@ La API del bot (api-public, `/v1/conversations/*`) va con token de integración,
 
 ## Pendiente
 
-- Websockets / push en vez de polling.
 - OAuth de Meta ("Continuar con Facebook") en lugar de pegar el token; etiqueta `HUMAN_AGENT` de Messenger para responder hasta 7 días.
 - Fachada compatible con la API de Chatwoot para importar los flujos de n8n sin tocarlos.
 - Permisos por rol en leads, contactos y calendario (mismo problema que tenía la bandeja; otro PR).
