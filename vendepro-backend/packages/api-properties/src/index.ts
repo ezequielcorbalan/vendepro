@@ -11,8 +11,14 @@ import { registerVisitFormRoutes } from './routes/visit-forms'
 import { registerLandingTemplateRoutes } from './routes/landings'
 import { registerSoldPropertyRoutes } from './routes/sold-properties'
 import { registerDocPortalRoutes } from './routes/doc-portal'
+import { registerDocDriveRoutes } from './routes/doc-drive'
+import { runDriveDocumentsSync } from '@vendepro/infrastructure'
 
-type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket; R2_PUBLIC_URL: string; BROWSER: Fetcher; API_PUBLIC_URL: string }
+type Env = {
+  DB: D1Database; JWT_SECRET: string; R2: R2Bucket; R2_PUBLIC_URL: string; BROWSER: Fetcher; API_PUBLIC_URL: string
+  GOOGLE_DRIVE_SA_KEY?: string
+  GEMINI_API_KEY?: string
+}
 type AuthVars = { Variables: { userId: string; userRole: string; orgId: string } }
 
 const app = new Hono<{ Bindings: Env } & AuthVars>()
@@ -37,5 +43,17 @@ registerVisitFormRoutes(app)
 registerLandingTemplateRoutes(app)
 registerSoldPropertyRoutes(app)
 registerDocPortalRoutes(app)
+registerDocDriveRoutes(app)
 
-export default app
+/**
+ * Cron diario (wrangler.jsonc, 07:00 UTC = 04:00 en Argentina, fuera del horario
+ * de trabajo): barrido de las unidades de Drive de documentación → checklist de
+ * cada propiedad. Plan: doc/documentacion-drive-plan.md.
+ */
+async function scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
+  ctx.waitUntil(runDriveDocumentsSync(env))
+}
+
+// El default sigue siendo la app de Hono (los tests usan app.request) con el
+// handler `scheduled` adosado: wrangler resuelve default.fetch y default.scheduled.
+export default Object.assign(app, { scheduled })

@@ -23,6 +23,8 @@ on:
         required: false
       GOOGLE_CLIENT_SECRET:
         required: false
+      GOOGLE_DRIVE_SA_KEY:
+        required: false
       SMOKE_EMAIL:
         required: true
       SMOKE_PASSWORD:
@@ -91,6 +93,7 @@ jobs:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_DRIVE_SA_KEY: ${{ secrets.GOOGLE_DRIVE_SA_KEY }}
         run: |
           # sync <NOMBRE> <valor>: sube el secret si tiene valor y, si no, lo dice.
           # El silencio era el problema: ANTHROPIC_API_KEY estuvo AUSENTE del worker
@@ -114,6 +117,9 @@ jobs:
           sync GOOGLE_CLIENT_SECRET "$GOOGLE_CLIENT_SECRET"
           # Envio de emails: api-auth (recuperar contrasena) y api-crm (marketing).
           sync RESEND_API_KEY "$RESEND_API_KEY"
+          # Lectura de Drive para el checklist de documentación: api-properties.
+          # Clave JSON de una cuenta de servicio de SOLO LECTURA (drive.readonly).
+          sync GOOGLE_DRIVE_SA_KEY "$GOOGLE_DRIVE_SA_KEY"
 
   smoke:
     name: Production smoke (${{ inputs.api_name }})

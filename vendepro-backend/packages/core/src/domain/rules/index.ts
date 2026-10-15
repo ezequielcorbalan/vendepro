@@ -72,3 +72,4 @@ export { buildMessageCreatedPayload, telefonoE164DesdeChat } from './inbox-webho
 export type { InboxWebhookInput } from './inbox-webhook-payload'
 export * from './document-checklist'
 export { authorizationExpiry, daysUntil, DEFAULT_AUTH_DURATION_DAYS } from './authorization-rules'
+export * from './drive-documents'
