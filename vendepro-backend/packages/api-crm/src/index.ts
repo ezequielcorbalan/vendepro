@@ -61,6 +61,7 @@ import {
   CreateEmailCampaignUseCase, UpdateEmailCampaignUseCase, ListEmailCampaignsUseCase,
   GetEmailCampaignUseCase, DeleteEmailCampaignUseCase, CancelEmailCampaignUseCase,
   PreviewCampaignAudienceUseCase, QueueCampaignSendUseCase, ProcessEmailQueueUseCase,
+  puedeVerConversacion, puedeAsignarConversacion, bandejaDe,
 } from '@vendepro/core'
 import {
   CreateLandingFromTemplateUseCase, UpdateLandingBlocksUseCase, AddBlockUseCase,
@@ -493,21 +494,42 @@ async function sessionClient(c: any): Promise<WahaSessionClient | null> {
 }
 
 // ── INBOX ──────────────────────────────────────────────────────
+// Permisos (ver conversation-access en core): admin/owner/supervisor ven todo;
+// el agente, sólo lo que le delegaron. Sin esto un agente leía cualquier hilo
+// pidiéndolo por id, aunque la pantalla no se lo mostrara.
+const actorInbox = (c: any) => ({ role: c.get('userRole') as string, userId: c.get('userId') as string })
+
+/**
+ * La conversación, si quien pregunta la puede ver. 404 y no 403 para una
+ * ajena: así no se confirma que el id existe.
+ */
+async function conversacionVisible(c: any) {
+  const conv = await new D1ConversationRepository(c.env.DB)
+    .findById(c.req.param('id'), c.get('orgId'))
+  if (!conv || !puedeVerConversacion(actorInbox(c), conv.assignee_id)) return null
+  return conv
+}
+
+const NO_ENCONTRADA = { error: 'Conversación no encontrada' }
+
 // Bandeja: la lista que ve el agente, con filtros por estado y asignado.
 app.get('/conversations', async (c) => {
   const { status, channel, assignee_id, unassigned } = c.req.query()
+  const propias = bandejaDe(actorInbox(c))
   const repo = new D1ConversationRepository(c.env.DB)
   const conversaciones = await repo.findByOrg(c.get('orgId'), {
     status: status as any,
     channel: channel as any,
-    assignee_id,
-    unassigned: unassigned === '1',
+    // Un agente no puede pedir la bandeja de otro ni la cola cambiando el query.
+    assignee_id: propias ?? assignee_id,
+    unassigned: propias ? false : unassigned === '1',
   })
   return c.json(conversaciones.map(cv => ({ ...cv.toObject(), window_open: cv.isWindowOpen() })))
 })
 
 // El hilo completo de una conversación.
 app.get('/conversations/:id/messages', async (c) => {
+  if (!(await conversacionVisible(c))) return c.json(NO_ENCONTRADA, 404)
   const uc = new GetConversationThreadUseCase(
     new D1ConversationRepository(c.env.DB),
     new D1MessageRepository(c.env.DB),
@@ -518,16 +540,23 @@ app.get('/conversations/:id/messages', async (c) => {
 
 // Asignar la conversación a un agente (o devolverla a la cola con null).
 app.post('/conversations/:id/assignments', async (c) => {
+  const conv = await conversacionVisible(c)
+  if (!conv) return c.json(NO_ENCONTRADA, 404)
   const body = (await c.req.json().catch(() => ({}))) as any
-  const conv = await new AssignConversationUseCase(
+  const nuevo = body?.assignee_id ?? null
+  if (!puedeAsignarConversacion(actorInbox(c), conv.assignee_id, nuevo)) {
+    return c.json({ error: 'Sólo un admin o supervisor puede delegar conversaciones' }, 403)
+  }
+  const asignada = await new AssignConversationUseCase(
     new D1ConversationRepository(c.env.DB),
     new D1UserRepository(c.env.DB),
-  ).execute(c.req.param('id'), c.get('orgId'), body?.assignee_id ?? null)
-  return c.json({ id: conv.id, assignee_id: conv.assignee_id })
+  ).execute(c.req.param('id'), c.get('orgId'), nuevo)
+  return c.json({ id: asignada.id, assignee_id: asignada.assignee_id })
 })
 
 // Abrir / cerrar desde la bandeja.
 app.post('/conversations/:id/toggle_status', async (c) => {
+  if (!(await conversacionVisible(c))) return c.json(NO_ENCONTRADA, 404)
   const body = (await c.req.json().catch(() => ({}))) as any
   const conv = await new ToggleConversationStatusUseCase(new D1ConversationRepository(c.env.DB))
     .execute(c.req.param('id'), c.get('orgId'), body?.status)
@@ -543,6 +572,9 @@ app.post('/conversations/:id/messages', async (c) => {
   if (!body || typeof body.content !== 'string') {
     return c.json({ error: 'content es requerido' }, 400)
   }
+  // Contestar desde el número de la inmobiliaria en nombre de otro agente es
+  // peor que leer: el cliente lo recibe.
+  if (!(await conversacionVisible(c))) return c.json(NO_ENCONTRADA, 404)
 
   const gateway = await createMessagingGateway(c.env, orgId)
   if (!gateway) {

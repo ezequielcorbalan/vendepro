@@ -1,9 +1,12 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { MessageSquare, Send, Check, Clock, AlertTriangle, Bot, ArrowUpRight, User as UserIcon } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
+import { useCurrentUser } from '@/lib/use-current-user'
+import { canSeeAll } from '@/lib/crm-config'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
@@ -57,7 +60,16 @@ function hora(iso: string | null): string {
     : d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })
 }
 
+// useSearchParams obliga a un límite de Suspense para el prerender.
 export default function ConversacionesPage() {
+  return (
+    <Suspense fallback={null}>
+      <Bandeja />
+    </Suspense>
+  )
+}
+
+function Bandeja() {
   const { toast } = useToast()
   const [filtro, setFiltro] = useState<'open' | 'resolved'>('open')
   const [conversaciones, setConversaciones] = useState<Conversation[]>([])
@@ -67,6 +79,12 @@ export default function ConversacionesPage() {
   const [texto, setTexto] = useState('')
   const [cargando, setCargando] = useState(true)
   const [enviando, setEnviando] = useState(false)
+  const { user } = useCurrentUser()
+  // Delegar es repartir: admin, owner y supervisor. El servidor lo exige igual;
+  // esto sólo evita mostrar un selector que va a responder 403.
+  const reparte = !!user && canSeeAll(user.role)
+  const activaId = useRef<string | null>(null)
+  activaId.current = activa?.id ?? null
 
   const cargarBandeja = useCallback(() => {
     apiFetch('crm', `/conversations?status=${filtro}`)
@@ -80,6 +98,34 @@ export default function ConversacionesPage() {
   }, [filtro])
 
   useEffect(() => { setCargando(true); cargarBandeja() }, [cargarBandeja])
+
+  // Sin websockets todavía: la bandeja y el hilo abierto se refrescan solos.
+  // 15 s es lo que tarda en sentirse "en vivo" sin castigar a D1.
+  useEffect(() => {
+    const intervalo = setInterval(() => {
+      if (document.hidden) return
+      cargarBandeja()
+      const id = activaId.current
+      if (!id) return
+      apiFetch('crm', `/conversations/${id}/messages`)
+        .then(r => r.json() as Promise<any>)
+        .then(d => { if (Array.isArray(d) && activaId.current === id) setMensajes(d) })
+        .catch(() => {})
+    }, 15_000)
+    return () => clearInterval(intervalo)
+  }, [cargarBandeja])
+
+  // El aviso de la campana trae `?c=<id>`: se abre esa conversación apenas
+  // carga la bandeja, y también si ya estabas acá y tocás otro aviso.
+  const pedida = useSearchParams().get('c')
+  const ultimaPedida = useRef<string | null>(null)
+  useEffect(() => {
+    if (!pedida || cargando || ultimaPedida.current === pedida) return
+    const c = conversaciones.find(x => x.id === pedida)
+    if (!c) return
+    ultimaPedida.current = pedida
+    abrir(c)
+  }, [pedida, cargando, conversaciones])
 
   useEffect(() => {
     apiFetch('admin', '/agents').then(r => r.json() as Promise<any>)
@@ -250,15 +296,21 @@ export default function ConversacionesPage() {
                 </div>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
-                <Select
-                  aria-label="Delegar a"
-                  value={activa.assignee_id ?? ''}
-                  onChange={e => asignar(e.target.value)}
-                  className="w-auto"
-                >
-                  <option value="">Sin asignar</option>
-                  {agentes.map(a => <option key={a.id} value={a.id}>{a.full_name}</option>)}
-                </Select>
+                {reparte ? (
+                  <Select
+                    aria-label="Delegar a"
+                    value={activa.assignee_id ?? ''}
+                    onChange={e => asignar(e.target.value)}
+                    className="w-auto"
+                  >
+                    <option value="">Sin asignar</option>
+                    {agentes.map(a => <option key={a.id} value={a.id}>{a.full_name}</option>)}
+                  </Select>
+                ) : activa.assignee_id === user?.id && (
+                  <Button variant="ghost" onClick={() => asignar('')}>
+                    Devolver a la cola
+                  </Button>
+                )}
                 <Button variant="outline" icon={<Check className="w-3.5 h-3.5" />} onClick={alternarEstado}>
                   {activa.status === 'resolved' ? 'Reabrir' : 'Resolver'}
                 </Button>

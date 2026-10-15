@@ -16,6 +16,7 @@ export { classifyGoogleEventType, matchNameInTitle, candidateNameTerms, normaliz
 export { computeRealLeadFunnel, computeCaptureTail } from './lead-funnel-rules'
 export type { FunnelLead, FunnelHistoryEntry, FunnelStageResult, LeadFunnelResult, FunnelProperty, CaptureTailResult } from './lead-funnel-rules'
 export { canSeeAll, canManageOrg, canManageAgents, canSetObjectives, isAdmin } from './role-rules'
+export { puedeVerConversacion, puedeAsignarConversacion, bandejaDe } from './conversation-access'
 export type { UserRole } from './role-rules'
 export { canTransitionPropertyStatus } from './property-rules'
 export type { PropertyStatus } from './property-rules'
