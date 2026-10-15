@@ -33,7 +33,7 @@ Cada dominio agrupa entidades + tablas + use cases + endpoints + páginas:
 - [[Dominio-Reportes]] · [[Dominio-Reservas]]
 - [[Dominio-Calendario]] · [[Dominio-Actividades]]
 - [[Dominio-Landings]] · [[Dominio-Marketing]]
-- [[Dominio-Objetivos]] · [[Dominio-Notificaciones]]
+- [[Dominio-Objetivos]] · [[Dominio-Notificaciones]] · [[Dominio-Inbox]]
 - [[Dominio-Usuarios-Org]]
 - [[Estados]] — máquinas de estado de lead/property/reservation + sync
 

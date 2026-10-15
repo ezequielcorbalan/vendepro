@@ -19,7 +19,7 @@
 | 07 · Landings por agente | 🟢 | Perfil + landing `/a/<org>/<agente>` con binding vivo en producción; propiedades activas, testimonios y descargables quedan fuera del MVP. |
 | 08 · Landings por propiedad | 🔴 | El kind `property` es solo un estilo; `landings` no tiene `property_id`, sin UTM builder ni QR. |
 | 09 · Automatizaciones de email | 🟡 | Motor v2 en producción; barrido cron time-based + `lead.created` desde api-public implementados (10-sep, falta deploy). Quedan 6 acciones sin executor y el open/click tracking. |
-| 10 · Agente conversacional IA | 🔴 | Cero código de WhatsApp/IG/Messenger, sin tablas conversations/messages. |
+| 10 · Agente conversacional IA | 🟡 | Bandeja propia de WhatsApp (WAHA) + Instagram (Meta) con delegación, avisos y permisos; el bot sigue en n8n. Rama sin mergear (15-oct), faltan migraciones 059-060 + deploy. |
 | 11 · Asistente IA interno | 🟠 | IA de extracción/generación 🟢, pero no hay chat, ni `ai_conversations`, ni function calling. |
 | 12 · Marketplace de servicios | 🔴 | Nada. |
 | 13 · Academia | 🔴 | Nada. |
@@ -168,9 +168,17 @@ El kind `property` es solo un **estilo**: `landings` no tiene `property_id` — 
 
 **Provider**: el roadmap dice "Emblue ya está en stack" — **desactualizado**: Emblue es legacy muerto (cero código vivo); todo sale por **Resend** (campañas, automatizaciones, test, reset de password), con template base unificado. Campañas de email 🟢: wizard completo, segmentos dinámicos, cola con cron `*/5` + batches de 100 + 3 reintentos, suppressions, unsubscribe público HMAC, borrador con IA.
 
-### Feature 10 — Agente conversacional IA 🔴
+### Feature 10 — Agente conversacional IA 🟡
 
-Confirmado con grep exhaustivo: cero adapters/ports/webhooks de WhatsApp Business, Instagram o Messenger; sin tablas `conversations`/`messages`/`agent_actions`. Lo único con "whatsapp" es cosmético (links `wa.me`, bloque `cta_whatsapp`, acción genérica `http_post` documentada "para WhatsApp vía n8n").
+**Bandeja propia 🟡 (rama `claude/inbox-delegar-conversacion`, 15-oct-2026)** — reemplazo de Onetalk. Detalle en [[Dominio-Inbox]].
+- Ingesta de WhatsApp por WAHA (webhook nativo, un WAHA compartido con una sesión por org) e Instagram por Meta; tablas `conversations`/`messages` (migraciones **059**, **060**).
+- Responder desde VendéPro (port `MessagingGateway`, adapters WAHA y Meta), delegar conversaciones, delegar un lead le pasa sus conversaciones.
+- Conectar WhatsApp desde la app con un botón y un QR.
+- Avisos por campana: mensaje nuevo (sólo cuando el cliente toma la palabra) y WhatsApp desconectado.
+- Permisos en el servidor: el agente sólo ve y opera lo que le delegaron.
+- Contrato con el bot de n8n compatible con Chatwoot (`message_created` crudo, mismas rutas).
+
+**Lo que falta**: el agente IA propiamente dicho (hoy es el bot de n8n), websockets, fachada Chatwoot completa, `agent_actions`. Pendiente operativo: migraciones 059-060, deploy de api-crm, api-public y frontend, levantar WAHA de la plataforma (`WAHA_BASE_URL`, `WAHA_API_KEY`, `INBOX_WEBHOOK_URL`).
 
 ### Feature 11 — Asistente IA interno 🟠
 
