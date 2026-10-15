@@ -18,6 +18,8 @@ export interface SweepEvent {
   trigger: string
   entityType: EntityType
   entityId: string
+  /** Repetición del hecho, para el dedupe_key (ej. fecha de vencimiento). */
+  occurrence?: string
 }
 
 /**
@@ -70,13 +72,14 @@ export class SweepTimeBasedAutomationsUseCase {
     for (const { automation } of active) {
       if (!automation.org_id) continue // las recetas de sistema no corren solas
       try {
-        const ids = await this.findCandidates(automation, now, limit)
-        for (const entityId of ids) {
+        const found = await this.findCandidates(automation, now, limit)
+        for (const { id: entityId, occurrence } of found) {
           await this.dispatch({
             orgId: automation.org_id,
             trigger: automation.trigger_type,
             entityType: automation.entity_type,
             entityId,
+            ...(occurrence ? { occurrence } : {}),
           })
           dispatched += 1
         }
@@ -91,7 +94,11 @@ export class SweepTimeBasedAutomationsUseCase {
     return { automations: active.length, dispatched }
   }
 
-  private findCandidates(automation: Automation, now: Date, limit: number): Promise<string[]> {
+  private async findCandidates(
+    automation: Automation,
+    now: Date,
+    limit: number,
+  ): Promise<Array<{ id: string; occurrence?: string }>> {
     const base = {
       orgId: automation.org_id!,
       automationId: automation.id,
@@ -102,17 +109,17 @@ export class SweepTimeBasedAutomationsUseCase {
     switch (automation.trigger_type) {
       case 'lead.sin_contacto_24h': {
         const horas = automation.thresholdOr('horas', 24)
-        return this.candidates.leadsSinContacto({
+        return asCandidates(await this.candidates.leadsSinContacto({
           ...base,
           createdBefore: sqliteUtc(new Date(now.getTime() - horas * 3_600_000)),
-        })
+        }))
       }
       case 'lead.sin_respuesta_7d': {
         const dias = automation.thresholdOr('dias', 7)
-        return this.candidates.leadsSinRespuesta({
+        return asCandidates(await this.candidates.leadsSinRespuesta({
           ...base,
           inactiveSince: sqliteUtc(new Date(now.getTime() - dias * 86_400_000)),
-        })
+        }))
       }
       case 'property.publicacion_vencida': {
         return this.candidates.propiedadesPorVencer({
@@ -124,9 +131,13 @@ export class SweepTimeBasedAutomationsUseCase {
       default:
         // findActiveTimeBased no debería devolver otros triggers; si el
         // catálogo suma uno, se agrega su query acá.
-        return Promise.resolve([])
+        return []
     }
   }
+}
+
+function asCandidates(ids: string[]): Array<{ id: string }> {
+  return ids.map((id) => ({ id }))
 }
 
 /**

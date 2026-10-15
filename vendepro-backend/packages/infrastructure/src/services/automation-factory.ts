@@ -140,6 +140,8 @@ export interface FireAutomationEventInput {
   entityId: string
   stage?: { from?: string | null; to?: string | null }
   depth?: number
+  /** Ver `RunAutomationsForEventInput.occurrence`. */
+  occurrence?: string | null
 }
 
 /**
@@ -172,6 +174,7 @@ export async function fireAutomationEvent(
       context,
       event: { to_stage: input.stage?.to ?? null, from_stage: input.stage?.from ?? null },
       depth: input.depth ?? 0,
+      occurrence: input.occurrence ?? null,
     })
   } catch (err) {
     console.error('[automations] fireAutomationEvent failed (swallowed):', (err as Error)?.message ?? err)
@@ -214,6 +217,7 @@ export async function sweepTimeBasedAutomations(env: AutomationEnv): Promise<voi
         trigger: event.trigger,
         entityType: event.entityType,
         entityId: event.entityId,
+        occurrence: event.occurrence ?? null,
       }),
     )
     const result = await sweeper.execute({})

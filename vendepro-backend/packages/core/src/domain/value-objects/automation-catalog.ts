@@ -141,8 +141,11 @@ export const TRIGGER_DEFINITIONS: readonly TriggerDefinition[] = [
   },
   {
     key: 'property.publicacion_vencida',
-    label: 'Publicación por vencer',
-    description: 'Faltan N días para que venza la publicación de la propiedad.',
+    // La clave quedó con el nombre viejo: hay automatizaciones guardadas con ella.
+    label: 'Autorización por vencer',
+    description:
+      'Faltan N días para que venza la autorización de venta (inicio + plazo cargados en la propiedad). '
+      + 'Si se renueva, vuelve a avisar para el vencimiento nuevo. Lo evalúa el sistema cada 15 minutos.',
     entity_type: 'property',
     config_fields: [
       { name: 'dias_antes', label: 'Días de anticipación', type: 'number', required: true, default: 7 },

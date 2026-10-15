@@ -1,4 +1,4 @@
-import type { AutomationSweepRepository, SweepCandidateQuery } from '@vendepro/core'
+import type { AutomationSweepRepository, SweepCandidate, SweepCandidateQuery } from '@vendepro/core'
 
 /**
  * Queries de candidatos del barrido por tiempo.
@@ -63,13 +63,22 @@ export class D1AutomationSweepRepository implements AutomationSweepRepository {
     return rows.map((r) => r.id as string)
   }
 
-  async propiedadesPorVencer(q: SweepCandidateQuery & { hoy: string; diasAntes: number }): Promise<string[]> {
+  async propiedadesPorVencer(
+    q: SweepCandidateQuery & { hoy: string; diasAntes: number },
+  ): Promise<SweepCandidate[]> {
     // Vencimiento = auth_start_date + auth_duration_days (migración 013).
     // Candidata si vence dentro de la ventana [hoy, hoy + diasAntes]; una ya
     // vencida no dispara (el aviso es "por vencer", no "vencida").
+    //
+    // Anti-re-disparo: sólo cuentan las corridas posteriores al inicio de la
+    // autorización VIGENTE. Una renovación (nuevo auth_start_date) deja atrás
+    // el aviso anterior y la propiedad vuelve a ser candidata; sin esto, con
+    // scope 'once' se avisaba una sola vez en la vida de la propiedad.
     const rows = ((await this.db
       .prepare(`
-        SELECT p.id FROM properties p
+        SELECT p.id,
+          date(p.auth_start_date, '+' || COALESCE(p.auth_duration_days, 180) || ' days') AS vence
+        FROM properties p
         WHERE p.org_id = ?
           AND p.status = 'active'
           AND p.auth_start_date IS NOT NULL AND p.auth_start_date != ''
@@ -79,6 +88,7 @@ export class D1AutomationSweepRepository implements AutomationSweepRepository {
           AND NOT EXISTS (
             SELECT 1 FROM automation_runs r
             WHERE r.automation_id = ? AND r.entity_id = p.id
+              AND datetime(r.created_at) >= datetime(p.auth_start_date)
               AND (? = '' OR r.created_at >= ?)
           )
         LIMIT ?
@@ -88,6 +98,6 @@ export class D1AutomationSweepRepository implements AutomationSweepRepository {
         q.automationId, q.notRunSince ?? '', q.notRunSince ?? '', q.limit,
       )
       .all()).results ?? []) as any[]
-    return rows.map((r) => r.id as string)
+    return rows.map((r) => ({ id: r.id as string, occurrence: r.vence as string }))
   }
 }
