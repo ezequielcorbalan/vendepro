@@ -196,4 +196,21 @@ describe('D1AppraisalRepository', () => {
     expect(comps[0]!.address).toBe('Cmp B')
     expect(comps[1]!.address).toBe('Cmp A')
   })
+
+  // Los métodos de comparables van por id sin org: este chequeo es lo que
+  // impide que otra inmobiliaria edite o borre un comparable ajeno.
+  it('findComparableAppraisalId devuelve la tasación sólo dentro de la org', async () => {
+    const repo = new D1AppraisalRepository(env.DB)
+    const app = buildAppraisal()
+    await repo.save(app)
+    const cmpId = nextId('cmp')
+    await env.DB.prepare(
+      `INSERT INTO appraisal_comparables (id, appraisal_id, address, sort_order) VALUES (?, ?, 'Cmp', 0)`,
+    ).bind(cmpId, app.id).run()
+
+    expect(await repo.findComparableAppraisalId(cmpId, orgId)).toBe(app.id)
+    const otraOrg = await seedOrg(env.DB)
+    expect(await repo.findComparableAppraisalId(cmpId, otraOrg.id)).toBeNull()
+    expect(await repo.findComparableAppraisalId('no-existe', orgId)).toBeNull()
+  })
 })

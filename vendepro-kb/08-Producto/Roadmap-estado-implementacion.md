@@ -51,6 +51,7 @@ Todo el núcleo está en producción con backend + UI:
 2. 🐛 **Detalle de prefactibilidad → 404** — `prefactibilidades/page.tsx:77` linkea a `/prefactibilidades/${id}` pero no existe `[id]/page.tsx` (el backend sí tiene `GET /prefactibilidades/:id`).
 3. ~~🐛 **Endpoints IA fantasma**~~ — **resuelto 2026-09-08**: `/extract-kiteprop` ahora existe en api-ai (PDF de KiteProp por Gemini nativo) y el screenshot de competencia reusa `/extract-comparable`; además hay `/extract-comparable-url` para pegar el link del aviso (con lista blanca de portales y degradación explícita a captura cuando el anti-bot bloquea).
 4. 🐛 **Actividades salta la capa de aplicación** — `api-crm:1025-1062` va directo a `D1ActivityRepository` sin use cases (funciona, pero rompe el patrón hexagonal).
+5. 🟡 **Permisos por rol sólo en la pantalla** — un agente podía leer/editar leads, contactos y eventos ajenos pidiéndolos por id. **Corregido el 15-oct-2026** en api-crm, api-properties y api-analytics (rama `claude/permisos-por-rol-crm`, falta merge + deploy de esos tres workers y el frontend). De paso: las rutas de comparables de tasaciones no chequeaban la organización. Ver [[Dominio-Usuarios-Org]].
 
 ### 00b — Meta CAPI + GA4 server-side (Stape) 🟡
 

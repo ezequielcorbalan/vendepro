@@ -44,4 +44,17 @@ describe('GetAppraisalStatsUseCase', () => {
     const result = await new GetAppraisalStatsUseCase(repo).execute('org1')
     expect(result).toEqual({ total: 0, captadas: 0 })
   })
+
+  it('para un agente cuenta sólo sus tasaciones', async () => {
+    const repo = {
+      countByOrg: vi.fn().mockResolvedValue(40),
+      countByAgent: vi.fn().mockResolvedValue(3),
+      countByOrgAndStage: vi.fn().mockResolvedValue(0),
+    } as any
+    const r = await new GetAppraisalStatsUseCase(repo).execute('org1', 'agent-1')
+    expect(r.total).toBe(3)
+    expect(repo.countByAgent).toHaveBeenCalledWith('org1', 'agent-1')
+    expect(repo.countByOrg).not.toHaveBeenCalled()
+    expect(repo.countByOrgAndStage).not.toHaveBeenCalled()
+  })
 })

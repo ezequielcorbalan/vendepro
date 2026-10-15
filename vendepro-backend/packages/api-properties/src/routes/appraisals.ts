@@ -28,6 +28,8 @@ import {
   RenderFailedError,
   AppraisalNotFoundError,
 } from '@vendepro/core'
+import { alcanceDe, duenoAlCrear } from '@vendepro/core'
+import { actor, tasacionVisible, tasacionDeComparable, NO_ENCONTRADA } from '../permisos'
 
 type Env = { DB: D1Database; JWT_SECRET: string; R2: R2Bucket; R2_PUBLIC_URL: string; BROWSER: Fetcher; API_PUBLIC_URL: string }
 type AuthVars = { Variables: { userId: string; userRole: string; orgId: string } }
@@ -39,6 +41,7 @@ export function registerAppraisalRoutes(app: Hono<{ Bindings: Env } & AuthVars>)
     const orgId = c.get('orgId')
 
     if (id) {
+      if (!(await tasacionVisible(c, id))) return c.json(NO_ENCONTRADA, 404)
       const useCase = new GetAppraisalDetailUseCase(repo)
       const result = await useCase.execute(id, orgId)
       if (!result) return c.json({ error: 'Not found' }, 404)
@@ -53,7 +56,8 @@ export function registerAppraisalRoutes(app: Hono<{ Bindings: Env } & AuthVars>)
     }
 
     const useCase = new GetAppraisalsUseCase(repo)
-    const items = await useCase.execute(orgId, { stage: status, agent_id })
+    // Un agente ve sus tasaciones aunque pida las de otro.
+    const items = await useCase.execute(orgId, { stage: status, agent_id: alcanceDe(actor(c), agent_id) })
     // Apply filters manually since the use-case uses 'stage' for status
     let rows = items.map(a => a.toObject())
     if (status) rows = rows.filter(r => r.status === status)
@@ -65,7 +69,7 @@ export function registerAppraisalRoutes(app: Hono<{ Bindings: Env } & AuthVars>)
     const body = (await c.req.json()) as any
     const repo = new D1AppraisalRepository(c.env.DB)
     const orgId = c.get('orgId')
-    const agentId = body.agent_id || c.get('userId')
+    const agentId = duenoAlCrear(actor(c), body.agent_id)
     const useCase = new CreateAppraisalUseCase(
       repo,
       new CryptoIdGenerator(),
@@ -110,6 +114,9 @@ export function registerAppraisalRoutes(app: Hono<{ Bindings: Env } & AuthVars>)
 
   app.put('/appraisals', async (c) => {
     const body = (await c.req.json()) as any
+    if (!(await tasacionVisible(c, c.req.query('id')))) return c.json(NO_ENCONTRADA, 404)
+    // Pasarla a otro agente es de quien reparte.
+    if (alcanceDe(actor(c))) delete body.agent_id
     const { id } = c.req.query()
     const repo = new D1AppraisalRepository(c.env.DB)
     const orgId = c.get('orgId')
@@ -129,8 +136,8 @@ export function registerAppraisalRoutes(app: Hono<{ Bindings: Env } & AuthVars>)
     const { id } = c.req.query()
     const repo = new D1AppraisalRepository(c.env.DB)
     const orgId = c.get('orgId')
-    const existing = await repo.findById(id ?? '', orgId)
-    if (!existing) return c.json({ error: 'Not found' }, 404)
+    const existing = await tasacionVisible(c, id)
+    if (!existing) return c.json(NO_ENCONTRADA, 404)
     if (existing.public_slug) {
       return c.json({ success: true, public_slug: existing.public_slug })
     }
@@ -159,6 +166,7 @@ export function registerAppraisalRoutes(app: Hono<{ Bindings: Env } & AuthVars>)
   })
 
   app.delete('/appraisals', async (c) => {
+    if (!(await tasacionVisible(c, c.req.query('id')))) return c.json(NO_ENCONTRADA, 404)
     const { id } = c.req.query()
     const repo = new D1AppraisalRepository(c.env.DB)
     const useCase = new DeleteAppraisalUseCase(repo)
@@ -167,8 +175,11 @@ export function registerAppraisalRoutes(app: Hono<{ Bindings: Env } & AuthVars>)
   })
 
   // Comparables
+  // Comparables: los use cases van por id sin org. Antes de tocar nada se
+  // confirma que la tasación es de esta org y visible para quien pregunta.
   app.post('/appraisals/comparables', async (c) => {
     const body = (await c.req.json()) as any
+    if (!(await tasacionVisible(c, body?.appraisal_id))) return c.json(NO_ENCONTRADA, 404)
     const repo = new D1AppraisalRepository(c.env.DB)
     const useCase = new AddAppraisalComparableUseCase(repo, new CryptoIdGenerator())
     const result = await useCase.execute(body)
@@ -178,6 +189,7 @@ export function registerAppraisalRoutes(app: Hono<{ Bindings: Env } & AuthVars>)
   app.put('/appraisals/comparables', async (c) => {
     const body = (await c.req.json()) as any
     if (!body?.id) return c.json({ error: 'id es requerido' }, 400)
+    if (!(await tasacionDeComparable(c, body.id))) return c.json(NO_ENCONTRADA, 404)
     const repo = new D1AppraisalRepository(c.env.DB)
     const useCase = new UpdateAppraisalComparableUseCase(repo)
     const { id, ...patch } = body
@@ -187,6 +199,7 @@ export function registerAppraisalRoutes(app: Hono<{ Bindings: Env } & AuthVars>)
 
   app.delete('/appraisals/comparables', async (c) => {
     const { id } = c.req.query()
+    if (!(await tasacionDeComparable(c, id))) return c.json(NO_ENCONTRADA, 404)
     const repo = new D1AppraisalRepository(c.env.DB)
     const useCase = new RemoveAppraisalComparableUseCase(repo)
     await useCase.execute(id ?? '')
@@ -194,6 +207,7 @@ export function registerAppraisalRoutes(app: Hono<{ Bindings: Env } & AuthVars>)
   })
 
   app.post('/appraisals/:id/sync-template', async (c) => {
+    if (!(await tasacionVisible(c, c.req.param('id')))) return c.json(NO_ENCONTRADA, 404)
     const uc = new SyncTemplateSnapshotUseCase(
       new D1AppraisalRepository(c.env.DB),
       new D1AppraisalTemplateRepository(c.env.DB),
@@ -203,6 +217,7 @@ export function registerAppraisalRoutes(app: Hono<{ Bindings: Env } & AuthVars>)
   })
 
   app.patch('/appraisals/:id/blocks/:block_id', async (c) => {
+    if (!(await tasacionVisible(c, c.req.param('id')))) return c.json(NO_ENCONTRADA, 404)
     const body = (await c.req.json().catch(() => ({}))) as any
     const uc = new SetBlockOverridesUseCase(new D1AppraisalRepository(c.env.DB))
     await uc.execute({
@@ -215,6 +230,7 @@ export function registerAppraisalRoutes(app: Hono<{ Bindings: Env } & AuthVars>)
   })
 
   app.post('/appraisals/:id/pdf', async (c) => {
+    if (!(await tasacionVisible(c, c.req.param('id')))) return c.json(NO_ENCONTRADA, 404)
     const useCase = new GenerateAppraisalPdfUseCase({
       appraisalRepo: new D1AppraisalRepository(c.env.DB),
       pdfRepo: new D1AppraisalPdfRepository(c.env.DB),

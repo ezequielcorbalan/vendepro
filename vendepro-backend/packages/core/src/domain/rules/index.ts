@@ -18,6 +18,7 @@ export type { FunnelLead, FunnelHistoryEntry, FunnelStageResult, LeadFunnelResul
 export { canSeeAll, canManageOrg, canManageAgents, canSetObjectives, isAdmin } from './role-rules'
 export { puedeVerConversacion, puedeAsignarConversacion, bandejaDe } from './conversation-access'
 export type { UserRole } from './role-rules'
+export { alcanceDe, puedeVerRegistro, duenoAlCrear } from './data-access'
 export { canTransitionPropertyStatus } from './property-rules'
 export type { PropertyStatus } from './property-rules'
 export { canTransitionReservationStage } from './reservation-rules'
