@@ -3,12 +3,20 @@ import type { Contact } from '../../../domain/entities/contact'
 export interface ContactFilters {
   search?: string
   agent_id?: string
+  /**
+   * Lo que puede ver un agente: los contactos a su nombre y los de sus leads.
+   * Por separado de `agent_id` porque el contacto de un lead delegado suele
+   * seguir a nombre de quien lo cargó (o del admin, si entró por WhatsApp).
+   */
+  visible_to?: string
   /** Filtra contactos cuyos leads tengan este tag */
   tag_id?: string
 }
 
 export interface ContactRepository {
   findById(id: string, orgId: string): Promise<Contact | null>
+  /** Misma regla que `visible_to`, para un contacto puntual. */
+  isVisibleTo(id: string, orgId: string, userId: string): Promise<boolean>
   findByOrg(orgId: string, filters?: ContactFilters): Promise<Contact[]>
   findByEmailOrPhone(orgId: string, email: string | null, phone: string | null): Promise<Contact | null>
   /** Dirección de la propiedad del lead más reciente de cada contacto, indexada por contact_id */

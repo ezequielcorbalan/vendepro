@@ -1,6 +1,11 @@
 import { Contact } from '@vendepro/core'
 import type { ContactRepository, ContactFilters } from '@vendepro/core'
 
+/** Contactos a nombre del agente o de alguno de sus leads (dos binds: userId, userId). */
+const VISIBLE_PARA = `agent_id = ? OR id IN (
+  SELECT contact_id FROM leads WHERE assigned_to = ? AND contact_id IS NOT NULL AND org_id = contacts.org_id
+)`
+
 export class D1ContactRepository implements ContactRepository {
   constructor(private readonly db: D1Database) {}
 
@@ -12,11 +17,23 @@ export class D1ContactRepository implements ContactRepository {
     return row ? this.toEntity(row) : null
   }
 
+  async isVisibleTo(id: string, orgId: string, userId: string): Promise<boolean> {
+    const row = await this.db
+      .prepare(`SELECT 1 AS ok FROM contacts WHERE id = ? AND org_id = ? AND (${VISIBLE_PARA})`)
+      .bind(id, orgId, userId, userId)
+      .first()
+    return !!row
+  }
+
   async findByOrg(orgId: string, filters?: ContactFilters): Promise<Contact[]> {
     let query = 'SELECT * FROM contacts WHERE org_id = ?'
     const binds: unknown[] = [orgId]
 
     if (filters?.agent_id) { query += ' AND agent_id = ?'; binds.push(filters.agent_id) }
+    if (filters?.visible_to) {
+      query += ` AND (${VISIBLE_PARA})`
+      binds.push(filters.visible_to, filters.visible_to)
+    }
     if (filters?.search) {
       query += ' AND (full_name LIKE ? OR phone LIKE ? OR email LIKE ?)'
       binds.push(`%${filters.search}%`, `%${filters.search}%`, `%${filters.search}%`)
