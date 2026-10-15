@@ -1,4 +1,4 @@
-import type { MessagingGateway, SendMessageInput, SendMessageResult } from '@vendepro/core'
+import type { MessagingGateway, SendMessageInput, SendMessageResult, SendFileInput } from '@vendepro/core'
 
 /** Topes de Meta para un mensaje de texto: Instagram corta antes que Messenger. */
 const MAX_TEXTO: Record<string, number> = { instagram: 1000, facebook: 2000 }
@@ -59,6 +59,33 @@ export class MetaMessagingGateway implements MessagingGateway {
       throw new Error(`Meta respondió ${res.status}${motivo ? `: ${motivo}` : ''}`)
     }
 
+    return { externalId: typeof data?.message_id === 'string' ? data.message_id : null }
+  }
+
+  /**
+   * Adjunto por URL (Meta lo descarga). Los adjuntos de Messenger/Instagram no
+   * llevan pie: el texto, si hay, sale antes como mensaje aparte.
+   */
+  async sendFile(input: SendFileInput): Promise<SendMessageResult> {
+    if (input.channel === 'whatsapp') {
+      throw new Error('Este adapter es para Instagram y Facebook; WhatsApp va por su propio canal')
+    }
+    if (input.text) await this.sendText({ channel: input.channel, chatId: input.chatId, text: input.text })
+
+    const m = input.file.mimetype
+    const tipo = m.startsWith('image/') ? 'image' : m.startsWith('video/') ? 'video' : m.startsWith('audio/') ? 'audio' : 'file'
+    const base = this.config.baseUrl ?? 'https://graph.facebook.com'
+    const version = this.config.apiVersion ?? 'v21.0'
+    const res = await fetch(`${trimSlash(base)}/${version}/me/messages?access_token=${encodeURIComponent(this.config.pageAccessToken)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        recipient: { id: input.chatId },
+        message: { attachment: { type: tipo, payload: { url: input.file.url, is_reusable: true } } },
+      }),
+    })
+    const data = (await res.json().catch(() => null)) as any
+    if (!res.ok) throw new Error(`Meta respondió ${res.status}${data?.error?.message ? `: ${data.error.message}` : ''}`)
     return { externalId: typeof data?.message_id === 'string' ? data.message_id : null }
   }
 }

@@ -1,6 +1,6 @@
 import type { ConversationRepository } from '../../ports/repositories/conversation-repository'
 import type { MessageRepository } from '../../ports/repositories/message-repository'
-import type { MessagingGateway } from '../../ports/services/messaging-gateway'
+import type { MessagingGateway, ArchivoSaliente } from '../../ports/services/messaging-gateway'
 import type { IdGenerator } from '../../ports/id-generator'
 import { Message } from '../../../domain/entities/message'
 import type { ConversationChannel } from '../../../domain/entities/conversation'
@@ -16,6 +16,8 @@ export interface SendMessageUseCaseInput {
   senderType: MessageSenderType
   /** users(id) cuando lo escribe un agente. */
   senderId?: string | null
+  /** Un archivo para mandar con el texto como pie (ej. el PDF que manda el bot). */
+  archivo?: ArchivoSaliente | null
 }
 
 export interface SendMessageUseCaseResult {
@@ -50,7 +52,8 @@ export class SendMessageUseCase {
 
   async execute(input: SendMessageUseCaseInput): Promise<SendMessageUseCaseResult> {
     const texto = (input.text ?? '').trim()
-    if (!texto) throw new ValidationError('El mensaje está vacío')
+    const archivo = input.archivo ?? null
+    if (!texto && !archivo) throw new ValidationError('El mensaje está vacío')
 
     const conversation = await this.conversations.findById(input.conversationId, input.orgId)
     if (!conversation) throw new NotFoundError('Conversación', input.conversationId)
@@ -68,11 +71,13 @@ export class SendMessageUseCase {
         : 'Pasaron más de 24 horas desde el último mensaje del cliente: Meta no deja responderle hasta que vuelva a escribir')
     }
 
-    const enviado = await this.gateway.sendText({
-      channel: conversation.channel,
-      chatId: conversation.external_id,
-      text: texto,
-    })
+    const enviado = archivo
+      ? await this.enviarArchivo(conversation.channel, conversation.external_id, texto, archivo)
+      : await this.gateway.sendText({
+          channel: conversation.channel,
+          chatId: conversation.external_id,
+          text: texto,
+        })
 
     const now = new Date().toISOString()
     const message = Message.create({
@@ -82,7 +87,8 @@ export class SendMessageUseCase {
       direction: 'out',
       sender_type: input.senderType,
       sender_id: input.senderId ?? null,
-      content: texto,
+      content: texto || null,
+      attachments: archivo ? [{ type: tipoDesdeMime(archivo.mimetype), url: archivo.url, mime: archivo.mimetype, filename: archivo.filename }] : [],
       external_id: enviado.externalId,
       created_at: now,
     })
@@ -107,4 +113,27 @@ export class SendMessageUseCase {
       createdAt: now,
     }
   }
+
+  /**
+   * Con un proveedor que manda medios, el archivo va como archivo. Si no puede
+   * (o falla), el texto sale con el link: el cliente igual recibe el PDF, y
+   * el bot no se queda esperando una respuesta que no va a llegar.
+   */
+  private async enviarArchivo(channel: ConversationChannel, chatId: string, texto: string, archivo: ArchivoSaliente) {
+    if (this.gateway.sendFile) {
+      try {
+        return await this.gateway.sendFile({ channel, chatId, text: texto, file: archivo })
+      } catch {
+        // Cae al link.
+      }
+    }
+    return this.gateway.sendText({ channel, chatId, text: [texto, archivo.url].filter(Boolean).join('\n\n') })
+  }
+}
+
+function tipoDesdeMime(mime: string): 'image' | 'audio' | 'video' | 'file' {
+  if (mime.startsWith('image/')) return 'image'
+  if (mime.startsWith('audio/')) return 'audio'
+  if (mime.startsWith('video/')) return 'video'
+  return 'file'
 }

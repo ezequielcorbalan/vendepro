@@ -74,6 +74,7 @@ import {
   SendMessageUseCase,
   GetContactsUseCase,
   buildMessageCreatedPayload,
+  telefonoE164DesdeChat,
   GetPublicDocPortalUseCase,
   UploadPortalDocumentUseCase,
   FinishDocPortalSessionUseCase,
@@ -92,6 +93,9 @@ type Env = {
   META_VERIFY_TOKEN?: string
   // Hub de tiempo real, definido en api-crm (binding con script_name).
   INBOX_HUB?: DurableObjectNamespace
+  // Base pública de este worker, para links que tiene que descargar un tercero
+  // (el PDF que manda el bot lo baja WhatsApp/Meta).
+  API_PUBLIC_URL?: string
   /** WAHA de la plataforma: lo usa el bot cuando responde por WhatsApp. */
   WAHA_BASE_URL?: string
   WAHA_API_KEY?: string
@@ -114,6 +118,19 @@ app.use('/v1/*', async (c, next) => {
   const authService = new JwtAuthService(c.env.JWT_SECRET)
   const apiTokenRepo = new D1ApiTokenRepository(c.env.DB)
   return createIntegrationAuthMiddleware(authService, apiTokenRepo)(c, next)
+})
+
+// ── RUTAS CON FORMA DE CHATWOOT (/api/v1/accounts/{cuenta}/...) ─────
+// El bot de n8n le habla a Onetalk en `/api/v1/accounts/161/conversations/…`.
+// Con este alias, migrarlo es cambiar el host y el token, nada más: se
+// reenvía al mismo handler de /v1 (y pasa por el mismo middleware de auth).
+// El número de cuenta se ignora: la org sale del token.
+app.all('/api/v1/accounts/:cuenta/*', (c) => {
+  const url = new URL(c.req.url)
+  url.pathname = url.pathname.replace(/^\/api\/v1\/accounts\/[^/]+/, '/v1')
+  let ctx: ExecutionContext | undefined
+  try { ctx = c.executionCtx } catch { ctx = undefined }
+  return app.fetch(new Request(url.toString(), c.req.raw), c.env, ctx)
 })
 
 // ── PUBLIC REPORT (/r/:slug) ───────────────────────────────────
@@ -555,6 +572,15 @@ app.get('/v1/conversations/:id', async (c) => {
     window_open: conv.isWindowOpen(),
     window_expires_at: o.window_expires_at,
     last_activity_at: o.last_activity_at,
+    // Forma de Chatwoot, para lo que el bot lea de `meta`.
+    meta: {
+      sender: {
+        name: o.contact_name ?? null,
+        phone_number: telefonoE164DesdeChat(o.channel, o.external_id),
+        identifier: telefonoE164DesdeChat(o.channel, o.external_id) ?? o.external_id,
+      },
+      assignee: o.assignee_id ? { id: o.assignee_id, name: o.assignee_name ?? null } : null,
+    },
   })
 })
 
@@ -565,31 +591,85 @@ app.get('/v1/conversations/:id/messages', async (c) => {
     new D1ConversationRepository(c.env.DB),
     new D1MessageRepository(c.env.DB),
   )
-  const limite = Number(c.req.query('limit') ?? 50)
-  const mensajes = await uc.getMessages(c.req.param('id'), c.get('orgId'), Number.isFinite(limite) ? limite : 50)
-  return c.json(mensajes.map(m => {
-    const o = m.toObject()
-    return {
-      id: o.id,
-      content: o.content,
-      // 0 = del cliente, 1 = nuestro. Es lo que el bot lee.
-      message_type: m.messageType,
-      sender_type: o.sender_type,
-      attachments: o.attachments,
-      created_at: o.created_at,
-    }
-  }))
+  // Como Chatwoot: los ÚLTIMOS N mensajes (per_page; `limit` también vale),
+  // del más viejo al más nuevo, envueltos en `payload`. El bot calcula el
+  // debounce y el tope de turnos restando `created_at`, así que va en
+  // segundos (número), no en ISO: con texto la resta daba NaN.
+  const pedido = Number(c.req.query('per_page') ?? c.req.query('limit') ?? 20)
+  const n = Number.isFinite(pedido) && pedido > 0 ? Math.min(pedido, 200) : 20
+  const todos = await uc.getMessages(c.req.param('id'), c.get('orgId'), 500)
+  const ultimos = todos.slice(-n)
+  return c.json({
+    meta: { count: ultimos.length },
+    payload: ultimos.map(m => {
+      const o = m.toObject()
+      return {
+        id: o.id,
+        content: o.content,
+        // 0 = del cliente, 1 = nuestro (en la API de Chatwoot es número; en el webhook, texto).
+        message_type: m.messageType,
+        content_type: 'text',
+        private: false,
+        created_at: Math.floor(new Date(o.created_at).getTime() / 1000),
+        sender_type: o.sender_type,
+        sender: { type: o.sender_type === 'contact' ? 'contact' : o.sender_type === 'bot' ? 'agent_bot' : 'user' },
+        attachments: (o.attachments ?? []).map((a: any) => ({ file_type: a.type, data_url: a.url ?? null })),
+      }
+    }),
+  })
 })
+
+/** Archivos que manda el bot (el PDF de presentación), servidos para que el proveedor los descargue. */
+app.get('/public/inbox/archivos/*', async (c) => {
+  const clave = c.req.path.replace(/^\/public\/inbox\/archivos\//, '')
+  if (!/^[\w-]+\/[0-9a-f-]{36}\/[^/]+$/.test(clave)) return c.text('No encontrado', 404)
+  const objeto = await c.env.R2.get(`inbox/${clave}`)
+  if (!objeto) return c.text('No encontrado', 404)
+  const headers = new Headers({ 'Cache-Control': 'public, max-age=86400' })
+  if (objeto.httpMetadata?.contentType) headers.set('Content-Type', objeto.httpMetadata.contentType)
+  return new Response(objeto.body, { headers })
+})
+
+/** Tope de un archivo del bot: lo que WhatsApp acepta para un documento cómodo. */
+const MAX_ARCHIVO_BYTES = 16 * 1024 * 1024
 
 // La respuesta del bot. Sale por el mismo camino que la de un agente.
 app.post('/v1/conversations/:id/messages', async (c) => {
   if (!puedeEscribirInbox(c)) return c.json(SIN_ESCRITURA, 403)
-  const body = (await c.req.json().catch(() => null)) as any
-  if (!body || typeof body.content !== 'string') {
+  const orgId = c.get('orgId')
+
+  // JSON (lo normal) o multipart con `attachments[]`, que es como el bot
+  // manda el PDF de presentación a Onetalk. `message_type` ("outgoing") y
+  // `private` se aceptan y se ignoran: acá todo lo que manda el bot sale.
+  let body: any = null
+  let archivoSubido: { url: string; filename: string; mimetype: string } | null = null
+  if ((c.req.header('Content-Type') ?? '').includes('multipart/form-data')) {
+    const form = await c.req.formData().catch(() => null)
+    if (!form) return c.json({ error: 'Formulario inválido' }, 400)
+    body = { content: String(form.get('content') ?? '') }
+    const archivo = (form.get('attachments[]') ?? form.get('attachments')) as File | string | null
+    if (archivo && typeof archivo !== 'string') {
+      if (archivo.size > MAX_ARCHIVO_BYTES) return c.json({ error: 'El archivo supera los 16 MB' }, 413)
+      const nombre = (archivo.name || 'archivo').replace(/[^\w.\-]+/g, '_').slice(0, 80)
+      const clave = `${orgId}/${crypto.randomUUID()}/${nombre}`
+      await c.env.R2.put(`inbox/${clave}`, await archivo.arrayBuffer(), {
+        httpMetadata: { contentType: archivo.type || 'application/octet-stream' },
+      })
+      archivoSubido = {
+        // La URL pública configurada: en local wrangler reescribe el host al del
+        // dominio de producción y el link quedaba apuntando afuera.
+        url: `${(c.env.API_PUBLIC_URL ?? new URL(c.req.url).origin).replace(/\/$/, '')}/public/inbox/archivos/${clave}`,
+        filename: nombre,
+        mimetype: archivo.type || 'application/octet-stream',
+      }
+    }
+  } else {
+    body = (await c.req.json().catch(() => null)) as any
+  }
+  if (!body || typeof body.content !== 'string' || (!body.content.trim() && !archivoSubido)) {
     return c.json({ error: 'content es requerido' }, 400)
   }
 
-  const orgId = c.get('orgId')
   // Por el canal de la conversación: antes salía siempre por WhatsApp, así que
   // al bot le era imposible contestarle a un cliente de Instagram.
   const charla = await new D1ConversationRepository(c.env.DB).findById(c.req.param('id'), orgId)
@@ -610,6 +690,7 @@ app.post('/v1/conversations/:id/messages', async (c) => {
       text: body.content,
       senderType: 'bot',
       senderId: null,
+      archivo: archivoSubido,
     })
   } catch (e: any) {
     // Igual que en api-crm: el motivo del proveedor, no un 500 mudo.
@@ -627,23 +708,30 @@ app.post('/v1/conversations/:id/messages', async (c) => {
     payload: buildMessageCreatedPayload({
       conversation: result.conversation as any,
       message: {
-        id: result.messageId, content: body.content, attachments: [],
+        id: result.messageId, content: body.content,
+        attachments: archivoSubido ? [{ type: archivoSubido.mimetype.startsWith('image/') ? 'image' : 'file', url: archivoSubido.url }] : [],
         direction: 'out', senderType: 'bot', createdAt: result.createdAt,
       },
       senderName: 'Bot',
     }),
   })
-  return c.json(result, 201)
+  // `id` en la raíz, como lo devuelve Chatwoot (el bot lo lee para registrar lo que mandó).
+  return c.json({ id: result.messageId, ...result }, 201)
 })
 
 // Asignar un agente al escalar a humano. `assignee_id: null` la devuelve a la cola.
 app.post('/v1/conversations/:id/assignments', async (c) => {
   if (!puedeEscribirInbox(c)) return c.json(SIN_ESCRITURA, 403)
   const body = (await c.req.json().catch(() => ({}))) as any
+  const pedido = body?.assignee_id ?? null
+  const asignado = pedido === null || pedido === '' ? null : await resolverAgente(c.env, c.get('orgId'), String(pedido))
+  if (pedido !== null && pedido !== '' && !asignado) {
+    return c.json({ error: `No hay un usuario de VendéPro para "${pedido}" (ni por id ni en el mapeo de agentes de KiteProp)` }, 422)
+  }
   const conv = await new AssignConversationUseCase(
     new D1ConversationRepository(c.env.DB),
     new D1UserRepository(c.env.DB),
-  ).execute(c.req.param('id'), c.get('orgId'), body?.assignee_id ?? null)
+  ).execute(c.req.param('id'), c.get('orgId'), asignado)
   await avisarConversacionBot(c.env, c.get('orgId'), conv)
   return c.json({ id: conv.id, assignee_id: conv.assignee_id })
 })
@@ -762,6 +850,24 @@ app.post('/v1/inbox/messages', async (c) => {
 })
 
 const NOMBRE_CANAL: Record<string, string> = { whatsapp: 'WhatsApp', instagram: 'Instagram', facebook: 'Messenger' }
+
+/**
+ * A quién asignar cuando el bot manda `assignee_id`: un usuario de VendéPro o
+ * un agente de KiteProp (el bot asigna al agente de la propiedad, y lo saca de
+ * KiteProp). Lo segundo se resuelve con el mapeo de agentes que ya se carga en
+ * Configuración → Conexiones → KiteProp.
+ */
+async function resolverAgente(env: Env, orgId: string, pedido: string): Promise<string | null> {
+  const usuario = await new D1UserRepository(env.DB).findById(pedido, orgId).catch(() => null)
+  if (usuario) return usuario.id
+  const kiteprop = await new D1OrgIntegrationRepository(env.DB).findByOrgAndProvider(orgId, 'kiteprop').catch(() => null)
+  const config = (kiteprop?.getConfig() ?? {}) as { agent_map?: Record<string, string> }
+  const mapa = config.agent_map ?? {}
+  const desdeKiteprop = mapa[pedido]
+  if (!desdeKiteprop) return null
+  const mapeado = await new D1UserRepository(env.DB).findById(desdeKiteprop, orgId).catch(() => null)
+  return mapeado?.id ?? null
+}
 
 function ingestor(env: Env) {
   return new IngestInboundMessageUseCase(

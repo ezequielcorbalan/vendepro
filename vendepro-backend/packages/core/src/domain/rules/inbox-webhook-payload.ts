@@ -106,13 +106,23 @@ export function buildMessageCreatedPayload(input: InboxWebhookInput) {
       // El teléfono es del CLIENTE aunque el mensaje sea saliente: es lo que
       // el bot usa para identificar la conversación.
       phone_number: telefonoE164DesdeChat(conversation.channel, conversation.externalId),
+      // El bot cae a `identifier` cuando no hay teléfono (Instagram, Messenger):
+      // sin esto, dos clientes de Instagram quedaban con la misma clave vacía.
+      identifier: telefonoE164DesdeChat(conversation.channel, conversation.externalId)
+        ?? sourceIdDesdeChat(conversation.channel, conversation.externalId),
       name: input.senderName ?? null,
       type: senderTipo(message.senderType),
     },
     content: message.content,
     contact_inbox: { source_id: sourceIdDesdeChat(conversation.channel, conversation.externalId) },
-    // 0 = entrante del cliente, 1 = saliente. Es lo que lee el bot.
-    message_type: entrante ? 0 : 1,
+    // TEXTO en el webhook, como lo manda Chatwoot ("incoming"/"outgoing"). El
+    // primer filtro del bot real es `message_type equals "incoming"`: con el
+    // número 0 (que es como viene en la API de historial, no en el webhook)
+    // el bot descartaba TODOS los mensajes. Se detectó leyendo el flujo de
+    // n8n en producción, no el brief.
+    message_type: entrante ? 'incoming' as const : 'outgoing' as const,
+    // Chatwoot lo manda siempre; el bot lo lee para filtrar reacciones.
+    content_attributes: {},
     attachments: (message.attachments ?? []).map(a => ({
       file_type: chatwootFileType(a.type),
       data_url: a.url ?? null,

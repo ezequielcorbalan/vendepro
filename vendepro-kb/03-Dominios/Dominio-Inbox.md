@@ -75,6 +75,19 @@ La API del bot (api-public, `/v1/conversations/*`) va con token de integración,
 
 `message_created` sale **crudo** (sin el envoltorio `{event,timestamp,data}` de los demás webhooks) imitando a Chatwoot: `sender.phone_number` en E.164, `sender.type` `contact|user|agent_bot`, `message_type` 0/1, `attachments[].file_type`, `contact_inbox.source_id` sólo dígitos. Un único builder: `core/src/domain/rules/inbox-webhook-payload.ts`. Las rutas `/v1/conversations/:id/messages|assignments|labels|toggle_status` copian las de Chatwoot.
 
+## Compatibilidad con el bot de n8n (revisado contra el flujo real, 15-oct-2026)
+
+El bot es **"Asistente IA Inmobiliaria"** (n8n cloud, 115 nodos, webhook `/webhook/kiteprop-mensajes`). Le habla a Onetalk en `https://inbox.embluemail.com/api/v1/accounts/161/conversations/{id}/…` con una credencial de header (`api_access_token`). Se leyó el flujo entero y se ajustó VendéPro para que migrar sea cambiar host y token:
+
+- **Webhook**: `message_type` va como **texto** (`"incoming"`/`"outgoing"`). El primer filtro del bot es `message_type equals "incoming"`; con el número `0` (lo que decía el brief) el bot descartaba todo. Se agregan `sender.identifier` (el bot lo usa cuando no hay teléfono) y `content_attributes`.
+- **Rutas**: `/api/v1/accounts/{cuenta}/…` se reenvía a `/v1/…` (la cuenta se ignora; la org sale del token). Auth: `Authorization: Bearer` o **`api_access_token`**.
+- **Historial** (`Pull Historial`, `?per_page=10`): `{meta, payload:[…]}` con los ÚLTIMOS N, `message_type` 0/1 (número en la API), `private:false` y `created_at` en **segundos** — el bot resta timestamps para el debounce y el tope de turnos.
+- **Conversación** (`Get Conv Meta`): `labels` + `meta.sender` / `meta.assignee` al estilo Chatwoot.
+- **Mandar**: JSON (`content`, `message_type:"outgoing"`) o **multipart con `attachments[]`** (el PDF de presentación). El archivo se guarda en R2 (`inbox/{org}/{uuid}/…`), se sirve en `/public/inbox/archivos/…` (base `API_PUBLIC_URL`) y sale como archivo si el proveedor puede (`sendFile`: WAHA Plus, Meta) o como texto + link (WAHA Core no manda medios). La respuesta trae `id` en la raíz.
+- **Asignar** (`assignee_id`): acepta un usuario de VendéPro **o un agente de KiteProp**, resuelto con el `agent_map` de la integración de KiteProp. Los ids de Onetalk (ej. `320`) no existen en VendéPro → 422.
+
+**Cambios necesarios del lado del bot** (no se tocó el flujo): ver `doc/n8n-migracion-bot.md`.
+
 ## Pantallas
 
 - `/conversaciones` — carpetas, filtros, bandeja, hilo, etiquetas, respuestas rápidas, responder, delegar / devolver a la cola, resolver, ver lead/contacto con etapa.

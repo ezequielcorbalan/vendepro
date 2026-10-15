@@ -118,4 +118,44 @@ describe('SendMessageUseCase', () => {
     const { uc } = build({ conv: null })
     await expect(uc.execute(entrada)).rejects.toBeInstanceOf(NotFoundError)
   })
+
+  describe('con archivo (el PDF que manda el bot)', () => {
+    const pdf = { url: 'https://public.api/public/inbox/archivos/org/uuid/presentacion.pdf', filename: 'presentacion.pdf', mimetype: 'application/pdf' }
+    const conArchivo = { ...entrada, senderType: 'bot' as const, senderId: null, text: 'Te paso la presentación', archivo: pdf }
+
+    it('si el proveedor manda archivos, sale como archivo con el texto de pie', async () => {
+      const { uc, gateway, messages } = build()
+      ;(gateway as any).sendFile = vi.fn(async () => ({ externalId: 'wamid.FILE' }))
+      const r = await uc.execute(conArchivo)
+
+      expect((gateway as any).sendFile).toHaveBeenCalledWith(expect.objectContaining({ text: 'Te paso la presentación', file: pdf }))
+      expect(gateway.sendText).not.toHaveBeenCalled()
+      expect(r.externalId).toBe('wamid.FILE')
+      expect(messages.save.mock.calls[0][0].toObject().attachments).toEqual([
+        { type: 'file', url: pdf.url, mime: 'application/pdf', filename: 'presentacion.pdf' },
+      ])
+    })
+
+    // WAHA Core (gratis) no manda medios: el cliente igual recibe el PDF por link.
+    it('si el proveedor no manda archivos, sale el texto con el link', async () => {
+      const { uc, gateway } = build()
+      await uc.execute(conArchivo)
+      expect(gateway.sendText).toHaveBeenCalledWith(expect.objectContaining({ text: `Te paso la presentación
+
+${pdf.url}` }))
+    })
+
+    it('si mandar el archivo falla, cae al link', async () => {
+      const { uc, gateway } = build()
+      ;(gateway as any).sendFile = vi.fn(async () => { throw new Error('WAHA Plus requerido') })
+      await uc.execute(conArchivo)
+      expect(gateway.sendText).toHaveBeenCalledWith(expect.objectContaining({ text: expect.stringContaining(pdf.url) }))
+    })
+
+    it('un archivo sin texto también vale', async () => {
+      const { uc, gateway } = build()
+      await uc.execute({ ...conArchivo, text: '' })
+      expect(gateway.sendText).toHaveBeenCalledWith(expect.objectContaining({ text: pdf.url }))
+    })
+  })
 })

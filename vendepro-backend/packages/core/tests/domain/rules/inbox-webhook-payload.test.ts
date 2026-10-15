@@ -31,15 +31,17 @@ describe('buildMessageCreatedPayload — la forma que documenta el brief', () =>
     expect(entrante()).not.toHaveProperty('body')
   })
 
-  it('message_type 0 para lo que manda el cliente', () => {
-    expect(entrante().message_type).toBe(0)
+  // El bot real filtra con `message_type equals "incoming"` (texto). Con el
+  // número 0 descartaba todos los mensajes.
+  it('message_type "incoming" para lo que manda el cliente', () => {
+    expect(entrante().message_type).toBe('incoming')
   })
 
-  it('message_type 1 para lo que manda un agente o el bot', () => {
+  it('message_type "outgoing" para lo que manda un agente o el bot', () => {
     const agente = entrante({ message: { id: 'm', content: 'Hola', direction: 'out', senderType: 'agent', createdAt: '2026-10-15T10:00:00.000Z' } })
     const bot = entrante({ message: { id: 'm', content: 'Hola', direction: 'out', senderType: 'bot', createdAt: '2026-10-15T10:00:00.000Z' } })
-    expect(agente.message_type).toBe(1)
-    expect(bot.message_type).toBe(1)
+    expect(agente.message_type).toBe('outgoing')
+    expect(bot.message_type).toBe('outgoing')
   })
 })
 
@@ -117,5 +119,17 @@ describe('telefonoE164DesdeChat', () => {
   })
   it('en Meta no hay teléfono', () => {
     expect(telefonoE164DesdeChat('instagram', '1784')).toBeNull()
+  })
+
+  // El bot usa `sender.phone_number || sender.identifier` como clave del cliente.
+  it('identifier: el teléfono en WhatsApp, el id de Meta en Instagram/Messenger', () => {
+    expect(entrante().sender.identifier).toBe(entrante().sender.phone_number)
+    const ig = buildMessageCreatedPayload({
+      conversation: { id: 'c2', channel: 'instagram', externalId: '17841400000000' },
+      message: { id: 'm', content: 'hola', direction: 'in', senderType: 'contact', createdAt: '2026-10-15T00:00:00Z' },
+    })
+    expect(ig.sender.phone_number).toBeNull()
+    expect(ig.sender.identifier).toBe('17841400000000')
+    expect(ig.content_attributes).toEqual({})
   })
 })

@@ -20,10 +20,14 @@ export function createIntegrationAuthMiddleware(
 ): MiddlewareHandler<IntegrationAuthEnv> {
   return async (c, next) => {
     const authHeader = c.req.header('Authorization')
-    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
+    // `api_access_token` es el header de Chatwoot (Onetalk): el bot de n8n ya
+    // lo manda así, y aceptarlo le ahorra tocar la credencial al migrar.
+    const token = authHeader?.startsWith('Bearer ')
+      ? authHeader.slice(7)
+      : (c.req.header('api_access_token') ?? null)
 
     if (!token) {
-      return c.json({ error: 'Token de integración requerido (Authorization: Bearer)' }, 401)
+      return c.json({ error: 'Token de integración requerido (Authorization: Bearer o api_access_token)' }, 401)
     }
 
     const payload = await authService.verifyToken(token)

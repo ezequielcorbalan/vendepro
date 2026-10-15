@@ -8,6 +8,18 @@ export interface SendMessageInput {
   text: string
 }
 
+/** Un archivo ya subido a un lugar público (el proveedor lo descarga de ahí). */
+export interface ArchivoSaliente {
+  url: string
+  filename: string
+  mimetype: string
+}
+
+export interface SendFileInput extends SendMessageInput {
+  /** `text` va como pie del archivo. */
+  file: ArchivoSaliente
+}
+
 export interface SendMessageResult {
   /** Id del mensaje en el proveedor, para poder reconocer su eco entrante. */
   externalId: string | null
@@ -36,6 +48,12 @@ export interface MessagingGateway {
   readonly enforcesWindow: boolean
 
   sendText(input: SendMessageInput): Promise<SendMessageResult>
+  /**
+   * Mandar un archivo (el PDF de presentación, una foto). Opcional: no todos
+   * los proveedores pueden — WAHA Core, el gratuito, no manda medios. Sin
+   * esto, el caso de uso manda el texto con el link al archivo.
+   */
+  sendFile?(input: SendFileInput): Promise<SendMessageResult>
 }
 
 /** Config que necesita un adapter para hablar con su proveedor. */

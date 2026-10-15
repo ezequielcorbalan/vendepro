@@ -1,4 +1,4 @@
-import type { MessagingGateway, MessagingProviderConfig, SendMessageInput, SendMessageResult } from '@vendepro/core'
+import type { MessagingGateway, MessagingProviderConfig, SendMessageInput, SendMessageResult, SendFileInput } from '@vendepro/core'
 
 /**
  * Adapter de WAHA (WhatsApp HTTP API), el proveedor con el que arranca el
@@ -48,6 +48,36 @@ export class WahaMessagingGateway implements MessagingGateway {
     // según el engine. Si no viene, se guarda sin él: el único costo es que el
     // eco entrante de ese mensaje no se puede reconocer como propio.
     const externalId = data?.id?._serialized ?? data?._data?.id?._serialized ?? data?.id ?? null
+    return { externalId: typeof externalId === 'string' ? externalId : null }
+  }
+
+  /**
+   * Mandar un archivo (`/api/sendFile`, WAHA lo descarga de la URL).
+   *
+   * WAHA Core, el gratuito, no manda medios y contesta con error: el caso de
+   * uso cae al link. Con WAHA Plus sale como archivo de verdad.
+   */
+  async sendFile(input: SendFileInput): Promise<SendMessageResult> {
+    if (input.channel !== 'whatsapp') throw new Error(`WAHA sólo maneja WhatsApp, no "${input.channel}"`)
+    const res = await fetch(`${trimSlash(this.config.baseUrl)}/api/sendFile`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(this.config.apiKey ? { 'X-Api-Key': this.config.apiKey } : {}),
+      },
+      body: JSON.stringify({
+        session: this.config.session,
+        chatId: input.chatId,
+        file: { url: input.file.url, filename: input.file.filename, mimetype: input.file.mimetype },
+        caption: input.text || undefined,
+      }),
+    })
+    if (!res.ok) {
+      const detalle = await res.text().catch(() => '')
+      throw new Error(`WAHA respondió ${res.status} al mandar el archivo${detalle ? `: ${detalle.slice(0, 200)}` : ''}`)
+    }
+    const data = (await res.json().catch(() => null)) as any
+    const externalId = data?.id?._serialized ?? data?.id ?? null
     return { externalId: typeof externalId === 'string' ? externalId : null }
   }
 }

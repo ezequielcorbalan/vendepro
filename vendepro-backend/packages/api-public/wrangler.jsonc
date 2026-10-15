@@ -6,7 +6,9 @@
   "vars": {
     // Base del sitio público: se usa para el <url> de cada aviso del feed
     // de portales. Sin barra final.
-    "PUBLIC_BASE_URL": "https://www.marcelagenta.com"
+    "PUBLIC_BASE_URL": "https://www.marcelagenta.com",
+    // Base de este worker: links de archivos que descarga WhatsApp/Meta.
+    "API_PUBLIC_URL": "https://public.api.vendepro.com.ar"
   },
   "routes": [
     { "pattern": "public.api.vendepro.com.ar", "custom_domain": true }
