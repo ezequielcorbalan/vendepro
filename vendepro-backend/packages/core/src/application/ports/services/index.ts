@@ -24,3 +24,4 @@ export type {
   ActionExecutionInput,
   ActionOutcome,
 } from './automation-action-executor'
+export type { DocumentIntakeGateway, DocumentIntakeFields, DocumentIntakeFile, DocumentIntakeResult } from './document-intake-gateway'

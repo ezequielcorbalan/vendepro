@@ -67,4 +67,5 @@ export type { EmailBrand, RenderEmailHtmlInput, RenderEmailTextInput } from './e
 export * from './email-deliverability'
 export * from './portal-cost-rules'
 export * from './property-income-rules'
+export * from './document-checklist'
 export { authorizationExpiry, daysUntil, DEFAULT_AUTH_DURATION_DAYS } from './authorization-rules'

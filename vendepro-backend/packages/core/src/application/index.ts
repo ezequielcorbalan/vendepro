@@ -229,3 +229,7 @@ export * from './use-cases/automations/drain-automation-jobs'
 export * from './use-cases/automations/build-automation-context'
 export * from './use-cases/automations/manage-automations'
 export * from './use-cases/automations/generate-email-sequence'
+// Portal de documentación del propietario (/d/<token>)
+export * from './use-cases/doc-portal/manage-doc-portal-link'
+export * from './use-cases/doc-portal/public-doc-portal'
+export * from './use-cases/doc-portal/docs-integration-settings'

@@ -18,6 +18,7 @@ import { Checkbox } from '@/components/ui/Choice'
 import { Alert } from '@/components/ui/Alert'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { getCurrentUser } from '@/lib/auth'
+import DocsIntegrationCard from '@/components/settings/DocsIntegrationCard'
 import type { CrmIntegration, GoogleIntegration, IntegrationSyncLogEntry } from '@/lib/types'
 
 type KpAgent = { external_id: string; full_name: string; email: string | null }
@@ -450,6 +451,8 @@ export default function ConexionesPage() {
       </Card>
 
       {isAdmin && (<>
+      <DocsIntegrationCard />
+
       {/* Integración de contactos (provider interno: kiteprop) */}
       <Card className="space-y-4">
         <div className="flex items-center justify-between gap-3">
