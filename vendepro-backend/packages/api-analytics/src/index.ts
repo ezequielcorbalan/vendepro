@@ -34,6 +34,13 @@ import {
   aggregateIncome,
   computeRoi,
 } from '@vendepro/core'
+import { alcanceDe } from '@vendepro/core'
+
+// Permisos por rol (core/domain/rules/data-access): admin, owner y supervisor
+// ven toda la inmobiliaria; un agente, sus números. Antes el dashboard le
+// tomaba el `agent_id` al query: sacándolo, un agente veía todo.
+const alcance = (c: any, pedido?: string | null) =>
+  alcanceDe({ role: c.get('userRole') as string, userId: c.get('userId') as string }, pedido)
 
 type Env = { DB: D1Database; JWT_SECRET: string }
 type AuthVars = { Variables: { userId: string; userRole: string; orgId: string } }
@@ -74,7 +81,7 @@ function funnelSince(raw: string | undefined): string | undefined {
 }
 
 app.get('/dashboard', async (c) => {
-  const { agent_id } = c.req.query()
+  const agent_id = alcance(c, c.req.query('agent_id'))
   const db = c.env.DB
   const orgId = c.get('orgId')
 
@@ -91,11 +98,11 @@ app.get('/dashboard', async (c) => {
       new D1ReservationRepository(db),
       new D1CalendarRepository(db),
     ).execute(orgId, agent_id, since),
-    new GetAppraisalStatsUseCase(new D1AppraisalRepository(db)).execute(orgId),
+    new GetAppraisalStatsUseCase(new D1AppraisalRepository(db)).execute(orgId, agent_id),
     new GetActivityStatsUseCase(new D1ActivityRepository(db)).execute(orgId, agent_id),
-    new GetTodayEventsUseCase(new D1CalendarRepository(db)).execute(orgId),
+    new GetTodayEventsUseCase(new D1CalendarRepository(db)).execute(orgId, agent_id),
     // Pipeline explícito: antes traía vendedores y compradores juntos.
-    new GetPendingFollowupsUseCase(new D1LeadRepository(db)).execute(orgId, 'vendedor'),
+    new GetPendingFollowupsUseCase(new D1LeadRepository(db)).execute(orgId, 'vendedor', 10, agent_id),
   ])
 
   const sb = base.stageBreakdown
@@ -179,7 +186,26 @@ app.get('/search', async (c) => {
     new D1PropertyRepository(db),
   ).execute(orgId, q, 5)
 
-  return c.json(results)
+  // Un agente encuentra sus leads y sus contactos (los suyos y los de sus
+  // leads); las propiedades, todas: el inventario se comparte.
+  const propio = alcance(c)
+  if (!propio) return c.json(results)
+  const leadIds = results.filter(r => r.type === 'lead').map(r => r.id)
+  const leadsPropios = new Set<string>()
+  if (leadIds.length) {
+    const rows = (await db.prepare(
+      `SELECT id FROM leads WHERE org_id = ? AND assigned_to = ? AND id IN (${leadIds.map(() => '?').join(',')})`,
+    ).bind(orgId, propio, ...leadIds).all()).results as any[]
+    rows.forEach(r => leadsPropios.add(r.id))
+  }
+  const contactos = new D1ContactRepository(db)
+  const visibles: typeof results = []
+  for (const r of results) {
+    if (r.type === 'property') visibles.push(r)
+    else if (r.type === 'lead' && leadsPropios.has(r.id)) visibles.push(r)
+    else if (r.type === 'contact' && await contactos.isVisibleTo(r.id, orgId, propio).catch(() => false)) visibles.push(r)
+  }
+  return c.json(visibles)
 })
 
 // ── KPIs DEL EQUIPO ───────────────────────────────────────────
@@ -241,7 +267,9 @@ app.get('/export', async (c) => {
 
   if (type === 'leads') {
     const rows = await new ExportLeadsUseCase(new D1LeadRepository(db)).execute(orgId)
-    return c.json(rows)
+    // Un agente exporta sus leads, no la base entera de la inmobiliaria.
+    const propio = alcance(c)
+    return c.json(propio ? rows.filter(r => r.assigned_to === propio) : rows)
   }
 
   return c.json({ error: 'Unknown export type' }, 400)

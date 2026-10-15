@@ -5,8 +5,12 @@
 // Admins and supervisors see everything.
 // An admin/supervisor can assign items to agents — that's the only way
 // an agent gets visibility on someone else's data.
+//
+// Esto es comodidad de pantalla: la regla la exige el servidor (api-crm,
+// core/domain/rules/data-access). Sacar el filtro de acá no muestra más.
 
 import { getCurrentUser } from './auth'
+import { canSeeAll } from './crm-config'
 
 /**
  * Returns the agent_id to use for filtering API calls.
@@ -16,7 +20,8 @@ import { getCurrentUser } from './auth'
 export function getScopedAgentId(): string | undefined {
   const user = getCurrentUser()
   if (!user) return undefined
-  if (user.role === 'admin' || user.role === 'supervisor') return undefined
+  // El owner ve todo: antes caía como agente y sólo veía lo suyo.
+  if (canSeeAll(user.role)) return undefined
   return user.id
 }
 
@@ -48,5 +53,5 @@ export function scopeQueryString(): string {
 export function isAdminOrSupervisor(): boolean {
   const user = getCurrentUser()
   if (!user) return false
-  return user.role === 'admin' || user.role === 'supervisor'
+  return canSeeAll(user.role)
 }

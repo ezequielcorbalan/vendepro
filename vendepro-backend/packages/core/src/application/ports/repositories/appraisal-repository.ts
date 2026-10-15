@@ -49,5 +49,11 @@ export interface AppraisalRepository {
   addComparable(comparable: NewAppraisalComparable): Promise<void>
   updateComparable(comparableId: string, patch: Partial<Omit<NewAppraisalComparable, 'id' | 'appraisal_id'>>): Promise<void>
   removeComparable(comparableId: string): Promise<void>
+  /**
+   * La tasación dueña de un comparable, sólo si es de esta org. Los métodos de
+   * comparables van por id sin org: sin este chequeo previo, un usuario de otra
+   * inmobiliaria podía editar o borrar comparables ajenos con sólo el id.
+   */
+  findComparableAppraisalId(comparableId: string, orgId: string): Promise<string | null>
   update(id: string, orgId: string, patch: Record<string, unknown>): Promise<void>
 }

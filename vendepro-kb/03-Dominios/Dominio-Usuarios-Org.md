@@ -82,6 +82,31 @@ Permite que cada org tenga sus propios datos de mercado, costos notariales, etc.
 | `canManageAgents(role)` | owner, admin |
 | `canSetObjectives(role)` | owner, admin, supervisor |
 
+## Quién ve qué (`domain/rules/data-access.ts`) — en el servidor desde 15-oct-2026
+
+Admin, owner y supervisor ven todo; el agente, sólo lo suyo. Delegar es la única forma de que un agente vea algo ajeno. Hasta ahora lo aplicaba **sólo el frontend** (`lib/agent-scope.ts`): el servidor devolvía cualquier lead, contacto o evento a quien lo pidiera por id o sacando el `?agent_id`. Además el helper del frontend trataba al **owner** como agente.
+
+Aplicado en api-crm:
+- **Listados** (`/leads`, `/contacts`, `/calendar`, `/activities`): para un agente el `agent_id` del query se pisa con el suyo (`alcanceDe`).
+- **Leads**: ver, editar, cambiar etapa, borrar y sus propiedades de interés, sólo si `assigned_to` es él. El `PUT /leads` ignora `assigned_to` para un agente: cambiar de dueño va por `POST /leads/assign`. Los interesados de una propiedad se filtran a sus leads.
+- **Contactos**: ve los suyos **y los de sus leads delegados** (`visible_to` / `isVisibleTo`: el contacto de un lead delegado suele quedar a nombre de quien lo cargó). Borrar, sólo los que están a su nombre.
+- **Agenda y actividades**: sólo las suyas; un agente crea para sí (`duenoAlCrear`), aunque mande otro `agent_id`.
+- Un registro ajeno responde **404**, no 403: no confirma que el id existe.
+
+Aplicado en api-properties:
+- **Propiedades**: el inventario se **ve entero** (un agente tiene que poder ofrecerle a su comprador una propiedad que captó otro; el buscador de propiedades de interés ya buscaba en toda la org). **Modificar** (editar, precio, estado, etapa, ingreso, fotos, borrar) sólo el agente de la propiedad o quien ve todo. Un agente no puede pasar la propiedad a otro por el `PUT`.
+- **Tasaciones**: estrictas — ver, editar, publicar, borrar, comparables, plantilla y PDF sólo las suyas.
+- **Comparables**: sus rutas no chequeaban la organización (iban por id); ahora se confirma antes que la tasación es de la org (`findComparableAppraisalId`).
+
+Aplicado en api-analytics:
+- **Dashboard**: el `agent_id` se pisa para un agente; seguimientos pendientes y eventos de hoy, acotados a él (antes eran de toda la org).
+- **Búsqueda global**: un agente encuentra sus leads, sus contactos visibles y todas las propiedades.
+- **Exportar leads**: un agente exporta sólo los suyos.
+
+Bandeja de conversaciones: mismo criterio, ver [[Dominio-Inbox]].
+
+**Contador de tasaciones** del dashboard: para un agente cuenta las suyas (`countByAgent`). Reportes de propiedades y `listings-performance` son datos de mercado del inventario y se ven enteros, como las propiedades.
+
 ## Tablas D1
 
 - `organizations`

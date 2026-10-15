@@ -13,10 +13,12 @@ export class GetPendingFollowupsUseCase {
     orgId: string,
     pipeline: LeadPipeline = 'vendedor',
     limit = 10,
+    /** Un agente ve sus seguimientos, no los de toda la inmobiliaria. */
+    agentId?: string,
   ): Promise<Array<{ id: string; full_name: string; next_step: string | null; next_step_date: string | null; stage: string }>> {
     try {
       const now = new Date().toISOString()
-      return await this.repo.findPendingFollowups(orgId, now, limit, pipeline)
+      return await this.repo.findPendingFollowups(orgId, now, limit, pipeline, agentId)
     } catch {
       return []
     }

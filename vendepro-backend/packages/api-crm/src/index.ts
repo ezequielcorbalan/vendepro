@@ -65,6 +65,7 @@ import {
   CreateEmailCampaignUseCase, UpdateEmailCampaignUseCase, ListEmailCampaignsUseCase,
   GetEmailCampaignUseCase, DeleteEmailCampaignUseCase, CancelEmailCampaignUseCase,
   PreviewCampaignAudienceUseCase, QueueCampaignSendUseCase, ProcessEmailQueueUseCase,
+  alcanceDe, puedeVerRegistro, duenoAlCrear,
   puedeVerConversacion, puedeAsignarConversacion, bandejaDe, SetConversationLabelsUseCase, DomainError,
 } from '@vendepro/core'
 import {
@@ -131,19 +132,38 @@ app.use('*', async (c, next) => {
 // este archivo ya es largo.
 app.route('/', automationsRoutes as any)
 
+// ── PERMISOS POR ROL ───────────────────────────────────────────
+// Admin, owner y supervisor ven todo; el agente, sólo lo suyo (reglas en
+// core/domain/rules/data-access). Antes lo filtraba sólo la pantalla: el
+// servidor le daba cualquier lead, contacto o evento a quien lo pidiera.
+// Un registro ajeno responde 404 y no 403, para no confirmar que existe.
+const actorCrm = (c: any) => ({ role: c.get('userRole') as string, userId: c.get('userId') as string })
+const NO_ENCONTRADO = (que: string) => ({ error: `${que} no encontrado` })
+/** Admin, owner o supervisor. (`canSeeAll` no se importa: core lo exporta dos veces.) */
+const veTodo = (c: any) => alcanceDe(actorCrm(c)) === undefined
+
+/** El lead, si quien pregunta lo puede ver. */
+async function leadVisible(c: any, id: string | undefined) {
+  if (!id) return null
+  const lead = await new D1LeadRepository(c.env.DB).findById(id, c.get('orgId')).catch(() => null)
+  if (!lead || !puedeVerRegistro(actorCrm(c), lead.assigned_to)) return null
+  return lead
+}
+
 // ── LEADS ──────────────────────────────────────────────────────
 app.get('/leads', async (c) => {
   const { id, stage, agent_id, search, pipeline } = c.req.query()
-  const repo = new D1LeadRepository(c.env.DB)
   // Detalle de un lead puntual: ?id=X devuelve el lead solo, no toda la lista.
   if (id) {
-    const lead = await repo.findById(id, c.get('orgId'))
+    const lead = await leadVisible(c, id)
     if (!lead) return c.json({ error: 'Lead no encontrado' }, 404)
     return c.json(lead.toObject?.() ?? lead)
   }
-  const useCase = new GetLeadsUseCase(repo)
+  const useCase = new GetLeadsUseCase(new D1LeadRepository(c.env.DB))
   // Sin ?pipeline devuelve ambos (backward-compat con export/AI panel).
-  const leads = await useCase.execute(c.get('orgId'), { stage, agent_id, search, pipeline })
+  const leads = await useCase.execute(c.get('orgId'), {
+    stage, search, pipeline, agent_id: alcanceDe(actorCrm(c), agent_id),
+  })
   return c.json(leads.map(l => l.toObject?.() ?? l))
 })
 
@@ -152,10 +172,13 @@ app.post('/leads', async (c) => {
   const leadRepo = new D1LeadRepository(c.env.DB)
   const contactRepo = new D1ContactRepository(c.env.DB)
   const useCase = new CreateLeadWithContactUseCase(leadRepo, contactRepo, new CryptoIdGenerator())
+  // Un agente crea para sí: cargarlo a nombre de otro sería delegar sin
+  // permisos ni aviso. Lo de abajo (marketing, webhook) usa este mismo valor.
+  body.assigned_to = duenoAlCrear(actorCrm(c), body.assigned_to)
   const result = await useCase.execute({
     ...body,
     org_id: c.get('orgId'),
-    assigned_to: body.assigned_to || c.get('userId'),
+    assigned_to: body.assigned_to,
   })
   // Hook marketing: evento `lead_created` (Meta + GA4 si están mapeados).
   const mk = await fireMarketingEvent(c.env, {
@@ -211,6 +234,11 @@ app.post('/leads', async (c) => {
 
 app.put('/leads', async (c) => {
   const body = (await c.req.json()) as any
+  if (!(await leadVisible(c, body?.id))) return c.json(NO_ENCONTRADO('Lead'), 404)
+  // Cambiar de dueño va por POST /leads/assign, que tiene sus permisos, avisa
+  // y deja constancia. Por acá un agente se podía sacar un lead de encima o
+  // quedarse con uno ajeno sin que nadie se enterara.
+  if (!veTodo(c)) delete body.assigned_to
   const repo = new D1LeadRepository(c.env.DB)
   const useCase = new UpdateLeadUseCase(repo)
   await useCase.execute({ ...body, orgId: c.get('orgId') })
@@ -267,6 +295,7 @@ app.post('/leads/assign', async (c) => {
 
 app.delete('/leads', async (c) => {
   const { id } = c.req.query()
+  if (!(await leadVisible(c, id))) return c.json(NO_ENCONTRADO('Lead'), 404)
   const repo = new D1LeadRepository(c.env.DB)
   const useCase = new DeleteLeadUseCase(repo)
   await useCase.execute(id, c.get('orgId'))
@@ -275,6 +304,7 @@ app.delete('/leads', async (c) => {
 
 app.post('/leads/stage', async (c) => {
   const body = (await c.req.json()) as any
+  if (!(await leadVisible(c, body?.id))) return c.json(NO_ENCONTRADO('Lead'), 404)
   const repo = new D1LeadRepository(c.env.DB)
   const calRepo = new D1CalendarRepository(c.env.DB)
   const historyRepo = new D1StageHistoryRepository(c.env.DB)
@@ -791,22 +821,34 @@ app.post('/conversations/:id/messages', async (c) => {
 })
 
 // ── LEAD PROPERTIES (propiedades de interés de un lead comprador) ──
+/** Un vínculo lead↔propiedad se puede tocar si se puede ver su lead. */
+async function vinculoVisible(c: any, id: string | undefined) {
+  if (!id) return false
+  const vinculo = await new D1LeadPropertyRepository(c.env.DB).findById(id, c.get('orgId')).catch(() => null)
+  return !!vinculo && !!(await leadVisible(c, vinculo.lead_id))
+}
+
 app.get('/lead-properties', async (c) => {
   const { lead_id, property_id } = c.req.query()
   const repo = new D1LeadPropertyRepository(c.env.DB)
   if (lead_id) {
+    if (!(await leadVisible(c, lead_id))) return c.json(NO_ENCONTRADO('Lead'), 404)
     const useCase = new GetLeadPropertiesUseCase(repo)
     return c.json(await useCase.execute({ orgId: c.get('orgId'), leadId: lead_id }))
   }
   if (property_id) {
     const useCase = new GetPropertyInterestedLeadsUseCase(repo)
-    return c.json(await useCase.execute({ orgId: c.get('orgId'), propertyId: property_id }))
+    const interesados = (await useCase.execute({ orgId: c.get('orgId'), propertyId: property_id })) as any[]
+    // Los interesados son leads (traen nombre y teléfono): un agente ve los suyos.
+    const propio = alcanceDe(actorCrm(c))
+    return c.json(propio ? interesados.filter(i => i.lead_assigned_to === propio) : interesados)
   }
   return c.json({ error: 'Falta lead_id o property_id' }, 400)
 })
 
 app.post('/lead-properties', async (c) => {
   const body = (await c.req.json()) as any
+  if (!(await leadVisible(c, body?.lead_id))) return c.json(NO_ENCONTRADO('Lead'), 404)
   const useCase = new LinkLeadPropertyUseCase(
     new D1LeadPropertyRepository(c.env.DB),
     new D1LeadRepository(c.env.DB),
@@ -824,6 +866,7 @@ app.post('/lead-properties', async (c) => {
 
 app.put('/lead-properties', async (c) => {
   const body = (await c.req.json()) as any
+  if (!(await vinculoVisible(c, body?.id))) return c.json(NO_ENCONTRADO('Vínculo'), 404)
   const useCase = new UpdateLeadPropertyStatusUseCase(new D1LeadPropertyRepository(c.env.DB))
   const result = await useCase.execute({
     orgId: c.get('orgId'),
@@ -838,6 +881,7 @@ app.put('/lead-properties', async (c) => {
 app.delete('/lead-properties', async (c) => {
   const { id } = c.req.query()
   if (!id) return c.json({ error: 'Falta id' }, 400)
+  if (!(await vinculoVisible(c, id))) return c.json(NO_ENCONTRADO('Vínculo'), 404)
   const useCase = new UnlinkLeadPropertyUseCase(new D1LeadPropertyRepository(c.env.DB))
   return c.json(await useCase.execute({ orgId: c.get('orgId'), id }))
 })
@@ -1647,17 +1691,30 @@ app.delete('/integrations/google', async (c) => {
 })
 
 // ── CONTACTS ───────────────────────────────────────────────────
+/** Contacto a su nombre, o de alguno de sus leads. */
+async function contactoVisible(c: any, id: string | undefined) {
+  if (!id) return false
+  const actor = actorCrm(c)
+  if (veTodo(c)) return true
+  return new D1ContactRepository(c.env.DB).isVisibleTo(id, c.get('orgId'), actor.userId).catch(() => false)
+}
+
 app.get('/contacts', async (c) => {
   const { search, agent_id, tag_id } = c.req.query()
   const repo = new D1ContactRepository(c.env.DB)
   const tagRepo = new D1TagRepository(c.env.DB)
   const useCase = new GetContactsUseCase(repo, tagRepo)
-  const contacts = await useCase.execute(c.get('orgId'), { search, agent_id, tag_id })
+  // Para un agente: los contactos a su nombre y los de sus leads delegados.
+  const actor = actorCrm(c)
+  const contacts = await useCase.execute(c.get('orgId'), veTodo(c)
+    ? { search, tag_id, agent_id }
+    : { search, tag_id, visible_to: actor.userId })
   return c.json(contacts)
 })
 
 app.get('/contacts/:id', async (c) => {
   const id = c.req.param('id')
+  if (!(await contactoVisible(c, id))) return c.json(NO_ENCONTRADO('Contacto'), 404)
   const repo = new D1ContactRepository(c.env.DB)
   const useCase = new GetContactDetailUseCase(repo)
   const detail = await useCase.execute(id, c.get('orgId'))
@@ -1674,7 +1731,7 @@ app.post('/contacts', async (c) => {
   const body = (await c.req.json()) as any
   const repo = new D1ContactRepository(c.env.DB)
   const useCase = new CreateContactUseCase(repo, new CryptoIdGenerator())
-  const result = await useCase.execute({ ...body, org_id: c.get('orgId'), agent_id: body.agent_id || c.get('userId') })
+  const result = await useCase.execute({ ...body, org_id: c.get('orgId'), agent_id: duenoAlCrear(actorCrm(c), body.agent_id) })
   return c.json(result, 201)
 })
 
@@ -1682,6 +1739,7 @@ app.put('/contacts', async (c) => {
   const body = (await c.req.json()) as any
   const { id } = c.req.query()
   if (!id) return c.json({ error: 'id es requerido' }, 400)
+  if (!(await contactoVisible(c, id))) return c.json(NO_ENCONTRADO('Contacto'), 404)
   const repo = new D1ContactRepository(c.env.DB)
   const useCase = new UpdateContactUseCase(repo)
   await useCase.execute(id, c.get('orgId'), {
@@ -1697,6 +1755,10 @@ app.put('/contacts', async (c) => {
 
 app.delete('/contacts', async (c) => {
   const { id } = c.req.query()
+  // Borrar es más que ver: un agente sólo borra contactos a SU nombre, no el
+  // de un lead que le delegaron (es de quien lo cargó).
+  const contacto = id ? await new D1ContactRepository(c.env.DB).findById(id, c.get('orgId')).catch(() => null) : null
+  if (!contacto || !puedeVerRegistro(actorCrm(c), contacto.agent_id)) return c.json(NO_ENCONTRADO('Contacto'), 404)
   const repo = new D1ContactRepository(c.env.DB)
   const useCase = new DeleteContactUseCase(repo)
   await useCase.execute(id, c.get('orgId'))
@@ -1704,11 +1766,17 @@ app.delete('/contacts', async (c) => {
 })
 
 // ── CALENDAR ───────────────────────────────────────────────────
+async function eventoVisible(c: any, id: string | undefined) {
+  if (!id) return false
+  const evento = await new D1CalendarRepository(c.env.DB).findById(id, c.get('orgId')).catch(() => null)
+  return !!evento && puedeVerRegistro(actorCrm(c), evento.agent_id)
+}
+
 app.get('/calendar', async (c) => {
   const { agent_id, start, end, event_type } = c.req.query()
   const repo = new D1CalendarRepository(c.env.DB)
   const useCase = new GetCalendarEventsUseCase(repo)
-  const events = await useCase.execute(c.get('orgId'), { agent_id, start, end, event_type })
+  const events = await useCase.execute(c.get('orgId'), { agent_id: alcanceDe(actorCrm(c), agent_id), start, end, event_type })
   return c.json(events.map(e => e.toObject()))
 })
 
@@ -1716,11 +1784,13 @@ app.post('/calendar', async (c) => {
   const body = (await c.req.json()) as any
   const repo = new D1CalendarRepository(c.env.DB)
   const useCase = new CreateCalendarEventUseCase(repo, new CryptoIdGenerator())
-  const result = await useCase.execute({ ...body, org_id: c.get('orgId'), agent_id: body.agent_id || c.get('userId') })
+  // Quien reparte agenda para otros; un agente, para sí.
+  const agenteDelEvento = duenoAlCrear(actorCrm(c), body.agent_id)
+  const result = await useCase.execute({ ...body, org_id: c.get('orgId'), agent_id: agenteDelEvento })
   // Espejo en el Google Calendar del agente (si lo conectó). Best-effort.
   const google = await mirrorEventToGoogle(c.env, {
     orgId: c.get('orgId'),
-    agentId: body.agent_id || c.get('userId'),
+    agentId: agenteDelEvento,
     eventId: result.id,
     action: 'upsert',
     attendeeEmail: typeof body.client_email === 'string' ? body.client_email : null,
@@ -1733,6 +1803,7 @@ app.post('/calendar', async (c) => {
 // una sola vez y las métricas de performance se llenan solas.
 app.put('/calendar/complete', async (c) => {
   const { id } = c.req.query()
+  if (!(await eventoVisible(c, id))) return c.json(NO_ENCONTRADO('Evento'), 404)
   const repo = new D1CalendarRepository(c.env.DB)
   const useCase = new ToggleEventCompleteUseCase(
     repo,
@@ -1745,6 +1816,7 @@ app.put('/calendar/complete', async (c) => {
 
 app.put('/calendar/reschedule', async (c) => {
   const body = (await c.req.json()) as any
+  if (!(await eventoVisible(c, body?.id))) return c.json(NO_ENCONTRADO('Evento'), 404)
   const repo = new D1CalendarRepository(c.env.DB)
   const useCase = new RescheduleEventUseCase(repo)
   await useCase.execute({ eventId: body.id, orgId: c.get('orgId'), startAt: body.start_at, endAt: body.end_at })
@@ -1766,6 +1838,7 @@ app.delete('/calendar', async (c) => {
   const repo = new D1CalendarRepository(c.env.DB)
   // Leer antes de borrar: el espejo en Google se cancela después del delete local.
   const event = await repo.findById(id, c.get('orgId')).catch(() => null)
+  if (!event || !puedeVerRegistro(actorCrm(c), event.agent_id)) return c.json(NO_ENCONTRADO('Evento'), 404)
   await repo.delete(id, c.get('orgId'))
   if (event?.google_event_id) {
     await mirrorEventToGoogle(c.env, {
@@ -1779,7 +1852,9 @@ app.delete('/calendar', async (c) => {
 app.get('/activities', async (c) => {
   const { agent_id, lead_id, contact_id, property_id, start } = c.req.query()
   const repo = new D1ActivityRepository(c.env.DB)
-  const activities = await repo.findByOrg(c.get('orgId'), { agent_id, lead_id, contact_id, property_id, since: start })
+  const activities = await repo.findByOrg(c.get('orgId'), {
+    agent_id: alcanceDe(actorCrm(c), agent_id), lead_id, contact_id, property_id, since: start,
+  })
   return c.json(activities.map(a => a.toObject?.() ?? a))
 })
 
@@ -1811,6 +1886,8 @@ app.post('/activities', async (c) => {
 app.delete('/activities', async (c) => {
   const { id } = c.req.query()
   const repo = new D1ActivityRepository(c.env.DB)
+  const actividad = id ? await repo.findById(id, c.get('orgId')).catch(() => null) : null
+  if (!actividad || !puedeVerRegistro(actorCrm(c), actividad.agent_id)) return c.json(NO_ENCONTRADO('Actividad'), 404)
   await repo.delete(id, c.get('orgId'))
   return c.json({ success: true })
 })

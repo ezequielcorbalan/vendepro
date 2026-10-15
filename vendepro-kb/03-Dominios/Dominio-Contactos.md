@@ -23,6 +23,10 @@ Campos:
 
 Los contactos se crean automáticamente desde leads en la migration `003_leads_contact_id.sql` (backfill) y en `CreateLeadWithContactUseCase`.
 
+## Permisos
+
+Un agente ve los contactos a su nombre y los de sus leads delegados; borra sólo los suyos. Detalle en [[Dominio-Usuarios-Org]] (quién ve qué).
+
 ## Use cases
 
 - `CreateContactUseCase`

@@ -329,3 +329,48 @@ describe('D1ContactRepository — findLeadPropertyByContactIds', () => {
     expect(result).toEqual({})
   })
 })
+
+// Lo que ve un agente: lo suyo y los contactos de sus leads delegados. El
+// contacto de un lead delegado suele quedar a nombre de quien lo cargó.
+describe('D1ContactRepository — visible para un agente', () => {
+  let env: TestEnv
+  beforeAll(async () => { env = await createTestDB() })
+  afterAll(async () => { await closeTestDB(env) })
+
+  async function insertLead(db: D1Database, orgId: string, contactId: string, assignedTo: string) {
+    const leadId = nextId('lead')
+    await db.prepare(
+      `INSERT INTO leads (id, org_id, full_name, source, stage, contact_id, assigned_to, created_at, updated_at)
+       VALUES (?, ?, 'Lead', 'web', 'nuevo', ?, ?, datetime('now'), datetime('now'))`,
+    ).bind(leadId, orgId, contactId, assignedTo).run()
+  }
+
+  it('lista los propios y los de sus leads, no los ajenos', async () => {
+    const repo = new D1ContactRepository(env.DB)
+    const org = await seedOrg(env.DB)
+    const admin = await seedUser(env.DB, org.id, { role: 'admin' })
+    const agente = await seedUser(env.DB, org.id, { role: 'agent' })
+
+    const propio = await insertContact(env.DB, org.id, agente.id)
+    const deLeadDelegado = await insertContact(env.DB, org.id, admin.id)
+    await insertLead(env.DB, org.id, deLeadDelegado, agente.id)
+    const ajeno = await insertContact(env.DB, org.id, admin.id)
+    await insertLead(env.DB, org.id, ajeno, admin.id)
+
+    const ids = (await repo.findByOrg(org.id, { visible_to: agente.id })).map(c => c.id).sort()
+    expect(ids).toEqual([propio, deLeadDelegado].sort())
+
+    expect(await repo.isVisibleTo(propio, org.id, agente.id)).toBe(true)
+    expect(await repo.isVisibleTo(deLeadDelegado, org.id, agente.id)).toBe(true)
+    expect(await repo.isVisibleTo(ajeno, org.id, agente.id)).toBe(false)
+  })
+
+  it('no cruza organizaciones', async () => {
+    const repo = new D1ContactRepository(env.DB)
+    const orgA = await seedOrg(env.DB)
+    const orgB = await seedOrg(env.DB)
+    const agente = await seedUser(env.DB, orgA.id, { role: 'agent' })
+    const deOtraOrg = await insertContact(env.DB, orgB.id, agente.id)
+    expect(await repo.isVisibleTo(deOtraOrg, orgA.id, agente.id)).toBe(false)
+  })
+})

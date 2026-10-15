@@ -28,7 +28,13 @@ Métodos: `advanceStage(newStage)` (con validación), `update(data)`.
 
 `reservations` (ver [[DB-overview]]) — Índices: `(org_id, stage)`, `agent_id`.
 
-> Nota: el modelo es laxo — no FK estricta a `properties` (guarda `property_address` como string). Esto es por diseño para soportar reservas de propiedades que no estaban en el sistema antes.
+> **Migración 064 (15-oct-2026)**: suma `property_id` (FK a `properties`), `acceptance_deadline`,
+> `accepted_at`, `boleto_date`, `escritura_date` y `delivery_date`. Hitos calculados en
+> `core/domain/rules/reservation-milestones.ts`; `GET /reservations?property_id=` los devuelve ya
+> calculados. UI: `ReservationCard` en la ficha de la propiedad (antes la tabla no tenía pantalla).
+> El propietario los ve con cuenta regresiva en su portal `/d/<token>`.
+>
+> Nota: el modelo es laxo — `property_id` es opcional (guarda también `property_address` como string). Esto es por diseño para soportar reservas de propiedades que no estaban en el sistema antes.
 
 ## Use cases
 

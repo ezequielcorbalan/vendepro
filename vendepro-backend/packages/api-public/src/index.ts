@@ -35,6 +35,7 @@ import {
   D1MetaIntegrationRepository,
   D1DocPortalLinkRepository,
   D1PropertyDocumentRepository,
+  D1ReservationRepository,
   N8nDocumentIntakeGateway,
   GeminiDocumentClassifier,
   GoogleDriveOrgStorageProvider,
@@ -1420,6 +1421,7 @@ app.get('/public/docs/:token', async (c) => {
     new D1PropertyRepository(db),
     new D1OrganizationRepository(db),
     new D1UserRepository(db),
+    { reservations: new D1ReservationRepository(db), reports: new D1ReportRepository(db) },
   )
   return c.json(await uc.execute(c.req.param('token')))
 })

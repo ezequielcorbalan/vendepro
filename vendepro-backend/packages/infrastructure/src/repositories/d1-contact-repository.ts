@@ -1,6 +1,11 @@
 import { Contact } from '@vendepro/core'
 import type { ContactRepository, ContactFilters } from '@vendepro/core'
 
+/** Contactos a nombre del agente o de alguno de sus leads (dos binds: userId, userId). */
+const VISIBLE_PARA = `agent_id = ? OR id IN (
+  SELECT contact_id FROM leads WHERE assigned_to = ? AND contact_id IS NOT NULL AND org_id = contacts.org_id
+)`
+
 export class D1ContactRepository implements ContactRepository {
   constructor(private readonly db: D1Database) {}
 
@@ -10,6 +15,14 @@ export class D1ContactRepository implements ContactRepository {
       .bind(id, orgId)
       .first() as any
     return row ? this.toEntity(row) : null
+  }
+
+  async isVisibleTo(id: string, orgId: string, userId: string): Promise<boolean> {
+    const row = await this.db
+      .prepare(`SELECT 1 AS ok FROM contacts WHERE id = ? AND org_id = ? AND (${VISIBLE_PARA})`)
+      .bind(id, orgId, userId, userId)
+      .first()
+    return !!row
   }
 
   async findByMetaUserId(orgId: string, metaUserId: string): Promise<Contact | null> {
@@ -25,6 +38,10 @@ export class D1ContactRepository implements ContactRepository {
     const binds: unknown[] = [orgId]
 
     if (filters?.agent_id) { query += ' AND agent_id = ?'; binds.push(filters.agent_id) }
+    if (filters?.visible_to) {
+      query += ` AND (${VISIBLE_PARA})`
+      binds.push(filters.visible_to, filters.visible_to)
+    }
     if (filters?.search) {
       // Teléfono: se comparan sólo dígitos, así "11 5555-1234" encuentra al
       // contacto guardado como "+5491155551234". Es la misma normalización que

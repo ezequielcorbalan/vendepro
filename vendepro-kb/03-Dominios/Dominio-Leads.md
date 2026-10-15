@@ -68,6 +68,8 @@ deja constancia.
 
 - **Permisos**: admin/owner/supervisor reparten cualquier lead; un agente sólo
   puede pasar uno que ya tenga asignado (`canSeeAll` de `role-rules`).
+- **Ver y editar** (15-oct-2026): el agente sólo ve y toca sus leads, en el
+  servidor; el `PUT /leads` le ignora `assigned_to`. Ver [[Dominio-Usuarios-Org]].
 - **Aviso**: notificación in-app `kind='lead_assigned'` (la tabla ya tenía ese
   kind desde la migración 007) + email al agente con el link al lead, si la org
   tiene remitente configurado y el worker tiene `RESEND_API_KEY`. Los dos avisos

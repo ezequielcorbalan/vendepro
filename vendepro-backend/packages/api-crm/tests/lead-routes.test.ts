@@ -71,7 +71,8 @@ describe('api-crm lead routes', () => {
   })
 
   it('GET /leads?id=X returns the single lead (not the list)', async () => {
-    const lead = { toObject: () => ({ id: 'L1', full_name: 'Ana', stage: 'contactado' }) }
+    // El usuario del test es un agente: el lead tiene que ser suyo.
+    const lead = { assigned_to: 'agent-1', toObject: () => ({ id: 'L1', full_name: 'Ana', stage: 'contactado' }) }
     ;(D1LeadRepository as any).mockImplementationOnce(() => ({
       findById: vi.fn().mockResolvedValue(lead),
     }))
@@ -82,6 +83,26 @@ describe('api-crm lead routes', () => {
     expect(Array.isArray(body)).toBe(false)
     expect(body.id).toBe('L1')
     expect(body.stage).toBe('contactado')
+  })
+
+  // El hueco que se tapó: un agente leía cualquier lead de la inmobiliaria por id.
+  it('GET /leads?id=X da 404 si el lead es de otro agente', async () => {
+    const ajeno = { assigned_to: 'agent-2', toObject: () => ({ id: 'L2' }) }
+    ;(D1LeadRepository as any).mockImplementationOnce(() => ({
+      findById: vi.fn().mockResolvedValue(ajeno),
+    }))
+    const { default: app } = await import('../src/index')
+    const res = await app.request('/leads?id=L2', { method: 'GET' }, { DB: {}, JWT_SECRET: 'secret' })
+    expect(res.status).toBe(404)
+  })
+
+  // Y pedía la lista de toda la org sacando (o cambiando) el ?agent_id.
+  it('GET /leads de un agente se filtra por él aunque pida otro agent_id', async () => {
+    const findByOrg = vi.fn().mockResolvedValue([])
+    ;(D1LeadRepository as any).mockImplementationOnce(() => ({ findByOrg }))
+    const { default: app } = await import('../src/index')
+    await app.request('/leads?agent_id=agent-2', { method: 'GET' }, { DB: {}, JWT_SECRET: 'secret' })
+    expect(findByOrg.mock.calls[0][1]).toMatchObject({ agent_id: 'agent-1' })
   })
 
   it('GET /leads?id=X returns 404 when the lead does not exist', async () => {
