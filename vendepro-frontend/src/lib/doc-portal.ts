@@ -37,6 +37,42 @@ export interface PublicDocPortal {
     created_at: string
   }>
   limits: { max_file_bytes: number }
+  reservation: {
+    stage: string
+    offer_amount: number | null
+    offer_currency: string
+    reservation_date: string | null
+    milestones: ReservationMilestone[]
+    next: ReservationMilestone | null
+  } | null
+  authorization: { start_date: string; end_date: string; days_left: number | null } | null
+  reports: Array<{ period_label: string; url: string; published_at: string | null }>
+}
+
+/** Hito de una reserva, calculado en el backend (core/domain/rules/reservation-milestones). */
+export interface ReservationMilestone {
+  key: 'aceptacion' | 'boleto' | 'escritura' | 'entrega'
+  label: string
+  date: string | null
+  done: boolean
+  days_left: number | null
+  overdue: boolean
+}
+
+/** "Faltan 5 días", "Es hoy", "Venció hace 2 días". */
+export function countdownLabel(daysLeft: number | null): string | null {
+  if (daysLeft === null) return null
+  if (daysLeft === 0) return 'Es hoy'
+  if (daysLeft === 1) return 'Falta 1 día'
+  if (daysLeft > 1) return `Faltan ${daysLeft} días`
+  return daysLeft === -1 ? 'Venció ayer' : `Venció hace ${-daysLeft} días`
+}
+
+/** YYYY-MM-DD → 15/10/2026, sin pasar por zona horaria (es una fecha, no un instante). */
+export function formatYmd(ymd: string | null): string {
+  if (!ymd) return ''
+  const [y, m, d] = ymd.slice(0, 10).split('-')
+  return `${d}/${m}/${y}`
 }
 
 export interface DocPortalLink {

@@ -14,6 +14,13 @@ export interface ReservationProps {
   reservation_date: string | null
   stage: ReservationStage
   notes: string | null
+  // Migración 064: propiedad y fechas previstas de cada hito.
+  property_id?: string | null
+  acceptance_deadline?: string | null
+  accepted_at?: string | null
+  boleto_date?: string | null
+  escritura_date?: string | null
+  delivery_date?: string | null
   created_at: string
   updated_at: string
   // Joined
@@ -42,6 +49,12 @@ export class Reservation {
   get reservation_date() { return this.props.reservation_date }
   get stage() { return this.props.stage }
   get notes() { return this.props.notes }
+  get property_id() { return this.props.property_id ?? null }
+  get acceptance_deadline() { return this.props.acceptance_deadline ?? null }
+  get accepted_at() { return this.props.accepted_at ?? null }
+  get boleto_date() { return this.props.boleto_date ?? null }
+  get escritura_date() { return this.props.escritura_date ?? null }
+  get delivery_date() { return this.props.delivery_date ?? null }
   get created_at() { return this.props.created_at }
   get updated_at() { return this.props.updated_at }
   get agent_name() { return this.props.agent_name }

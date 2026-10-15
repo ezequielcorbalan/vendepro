@@ -2,6 +2,8 @@
 // celular. Sin dependencias: un PDF con imágenes JPEG es texto plano más los
 // bytes de cada JPEG tal cual (filtro DCTDecode), así que alcanza con armarlo a mano.
 
+import { DEFAULT_QUAD, detectDocumentQuad, outputSize, warpPerspective, type Quad } from './doc-crop'
+
 export interface ScannedPage {
   jpeg: Blob
   width: number
@@ -16,24 +18,95 @@ const JPEG_QUALITY = 0.75
 /** Ancho de página en puntos (A4 = 595 pt); el alto sigue la proporción de la foto. */
 const PAGE_WIDTH_PT = 595
 
-/**
- * Procesa una foto: la achica y, con `enhance`, la pasa a escala de grises con
- * los niveles estirados para que el papel quede blanco y la tinta negra, que es
- * lo que hace legible una foto sacada con mala luz.
- */
-export async function processPhoto(file: Blob, enhance: boolean): Promise<ScannedPage> {
-  const bitmap = await createImageBitmap(file)
-  const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height))
-  const width = Math.round(bitmap.width * scale)
-  const height = Math.round(bitmap.height * scale)
+/** Lado del preview del editor de recorte y de la imagen donde se detecta la hoja. */
+const PREVIEW_SIDE = 1200
+const DETECT_SIDE = 360
+/** Antes de enderezar se trabaja con más resolución, para no perder nitidez. */
+const WARP_SOURCE_SIDE = 3000
 
+export interface CropDraft {
+  /** object URL del preview (liberar con URL.revokeObjectURL). */
+  previewUrl: string
+  width: number
+  height: number
+  /** Esquinas sugeridas: las detectadas o, si no, casi toda la foto. */
+  quad: Quad
+  detected: boolean
+}
+
+function drawScaled(bitmap: ImageBitmap, maxSide: number): { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } {
+  const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height))
   const canvas = document.createElement('canvas')
-  canvas.width = width
-  canvas.height = height
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale))
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale))
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('El navegador no permite procesar la imagen')
-  ctx.drawImage(bitmap, 0, 0, width, height)
-  bitmap.close?.()
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+  return { canvas, ctx }
+}
+
+/**
+ * Prepara una foto para el editor de recorte: un preview liviano y las
+ * esquinas de la hoja detectadas sobre una copia chica (rápido en el celular).
+ */
+export async function prepareCrop(file: Blob): Promise<CropDraft> {
+  const bitmap = await createImageBitmap(file)
+  try {
+    const preview = drawScaled(bitmap, PREVIEW_SIDE)
+    const small = drawScaled(bitmap, DETECT_SIDE)
+    const rgba = small.ctx.getImageData(0, 0, small.canvas.width, small.canvas.height).data
+    const gray = new Uint8ClampedArray(small.canvas.width * small.canvas.height)
+    for (let i = 0, j = 0; i < rgba.length; i += 4, j++) {
+      gray[j] = (rgba[i] * 299 + rgba[i + 1] * 587 + rgba[i + 2] * 114) / 1000
+    }
+    const found = detectDocumentQuad(gray, small.canvas.width, small.canvas.height)
+    const blob = await new Promise<Blob>((resolve, reject) =>
+      preview.canvas.toBlob(b => (b ? resolve(b) : reject(new Error('No se pudo leer la foto'))), 'image/jpeg', 0.85),
+    )
+    return {
+      previewUrl: URL.createObjectURL(blob),
+      width: preview.canvas.width,
+      height: preview.canvas.height,
+      quad: found ?? DEFAULT_QUAD,
+      detected: !!found,
+    }
+  } finally {
+    bitmap.close?.()
+  }
+}
+
+/**
+ * Procesa una foto: si viene `quad` (esquinas 0..1 aceptadas en el editor),
+ * recorta y endereza la hoja; la achica y, con `enhance`, la pasa a escala de
+ * grises con los niveles estirados para que el papel quede blanco y la tinta
+ * negra, que es lo que hace legible una foto sacada con mala luz.
+ */
+export async function processPhoto(file: Blob, enhance: boolean, quad?: Quad | null): Promise<ScannedPage> {
+  const bitmap = await createImageBitmap(file)
+  let canvas: HTMLCanvasElement
+  let ctx: CanvasRenderingContext2D
+  try {
+    if (quad) {
+      const source = drawScaled(bitmap, WARP_SOURCE_SIDE)
+      const sw = source.canvas.width, sh = source.canvas.height
+      const px = quad.map(p => ({ x: p.x * (sw - 1), y: p.y * (sh - 1) })) as Quad
+      const { w, h } = outputSize(quad, sw, sh, MAX_SIDE)
+      const warped = warpPerspective(source.ctx.getImageData(0, 0, sw, sh).data, sw, sh, px, w, h)
+      canvas = document.createElement('canvas')
+      canvas.width = w
+      canvas.height = h
+      const c2 = canvas.getContext('2d')
+      if (!c2) throw new Error('El navegador no permite procesar la imagen')
+      ctx = c2
+      ctx.putImageData(new ImageData(warped as unknown as Uint8ClampedArray<ArrayBuffer>, w, h), 0, 0)
+    } else {
+      ;({ canvas, ctx } = drawScaled(bitmap, MAX_SIDE))
+    }
+  } finally {
+    bitmap.close?.()
+  }
+  const width = canvas.width
+  const height = canvas.height
 
   if (enhance) {
     const background = estimateBackground(canvas, width, height)
