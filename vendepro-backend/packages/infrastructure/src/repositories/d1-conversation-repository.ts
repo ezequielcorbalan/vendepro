@@ -126,7 +126,8 @@ const SELECT_BASE = `
     ${LEAD_RESUELTO} AS resolved_lead_id,
     (SELECT l.full_name FROM leads l WHERE l.id = ${LEAD_RESUELTO}) AS lead_name,
     (SELECT l.stage FROM leads l WHERE l.id = ${LEAD_RESUELTO}) AS lead_stage,
-    (SELECT COALESCE(l.pipeline, 'vendedor') FROM leads l WHERE l.id = ${LEAD_RESUELTO}) AS lead_pipeline
+    (SELECT COALESCE(l.pipeline, 'vendedor') FROM leads l WHERE l.id = ${LEAD_RESUELTO}) AS lead_pipeline,
+    (SELECT l.property_address FROM leads l WHERE l.id = ${LEAD_RESUELTO}) AS lead_address
   FROM conversations c
   LEFT JOIN contacts ct ON ct.id = c.contact_id
   LEFT JOIN users u ON u.id = c.assignee_id`
@@ -155,6 +156,7 @@ function toEntity(row: any): Conversation {
           full_name: row.lead_name ?? null,
           stage: row.lead_stage ?? null,
           pipeline: row.lead_pipeline ?? 'vendedor',
+          address: row.lead_address ?? null,
         }
       : null,
   })

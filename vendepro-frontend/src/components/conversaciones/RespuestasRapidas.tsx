@@ -15,12 +15,14 @@ import { useWhatsAppTemplates, renderWhatsAppTemplate } from '@/lib/whatsapp-tem
 interface RespuestasRapidasProps {
   /** Nombre del contacto, para {{nombre}}. */
   nombre: string | null
+  /** Dirección de la propiedad del lead, para {{direccion}}. */
+  direccion?: string | null
   onElegir: (texto: string) => void
   /** Sólo admin/owner editan las plantillas: a ellos se les ofrece el atajo. */
   puedeConfigurar: boolean
 }
 
-export function RespuestasRapidas({ nombre, onElegir, puedeConfigurar }: RespuestasRapidasProps) {
+export function RespuestasRapidas({ nombre, direccion, onElegir, puedeConfigurar }: RespuestasRapidasProps) {
   const { templates, orgName, loading } = useWhatsAppTemplates()
   const router = useRouter()
 
@@ -37,7 +39,7 @@ export function RespuestasRapidas({ nombre, onElegir, puedeConfigurar }: Respues
         <DropdownItem>No hay respuestas rápidas cargadas</DropdownItem>
       ) : (
         templates.map(t => (
-          <DropdownItem key={t.id} onClick={() => onElegir(renderWhatsAppTemplate(t.body, { name: nombre }, { orgName }))}>
+          <DropdownItem key={t.id} onClick={() => onElegir(renderWhatsAppTemplate(t.body, { name: nombre, address: direccion }, { orgName }))}>
             {t.name}
           </DropdownItem>
         ))

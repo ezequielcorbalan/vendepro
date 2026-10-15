@@ -46,7 +46,7 @@ La campana consulta cada 60 s y la bandeja (lista + hilo abierto) cada 15 s, amb
 
 ## Respuestas rápidas
 
-Las mismas plantillas de "Mensajes predeterminados de WhatsApp" (`whatsapp_templates`, migración 048, se editan en Configuración → WhatsApp). Botón ⚡ en el compositor: pega el texto con `{{nombre}}`, `{{agente}}`, `{{inmobiliaria}}` resueltas para que el agente lo ajuste antes de enviar — no lo manda solo.
+Las mismas plantillas de "Mensajes predeterminados de WhatsApp" (`whatsapp_templates`, migración 048, se editan en Configuración → WhatsApp). Botón ⚡ en el compositor, o el atajo **`/`** ("/seg" sugiere "Seguimiento"; flechas, Enter o Tab para elegir, Escape para cancelar; busca sin tildes en cualquier parte del nombre). Pega el texto con `{{nombre}}`, `{{agente}}`, `{{inmobiliaria}}` y `{{direccion}}` (la propiedad del lead de la conversación) resueltas para que el agente lo ajuste — no lo manda solo, y no deja enviar un "/algo" por error.
 
 ## Messenger e Instagram — conexión
 
@@ -78,7 +78,6 @@ La API del bot (api-public, `/v1/conversations/*`) va con token de integración,
 
 - Websockets / push en vez de polling.
 - OAuth de Meta ("Continuar con Facebook") en lugar de pegar el token; etiqueta `HUMAN_AGENT` de Messenger para responder hasta 7 días.
-- Atajo `/` en el compositor para buscar respuestas rápidas.
 - Fachada compatible con la API de Chatwoot para importar los flujos de n8n sin tocarlos.
 - Permisos por rol en leads, contactos y calendario (mismo problema que tenía la bandeja; otro PR).
 - Lo que alguien escribe directo desde el teléfono no queda en el hilo (se descarta `fromMe` para que el bot no se conteste solo).

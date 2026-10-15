@@ -36,7 +36,8 @@ export interface ConversationProps {
    * Lead del contacto, resuelto al leer (el vivo más reciente). Es lo que
    * permite saltar de la charla al trabajo comercial sin buscar a mano.
    */
-  lead?: { id: string; full_name: string | null; stage: string | null; pipeline: string } | null
+  /** `address`: la propiedad del lead, para {{direccion}} de las respuestas rápidas. */
+  lead?: { id: string; full_name: string | null; stage: string | null; pipeline: string; address?: string | null } | null
 }
 
 export class Conversation {
