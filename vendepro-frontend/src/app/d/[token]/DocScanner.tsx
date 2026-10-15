@@ -19,7 +19,8 @@ interface Props {
   /** Documentos para elegir (los pendientes primero). */
   options: Array<{ value: string; label: string }>
   maxBytes: number
-  onDone: (file: File) => void
+  /** El PDF armado y el documento que eligió el propietario (pista para la IA). */
+  onDone: (file: File, docType: string) => void
 }
 
 /**
@@ -89,7 +90,7 @@ export default function DocScanner({ open, onClose, options, maxBytes, onDone }:
         return
       }
       const label = options.find(o => o.value === docType)?.label ?? 'Documento escaneado'
-      onDone(new File([pdf], scanFileName(label), { type: 'application/pdf' }))
+      onDone(new File([pdf], scanFileName(label), { type: 'application/pdf' }), docType)
       reset()
       onClose()
     } catch {

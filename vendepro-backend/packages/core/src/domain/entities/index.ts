@@ -105,5 +105,5 @@ export { AutomationRun, AutomationRunAction, MAX_CHAIN_DEPTH, DEDUPE_SCOPES } fr
 export type { AutomationRunProps, AutomationRunActionProps, RunStatus, RunActionStatus, SkipReason, DedupeScope } from './automation-run'
 export { AutomationJob, MAX_JOB_ATTEMPTS, JOB_LOCK_MINUTES } from './automation-job'
 export type { AutomationJobProps, JobStatus } from './automation-job'
-export { DOCS_INTEGRATION_PROVIDER, parseDocsIntegrationConfig } from './doc-portal'
-export type { DocPortalLink, PropertyDocument, PropertyDocumentSource, DocsIntegrationConfig } from './doc-portal'
+export { DOCS_INTEGRATION_PROVIDER, GOOGLE_DRIVE_PROVIDER, DOCS_ENGINES, parseDocsIntegrationConfig } from './doc-portal'
+export type { DocPortalLink, PropertyDocument, PropertyDocumentSource, DocsIntegrationConfig, DocsEngine } from './doc-portal'

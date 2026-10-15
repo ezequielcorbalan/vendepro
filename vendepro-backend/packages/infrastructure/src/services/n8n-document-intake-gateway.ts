@@ -1,5 +1,6 @@
 import type {
   DocsIntegrationConfig,
+  DocumentIntakeFinish,
   DocumentIntakeFields,
   DocumentIntakeFile,
   DocumentIntakeGateway,
@@ -73,7 +74,8 @@ export class N8nDocumentIntakeGateway implements DocumentIntakeGateway {
     }
   }
 
-  async finish(config: DocsIntegrationConfig, sessionId: string): Promise<void> {
+  async finish(config: DocsIntegrationConfig, ctx: DocumentIntakeFinish): Promise<void> {
+    const sessionId = ctx.sessionId
     if (!config.done_url) return
     try {
       await this.fetchFn(config.done_url, {

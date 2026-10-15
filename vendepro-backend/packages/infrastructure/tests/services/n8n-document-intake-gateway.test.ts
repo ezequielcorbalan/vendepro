@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { N8nDocumentIntakeGateway } from '../../src/services/n8n-document-intake-gateway'
 
 const config = {
+  engine: 'n8n' as const,
   upload_url: 'https://n8n.test/webhook/documentacion-subir',
   done_url: 'https://n8n.test/webhook/documentacion-listo',
   agent_map: {},
@@ -9,6 +10,7 @@ const config = {
 const fields = {
   direccion: 'Inexistente 99999', operacion: 'venta', tipo: 'depto', sucesion: 'no',
   nombre: 'Ana', telefono: '11', email: '', sid: 'sid-1', agente: 'andres',
+  org_id: 'org-1', property_id: 'prop-1',
 }
 const file = { name: 'dni.jpg', type: 'image/jpeg', size: 3, data: new Blob(['abc'], { type: 'image/jpeg' }) }
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status })
@@ -18,10 +20,10 @@ describe('N8nDocumentIntakeGateway', () => {
     const fetchFn = vi.fn().mockResolvedValue(json({ ok: true, tipo: 'dni', tipo_label: 'DNI', reconocido: true }))
     await new N8nDocumentIntakeGateway(fetchFn as any).upload(config, file, fields)
 
-    const [url, init] = fetchFn.mock.calls[0]
+    const [url, init] = fetchFn.mock.calls[0] as [string, RequestInit]
     expect(url).toBe(config.upload_url)
     const body = init.body as FormData
-    expect((body.get('archivo') as File).name).toBe('dni.jpg')
+    expect((body.get('archivo') as unknown as File).name).toBe('dni.jpg')
     expect(body.get('direccion')).toBe('Inexistente 99999')
     expect(body.get('sid')).toBe('sid-1')
     expect(body.get('agente')).toBe('andres')
@@ -49,8 +51,10 @@ describe('N8nDocumentIntakeGateway', () => {
 
   it('cierra la sesión con { sid } en text/plain', async () => {
     const fetchFn = vi.fn().mockResolvedValue(json({ ok: true }))
-    await new N8nDocumentIntakeGateway(fetchFn as any).finish(config, 'sid-1')
-    const [url, init] = fetchFn.mock.calls[0]
+    await new N8nDocumentIntakeGateway(fetchFn as any).finish(config, {
+      sessionId: 'sid-1', orgId: 'org-1', propertyId: 'prop-1', address: 'x', agentId: null, missing: [],
+    })
+    const [url, init] = fetchFn.mock.calls[0] as [string, any]
     expect(url).toBe(config.done_url)
     expect(init.headers['Content-Type']).toBe('text/plain')
     expect(JSON.parse(init.body)).toEqual({ sid: 'sid-1' })

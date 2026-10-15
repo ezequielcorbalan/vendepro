@@ -207,7 +207,12 @@ describe('FinishDocPortalSessionUseCase', () => {
   it('avisa a n8n cuando hubo archivos nuevos', async () => {
     const d = deps({ links: { findByToken: vi.fn().mockResolvedValue(link({ last_upload_at: new Date().toISOString() })) } })
     expect(await build(d).execute('tok')).toEqual({ notified: true })
-    expect(d.gateway.finish).toHaveBeenCalledWith(expect.anything(), 'sid-1')
+    expect(d.gateway.finish).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+      sessionId: 'sid-1',
+      propertyId: 'prop-1',
+      agentId: 'agent-1',
+      address: 'Inexistente 99999 2° B',
+    }))
   })
 
   it('no repite el resumen si no llegó nada desde el último', async () => {
