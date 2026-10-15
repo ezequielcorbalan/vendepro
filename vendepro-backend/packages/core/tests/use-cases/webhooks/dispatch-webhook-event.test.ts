@@ -66,6 +66,36 @@ describe('DispatchWebhookEventUseCase', () => {
     expect(mockRepo.touchLastTriggered).toHaveBeenCalledTimes(2)
   })
 
+  // message_created imita a Chatwoot, que no envuelve. Con el envoltorio, cada
+  // nodo del bot de n8n que lee $json.body.conversation se rompería.
+  it('message_created sale CRUDO, sin el envoltorio {event, timestamp, data}', async () => {
+    mockRepo.findActiveByEvent.mockResolvedValue([makeWebhook('wh-1', ['message_created'])])
+    mockSender.send.mockResolvedValue({ ok: true, status: 200, error: null })
+
+    const payload = { event: 'message_created', conversation: { id: 'c1' }, message_type: 0 }
+    const uc = new DispatchWebhookEventUseCase(mockRepo, mockDeliveries, mockSender, mockIds)
+    await uc.execute({ orgId: 'org_mg', event: 'message_created', payload })
+
+    const parsed = JSON.parse(mockSender.send.mock.calls[0][2])
+    expect(parsed).toEqual(payload)
+    expect(parsed).not.toHaveProperty('data')
+    expect(parsed).not.toHaveProperty('timestamp')
+  })
+
+  // Los flujos de n8n que ya escuchan lead.created cuentan con el envoltorio:
+  // sacarlo para todos los eventos los rompería.
+  it('lead.created conserva el envoltorio de siempre', async () => {
+    mockRepo.findActiveByEvent.mockResolvedValue([makeWebhook('wh-1')])
+    mockSender.send.mockResolvedValue({ ok: true, status: 200, error: null })
+
+    const uc = new DispatchWebhookEventUseCase(mockRepo, mockDeliveries, mockSender, mockIds)
+    await uc.execute({ orgId: 'org_mg', event: 'lead.created', payload: { lead_id: 'l1' } })
+
+    const parsed = JSON.parse(mockSender.send.mock.calls[0][2])
+    expect(Object.keys(parsed).sort()).toEqual(['data', 'event', 'timestamp'])
+    expect(parsed.data).toEqual({ lead_id: 'l1' })
+  })
+
   it('reintenta una vez ante 5xx y loguea attempts=2', async () => {
     mockRepo.findActiveByEvent.mockResolvedValue([makeWebhook('wh-1')])
     mockSender.send
