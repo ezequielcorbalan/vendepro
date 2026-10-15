@@ -8,7 +8,7 @@ Bandeja propia para reemplazar Onetalk (Chatwoot white-label de EMBLUE). El núm
 
 **Número central**: un número por inmobiliaria (no el WhatsApp personal de cada agente). Delegar un lead le pasa también sus conversaciones (`AssignLeadUseCase.seguirConversaciones`).
 
-**Proveedor**: WAHA (no oficial) hoy; Meta Cloud API después. Los dos implementan el port `MessagingGateway` (`enforcesWindow` sólo en Meta: fuera de la ventana de 24 h no se manda texto libre). Instagram ya entra por Meta (`/public/inbox/meta`, firma `X-Hub-Signature-256`).
+**Proveedor**: WAHA (no oficial) hoy; Meta Cloud API después. Los dos implementan el port `MessagingGateway` (`enforcesWindow` sólo en Meta: fuera de la ventana de 24 h no se manda texto libre — vale para WhatsApp Cloud, Instagram y Messenger). Instagram y **Facebook Messenger** entran por Meta (`/public/inbox/meta`, firma `X-Hub-Signature-256`); cada uno es una integración propia (`org_integrations.provider` = `instagram` / `facebook`, `config.account_id` = id de la cuenta de IG / id de la página) y el webhook se rutea por canal + cuenta. Se responde **por el canal de la conversación** (antes salía siempre por WhatsApp).
 
 **WAHA compartido**: una instancia de la plataforma, una sesión por org (`org-<id>`). Cada sesión tiene su webhook con el token de integración de **su** org en el header, así el mensaje se atribuye solo. Conectar rota el token; si la sesión ya existía se le pisa la config con `PUT /api/sessions/{s}` (antes quedaba mandando el token revocado y la bandeja se quedaba muda).
 
@@ -38,6 +38,20 @@ Después de guardar, igual para todos los canales (`trasIngerir`): emite `messag
 
 La campana consulta cada 60 s y la bandeja (lista + hilo abierto) cada 15 s, ambas pausadas con la pestaña oculta. No hay websockets todavía.
 
+## Carpetas, filtros y etiquetas (15-oct-2026)
+
+- **Carpetas**: Mías / Sin asignar / Todas, con contador de abiertas (`GET /conversations/carpetas` → `countOpenByFolder` + etiquetas en uso). Un agente sólo tiene "Mías" y no se le dibujan las pestañas.
+- **Filtros**: búsqueda (nombre, teléfono por dígitos, texto de cualquier mensaje), canal y etiqueta (`json_each` sobre `conversations.labels`).
+- **Etiquetas**: libres, se agregan desde el hilo (existentes o nuevas, tope 40 caracteres) con `POST /conversations/:id/labels` (reemplazo completo, como el bot). "Pausar bot" = etiqueta `bot_pausado`, con botón propio.
+
+## Respuestas rápidas
+
+Las mismas plantillas de "Mensajes predeterminados de WhatsApp" (`whatsapp_templates`, migración 048, se editan en Configuración → WhatsApp). Botón ⚡ en el compositor: pega el texto con `{{nombre}}`, `{{agente}}`, `{{inmobiliaria}}` resueltas para que el agente lo ajuste antes de enviar — no lo manda solo.
+
+## Messenger e Instagram — conexión
+
+`/configuracion/conexiones/meta`: id de la cuenta + page access token (cifrado, nunca vuelve), por canal. La misma cuenta no puede quedar en dos orgs. El nombre de quien escribe se pide a la Graph API al abrir la conversación (`obtenerPerfilMeta`, best-effort); sin respuesta queda "Cliente de Messenger 1234". **Falta**: app de Meta aprobada con `pages_messaging` / `instagram_manage_messages`, el botón "Continuar con Facebook" (OAuth) y los secrets `META_APP_SECRET` y `META_VERIFY_TOKEN` en api-public.
+
 ## Permisos
 
 Reglas en `core/src/domain/rules/conversation-access.ts`, aplicadas en api-crm:
@@ -53,7 +67,7 @@ La API del bot (api-public, `/v1/conversations/*`) va con token de integración,
 
 ## Pantallas
 
-- `/conversaciones` — bandeja, hilo, responder, delegar / devolver a la cola, resolver, ver lead/contacto con etapa.
+- `/conversaciones` — carpetas, filtros, bandeja, hilo, etiquetas, respuestas rápidas, responder, delegar / devolver a la cola, resolver, ver lead/contacto con etapa.
 - `/configuracion/conexiones/whatsapp` — conectar en un botón + QR (refresca cada 8 s), opciones avanzadas para WAHA propio.
 
 ## Probar en local
@@ -63,6 +77,8 @@ La API del bot (api-public, `/v1/conversations/*`) va con token de integración,
 ## Pendiente
 
 - Websockets / push en vez de polling.
+- OAuth de Meta ("Continuar con Facebook") en lugar de pegar el token; etiqueta `HUMAN_AGENT` de Messenger para responder hasta 7 días.
+- Atajo `/` en el compositor para buscar respuestas rápidas.
 - Fachada compatible con la API de Chatwoot para importar los flujos de n8n sin tocarlos.
 - Permisos por rol en leads, contactos y calendario (mismo problema que tenía la bandeja; otro PR).
 - Lo que alguien escribe directo desde el teléfono no queda en el hilo (se descarta `fromMe` para que el bot no se conteste solo).
