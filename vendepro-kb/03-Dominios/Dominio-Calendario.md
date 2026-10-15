@@ -36,6 +36,10 @@ Cada tipo tiene color, ícono y label asociados en el frontend.
 
 Métodos: `isOverdue(now)`, `toggleComplete()`, `reschedule(start, end)`.
 
+## Permisos
+
+Un agente ve, completa, reprograma y borra sólo sus eventos, y los que crea quedan a su nombre. Admin, owner y supervisor agendan para cualquiera. Ver [[Dominio-Usuarios-Org]].
+
 ## Tabla D1
 
 `calendar_events` — Índices: `(org_id, start_at)`, `agent_id`.
