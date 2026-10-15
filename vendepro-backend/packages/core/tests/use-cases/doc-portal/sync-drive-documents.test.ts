@@ -68,7 +68,7 @@ function deps(over: {
     },
     store: {
       listTree: vi.fn().mockResolvedValue(over.items ?? tree()),
-      download: vi.fn().mockResolvedValue({ base64: 'AAAA', mimeType: 'application/pdf' }),
+      download: vi.fn().mockResolvedValue({ data: new Blob(['%PDF']), mimeType: 'application/pdf' }),
     },
     classifier: {
       classify: over.classify ?? vi.fn().mockResolvedValue({ docType: 'dni', issuedAt: null, authorization: null, observations: null }),
@@ -197,6 +197,19 @@ describe('SyncDriveDocumentsUseCase', () => {
     expect(r!.unreadable).toBe(1)
   })
 
+  it('la autorización de la IA sólo cuenta si el documento es una autorización', async () => {
+    const d = deps({
+      items: tree([item({ id: 'a', name: 'scan.pdf', parentId: 'f-prop' })]),
+      classify: vi.fn().mockResolvedValue({
+        docType: 'titulo', issuedAt: null,
+        authorization: { startDate: '2026-10-08', durationDays: 90, endDate: null, exclusive: null }, observations: null,
+      }),
+    })
+    await run(d)
+    expect(d.created[0]).toMatchObject({ doc_type: 'titulo', extracted_json: null })
+    expect(d.properties.update.mock.calls[0]?.[2] ?? {}).not.toHaveProperty('auth_start_date')
+  })
+
   it('si la IA falla no registra nada: se reintenta la próxima noche', async () => {
     const d = deps({
       items: tree([item({ id: 'a', name: 'a.pdf', parentId: 'f-prop' })]),
@@ -215,10 +228,20 @@ describe('SyncDriveDocumentsUseCase', () => {
       ]),
       classify: vi.fn().mockResolvedValue({
         docType: 'autorizacion_venta', issuedAt: '2026-10-08',
-        authorization: { start_date: '2026-10-08', duration_days: 120 }, observations: null,
+        authorization: { startDate: '2026-10-08', durationDays: 120, endDate: '2027-02-05', exclusive: true },
+        observations: null,
       }),
     })
     const [r] = await run(d)
+    // El nombre de n8n viaja como pista para la IA.
+    expect(d.classifier.classify).toHaveBeenCalledWith(expect.objectContaining({
+      fileName: 'Autorizacion de venta firmada - 2026-10-08.pdf', declaredType: 'autorizacion_venta', mimeType: 'application/pdf',
+    }))
+    expect(d.documents.createFromDrive).toHaveBeenCalledWith(expect.objectContaining({ drive_file_id: 'a', classified_by: 'ia' }))
+    const saved = d.created.find((x: any) => x.drive_file_id === 'a')
+    expect(JSON.parse(saved.extracted_json).authorization).toMatchObject({
+      start_date: '2026-10-08', duration_days: 120, terms: { exclusive: true, endDate: '2027-02-05' },
+    })
     expect(d.properties.update).toHaveBeenCalledTimes(1)
     const [id, org, patch] = d.properties.update.mock.calls[0]!
     expect([id, org]).toEqual(['prop-1', 'org-1'])
@@ -234,7 +257,8 @@ describe('SyncDriveDocumentsUseCase', () => {
       properties: [property({ auth_start_date: '2026-05-01' })],
       items: tree([item({ id: 'a', name: 'autorizacion.pdf', parentId: 'f-prop' })]),
       classify: vi.fn().mockResolvedValue({
-        docType: 'autorizacion_venta', issuedAt: null, authorization: { start_date: '2026-10-08', duration_days: 90 }, observations: null,
+        docType: 'autorizacion_venta', issuedAt: null,
+        authorization: { startDate: '2026-10-08', durationDays: 90, endDate: null, exclusive: null }, observations: null,
       }),
     })
     const [r] = await run(d)

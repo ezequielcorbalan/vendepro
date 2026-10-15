@@ -3,6 +3,7 @@ import {
   parseN8nDocName,
   documentValidUntil,
   planAuthorizationUpdate,
+  authorizationFromTerms,
   isIgnoredFolderName,
   normalizeAddress,
   matchFolderToProperty,
@@ -63,6 +64,31 @@ describe('planAuthorizationUpdate', () => {
 
   it('sin fecha leída no hace nada', () => {
     expect(planAuthorizationUpdate({ auth_start_date: null, auth_duration_days: null }, null)).toEqual({ patch: null, conflict: null })
+  })
+})
+
+describe('authorizationFromTerms', () => {
+  it('inicio y plazo pasan tal cual', () => {
+    expect(authorizationFromTerms({ startDate: '2026-10-08', durationDays: 120, endDate: null })).toEqual({
+      start_date: '2026-10-08', duration_days: 120,
+    })
+  })
+
+  it('sin plazo, lo deduce del fin', () => {
+    expect(authorizationFromTerms({ startDate: '2026-10-08', durationDays: null, endDate: '2027-04-06' })).toEqual({
+      start_date: '2026-10-08', duration_days: 180,
+    })
+  })
+
+  it('sin inicio, lo deduce del fin y el plazo', () => {
+    expect(authorizationFromTerms({ startDate: null, durationDays: 90, endDate: '2027-01-06' })).toEqual({
+      start_date: '2026-10-08', duration_days: 90,
+    })
+  })
+
+  it('sin inicio deducible no hay autorización', () => {
+    expect(authorizationFromTerms({ startDate: null, durationDays: 90, endDate: null })).toBeNull()
+    expect(authorizationFromTerms(null)).toBeNull()
   })
 })
 

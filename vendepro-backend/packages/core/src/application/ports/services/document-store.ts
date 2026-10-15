@@ -17,7 +17,8 @@ export interface DriveItem {
 }
 
 export interface DownloadedFile {
-  base64: string
+  /** El contenido tal cual: el clasificador recibe un Blob (contrato de `DocumentClassifier`). */
+  data: Blob
   mimeType: string
 }
 

@@ -68,6 +68,35 @@ export interface ExtractedAuthorization {
   duration_days: number | null
 }
 
+/**
+ * Lo que lee el clasificador (`AuthorizationTerms`: inicio, plazo, fin,
+ * exclusiva) → inicio + plazo, que es lo que guarda la propiedad.
+ * Sin inicio pero con fin y plazo, el inicio se deduce; sin plazo pero con
+ * inicio y fin, el plazo también. Sin inicio deducible no hay nada que cargar.
+ */
+export function authorizationFromTerms(
+  terms: { startDate: string | null; durationDays: number | null; endDate: string | null } | null,
+): ExtractedAuthorization | null {
+  if (!terms) return null
+  const start = ymdToUtc(terms.startDate)
+  const end = ymdToUtc(terms.endDate)
+  const days = terms.durationDays && terms.durationDays > 0 ? Math.round(terms.durationDays) : null
+
+  if (start !== null) {
+    const fromEnd = end !== null && end > start ? Math.round((end - start) / 86_400_000) : null
+    return { start_date: terms.startDate!.slice(0, 10), duration_days: days ?? fromEnd }
+  }
+  if (end !== null && days !== null) {
+    return { start_date: new Date(end - days * 86_400_000).toISOString().slice(0, 10), duration_days: days }
+  }
+  return null
+}
+
+function ymdToUtc(value: string | null | undefined): number | null {
+  const m = value ? /^(\d{4})-(\d{2})-(\d{2})/.exec(value) : null
+  return m ? Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null
+}
+
 export interface AuthorizationPlan {
   /** Qué escribir en la propiedad, o null si no hay que tocar nada. */
   patch: { auth_start_date: string; auth_duration_days?: number } | null

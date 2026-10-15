@@ -4,7 +4,7 @@ import type { PropertyRepository } from '../../ports/repositories/property-repos
 import type { NotificationRepository } from '../../ports/repositories/notification-repository'
 import type { IdGenerator } from '../../ports/id-generator'
 import type { DocumentStore, DriveItem } from '../../ports/services/document-store'
-import type { DocumentClassifier } from '../../ports/services/document-classifier'
+import type { AuthorizationTerms, DocumentClassifier } from '../../ports/services/document-classifier'
 import type { Property } from '../../../domain/entities/property'
 import type { PropertyDocument } from '../../../domain/entities/doc-portal'
 import { Notification } from '../../../domain/entities/notification'
@@ -16,6 +16,7 @@ import {
 } from '../../../domain/entities/drive-documents'
 import { applyDocumentToDocStatus, type DocType } from '../../../domain/rules/document-checklist'
 import {
+  authorizationFromTerms,
   documentValidUntil,
   isIgnoredFolderName,
   matchFolderToProperty,
@@ -69,6 +70,8 @@ interface Classified {
   docType: DocType
   issuedAt: string | null
   authorization: ExtractedAuthorization | null
+  /** Lo que leyó la IA de la autorización, entero (fin, exclusiva), para extracted_json. */
+  authorizationTerms: AuthorizationTerms | null
   observations: string | null
   classifiedBy: 'nombre_n8n' | 'ia' | 'sin_leer'
 }
@@ -210,7 +213,9 @@ export class SyncDriveDocumentsUseCase {
         observations: classified.observations,
         size_bytes: file.sizeBytes,
         valid_until: documentValidUntil(classified.docType, classified.issuedAt),
-        extracted_json: classified.authorization ? JSON.stringify({ authorization: classified.authorization }) : null,
+        extracted_json: classified.authorization
+          ? JSON.stringify({ authorization: { ...classified.authorization, terms: classified.authorizationTerms } })
+          : null,
         classified_by: classified.classifiedBy,
         drive_modified_at: file.modifiedTime,
         created_at: nowIso,
@@ -264,7 +269,10 @@ export class SyncDriveDocumentsUseCase {
     // Lo que ya clasificó n8n no gasta IA. La autorización sí: el nombre trae
     // la fecha de firma, no el plazo del mandato.
     if (parsed && parsed.docType !== 'autorizacion_venta') {
-      return { docType: parsed.docType, issuedAt: parsed.issuedAt, authorization: null, observations, classifiedBy: 'nombre_n8n' }
+      return {
+        docType: parsed.docType, issuedAt: parsed.issuedAt, authorization: null, authorizationTerms: null,
+        observations, classifiedBy: 'nombre_n8n',
+      }
     }
 
     const readable = isReadableMime(file.mimeType)
@@ -273,6 +281,7 @@ export class SyncDriveDocumentsUseCase {
         docType: parsed?.docType ?? 'otro',
         issuedAt: parsed?.issuedAt ?? null,
         authorization: null,
+        authorizationTerms: null,
         observations: !readable
           ? 'Formato que no se lee automáticamente: revisalo a mano.'
           : 'Pesa más de 15 MB: no se lee automáticamente, revisalo a mano.',
@@ -287,15 +296,26 @@ export class SyncDriveDocumentsUseCase {
       if (!content) {
         return {
           docType: parsed?.docType ?? 'otro', issuedAt: parsed?.issuedAt ?? null, authorization: null,
+          authorizationTerms: null,
           observations: 'No se pudo descargar para leerlo: revisalo a mano.', classifiedBy: 'sin_leer',
         }
       }
-      const c = await this.deps.classifier.classify({ base64: content.base64, mimeType: content.mimeType, fileName: file.name })
+      // Si n8n ya dijo qué era, va como pista; su tipo manda y la IA aporta las fechas.
+      // El clasificador TIRA ante errores del proveedor (red, 429, 5xx): cae en el
+      // catch y se reintenta la próxima pasada en vez de quedar registrado como 'otro'.
+      const c = await this.deps.classifier.classify({
+        data: content.data,
+        mimeType: content.mimeType,
+        fileName: file.name,
+        declaredType: parsed?.docType ?? null,
+      })
+      const docType = parsed?.docType ?? c.docType
+      const terms = docType === 'autorizacion_venta' ? c.authorization : null
       return {
-        // Si n8n ya dijo qué era, su tipo manda; la IA aporta las fechas.
-        docType: parsed?.docType ?? c.docType,
+        docType,
         issuedAt: c.issuedAt ?? parsed?.issuedAt ?? null,
-        authorization: c.authorization,
+        authorization: authorizationFromTerms(terms),
+        authorizationTerms: terms,
         observations: c.observations ?? observations,
         classifiedBy: 'ia',
       }

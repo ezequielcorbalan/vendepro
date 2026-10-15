@@ -109,7 +109,9 @@ cada org la activa en Automatizaciones.
 
 ## Parte 2 — Barrido de Drive → checklist ✅ implementada (15-oct-2026)
 
-Rama `claude/documentacion-drive-sync`. Sin frontend todavía (ver "Pendiente" abajo).
+Rama `claude/documentacion-drive-sync`, **rebasada sobre `claude/documentacion-drive-propio`**
+(motor propio del portal): reusa su `DocumentClassifier` en vez de tener uno propio, así que se
+mergea **después** de esa rama. Sin frontend todavía (ver "Pendiente" abajo).
 
 ### Datos — migración `063_documentacion_drive.sql`
 
@@ -141,10 +143,14 @@ agrega el mail de la cuenta de servicio como *Lector* de su unidad. Nada de Marc
   - `isIgnoredFolderName`: MODELOS, PLANTILLAS, REVISAR, VENDIDAS, CANCELADOS, Downloads,
     "Sin identificar", ALQUILERES, más lo que diga `ignore` en la config.
   - `documentValidUntil`: informes de dominio e inhibición, 30 días.
+  - `authorizationFromTerms`: lo que lee el clasificador (inicio, plazo, fin, exclusiva) → inicio +
+    plazo; deduce el que falte a partir del fin.
   - `planAuthorizationUpdate`: sólo completa vacíos; si la propiedad tiene otra fecha, devuelve un
     conflicto para avisar.
-- Puertos: `DocumentStore` (sólo lectura: `listTree`, `download`), `DocumentClassifier`,
-  `DriveFolderRepository`, y `PropertyDocumentRepository` suma `listDriveIndex`,
+- Puertos: `DocumentStore` (sólo lectura: `listTree`, `download` → `Blob`), `DriveFolderRepository`,
+  el `DocumentClassifier` **compartido con el portal** (contrato del motor propio: `Blob` +
+  `declaredType` como pista; tira ante errores del proveedor y sólo devuelve `otro` para lo que no
+  reconoce, que es lo que deja reintentar el barrido), y `PropertyDocumentRepository` suma `listDriveIndex`,
   `listByOrgAndSource`, `createFromDrive`, `updateFromDrive`.
 - `SyncDriveDocumentsUseCase` (`use-cases/doc-portal/sync-drive-documents.ts`):
   1. Lista el árbol entero. Carpeta de propiedad = hija directa de un área; los archivos se asignan
@@ -172,10 +178,9 @@ agrega el mail de la cuenta de servicio como *Lector* de su unidad. Nada de Marc
 - `GoogleDriveDocumentStore`: JWT RS256 firmado con WebCrypto → token `drive.readonly`;
   `files.list` con `corpora=drive` y `pageSize=1000`; los Google Docs se exportan a PDF; no descarga
   lo que pasa el tope.
-- `GeminiDocumentClassifier`: API nativa de Gemini (`gemini-3.5-flash-lite`, el mismo modelo de
-  api-ai), PDF/imagen inline, catálogo cerrado de 17 tipos, fechas y plazo validados (se descartan
-  fechas imposibles y plazos de más de 10 años). Le pide no copiar datos personales en las
-  observaciones.
+- `GeminiDocumentClassifier`: el del motor propio del portal (API nativa de Gemini, PDF/imagen
+  inline, catálogo cerrado). El barrido le pasa el tipo del nombre de n8n como `declaredType`, y guarda
+  en `extracted_json` los términos completos de la autorización (fin, exclusiva).
 - `D1DriveFolderRepository` y los métodos nuevos de `D1PropertyDocumentRepository`.
 - `createDriveDocumentsSync(env)` / `runDriveDocumentsSync(env)`: sin `GOOGLE_DRIVE_SA_KEY` no corre;
   sin `GEMINI_API_KEY` registra sólo lo que trae nombre de n8n.

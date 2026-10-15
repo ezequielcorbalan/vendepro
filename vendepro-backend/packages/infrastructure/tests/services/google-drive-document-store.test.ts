@@ -83,7 +83,7 @@ describe('GoogleDriveDocumentStore', () => {
     expect(fetchFn.mock.calls.filter(([u]) => String(u).includes('oauth2')).length).toBe(1)
   })
 
-  it('descarga en base64; los Google Docs se exportan a PDF', async () => {
+  it('descarga el contenido; los Google Docs se exportan a PDF', async () => {
     const fetchFn = vi.fn(async (url: string) => {
       if (url.includes('oauth2')) return json({ access_token: 'tok', expires_in: 3600 })
       if (url.includes('/export?')) return new Response(new Uint8Array([1, 2, 3]))
@@ -92,10 +92,12 @@ describe('GoogleDriveDocumentStore', () => {
     const store = new GoogleDriveDocumentStore(key, fetchFn as any)
     const base = { name: 'x', parentId: 'f', isFolder: false, modifiedTime: 't', webViewLink: null, description: null }
 
-    await expect(store.download({ ...base, id: 'a', mimeType: 'application/pdf', sizeBytes: 4 }, 100))
-      .resolves.toEqual({ base64: btoa('hola'), mimeType: 'application/pdf' })
-    await expect(store.download({ ...base, id: 'g', mimeType: 'application/vnd.google-apps.document', sizeBytes: null }, 100))
-      .resolves.toEqual({ base64: btoa(String.fromCharCode(1, 2, 3)), mimeType: 'application/pdf' })
+    const pdf = await store.download({ ...base, id: 'a', mimeType: 'application/pdf', sizeBytes: 4 }, 100)
+    expect(pdf?.mimeType).toBe('application/pdf')
+    expect(await pdf!.data.text()).toBe('hola')
+    const doc = await store.download({ ...base, id: 'g', mimeType: 'application/vnd.google-apps.document', sizeBytes: null }, 100)
+    expect(doc?.mimeType).toBe('application/pdf')
+    expect(Array.from(new Uint8Array(await doc!.data.arrayBuffer()))).toEqual([1, 2, 3])
   })
 
   it('no descarga lo que pesa de más ni lo que no se lee', async () => {

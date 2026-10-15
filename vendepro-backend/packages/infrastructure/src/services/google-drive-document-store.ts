@@ -82,7 +82,7 @@ export class GoogleDriveDocumentStore implements DocumentStore {
     if (Number.isFinite(declared) && declared > maxBytes) return null
     const buffer = await res.arrayBuffer()
     if (buffer.byteLength > maxBytes) return null
-    return { base64: toBase64(buffer), mimeType }
+    return { data: new Blob([buffer], { type: mimeType }), mimeType }
   }
 
   private async authorized(url: string): Promise<Response> {
@@ -172,10 +172,6 @@ function base64Url(text: string): string {
 
 function base64UrlBytes(bytes: Uint8Array): string {
   return bytesToBase64(bytes).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_')
-}
-
-function toBase64(buffer: ArrayBuffer): string {
-  return bytesToBase64(new Uint8Array(buffer))
 }
 
 /** En trozos: String.fromCharCode(...bytes) revienta el stack con un PDF de varios MB. */
