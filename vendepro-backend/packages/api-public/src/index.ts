@@ -878,14 +878,21 @@ app.post('/v1/inbox/messages', async (c) => {
 const NOMBRE_CANAL: Record<string, string> = { whatsapp: 'WhatsApp', instagram: 'Instagram', facebook: 'Messenger' }
 
 /**
- * A quién asignar cuando el bot manda `assignee_id`: un usuario de VendéPro o
- * un agente de KiteProp (el bot asigna al agente de la propiedad, y lo saca de
+ * A quién asignar cuando el bot manda `assignee_id`: un usuario de VendéPro
+ * (id o email) o un agente de KiteProp (el bot asigna al agente de la propiedad, y lo saca de
  * KiteProp). Lo segundo se resuelve con el mapeo de agentes que ya se carga en
  * Configuración → Conexiones → KiteProp.
  */
 async function resolverAgente(env: Env, orgId: string, pedido: string): Promise<string | null> {
-  const usuario = await new D1UserRepository(env.DB).findById(pedido, orgId).catch(() => null)
+  const usuarios = new D1UserRepository(env.DB)
+  const usuario = await usuarios.findById(pedido, orgId).catch(() => null)
   if (usuario) return usuario.id
+  // Un email (ej. el "asignar a Gastón" de respaldo del bot): sin depender de
+  // un id de VendéPro escrito en n8n. Tiene que ser de ESTA org.
+  if (pedido.includes('@')) {
+    const porEmail = await usuarios.findByEmail(pedido).catch(() => null)
+    return porEmail && porEmail.org_id === orgId ? porEmail.id : null
+  }
   const kiteprop = await new D1OrgIntegrationRepository(env.DB).findByOrgAndProvider(orgId, 'kiteprop').catch(() => null)
   const config = (kiteprop?.getConfig() ?? {}) as { agent_map?: Record<string, string> }
   const mapa = config.agent_map ?? {}
