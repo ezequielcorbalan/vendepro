@@ -35,6 +35,8 @@ interface Reservation {
 interface Props {
   propertyId: string
   propertyAddress: string
+  /** Cargar la reserva pasa la propiedad a "Reservada": la ficha recarga su etapa. */
+  onPropertyChanged?: () => void
 }
 
 const EMPTY_FORM = {
@@ -50,7 +52,7 @@ const todayYmd = () => new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().s
  * entrega. Lo mismo que ve el propietario en su portal, con las acciones para
  * ir avanzando.
  */
-export default function ReservationCard({ propertyId, propertyAddress }: Props) {
+export default function ReservationCard({ propertyId, propertyAddress, onPropertyChanged }: Props) {
   const { toast } = useToast()
   const { confirmDialog, askConfirm } = useConfirm()
   const [loading, setLoading] = useState(true)
@@ -112,9 +114,15 @@ export default function ReservationCard({ propertyId, propertyAddress }: Props) 
             method: 'POST',
             body: JSON.stringify({ ...payload, property_id: propertyId, property_address: propertyAddress }),
           })
-      if (!res.ok) throw new Error(((await res.json().catch(() => ({}))) as any)?.error || 'No se pudo guardar')
+      const j = (await res.json().catch(() => ({}))) as any
+      if (!res.ok) throw new Error(j?.error || 'No se pudo guardar')
       setModalOpen(false)
-      toast(reservation ? 'Reserva actualizada' : 'Reserva cargada')
+      if (j?.property_reserved) {
+        toast('Reserva cargada · la propiedad pasó a Reservada')
+        onPropertyChanged?.()
+      } else {
+        toast(reservation ? 'Reserva actualizada' : 'Reserva cargada')
+      }
       await load()
     } catch (err) {
       toast((err as Error).message, 'error')

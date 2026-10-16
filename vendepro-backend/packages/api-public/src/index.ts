@@ -33,6 +33,7 @@ import {
   D1AgentProfileRepository,
   D1MetaIntegrationRepository,
   D1DocPortalLinkRepository,
+  D1StageHistoryRepository,
   D1PropertyDocumentRepository,
   D1ReservationRepository,
   N8nDocumentIntakeGateway,
@@ -78,6 +79,7 @@ import {
   FinishDocPortalSessionUseCase,
   NativeDocumentIntakeGateway,
   EngineRoutingIntakeGateway,
+  MarkPropertyReservedUseCase,
 } from '@vendepro/core'
 
 type Env = {
@@ -1257,6 +1259,7 @@ app.post('/public/docs/:token/upload', async (c) => {
     new D1OrgIntegrationRepository(db),
     docIntakeGateway(c.env),
     new CryptoIdGenerator(),
+    new MarkPropertyReservedUseCase(new D1PropertyRepository(db), new D1StageHistoryRepository(db), new D1LeadRepository(db)),
   )
   const declared = form?.get('tipo_declarado')
   const result = await uc.execute(

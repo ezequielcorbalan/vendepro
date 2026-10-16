@@ -1,8 +1,10 @@
-import { SyncDriveDocumentsUseCase } from '@vendepro/core'
+import { MarkPropertyReservedUseCase, SyncDriveDocumentsUseCase } from '@vendepro/core'
 import { D1DriveFolderRepository, D1PropertyDocumentRepository } from '../repositories/d1-doc-portal-repository'
 import { D1OrgIntegrationRepository } from '../repositories/d1-org-integration-repository'
 import { D1PropertyRepository } from '../repositories/d1-property-repository'
 import { D1NotificationRepository } from '../repositories/d1-notification-repository'
+import { D1StageHistoryRepository } from '../repositories/d1-stage-history-repository'
+import { D1LeadRepository } from '../repositories/d1-lead-repository'
 import { CryptoIdGenerator } from './crypto-id-generator'
 import { GoogleDriveDocumentStore, parseServiceAccountKey } from './google-drive-document-store'
 import { GeminiDocumentClassifier } from './gemini-document-classifier'
@@ -31,6 +33,12 @@ export function createDriveDocumentsSync(env: DriveDocsEnv): SyncDriveDocumentsU
     properties: new D1PropertyRepository(env.DB),
     notifications: new D1NotificationRepository(env.DB),
     ids: new CryptoIdGenerator(),
+    // Una reserva leída en la carpeta pasa la propiedad a "Reservada".
+    reserve: new MarkPropertyReservedUseCase(
+      new D1PropertyRepository(env.DB),
+      new D1StageHistoryRepository(env.DB),
+      new D1LeadRepository(env.DB),
+    ),
   })
 }
 

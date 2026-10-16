@@ -5,6 +5,7 @@ import type { OrganizationRepository } from '../../ports/repositories/organizati
 import type { UserRepository } from '../../ports/repositories/user-repository'
 import type { ReservationRepository } from '../../ports/repositories/reservation-repository'
 import type { ReportRepository } from '../../ports/repositories/report-repository'
+import type { MarkPropertyReservedUseCase } from '../properties/mark-property-reserved'
 import type { IdGenerator } from '../../ports/id-generator'
 import type { DocumentIntakeGateway, DocumentIntakeFile } from '../../ports/services/document-intake-gateway'
 import type { AuthorizationTerms } from '../../ports/services/document-classifier'
@@ -247,6 +248,8 @@ export class UploadPortalDocumentUseCase {
     private readonly integrations: OrgIntegrationRepository,
     private readonly gateway: DocumentIntakeGateway,
     private readonly ids: IdGenerator,
+    /** Si el propietario sube la reserva firmada, la propiedad pasa a "Reservada". */
+    private readonly reserve?: MarkPropertyReservedUseCase,
   ) {}
 
   async execute(
@@ -329,6 +332,19 @@ export class UploadPortalDocumentUseCase {
       if (Object.keys(patch).length > 0) await this.properties.update(property.id, link.org_id, patch)
     } catch (err) {
       console.error('[doc-portal] no se pudo actualizar doc_status_json', err)
+    }
+
+    if (recognized && docType === 'reserva' && this.reserve) {
+      try {
+        await this.reserve.execute({
+          orgId: link.org_id,
+          propertyId: property.id,
+          triggeredBy: 'system',
+          reason: `El propietario subió la reserva por el portal: ${doc.original_name}`,
+        })
+      } catch (err) {
+        console.error('[doc-portal] no se pudo pasar a reservada', err)
+      }
     }
 
     return {

@@ -1,7 +1,8 @@
 import { Hono } from 'hono'
-import { corsMiddleware, errorHandler, createAuthMiddleware, D1ReservationRepository, D1StageHistoryRepository, JwtAuthService, CryptoIdGenerator, fireMarketingEvent } from '@vendepro/infrastructure'
+import { corsMiddleware, errorHandler, createAuthMiddleware, D1ReservationRepository, D1StageHistoryRepository, D1PropertyRepository, D1LeadRepository, JwtAuthService, CryptoIdGenerator, fireMarketingEvent } from '@vendepro/infrastructure'
 import {
   GetReservationsUseCase, CreateReservationUseCase, AdvanceReservationStageUseCase, computeReservationMilestones,
+  MarkPropertyReservedUseCase,
 } from '@vendepro/core'
 
 type Env = { DB: D1Database; JWT_SECRET: string }
@@ -46,6 +47,26 @@ app.post('/reservations', async (c) => {
   const orgId = c.get('orgId')
   const reservationAgentId = body.agent_id || c.get('userId')
   const result = await useCase.execute({ ...body, org_id: orgId, agent_id: reservationAgentId })
+  // Cargar la reserva de una propiedad la pasa a "Reservada" (si estaba antes en
+  // el pipeline): no hace falta cambiar la etapa aparte. Si falla, la reserva
+  // igual quedó creada.
+  let propertyReserved = false
+  if (typeof body.property_id === 'string' && body.property_id) {
+    try {
+      const out = await new MarkPropertyReservedUseCase(
+        new D1PropertyRepository(c.env.DB), historyRepo, new D1LeadRepository(c.env.DB),
+      ).execute({
+        orgId,
+        propertyId: body.property_id,
+        changedBy: c.get('userId'),
+        triggeredBy: 'user',
+        reason: 'Se cargó la reserva',
+      })
+      propertyReserved = out.moved
+    } catch (err) {
+      console.error('[reservations] no se pudo pasar la propiedad a reservada', err)
+    }
+  }
   // Hook marketing: evento `reservation_created`.
   const mk = await fireMarketingEvent(c.env, {
     orgId,
@@ -63,7 +84,7 @@ app.post('/reservations', async (c) => {
     },
     actionSource: 'system_generated',
   })
-  return c.json({ ...result, marketing: mk ?? null }, 201)
+  return c.json({ ...result, property_reserved: propertyReserved, marketing: mk ?? null }, 201)
 })
 
 app.put('/reservations/stage', async (c) => {

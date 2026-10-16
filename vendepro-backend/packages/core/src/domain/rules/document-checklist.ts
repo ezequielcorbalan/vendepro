@@ -24,6 +24,9 @@ export const DOC_TYPES = [
   'factura_gas',
   'aysa',
   'usufructo',
+  // No es documentación que se le pide al propietario: leerla mueve la
+  // propiedad a "Reservada" (ver reserved-property.ts).
+  'reserva',
   'otro',
 ] as const
 
@@ -54,6 +57,7 @@ export const DOC_TYPE_LABELS: Record<DocType, string> = {
   factura_gas: 'Factura de gas',
   aysa: 'Factura de AySA',
   usufructo: 'Usufructo',
+  reserva: 'Reserva firmada (oferta aceptada)',
   otro: 'Otro documento',
 }
 
@@ -63,6 +67,9 @@ export const DOC_TYPE_LABELS: Record<DocType, string> = {
  * como trámite interno.
  */
 export const INTERNAL_DOC_TYPES: DocType[] = ['informe_dominio', 'informe_inhibicion']
+
+/** Tipos que se reconocen pero no son parte del checklist de documentación. */
+export const NON_CHECKLIST_TYPES: DocType[] = ['reserva']
 
 export interface DocChecklistInput {
   operation: DocOperation
@@ -229,7 +236,7 @@ export function applyDocumentToDocStatus(
   const data = parseDocStatus(raw)
   let changed = false
 
-  if (isDocType(doc.type) && doc.type !== 'otro') {
+  if (isDocType(doc.type) && doc.type !== 'otro' && !NON_CHECKLIST_TYPES.includes(doc.type)) {
     let key = DOC_STATUS_KEY_BY_TYPE[doc.type]
     if (!key) {
       key = `doc_${doc.type}`

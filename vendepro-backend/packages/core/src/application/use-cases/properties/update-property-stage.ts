@@ -1,6 +1,6 @@
 import type { PropertyRepository } from '../../ports/repositories/property-repository'
 import type { LeadRepository } from '../../ports/repositories/lead-repository'
-import type { StageHistoryRepository } from '../../ports/repositories/stage-history-repository'
+import type { StageHistoryRepository, StageHistoryTrigger } from '../../ports/repositories/stage-history-repository'
 import type { PropertyStageValue } from '../../../domain/value-objects/property-stage'
 import { PropertyStage } from '../../../domain/value-objects/property-stage'
 import type { LeadStageValue } from '../../../domain/value-objects/lead-stage'
@@ -15,6 +15,8 @@ export interface UpdatePropertyStageInput {
   notes?: string | null
   /** Cambio manual libre: saltea la máquina de transiciones (pipeline comercial). */
   override?: boolean
+  /** Quién lo disparó, para el historial. Default 'user'. */
+  triggeredBy?: StageHistoryTrigger
 }
 
 export interface UpdatePropertyStageOutput {
@@ -48,7 +50,7 @@ export class UpdatePropertyStageUseCase {
         to_stage: input.newStage,
         changed_by: input.changedBy,
         notes: input.notes ?? null,
-        triggered_by: 'user',
+        triggered_by: input.triggeredBy ?? 'user',
       })
     }
 
