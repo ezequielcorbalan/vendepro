@@ -21,7 +21,7 @@ describe('MetaAdsInsightsHttp', () => {
     await new MetaAdsInsightsHttp().getCampaignInsights(INPUT)
 
     const url = new URL(fn.mock.calls[0][0] as string)
-    expect(url.pathname).toBe('/v17.0/act_123456/insights')
+    expect(url.pathname).toBe('/v24.0/act_123456/insights')
     expect(url.searchParams.get('level')).toBe('campaign')
     expect(url.searchParams.get('access_token')).toBe('tok')
     expect(JSON.parse(url.searchParams.get('time_range')!)).toEqual({ since: '2026-07-01', until: '2026-07-06' })

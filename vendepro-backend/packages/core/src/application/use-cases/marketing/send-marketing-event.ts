@@ -17,6 +17,8 @@ export interface MarketingUserData {
   client_ip_address?: string | null
   client_user_agent?: string | null
   external_id?: string | null
+  /** ID que Meta Lead Ads le dio al lead. Se manda tal cual como `user_data.lead_id`. */
+  meta_lead_id?: string | null
 }
 
 export interface SendMarketingEventInput {
@@ -60,6 +62,16 @@ export interface SendMarketingEventOutput {
 }
 
 const ACTION_SOURCE_DEFAULT: MetaEventPayload['action_source'] = 'system_generated'
+
+/** Nombre del CRM que la API de conversiones para CRM espera en `lead_event_source`. */
+const CRM_NAME = 'VendéPro'
+
+/** Meta rechaza el evento entero si `lead_id` no es su formato: mejor no mandarlo. */
+function normalizeMetaLeadId(s: string | null | undefined): string | null {
+  if (!s) return null
+  const t = s.trim()
+  return /^\d{15,17}$/.test(t) ? t : null
+}
 
 async function sha256Hex(input: string): Promise<string> {
   const enc = new TextEncoder()
@@ -176,6 +188,9 @@ export class SendMarketingEventUseCase {
       stage_key: input.eventKey,
       entity_type: entityType ?? 'unknown',
       ...(entityId ? { entity_id: entityId } : {}),
+      // API de conversiones para CRM: Meta sólo trata el evento como etapa de un
+      // lead si trae estas dos marcas.
+      ...(entityType === 'lead' ? { event_source: 'crm', lead_event_source: CRM_NAME } : {}),
       ...(input.customData ?? {}),
     }
 
@@ -194,6 +209,7 @@ export class SendMarketingEventUseCase {
       hashedFn,
       hashedLn,
       externalId,
+      metaLeadId: normalizeMetaLeadId(userData?.meta_lead_id),
       customData,
       clientIp: userData?.client_ip_address ?? null,
       clientUa: userData?.client_user_agent ?? null,
@@ -241,6 +257,7 @@ export class SendMarketingEventUseCase {
     hashedFn: string | null
     hashedLn: string | null
     externalId: string | null
+    metaLeadId: string | null
     customData: Record<string, unknown>
     clientIp: string | null
     clientUa: string | null
@@ -265,6 +282,7 @@ export class SendMarketingEventUseCase {
     if (args.externalId) user_data.external_id = [args.externalId]
     if (args.clientIp) user_data.client_ip_address = args.clientIp
     if (args.clientUa) user_data.client_user_agent = args.clientUa
+    if (args.metaLeadId) user_data.lead_id = args.metaLeadId
 
     const log = MetaEventLog.create({
       id: this.ids.generate(),

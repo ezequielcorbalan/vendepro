@@ -3,12 +3,13 @@ import type {
   SendMetaEventInput,
   SendMetaEventResult,
 } from '@vendepro/core'
+import { META_GRAPH_API_VERSION } from '@vendepro/core'
 
 /**
  * HTTP adapter para Meta Conversion API.
  *
  * Endpoint:
- *   ${endpoint}/v17.0/${pixelId}/events?access_token=${token}[&test_event_code=...]
+ *   ${endpoint}/${META_GRAPH_API_VERSION}/${pixelId}/events?access_token=${token}[&test_event_code=...]
  *
  * Default endpoint: https://graph.facebook.com
  * Stape (server-side GTM) puede sobrescribirlo.
@@ -22,7 +23,7 @@ export class MetaConversionAPIHttp implements MetaConversionAPI {
     if (!input.pixelId) return { ok: false, status: 0, body: '', error: 'pixelId is required' }
     if (!input.accessToken) return { ok: false, status: 0, body: '', error: 'accessToken is required' }
 
-    const url = new URL(`${endpoint}/v17.0/${input.pixelId}/events`)
+    const url = new URL(`${endpoint}/${META_GRAPH_API_VERSION}/${input.pixelId}/events`)
     url.searchParams.set('access_token', input.accessToken)
     if (input.testEventCode) url.searchParams.set('test_event_code', input.testEventCode)
 

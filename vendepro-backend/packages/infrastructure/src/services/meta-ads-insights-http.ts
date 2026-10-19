@@ -9,12 +9,13 @@ import type {
   GetAdsResult,
   AdCreativeInfo,
 } from '@vendepro/core'
+import { META_GRAPH_API_VERSION } from '@vendepro/core'
 
 /**
  * HTTP adapter para Meta Marketing API (Ads Insights).
  *
  * Endpoint:
- *   GET https://graph.facebook.com/v17.0/act_{id}/insights
+ *   GET https://graph.facebook.com/${META_GRAPH_API_VERSION}/act_{id}/insights
  *       ?level=campaign&fields=...&time_range={"since","until"}
  *
  * Requiere token con permiso `ads_read` sobre el ad account.
@@ -34,7 +35,7 @@ export class MetaAdsInsightsHttp implements MetaAdsInsightsService {
     if (!input.accessToken) return { ok: false, status: 0, campaigns: [], error: 'accessToken is required' }
 
     const account = input.adAccountId.startsWith('act_') ? input.adAccountId : `act_${input.adAccountId}`
-    const url = new URL(`https://graph.facebook.com/v17.0/${account}/insights`)
+    const url = new URL(`https://graph.facebook.com/${META_GRAPH_API_VERSION}/${account}/insights`)
     url.searchParams.set('level', 'campaign')
     url.searchParams.set('fields', 'campaign_id,campaign_name,spend,impressions,clicks,actions,account_currency')
     url.searchParams.set('time_range', JSON.stringify({ since: input.since, until: input.until }))
@@ -91,7 +92,7 @@ export class MetaAdsInsightsHttp implements MetaAdsInsightsService {
     if (!input.accessToken) return { ok: false, status: 0, insights: [], error: 'accessToken is required' }
 
     const account = input.adAccountId.startsWith('act_') ? input.adAccountId : `act_${input.adAccountId}`
-    const url = new URL(`https://graph.facebook.com/v17.0/${account}/insights`)
+    const url = new URL(`https://graph.facebook.com/${META_GRAPH_API_VERSION}/${account}/insights`)
     url.searchParams.set('level', 'ad')
     url.searchParams.set('time_increment', '1')
     url.searchParams.set('fields', [
@@ -163,7 +164,7 @@ export class MetaAdsInsightsHttp implements MetaAdsInsightsService {
     if (!input.accessToken) return { ok: false, status: 0, ads: [], error: 'accessToken is required' }
 
     const account = input.adAccountId.startsWith('act_') ? input.adAccountId : `act_${input.adAccountId}`
-    const url = new URL(`https://graph.facebook.com/v17.0/${account}/ads`)
+    const url = new URL(`https://graph.facebook.com/${META_GRAPH_API_VERSION}/${account}/ads`)
     url.searchParams.set('fields', [
       'id', 'name', 'status', 'campaign_id', 'adset_id',
       'creative{thumbnail_url,title,body,effective_object_story_id,object_story_spec}',

@@ -61,6 +61,27 @@ MarketingSenderFactory.execute({ org_id, stage_key, entity_id, ... })
 
 Ver `infrastructure/src/services/marketing-sender-factory.ts` y [[Servicios-externos]].
 
+### API de conversiones para CRM (Meta)
+
+Desde 2026-10-19 los eventos de **lead** (`entityType === 'lead'`) salen con el formato que pide la
+API de conversiones para CRM de Meta (la que deja optimizar campañas de Lead Ads por una etapa
+real del CRM, ej. `captado`, en vez de por "formulario enviado"):
+
+- `action_source: 'system_generated'` (ya era el default).
+- `custom_data.event_source: 'crm'` y `custom_data.lead_event_source: 'VendéPro'`.
+- `user_data.lead_id`: el ID que Meta Lead Ads le dio al lead (15–17 dígitos, sin hashear, como
+  string). Entra por `userData.meta_lead_id`; si no tiene ese formato se descarta en vez de mandarse
+  (Meta rechazaría el evento entero).
+
+⚠️ **Hoy nadie completa `meta_lead_id`**: falta el webhook `leadgen` que traiga los leads de los
+formularios de Meta y guarde su ID (columna nueva en `leads`). Hasta entonces el match sigue siendo
+por email/teléfono hasheados. Además, Meta espera un conjunto de datos por inmobiliaria y la config
+hoy es por agente.
+
+La versión de la Graph API vive en una sola constante, `META_GRAPH_API_VERSION`
+(`core/src/application/ports/services/meta-conversion-api.ts`, hoy `v24.0`), que usan CAPI, insights
+de anuncios y mensajería. Antes eran `v17.0` (vencida) y `v21.0` sueltas.
+
 ## Eventos típicos mapeables
 
 - `lead_created`, `lead_calificado`, `lead_perdido`
