@@ -80,6 +80,21 @@ deja constancia.
   el catálogo desde la migración 043 sin que ningún worker lo disparara.
 - UI: botón "Delegar" en `/leads/[id]` → `components/leads/DelegateLeadModal`
   (agente + instrucción opcional que viaja en el aviso).
+- **Reparto en lote**: en la lista `/leads` cada card tiene un checkbox (sólo
+  sobre los leads que uno puede delegar) y aparece una barra con "Delegar".
+  Manda `{ids: [...]}` al mismo endpoint, que llama a `executeMany`. Un lead
+  solo va como `{id}` para que los problemas vuelvan como error HTTP; en lote
+  **nada corta la tanda**: lo que no se pudo mover vuelve en `failed`
+  (`sin_permiso` / `no_encontrado`) y el toast lo dice. Tope de 100 por request.
+- **El aviso es uno por tanda, no uno por lead**: cinco leads delegados juntos
+  son una decisión, no cinco, y cinco campanazos se leen como ruido. Con un solo
+  lead el aviso es idéntico al de la ficha (nombre + link directo); con varios,
+  el link va a `/leads?agent=<id>`. La **constancia sí va por lead**, que es
+  donde después se la busca.
+- **No hay reparto automático y es a propósito** (decisión de producto, 22-sep-2026):
+  el lead que entra es del dueño hasta que decide dárselo a alguien. La acción
+  `assign_lead` del catálogo (`implemented: false`) y la receta "Lead de portal"
+  de la migración 044 (`is_active = 0`) quedan como están.
 - Se arregló de paso la campana (`NotificationBell`): pegaba a `api-crm` cuando
   el endpoint vive en `api-admin` y esperaba `{notifications}` en vez de un
   array, así que nunca mostró nada.
