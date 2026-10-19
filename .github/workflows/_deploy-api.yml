@@ -25,6 +25,10 @@ on:
         required: false
       GOOGLE_DRIVE_SA_KEY:
         required: false
+      META_APP_SECRET:
+        required: false
+      META_VERIFY_TOKEN:
+        required: false
       SMOKE_EMAIL:
         required: true
       SMOKE_PASSWORD:
@@ -94,6 +98,8 @@ jobs:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           GOOGLE_DRIVE_SA_KEY: ${{ secrets.GOOGLE_DRIVE_SA_KEY }}
+          META_APP_SECRET: ${{ secrets.META_APP_SECRET }}
+          META_VERIFY_TOKEN: ${{ secrets.META_VERIFY_TOKEN }}
         run: |
           # sync <NOMBRE> <valor>: sube el secret si tiene valor y, si no, lo dice.
           # El silencio era el problema: ANTHROPIC_API_KEY estuvo AUSENTE del worker
@@ -120,6 +126,11 @@ jobs:
           # Lectura de Drive para el checklist de documentación: api-properties.
           # Clave JSON de una cuenta de servicio de SOLO LECTURA (drive.readonly).
           sync GOOGLE_DRIVE_SA_KEY "$GOOGLE_DRIVE_SA_KEY"
+          # Webhook de Meta (bandeja de Instagram/Facebook y formularios de Lead
+          # Ads): api-public. El app secret valida la firma; el verify token es
+          # el que se carga en la configuración del webhook en Meta.
+          sync META_APP_SECRET "$META_APP_SECRET"
+          sync META_VERIFY_TOKEN "$META_VERIFY_TOKEN"
 
   smoke:
     name: Production smoke (${{ inputs.api_name }})
