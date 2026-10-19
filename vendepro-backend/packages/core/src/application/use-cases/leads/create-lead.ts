@@ -25,6 +25,7 @@ export interface CreateLeadInput {
   budget?: number | null
   timing?: string | null
   contact_id?: string | null
+  meta_lead_id?: string | null
 }
 
 export class CreateLeadUseCase {
@@ -60,6 +61,7 @@ export class CreateLeadUseCase {
       lost_reason: null,
       first_contact_at: null,
       contact_id: input.contact_id ?? null,
+      meta_lead_id: input.meta_lead_id ?? null,
     })
 
     await this.leadRepo.save(lead)

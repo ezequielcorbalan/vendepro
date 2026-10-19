@@ -73,10 +73,10 @@ real del CRM, ej. `captado`, en vez de por "formulario enviado"):
   string). Entra por `userData.meta_lead_id`; si no tiene ese formato se descarta en vez de mandarse
   (Meta rechazaría el evento entero).
 
-⚠️ **Hoy nadie completa `meta_lead_id`**: falta el webhook `leadgen` que traiga los leads de los
-formularios de Meta y guarde su ID (columna nueva en `leads`). Hasta entonces el match sigue siendo
-por email/teléfono hasheados. Además, Meta espera un conjunto de datos por inmobiliaria y la config
-hoy es por agente.
+El ID lo guarda el webhook `leadgen` en `leads.meta_lead_id` (migración 065, ver [[Dominio-Leads]]):
+el alta manda `lead_created` con el ID, y en cada cambio de etapa el caso de uso lo lee del lead.
+Los leads que no vinieron de un formulario de Meta siguen matcheando por email/teléfono hasheados.
+Ojo: Meta espera un conjunto de datos por inmobiliaria y la config hoy es por agente.
 
 La versión de la Graph API vive en una sola constante, `META_GRAPH_API_VERSION`
 (`core/src/application/ports/services/meta-conversion-api.ts`, hoy `v24.0`), que usan CAPI, insights

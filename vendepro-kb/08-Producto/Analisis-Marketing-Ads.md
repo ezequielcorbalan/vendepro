@@ -112,7 +112,7 @@ Los portales son **inventario de demanda**, no un canal de marketing: se pagan p
 | 13 | **Cero histórico**: todo es fetch en vivo con cache de 15 min. Sin tablas `ad_*` ni cron de pull no hay serie temporal, no se puede ver cómo venía el CPL, y cada cambio de período es otra llamada contra un endpoint que ratelimitea fuerte | no existe |
 | 14 | **Panel org-level, Ad Account por agente**: `/marketing/campaigns` usa `c.get('userId')` → cada usuario ve las campañas de *su* ad account, mientras el resto de la pantalla muestra los leads de *toda la org*. F0 alineó el badge de integración al mismo usuario; la solución de fondo (varias cuentas por org) es F2 | 🟡 parcial |
 | 15 | 🐛 El badge "Meta activo" consulta `meta_integration WHERE org_id = ?` con `.first()` sobre una tabla cuya PK es `agent_id` → puede mostrar la config de otro agente | ✅ **arreglado en F0** |
-| 16 | **Sin ingesta de Lead Ads**: no hay webhook `leadgen` de Meta. Un formulario nativo no entra al CRM salvo export manual o n8n contra `POST /v1/leads` | grep vacío |
+| 16 | **Sin ingesta de Lead Ads**: no hay webhook `leadgen` de Meta. Un formulario nativo no entra al CRM salvo export manual o n8n contra `POST /v1/leads` | ✅ **webhook `leadgen` hecho** (19-oct-2026, migración 065) |
 | 17 | **Google Ads no existe**: cero código. GA4 Measurement Protocol ≠ Google Ads: sirve para analítica, no alimenta al optimizador de la pauta | grep vacío |
 | 18 | Ninguna acción sobre la pauta: no se puede pausar, ajustar presupuesto, ni duplicar nada desde acá. El link "Abrir Meta Ads" es una salida, no una función | `marketing/page.tsx:344` |
 

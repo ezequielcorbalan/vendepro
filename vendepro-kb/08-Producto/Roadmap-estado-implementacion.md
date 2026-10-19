@@ -61,7 +61,7 @@ Todo el núcleo está en producción con backend + UI:
 - 8 hooks vivos: lead_created, stage del lead, appraisal_created, reservation_created/stage, visit_form, ficha pública, landing lead/pageview.
 - Config **por agente** desde la migración 040 (la PK de `meta_integration` pasó de `org_id` a `agent_id`).
 - UI completa en `configuracion/marketing/page.tsx` (tabs config/mappings/log/email).
-- Eventos de lead con el formato de la **API de conversiones para CRM** (`event_source`, `lead_event_source`, `user_data.lead_id`) y Graph API unificada en `v24.0` — 2026-10-19. Falta el webhook `leadgen` que guarde el ID de Meta del lead; sin eso `lead_id` no sale. Ver [[Dominio-Marketing]].
+- Eventos de lead con el formato de la **API de conversiones para CRM** (`event_source`, `lead_event_source`, `user_data.lead_id`) y Graph API unificada en `v24.0` — 2026-10-19. Webhook `leadgen` de Lead Ads implementado el mismo día (migración 065): los formularios de Meta entran solos al CRM con su ID. Falta migración + deploy + configurar la app de Meta. Ver [[Dominio-Leads]].
 
 **La deuda que el roadmap llama "requiere pulir"** (confirmada en código):
 1. `custom_data` hardcodeado: `currency: 'USD'` fijo, sin `content_type/content_ids` ni datos de propiedad (`send-marketing-event.ts:173-180`).

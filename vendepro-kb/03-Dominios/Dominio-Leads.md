@@ -49,6 +49,7 @@ Métodos: `advanceStage(newStage)`, `update(data)`, `getUrgency()`, `getChecklis
 - Índices: `(org_id, stage)`, `assigned_to`, `created_at`
 - FKs: `assigned_to → users(id)`, `contact_id → contacts(id)`
 - M:N con tags vía `lead_tags`
+- `meta_lead_id` (migración 065): ID de Meta Lead Ads si el lead entró por un formulario de Facebook/Instagram. Índice único parcial `(org_id, meta_lead_id)`.
 
 ## Use cases
 
@@ -97,6 +98,30 @@ Sin migración. Hay que deployar **api-crm**.
 - `GET /stage-history?entity_type=lead&entity_id=...`
 
 Captura pública: `POST /public/leads` en [[API-public]] (con `X-API-Key`).
+
+## Formularios de Meta Lead Ads (19-oct-2026)
+
+Los leads de los formularios instantáneos de Facebook/Instagram entran solos por el webhook
+`leadgen`, en el **mismo** endpoint que la bandeja de Meta (`POST /public/inbox/meta` de [[API-public]],
+firma `X-Hub-Signature-256`). Llegan en `entry[].changes[]` con sólo IDs; los datos se piden con
+`GET /{leadgen_id}` usando el page access token de la org (`org_integrations`, provider `instagram`).
+
+- Use case `IngestMetaLeadUseCase` (`core/.../use-cases/meta-leads/`), port `MetaLeadAdsGateway`,
+  adapter `MetaLeadAdsHttp` (pide campaña y anuncio; si el token no tiene `ads_read`, reintenta sin eso).
+- Dedup por `meta_lead_id` (Meta reintenta el webhook).
+- Dueño = primer admin de la org, etapa `nuevo` — el reparto sigue siendo manual.
+- `source` = `facebook` | `instagram` según `platform`; `source_detail` = nombre de la campaña (la clave con
+  la que [[Dominio-Marketing]] cruza gasto y leads); las preguntas propias del formulario van a `notes`.
+- Dispara `lead_created` de marketing (con el ID de Meta), webhook `lead.created` y automatizaciones.
+- Cada cambio de etapa posterior le informa a Meta el `lead_id` (API de conversiones para CRM): el
+  fallback de `SendMarketingEventUseCase` lo lee del lead.
+- Los IDs llegan como número en el JSON; `protegerIdsLargosMeta` los pasa a string antes de parsear.
+- Mapeo página → org: `config_json.account_id` o el nuevo `config_json.page_id` (cuando `account_id` es la
+  cuenta de Instagram).
+
+**Para que ande**: migración 065, deploy de api-public y api-crm, page access token con `leads_retrieval`
+(y `ads_read` para ver la campaña), suscribir la página al campo `leadgen` en la app de Meta, y cargar
+`page_id` en la integración si `account_id` es de Instagram.
 
 ## Frontend
 

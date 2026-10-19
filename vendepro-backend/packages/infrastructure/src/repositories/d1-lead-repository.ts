@@ -35,8 +35,8 @@ export class D1LeadRepository implements LeadRepository {
       INSERT INTO leads (id, org_id, full_name, phone, email, source, source_detail, property_address,
         neighborhood, property_type, operation, pipeline, stage, assigned_to, notes, estimated_value, budget,
         timing, personas_trabajo, mascotas, next_step, next_step_date, lost_reason, first_contact_at,
-        contact_id, created_at, updated_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        contact_id, meta_lead_id, created_at, updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
       ON CONFLICT(id) DO UPDATE SET
         stage=excluded.stage, assigned_to=excluded.assigned_to, notes=excluded.notes,
         estimated_value=excluded.estimated_value, budget=excluded.budget, timing=excluded.timing,
@@ -51,8 +51,16 @@ export class D1LeadRepository implements LeadRepository {
       o.property_address, o.neighborhood, o.property_type, o.operation, o.pipeline, o.stage,
       o.assigned_to, o.notes, o.estimated_value, o.budget, o.timing, o.personas_trabajo,
       o.mascotas, o.next_step, o.next_step_date, o.lost_reason, o.first_contact_at,
-      o.contact_id ?? null, o.created_at, o.updated_at
+      o.contact_id ?? null, o.meta_lead_id ?? null, o.created_at, o.updated_at
     ).run()
+  }
+
+  async findByMetaLeadId(metaLeadId: string, orgId: string): Promise<Lead | null> {
+    const row = await this.db
+      .prepare(`SELECT l.*, u.full_name as assigned_name FROM leads l LEFT JOIN users u ON l.assigned_to = u.id WHERE l.meta_lead_id = ? AND l.org_id = ?`)
+      .bind(metaLeadId, orgId)
+      .first() as any
+    return row ? this.toEntity(row) : null
   }
 
   async delete(id: string, orgId: string): Promise<void> {
@@ -151,6 +159,7 @@ export class D1LeadRepository implements LeadRepository {
       mascotas: row.mascotas, next_step: row.next_step, next_step_date: row.next_step_date,
       lost_reason: row.lost_reason, first_contact_at: row.first_contact_at,
       contact_id: row.contact_id ?? null,
+      meta_lead_id: row.meta_lead_id ?? null,
       created_at: row.created_at, updated_at: row.updated_at,
       assigned_name: row.assigned_name,
     })

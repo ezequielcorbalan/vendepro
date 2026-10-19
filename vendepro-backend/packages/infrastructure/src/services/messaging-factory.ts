@@ -89,6 +89,11 @@ interface WhatsAppConfig {
   api_version?: string
   /** Id de la cuenta de Instagram / página que recibe los webhooks. */
   account_id?: string
+  /**
+   * Id de la página de Facebook, cuando `account_id` es la cuenta de Instagram.
+   * Los formularios de Lead Ads (webhook `leadgen`) llegan siempre por la página.
+   */
+  page_id?: string
 }
 
 export function parseConfig(raw: string | null): WhatsAppConfig {
