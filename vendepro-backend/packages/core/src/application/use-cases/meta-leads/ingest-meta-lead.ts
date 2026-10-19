@@ -28,8 +28,51 @@ export type IngestMetaLeadResult =
       notes: string | null
     }
 
-/** Claves estándar de Meta que van a columnas propias, no a las notas. */
-const CAMPOS_PROPIOS = new Set(['full_name', 'first_name', 'last_name', 'email', 'phone_number', 'phone'])
+/**
+ * Qué pregunta del formulario es el nombre, el teléfono o el email.
+ *
+ * Las preguntas estándar de Meta llegan con clave en inglés (`full_name`,
+ * `phone_number`), pero muchos formularios usan preguntas propias en castellano
+ * (`nombre`, `número_de_teléfono`). Se comparan normalizadas: sin tildes, en
+ * minúscula y con `_` en lugar de espacios y signos.
+ */
+const NOMBRE_COMPLETO = new Set(['full_name', 'nombre_completo', 'nombre_y_apellido', 'nombre_y_apellidos', 'nombre_apellido'])
+const NOMBRE = new Set(['first_name', 'nombre', 'name'])
+const APELLIDO = new Set(['last_name', 'apellido', 'apellidos'])
+const ES_TELEFONO = /phone|telefono|celular|whatsapp|movil/
+const ES_EMAIL = /email|correo/
+
+function normalizarClave(clave: string): string {
+  return clave
+    .normalize('NFD').replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+}
+
+interface CamposConocidos {
+  nombreCompleto?: string
+  nombre?: string
+  apellido?: string
+  telefono?: string
+  email?: string
+  /** Lo que no es nombre/teléfono/email: va a las notas, con la clave original. */
+  resto: Array<[string, string]>
+}
+
+function clasificar(campos: Map<string, string>): CamposConocidos {
+  const out: CamposConocidos = { resto: [] }
+  for (const [clave, valor] of campos) {
+    const k = normalizarClave(clave)
+    if (NOMBRE_COMPLETO.has(k) && !out.nombreCompleto) out.nombreCompleto = valor
+    else if (NOMBRE.has(k) && !out.nombre) out.nombre = valor
+    else if (APELLIDO.has(k) && !out.apellido) out.apellido = valor
+    else if (ES_EMAIL.test(k) && !out.email) out.email = valor
+    else if (ES_TELEFONO.test(k) && !out.telefono) out.telefono = valor
+    else out.resto.push([clave, valor])
+  }
+  return out
+}
 
 /**
  * Da de alta en el CRM un lead que llegó por un formulario de Meta Lead Ads.
@@ -59,10 +102,10 @@ export class IngestMetaLeadUseCase {
     const admin = await this.userRepo.findFirstAdminByOrg(input.orgId)
     if (!admin) throw new ValidationError('Organización sin administrador configurado')
 
-    const campos = aplanarCampos(data)
+    const campos = clasificar(aplanarCampos(data))
     const fullName = nombreDe(campos, data)
-    const email = campos.get('email') ?? null
-    const phone = campos.get('phone_number') ?? campos.get('phone') ?? null
+    const email = campos.email ?? null
+    const phone = campos.telefono ?? null
     const source = data.platform === 'ig' ? 'instagram' : 'facebook'
     const sourceDetail = data.campaign_name?.trim() || null
     const notes = notasDe(campos, data)
@@ -112,21 +155,17 @@ function aplanarCampos(data: MetaLeadData): Map<string, string> {
   return campos
 }
 
-function nombreDe(campos: Map<string, string>, data: MetaLeadData): string {
-  const completo = campos.get('full_name')
-    ?? [campos.get('first_name'), campos.get('last_name')].filter(Boolean).join(' ')
+function nombreDe(campos: CamposConocidos, data: MetaLeadData): string {
+  const completo = campos.nombreCompleto
+    ?? [campos.nombre, campos.apellido].filter(Boolean).join(' ')
   // Un formulario sin pregunta de nombre es válido en Meta; el lead igual tiene
   // que poder entrar (Lead exige al menos 2 caracteres).
   if (completo && completo.trim().length >= 2) return completo.trim()
   return data.platform === 'ig' ? 'Lead de Instagram' : 'Lead de Facebook'
 }
 
-function notasDe(campos: Map<string, string>, data: MetaLeadData): string | null {
-  const lineas: string[] = []
-  for (const [clave, valor] of campos) {
-    if (CAMPOS_PROPIOS.has(clave)) continue
-    lineas.push(`${clave.replace(/_/g, ' ')}: ${valor}`)
-  }
+function notasDe(campos: CamposConocidos, data: MetaLeadData): string | null {
+  const lineas = campos.resto.map(([clave, valor]) => `${clave.replace(/_/g, ' ')}: ${valor}`)
   const origen = [data.campaign_name && `campaña "${data.campaign_name}"`, data.ad_name && `anuncio "${data.ad_name}"`]
     .filter(Boolean)
     .join(', ')
