@@ -57,4 +57,39 @@ describe('SendMarketingEventUseCase — por agente', () => {
     const savedLog = d.logs.save.mock.calls[0][0]
     expect(savedLog.agent_id).toBe('ag1')
   })
+
+  it('evento de lead: manda lead_id de Meta y las marcas de la API de conversiones para CRM', async () => {
+    const d = makeDeps(enabledIntegration)
+    await build(d).execute({
+      orgId: 'org', agentId: 'ag1', eventKey: 'captado', entityType: 'lead', entityId: 'l1',
+      userData: { email: 'a@b.com', meta_lead_id: ' 1234567890123456 ' },
+    })
+    const { payload } = d.metaApi.sendEvent.mock.calls[0][0]
+    expect(payload.action_source).toBe('system_generated')
+    expect(payload.user_data.lead_id).toBe('1234567890123456')
+    expect(payload.custom_data).toEqual(expect.objectContaining({
+      event_source: 'crm', lead_event_source: 'VendéPro',
+    }))
+  })
+
+  it('descarta un lead_id que no tiene formato de Meta', async () => {
+    const d = makeDeps(enabledIntegration)
+    await build(d).execute({
+      orgId: 'org', agentId: 'ag1', eventKey: 'captado', entityType: 'lead', entityId: 'l1',
+      userData: { email: 'a@b.com', meta_lead_id: 'abc123' },
+    })
+    const { payload } = d.metaApi.sendEvent.mock.calls[0][0]
+    expect(payload.user_data.lead_id).toBeUndefined()
+  })
+
+  it('eventos que no son de lead no llevan las marcas de CRM', async () => {
+    const d = makeDeps(enabledIntegration)
+    await build(d).execute({
+      orgId: 'org', agentId: 'ag1', eventKey: 'appraisal_created', entityType: 'appraisal', entityId: 'a1',
+      userData: { email: 'a@b.com' },
+    })
+    const { payload } = d.metaApi.sendEvent.mock.calls[0][0]
+    expect(payload.custom_data.event_source).toBeUndefined()
+    expect(payload.custom_data.lead_event_source).toBeUndefined()
+  })
 })

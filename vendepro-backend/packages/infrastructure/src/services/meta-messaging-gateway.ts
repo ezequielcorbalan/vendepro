@@ -1,4 +1,5 @@
 import type { MessagingGateway, SendMessageInput, SendMessageResult } from '@vendepro/core'
+import { META_GRAPH_API_VERSION } from '@vendepro/core'
 
 /** Tope de Meta para un mensaje de texto de Instagram. */
 const MAX_TEXTO = 1000
@@ -38,7 +39,7 @@ export class MetaMessagingGateway implements MessagingGateway {
     }
 
     const base = this.config.baseUrl ?? 'https://graph.facebook.com'
-    const version = this.config.apiVersion ?? 'v21.0'
+    const version = this.config.apiVersion ?? META_GRAPH_API_VERSION
     const url = `${trimSlash(base)}/${version}/me/messages?access_token=${encodeURIComponent(this.config.pageAccessToken)}`
 
     const res = await fetch(url, {
