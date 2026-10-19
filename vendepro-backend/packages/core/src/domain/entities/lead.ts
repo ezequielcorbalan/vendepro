@@ -30,6 +30,8 @@ export interface LeadProps {
   lost_reason: string | null
   first_contact_at: string | null
   contact_id?: string | null
+  /** ID que Meta Lead Ads le dio al lead, si entró por un formulario de Meta. */
+  meta_lead_id?: string | null
   created_at: string
   updated_at: string
   // Computed
@@ -87,6 +89,7 @@ export class Lead {
   get lost_reason() { return this.props.lost_reason }
   get first_contact_at() { return this.props.first_contact_at }
   get contact_id() { return this.props.contact_id ?? null }
+  get meta_lead_id() { return this.props.meta_lead_id ?? null }
   get created_at() { return this.props.created_at }
   get updated_at() { return this.props.updated_at }
   get source() { return this.props.source }

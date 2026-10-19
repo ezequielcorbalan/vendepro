@@ -28,6 +28,7 @@ import {
   fireWebhookEvent,
   D1ConversationRepository, D1MessageRepository, createMessagingGateway,
   D1OrgIntegrationRepository, verificarFirmaMeta, parsearWebhookMeta, parseConfig, META_PROVIDER,
+  parsearLeadgenMeta, protegerIdsLargosMeta, MetaLeadAdsHttp,
   esWebhookWaha, parsearWebhookWaha, D1NotificationRepository,
   fireAutomationEvent,
   D1AgentProfileRepository,
@@ -65,6 +66,7 @@ import {
   GetPublicAgentLandingUseCase,
   GetPublicTagConfigUseCase,
   IngestInboundMessageUseCase,
+  IngestMetaLeadUseCase,
   NotifyInboxUseCase,
   type IngestInboundMessageResult,
   GetConversationThreadUseCase,
@@ -452,20 +454,28 @@ app.post('/public/inbox/meta', async (c) => {
   const firmaOk = await verificarFirmaMeta(raw, c.req.header('X-Hub-Signature-256') ?? null, appSecret)
   if (!firmaOk) return c.text('Firma inválida', 401)
 
-  const payload = JSON.parse(raw || '{}')
+  const payload = JSON.parse(protegerIdsLargosMeta(raw || '{}'))
   const mensajes = parsearWebhookMeta(payload)
-  if (mensajes.length === 0) return c.json({ ok: true, ingeridos: 0 })
+  const leadgens = parsearLeadgenMeta(payload)
+  if (mensajes.length === 0 && leadgens.length === 0) return c.json({ ok: true, ingeridos: 0 })
 
   // Meta manda todo por un solo webhook, sin decir de qué organización es: la
   // cuenta que recibió el mensaje (`entry.id`) es lo que lo ata a una org.
+  // `page_id` es para cuando `account_id` es la cuenta de Instagram: los
+  // formularios de Lead Ads siempre llegan con el ID de la página de Facebook.
   const integraciones = await new D1OrgIntegrationRepository(c.env.DB)
     .findEnabledByProvider(META_PROVIDER)
     .catch(() => [])
   const orgPorCuenta = new Map<string, string>()
+  const tokenPorOrg = new Map<string, string | null>()
   for (const i of integraciones) {
-    const cuenta = parseConfig(i.config_json).account_id
-    if (cuenta) orgPorCuenta.set(String(cuenta), i.org_id)
+    const config = parseConfig(i.config_json)
+    if (config.account_id) orgPorCuenta.set(String(config.account_id), i.org_id)
+    if (config.page_id) orgPorCuenta.set(String(config.page_id), i.org_id)
+    tokenPorOrg.set(i.org_id, i.credentials_encrypted)
   }
+
+  const leadsCreados = await ingerirLeadgens(c.env, leadgens, orgPorCuenta, tokenPorOrg)
 
   const uc = ingestor(c.env)
 
@@ -499,8 +509,95 @@ app.post('/public/inbox/meta', async (c) => {
 
   // Siempre 200 salvo firma inválida: un 500 hace que Meta reintente en loop
   // y termine dando de baja la suscripción del webhook.
-  return c.json({ ok: true, ingeridos })
+  return c.json({ ok: true, ingeridos, leads: leadsCreados })
 })
+
+/**
+ * Formularios de Meta Lead Ads → leads del CRM. Cada lead se procesa aparte y
+ * un error no corta el resto ni cambia el 200 del webhook: si uno falla queda
+ * en el log y se puede recuperar desde la página (Meta guarda los leads 90 días).
+ */
+async function ingerirLeadgens(
+  env: Env,
+  leadgens: ReturnType<typeof parsearLeadgenMeta>,
+  orgPorCuenta: Map<string, string>,
+  tokenPorOrg: Map<string, string | null>,
+): Promise<number> {
+  if (leadgens.length === 0) return 0
+  const uc = new IngestMetaLeadUseCase(
+    new MetaLeadAdsHttp(),
+    new D1LeadRepository(env.DB),
+    new D1ContactRepository(env.DB),
+    new D1UserRepository(env.DB),
+    new CryptoIdGenerator(),
+  )
+
+  let creados = 0
+  for (const l of leadgens) {
+    const orgId = orgPorCuenta.get(l.pageId)
+    if (!orgId) continue
+    try {
+      const cifrado = tokenPorOrg.get(orgId)
+      const token = cifrado ? await decrypt(cifrado, env.JWT_SECRET) : null
+      if (!token) {
+        console.error(`[leadgen] org ${orgId} sin page access token: no se puede leer el lead ${l.leadgenId}`)
+        continue
+      }
+
+      const r = await uc.execute({ orgId, leadgenId: l.leadgenId, pageAccessToken: token })
+      if (r.duplicate) continue
+      creados++
+
+      // API de conversiones para CRM: el primer evento ya lleva el ID de Meta.
+      await fireMarketingEvent(env, {
+        orgId,
+        agentId: r.assigned_to,
+        eventKey: 'lead_created',
+        entityType: 'lead',
+        entityId: r.lead_id,
+        leadId: r.lead_id,
+        userData: {
+          full_name: r.full_name,
+          email: r.email,
+          phone: r.phone,
+          meta_lead_id: l.leadgenId,
+        },
+        customData: { source: r.source, source_detail: r.source_detail },
+        actionSource: 'system_generated',
+      })
+
+      const admin = await new D1UserRepository(env.DB).findById(r.assigned_to, orgId).catch(() => null)
+      await fireWebhookEvent(env, {
+        orgId,
+        event: 'lead.created',
+        payload: {
+          lead: {
+            id: r.lead_id,
+            full_name: r.full_name,
+            email: r.email,
+            phone: r.phone,
+            operation: 'otro',
+            source: r.source,
+            source_detail: r.source_detail,
+            notes: r.notes,
+            assigned_agent: admin ? { name: admin.name ?? null, email: admin.email ?? null } : null,
+            property: null,
+          },
+        },
+      })
+
+      await fireAutomationEvent(env, {
+        orgId,
+        trigger: 'lead.created',
+        entityType: 'lead',
+        entityId: r.lead_id,
+      })
+    } catch (err: any) {
+      console.error(`[leadgen] no se pudo ingresar el lead ${l.leadgenId} de la org ${orgId}: ${err?.message ?? err}`)
+    }
+  }
+  return creados
+}
 
 // ── INBOX: CONTRATO DEL BOT (/v1/conversations/*) ──────────────
 // Los endpoints que consume el bot de n8n. Las rutas y los nombres de los

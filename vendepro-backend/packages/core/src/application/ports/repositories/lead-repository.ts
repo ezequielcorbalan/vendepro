@@ -35,4 +35,6 @@ export interface LeadRepository {
    * nuevas del mismo contacto suman propiedades de interés, no leads.
    */
   findOpenBuyerByContact(contactId: string, orgId: string): Promise<Lead | null>
+  /** Lead que entró por Meta Lead Ads con ese ID. Dedup de los reintentos del webhook `leadgen`. */
+  findByMetaLeadId(metaLeadId: string, orgId: string): Promise<Lead | null>
 }

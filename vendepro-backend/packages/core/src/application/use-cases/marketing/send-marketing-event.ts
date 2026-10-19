@@ -166,6 +166,7 @@ export class SendMarketingEventUseCase {
           email: lead.email,
           phone: lead.phone,
           estimated_value: lead.estimated_value,
+          meta_lead_id: lead.meta_lead_id,
         }
       }
     }

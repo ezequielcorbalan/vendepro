@@ -29,3 +29,4 @@ export type { DocumentIntakeGateway, DocumentIntakeFields, DocumentIntakeFile, D
 export type { DocumentClassifier, DocumentClassifierInput, DocumentClassification, AuthorizationTerms } from './document-classifier'
 export type { CloudDocumentStorage, CloudFolder, CloudFile } from './cloud-document-storage'
 export type { DocumentStore, DriveItem, DownloadedFile } from './document-store'
+export type { MetaLeadAdsGateway, MetaLeadData, MetaLeadField } from './meta-lead-ads-gateway'

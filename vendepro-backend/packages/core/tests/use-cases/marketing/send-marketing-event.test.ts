@@ -93,3 +93,15 @@ describe('SendMarketingEventUseCase — por agente', () => {
     expect(payload.custom_data.lead_event_source).toBeUndefined()
   })
 })
+
+describe('SendMarketingEventUseCase — lead_id de Meta desde la base', () => {
+  it('en un cambio de etapa sin userData toma el meta_lead_id guardado en el lead', async () => {
+    const d = makeDeps(enabledIntegration)
+    d.leads.findById.mockResolvedValue({
+      full_name: 'Ana', email: 'a@b.com', phone: null, estimated_value: null, meta_lead_id: '1234567890123456',
+    })
+    await build(d).execute({ orgId: 'org', agentId: 'ag1', eventKey: 'captado', entityType: 'lead', entityId: 'l1', leadId: 'l1' })
+    const { payload } = d.metaApi.sendEvent.mock.calls[0][0]
+    expect(payload.user_data.lead_id).toBe('1234567890123456')
+  })
+})

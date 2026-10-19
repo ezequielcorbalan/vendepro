@@ -175,6 +175,7 @@ export * from './use-cases/public/get-public-visit-form'
 export * from './use-cases/public/submit-visit-form-response'
 export * from './use-cases/public/get-public-prefactibilidad'
 export * from './use-cases/public/create-public-lead'
+export * from './use-cases/meta-leads/ingest-meta-lead'
 export * from './use-cases/public/get-public-ficha-link'
 export * from './use-cases/public/submit-public-ficha'
 

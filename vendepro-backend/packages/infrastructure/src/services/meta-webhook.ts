@@ -94,3 +94,47 @@ export function parsearWebhookMeta(payload: any): MensajeMeta[] {
 
   return mensajes.filter(m => m.cuentaId && m.remitenteId)
 }
+
+export interface LeadgenMeta {
+  /** Página dueña del formulario. */
+  pageId: string
+  /** ID del lead en Meta: con esto se piden los datos y se informan las etapas. */
+  leadgenId: string
+  formId: string | null
+}
+
+/**
+ * Saca los avisos de lead nuevo (`leadgen`) del webhook de Meta.
+ *
+ * Llegan por el mismo webhook de página que los mensajes, pero en
+ * `entry[].changes[]` y no en `entry[].messaging[]`, y traen sólo IDs: los
+ * datos del formulario se piden aparte.
+ */
+export function parsearLeadgenMeta(payload: any): LeadgenMeta[] {
+  if (payload?.object !== 'page') return []
+  const entradas = Array.isArray(payload?.entry) ? payload.entry : []
+  const leads: LeadgenMeta[] = []
+
+  for (const entrada of entradas) {
+    const cambios = Array.isArray(entrada?.changes) ? entrada.changes : []
+    for (const cambio of cambios) {
+      if (cambio?.field !== 'leadgen') continue
+      const v = cambio.value ?? {}
+      const leadgenId = v.leadgen_id != null ? String(v.leadgen_id) : ''
+      const pageId = String(v.page_id ?? entrada?.id ?? '')
+      if (!leadgenId || !pageId) continue
+      leads.push({ pageId, leadgenId, formId: v.form_id != null ? String(v.form_id) : null })
+    }
+  }
+
+  return leads
+}
+
+/**
+ * Meta manda los IDs de `leadgen` como NÚMEROS en el JSON. Con 17 dígitos
+ * `JSON.parse` los redondea y el ID ya no existe en Meta. Se pasan a string
+ * sobre el texto crudo, antes de parsear (y después de verificar la firma).
+ */
+export function protegerIdsLargosMeta(raw: string): string {
+  return raw.replace(/"(leadgen_id|page_id|form_id|ad_id|adgroup_id)"\s*:\s*(\d+)/g, '"$1":"$2"')
+}

@@ -28,6 +28,7 @@ export interface CreateLeadWithContactInput {
   next_step?: string | null
   next_step_date?: string | null
   contact_id?: string | null
+  meta_lead_id?: string | null
   contact_data?: {
     full_name: string
     phone?: string | null
