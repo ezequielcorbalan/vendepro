@@ -80,6 +80,40 @@ describe('IngestMetaLeadUseCase', () => {
     expect(lead.source_detail).toBeNull()
   })
 
+  it('reconoce nombre, teléfono y email con preguntas en castellano (como el formulario real de Marcela)', async () => {
+    const { uc, leadRepo } = build({ lead: {
+      id: '3', created_time: null, form_id: 'f1', campaign_name: null, ad_name: null, platform: 'fb',
+      field_data: [
+        { name: 'nombre', values: ['María López'] },
+        { name: 'número_de_teléfono', values: ['+5491133334444'] },
+        { name: 'correo_electrónico', values: ['maria@mail.com'] },
+        { name: '¿en_que_te_podemos_ayudar?', values: ['Quiero tasar mi depto'] },
+      ],
+    } })
+    await uc.execute({ orgId: 'org1', leadgenId: '3', pageAccessToken: 'tok' })
+    const lead = leadRepo.save.mock.calls[0][0].toObject()
+    expect(lead.full_name).toBe('María López')
+    expect(lead.phone).toBe('+5491133334444')
+    expect(lead.email).toBe('maria@mail.com')
+    expect(lead.notes).toBe('Formulario de Meta\n¿en que te podemos ayudar?: Quiero tasar mi depto')
+  })
+
+  it('arma el nombre con "nombre" + "apellido" y reconoce el celular', async () => {
+    const { uc, leadRepo } = build({ lead: {
+      id: '4', created_time: null, form_id: null, campaign_name: null, ad_name: null, platform: 'ig',
+      field_data: [
+        { name: 'Nombre', values: ['Juan'] },
+        { name: 'Apellido', values: ['Pérez'] },
+        { name: 'celular', values: ['1155556666'] },
+      ],
+    } })
+    await uc.execute({ orgId: 'org1', leadgenId: '4', pageAccessToken: 'tok' })
+    const lead = leadRepo.save.mock.calls[0][0].toObject()
+    expect(lead.full_name).toBe('Juan Pérez')
+    expect(lead.phone).toBe('1155556666')
+    expect(lead.notes).toBe('Formulario de Meta')
+  })
+
   it('falla si la org no tiene admin a quien asignarlo', async () => {
     const { uc } = build({ admin: null })
     await expect(uc.execute({ orgId: 'org1', leadgenId: '1', pageAccessToken: 'tok' })).rejects.toThrow('administrador')
