@@ -14,6 +14,7 @@ import {
   D1NotificationRepository,
   D1ConversationRepository, D1MessageRepository, createMessagingGateway,
   WahaSessionClient, WHATSAPP_PROVIDER, parseConfig, sessionDeOrg,
+  META_PROVIDER, MetaPageConnectorHttp,
   D1OrgIntegrationRepository, D1IntegrationLinkRepository, D1IntegrationSyncLogRepository,
   KitepropMcpClient,
   D1UserIntegrationRepository, GoogleCalendarHttpClient, buildGoogleAuthUrl, GoogleDriveStorage,
@@ -25,7 +26,7 @@ import {
   createMarketingSender, fireMarketingEvent, fireWebhookEvent, resolveAssignedAgent,
   fireAndDrainAutomations, drainAutomationJobs, sweepTimeBasedAutomations,
 } from '@vendepro/infrastructure'
-import { Activity, OrgIntegration, propertyFromIncoming, buildMessageCreatedPayload } from '@vendepro/core'
+import { Activity, OrgIntegration, propertyFromIncoming, buildMessageCreatedPayload, ConnectMetaPageUseCase, ValidationError } from '@vendepro/core'
 import {
   GetGoogleDriveStatusUseCase, ConnectGoogleDriveUseCase, DisconnectGoogleDriveUseCase, GOOGLE_DRIVE_SCOPES,
 } from '@vendepro/core'
@@ -397,6 +398,53 @@ app.put('/integrations/whatsapp', async (c) => {
     created_at: previa?.created_at,
   }))
   return c.json({ ok: true })
+})
+
+// ── CONEXIÓN DE LA PÁGINA DE FACEBOOK (Lead Ads) ──────────────
+// El admin pega el token de un usuario del sistema de su Business Manager; de
+// ahí se saca el token de la página, se la suscribe a los leads y se guarda
+// cifrado. El token pegado no se guarda.
+
+app.get('/integrations/meta', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const integracion = await new D1OrgIntegrationRepository(c.env.DB)
+    .findByOrgAndProvider(c.get('orgId'), META_PROVIDER)
+    .catch(() => null)
+  if (!integracion) return c.json({ configurado: false })
+
+  const config = integracion.getConfig()
+  return c.json({
+    configurado: true,
+    enabled: integracion.enabled,
+    page_id: (config.page_id as string | undefined) ?? null,
+    page_name: (config.page_name as string | undefined) ?? null,
+    tiene_token: !!integracion.credentials_encrypted,
+  })
+})
+
+app.post('/integrations/meta/connect', async (c) => {
+  const denied = requireAdmin(c); if (denied) return denied
+  const body = (await c.req.json().catch(() => null)) as any
+  const uc = new ConnectMetaPageUseCase(
+    new D1OrgIntegrationRepository(c.env.DB),
+    new MetaPageConnectorHttp(),
+    new CryptoIdGenerator(),
+    (plain) => encrypt(plain, c.env.JWT_SECRET),
+  )
+  try {
+    const result = await uc.execute({
+      orgId: c.get('orgId'),
+      provider: META_PROVIDER,
+      userAccessToken: String(body?.token ?? ''),
+      pageId: body?.page_id ? String(body.page_id) : null,
+    })
+    return c.json(result)
+  } catch (err: any) {
+    // Los errores de Meta (token vencido, permiso faltante) los resuelve el
+    // admin si los lee: van como 400 con el motivo, no como un 500 mudo.
+    if (err instanceof ValidationError) throw err
+    return c.json({ error: err?.message ?? 'No se pudo conectar con Meta' }, 400)
+  }
 })
 
 /**

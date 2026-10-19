@@ -119,9 +119,18 @@ firma `X-Hub-Signature-256`). Llegan en `entry[].changes[]` con sólo IDs; los d
 - Mapeo página → org: `config_json.account_id` o el nuevo `config_json.page_id` (cuando `account_id` es la
   cuenta de Instagram).
 
-**Para que ande**: migración 065, deploy de api-public y api-crm, page access token con `leads_retrieval`
-(y `ads_read` para ver la campaña), suscribir la página al campo `leadgen` en la app de Meta, y cargar
-`page_id` en la integración si `account_id` es de Instagram.
+**Conectar la página** (desde 19-oct-2026): Configuración → Conexiones → **Facebook e Instagram**
+(`/configuracion/conexiones/meta`). El admin pega el token de un usuario del sistema del Business Manager;
+`ConnectMetaPageUseCase` lista sus páginas (`GET /me/accounts`), toma el **page token** de la elegida, la
+suscribe a `leadgen` (`POST /{page}/subscribed_apps`) y guarda el page token cifrado + `page_id`/`page_name`
+en `org_integrations` (provider `instagram`, conserva la config de la bandeja). El token pegado no se guarda.
+Rutas `GET /integrations/meta` y `POST /integrations/meta/connect` en [[API-crm]] (sólo admin/owner).
+
+**Configuración en Meta (hecha 19-oct-2026 para Marcela)**: app "Asistente IA Inmobiliaria"
+(985484797782300) con el caso de uso de clientes potenciales; webhook del objeto Page apuntando a
+`/public/inbox/meta` con el campo `leadgen` suscrito. `META_APP_SECRET` y `META_VERIFY_TOKEN` son secrets del
+repo que el deploy de api-public sincroniza. La app tiene que estar **publicada** para recibir leads reales
+(política en `/privacidad`). Usar un usuario del sistema propio ("VendéPro"), no el del bot de n8n.
 
 ## Frontend
 
