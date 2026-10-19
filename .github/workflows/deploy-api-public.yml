@@ -30,5 +30,8 @@ jobs:
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
       GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      # Webhook de Meta: firma (app secret) y alta del webhook (verify token).
+      META_APP_SECRET: ${{ secrets.META_APP_SECRET }}
+      META_VERIFY_TOKEN: ${{ secrets.META_VERIFY_TOKEN }}
       SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}
       SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
