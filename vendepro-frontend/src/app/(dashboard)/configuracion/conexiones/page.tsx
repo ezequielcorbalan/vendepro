@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import {
   Plug, ArrowLeft, Loader2, Save, CheckCircle2, XCircle,
-  RefreshCw, Download, Radio, AlertCircle, History, Calendar, Unplug, Users, Sparkles, MessageSquare,
+  RefreshCw, Download, Radio, AlertCircle, History, Calendar, Unplug, Users, Sparkles, MessageSquare, Facebook,
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/Toast'
@@ -379,6 +379,22 @@ export default function ConexionesPage() {
           </div>
         </div>
         <Button href="/configuracion/conexiones/whatsapp" variant="outline">Configurar</Button>
+      </Card>
+
+      {/* Página de Facebook: los formularios de Lead Ads entran solos como leads. */}
+      <Card className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-control bg-info/10 text-info flex items-center justify-center">
+            <Facebook className="w-5 h-5" />
+          </div>
+          <div className="min-w-0">
+            <Heading level={4}>Facebook e Instagram</Heading>
+            <Text size="sm" tone="muted">
+              Los formularios de tus anuncios entran solos como leads al CRM.
+            </Text>
+          </div>
+        </div>
+        <Button href="/configuracion/conexiones/meta" variant="outline">Configurar</Button>
       </Card>
 
       {/* Google Calendar (personal del usuario) */}
