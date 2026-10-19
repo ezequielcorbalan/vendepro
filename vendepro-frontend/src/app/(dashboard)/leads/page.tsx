@@ -356,7 +356,8 @@ export default function LeadsPage() {
         method: 'POST',
         body: JSON.stringify({ id: lead.id, stage: nextStage })
       })
-      const result = (await res.json()) as any
+      const result = (await res.json().catch(() => ({}))) as any
+      if (!res.ok) { toast(result?.error || 'No se pudo cambiar la etapa', 'error'); return }
       pushFromApiResponse(result, { entity_type: 'lead', entity_id: lead.id, event_name_fallback: nextStage })
       const stageLabel = getStageConfig(nextStage, lead.pipeline).label
       toast(`${lead.full_name} → ${stageLabel}`)
@@ -425,18 +426,26 @@ export default function LeadsPage() {
           reasonPlaceholder: 'Motivo (opcional)',
         })
         if (!confirmed) return
+        // Cerrar un lead vale desde cualquier etapa abierta: `override` como en
+        // la ficha, así la máquina de transiciones no lo frena.
         const r = await apiFetch('crm', '/leads/stage', {
           method: 'POST',
-          body: JSON.stringify({ id: leadId, stage, notes: reason || 'Sin motivo' })
+          body: JSON.stringify({ id: leadId, stage, notes: reason || 'Sin motivo', override: true })
         })
-        pushFromApiResponse(await r.json().catch(() => ({})), { entity_type: 'lead', entity_id: leadId, event_name_fallback: stage })
+        const result = (await r.json().catch(() => ({}))) as any
+        // Sin este chequeo un rechazo de la API mostraba el toast de éxito y el
+        // lead quedaba en su columna sin explicación.
+        if (!r.ok) { toast(result?.error || 'No se pudo cerrar el lead', 'error'); loadLeads(); return }
+        pushFromApiResponse(result, { entity_type: 'lead', entity_id: leadId, event_name_fallback: stage })
         toast(`Lead marcado como ${stage === 'perdido' ? 'perdido' : 'inválido'}`, 'warning')
       } else {
         const r = await apiFetch('crm', '/leads/stage', {
           method: 'POST',
           body: JSON.stringify({ id: leadId, stage })
         })
-        pushFromApiResponse(await r.json().catch(() => ({})), { entity_type: 'lead', entity_id: leadId, event_name_fallback: stage })
+        const result = (await r.json().catch(() => ({}))) as any
+        if (!r.ok) { toast(result?.error || 'No se pudo mover el lead', 'error'); loadLeads(); return }
+        pushFromApiResponse(result, { entity_type: 'lead', entity_id: leadId, event_name_fallback: stage })
         const movedLead = leads.find(l => l.id === leadId)
         const stageLabel = getStageConfig(stage, movedLead?.pipeline).label
         toast(`Movido a ${stageLabel}`)
@@ -475,9 +484,15 @@ export default function LeadsPage() {
     try {
       const r = await apiFetch('crm', '/leads/stage', {
         method: 'POST',
-        body: JSON.stringify({ id: lead.id, stage: 'perdido', notes: reason || 'Sin motivo especificado' })
+        body: JSON.stringify({ id: lead.id, stage: 'perdido', notes: reason || 'Sin motivo especificado', override: true })
       })
-      pushFromApiResponse(await r.json().catch(() => ({})), { entity_type: 'lead', entity_id: lead.id, event_name_fallback: 'perdido' })
+      const result = (await r.json().catch(() => ({}))) as any
+      if (!r.ok) {
+        toast(result?.error || 'No se pudo marcar como no captado', 'error')
+        setSaving(false)
+        return
+      }
+      pushFromApiResponse(result, { entity_type: 'lead', entity_id: lead.id, event_name_fallback: 'perdido' })
       setNotCapturedLead(null)
 
       if (recontactDate) {
@@ -1187,7 +1202,11 @@ function KanbanCard({ lead, onAdvance, onMoveTo }: { lead: any; onAdvance: () =>
       {showMove && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setShowMove(false)} />
-          <div className="absolute right-2 top-full mt-1 z-20 bg-white border rounded-control shadow-pop py-1 min-w-[140px] max-h-60 overflow-y-auto">
+          {/* La columna tiene scroll propio y recorta el menú: en las últimas
+              cards quedaba fuera de vista y "No captado"/"Inválido" (que van al
+              final) no se alcanzaban. Al abrir, se trae a la vista. */}
+          <div ref={el => { el?.scrollIntoView({ block: 'nearest' }) }}
+            className="absolute right-2 top-full mt-1 z-20 bg-white border rounded-control shadow-pop py-1 min-w-[140px] max-h-60 overflow-y-auto">
             {(() => {
               const leadStages = getStagesForPipeline(lead.pipeline === 'comprador' ? 'comprador' : 'vendedor')
               return leadStages.keys.filter(s => s !== lead.stage).map(s => (
