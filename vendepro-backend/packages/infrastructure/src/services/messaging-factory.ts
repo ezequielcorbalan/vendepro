@@ -94,6 +94,8 @@ interface WhatsAppConfig {
    * Los formularios de Lead Ads (webhook `leadgen`) llegan siempre por la página.
    */
   page_id?: string
+  /** Usuario al que se le asignan los leads de los formularios (quien conectó la página). */
+  lead_owner_id?: string
 }
 
 export function parseConfig(raw: string | null): WhatsAppConfig {

@@ -11,6 +11,8 @@ export interface IngestMetaLeadInput {
   /** `leadgen_id` del webhook de Meta. */
   leadgenId: string
   pageAccessToken: string
+  /** Dueño de los leads de Meta (quien conectó la página). Sin él, o si ya no está activo, el primer admin. */
+  ownerId?: string | null
 }
 
 export type IngestMetaLeadResult =
@@ -78,8 +80,8 @@ function clasificar(campos: Map<string, string>): CamposConocidos {
  * Da de alta en el CRM un lead que llegó por un formulario de Meta Lead Ads.
  *
  * - **Dedup por el ID de Meta**: el webhook se reintenta y no puede entrar dos veces.
- * - **Dueño = el admin de la org**, igual que los leads públicos: el reparto
- *   es manual, nadie lo asigna solo.
+ * - **Dueño = quien conectó la página** (o el primer admin si no hay o ya no
+ *   está activo): el reparto es manual, nadie lo asigna solo.
  * - `source_detail` = nombre de la campaña, que es la clave con la que el panel
  *   de Marketing cruza gasto y leads.
  * - Las preguntas propias del formulario quedan en las notas.
@@ -99,7 +101,7 @@ export class IngestMetaLeadUseCase {
 
     const data = await this.gateway.fetchLead(input.leadgenId, input.pageAccessToken)
 
-    const admin = await this.userRepo.findFirstAdminByOrg(input.orgId)
+    const admin = await this.duenio(input.orgId, input.ownerId ?? null)
     if (!admin) throw new ValidationError('Organización sin administrador configurado')
 
     const campos = clasificar(aplanarCampos(data))
@@ -143,6 +145,14 @@ export class IngestMetaLeadUseCase {
       source_detail: sourceDetail,
       notes,
     }
+  }
+
+  private async duenio(orgId: string, ownerId: string | null) {
+    if (ownerId) {
+      const owner = await this.userRepo.findById(ownerId, orgId).catch(() => null)
+      if (owner && owner.active !== 0) return owner
+    }
+    return this.userRepo.findFirstAdminByOrg(orgId)
   }
 }
 

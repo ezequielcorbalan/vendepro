@@ -4,7 +4,7 @@ import { IngestMetaLeadUseCase } from '../../../src/application/use-cases/meta-l
 let n = 0
 const ids = { generate: () => `id_${++n}` }
 
-function build(opts: { existente?: any; admin?: any; lead?: any } = {}) {
+function build(opts: { existente?: any; admin?: any; lead?: any; owner?: any } = {}) {
   const leadRepo = {
     findByMetaLeadId: vi.fn().mockResolvedValue(opts.existente ?? null),
     save: vi.fn().mockResolvedValue(undefined),
@@ -12,6 +12,7 @@ function build(opts: { existente?: any; admin?: any; lead?: any } = {}) {
   const contactRepo = { save: vi.fn().mockResolvedValue(undefined) } as any
   const userRepo = {
     findFirstAdminByOrg: vi.fn().mockResolvedValue(opts.admin === undefined ? { id: 'admin1' } : opts.admin),
+    findById: vi.fn().mockResolvedValue(opts.owner ?? null),
   } as any
   const gateway = {
     fetchLead: vi.fn().mockResolvedValue(opts.lead ?? {
@@ -30,7 +31,7 @@ function build(opts: { existente?: any; admin?: any; lead?: any } = {}) {
     }),
   }
   const uc = new IngestMetaLeadUseCase(gateway, leadRepo, contactRepo, userRepo, ids)
-  return { uc, leadRepo, contactRepo, gateway }
+  return { uc, leadRepo, contactRepo, gateway, userRepo }
 }
 
 describe('IngestMetaLeadUseCase', () => {
@@ -112,6 +113,19 @@ describe('IngestMetaLeadUseCase', () => {
     expect(lead.full_name).toBe('Juan Pérez')
     expect(lead.phone).toBe('1155556666')
     expect(lead.notes).toBe('Formulario de Meta')
+  })
+
+  it('asigna el lead a quien conectó la página', async () => {
+    const { uc, leadRepo, userRepo } = build({ owner: { id: 'gaston', active: 1 } })
+    await uc.execute({ orgId: 'org1', leadgenId: '1234567890123456', pageAccessToken: 'tok', ownerId: 'gaston' })
+    expect(userRepo.findById).toHaveBeenCalledWith('gaston', 'org1')
+    expect(leadRepo.save.mock.calls[0][0].toObject().assigned_to).toBe('gaston')
+  })
+
+  it('si el dueño ya no está activo, vuelve al primer admin', async () => {
+    const { uc, leadRepo } = build({ owner: { id: 'gaston', active: 0 } })
+    await uc.execute({ orgId: 'org1', leadgenId: '1234567890123456', pageAccessToken: 'tok', ownerId: 'gaston' })
+    expect(leadRepo.save.mock.calls[0][0].toObject().assigned_to).toBe('admin1')
   })
 
   it('falla si la org no tiene admin a quien asignarlo', async () => {

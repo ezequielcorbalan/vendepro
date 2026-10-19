@@ -22,7 +22,7 @@ function build(opts: { pages?: typeof PAGINAS; previa?: OrgIntegration | null } 
   return { uc: new ConnectMetaPageUseCase(repo, connector, ids, encrypt), repo, connector }
 }
 
-const BASE = { orgId: 'org1', provider: 'instagram', userAccessToken: 'user-token' }
+const BASE = { orgId: 'org1', provider: 'instagram', userAccessToken: 'user-token', connectedBy: 'gaston' }
 
 describe('ConnectMetaPageUseCase', () => {
   it('con varias páginas y sin elegir, devuelve las opciones sin tokens y no guarda nada', async () => {
@@ -42,7 +42,7 @@ describe('ConnectMetaPageUseCase', () => {
     const guardada = repo.save.mock.calls[0][0] as OrgIntegration
     expect(guardada.credentials_encrypted).toBe('enc(page-token-2)')
     expect(guardada.enabled).toBe(true)
-    expect(guardada.getConfig()).toEqual({ page_id: 'p2', page_name: 'Otra página' })
+    expect(guardada.getConfig()).toEqual({ page_id: 'p2', page_name: 'Otra página', lead_owner_id: 'gaston' })
   })
 
   it('con una sola página la conecta directo', async () => {
@@ -60,7 +60,7 @@ describe('ConnectMetaPageUseCase', () => {
     await uc.execute({ ...BASE, pageId: 'p1' })
     const guardada = repo.save.mock.calls[0][0] as OrgIntegration
     expect(guardada.id).toBe('vieja')
-    expect(guardada.getConfig()).toEqual({ account_id: 'ig1', api_version: 'v24.0', page_id: 'p1', page_name: 'Marcela Genta' })
+    expect(guardada.getConfig()).toEqual({ account_id: 'ig1', api_version: 'v24.0', page_id: 'p1', page_name: 'Marcela Genta', lead_owner_id: 'gaston' })
   })
 
   it('rechaza un token sin páginas, una página ajena y un token vacío', async () => {

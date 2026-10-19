@@ -109,7 +109,7 @@ firma `X-Hub-Signature-256`). Llegan en `entry[].changes[]` con sólo IDs; los d
 - Use case `IngestMetaLeadUseCase` (`core/.../use-cases/meta-leads/`), port `MetaLeadAdsGateway`,
   adapter `MetaLeadAdsHttp` (pide campaña y anuncio; si el token no tiene `ads_read`, reintenta sin eso).
 - Dedup por `meta_lead_id` (Meta reintenta el webhook).
-- Dueño = primer admin de la org, etapa `nuevo` — el reparto sigue siendo manual.
+- Dueño = quien conectó la página (`config_json.lead_owner_id`); si no hay o ya no está activo, el primer admin. Etapa `nuevo` — el reparto sigue siendo manual.
 - `source` = `facebook` | `instagram` según `platform`; `source_detail` = nombre de la campaña (la clave con
   la que [[Dominio-Marketing]] cruza gasto y leads); las preguntas propias del formulario van a `notes`.
 - Dispara `lead_created` de marketing (con el ID de Meta), webhook `lead.created` y automatizaciones.
