@@ -12,6 +12,8 @@ export interface ConnectMetaPageInput {
   userAccessToken: string
   /** Página elegida. Sin esto, y con más de una página, se devuelven las opciones. */
   pageId?: string | null
+  /** Quién conecta la página: los leads de los formularios se le asignan a él. */
+  connectedBy: string
 }
 
 export type ConnectMetaPageResult =
@@ -29,6 +31,10 @@ export type ConnectMetaPageResult =
  *
  * La config previa se conserva: la misma fila la usa la bandeja de Instagram
  * (`account_id`, `api_version`).
+ *
+ * Quien conecta la página queda como dueño de los leads que entran
+ * (`lead_owner_id`): el reparto es manual, así que alguien concreto los recibe
+ * y los delega. Para cambiarlo, otro admin reconecta.
  */
 export class ConnectMetaPageUseCase {
   constructor(
@@ -56,7 +62,12 @@ export class ConnectMetaPageUseCase {
     await this.connector.subscribeLeadgen(page.id, page.access_token)
 
     const previa = await this.repo.findByOrgAndProvider(input.orgId, input.provider).catch(() => null)
-    const config = { ...(previa?.getConfig() ?? {}), page_id: page.id, page_name: page.name }
+    const config = {
+      ...(previa?.getConfig() ?? {}),
+      page_id: page.id,
+      page_name: page.name,
+      lead_owner_id: input.connectedBy,
+    }
 
     await this.repo.save(OrgIntegration.create({
       id: previa?.id ?? this.ids.generate(),

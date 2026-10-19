@@ -468,14 +468,16 @@ app.post('/public/inbox/meta', async (c) => {
     .catch(() => [])
   const orgPorCuenta = new Map<string, string>()
   const tokenPorOrg = new Map<string, string | null>()
+  const duenioPorOrg = new Map<string, string | null>()
   for (const i of integraciones) {
     const config = parseConfig(i.config_json)
     if (config.account_id) orgPorCuenta.set(String(config.account_id), i.org_id)
     if (config.page_id) orgPorCuenta.set(String(config.page_id), i.org_id)
     tokenPorOrg.set(i.org_id, i.credentials_encrypted)
+    duenioPorOrg.set(i.org_id, config.lead_owner_id ?? null)
   }
 
-  const leadsCreados = await ingerirLeadgens(c.env, leadgens, orgPorCuenta, tokenPorOrg)
+  const leadsCreados = await ingerirLeadgens(c.env, leadgens, orgPorCuenta, tokenPorOrg, duenioPorOrg)
 
   const uc = ingestor(c.env)
 
@@ -522,6 +524,7 @@ async function ingerirLeadgens(
   leadgens: ReturnType<typeof parsearLeadgenMeta>,
   orgPorCuenta: Map<string, string>,
   tokenPorOrg: Map<string, string | null>,
+  duenioPorOrg: Map<string, string | null>,
 ): Promise<number> {
   if (leadgens.length === 0) return 0
   const uc = new IngestMetaLeadUseCase(
@@ -544,7 +547,7 @@ async function ingerirLeadgens(
         continue
       }
 
-      const r = await uc.execute({ orgId, leadgenId: l.leadgenId, pageAccessToken: token })
+      const r = await uc.execute({ orgId, leadgenId: l.leadgenId, pageAccessToken: token, ownerId: duenioPorOrg.get(orgId) ?? null })
       if (r.duplicate) continue
       creados++
 

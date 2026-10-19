@@ -413,12 +413,18 @@ app.get('/integrations/meta', async (c) => {
   if (!integracion) return c.json({ configurado: false })
 
   const config = integracion.getConfig()
+  const ownerId = (config.lead_owner_id as string | undefined) ?? null
+  const owner = ownerId
+    ? await new D1UserRepository(c.env.DB).findById(ownerId, c.get('orgId')).catch(() => null)
+    : null
   return c.json({
     configurado: true,
     enabled: integracion.enabled,
     page_id: (config.page_id as string | undefined) ?? null,
     page_name: (config.page_name as string | undefined) ?? null,
     tiene_token: !!integracion.credentials_encrypted,
+    // Sin dueño guardado (conexiones viejas) los leads van al primer admin.
+    lead_owner_name: owner?.full_name ?? null,
   })
 })
 
@@ -437,6 +443,7 @@ app.post('/integrations/meta/connect', async (c) => {
       provider: META_PROVIDER,
       userAccessToken: String(body?.token ?? ''),
       pageId: body?.page_id ? String(body.page_id) : null,
+      connectedBy: c.get('userId'),
     })
     return c.json(result)
   } catch (err: any) {

@@ -22,6 +22,7 @@ interface Conexion {
   page_id?: string | null
   page_name?: string | null
   tiene_token?: boolean
+  lead_owner_name?: string | null
 }
 
 interface Pagina { id: string; name: string }
@@ -100,7 +101,7 @@ export default function ConexionMetaPage() {
             <Heading level={3}>Página de Facebook</Heading>
             <Text size="sm" tone="muted">
               Cada formulario que alguien completa en un anuncio de Facebook o Instagram crea un lead
-              en etapa Nuevo, asignado al administrador, con la campaña como origen.
+              en etapa Nuevo, asignado a quien conectó la página, con la campaña como origen.
             </Text>
           </div>
           <StatusBadge
@@ -113,6 +114,13 @@ export default function ConexionMetaPage() {
           <Text size="sm" className="flex items-center gap-1.5">
             <CheckCircle2 className="w-4 h-4 text-success" />
             Conectada a <strong>{conexion?.page_name ?? conexion?.page_id}</strong>
+          </Text>
+        )}
+        {conectada && (
+          <Text size="sm" tone="muted">
+            Los leads nuevos se asignan a{' '}
+            <strong>{conexion?.lead_owner_name ?? 'el primer administrador'}</strong>.
+            Para recibirlos vos, reconectá la página con tu usuario.
           </Text>
         )}
 
