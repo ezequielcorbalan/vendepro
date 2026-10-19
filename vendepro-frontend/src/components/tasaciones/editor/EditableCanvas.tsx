@@ -33,6 +33,7 @@ import { AgentContactCardBlock } from '../renderer/blocks/AgentContactCardBlock'
 import { ZoneMapBlock } from '../renderer/blocks/ZoneMapBlock'
 import { BlockEditPopover } from './BlockEditPopover'
 import { useConfirm } from '@/components/ui/useConfirm'
+import { ColorInput } from '@/components/ui/ColorInput'
 import '../renderer/print.css'
 
 interface Props {
@@ -275,13 +276,9 @@ function BackgroundColorButton({ value, onChange }: { value: string | null; onCh
         <>
           <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
           <div className="absolute right-0 top-6 z-30 flex items-center gap-2 rounded-control border border-gray-200 bg-white p-2 shadow-pop" onClick={(e) => e.stopPropagation()}>
-            {/* ds-todo: el DS no tiene selector de color. Se repite en FunnelChartForm.
-              Candidato a componente "ColorInput". */}
-            <input
-              type="color"
-              value={value ?? '#ffffff'}
-              onChange={(e) => onChange(e.target.value)}
-              className="h-7 w-7 rounded border border-gray-300 p-0.5"
+            <ColorInput
+              value={value}
+              onChange={onChange}
               aria-label="Elegir color de fondo"
             />
             {value && (

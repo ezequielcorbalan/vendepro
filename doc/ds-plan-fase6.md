@@ -8,6 +8,28 @@ El criterio que la ordena: **componentizar, no maquillar.** Un overlay armado a
 mano se ve bien y pasa los cinco ratchets actuales. Se rompe cuando alguien
 intenta cerrarlo con Escape.
 
+## Estado al 08/09/2026 — cerrada como migración
+
+Las seis tandas están hechas. Lo que queda no es trabajo de migración: son
+**seis decisiones de diseño** (19 `ds-todo`) más una de producto (las páginas
+públicas), listadas al final.
+
+| Contador | Arrancó | Hoy |
+|---|---|---|
+| overlays armados a mano | 18 | **0** |
+| diálogos nativos (`confirm`/`alert`/`prompt`) | 24 | **3** |
+| botones nativos (`<button>`) | 161 | 22 |
+| inputs nativos | 28 | 15 |
+
+Los **overlays llegaron a 0 y ahí se quedan**: cualquier `inset-0` translúcido
+nuevo hace fallar el lint. Los 3 diálogos, 22 botones y 15 inputs que quedan
+están **fuera de alcance a propósito** — 30 de esos controles y los 3 diálogos
+viven en archivos de la tanda de Ezequiel del 31/08–04/09, que se dejaron
+afuera para no pisarnos, y el resto son las páginas públicas y los `ds-todo`.
+
+Los nueve ratchets corren en `frontend-checks.yml` junto a `tsc`, `vitest` y
+`eslint` (desde el 08/09/2026; antes los tests no corrían en ningún workflow).
+
 ## Por qué esta fase existe
 
 Medido el 01/09/2026, después de migrar `AIChatPanel`:
@@ -86,7 +108,10 @@ mecánica.
 Van a `ui/Drawer`, que ya tiene los slots `header` y `padded` agregados en
 `716510f`. Si alguno necesita un footer fijo, `Drawer` ya lo soporta.
 
-## Tanda 3 — Modales embutidos en pantallas
+## Tanda 3 — Modales embutidos en pantallas ✅ HECHA (02/09/2026)
+
+Los 5 archivos usan `ui/Modal`; cero overlays a mano. Los `fixed inset-0`
+transparentes del atrapa-clicks siguen ahí, como dice el plan: no son modales.
 
 **4 archivos · 6 overlays · riesgo medio**
 
@@ -104,7 +129,16 @@ migrarlo: dos pasos chicos y verificables en vez de uno grande.
 transparente que es el atrapa-clicks del selector de etiquetas. **Ése no se
 migra** — no es un modal. Lo mismo en `components/properties/PropertyFilters.tsx`.
 
-## Tanda 4 — Casos especiales
+## Tanda 4 — Casos especiales ✅ HECHA (03–04/09/2026)
+
+Los 5 usan `ui/Modal` o `ui/Drawer`. Los tres que el plan marcaba como
+delicados necesitaron un prop que el DS no tenía, y por eso mismo estaban
+armados a mano: `Drawer side="left"` (nav móvil), `Modal align="top"` (paleta
+⌘K) y `Modal header` (onboarding).
+
+**El onboarding perdió su fade de entrada.** Ningún overlay del DS tiene
+transición, y meterle una toca todos los overlays de la app, así que se decidió
+aparte y se aceptó la pérdida.
 
 **4 archivos · riesgo alto, decidir uno por uno**
 
@@ -216,22 +250,47 @@ Buscar también `focus:outline-none`, que se come el anillo de foco del teclado.
 
 ---
 
-## Enforcement: dos ratchets nuevos
+## Enforcement: eran dos ratchets nuevos, terminaron siendo cuatro
 
-Los cinco actuales miden apariencia y no detectan nada de esta fase. Sumar a
-`scripts/ds-color-lint.mjs`:
+Los cinco de antes miden apariencia y no detectan nada de esta fase. Sumados a
+`scripts/ds-color-lint.mjs`, hoy son **nueve en total**:
 
 **6. Overlays a mano** — hecho. `inset-0` con fondo translúcido, fuera de
 `src/components/ui`. **Arrancó en 19; con las tandas 1 y 2 bajó a 12.**
 Objetivo 0. No cuenta el `inset-0` transparente que sirve de atrapa-clicks de un
 dropdown, que es un uso legítimo.
 
-**7. Controles nativos** — `<input>`/`<select>`/`<textarea>` fuera de
-`src/components/ui` y de las superficies externas ya excluidas. Baseline 28.
+**7. Inputs nativos** — `<input>`/`<select>`/`<textarea>` fuera de
+`src/components/ui` y de las superficies externas ya excluidas. Arrancó en 28,
+hoy 15.
 
-Para los `<button>` **no** conviene un ratchet todavía: hay demasiados usos
-legítimos y el número solo no distingue. Primero clasificar (tanda 5), después
-poner baseline sobre lo que quede.
+**8. Botones nativos** — el plan decía que "no conviene todavía: hay demasiados
+usos legítimos y el número solo no distingue". Se puso **después** de clasificar
+en la tanda 5, que es justo lo que el plan proponía. Arrancó en 161, hoy 22.
+
+**9. Diálogos nativos** — `confirm`/`alert`/`prompt`. No estaba en el plan
+original: apareció al migrar los overlays, porque `ConfirmDialog` armaba el suyo
+a mano y el contador no lo veía —el chequeo excluía `components/ui`, exclusión
+que tiene sentido para colores pero no para comportamiento—. Arrancó en 24, hoy
+3 (regla 29).
+
+**Los que NO se pusieron, y por qué importa.** Un ratchet sólo sirve sobre un
+patrón que YA tiene alternativa en el DS y que se puede detectar sin falsos
+positivos. Sobre uno que no la tiene, no protege nada: bloquea trabajo legítimo
+hasta que alguien decida el componente. Quedaron sin ratchet a propósito:
+
+- los **29 "Volver" armados a mano** y los **82 micro-labels**
+  `uppercase tracking-wide` — no hay componente del DS que los reemplace;
+- la **regla 30** (acción de pestaña vs de pantalla) — no hay patrón mecánico
+  que las distinga;
+- la **regla 31** (`StepCard`) — el patrón a cazar sería
+  `rounded-full bg-primary text-white`, y choca con el "hoy" del calendario,
+  donde `primary` sí corresponde porque es un estado;
+- la **regla 32** (`getCurrentUser` en el render) — `getCurrentUser` sigue
+  siendo correcto adentro de un handler o un efecto, así que contar llamados
+  marcaría los usos buenos.
+
+Esas cuatro se verifican con tests, no con contadores.
 
 ## Decisiones
 
@@ -269,9 +328,27 @@ las 21.
 
 **No decidir esto no bloquea la fase 6** — ninguna tanda toca esas rutas.
 
-## Sugerencia de secuencia
+## Sugerencia de secuencia (cumplida)
 
-Tandas 1 y 2 primero: 7 archivos de riesgo bajo que ya bajan el ratchet de 17 a
-10 y validan el checklist de verificación. Después la tanda 5 acotada a `leads`,
-que es donde más se nota. Las tandas 3 y 4 al final, con los overlays extraídos
-a componentes propios como paso previo.
+Se siguió el orden propuesto: tandas 1 y 2 primero (riesgo bajo, validaron el
+checklist), después la 5 acotada a `leads`, y las 3 y 4 al final. El paso previo
+de extraer cada overlay a su componente resultó innecesario en la mayoría: el
+markup se pudo envolver en `Modal` en el lugar.
+
+## Lo que queda — seis decisiones de diseño, no trabajo de migración
+
+Quedan **14** `ds-todo` (`grep -rn ds-todo vendepro-frontend/src`) en cuatro
+grupos. Los dos que eran "falta un componente" ya están hechos; los cuatro que
+quedan son "¿esto merece existir en el DS o se queda local?", que es una
+pregunta distinta:
+
+| Decisión | Cuántos | Qué falta decidir |
+|---|---|---|
+| ~~`FileInput`~~ | ~~3~~ | ✅ **Hecho el 08/09/2026.** Creado y aplicado en los 3. De paso arregló dos bugs que los tres resolvían distinto: la misma foto no se podía elegir dos veces (`ImageUpload`) y el input quedaba fuera del tab order (los tres). Regla 33. |
+| ~~`ColorInput`~~ | ~~2~~ | ✅ **Hecho el 08/09/2026.** `aria-label` obligatorio en el tipo: `FunnelChartForm` lo tenía sin ninguno. Regla 33. |
+| Editor de tasación | 5 | `BubbleToolbar`, toggle de barra ×2, campo inline sobre el lienzo, inputs `size="sm"`. ¿Entran al DS o se quedan locales al editor? |
+| Superficies oscuras de la tasación | 4 | 3 tonos sin mapeo + la portada legacy A4. |
+| Sueltos | 5 | WhatsApp sin número, converger `ContactSelector`, `Modal initialFocus`, toggle de par en 24px, CTA sin destino. |
+
+Más la de producto de la sección anterior (las páginas públicas), que desbloquea
+11 controles nativos y **no bloquea nada** mientras no se decida.

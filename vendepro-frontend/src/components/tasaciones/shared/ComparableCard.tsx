@@ -12,6 +12,7 @@ import {
 } from './extract-comparable'
 import { Field, Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import { FileInput } from '@/components/ui/FileInput'
 
 export type ComparableKind = 'publicacion' | 'venta'
 
@@ -222,14 +223,24 @@ export function ComparableCard({
             )}
 
             {/* Drop zone — disponible en ambos kinds */}
+            <FileInput accept="image/*" onFiles={(fs) => handleFile(fs[0])} aria-label="Subir una captura del comparable">
+              {(abrir) => (
             <div
+              role="button"
               tabIndex={0}
               onPaste={handlePaste}
               onDragOver={(e) => { e.preventDefault(); setHighlight(true) }}
               onDragLeave={() => setHighlight(false)}
               onDrop={handleDrop}
-              onClick={() => fileRef.current?.click()}
-              className={`flex cursor-pointer flex-col items-center justify-center gap-1 rounded-card border-2 border-dashed px-4 py-6 text-center transition ${
+              onClick={abrir}
+              // Un `div` con `tabIndex` es un tab stop que NO dispara su
+              // `onClick` con Enter ni con espacio: entrabas al dropzone con el
+              // teclado y no pasaba nada. Con `role="button"` el lector de
+              // pantalla lo anuncia como botón, y esto lo hace cumplir.
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abrir() }
+              }}
+              className={`flex cursor-pointer flex-col items-center justify-center gap-1 rounded-card border-2 border-dashed px-4 py-6 text-center transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
                 highlight ? 'border-primary bg-primary/5' : 'border-gray-300 hover:border-primary/60'
               }`}
             >
@@ -266,19 +277,9 @@ export function ComparableCard({
                   </p>
                 </>
               )}
-              {/* ds-todo: el DS no tiene control de archivo — ver ImageUpload. Candidato a "FileInput". */}
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0]
-                  if (f) handleFile(f)
-                  e.target.value = ''
-                }}
-              />
             </div>
+              )}
+            </FileInput>
             {error && <p className="text-xs text-danger">{error}</p>}
 
             {/* Campos */}

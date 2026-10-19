@@ -4,7 +4,7 @@ import { useState } from 'react'
 import {
   Plus, Trash2, Search, Car, Sun, Waves, Inbox, AlertTriangle,
   MoreVertical, Pencil, Copy, HelpCircle, Settings, Building2, Target, Home,
-  Zap, SlidersHorizontal, ChevronRight, Check, Eye, BarChart3, Activity,
+  Zap, SlidersHorizontal, ChevronRight, Check, Eye, BarChart3, Activity, Upload,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -29,6 +29,8 @@ import { Timeline } from '@/components/ui/Timeline'
 import { ProgressBar } from '@/components/ui/Progress'
 import { StepIndicator } from '@/components/ui/StepIndicator'
 import { StepCard } from '@/components/ui/StepCard'
+import { FileInput } from '@/components/ui/FileInput'
+import { ColorInput } from '@/components/ui/ColorInput'
 import { Heading, Text } from '@/components/ui/Typography'
 import { CallButton, WhatsAppButton } from '@/components/ui/ContactButtons'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -400,6 +402,41 @@ export default function DesignSystemPage() {
             <StepCard step={3} level={4} title="level={4} cuando cuelga de un título de sección">
               <Text size="sm" tone="muted">Saltarse un nivel de encabezado rompe la navegación por encabezados.</Text>
             </StepCard>
+          </div>
+        </Section>
+
+        {/* FileInput + ColorInput */}
+        <Section
+          title="FileInput"
+          hint="El `<input type=“file”>` y nada más: la plomería, no el botón. El disparador lo pone el que llama —por eso es una render prop que recibe `abrir`—, porque los tres lugares que tenían esto a mano lo tienen distinto y con razón: un Button, un dropzone con pegar y arrastrar, y un botón punteado a lo ancho. Lo que se repetía era el input escondido, y ahí había dos bugs: la misma foto no se podía elegir dos veces (el `change` no dispara si el `value` no cambió — sólo dos de los tres lo resolvían) y `className=“hidden”` saca el input del tab order. Acá el reset es siempre y el input va `sr-only`: invisible pero donde el teclado lo encuentra."
+        >
+          <div className="flex flex-wrap items-center gap-3">
+            <FileInput accept="image/*" onFiles={() => {}} aria-label="Subir una imagen (demo)">
+              {abrir => (
+                <Button variant="outline" size="sm" onClick={abrir} icon={<Upload className="w-3.5 h-3.5" />}>
+                  Subir
+                </Button>
+              )}
+            </FileInput>
+            <FileInput accept="image/*" onFiles={() => {}} disabled aria-label="Subir deshabilitado (demo)">
+              {abrir => (
+                <Button variant="outline" size="sm" onClick={abrir} disabled icon={<Upload className="w-3.5 h-3.5" />}>
+                  Deshabilitado
+                </Button>
+              )}
+            </FileInput>
+          </div>
+        </Section>
+
+        <Section
+          title="ColorInput"
+          hint="Muestrita de 28px sobre el `<input type=“color”>` nativo, que es el que abre el selector del sistema — reemplazarlo pide escribir un picker entero y no hace falta. Unifica la medida y el borde, que estaban con `rounded` en un lugar y `rounded-control` en el otro. El `aria-label` es OBLIGATORIO en el tipo: el control no tiene texto visible, así que sin label no tiene nombre — en FunnelChartForm no lo tenía y un lector de pantalla anunciaba sólo “color”."
+        >
+          <div className="flex items-center gap-3">
+            <ColorInput value="#ff007c" onChange={() => {}} aria-label="Color de marca (demo)" />
+            <ColorInput value={null} fallback="#ffffff" onChange={() => {}} aria-label="Sin color elegido (demo)" />
+            <ColorInput value="#ff8017" onChange={() => {}} disabled aria-label="Deshabilitado (demo)" />
+            <Text size="xs" tone="muted">con color · sin color (fallback) · deshabilitado</Text>
           </div>
         </Section>
 

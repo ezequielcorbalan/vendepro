@@ -2,6 +2,7 @@
 import { BlockField, BlockInput } from '../BlockField'
 import { X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
+import { ColorInput } from '@/components/ui/ColorInput'
 interface Props { data: any; onPatch: (p: Record<string, unknown>) => void }
 
 interface FunnelStep { label: string; value: number | null; color?: string }
@@ -31,8 +32,12 @@ export function FunnelChartForm({ data, onPatch }: Props) {
             <div key={i} className="flex items-center gap-2">
               <BlockInput placeholder="Etapa" value={step.label} onChange={e => setStep(i, 'label', e.target.value)} className="flex-1 text-xs" />
               <BlockInput type="number" placeholder="Valor" value={step.value ?? ''} onChange={e => setStep(i, 'value', e.target.value)} />
-              {/* ds-todo: el DS no tiene selector de color — ver EditableCanvas. Candidato a "ColorInput". */}
-              <input type="color" value={step.color ?? '#ff007c'} onChange={e => setStep(i, 'color', e.target.value)} className="h-7 w-7 rounded-control border border-gray-300 p-0.5" />
+              <ColorInput
+                value={step.color ?? null}
+                fallback="#ff007c"
+                onChange={c => setStep(i, 'color', c)}
+                aria-label={`Color de la etapa ${step.label || i + 1}`}
+              />
               <Button variant="ghost" size="icon" onClick={() => remove(i)} aria-label="Quitar" className="p-0 text-gray-400 hover:text-danger"><X className="w-3.5 h-3.5" /></Button>
             </div>
           ))}

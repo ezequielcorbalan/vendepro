@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
-  Megaphone, Settings, BarChart3, Activity, Save, Loader2,
+  Settings, BarChart3, Activity, Save, Loader2,
   Plus, Trash2, ArrowLeft, Send, CheckCircle2, Mail,
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
@@ -20,6 +20,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { Modal } from '@/components/ui/Modal'
 import { Alert } from '@/components/ui/Alert'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 const EVENT_KEY_GROUPS: { label: string; keys: { key: string; label: string }[] }[] = [
   {
@@ -279,18 +280,11 @@ export default function MarketingConfigPage() {
         <ArrowLeft className="w-4 h-4" /> Volver a Configuración
       </Link>
 
-      {/* Header propio (hero con ícono degradado + imagen decorativa) — se deja como está */}
-      <div className="bg-white rounded-card border border-gray-200 shadow-card p-6 mb-6 relative overflow-hidden">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-control bg-gradient-to-br from-brand-pink to-brand-orange flex items-center justify-center">
-            <Megaphone className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-xl font-semibold text-ink">Marketing</h1>
-            <p className="text-sm text-gray-500 mt-0.5">Tu Meta Pixel + Google Analytics 4 + GTM — la configuración es por agente</p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        className="mb-6"
+        title="Marketing"
+        subtitle="Tu Meta Pixel + Google Analytics 4 + GTM — la configuración es por agente"
+      />
 
       {/* Mapeos (funnel de la org) y Email son admin-only. */}
       <SegmentedControl
