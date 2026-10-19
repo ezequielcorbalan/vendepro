@@ -8,6 +8,8 @@ const PUBLIC_PATHS = [
   '/login',
   '/register',
   '/terminos',
+  // Política de privacidad: la exige Meta para publicar la app (Lead Ads, mensajes).
+  '/privacidad',
   // Recuperar contraseña: por definición el usuario no tiene sesión acá. Sin
   // esto el middleware lo manda a /login y encima descarta el ?token= del mail.
   '/forgot-password',
